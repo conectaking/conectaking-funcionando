@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>King Docs — Conecta King</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; --bad:#c0392b; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); padding:1rem 1rem 3rem; }
+    .wrap { max-width: 920px; margin: 0 auto; }
+    .banner { background: #e8f0ea; border: 1px dashed var(--accent); color: var(--accent); padding: .65rem .9rem; border-radius: 8px; font-size: .82rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.45rem; margin: 0 0 .35rem; }
+    .sub { color: var(--muted); font-size: .85rem; margin-bottom: 1.2rem; }
+    .tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tab { padding: .45rem .9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: .82rem; }
+    .tab.active { border-color: var(--accent); background: #e8f0ea; color: var(--accent); font-weight: 600; }
+    .panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+    .panel.active { display: block; }
+    .group { margin-bottom: 1.2rem; }
+    .group h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 .6rem; }
+    .row { display: grid; grid-template-columns: 140px 1fr; gap: .5rem; align-items: center; margin-bottom: .45rem; font-size: .88rem; }
+    .row label { color: var(--muted); font-size: .78rem; }
+    input[type=text], input[type=password], input[type=number], select {
+      width: 100%; padding: .45rem .55rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;
+    }
+    .btn { display:inline-block; padding: .5rem 1rem; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; font-size: .85rem; }
+    .btn.secondary { background: #eee; color: var(--ink); }
+    .btn.bad { background: var(--bad); }
+    .file-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem 0; border-bottom: 1px solid var(--border); font-size: .85rem; }
+    .share-grid { font-size: .82rem; }
+    .share-grid table { width: 100%; border-collapse: collapse; }
+    .share-grid th, .share-grid td { border: 1px solid var(--border); padding: .35rem .4rem; text-align: left; vertical-align: middle; }
+    .share-grid th { background: #faf9f7; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .err { color: var(--bad); font-size: .85rem; margin: .5rem 0; }
+    .okmsg { color: var(--accent); font-size: .85rem; margin: .5rem 0; }
+    .linkbox { word-break: break-all; background: #f0f0ec; padding: .6rem; border-radius: 8px; font-size: .78rem; margin: .5rem 0; }
+    code { font-size: .78rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="banner"><strong>King Docs</strong> — dados confidenciais. Não aparecem no teu cartão público. Só são enviados quando crias um link ou copias daqui.</div>
+    <h1>King Docs</h1>
+    <p class="sub">Cofre pessoal e partilha controlada (texto, ficheiros, links temporários).</p>
+    <p class="sub" id="auth-hint"></p>
+
+    <div class="tabs">
+      <button type="button" class="tab active" data-panel="p-dados">Dados</button>
+      <button type="button" class="tab" data-panel="p-docs">Documentos</button>
+      <button type="button" class="tab" data-panel="p-share">Criar link</button>
+      <button type="button" class="tab" data-panel="p-links">Os meus links</button>
+    </div>
+
+    <div id="p-dados" class="panel active"></div>
+    <div id="p-docs" class="panel">
+      <p class="sub">Envia PDF ou imagem. Depois podes associar cada ficheiro a um campo na aba «Criar link».</p>
+      <input type="file" id="up-file"/>
+      <input type="text" id="up-type" placeholder="Tipo (ex.: CPF scan, RG)" style="max-width:220px; margin-left:.5rem"/>
+      <button type="button" class="btn" id="up-btn">Enviar</button>
+      <div id="file-list" style="margin-top:1rem"></div>
+    </div>
+
+    <div id="p-share" class="panel">
+      <p class="sub">Marca o que entra no link. Por campo: podes enviar <strong>só texto</strong>, <strong>só ficheiro</strong> ou <strong>ambos</strong>.</p>
+      <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
+        <label>Nome a mostrar</label>
+        <input type="text" id="sh-name" placeholder="Nome no topo da página do link"/>
+      </div>
+      <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
+        <label>Foto (URL)</label>
+        <input type="text" id="sh-photo" placeholder="Opcional — URL da imagem de perfil"/>
+      </div>
+      <div class="share-grid" id="share-table-wrap"></div>
+      <h3 class="group" style="margin-top:1rem;">Documentos extra (só ficheiro, sem campo de texto)</h3>
+      <div id="extra-docs-wrap"></div>
+      <div style="margin-top:1rem; display:grid; gap:.6rem; max-width: 420px;">
+        <div class="row" style="grid-template-columns: 160px 1fr;">
+          <label>Expira em (horas)</label>
+          <input type="number" id="sh-hours" value="24" min="1" max="720"/>
+        </div>
+        <div class="row" style="grid-template-columns: 160px 1fr;">
+          <label>Senha (opcional)</label>
+          <input type="password" id="sh-pass" placeholder="Vazio = sem senha"/>
+        </div>
+        <div class="row" style="grid-template-columns: 160px 1fr;">
+          <label>Máx. visualizações</label>
+          <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1"/>
+        </div>
+      </div>
+      <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link</button></p>
+      <div id="share-out"></div>
+    </div>
+
+    <div id="p-links" class="panel">
+      <div id="links-list"></div>
+    </div>
+  </div>
+
+  <script>
+(function(){
+  function apiBase() {
+    if (typeof window.API_BASE === 'string' && window.API_BASE) return window.API_BASE.replace(/\/$/, '');
+    if (typeof window.API_URL === 'string' && window.API_URL) return window.API_URL.replace(/\/$/, '');
+    return '';
+  }
+  function api(path) { return apiBase() + path; }
+  function getToken() {
+    try {
+      return localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || sessionStorage.getItem('token') || '';
+    } catch (e) { return ''; }
+  }
+  function authHeaders() {
+    const t = getToken();
+    const h = { 'Content-Type': 'application/json' };
+    if (t) h['Authorization'] = 'Bearer ' + t;
+    return h;
+  }
+
+  const GROUPS = [
+    { id: 'pessoal', title: 'Dados pessoais', keys: ['Nome Completo','Data de Nasc.','RG','CPF'] },
+    { id: 'contato', title: 'Contato', keys: ['WhatsApp','E-mail','Instagram'] },
+    { id: 'endereco', title: 'Endereço', keys: ['Rua','Bairro','Cidade','CEP'] },
+    { id: 'financeiro', title: 'Financeiro (PF)', keys: ['PIX (CPF)','Banco','Agência','Conta'] },
+    { id: 'empresa', title: 'Empresa', keys: ['Razão Social','CNPJ','IE','C.C.M','E-mail','Site','Endereço','Bairro','Cidade','CEP'] },
+    { id: 'financeiropj', title: 'Financeiro (PJ)', keys: ['PIX (CNPJ)','Favorecido','Banco','Agência','Conta'] }
+  ];
+
+  let fieldData = {};
+  let filesList = [];
+
+  function ensureFieldData() {
+    GROUPS.forEach(g => {
+      if (!fieldData[g.id]) fieldData[g.id] = {};
+      g.keys.forEach(k => { if (fieldData[g.id][k] == null) fieldData[g.id][k] = ''; });
+    });
+  }
+
+  function renderDados() {
+    ensureFieldData();
+    const el = document.getElementById('p-dados');
+    let html = '<p class="sub">Preenche os dados que quiseres guardar. «Guardar» grava no servidor.</p>';
+    html += '<p><button type="button" class="btn" id="btn-save-vault">Guardar dados</button></p>';
+    GROUPS.forEach(g => {
+      html += '<div class="group"><h3>' + g.title + '</h3>';
+      g.keys.forEach(k => {
+        const v = (fieldData[g.id] && fieldData[g.id][k]) || '';
+        html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '" data-k="' + escapeHtml(k) + '" value="' + escapeAttr(v) + '"/></div>';
+      });
+      html += '</div>';
+    });
+    el.innerHTML = html;
+    document.getElementById('btn-save-vault').onclick = saveVault;
+    el.querySelectorAll('input[data-g]').forEach(inp => {
+      inp.addEventListener('change', function() {
+        const g = this.getAttribute('data-g');
+        const k = this.getAttribute('data-k');
+        if (!fieldData[g]) fieldData[g] = {};
+        fieldData[g][k] = this.value;
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/"/g, '&quot;');
+  }
+
+  async function loadVault() {
+    const tok = getToken();
+    if (!tok) {
+      document.getElementById('auth-hint').textContent = 'Inicia sessão no Conecta King e abre esta página a partir do painel (com token guardado).';
+      return;
+    }
+    document.getElementById('auth-hint').textContent = '';
+    const r = await fetch(api('/api/king-docs/vault'), { headers: authHeaders() });
+    if (r.status === 403) {
+      document.getElementById('auth-hint').textContent = 'O módulo King Docs não está disponível no teu plano.';
+      return;
+    }
+    if (!r.ok) { document.getElementById('auth-hint').textContent = 'Erro ao carregar cofre.'; return; }
+    const j = await r.json();
+    const d = j.data && j.data.fieldData;
+    if (d && typeof d === 'object') fieldData = d;
+    ensureFieldData();
+    renderDados();
+    renderShareTable();
+    loadFiles();
+    loadLinks();
+  }
+
+  async function saveVault() {
+    const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
+    if (!r.ok) { alert('Erro ao guardar'); return; }
+    alert('Guardado.');
+  }
+
+  async function loadFiles() {
+    const r = await fetch(api('/api/king-docs/files'), { headers: authHeaders() });
+    if (!r.ok) return;
+    const j = await r.json();
+    filesList = (j.data && j.data.files) || [];
+    const el = document.getElementById('file-list');
+    if (!filesList.length) { el.innerHTML = '<p class="sub">Nenhum ficheiro.</p>'; renderShareTable(); return; }
+    el.innerHTML = filesList.map(f => '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code></span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>').join('');
+    el.querySelectorAll('.btn-del-file').forEach(b => {
+      b.onclick = async function() {
+        if (!confirm('Apagar este ficheiro do cofre?')) return;
+        const id = this.getAttribute('data-id');
+        await fetch(api('/api/king-docs/files/' + id), { method: 'DELETE', headers: authHeaders() });
+        loadFiles();
+      };
+    });
+    renderShareTable();
+    renderExtraDocs();
+  }
+
+  function fileSelectHtml(fieldId) {
+    let o = '<option value="">— ficheiro —</option>';
+    filesList.forEach(f => { o += '<option value="' + f.id + '">#' + f.id + ' ' + escapeHtml(f.doc_type) + '</option>'; });
+    return '<select data-sel-for="' + fieldId + '">' + o + '</select>';
+  }
+
+  function renderShareTable() {
+    const wrap = document.getElementById('share-table-wrap');
+    let rows = '';
+    let idx = 0;
+    GROUPS.forEach(g => {
+      g.keys.forEach(k => {
+        const fid = 'f' + (idx++);
+        rows += '<tr data-fk="' + escapeHtml(g.id + '|' + k) + '">' +
+          '<td><input type="checkbox" class="incl" data-fid="' + fid + '"/></td>' +
+          '<td>' + escapeHtml(g.title) + '</td>' +
+          '<td>' + escapeHtml(k) + '</td>' +
+          '<td><input type="checkbox" class="st" data-fid="' + fid + '" checked/></td>' +
+          '<td><input type="checkbox" class="sf" data-fid="' + fid + '"/></td>' +
+          '<td>' + fileSelectHtml(fid) + '</td></tr>';
+      });
+    });
+    wrap.innerHTML = '<table><thead><tr><th>Incluir</th><th>Grupo</th><th>Campo</th><th>Texto</th><th>Ficheiro</th><th>Ficheiro (scan)</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function renderExtraDocs() {
+    const w = document.getElementById('extra-docs-wrap');
+    if (!filesList.length) { w.innerHTML = '<p class="sub">Sem ficheiros.</p>'; return; }
+    w.innerHTML = filesList.map(f => '<div class="row" style="grid-template-columns:1fr 120px;"><label><input type="checkbox" class="xd-check" data-fid="' + f.id + '"/> #' + f.id + ' ' + escapeHtml(f.doc_type) + '</label><input type="text" class="xd-label" data-fid="' + f.id + '" placeholder="Rótulo"/></div>').join('');
+  }
+
+  document.getElementById('up-btn').onclick = async function() {
+    const inp = document.getElementById('up-file');
+    if (!inp.files || !inp.files[0]) { alert('Escolhe um ficheiro'); return; }
+    const fd = new FormData();
+    fd.append('file', inp.files[0]);
+    fd.append('docType', document.getElementById('up-type').value || 'documento');
+    const r = await fetch(api('/api/king-docs/files'), { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }, body: fd });
+    if (!r.ok) { alert('Erro no upload'); return; }
+    inp.value = '';
+    loadFiles();
+  };
+
+  document.getElementById('btn-create-link').onclick = async function() {
+    const sections = [];
+    GROUPS.forEach(g => {
+      const rows = [];
+      g.keys.forEach(k => {
+        const tr = document.querySelector('tr[data-fk="' + g.id + '|' + k + '"]');
+        if (!tr) return;
+        const incl = tr.querySelector('.incl');
+        if (!incl || !incl.checked) return;
+        const fid = incl.getAttribute('data-fid');
+        const st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        const sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
+        const sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
+        const fileId = sel && sel.value ? parseInt(sel.value, 10) : null;
+        rows.push({
+          group: g.id,
+          key: k,
+          label: k,
+          showText: !!(st && st.checked),
+          showFile: !!(sf && sf.checked),
+          fileId: fileId || null
+        });
+      });
+      if (rows.length) sections.push({ title: g.title, rows });
+    });
+    const extraDocs = [];
+    document.querySelectorAll('.xd-check:checked').forEach(ch => {
+      const id = parseInt(ch.getAttribute('data-fid'), 10);
+      const lab = document.querySelector('.xd-label[data-fid="' + id + '"]');
+      extraDocs.push({ fileId: id, label: (lab && lab.value) ? lab.value : 'Documento' });
+    });
+
+    const body = {
+      expiresInHours: parseInt(document.getElementById('sh-hours').value, 10) || 24,
+      password: document.getElementById('sh-pass').value || '',
+      maxViews: document.getElementById('sh-maxv').value || '',
+      selection: {
+        displayName: document.getElementById('sh-name').value || '',
+        profileImageUrl: document.getElementById('sh-photo').value || '',
+        sections,
+        extraDocs
+      }
+    };
+    const r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    const out = document.getElementById('share-out');
+    if (!r.ok) { out.innerHTML = '<p class="err">Erro ao criar link.</p>'; return; }
+    const j = await r.json();
+    const d = j.data || {};
+    const fullUrl = window.location.origin + (d.shareUrl || '');
+    out.innerHTML = '<p class="okmsg">Link criado.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button></p>';
+    document.getElementById('btn-copy-link').onclick = function() {
+      navigator.clipboard.writeText(fullUrl).then(function() { alert('Copiado.'); });
+    };
+    loadLinks();
+  };
+
+  async function loadLinks() {
+    const el = document.getElementById('links-list');
+    const r = await fetch(api('/api/king-docs/shares'), { headers: authHeaders() });
+    if (!r.ok) { el.innerHTML = '<p class="err">Erro ao listar.</p>'; return; }
+    const j = await r.json();
+    const arr = (j.data && j.data.shares) || [];
+    if (!arr.length) { el.innerHTML = '<p class="sub">Nenhum link.</p>'; return; }
+    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th>ID</th><th>Link</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th></th></tr>' +
+      arr.map(s => {
+        const u = window.location.origin + '/kingDocsShare.html?t=' + encodeURIComponent(s.token);
+        return '<tr><td>' + s.id + '</td><td><button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar URL</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button></td></tr>';
+      }).join('') + '</table>';
+    el.querySelectorAll('.btn-copyt').forEach(b => {
+      b.onclick = function() { navigator.clipboard.writeText(this.getAttribute('data-u')); alert('URL copiada.'); };
+    });
+    el.querySelectorAll('.btn-rev').forEach(b => {
+      b.onclick = async function() {
+        if (!confirm('Revogar este link?')) return;
+        await fetch(api('/api/king-docs/shares/' + this.getAttribute('data-id')), { method: 'DELETE', headers: authHeaders() });
+        loadLinks();
+      };
+    });
+  }
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById(this.getAttribute('data-panel')).classList.add('active');
+    });
+  });
+
+  async function loadProfileHints() {
+    const tok = getToken();
+    if (!tok) return;
+    try {
+      const r = await fetch(api('/api/account/status'), { headers: authHeaders() });
+      if (!r.ok) return;
+      const u = await r.json();
+      if (u.name && !document.getElementById('sh-name').value) document.getElementById('sh-name').value = u.name;
+      if (u.profileImageUrl && !document.getElementById('sh-photo').value) document.getElementById('sh-photo').value = u.profileImageUrl;
+    } catch (e) {}
+  }
+
+  loadVault().then(loadProfileHints);
+})();
+  </script>
+</body>
+</html>

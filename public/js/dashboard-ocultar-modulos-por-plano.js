@@ -51,7 +51,8 @@
             { key: 'hasBranding', module: 'branding', labels: ['Personalização da Marca', 'Personalizacao da Marca'] },
             { key: 'hasKingBrief', module: 'kingbrief', labels: ['KingBrief'] },
             { key: 'hasKingSelection', module: 'king_selection', labels: ['King Selection'] },
-            { key: 'hasDigitalForm', module: 'digital_form', labels: ['King Forms', 'Formulário King'] }
+            { key: 'hasDigitalForm', module: 'digital_form', labels: ['King Forms', 'Formulário King'] },
+            { key: 'hasKingDocs', module: 'king_docs', labels: ['King Docs'] }
         ];
 
         map.forEach(function (item) {
@@ -60,6 +61,9 @@
             var show = raw === true || raw === 1 || raw === 'true';
             // API antiga sem hasDigitalForm: manter visível (evita sumir o menu antes do deploy do back-end)
             if (item.key === 'hasDigitalForm' && raw === undefined) {
+                show = true;
+            }
+            if (item.key === 'hasKingDocs' && raw === undefined) {
                 show = true;
             }
             

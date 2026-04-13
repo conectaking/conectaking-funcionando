@@ -155,6 +155,7 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasKingSelection = hasModule('king_selection');
         user.hasPhotographerSite = hasModule('photographer_site');
         user.hasDigitalForm = hasModule('digital_form');
+        user.hasKingDocs = hasModule('king_docs');
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
         
         // Buscar limites de links (módulo isolado)
@@ -181,6 +182,7 @@ router.get('/status', protectUser, async (req, res) => {
             hasKingSelection: user.hasKingSelection,
             hasPhotographerSite: user.hasPhotographerSite,
             hasDigitalForm: user.hasDigitalForm,
+            hasKingDocs: user.hasKingDocs,
             financeInBase: baseSet.has('finance'),
             financeInIndividual: individualSet.has('finance'),
             financeExcluded: excludedSet.has('finance')
