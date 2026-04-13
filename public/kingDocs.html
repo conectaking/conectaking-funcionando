@@ -28,6 +28,9 @@
     .btn { display:inline-block; padding: .5rem 1rem; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; font-size: .85rem; }
     .btn.secondary { background: #eee; color: var(--ink); }
     .btn.bad { background: var(--bad); }
+    .btn-row { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0 1rem; align-items: center; }
+    .preset-row { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 1rem; }
+    .preset-row .btn { font-size: .78rem; padding: .35rem .65rem; }
     .file-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem 0; border-bottom: 1px solid var(--border); font-size: .85rem; }
     .share-grid { font-size: .82rem; }
     .share-grid table { width: 100%; border-collapse: collapse; }
@@ -64,6 +67,12 @@
 
     <div id="p-share" class="panel">
       <p class="sub">Marca o que entra no link. Por campo: podes enviar <strong>só texto</strong>, <strong>só ficheiro</strong> ou <strong>ambos</strong>.</p>
+      <div class="preset-row">
+        <span class="sub" style="margin:0;">Atalhos:</span>
+        <button type="button" class="btn secondary" id="btn-preset-all">Incluir todos os campos</button>
+        <button type="button" class="btn secondary" id="btn-preset-none">Limpar inclusões</button>
+        <button type="button" class="btn secondary" id="btn-preset-contact">Só pessoal + contato</button>
+      </div>
       <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
         <label>Nome a mostrar</label>
         <input type="text" id="sh-name" placeholder="Nome no topo da página do link"/>
@@ -141,7 +150,11 @@
     ensureFieldData();
     const el = document.getElementById('p-dados');
     let html = '<p class="sub">Preenche os dados que quiseres guardar. «Guardar» grava no servidor.</p>';
-    html += '<p><button type="button" class="btn" id="btn-save-vault">Guardar dados</button></p>';
+    html += '<div class="btn-row">';
+    html += '<button type="button" class="btn" id="btn-save-vault">Guardar dados</button>';
+    html += '<button type="button" class="btn secondary" id="btn-import-profile">Importar do perfil (cartão)</button>';
+    html += '<button type="button" class="btn secondary" id="btn-export-pdf">Exportar PDF</button>';
+    html += '</div>';
     GROUPS.forEach(g => {
       html += '<div class="group"><h3>' + g.title + '</h3>';
       g.keys.forEach(k => {
@@ -152,6 +165,8 @@
     });
     el.innerHTML = html;
     document.getElementById('btn-save-vault').onclick = saveVault;
+    document.getElementById('btn-import-profile').onclick = importFromProfile;
+    document.getElementById('btn-export-pdf').onclick = exportVaultPdf;
     el.querySelectorAll('input[data-g]').forEach(inp => {
       inp.addEventListener('change', function() {
         const g = this.getAttribute('data-g');
@@ -196,6 +211,30 @@
     const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
     if (!r.ok) { alert('Erro ao guardar'); return; }
     alert('Guardado.');
+  }
+
+  async function importFromProfile() {
+    const r = await fetch(api('/api/king-docs/vault/import-profile'), { method: 'POST', headers: authHeaders() });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { alert(j.message || 'Não foi possível importar o perfil.'); return; }
+    const d = j.data && j.data.fieldData;
+    if (d && typeof d === 'object') fieldData = d;
+    ensureFieldData();
+    renderDados();
+    renderShareTable();
+    alert(j.message || 'Importado.');
+  }
+
+  async function exportVaultPdf() {
+    const r = await fetch(api('/api/king-docs/vault/export-pdf'), { headers: { Authorization: 'Bearer ' + getToken() } });
+    if (!r.ok) { alert('Erro ao gerar PDF.'); return; }
+    const blob = await r.blob();
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = u;
+    a.download = 'king-docs-cofre.pdf';
+    a.click();
+    URL.revokeObjectURL(u);
   }
 
   async function loadFiles() {
@@ -310,9 +349,13 @@
     const j = await r.json();
     const d = j.data || {};
     const fullUrl = window.location.origin + (d.shareUrl || '');
-    out.innerHTML = '<p class="okmsg">Link criado.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button></p>';
+    out.innerHTML = '<p class="okmsg">Link criado.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p class="btn-row"><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button> <button type="button" class="btn secondary" id="btn-wa-link">WhatsApp</button></p>';
     document.getElementById('btn-copy-link').onclick = function() {
       navigator.clipboard.writeText(fullUrl).then(function() { alert('Copiado.'); });
+    };
+    document.getElementById('btn-wa-link').onclick = function() {
+      const msg = encodeURIComponent('Segue o link confidencial (King Docs):\n' + fullUrl);
+      window.open('https://wa.me/?text=' + msg, '_blank', 'noopener,noreferrer');
     };
     loadLinks();
   };
@@ -340,6 +383,21 @@
       };
     });
   }
+
+  document.getElementById('btn-preset-all').onclick = function() {
+    document.querySelectorAll('#share-table-wrap .incl').forEach(function(c) { c.checked = true; });
+  };
+  document.getElementById('btn-preset-none').onclick = function() {
+    document.querySelectorAll('#share-table-wrap .incl').forEach(function(c) { c.checked = false; });
+  };
+  document.getElementById('btn-preset-contact').onclick = function() {
+    document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function(tr) {
+      var fk = tr.getAttribute('data-fk') || '';
+      var incl = tr.querySelector('.incl');
+      if (!incl) return;
+      incl.checked = fk.indexOf('pessoal|') === 0 || fk.indexOf('contato|') === 0;
+    });
+  };
 
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', function() {

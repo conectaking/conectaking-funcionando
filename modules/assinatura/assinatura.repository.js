@@ -94,6 +94,7 @@ const MODULE_NAME_TO_CODE = {
     Contratos: 'contract',
     'Agenda Inteligente': 'agenda',
     'Modo Empresa': 'modo_empresa',
+    'King Docs': 'king_docs',
 };
 
 async function syncModuleAvailability(client, planCode, includedModules, excludedModules) {

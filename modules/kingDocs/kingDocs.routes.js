@@ -23,6 +23,8 @@ router.get('/public/:token/file/:fileId', asyncHandler(controller.publicDownload
 /* ---------- Rotas autenticadas + plano ---------- */
 router.get('/vault', protectUser, requireModule('king_docs'), asyncHandler(controller.getVault));
 router.put('/vault', protectUser, requireModule('king_docs'), express.json({ limit: '512kb' }), asyncHandler(controller.putVault));
+router.post('/vault/import-profile', protectUser, requireModule('king_docs'), asyncHandler(controller.importProfile));
+router.get('/vault/export-pdf', protectUser, requireModule('king_docs'), asyncHandler(controller.exportPdf));
 
 router.get('/files', protectUser, requireModule('king_docs'), asyncHandler(controller.listFiles));
 router.post(

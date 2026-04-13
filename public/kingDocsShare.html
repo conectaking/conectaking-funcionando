@@ -139,7 +139,7 @@
     html += '<p class="tag">Partilha confidencial</p>';
     html += '<h1>' + esc(snap.displayName || 'Dados partilhados') + '</h1></div>';
 
-    html += '<div class="toolbar"><button type="button" class="btn primary" id="copy-all">Copiar tudo (texto)</button> <button type="button" class="btn" id="copy-sel">Copiar selecionados</button></div>';
+    html += '<div class="toolbar"><button type="button" class="btn primary" id="copy-all">Copiar tudo (texto)</button> <button type="button" class="btn" id="copy-sel">Copiar selecionados</button> <button type="button" class="btn" id="btn-wa-share">WhatsApp</button></div>';
 
     (snap.sections || []).forEach(sec => {
       html += '<div class="sec"><h2>' + esc(sec.title) + '</h2>';
@@ -180,6 +180,11 @@
     root.querySelector('#copy-all').onclick = function() {
       const txt = buildTextFromSnapshot(snap);
       navigator.clipboard.writeText(txt).then(function() { alert('Texto copiado.'); });
+    };
+    var btnWa = root.querySelector('#btn-wa-share');
+    if (btnWa) btnWa.onclick = function() {
+      var txt = buildTextFromSnapshot(snap) + '\n\n' + window.location.href;
+      window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener,noreferrer');
     };
     var btnSel = root.querySelector('#copy-sel');
     if (btnSel) btnSel.onclick = function() {

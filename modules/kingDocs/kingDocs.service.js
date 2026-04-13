@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const repo = require('./kingDocs.repository');
 const { r2PutObjectBuffer, r2GetObjectBuffer, getR2Client, getR2Config } = require('../../utils/r2');
+const informacoesRepo = require('../editarCartao/informacoes/informacoes.repository');
+const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const path = require('path');
 
 function randomToken(bytes = 24) {
@@ -324,6 +326,78 @@ async function publicDownloadFile(token, fileId, viewerHeader) {
   };
 }
 
+async function importFromProfile(userId) {
+  const details = await informacoesRepo.getDetails(userId);
+  if (!details) {
+    const err = new Error('Perfil não encontrado.');
+    err.statusCode = 404;
+    throw err;
+  }
+  const vault = await repo.getVault(userId);
+  const fd = vault && vault.field_data ? JSON.parse(JSON.stringify(vault.field_data)) : {};
+  if (!fd.pessoal) fd.pessoal = {};
+  if (!fd.contato) fd.contato = {};
+  if (details.display_name) fd.pessoal['Nome Completo'] = String(details.display_name);
+  const wa = details.whatsapp || details.whatsapp_number;
+  if (wa) fd.contato['WhatsApp'] = String(wa);
+  if (details.email) fd.contato['E-mail'] = String(details.email);
+  await repo.upsertVault(userId, fd);
+  return getVault(userId);
+}
+
+async function exportVaultPdf(userId) {
+  const v = await getVault(userId);
+  const fieldData = v.fieldData || {};
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  let page = pdfDoc.addPage([595, 842]);
+  let pageHeight = page.getSize().height;
+  let y = pageHeight - 48;
+
+  const groupLabels = {
+    pessoal: 'Dados pessoais',
+    contato: 'Contato',
+    endereco: 'Endereço',
+    financeiro: 'Financeiro (PF)',
+    empresa: 'Empresa',
+    financeiropj: 'Financeiro (PJ)'
+  };
+
+  function newPageIfNeeded(minY) {
+    if (y < minY) {
+      page = pdfDoc.addPage([595, 842]);
+      pageHeight = page.getSize().height;
+      y = pageHeight - 48;
+    }
+  }
+
+  page.drawText('King Docs — cofre (confidencial)', { x: 48, y, size: 14, font: fontBold, color: rgb(0.12, 0.32, 0.18) });
+  y -= 22;
+  page.drawText('Exportado em ' + new Date().toLocaleString('pt-BR'), { x: 48, y, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+  y -= 22;
+
+  for (const [gkey, obj] of Object.entries(fieldData)) {
+    if (!obj || typeof obj !== 'object') continue;
+    newPageIfNeeded(48);
+    page.drawText(String(groupLabels[gkey] || gkey), { x: 48, y, size: 11, font: fontBold });
+    y -= 16;
+    for (const [k, val] of Object.entries(obj)) {
+      const rawLine = String(k) + ': ' + String(val != null ? val : '');
+      const parts = rawLine.match(/.{1,85}/g) || [rawLine];
+      for (const part of parts) {
+        newPageIfNeeded(24);
+        page.drawText(part, { x: 52, y, size: 10, font });
+        y -= 12;
+      }
+      y -= 4;
+    }
+    y -= 10;
+  }
+
+  return Buffer.from(await pdfDoc.save());
+}
+
 module.exports = {
   buildSnapshot,
   createShare,
@@ -335,6 +409,8 @@ module.exports = {
   publicUnlock,
   publicData,
   publicDownloadFile,
+  importFromProfile,
+  exportVaultPdf,
   listFiles: (uid) => repo.listFiles(uid),
   listShares: (uid) => repo.listShares(uid),
   revokeShare: (uid, id) => repo.revokeShare(id, uid)

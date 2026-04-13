@@ -159,6 +159,28 @@ async function publicDownloadFile(req, res) {
   }
 }
 
+async function importProfile(req, res) {
+  try {
+    const data = await service.importFromProfile(req.user.userId);
+    return responseFormatter.success(res, data, 'Dados do perfil importados para o cofre.');
+  } catch (e) {
+    logger.error('kingDocs importProfile', e);
+    return responseFormatter.error(res, e.message || 'Erro', e.statusCode || 500);
+  }
+}
+
+async function exportPdf(req, res) {
+  try {
+    const buf = await service.exportVaultPdf(req.user.userId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="king-docs-cofre.pdf"');
+    return res.send(buf);
+  } catch (e) {
+    logger.error('kingDocs exportPdf', e);
+    return responseFormatter.error(res, e.message || 'Erro', 500);
+  }
+}
+
 module.exports = {
   getVault,
   putVault,
@@ -171,5 +193,7 @@ module.exports = {
   publicMeta,
   publicUnlock,
   publicData,
-  publicDownloadFile
+  publicDownloadFile,
+  importProfile,
+  exportPdf
 };
