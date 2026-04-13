@@ -47,7 +47,14 @@ A API no **Render** não define a raiz do site na Hostinger. Só o **painel da H
 
 ## Ficheiros no repositório que ajudam
 
-- `public_html/.htaccess` — mínimo (`DirectoryIndex`, UTF-8).
-- `public_html/index.php` — ajuda só em casos em que o servidor procura `index.php`; se existir `index.html`, o Apache usa primeiro o que estiver em `DirectoryIndex`.
+- `public_html/.htaccess` — `DirectoryIndex`, UTF-8, `Options`, `Require all granted` (evita 403 em alguns servidores).
+- `public_html/COPIAR-PARA-htaccess.txt` — **se no File Manager não aparecer `.htaccess`**, o ficheiro pode não ter sido enviado (nomes com ponto são ocultos) ou falta criá-lo no painel; este ficheiro tem o texto exacto para colar num ficheiro novo chamado `.htaccess`.
+- `public_html/index.php` — fallback quando o servidor procura `index.php`.
+
+### 403 mesmo com `index.html` na pasta
+
+1. Confirma que existe **`.htaccess`** (não basta `htaccess-regras-opcionais.txt`). No File Manager, activa **mostrar ficheiros ocultos**.
+2. Permissão da **pasta** `public_html`: **755** (não 644).
+3. Testa `https://www.teudominio/index.html` — se abrir e só `/` der 403, faltava `DirectoryIndex` / `.htaccess`.
 
 Depois de a raiz do domínio estar correcta, o teu hábito de **atualizar só o conteúdo de `public_html`** continua a ser o ideal.
