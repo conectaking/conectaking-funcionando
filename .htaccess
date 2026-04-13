@@ -39,6 +39,14 @@ RewriteRule ^ %1 [R=301,L]
 # 2. King Selection (evitar que /kingSelection vire kingSelection.html inexistente → 404)
 #    Com slug: PHP injeta Open Graph (capa WhatsApp) e envia o mesmo HTML que kingSelectionCliente.html.
 #    Requer PHP. Sem PHP, volte a kingSelectionCliente.html
+#    Painel: /kingSelection/kingSelectionProject.html → ficheiro na raiz (não confundir com slug da galeria)
+RewriteRule ^kingSelection/kingSelectionProject\.html$ kingSelectionProject.html [L,QSA,NC]
+RewriteRule ^kingSelection/kingSelectionEdit\.html$ kingSelectionEdit.html [L,QSA,NC]
+RewriteRule ^kingSelection/kingSelectionCliente\.html$ kingSelectionCliente.html [L,QSA,NC]
+RewriteRule ^kingSelection/kingSelectionGallery\.html$ kingSelectionGallery.html [L,QSA,NC]
+RewriteRule ^kingSelection/kingSelectionReview\.html$ kingSelectionReview.html [L,QSA,NC]
+RewriteRule ^kingSelection/kingSelectionSuccess\.html$ kingSelectionSuccess.html [L,QSA,NC]
+RewriteCond %{REQUEST_URI} !\.(css|js|mjs|map|json|woff2?|ttf|eot|svg|png|jpe?g|gif|ico|webp|html|htm)$ [NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/([^/]+)/?$ kingSelectionGallery.php?ks_slug=$1 [L,NC,QSA]
