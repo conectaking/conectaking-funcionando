@@ -7535,30 +7535,35 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
     const galleryId = gRes.rows[0].id;
 
     const buf = await ksFetchGalleryLinkCoverBuffer(client, galleryId);
-    if (!buf) return res.status(404).send('Sem capa');
+    if (!buf || buf.length < 12) return res.status(404).send('Sem capa');
 
-    // Capa: preview watermarked + blur leve, 1400px
-    const img = sharp(buf).rotate();
-    const meta = await img.metadata();
-    const { width, height } = getDisplayDimensions(meta, 1400, 900);
-    const max = 1400;
-    const scale = Math.min(max / Math.max(width, height), 1);
-    const outW = Math.max(1, Math.round(width * scale));
-    const outH = Math.max(1, Math.round(height * scale));
+    let out;
+    try {
+      const meta = await sharp(buf).rotate().metadata();
+      const { width, height } = getDisplayDimensions(meta, 1400, 900);
+      const max = 1400;
+      const scale = Math.min(max / Math.max(width, height), 1);
+      const outW = Math.max(1, Math.round(width * scale));
+      const outH = Math.max(1, Math.round(height * scale));
 
-    const svg = Buffer.from(
-      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+      const svg = Buffer.from(
+        `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
          <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.22" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
          <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.22" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
        </svg>`
-    );
+      );
 
-    const out = await img
-      .resize(outW, outH, { fit: 'inside' })
-      .composite([{ input: svg, top: 0, left: 0 }])
-      .blur(2.2)
-      .jpeg({ quality: 78 })
-      .toBuffer();
+      out = await sharp(buf)
+        .rotate()
+        .resize(outW, outH, { fit: 'inside' })
+        .composite([{ input: svg, top: 0, left: 0 }])
+        .blur(2.2)
+        .jpeg({ quality: 78 })
+        .toBuffer();
+    } catch (err) {
+      console.error('[public/cover] processamento', slug, err && err.message);
+      return res.status(502).send('Falha ao processar capa');
+    }
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=900'); // 15min
@@ -7667,19 +7672,25 @@ router.get('/galleries/:id/link-cover-preview', protectUser, asyncHandler(async 
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
     const buf = await ksFetchGalleryLinkCoverBuffer(client, galleryId);
-    if (!buf) return res.status(404).send('Sem capa');
+    if (!buf || buf.length < 12) return res.status(404).type('text/plain').send('Sem capa');
 
-    const img = sharp(buf).rotate();
-    const meta = await img.metadata();
-    const { width, height } = getDisplayDimensions(meta, 1200, 1200);
-    const max = 1200;
-    const scale = Math.min(max / Math.max(width, height), 1);
-    const outW = Math.max(1, Math.round(width * scale));
-    const outH = Math.max(1, Math.round(height * scale));
-    const out = await img
-      .resize(outW, outH, { fit: 'inside' })
-      .jpeg({ quality: 86, progressive: true })
-      .toBuffer();
+    let out;
+    try {
+      const meta = await sharp(buf).rotate().metadata();
+      const { width, height } = getDisplayDimensions(meta, 1200, 1200);
+      const max = 1200;
+      const scale = Math.min(max / Math.max(width, height), 1);
+      const outW = Math.max(1, Math.round(width * scale));
+      const outH = Math.max(1, Math.round(height * scale));
+      out = await sharp(buf)
+        .rotate()
+        .resize(outW, outH, { fit: 'inside' })
+        .jpeg({ quality: 86, progressive: true })
+        .toBuffer();
+    } catch (err) {
+      console.error('[link-cover-preview] processamento', galleryId, err && err.message);
+      return res.status(502).type('text/plain').send('Falha ao processar imagem da capa');
+    }
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
