@@ -184,7 +184,8 @@ function ogImageProxyUrlForHost(host, slug) {
   const h = normalizeShareHost(host);
   const s = String(slug || '').trim();
   if (!h || !s) return null;
-  return `https://${h}/kingSelectionGallery.php?ks_og=1&slug=${encodeURIComponent(s)}`;
+  // kingSelectionGallery.php lê `ks_slug` (igual ao rewrite Apache); `slug` sozinho devolve 400 e o ZAP fica sem capa.
+  return `https://${h}/kingSelectionGallery.php?ks_og=1&ks_slug=${encodeURIComponent(s)}`;
 }
 
 function buildShareMetaPayload(ogRow, hostnameForCanonical, slugRequested) {
