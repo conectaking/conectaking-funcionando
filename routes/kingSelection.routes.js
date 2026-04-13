@@ -723,6 +723,20 @@ async function ensureSessionKingGalleryClientForFace(pgClient, galleryId, sessio
   }
 }
 
+/** Mesma chave de sessão que `ensureSessionKingGalleryClientForFace`, só leitura (sem INSERT). */
+async function getSessionKingGalleryClientIdIfExists(pgClient, galleryId, sessionKeyRaw) {
+  const sessionKey = String(sessionKeyRaw || '').trim();
+  if (!sessionKey || sessionKey.length < 8) return null;
+  if (!(await hasTable(pgClient, 'king_gallery_clients'))) return null;
+  const h = crypto.createHash('sha256').update(`${galleryId}|${sessionKey}`).digest('hex').slice(0, 32);
+  const email = `__ks_face_sess_${h}@internal.king`;
+  const existing = await pgClient.query(
+    'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND lower(email)=lower($2) LIMIT 1',
+    [galleryId, email]
+  );
+  return existing.rows.length ? parseInt(existing.rows[0].id, 10) : null;
+}
+
 async function ensureDefaultKingGalleryClientForFace(pgClient, galleryId) {
   const email = `__ks_face_default_${galleryId}@internal.king`;
   const existing = await pgClient.query(
@@ -8570,12 +8584,16 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const salePackages = salesModeActive ? (await ksListSalePackages(client, gallery.id)).filter((p) => p.active !== false) : [];
     const selectedCountForPricing = selectedPhotoIds.length;
     let promoClientRow = null;
-    if (cid && hasPromoEnabled && (await hasColumn(client, 'king_gallery_clients', 'promo_coupon_validated_at'))) {
+    let promoResolveCid = cid ? parseInt(cid, 10) || 0 : 0;
+    if (!promoResolveCid && sk && salesModeActive && hasPromoEnabled) {
+      promoResolveCid = (await getSessionKingGalleryClientIdIfExists(client, gallery.id, sk)) || 0;
+    }
+    if (promoResolveCid && hasPromoEnabled && (await hasColumn(client, 'king_gallery_clients', 'promo_coupon_validated_at'))) {
       try {
         const pr = await client.query(
           `SELECT promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
            FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
-          [cid, gallery.id]
+          [promoResolveCid, gallery.id]
         );
         promoClientRow = pr.rows[0] || null;
       } catch (_) { }
@@ -9016,15 +9034,26 @@ router.post('/client/promo-verify', requireClient, asyncHandler(async (req, res)
   const couponCode = String(req.body?.coupon_code || '').trim();
   if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
   if (slug !== req.ksClient.slug) return res.status(403).json({ message: 'Sem permissão.' });
-  const cid = req.ksCtx.cid ? parseInt(req.ksCtx.cid, 10) : 0;
-  if (!cid) return res.status(403).json({ message: 'Entre com sua conta para validar o cupom.' });
   if (!socialConfirmed) {
     return res.status(400).json({ message: 'Marque que seguiu os perfis indicados.' });
   }
   if (!couponCode) return res.status(400).json({ message: 'Informe o código do cupom.' });
 
+  let cid = req.ksCtx.cid ? parseInt(req.ksCtx.cid, 10) : 0;
+  const sk = req.ksCtx.sk ? String(req.ksCtx.sk).trim() : '';
+
   const client = await db.pool.connect();
   try {
+    if (!cid && sk) {
+      cid = (await ensureSessionKingGalleryClientForFace(client, req.ksClient.galleryId, sk)) || 0;
+    }
+    if (!cid) {
+      return res.status(403).json({
+        message:
+          'Entre com sua conta para validar o cupom (e-mail/senha ou nome/e-mail/WhatsApp), ou abra o link da galeria numa sessão válida.'
+      });
+    }
+
     const hasPromo = await hasColumn(client, 'king_galleries', 'promo_enabled');
     if (!hasPromo) {
       return res.status(503).json({ message: 'Cupom indisponível neste servidor. Execute a migration 213 no Postgres.' });
