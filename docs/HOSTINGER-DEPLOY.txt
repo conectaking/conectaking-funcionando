@@ -15,13 +15,13 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
    Regras opcionais (URLs limpas /kingSelection) estão em htaccess-regras-opcionais.txt
    para ativares só quando o site já estiver estável.
 
-1) RAIZ DO DOMÍNIO (causa mais comum de 403 / 404)
-   No hPanel (Websites → Gerir → Domínios), a "Raiz do documento" do domínio tem
-   de ser a pasta onde estão index.html, kingSelectionEdit.html e .htaccess.
-   Se o File Manager mostrar só uma pasta "public_html" na raiz da conta e o
-   domínio NÃO apontar para DENTRO dessa pasta, o site "não lê" os ficheiros —
-   use /public_html/... no URL ou (recomendado) corrija a raiz do domínio para
-   public_html.
+1) RAIZ DO DOMÍNIO (causa n.º 1 do 403 na raiz /)
+   O domínio TEM de usar como "Raiz do documento" a pasta public_html onde estão
+   index.html, login.html, .htaccess (não a pasta "pai" onde só aparece a pasta
+   public_html vazia por fora).
+   Passo a passo: docs/HOSTINGER-RAIZ-PUBLIC-HTML.md
+   Não há como "forçar isto" pelo código do back-end — só pelo hPanel Hostinger
+   (ou suporte a dizer: document root = public_html com os teus ficheiros).
 
 2) FICHEIROS
    Envie TODO o conteúdo da pasta public_html (no teu PC) para essa raiz no
@@ -32,10 +32,10 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
    public_html, apague-a. O Apache pode servir essa pasta em vez do rewrite e
    dar 404. O rewrite envia /kingSelection para kingSelectionEdit.html (ficheiro).
 
-4) .HTACCESS
-   Usa o public_html/.htaccess do projeto (versão simples, só rewrites King
-   Selection + dashboard + cache). Não mistures com o /.htaccess grande da raiz
-   do repositório salvo que saibas fundir regras — na Hostinger usa este leve.
+4) .HTACCESS + index.php
+   public_html/.htaccess = versão MÍNIMA (DirectoryIndex + UTF-8).
+   public_html/index.php = fallback se o servidor pedir index.php; envia o mesmo
+   conteúdo que index.html quando este existe.
 
 5) TESTES RÁPIDOS (após upload)
    https://www.conectaking.com.br/index.html
