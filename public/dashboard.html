@@ -6,7 +6,24 @@
     <title>Meu Painel - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    
+    <!-- Navegação para páginas .html (King Docs, King Forms, etc.): o dashboard.js usa .nav-link e pode bloquear o carregamento -->
+    <script>
+    (function () {
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest && e.target.closest('.sidebar-nav a.nav-link');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        if (!href || href === '#') return;
+        if (href.trim().charAt(0) === '#' && href.indexOf('.html') === -1) return;
+        var isHtml = href.indexOf('.html') !== -1;
+        var isAbs = /^https?:\/\//i.test(href);
+        if (!isHtml && !isAbs) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        window.location.assign(a.href);
+      }, true);
+    })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
