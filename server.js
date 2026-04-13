@@ -618,7 +618,8 @@ async function serveKingSelectionClienteGallery(req, res, next) {
     let html = tpl.replace('</head>', `  ${metaBlock}\n  ${bootScript}\n</head>`);
     html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escHtmlAttr(pageTitle)}</title>`);
 
-    res.setHeader('Cache-Control', 'public, max-age=300');
+    // HTML muda com deploy; evita 5 min de cache agressivo em CDN/browser.
+    res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
     res.type('html').send(html);
 }
 
