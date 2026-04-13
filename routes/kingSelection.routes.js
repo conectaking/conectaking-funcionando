@@ -6899,8 +6899,13 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         else val = String(val).trim().slice(0, 80);
       }
       if (key === 'promo_valid_until') {
-        if (val === '' || val === 'null' || val == null) val = null;
-        else val = String(val).trim().slice(0, 40);
+        if (val === '' || val === 'null' || val == null) {
+          val = null;
+        } else {
+          const raw = String(val).trim();
+          const t = Date.parse(raw);
+          val = Number.isFinite(t) ? new Date(t).toISOString() : null;
+        }
       }
       if (key === 'promo_free_photo_count') {
         val = Math.max(1, Math.min(50, parseInt(val || 1, 10) || 1));
@@ -6922,6 +6927,11 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
             url: String(x?.url || '').trim().slice(0, 500)
           }))
           .filter((x) => x.url);
+        try {
+          val = JSON.parse(JSON.stringify(val));
+        } catch (_) {
+          val = [];
+        }
       }
       if (key === 'promo_instructions') {
         if (val === '' || val === 'null' || val == null) val = null;
@@ -6943,6 +6953,12 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (err.code === '23514') {
         return res.status(400).json({
           message: 'Valor de marca d\'água fora do permitido pelo banco. Use opacidade entre 0 e 100% e tamanho entre 10 e 500%. Se já estiver nesse intervalo, execute a migration 151 no Postgres: npm run migrate ou node scripts/run-migration-151.js'
+        });
+      }
+      if (err.code === '22P02') {
+        return res.status(400).json({
+          message:
+            'Dados inválidos para o banco (data, número ou JSON). Verifique validade do cupom, valores numéricos e perfis de rede. Se persistir, rode a migration 213 (cupom) no Postgres.'
         });
       }
       throw err;
