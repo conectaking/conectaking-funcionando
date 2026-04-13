@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Meu Painel - Conecta King</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <!-- Cache-buster para CSS - Atualizado para forçar reload -->
+    <link rel="stylesheet" href="style.css?v=2025-01-31-01">
+    <link rel="stylesheet" href="dashboard.css?v=2025-01-31-01">
+    <!-- Deve carregar antes do dashboard.js para evitar erro "applyModulesVisibility não está disponível" -->
+    <script src="js/dashboard-ocultar-modulos-por-plano.js?v=2025-01-31-03"></script>
+
+    <style>
+    /* Detalhes expansíveis: orçamento e arquétipo (aparecem abaixo da linha) */
+    .detalhe-expansivel-row td { vertical-align: top; padding: 0 !important; border-top: none !important; }
+    .detalhe-expansivel-card { margin: 12px 8px 16px; padding: 24px; background: rgba(250,204,21,0.06); border-radius: 12px; border-left: 4px solid #facc15; text-align: left; }
+    .detalhe-expansivel-card h4 { color: #facc15; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 12px; }
+    .detalhe-expansivel-card .detalhe-secao { margin-bottom: 20px; }
+    .detalhe-expansivel-card .detalhe-secao:last-child { margin-bottom: 0; }
+    .detalhe-expansivel-card .detalhe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 24px; }
+    .detalhe-expansivel-card .detalhe-item { font-size: 0.9rem; color: var(--text-secondary, #ccc); }
+    .detalhe-expansivel-card .detalhe-item strong { color: var(--text-primary, #fff); display: block; font-size: 0.75rem; margin-bottom: 2px; }
+    .detalhe-expansivel-card .detalhe-lista { list-style: none; padding: 0; margin: 0; }
+    .detalhe-expansivel-card .detalhe-lista li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; gap: 12px; }
+    .detalhe-expansivel-card .detalhe-lista li:last-child { border-bottom: none; }
+    .detalhe-expansivel-card .btn-fechar-detalhe { margin-top: 16px; padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #ccc; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .detalhe-expansivel-card .btn-fechar-detalhe:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .detalhe-expansivel-card .arq-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 4px; }
+    .detalhe-expansivel-card .arq-bar-fill { height: 100%; background: linear-gradient(90deg, #facc15, #eab308); border-radius: 4px; transition: width 0.3s; }
+    /* Botão Editar King Forms (igual aos outros botões de edição: ícone amarelo no hover) */
+    .king-forms-config-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0; padding: 8px; min-width: 36px; font-size: 1rem; text-decoration: none; border-radius: 6px; transition: all 0.2s ease; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; margin-left: 8px; }
+    .king-forms-config-btn:hover { color: var(--dourado-principal); background: rgba(255, 199, 0, 0.1); }
+    /* Aba Contratos - cards de status (estilo ZapSign) */
+    .contracts-status-card { outline: none; }
+    .contracts-status-card:hover { filter: brightness(1.08); }
+    .contracts-status-card.active { box-shadow: 0 0 0 2px currentColor; }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+</head><body><script type="text/javascript">
+// REMOVER IMEDIATAMENTE qualquer texto "image.png" que seja filho direto do body
+(function() {
+    function removeBodyTextNodes() {
+        if (!document.body) return;
+        
+        // Remover todos os nós de texto filhos diretos do body que contenham "image.png"
+        const bodyChildren = Array.from(document.body.childNodes);
+        bodyChildren.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent || node.nodeValue || '';
+                if (text.includes('image.png') || text.trim().includes('image.png')) {
+                    try {
+                        document.body.removeChild(node);
+                    } catch(e) {
+                        node.textContent = '';
+                        node.nodeValue = '';
+                    }
+                }
+            }
+        });
+    }
+    
+    // Executar imediatamente
+    removeBodyTextNodes();
+    
+    // Executar quando body estiver disponível
+    if (document.body) {
+        removeBodyTextNodes();
+    } else {
+        document.addEventListener('DOMContentLoaded', removeBodyTextNodes);
+    }
+    
+    // Executar múltiplas vezes
+    setTimeout(removeBodyTextNodes, 0);
+    setTimeout(removeBodyTextNodes, 10);
+    setTimeout(removeBodyTextNodes, 50);
+})();
+</script>
+    <div class="dashboard-layout"><button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Menu">
+    <i class="fas fa-bars"></i>
+</button>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="Conecta King" class="logo-image">
+            <span class="logo-text">CONECTA KING</span>
+        </a>
+    </div>
+    
+    <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="perfis">Perfis</button>
+        <button class="sidebar-tab" data-tab="times">Empresa</button>
+    </div>
+    
+    <div class="profile-card-sidebar" id="profile-card-sidebar">
+        <div class="profile-avatar-sidebar">
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=" alt="Avatar" id="sidebar-profile-avatar">
+        </div>
+        <div class="profile-info-sidebar">
+            <div class="profile-name-sidebar" id="sidebar-profile-name"></div>
+            <div class="profile-handle-sidebar" id="sidebar-profile-handle"></div>
+        </div>
+    </div>
+    
+    <button class="btn-ver-monocard" id="btn-ver-monocard">
+        <i class="fas fa-eye"></i> Ver Cartão
+    </button>
+    
+    <nav class="sidebar-nav">
+        <a href="#" class="nav-link active" data-target="editar-pane" title="Editar Conecta King"><i class="fas fa-pencil-alt"></i> <span>Editar Conecta King</span></a>
+        <a href="#" class="nav-link" data-target="separacao-pacotes-pane" id="separacao-pacotes-link" title="Separação de Pacotes" style="display: none;"><i class="fas fa-layer-group"></i> <span>Separação de Pacotes</span></a>
+        <a href="#" class="nav-link nav-link-by-plan" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira" style="display: none;"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
+        <a href="kingForms.html" class="nav-link" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
+        <a href="/kingSelection?v=2026-03-23-anticache-a1" class="nav-link nav-link-by-plan" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection" style="display: none;"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
+        <a href="kingbrief-dashboard.html" class="nav-link nav-link-by-plan" data-module="kingbrief" id="kingbrief-sidebar-link" title="King Briefing" style="display: none;"><i class="fas fa-microphone-alt"></i> <span>King Briefing</span></a>
+        <a href="#" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
+        <a href="kingDocs.html" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
+        <a href="#" class="nav-link nav-link-by-plan" id="meusite-sidebar-link" data-module="photographer_site" data-target="meu-site-pane" title="Meu site" style="display: none;"><i class="fas fa-globe"></i> <span>Meu site</span></a>
+        <a href="recibos-orcamentos.html" class="nav-link nav-link-by-plan" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos" style="display: none;"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
+        <a href="contracts.html" class="nav-link nav-link-by-plan" data-module="contract" id="contratos-link" title="Contratos" style="display: none;"><i class="fas fa-file-contract"></i> <span>Contratos</span></a>
+        <a href="#" class="nav-link nav-link-by-plan" data-module="agenda" data-target="agenda-pane" id="agenda-link" title="Agenda Inteligente" style="display: none;"><i class="fas fa-calendar-check"></i> <span>Agenda Inteligente</span></a>
+        <a href="#" class="nav-link" data-target="relatorios-pane" title="Relatórios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
+        <a href="#" class="nav-link" data-target="compartilhar-pane" title="Compartilhar"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></a>
+        <a href="#" class="nav-link nav-link-by-plan" data-module="branding" data-target="branding-pane" id="branding-link" title="Personalização da Marca" style="display: none;"><i class="fas fa-palette"></i> <span>Personalização da Marca</span></a>
+    </nav>
+    
+    <div class="sidebar-footer">
+        <div class="footer-section-title">DADOS GERAIS DA CONTA</div>
+        <a href="admin/index.html" class="nav-link" id="adm-link" style="display: none;"><i class="fas fa-user-shield"></i> <span>ADM</span></a>
+        <a href="admin-devocionais-365.html" class="nav-link" id="dev365-admin-link" style="display: none;"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
+        <a href="#" class="nav-link" data-target="personalizar-link-pane" id="personalizar-link-link" style="display: none;" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
+        <a href="#" class="nav-link" data-target="assinatura-pane" id="assinatura-link"><i class="fas fa-crown"></i> <span>Assinatura</span></a>
+        <a href="business/index.html?only=logo" class="nav-link" id="personalizacao-logo-link" style="display: none;" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
+        <a href="#" id="logout-btn" class="nav-link" title="Sair"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a>
+    </div>
+</aside>
+
+        <div class="content-wrapper">
+            <main class="main-content active" id="editar-pane" data-pane>
+                <header class="content-header">
+                    <div class="header-title-wrapper">
+                        <h1 class="header-title-top">EDITAR</h1>
+                        <h1 class="header-title-bottom">CARTÃO VIRTUAL</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button id="tutorial-btn" class="btn btn-tutorial" title="Tutorial Interativo - Aprenda passo a passo">
+                            <i class="fas fa-graduation-cap"></i> Tutorial
+                        </button>
+                        <button id="header-save-btn" class="btn btn-save-header">
+                            <i class="fas fa-check"></i> Publicar alterações
+                        </button>
+                    </div>
+                </header>
+                
+                <!-- Chips de cores -->
+                
+                <nav class="editor-nav">
+                    <a href="#" class="editor-nav-link active" data-editor-target="info-editor">
+                        <i class="fas fa-info-circle"></i> Informações
+                    </a>
+                    <a href="#" class="editor-nav-link" data-editor-target="items-editor">
+                        <i class="fas fa-th"></i> Módulos
+                    </a>
+                    <a href="#" class="editor-nav-link" data-editor-target="personalizar-editor">
+                        <i class="fas fa-palette"></i> Personalizar
+                    </a>
+                </nav>
+
+                <div class="editor-area">
+ <div id="info-editor" class="editor-pane active">
+    <div class="info-section-header">
+        <h4><i class="fas fa-user"></i> Informações do Perfil</h4>
+    </div>
+    
+    <!-- Campos sempre visíveis -->
+    <div class="info-editor-fields" id="info-editor-fields">
+        <div class="info-editor-layout">
+            <!-- Foto de perfil -->
+            <div id="dashboard-photo-upload-area" class="photo-upload-area" title="Clique para alterar a foto">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=" alt="Avatar do Usuário" id="dashboard-photo-preview">
+                <div class="upload-overlay"><i class="fas fa-pencil-alt"></i></div>
+                <div class="upload-loader"></div>
+                <input type="file" id="dashboard-photo-file-input" accept="image/*" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
+            </div>
+            
+            <div class="info-editor-fields-inner">
+                <!-- Nome do perfil -->
+                <div class="input-group">
+                    <label for="displayName">Alterar o nome do perfil</label>
+                    <input type="text" id="displayName" placeholder="Nome do perfil">
+                </div>
+                
+                <!-- WhatsApp -->
+                <div class="input-group">
+                    <label for="whatsappNumber">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </label>
+                    <input type="text" id="whatsappNumber" placeholder="5511999999999" maxlength="20">
+                    <p class="input-hint">Digite apenas números com código do país (ex: 5511999999999 para Brasil, 12125551234 para EUA). Este número será usado no botão "Salvar Contato".</p>
+                </div>
+                
+                <!-- Formato do Avatar (embaixo do nome) -->
+                <div id="avatar-format-selector" class="avatar-format-selector">
+                    <label class="avatar-format-label">Formato do Avatar</label>
+                    <p class="avatar-format-description">Escolha como o avatar aparecerá no seu cartão virtual: circular, quadrado grande ou quadrado pequeno.</p>
+                    <div class="avatar-format-options">
+                        <button type="button" class="avatar-format-btn" data-format="circular" title="Circular">
+                            <i class="fas fa-circle"></i>
+                            <span>Circular</span>
+                        </button>
+                        <button type="button" class="avatar-format-btn" data-format="square-full" title="Quadrado Grande">
+                            <i class="fas fa-square"></i>
+                            <span>Quadrado Grande</span>
+                        </button>
+                        <button type="button" class="avatar-format-btn" data-format="square-small" title="Quadrado Pequeno">
+                            <i class="fas fa-stop"></i>
+                            <span>Quadrado Pequeno</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- @ do Instagram -->
+                <div class="input-group">
+                    <label for="profileSlug">Alterar o @ do Instagram</label>
+                    <div class="slug-input-wrapper">
+                        <span class="slug-prefix">cnking.bio/</span>
+                        <input type="text" id="profileSlug" placeholder="seu-usuario">
+                    </div>
+                    <button type="button" class="btn-copy-slug" id="btn-copy-slug" title="Copiar link do perfil">
+                        <i class="fas fa-copy"></i>
+                        <span>Copiar</span>
+                    </button>
+                    <p class="input-hint">Cole este link no seu perfil do Instagram para que seus seguidores encontrem seu cartão virtual.</p>
+                </div>
+                
+                <!-- Biografia -->
+                <div class="input-group">
+                    <label for="bio">Biografia do perfil</label>
+                    <textarea id="bio" rows="4" placeholder="Uma breve descrição sobre você..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                    <div id="items-editor" class="editor-pane">
+                        <div class="modules-section-header">
+                            <h4><i class="fas fa-th"></i> Módulos Ativos</h4>
+                        </div>
+                        <div class="modules-actions">
+                            <button id="add-item-btn" class="btn btn-add-module"><i class="fas fa-plus"></i> Adicionar</button>
+                        </div>
+                        <div id="items-container" class="modules-list links-editor-list"></div>
+                        
+                        <!-- Seção de Gerenciamento de Abas -->
+                    </div>
+
+
+                    <div id="personalizar-editor" class="editor-pane">
+                        <div class="config-section-header">
+                            <h4><i class="fas fa-cog"></i> Configurações</h4>
+                        </div>
+                        <div class="config-options-list">
+                            <button class="config-option-btn" id="btn-config-cabecalho">
+                                <i class="fas fa-share-alt"></i>
+                                <span>Imagem de compartilhamento</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Configurações sempre visíveis -->
+                        <div class="config-expanded-content" id="config-expanded-content">
+                        <div data-section="fundo">
+                        <h4><i class="fas fa-image"></i> Fundo de Tela</h4>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-address-card"></i>
+                                <span>Botão "Salvar Contato"</span>
+                            </div>
+                            <div class="setting-control">
+                                <div class="segmented-control">
+                                    <input type="radio" id="vcard-on" name="vcard-toggle" value="true" checked>
+                                    <label for="vcard-on"><i class="fas fa-eye"></i> Visível</label>
+                                    <input type="radio" id="vcard-off" name="vcard-toggle" value="false">
+                                    <label for="vcard-off"><i class="fas fa-eye-slash"></i> Oculto</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item" id="bible-visibility-setting" style="display: none;">
+                            <div class="setting-label">
+                                <i class="fas fa-bible"></i>
+                                <span>Bíblia</span>
+                            </div>
+                            <div class="setting-control">
+                                <div class="segmented-control">
+                                    <input type="radio" id="bible-on" name="bible-toggle" value="true" checked>
+                                    <label for="bible-on"><i class="fas fa-eye"></i> Visível</label>
+                                    <input type="radio" id="bible-off" name="bible-toggle" value="false">
+                                    <label for="bible-off"><i class="fas fa-eye-slash"></i> Oculto</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-font"></i>
+                                <span>Fonte</span>
+                            </div>
+                            <div class="setting-control">
+                                <select id="font-family-select">
+                                    <option value="Inter">Inter (Moderna)</option>
+                                    <option value="Roboto Slab">Roboto Slab (Elegante)</option>
+                                    <option value="Lora">Lora (Clássica)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <br>
+                        <br>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-image"></i>
+                                <span>Tipo de Fundo</span>
+                            </div>
+                            <div class="setting-control">
+                                <div class="segmented-control">
+                                    <input type="radio" id="bg-type-color" name="bg-type" value="color" checked>
+                                    <label for="bg-type-color"><i class="fas fa-palette"></i> Cor</label>
+                                    <input type="radio" id="bg-type-image" name="bg-type" value="image">
+                                    <label for="bg-type-image"><i class="fas fa-image"></i> Imagem</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="background-color-container">
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <i class="fas fa-fill-drip"></i>
+                                    <span>Cor de Fundo</span>
+                                </div>
+                                <div class="setting-control">
+                                    <input type="color" id="background-color-picker" value="#0D0D0F">
+                                </div>
+                            </div>
+                        </div>
+                        
+                            <div id="background-image-container" style="display: none;">
+                                <div class="setting-item">
+                                    <div class="setting-label">
+                                        <i class="fas fa-image"></i>
+                                        <span>Imagem de Fundo</span>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div id="background-upload-area" class="image-upload-area small-upload">
+                                            <input type="file" id="background-file-input" accept="image/*" style="display: none;">
+                                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik03NSA0MEM4NS4yODQzIDQwIDkzLjMzMzMgNDguMDQ5IDkzLjMzMzMgNTguMzMzM0M5My4zMzMzIDY4LjYxNzcgODUuMjg0MyA3Ni42NjY3IDc1IDc2LjY2NjdDNjQuNzE1NyA3Ni42NjY3IDU2LjY2NjcgNjguNjE3NyA1Ni42NjY3IDU4LjMzMzNDNTYuNjY2NyA0OC4wNDkgNjQuNzE1NyA0MCA3NSA0MFoiIGZpbGw9IiM2NjY2NjYiLz4KPHBhdGggZD0iTTQ1IDExMEM1NS4yODQzIDExMCA2My4zMzMzIDExOC4wNDkgNjMuMzMzMyAxMjguMzMzQzYzLjMzMzMgMTM4LjYxOCA1NS4yODQzIDE0Ni42NjcgNDUgMTQ2LjY2N0MzNC43MTU3IDE0Ni42NjcgMjYuNjY2NyAxMzguNjE4IDI2LjY2NjcgMTI4LjMzM0MyNi42NjY3IDExOC4wNDkgMzQuNzE1NyAxMTAgNDUgMTEwWiIgZmlsbD0iIzY2NjY2NiIvPgo8cGF0aCBkPSJNMTA1IDExMEMxMTUuMjg0IDExMCAxMjMuMzMzIDExOC4wNDkgMTIzLjMzMyAxMjguMzMzQzEyMy4zMzMgMTM4LjYxOCAxMTUuMjg0IDE0Ni42NjcgMTA1IDE0Ni42NjdDOTQuNzE1NyAxNDYuNjY3IDg2LjY2NjcgMTM4LjYxOCA4Ni42NjY3IDEyOC4zMzNDODYuNjY2NyAxMTguMDQ5IDk0LjcxNTcgMTEwIDEwNSAxMTBaIiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9Ijc1IiB5PSIxMzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiI+SW1hZ2VtPC90ZXh0Pgo8L3N2Zz4K" id="background-image-preview" class="banner-preview-thumb" alt="Preview Fundo"/>
+                                            <div class="image-upload-text">
+                                                <p>Alterar Imagem</p>
+                                                <span>Clique para enviar</span>
+                                            </div>
+                                            <div class="upload-loader"></div>
+                                        </div>
+                                        <input type="hidden" id="background-image-url-input">
+                                    </div>
+                                </div>
+                                    <div class="setting-item">
+                                <div class="setting-label">
+                                    <i class="fas fa-low-vision"></i>
+                                    <span>Opacidade da Imagem de Fundo</span>
+                                </div>
+                                <div class="setting-control range-control">
+                                    <span id="background-image-opacity-value">100%</span>
+                                    <input type="range" id="background-image-opacity-picker" min="0" max="1" step="0.05" value="1">
+                                </div>
+                            </div>
+                            </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-square-full"></i>
+                                <span>Cor do Texto</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="color" id="text-color-picker" value="#ECECEC">
+                            </div>
+                        </div>
+                        <br>
+                        <h4 class=""><i class="fas fa-id-card"></i> Card Principal</h4>
+                        <br>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-paint-roller"></i>
+                                <span>Cor de Fundo do Card</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="color" id="card-background-color-picker" value="#141417">
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-low-vision"></i>
+                                <span>Opacidade do Fundo do Card</span>
+                            </div>
+                            <div class="setting-control range-control">
+                                <span id="card-opacity-value">100%</span>
+                                <input type="range" id="card-opacity-picker" min="0" max="1" step="0.05" value="1">
+                            </div>
+                        </div>
+                        <br>
+                        <h4 class=""><i class="fas fa-link"></i> Botões (Módulos)</h4>
+                        <br>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-fill"></i>
+                                <span>Cor dos Botões</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="color" id="button-color-picker" value="#1C1C21">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-pen-nib"></i>
+                                <span>Cor do Texto dos Botões</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="color" id="button-text-color-picker" value="#FFFFFF">
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-low-vision"></i>
+                                <span>Opacidade dos Botões</span>
+                            </div>
+                            <div class="setting-control range-control">
+                                <span id="button-opacity-value">100%</span>
+                                <input type="range" id="button-opacity-picker" min="0.1" max="1" step="0.05" value="1">
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-text-height"></i>
+                                <span>Tamanho da Fonte</span>
+                            </div>
+                            <div class="setting-control range-control">
+                                <span id="button-font-size-value">16px</span>
+                                <input type="range" id="button-font-size-picker" min="12" max="22" step="1" value="16">
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-align-center"></i>
+                                <span>Alinhamento do Conteúdo</span>
+                            </div>
+                            <div class="setting-control">
+                                <div class="segmented-control">
+                                    <input type="radio" id="align-left" name="button-align" value="left">
+                                    <label for="align-left"><i class="fas fa-align-left"></i></label>
+                                    <input type="radio" id="align-center" name="button-align" value="center" checked>
+                                    <label for="align-center"><i class="fas fa-align-center"></i></label>
+                                    <input type="radio" id="align-right" name="button-align" value="right">
+                                    <label for="align-right"><i class="fas fa-align-right"></i></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-arrows-alt-h"></i>
+                                <span>Aproximação da logo</span>
+                            </div>
+                            <div class="setting-control">
+                                <div class="segmented-control">
+                                    <input type="radio" id="logo-align-left" name="logo-align" value="left">
+                                    <label for="logo-align-left"><i class="fas fa-align-left"></i></label>
+                                    <input type="radio" id="logo-align-center" name="logo-align" value="center" checked>
+                                    <label for="logo-align-center"><i class="fas fa-align-center"></i></label>
+                                    <input type="radio" id="logo-align-right" name="logo-align" value="right">
+                                    <label for="logo-align-right"><i class="fas fa-align-right"></i></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="fas fa-border-style"></i>
+                                <span>Curvatura da Borda</span>
+                            </div>
+                            <div class="setting-control" style="flex-direction:column;align-items:stretch;gap:10px">
+                                <div class="segmented-control">
+                                    <input type="radio" id="radius-preset-all" name="radius-preset" value="all" checked>
+                                    <label for="radius-preset-all">Uniforme</label>
+                                    <input type="radio" id="radius-preset-alt" name="radius-preset" value="alt">
+                                    <label for="radius-preset-alt">Alternado</label>
+                                    <input type="radio" id="radius-preset-square" name="radius-preset" value="square">
+                                    <label for="radius-preset-square">Quadrado</label>
+                                    <input type="radio" id="radius-preset-soft" name="radius-preset" value="soft">
+                                    <label for="radius-preset-soft">Suave</label>
+                                    <input type="radio" id="radius-preset-pill" name="radius-preset" value="pill">
+                                    <label for="radius-preset-pill">Pílula</label>
+                                    <input type="radio" id="radius-preset-top" name="radius-preset" value="top">
+                                    <label for="radius-preset-top">Só Topo</label>
+                                    <input type="radio" id="radius-preset-bottom" name="radius-preset" value="bottom">
+                                    <label for="radius-preset-bottom">Só Base</label>
+                                    <input type="radio" id="radius-preset-diagonal" name="radius-preset" value="diagonal">
+                                    <label for="radius-preset-diagonal">Diagonal</label>
+                                    <input type="radio" id="radius-preset-invert" name="radius-preset" value="invert">
+                                    <label for="radius-preset-invert">Invertido</label>
+                                </div>
+                                <div class="radius-grid-4">
+                                    <label>Topo Esq.<input type="number" id="radius-tl" min="0" value="12"></label>
+                                    <label>Topo Dir.<input type="number" id="radius-tr" min="0" value="12"></label>
+                                    <label>Base Esq.<input type="number" id="radius-bl" min="0" value="12"></label>
+                                    <label>Base Dir.<input type="number" id="radius-br" min="0" value="12"></label>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                                    <small id="button-border-radius-value">12px 12px 12px 12px</small>
+                                    <button id="save-radius-default-btn" class="btn btn-secondary" type="button" title="Salvar esses valores como padrão">Aplicar como padrão</button>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        </div>
+            </main>
+            
+            <!-- Páginas adicionais que aparecem nas imagens -->
+            <main id="eventos-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1>Últimos eventos</h1>
+                </header>
+                <p>Página em desenvolvimento</p>
+            </main>
+
+            <!-- Meu site: orçamentos e teste de arquétipo -->
+            <main id="meu-site-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1><i class="fas fa-globe"></i> Meu site</h1>
+                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">O que acontece no seu site: orçamentos e resultados do teste de arquétipo.</p>
+                </header>
+                <div style="padding: 20px; max-width: 1000px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px;">
+                        <a href="#" id="meu-site-ver-link" class="btn btn-primary" target="_blank" rel="noopener" style="display: none;"><i class="fas fa-external-link-alt"></i> Ver meu site</a>
+                        <a href="#" id="meu-site-editar-link" class="btn btn-secondary"><i class="fas fa-pencil-alt"></i> Editar meu site</a>
+                        <a href="orcamentos.html" class="btn btn-secondary"><i class="fas fa-file-invoice-dollar"></i> Ver todos os orçamentos</a>
+                        <a href="arquetipo-resultados.html" class="btn btn-secondary"><i class="fas fa-user-check"></i> Ver todos os testes de arquétipo</a>
+                        <button type="button" id="meu-site-copiar-link-orcamento" class="btn btn-secondary" title="Copiar link para enviar ao cliente solicitar orçamento"><i class="fas fa-link"></i> Copiar link orçamento</button>
+                    </div>
+                    <div class="meu-site-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color, #333);">
+                            <h2 style="color: var(--text-primary, #fff); font-size: 1.1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-file-invoice-dollar" style="color: #facc15;"></i> Orçamentos recebidos</h2>
+                            <div id="meu-site-orcamentos-list" style="min-height: 120px;">
+                                <p style="color: var(--text-secondary, #888); text-align: center; padding: 20px;">Carregando...</p>
+                            </div>
+                        </div>
+                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color, #333);">
+                            <h2 style="color: var(--text-primary, #fff); font-size: 1.1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-user-check" style="color: #facc15;"></i> Resultados do Teste de Arquétipo</h2>
+                            <div id="meu-site-arquetipo-list" style="min-height: 120px;">
+                                <p style="color: var(--text-secondary, #888); text-align: center; padding: 20px;">Carregando...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="color: var(--text-secondary, #666); font-size: 0.85rem; margin-top: 20px;">Quando alguém enviar um orçamento ou concluir o teste de arquétipo no seu site, os dados aparecem aqui. Clique em <strong>Ver detalhes</strong> para expandir as informações abaixo da linha.</p>
+                </div>
+            </main>
+            
+            <!-- Página de Finanças -->
+            <main id="finance-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1><i class="fas fa-wallet"></i> Gestão Financeira</h1>
+                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                        Controle suas receitas, despesas, contas e orçamentos
+                    </p>
+                </header>
+                <div id="finance-content" style="padding: 20px;">
+                    <p style="color: var(--text-secondary, #888888); text-align: center; padding: 40px;">
+                        Carregando módulo financeiro...
+                    </p>
+                </div>
+            </main>
+            
+            <!-- Página King Forms (mesma página, iframe) -->
+            <main id="king-forms-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1><i class="fas fa-file-signature"></i> King Forms</h1>
+                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                        Crie e gerencie vários formulários. Edite e apague na lista abaixo.
+                    </p>
+                </header>
+                <div id="king-forms-content" style="padding: 0; height: calc(100vh - 140px); min-height: 400px;">
+                    <iframe id="king-forms-iframe" src="about:blank" title="King Forms" style="width: 100%; height: 100%; border: none; border-radius: 12px; background: var(--bg-primary, #0D0D0F);"></iframe>
+                </div>
+            </main>
+            
+            <!-- Página de Agenda -->
+            <main id="agenda-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1><i class="fas fa-calendar-check"></i> Agenda Inteligente</h1>
+                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                        Gerencie seus agendamentos e reuniões com integração Google Calendar
+                    </p>
+                </header>
+                <div id="agenda-content" style="padding: 20px;">
+                    <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 30px; margin-bottom: 20px; text-align: center;">
+                        <i class="fas fa-calendar-check" style="font-size: 4rem; color: #FFC700; margin-bottom: 20px;"></i>
+                        <h2 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">Agenda Inteligente</h2>
+                        <p style="color: var(--text-secondary, #888888); margin-bottom: 30px; line-height: 1.6;">
+                            Configure sua agenda para receber agendamentos de clientes. Integre com Google Calendar e Google Meet para reuniões profissionais.
+                        </p>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="window.agendaModule?.init()">
+                                <i class="fas fa-cog"></i> Configurar Agenda
+                            </button>
+                            <button class="btn btn-secondary" onclick="window.agendaModule?.connectGoogle()">
+                                <i class="fab fa-google"></i> Conectar Google Calendar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 25px;">
+                            <h3 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">
+                                <i class="fas fa-clock"></i> Próximos Agendamentos
+                            </h3>
+                            <div id="agenda-upcoming-appointments">
+                                <p style="color: var(--text-secondary, #888888); text-align: center; padding: 20px;">
+                                    Nenhum agendamento próximo.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 25px;">
+                            <h3 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">
+                                <i class="fas fa-chart-line"></i> Estatísticas
+                            </h3>
+                            <div id="agenda-stats">
+                                <p style="color: var(--text-secondary, #888888); text-align: center; padding: 20px;">
+                                    Carregando estatísticas...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            <main id="relatorios-pane" class="main-content" data-pane>
+                <header class="content-header">
+                    <h1>Relatórios de Desempenho</h1>
+                    <div class="header-actions">
+                        <select id="period-selector" class="btn btn-secondary">
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="30" selected>Últimos 30 dias</option>
+                            <option value="90">Últimos 90 dias</option>
+                        </select>
+                    </div>
+                </header>
+
+                <div class="reports-grid">
+                    <div class="stat-card">
+                        <h4>Total de Visualizações</h4>
+                        <p id="kpi-total-views">...</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Total de Cliques</h4>
+                        <p id="kpi-total-clicks">...</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Taxa de Clique (CTR)</h4>
+                        <p id="kpi-ctr">...%</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Contatos Salvos</h4>
+                        <p id="kpi-total-saves">...</p>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Visualizações e Cliques</h3>
+                        <canvas id="performance-chart"></canvas>
+                    </div>
+
+                    <div class="ranked-list-container">
+                        <h3>Top 5 Itens Mais Clicados</h3>
+                        <ul id="top-items-list" class="ranked-list">
+                            </ul>
+                    </div>
+                </div>
+
+                <!-- Seção de Detalhes Completos dos Links -->
+                <div style="margin-top: 40px;">
+                    <h3 style="color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-list"></i> Detalhes Completos dos Seus Links
+                    </h3>
+                    <div id="all-links-details" style="display: grid; gap: 15px;">
+                        <p style="color: var(--text-dark); text-align: center; padding: 20px;">Carregando detalhes dos links...</p>
+                    </div>
+                </div>
+            </main>
+            <main id="compartilhar-pane" class="main-content" data-pane>
+                <header class="content-header">
+                    <h1>Compartilhe sua Tag</h1>
+                </header>
+
+                <div class="share-layout">
+                    <div class="share-column-left">
+                        <div class="qr-code-card">
+                            <h4>Escaneie o QRCode</h4>
+                            <div id="qr-code-container">
+                                </div>
+                            <button id="download-qr-btn" class="btn btn-secondary"><i class="fas fa-download"></i> Baixar PNG</button>
+                        </div>
+                    </div>
+
+                    <div class="share-column-right">
+                        <div class="share-options-list">
+                            
+                            <div class="share-option-item">
+                                <div class="share-option-label">
+                                    <i class="fas fa-link"></i>
+                                    <span>Url</span>
+                                </div>
+                                <button id="copy-url-btn" class="btn btn-secondary">Copiar</button>
+                            </div>
+
+                            <div class="share-option-item">
+                                <div class="share-option-label">
+                                    <i class="fas fa-qrcode"></i>
+                                    <span>QRCode</span>
+                                </div>
+                                <button id="download-qr-btn-alt" class="btn btn-secondary">Baixar</button>
+                            </div>
+                            
+                            <div class="share-option-item disabled">
+                                <div class="share-option-label">
+                                    <i class="fab fa-apple"></i>
+                                    <span>Apple Wallet</span>
+                                    <span class="pro-badge">Em breve</span>
+                                </div>
+                                <button class="btn btn-secondary" disabled>Adicionar</button>
+                            </div>
+
+                            <div class="share-option-item disabled">
+                                <div class="share-option-label">
+                                    <i class="fab fa-google-wallet"></i>
+                                    <span>Google Wallet</span>
+                                    <span class="pro-badge">Em breve</span>
+                                </div>
+                                <button class="btn btn-secondary" disabled>Adicionar</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Página de Personalização da Marca -->
+            <main id="branding-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1><i class="fas fa-palette"></i> Personalização da Marca</h1>
+                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                        Personalize o logo da sua empresa que aparecerá no seu cartão virtual
+                    </p>
+                </header>
+                
+                <div class="branding-container" style="max-width: 900px; margin: 0 auto;">
+                    <!-- Preview do Logo -->
+                    <div class="branding-preview-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 2px solid var(--border-color, #333);">
+                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-eye"></i> Preview do Logo
+                        </h3>
+                        <div id="branding-preview-container" style="background: #000; border-radius: 8px; padding: 40px; text-align: center; min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                            <img id="branding-logo-preview" src="" alt="Logo da Empresa" style="max-width: 100%; max-height: 200px; object-fit: contain; display: none;" />
+                            <p id="branding-no-logo" style="color: var(--text-secondary, #888888);">Nenhum logo configurado</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulário de Personalização -->
+                    <div class="branding-form-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; border: 2px solid var(--border-color, #333);">
+                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-upload"></i> Configurar Logo
+                        </h3>
+                        
+                        <form id="branding-form">
+                            <input type="hidden" id="branding-logo-url" value="">
+                            <div class="form-group" style="margin-bottom: 25px;">
+                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <i class="fas fa-upload"></i> Upload de Imagem
+                                </label>
+                                <input type="file" id="branding-logo-upload" accept="image/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
+                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Formatos aceitos: PNG, JPG, JPEG, GIF, WebP</small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 25px;">
+                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <i class="fas fa-ruler"></i> Tamanho do Logo (px)
+                                </label>
+                                <input type="number" id="branding-logo-size" class="form-input" placeholder="60" min="20" max="200" value="60" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
+                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Tamanho em pixels (recomendado: 60-120px)</small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 25px;">
+                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <i class="fas fa-link"></i> Link do Logo (opcional)
+                                </label>
+                                <input type="url" id="branding-logo-link" class="form-input" placeholder="https://seusite.com.br" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
+                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">URL para onde o logo redirecionará quando clicado</small>
+                            </div>
+                            
+                            <div style="display: flex; gap: 12px; margin-top: 32px;">
+                                <button type="button" onclick="clearBranding()" 
+                                        style="flex: 1; padding: 14px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: transparent; color: var(--text-secondary, #888888); cursor: pointer; font-weight: 600;">
+                                    Limpar
+                                </button>
+                                <button type="submit" 
+                                        style="flex: 2; padding: 14px; border-radius: 8px; border: none; background: var(--dourado-principal, #FFD700); color: #000; cursor: pointer; font-weight: 700;">
+                                    <i class="fas fa-save"></i> Salvar Personalização
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Página de Separação de Pacotes (ADM) -->
+            <main id="separacao-pacotes-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1>Separação de Pacotes</h1>
+                </header>
+                
+                <!-- Abas de navegação -->
+                <div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--border-color, #333);">
+                    <button id="tab-modules" class="tab-button active" onclick="switchSeparationTab('modules')" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 2px solid var(--dourado-principal, #FFD700); color: var(--dourado-principal, #FFD700); font-weight: 600; cursor: pointer;">
+                        Módulos por Plano
+                    </button>
+                    <button id="tab-individual" class="tab-button" onclick="switchSeparationTab('individual')" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary, #888888); font-weight: 600; cursor: pointer;">
+                        Planos Individuais por Usuário
+                    </button>
+                    <button id="tab-link-limits" class="tab-button" onclick="switchSeparationTab('link-limits')" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary, #888888); font-weight: 600; cursor: pointer;">
+                        Quantidade de Links
+                    </button>
+                </div>
+                
+                <!-- Aba de Módulos por Plano -->
+                <div id="tab-content-modules" class="tab-content-separation" style="display: block;">
+                    <div class="module-availability-container">
+                        <div class="module-availability-header">
+                            <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
+                                Configure quais módulos estarão disponíveis para cada plano de assinatura.
+                            </p>
+                            <div style="margin-bottom: 16px;">
+                                <label for="module-filter-input" style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary, #888888);">Filtrar por módulo</label>
+                                <input type="text" id="module-filter-input" placeholder="Ex: Banner, Carrossel, Agenda..." 
+                                    style="width: 100%; max-width: 320px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--graphite, #1F1F1F); color: var(--text-primary, #FFF); font-size: 0.95rem;">
+                            </div>
+                        </div>
+                        
+                        <div id="module-availability-list" class="module-availability-list">
+                            <p>Carregando módulos...</p>
+                        </div>
+                        
+                        <div class="module-availability-actions" style="margin-top: 24px;">
+                            <button id="save-module-availability-btn" class="btn btn-primary" style="display: none;">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Aba de Planos Individuais por Usuário -->
+                <div id="tab-content-individual" class="tab-content-separation" style="display: none;">
+                    <div class="individual-plans-container">
+                        <div style="margin-bottom: 24px;">
+                            <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
+                                Configure planos individuais para usuários específicos. Exemplo: permitir que um usuário tenha acesso ao módulo Carrossel mesmo sem ter o plano completo.
+                            </p>
+                            <button id="add-individual-plan-btn" class="btn btn-primary" onclick="showAddIndividualPlanModal()">
+                                <i class="fas fa-plus"></i> Adicionar Plano Individual
+                            </button>
+                        </div>
+                        
+                        <div id="individual-plans-list" class="individual-plans-list">
+                            <p>Carregando planos individuais...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Aba de Quantidade de Links -->
+                <div id="tab-content-link-limits" class="tab-content-separation" style="display: none;">
+                    <div class="link-limits-container">
+                        <div class="link-limits-header">
+                            <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
+                                Configure a quantidade máxima de links por tipo de módulo em cada plano. Deixe em branco para ilimitado.
+                            </p>
+                            <div style="margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <label for="link-limits-filter-module" style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary, #888888);">Filtrar por módulo</label>
+                                    <input type="text" id="link-limits-filter-module" placeholder="Ex: Banner, WhatsApp..." 
+                                        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--graphite, #1F1F1F); color: var(--text-primary, #FFF); font-size: 0.95rem;">
+                                </div>
+                                <div style="flex: 1; min-width: 200px;">
+                                    <label for="link-limits-filter-plan" style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary, #888888);">Filtrar por plano</label>
+                                    <input type="text" id="link-limits-filter-plan" placeholder="Ex: King Start, King Prime..." 
+                                        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--graphite, #1F1F1F); color: var(--text-primary, #FFF); font-size: 0.95rem;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="link-limits-grid" class="link-limits-grid" style="overflow-x: auto;">
+                            <p>Carregando limites...</p>
+                        </div>
+                        
+                        <div class="link-limits-actions" style="margin-top: 24px; display: flex; gap: 12px;">
+                            <button id="save-link-limits-btn" class="btn btn-primary" style="display: none;">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
+                            <button id="reset-link-limits-btn" class="btn btn-secondary" onclick="resetLinkLimits()" style="display: none;">
+                                <i class="fas fa-undo"></i> Resetar para Ilimitado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Página de Assinatura -->
+            <main id="assinatura-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1>Assinatura</h1>
+                </header>
+                
+                <div class="subscription-container">
+                    <!-- Informações da Assinatura Atual -->
+                    <div class="subscription-current-card">
+                        <h2><i class="fas fa-crown"></i> Sua Assinatura</h2>
+                        <div id="subscription-info" class="subscription-info">
+                            <p>Carregando informações...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Planos Disponíveis -->
+                    <div class="subscription-plans-section">
+                        <h2>Planos Disponíveis</h2>
+                        <div id="subscription-plans-list" class="subscription-plans-grid">
+                            <p>Carregando planos...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção de Edição (apenas ADM) -->
+                    <div id="subscription-admin-section" style="display: none;">
+                        <div class="subscription-admin-card">
+                            <h2><i class="fas fa-edit"></i> Editar Planos (ADM)</h2>
+                            <button id="edit-plans-btn" class="btn btn-primary">
+                                <i class="fas fa-edit"></i> Editar Planos
+                            </button>
+                            <div id="plans-edit-form" style="display: none; margin-top: 20px;">
+                                <!-- Formulário de edição será preenchido via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Página de Personalizar Link do Site (APENAS ADM PRINCIPAL) -->
+            <main id="personalizar-link-pane" class="main-content" data-pane style="display: none;">
+                <header class="content-header">
+                    <h1><i class="fas fa-link"></i> Personalizar Link do Site</h1>
+                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                        Personalize a preview do link quando compartilhado no WhatsApp, Facebook e outras redes sociais
+                    </p>
+                </header>
+                
+                <div class="link-preview-container" style="max-width: 900px; margin: 0 auto;">
+                    <!-- Preview da Imagem -->
+                    <div class="link-preview-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 2px solid var(--border-color, #333);">
+                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-eye"></i> Preview da Imagem
+                        </h3>
+                        <div id="link-preview-image-container" style="background: #000; border-radius: 8px; padding: 20px; text-align: center; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                            <img id="link-preview-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200' viewBox='0 0 400 200'%3E%3Crect fill='%231a1a1a' width='400' height='200'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14'%3EPreview da imagem%3C/text%3E%3C/svg%3E" alt="Preview" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+                        </div>
+                        <p style="color: var(--text-secondary, #888888); margin-top: 15px; font-size: 0.9rem; text-align: center;">
+                            Esta é a imagem que aparecerá quando o link do site for compartilhado
+                        </p>
+                    </div>
+                    
+                    <!-- Formulário de Personalização -->
+                    <div class="link-preview-form-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; border: 2px solid var(--border-color, #333);">
+                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-palette"></i> Personalizar
+                        </h3>
+                        
+                        <form id="link-preview-form">
+                            <div class="form-group" style="margin-bottom: 25px;">
+                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <i class="fas fa-heading"></i> Título Principal
+                                </label>
+                                <input type="text" id="link-preview-title" class="form-input" placeholder="CONECTAKING" maxlength="50" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
+                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Texto principal exibido na preview (máx. 50 caracteres)</small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 25px;">
+                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <i class="fas fa-text-height"></i> Subtítulo
+                                </label>
+                                <input type="text" id="link-preview-subtitle" class="form-input" placeholder="Sua Presença Digital. Um Toque. Poder Absoluto." maxlength="100" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
+                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Texto secundário exibido na preview (máx. 100 caracteres)</small>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                                <div class="form-group">
+                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                        <i class="fas fa-fill"></i> Cor de Fundo 1
+                                    </label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <input type="color" id="link-preview-bg1" value="#991B1B" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
+                                        <input type="text" id="link-preview-bg1-text" value="#991B1B" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                        <i class="fas fa-fill"></i> Cor de Fundo 2
+                                    </label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <input type="color" id="link-preview-bg2" value="#000000" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
+                                        <input type="text" id="link-preview-bg2-text" value="#000000" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                                <div class="form-group">
+                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                        <i class="fas fa-font"></i> Cor do Texto Principal
+                                    </label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <input type="color" id="link-preview-text-color" value="#F5F5F5" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
+                                        <input type="text" id="link-preview-text-color-text" value="#F5F5F5" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                        <i class="fas fa-font"></i> Cor do Subtítulo
+                                    </label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <input type="color" id="link-preview-subtitle-color" value="#FFC700" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
+                                        <input type="text" id="link-preview-subtitle-color-text" value="#FFC700" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
+                                <button type="button" id="link-preview-reset-btn" class="btn btn-secondary" style="padding: 12px 24px;">
+                                    <i class="fas fa-undo"></i> Restaurar Padrão
+                                </button>
+                                <button type="button" id="link-preview-preview-btn" class="btn btn-secondary" style="padding: 12px 24px;">
+                                    <i class="fas fa-eye"></i> Atualizar Preview
+                                </button>
+                                <button type="submit" id="link-preview-save-btn" class="btn btn-primary" style="padding: 12px 24px;">
+                                    <i class="fas fa-save"></i> Salvar Configuração
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Contratos Pane (aba própria, como King Forms) -->
+            <main id="contratos-pane" class="main-content" data-pane style="display: none;">
+                <div id="contracts-content" style="padding: 0; height: calc(100vh - 140px); min-height: 400px;">
+                    <iframe id="contratos-iframe" src="about:blank" title="Contratos" style="width: 100%; height: 100%; border: none; border-radius: 12px; background: var(--bg-primary, #0D0D0F);"></iframe>
+                </div>
+            </main>
+
+        </div>
+
+<aside class="live-preview">
+    <div class="preview-header-section">
+        <h3>Pré-visualização</h3>
+    </div>
+    <button id="preview-close-btn" class="preview-close-btn">&times;</button>
+    <div class="phone-mockup">
+        <div class="phone-screen" id="preview-screen">
+            <div class="preview-card">
+                <div class="preview-header">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=" class="preview-avatar" id="preview-avatar" alt="Avatar">
+                    <h3 id="preview-name">Seu Nome</h3>
+                    <p id="preview-bio">Sua biografia aparecerá aqui.</p>
+                </div>
+                <div class="preview-items" id="preview-items-container"></div>
+                <div class="preview-footer-icons">
+                    <i class="fas fa-share-alt"></i>
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="preview-branding-wrap" style="text-align:center;margin-top:10px;min-height:28px;">
+                    <img id="preview-branding-logo" src="" alt="Logo" style="display:none; max-height:60px; width:auto; object-fit:contain;">
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+    </div>
+    
+    <div id="icon-modal" class="modal-overlay"><div class="modal-content"><h4>Escolha um Ícone</h4><input type="text" id="icon-search" placeholder="Buscar ícone (ex: instagram)"><div id="icon-grid" class="icon-grid"></div><button id="close-modal-btn" class="btn btn-secondary">Fechar</button></div></div>
+
+    <div id="edit-item-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4 id="edit-modal-title">Editar Módulo</h4>
+            <button id="close-edit-modal-btn" class="close-btn">×</button>
+        </div>
+        <div class="modal-body" id="edit-modal-body">
+            </div>
+        <div class="modal-footer">
+            <button id="delete-modal-btn" class="btn btn-danger">Deletar Módulo</button>
+            <button id="save-edit-modal-btn" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<div id="add-item-modal" class="modal-overlay">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h4>Adicionar novo módulo</h4>
+            <button id="close-add-modal-btn" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h5>Contato</h5>
+            <div class="module-gallery">
+                <div class="module-choice-card" data-item-type="whatsapp"><i class="fab fa-whatsapp"></i><span>WhatsApp</span></div>
+                <div class="module-choice-card" data-item-type="telegram"><i class="fab fa-telegram"></i><span>Telegram</span></div>
+                <div class="module-choice-card" data-item-type="email"><i class="fas fa-envelope"></i><span>Email</span></div>
+                <div class="module-choice-card" data-item-type="pix"><i class="fa-solid fa-copy"></i><span>PIX (Copia e Cola)</span></div>
+                <div class="module-choice-card" data-item-type="pix_qrcode"><i class="fas fa-qrcode"></i><span>PIX QR Code</span></div>
+            </div>
+            <hr class="divider">
+            <h5>Redes Sociais</h5>
+            <div class="module-gallery">
+                <div class="module-choice-card" data-item-type="instagram"><i class="fab fa-instagram"></i><span>Instagram</span></div>
+                <div class="module-choice-card" data-item-type="facebook"><i class="fab fa-facebook"></i><span>Facebook</span></div>
+                <div class="module-choice-card" data-item-type="tiktok"><i class="fab fa-tiktok"></i><span>TikTok</span></div>
+                <div class="module-choice-card" data-item-type="twitter"><i class="fab fa-twitter"></i><span>X (Twitter)</span></div>
+                <div class="module-choice-card" data-item-type="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
+                <div class="module-choice-card" data-item-type="spotify"><i class="fab fa-spotify"></i><span>Spotify</span></div>
+                <div class="module-choice-card" data-item-type="linkedin"><i class="fab fa-linkedin"></i><span>LinkedIn</span></div>
+                <div class="module-choice-card" data-item-type="pinterest"><i class="fab fa-pinterest"></i><span>Pinterest</span></div>
+                <!-- <div class="module-choice-card" data-item-type="reddit"><i class="fab fa-reddit"></i><span>Reddit</span></div> -->
+                <!-- <div class="module-choice-card" data-item-type="twitch"><i class="fab fa-twitch"></i><span>Twitch</span></div> -->
+            </div>
+            <hr class="divider">
+            <h5>Outros</h5>
+            <div class="module-gallery">
+                <div class="module-choice-card" data-item-type="link"><i class="fas fa-link"></i><span>Link Personalizado</span></div>
+                <div class="module-choice-card" data-item-type="portfolio"><i class="fas fa-briefcase"></i><span>Portfólio</span></div>
+                <!-- KingSelection não é mais adicionado aqui; acesse pela aba lateral (abaixo de Gestão Financeira) -->
+                <div class="module-choice-card" data-item-type="banner"><i class="fas fa-image"></i><span>Banner</span></div>
+                <div class="module-choice-card" data-item-type="carousel"><i class="fas fa-images"></i><span>Carrossel</span></div>
+                <!-- <div class="module-choice-card" data-item-type="pdf"><i class="fas fa-file-pdf"></i><span>Baixar PDF</span></div> -->
+                <!-- Módulos incorporados: instagram_embed visível para ADM e pacotes com o módulo -->
+                <div class="module-choice-card" data-item-type="instagram_embed"><i class="fab fa-instagram"></i><span>Instagram Incorporado</span></div>
+                <div class="module-choice-card" data-item-type="youtube_embed"><i class="fab fa-youtube"></i><span>YouTube Incorporado</span></div>
+                <!-- <div class="module-choice-card" data-item-type="tiktok_embed"><i class="fab fa-tiktok"></i><span>TikTok Incorporado</span></div> -->
+                <!-- <div class="module-choice-card" data-item-type="spotify_embed"><i class="fab fa-spotify"></i><span>Spotify Incorporado</span></div> -->
+                <!-- <div class="module-choice-card" data-item-type="linkedin_embed"><i class="fab fa-linkedin"></i><span>LinkedIn Incorporado</span></div> -->
+                <!-- <div class="module-choice-card" data-item-type="pinterest_embed"><i class="fab fa-pinterest"></i><span>Pinterest Incorporado</span></div> -->
+                <div class="module-choice-card" data-item-type="digital_form"><i class="fas fa-file-signature"></i><span>Formulário King</span></div>
+                <div class="module-choice-card" data-item-type="sales_page"><i class="fas fa-store"></i><span>Página de Vendas</span></div>
+                <div class="module-choice-card" data-item-type="guest_list"><i class="fas fa-users"></i><span>Lista de Convidados</span></div>
+                <div class="module-choice-card" data-item-type="contract"><i class="fas fa-file-contract"></i><span>Contrato Digital</span></div>
+                <div class="module-choice-card" data-item-type="agenda"><i class="fas fa-calendar-check"></i><span>Agenda Inteligente</span></div>
+                <div class="module-choice-card" data-item-type="bible"><i class="fas fa-bible"></i><span>Bíblia</span></div>
+                <div class="module-choice-card" data-item-type="location"><i class="fas fa-map-marker-alt"></i><span>Localização</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="cropper-modal" class="modal-overlay">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h4>Ajuste sua Imagem</h4>
+        </div>
+        <div class="modal-body cropper-body">
+            <div class="cropper-container">
+                <img id="image-to-crop" src="">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="cancel-crop-btn" class="btn btn-secondary">Cancelar</button>
+            <button id="crop-and-upload-btn" class="btn btn-primary">Cortar e Enviar</button>
+        </div>
+    </div>
+</div>
+
+    <button id="mobile-preview-btn" class="mobile-preview-btn">
+        <i class="fas fa-eye"></i>
+    </button>
+
+    <!-- Botão de salvar fixo no mobile - aparece em todas as abas -->
+    <div class="mobile-save-button-container">
+        <button id="mobile-save-all-btn" class="btn btn-save-changes mobile-save-btn">
+            <i class="fas fa-check"></i> Publicar alterações
+        </button>
+    </div>
+
+    <!-- Modal de Tutorial Interativo -->
+    <div id="tutorial-modal" class="modal-overlay tutorial-modal-overlay">
+        <div class="modal-content tutorial-modal-content">
+            <div class="tutorial-header">
+                <h2><i class="fas fa-graduation-cap"></i> Tutorial Interativo</h2>
+                <button class="close-tutorial-btn" id="close-tutorial-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="tutorial-sidebar">
+                <h3>Tutoriais Disponíveis</h3>
+                <div id="tutorial-list" class="tutorial-list">
+                    <!-- Tutoriais serão carregados aqui -->
+                </div>
+            </div>
+            
+            <div class="tutorial-content">
+                <div id="tutorial-welcome" class="tutorial-welcome">
+                    <div class="welcome-icon">🎯</div>
+                    <h2>Bem-vindo ao Tutorial Interativo!</h2>
+                    <p>Vou te guiar passo a passo para configurar seu cartão Conecta King.</p>
+                    <p>Escolha um tutorial ao lado para começar, ou clique em "Tutorial Rápido" para uma visão geral.</p>
+                    <button class="btn btn-primary" id="start-quick-tutorial">
+                        <i class="fas fa-rocket"></i> Tutorial Rápido
+                    </button>
+                </div>
+                
+                <div id="tutorial-steps" class="tutorial-steps" style="display: none;">
+                    <div class="tutorial-progress">
+                        <div class="progress-bar">
+                            <div id="tutorial-progress-bar" class="progress-fill"></div>
+                        </div>
+                        <span id="tutorial-progress-text">Passo 1 de 6</span>
+                    </div>
+                    
+                    <div class="tutorial-step-content" id="tutorial-step-content">
+                        <!-- Conteúdo do passo será inserido aqui -->
+                    </div>
+                    
+                    <div class="tutorial-actions">
+                        <button class="btn btn-secondary" id="tutorial-prev-btn" style="display: none;">
+                            <i class="fas fa-arrow-left"></i> Anterior
+                        </button>
+                        <button class="btn btn-primary" id="tutorial-next-btn">
+                            Próximo <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button class="btn btn-success" id="tutorial-complete-btn" style="display: none;">
+                            <i class="fas fa-check"></i> Concluir Tutorial
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restaurar painel correto IMEDIATAMENTE (evita flash e demora de 7s no mobile) -->
+    <script>
+    (function(){
+        function restorePane() {
+            var hash = (location.hash || '').trim();
+            if (!hash || hash === '#') {
+                try { var s = localStorage.getItem('dashboard_last_pane'); if (s) hash = s.charAt(0)==='#' ? s : '#'+s; } catch(e){}
+            }
+            if (!hash || hash === '#') return;
+            var tid = hash.replace(/^#/,'').trim();
+            if (tid.startsWith('finance-pane-tab-')) tid = 'finance-pane';
+            var map = {finance:'finance-pane','king-forms':'king-forms-pane',relatorios:'relatorios-pane',editar:'editar-pane',compartilhar:'compartilhar-pane',contratos:'contratos-pane',agenda:'agenda-pane',branding:'branding-pane','separacao-pacotes':'separacao-pacotes-pane',assinatura:'assinatura-pane','personalizar-link':'personalizar-link-pane'};
+            var editorTab = null;
+            if (map[tid]) tid = map[tid];
+            else if (tid === 'info-editor' || tid === 'items-editor' || tid === 'personalizar-editor') { editorTab = tid; tid = 'editar-pane'; }
+            var target = document.getElementById(tid);
+            var panes = document.querySelectorAll('.main-content');
+            if (panes.length && target) {
+                panes.forEach(function(p){ p.classList.remove('active'); p.style.display='none'; });
+                target.classList.add('active'); target.style.display='flex';
+                var link = document.querySelector('.sidebar .nav-link[data-target="'+tid+'"]');
+                if (link) { document.querySelectorAll('.sidebar .nav-link').forEach(function(l){ l.classList.remove('active'); }); link.classList.add('active'); }
+                if (editorTab) {
+                    var el = document.querySelector('[data-editor-target="'+editorTab+'"]');
+                    var pane = document.getElementById(editorTab);
+                    if (el && pane) {
+                        document.querySelectorAll('.editor-nav-link').forEach(function(l){ l.classList.remove('active'); });
+                        document.querySelectorAll('.editor-pane').forEach(function(p){ p.classList.remove('active'); });
+                        el.classList.add('active');
+                        pane.classList.add('active');
+                    }
+                }
+            }
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restorePane);
+        else restorePane();
+        setTimeout(restorePane, 0);
+    })();
+    </script>
+    <script src="global.js?v=2026-03-23-anticache-a1" defer></script>
+    <script src="android-fix.js?v=2026-03-22-no-fetch-patch"></script>
+    <script src="js/planRenderer.js?v=2025-01-31-01" defer></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="dashboard.js?v=2026-03-23-anticache-a1" defer></script>
+    
+    <!-- Script para remover texto "image.png" que aparece no mobile -->
+    <script>
+        (function() {
+            function removeImagePngText() {
+                // Função para remover nós de texto que contenham "image.png"
+                function removeTextNodes(node) {
+                    if (!node) return;
+                    
+                    // Verificar todos os nós filhos
+                    const children = Array.from(node.childNodes || []);
+                    children.forEach(child => {
+                        if (child.nodeType === Node.TEXT_NODE) {
+                            const text = child.textContent || child.nodeValue || '';
+                            if (text.includes('image.png') || text.trim().includes('image.png')) {
+                                try {
+                                    child.parentNode && child.parentNode.removeChild(child);
+                                } catch(e) {
+                                    child.textContent = '';
+                                    child.nodeValue = '';
+                                }
+                            }
+                        } else if (child.nodeType === Node.ELEMENT_NODE) {
+                            // Verificar atributos que possam conter o texto
+                            Array.from(child.attributes || []).forEach(attr => {
+                                if (attr.value && attr.value.includes('image.png')) {
+                                    child.removeAttribute(attr.name);
+                                }
+                            });
+                            
+                            // Continuar recursivamente
+                            removeTextNodes(child);
+                        }
+                    });
+                }
+                
+                // Remover de todo o documento
+                removeTextNodes(document.body);
+                removeTextNodes(document.documentElement);
+                removeTextNodes(document.head);
+                
+                // Verificar e remover elementos específicos
+                const allElements = document.querySelectorAll('*');
+                allElements.forEach(el => {
+                    const text = el.textContent || '';
+                    const innerText = el.innerText || '';
+                    
+                    // Se o elemento contém apenas "image.png", remover
+                    if ((text.trim() === 'image.png' || innerText.trim() === 'image.png') && 
+                        el.children.length === 0) {
+                        el.style.display = 'none';
+                        el.style.visibility = 'hidden';
+                        el.style.opacity = '0';
+                        el.style.height = '0';
+                        el.style.width = '0';
+                        el.style.overflow = 'hidden';
+                        el.style.fontSize = '0';
+                        el.style.lineHeight = '0';
+                        try {
+                            el.remove();
+                        } catch(e) {
+                            el.textContent = '';
+                            el.innerHTML = '';
+                        }
+                    }
+                });
+                
+                // Verificar especificamente a área ao redor do botão mobile
+                const mobileToggle = document.querySelector('.mobile-menu-toggle');
+                if (mobileToggle && mobileToggle.parentNode) {
+                    const parent = mobileToggle.parentNode;
+                    const siblings = Array.from(parent.childNodes || []);
+                    siblings.forEach(sibling => {
+                        if (sibling !== mobileToggle && sibling.nodeType === Node.TEXT_NODE) {
+                            const text = sibling.textContent || sibling.nodeValue || '';
+                            if (text.includes('image.png') || text.trim().includes('image.png')) {
+                                try {
+                                    sibling.parentNode && sibling.parentNode.removeChild(sibling);
+                                } catch(e) {
+                                    sibling.textContent = '';
+                                    sibling.nodeValue = '';
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Executar imediatamente
+            removeImagePngText();
+            
+            // Executar quando DOM estiver pronto
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', removeImagePngText);
+            } else {
+                removeImagePngText();
+            }
+            
+            // Executar múltiplas vezes para garantir
+            setTimeout(removeImagePngText, 50);
+            setTimeout(removeImagePngText, 100);
+            setTimeout(removeImagePngText, 200);
+            setTimeout(removeImagePngText, 500);
+            setTimeout(removeImagePngText, 1000);
+            
+            // Observar mudanças no DOM
+            if (window.MutationObserver) {
+                const observer = new MutationObserver(function(mutations) {
+                    removeImagePngText();
+                });
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            }
+        })();
+    </script>
+    <!-- Base da API (produção por padrão; local apenas quando explicitamente solicitado) -->
+    <script>
+      (function () {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var forceLocal =
+            (params.get('api') || '').toLowerCase() === 'local' ||
+            (localStorage.getItem('useLocalApi') === 'true');
+
+          var host = window.location.hostname || 'localhost';
+          var localApiBase = 'http://' + host + ':5000';
+          var prodApiBase = 'https://conectaking-api.onrender.com';
+
+          // Define para todos os scripts (planRenderer / ocultar-módulos / dashboard.js etc)
+          window.API_BASE = forceLocal ? localApiBase : prodApiBase;
+          window.API_URL = window.API_BASE;
+          window.USE_LOCAL_API_5000 = !!forceLocal;
+        } catch (e) {
+          // Fallback seguro (evita base vazia virar /api no Live Server)
+          window.API_BASE = window.API_BASE || window.API_URL || 'https://conectaking-api.onrender.com';
+          window.API_URL = window.API_URL || window.API_BASE;
+          window.USE_LOCAL_API_5000 = false;
+        }
+      })();
+    </script>
+    <!-- Carrega api-config.js dinamicamente (evita document.write e aviso de parser-blocking) -->
+    <script>
+      (function(){ var b = (window.API_BASE || 'https://conectaking-api.onrender.com').replace(/\/$/, ''); var s = document.createElement('script'); s.src = b + '/api-config.js'; s.async = true; document.body.appendChild(s); })();
+    </script>
+    <script src="js/module-link-limits.js?v=2026-01-28-03"></script>
+    <script src="js/contracts-wizard.js?v=2026-03-09"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

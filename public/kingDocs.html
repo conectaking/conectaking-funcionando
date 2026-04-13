@@ -4,6 +4,26 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>King Docs — Conecta King</title>
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        var forceLocal =
+          (params.get('api') || '').toLowerCase() === 'local' ||
+          (typeof localStorage !== 'undefined' && localStorage.getItem('useLocalApi') === 'true');
+        var host = window.location.hostname || 'localhost';
+        var localApiBase = 'http://' + host + ':5000';
+        var prodApiBase = 'https://conectaking-api.onrender.com';
+        window.API_BASE = forceLocal ? localApiBase : prodApiBase;
+        window.API_URL = window.API_BASE;
+        window.USE_LOCAL_API_5000 = !!forceLocal;
+      } catch (e) {
+        window.API_BASE = window.API_BASE || window.API_URL || 'https://conectaking-api.onrender.com';
+        window.API_URL = window.API_URL || window.API_BASE;
+        window.USE_LOCAL_API_5000 = false;
+      }
+    })();
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
     :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; --bad:#c0392b; }
