@@ -6,7 +6,14 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
 0) O QUE NÃO É O PROBLEMA
    O back-end (Node no Render / conectaking-api) NÃO serve conectaking.com.br.
    Quem serve o site é só a Hostinger: ficheiros em public_html + .htaccess + PHP.
-   Alterações no repositório "back-end" não mudam sozinhas o que a Hostinger mostra.
+   Alterações na API não alteram o teu hosting até fazeres deploy de ficheiros lá.
+
+0b) .HTACCESS MÍNIMO (recuperar o site)
+   O public_html/.htaccess foi reduzido ao MÍNIMO (só DirectoryIndex + UTF-8), sem
+   mod_rewrite nem headers, para não bloquear login, dashboard nem o resto.
+   Abre sempre com URL completa: /login.html, /dashboard.html, etc.
+   Regras opcionais (URLs limpas /kingSelection) estão em htaccess-regras-opcionais.txt
+   para ativares só quando o site já estiver estável.
 
 1) RAIZ DO DOMÍNIO (causa mais comum de 403 / 404)
    No hPanel (Websites → Gerir → Domínios), a "Raiz do documento" do domínio tem
