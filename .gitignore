@@ -47,9 +47,13 @@ public/uploads/
 # Caminho do front-end: .../conectaking-funcionando/public_html
 # Caminho do back-end (ponto de envio Git): .../conectaking-funcionando
 # Nada de public_html sobe para o repositório; front-end sobe manualmente.
-# Exceção: PHP usado no Hostinger (.htaccess) para OG + HTML da galeria cliente.
+# Exceções: ficheiros de deploy/referência e PHP do King Selection no Hostinger.
+# (public_html/** + !pasta permite versionar ficheiros pontuais)
 # =============================================================================
-public_html/
+public_html/**
+!public_html/
 !public_html/kingSelectionGallery.php
+!public_html/.htaccess
+!public_html/HOSTINGER-DEPLOY.txt
 
 # Backend - arquivos na raiz (server.js, routes/, views/, etc.) são commitados

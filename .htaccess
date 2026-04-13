@@ -2,6 +2,9 @@
 # ARQUIVO DE CONFIGURAÇÃO CONECTA KING (v2 - com URLs Amigáveis)
 # ==============================================================================
 
+# Página inicial (espelho de public_html/.htaccess na Hostinger)
+DirectoryIndex index.html index.php
+
 # FORÇAR CODIFICAÇÃO UTF-8
 # ------------------------------------------------------------------------------
 AddDefaultCharset UTF-8
@@ -9,6 +12,7 @@ AddDefaultCharset UTF-8
 # REGRAS DE REESCRITA DE URL
 # ------------------------------------------------------------------------------
 RewriteEngine On
+RewriteBase /
 
 # Favicon: o browser pede /favicon.ico por defeito — redireciona para o logo já usado no site (evita 404 no console)
 RewriteRule ^favicon\.ico$ https://i.ibb.co/60sW9k75/logo.png [R=302,L]
@@ -105,6 +109,12 @@ RewriteRule ^(.*)$ $1.html [L]
         Header set Pragma "no-cache"
         Header set Expires "0"
         Header set Last-Modified "Thu, 01 Jan 1970 00:00:00 GMT"
+    </FilesMatch>
+
+    <FilesMatch "^(config\.js|kingSelection.*\.(html|js))$">
+        Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header always set Pragma "no-cache"
+        Header always set Expires "0"
     </FilesMatch>
 </IfModule>
 
