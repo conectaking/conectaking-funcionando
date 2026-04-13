@@ -757,6 +757,53 @@ function isTechnicalFaceGalleryClientEmail(email) {
 }
 
 /**
+ * O painel admin (projeto) lista clientes só em king_gallery_clients.
+ * Galerias criadas só em king_galleries (ou legado sem backfill) ficam sem linha — corrigimos aqui.
+ */
+async function ensurePrimaryKingGalleryClientFromGalleryRow(pgClient, g, overrides = {}) {
+  if (!(await hasTable(pgClient, 'king_gallery_clients'))) return;
+  const row = { ...g, ...overrides };
+  const gid = parseInt(row.id, 10);
+  if (!Number.isFinite(gid) || gid < 1) return;
+  const em = String(row.cliente_email || '').trim();
+  if (!em || isTechnicalFaceGalleryClientEmail(em)) return;
+  if (!row.senha_hash) return;
+  const ex = await pgClient.query(
+    'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND lower(email)=lower($2) LIMIT 1',
+    [gid, em]
+  );
+  if (ex.rows.length) return;
+  const hasEnc = await hasColumn(pgClient, 'king_gallery_clients', 'senha_enc');
+  const hasCliStatus = await hasColumn(pgClient, 'king_gallery_clients', 'status');
+  const hasClienteNome = await hasColumn(pgClient, 'king_galleries', 'cliente_nome');
+  const hasTel = await hasColumn(pgClient, 'king_galleries', 'cliente_telefone');
+  const nomeIns = (hasClienteNome && row.cliente_nome)
+    ? String(row.cliente_nome).trim().slice(0, 255)
+    : String(row.nome_projeto || '').trim().slice(0, 255) || 'Cliente';
+  const telVal = hasTel && row.cliente_telefone
+    ? String(row.cliente_telefone).trim().slice(0, 60)
+    : null;
+  const encVal = hasEnc && row.senha_enc ? row.senha_enc : null;
+  try {
+    if (hasCliStatus) {
+      await pgClient.query(
+        `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, status, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,'preparacao',NOW(),NOW())`,
+        [gid, nomeIns, em.toLowerCase(), telVal, row.senha_hash, encVal]
+      );
+    } else {
+      await pgClient.query(
+        `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,NOW(),NOW())`,
+        [gid, nomeIns, em.toLowerCase(), telVal, row.senha_hash, encVal]
+      );
+    }
+  } catch (e) {
+    if (String(e.code) !== '23505') throw e;
+  }
+}
+
+/**
  * JWT com clientId, ou um único visitante “real”, ou ficha técnica / sessão (sk) / galeria vazia.
  * Várias fichas reais sem clientId e sem sk → null.
  */
@@ -2610,6 +2657,10 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
       } catch (_) { /* colunas opcionais */ }
     }
 
+    try {
+      await ensurePrimaryKingGalleryClientFromGalleryRow(client, ins.rows[0], { cliente_nome: nomeCliente });
+    } catch (_) { /* não bloquear criação se INSERT opcional falhar */ }
+
     res.status(201).json({
       success: true,
       gallery: ins.rows[0],
@@ -4048,6 +4099,10 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     );
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
+
+    try {
+      await ensurePrimaryKingGalleryClientFromGalleryRow(client, g);
+    } catch (_) { /* auto-heal opcional */ }
 
     // Clientes (multi-client) — incluir status por cliente para o painel habilitar Reativar quando o cliente está em revisão
     let clients = [];
