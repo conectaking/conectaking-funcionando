@@ -48,7 +48,7 @@ public/uploads/
 # Caminho do back-end (ponto de envio Git): .../conectaking-funcionando
 # Nada de public_html sobe para o repositório; front-end sobe manualmente.
 # Exceções: ficheiros de deploy/referência e PHP do King Selection no Hostinger.
-# (public_html/** + !pasta permite versionar ficheiros pontuais)
+# (!public_html/ é necessário para o Git aceitar ficheiros negados dentro da pasta)
 # =============================================================================
 public_html/**
 !public_html/
