@@ -3,32 +3,44 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
 ================================================================================
 (Ficheiro versionado no Git. Na tua máquina, a pasta public_html espelha isto.)
 
-1) RAIZ DO DOMÍNIO
-   No hPanel (Websites → Gerir → Domínios), confirme que conectaking.com.br usa
-   como "Raiz do documento" / public_html a pasta correta (normalmente
-   /home/USER/public_html ou domains/conectaking.com.br/public_html).
+0) O QUE NÃO É O PROBLEMA
+   O back-end (Node no Render / conectaking-api) NÃO serve conectaking.com.br.
+   Quem serve o site é só a Hostinger: ficheiros em public_html + .htaccess + PHP.
+   Alterações no repositório "back-end" não mudam sozinhas o que a Hostinger mostra.
+
+1) RAIZ DO DOMÍNIO (causa mais comum de 403 / 404)
+   No hPanel (Websites → Gerir → Domínios), a "Raiz do documento" do domínio tem
+   de ser a pasta onde estão index.html, kingSelectionEdit.html e .htaccess.
+   Se o File Manager mostrar só uma pasta "public_html" na raiz da conta e o
+   domínio NÃO apontar para DENTRO dessa pasta, o site "não lê" os ficheiros —
+   use /public_html/... no URL ou (recomendado) corrija a raiz do domínio para
+   public_html.
 
 2) FICHEIROS
    Envie TODO o conteúdo da pasta public_html (no teu PC) para essa raiz no
-   servidor (FTP, File Manager ou Git deploy). Inclua ficheiros ocultos: .htaccess
+   servidor. Inclua ficheiros ocultos: .htaccess
 
-3) .HTACCESS
-   O ficheiro public_html/.htaccess no projeto está alinhado com /.htaccess na
-   raiz do repositório. Sem ele, URLs limpas, HTTPS e King Selection (PHP) podem
-   falhar. Copia também o /.htaccess da raiz para public_html se só actualizares
-   um dos dois.
+3) PASTA kingSelection VAZIA (causa de 404 em /kingSelection/)
+   Se existir uma pasta chamada "kingSelection" vazia (ou sem index) dentro de
+   public_html, apague-a. O Apache pode servir essa pasta em vez do rewrite e
+   dar 404. O rewrite envia /kingSelection para kingSelectionEdit.html (ficheiro).
 
-4) TESTES RÁPIDOS (após upload)
-   https://www.conectaking.com.br/
-   https://www.conectaking.com.br/dashboard.html
+4) .HTACCESS
+   Usa o public_html/.htaccess do projeto (versão simples, só rewrites King
+   Selection + dashboard + cache). Não mistures com o /.htaccess grande da raiz
+   do repositório salvo que saibas fundir regras — na Hostinger usa este leve.
+
+5) TESTES RÁPIDOS (após upload)
+   https://www.conectaking.com.br/index.html
+   https://www.conectaking.com.br/kingSelectionEdit.html
    https://www.conectaking.com.br/kingSelection
+   Se os dois primeiros funcionarem e /kingSelection não, é rewrite ou pasta vazia.
 
-5) ERRO 500 APÓS SUBIR .HTACCESS
+6) ERRO 500 APÓS SUBIR .HTACCESS
    Renomeia temporariamente .htaccess para .htaccess.bak. Se o site voltar,
-   o servidor pode ter mod_rewrite desativado — contacta o suporte Hostinger.
+   contacta o suporte Hostinger (mod_rewrite).
 
-6) API
-   O front usa a API em Render (config.js → conectaking-api.onrender.com).
-   Isto é independente da pasta public_html no hosting.
+7) API
+   config.js → conectaking-api.onrender.com (independente do hosting).
 
 ================================================================================
