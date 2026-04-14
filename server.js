@@ -816,6 +816,23 @@ app.get('/public_html/bible.html', (req, res) => {
 // Frontend estático (Hostinger → Render/Node)
 // Serve public_html/ como origem do domínio
 // ============================================
+// King Docs: versão canónica em public/ (public_html costuma ter cópia antiga; express.static(public_html) vem primeiro e escondia as atualizações)
+const kingDocsHtmlPath = path.join(__dirname, 'public', 'kingDocs.html');
+const kingDocsShareHtmlPath = path.join(__dirname, 'public', 'kingDocsShare.html');
+app.get('/kingDocs.html', (req, res) => {
+    if (!fs.existsSync(kingDocsHtmlPath)) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.type('html').sendFile(kingDocsHtmlPath);
+});
+app.get('/kingDocsShare.html', (req, res) => {
+    if (!fs.existsSync(kingDocsShareHtmlPath)) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.type('html').sendFile(kingDocsShareHtmlPath);
+});
 // Painel admin Devocionais 365: versão canónica em public/ (public_html pode ter cópia antiga sem os botões novos)
 const adminDev365HtmlPath = path.join(__dirname, 'public', 'admin-devocionais-365.html');
 app.get('/admin-devocionais-365.html', (req, res) => {
