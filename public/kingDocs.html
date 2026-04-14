@@ -618,7 +618,7 @@
               <button type="button" class="btn secondary" id="btn-copy-share-text-only" disabled>Copiar só textos</button>
               <button type="button" class="btn secondary" id="btn-share-wa-summary" disabled>WhatsApp (resumo)</button>
             </div>
-            <span class="kd-hint-inline">Inclui nome do topo, campos de texto e referências a ficheiros. «Só textos» omite ficheiros/anexos. O URL gera-se na aba <strong>Partilhar</strong>.</span>
+            <span class="kd-hint-inline">Junta texto e ficheiro no mesmo bloco quando marcas o tipo nos cartões de cima. «Só textos» copia só as linhas de texto. O URL gera-se na aba <strong>Partilhar</strong>.</span>
           </div>
           <div class="preview-footer-msg"><span>✓</span> Prazo, senha e <strong>Gerar link seguro</strong> ficam na aba <strong>Partilhar</strong>.</div>
           <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
@@ -1574,9 +1574,9 @@
       if (block) {
         applyFieldModeToBlock(block, 'f');
         if (!findFileForFieldHint(pair[0], pair[1])) {
-          showToast('Marca o campo no link e envia o ficheiro «' + dt + '» no cofre (aba Upload).', 'neutral');
+          showToast('Envia o ficheiro «' + dt + '» em Upload e marca o cartão desse tipo em Documentos.', 'neutral');
         } else {
-          showToast('Ficheiro ligado ao campo. Em Documentos podes mudar para só texto ou texto+ficheiro.', 'ok');
+          showToast('Tipo marcado nos cartões — no preview, texto e ficheiro ficam juntos.', 'ok');
         }
         clearAtalhoActive();
         updateSharePreview();
