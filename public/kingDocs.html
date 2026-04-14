@@ -1726,18 +1726,6 @@
     var p = merged.find(function (x) { return x.docType === t; });
     return p ? p.label : t;
   }
-  function renderDocQuickChips() {
-    var host = document.getElementById('kd-doc-quick-chips');
-    if (!host) return;
-    var list = getDocCardPresetsMerged();
-    host.innerHTML = list.map(function (p) {
-      return '<button type="button" class="btn-atalho btn-atalho--doc" data-doc-quick="' + escapeAttr(p.docType) + '" title="Incluir ' + escapeAttr(p.label) + ' (ficheiro). Ajusta texto/ficheiro em Documentos.">' +
-        '<span aria-hidden="true">' + p.icon + '</span> <span>' + escapeHtml(p.label) + '</span></button>';
-    }).join('');
-    host.querySelectorAll('[data-doc-quick]').forEach(function (btn) {
-      btn.onclick = function () { applyDocTypeQuick(this.getAttribute('data-doc-quick') || ''); };
-    });
-  }
   function formatVaultSavedHint() {
     try {
       var raw = localStorage.getItem(VAULT_SAVED_AT_KEY);
@@ -1822,7 +1810,6 @@
   function renderDocCards() {
     renderDocUploadCards();
     renderDocBrowseCards();
-    renderDocQuickChips();
     if (docPreviewSelectedTypes.length) {
       var pruned = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
       if (pruned.length !== docPreviewSelectedTypes.length) {
@@ -1927,10 +1914,17 @@
     if (!arr.length) { host.innerHTML = ''; return; }
     host.innerHTML = arr.map(function (it) {
       var img = it.imageDataUrl ? '<img src="' + escapeAttr(it.imageDataUrl) + '" alt="" class="kd-atalho-img"/>' : '<span aria-hidden="true">' + escapeHtml(it.icon || '📌') + '</span>';
-      return '<button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="' + escapeAttr(it.name) + '">' + img + ' <span>' + escapeHtml(it.name) + '</span></button>';
+      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '">' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">✎</button></span>';
     }).join('');
     host.querySelectorAll('[data-custom-id]').forEach(function (btn) {
       btn.onclick = function () { applyCustomShortcut(this.getAttribute('data-custom-id')); };
+    });
+    host.querySelectorAll('[data-edit-id]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openShortcutModal(this.getAttribute('data-edit-id'));
+      };
     });
   }
   function applyCustomShortcut(id) {
@@ -2043,14 +2037,43 @@
     return lines.join('\n').trim();
   }
 
+  function formatSharePreviewPlainTextTextOnly(data) {
+    if (!data || !data.count) return '';
+    var lines = [];
+    lines.push('King Docs — só campos de texto');
+    lines.push('');
+    if (data.showName) {
+      lines.push('Nome no topo: ' + data.showName);
+      lines.push('');
+    }
+    if (data.showPhoto) {
+      lines.push('Foto (URL): ' + data.showPhoto);
+      lines.push('');
+    }
+    Object.keys(data.sections).forEach(function (title) {
+      var items = (data.sections[title] || []).filter(function (item) { return item.kind === 'text'; });
+      if (!items.length) return;
+      lines.push('▸ ' + title);
+      items.forEach(function (item) {
+        lines.push('  • ' + item.label + ': ' + item.val);
+      });
+      lines.push('');
+    });
+    return lines.join('\n').trim();
+  }
+
   function updateSharePreview() {
     const out = document.getElementById('share-preview-body');
     const badge = document.getElementById('preview-count');
     const copyBtn = document.getElementById('btn-copy-share-summary');
+    const copyTxt = document.getElementById('btn-copy-share-text-only');
+    const waBtn = document.getElementById('btn-share-wa-summary');
     if (!out || !badge) return;
     const data = collectSharePreviewData();
     const count = data.count;
     if (copyBtn) copyBtn.disabled = count === 0;
+    if (copyTxt) copyTxt.disabled = !formatSharePreviewPlainTextTextOnly(data);
+    if (waBtn) waBtn.disabled = count === 0;
 
     badge.textContent = count + ' itens';
     var hintEl = document.getElementById('share-confirm-hint');
@@ -2091,8 +2114,9 @@
     out.innerHTML = html;
   }
 
-  function renderShareTable() {
-    const wrap = document.getElementById('share-table-wrap');
+  function renderShareTableInto(wrapId, idPrefix) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
     let idx = 0;
     let html = '';
     GROUPS.forEach(function (g) {
@@ -2103,7 +2127,7 @@
       html += '<button type="button" class="kd-link-btn" data-select-all-gid="' + escapeAttr(g.id) + '">Selecionar todos</button>';
       html += '</div><div class="kd-share-cat-body">';
       g.keys.forEach(function (k) {
-        const fid = 'f' + (idx++);
+        const fid = idPrefix + (idx++);
         const fk = g.id + '|' + k;
         html += '<div class="kd-field-block" data-fk="' + escapeAttr(fk) + '">';
         html += '<label class="kd-field-main"><input type="checkbox" class="incl" data-fid="' + fid + '"/> ' + escapeHtml(k) + '</label>';
@@ -2123,16 +2147,25 @@
         if (!cat) return;
         cat.querySelectorAll('.kd-field-block .incl').forEach(function (c) { c.checked = true; });
         clearAtalhoActive();
-        updateSharePreview();
+        if (idPrefix === 'f') updateSharePreview();
       };
     });
-    updateSharePreview();
+    if (idPrefix === 'f') updateSharePreview();
+  }
+  function renderShareTable() {
+    renderShareTableInto('share-table-wrap', 'f');
   }
 
+  function renderExtraDocsInto(wrapId) {
+    const w = document.getElementById(wrapId);
+    if (!w) return;
+    if (!filesList.length) { w.innerHTML = '<p class="sub">Sem ficheiros.</p>'; return; }
+    w.innerHTML = filesList.map(function (f) {
+      return '<div class="row" style="grid-template-columns:1fr 120px;"><label><input type="checkbox" class="xd-check" data-fid="' + f.id + '"/> #' + f.id + ' ' + escapeHtml(f.doc_type) + '</label><input type="text" class="xd-label" data-fid="' + f.id + '" placeholder="Rótulo"/></div>';
+    }).join('');
+  }
   function renderExtraDocs() {
-    const w = document.getElementById('extra-docs-wrap');
-    if (!filesList.length) { w.innerHTML = '<p class="sub">Sem ficheiros.</p>'; updateSharePreview(); return; }
-    w.innerHTML = filesList.map(f => '<div class="row" style="grid-template-columns:1fr 120px;"><label><input type="checkbox" class="xd-check" data-fid="' + f.id + '"/> #' + f.id + ' ' + escapeHtml(f.doc_type) + '</label><input type="text" class="xd-label" data-fid="' + f.id + '" placeholder="Rótulo"/></div>').join('');
+    renderExtraDocsInto('extra-docs-wrap');
     updateSharePreview();
   }
 
@@ -2326,29 +2359,12 @@
     loadLinks();
   };
 
-  document.getElementById('btn-preset-all').onclick = function() {
-    clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap .incl').forEach(function(c) { c.checked = true; });
-    updateSharePreview();
-  };
-  document.getElementById('btn-preset-none').onclick = function() {
-    clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap .incl').forEach(function(c) { c.checked = false; });
-    document.querySelectorAll('.xd-check').forEach(function(c) { c.checked = false; });
-    updateSharePreview();
-  };
-  document.getElementById('btn-preset-contact').onclick = function() {
-    clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function(tr) {
-      var fk = tr.getAttribute('data-fk') || '';
-      var incl = tr.querySelector('.incl');
-      if (!incl) return;
-      incl.checked = fk.indexOf('pessoal|') === 0 || fk.indexOf('contato|') === 0;
-    });
-    updateSharePreview();
-  };
   document.getElementById('btn-preview-clear').onclick = function() {
-    document.getElementById('btn-preset-none').click();
+    clearAtalhoActive();
+    document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
+    var exw = document.getElementById('extra-docs-wrap');
+    if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    updateSharePreview();
   };
 
   document.querySelector('.wrap').addEventListener('click', function (e) {
@@ -2366,7 +2382,17 @@
   document.getElementById('btn-copy-share-summary').onclick = function () {
     var t = formatSharePreviewPlainText(collectSharePreviewData());
     if (!t) { showToast('Nada para copiar — marca campos no preview primeiro.', 'neutral'); return; }
-    navigator.clipboard.writeText(t).then(function () { showToast('Resumo em texto copiado.', 'ok'); }).catch(function () { showToast('Não foi possível copiar.', 'err'); });
+    navigator.clipboard.writeText(t).then(function () { showToast('Resumo completo copiado.', 'ok'); }).catch(function () { showToast('Não foi possível copiar.', 'err'); });
+  };
+  document.getElementById('btn-copy-share-text-only').onclick = function () {
+    var t = formatSharePreviewPlainTextTextOnly(collectSharePreviewData());
+    if (!t) { showToast('Não há campos de texto no resumo.', 'neutral'); return; }
+    navigator.clipboard.writeText(t).then(function () { showToast('Só textos copiados.', 'ok'); }).catch(function () { showToast('Não foi possível copiar.', 'err'); });
+  };
+  document.getElementById('btn-share-wa-summary').onclick = function () {
+    var t = formatSharePreviewPlainText(collectSharePreviewData());
+    if (!t) { showToast('Nada para enviar — marca campos primeiro.', 'neutral'); return; }
+    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
   };
 
   document.querySelectorAll('.tab').forEach(t => {
@@ -2522,28 +2548,36 @@
   };
   document.getElementById('kd-qr-close').onclick = closeQrModal;
   document.getElementById('kd-qr-backdrop').onclick = closeQrModal;
-  document.getElementById('btn-add-custom-atalho').onclick = openShortcutModal;
+  document.getElementById('btn-add-custom-atalho').onclick = function () { openShortcutModal(); };
   document.getElementById('kd-sc-cancel').onclick = closeShortcutModal;
   document.getElementById('kd-shortcut-backdrop').onclick = closeShortcutModal;
-  document.getElementById('kd-sc-mode').addEventListener('change', syncShortcutModalMode);
   document.getElementById('kd-sc-save').onclick = function () {
     var name = document.getElementById('kd-sc-name').value.trim();
     if (!name) { showToast('Escreve um nome para o atalho.', 'neutral'); return; }
     var emoji = (document.getElementById('kd-sc-emoji').value || '📌').trim().slice(0, 8) || '📌';
-    var mode = document.getElementById('kd-sc-mode').value;
     var imgInput = document.getElementById('kd-sc-img');
+    var editId = (document.getElementById('kd-sc-edit-id') && document.getElementById('kd-sc-edit-id').value || '').trim();
     function pushItem(imgData) {
+      var pairs = collectCurrentPresetPairsFrom(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'));
+      if (!pairs.length) { showToast('Marca pelo menos um campo ou documento extra na grelha acima.', 'neutral'); return; }
       var arr = loadCustomShortcuts();
-      if (arr.length >= 24) { showToast('Limite de 24 atalhos personalizados.', 'neutral'); return; }
-      var item = { id: 'c' + Date.now(), name: name, icon: emoji };
-      if (imgData) item.imageDataUrl = imgData;
-      if (mode === 'preset') {
-        item.presetKey = document.getElementById('kd-sc-preset').value;
-      } else {
-        var pairs = collectCurrentPresetPairs();
-        if (!pairs.length) { showToast('Marca pelo menos um campo ou documento extra em Documentos (secção «Incluir no link»).', 'neutral'); return; }
-        item.pairs = pairs;
+      if (editId) {
+        var ix = arr.findIndex(function (x) { return x.id === editId; });
+        if (ix < 0) { showToast('Atalho não encontrado.', 'err'); return; }
+        var prev = arr[ix];
+        var next = { id: editId, name: name, icon: emoji, pairs: pairs };
+        if (imgData) next.imageDataUrl = imgData;
+        else if (prev.imageDataUrl) next.imageDataUrl = prev.imageDataUrl;
+        arr[ix] = next;
+        saveCustomShortcuts(arr);
+        renderCustomShortcuts();
+        closeShortcutModal();
+        showToast('Atalho atualizado.', 'ok');
+        return;
       }
+      if (arr.length >= 24) { showToast('Limite de 24 atalhos personalizados.', 'neutral'); return; }
+      var item = { id: 'c' + Date.now(), name: name, icon: emoji, pairs: pairs };
+      if (imgData) item.imageDataUrl = imgData;
       arr.push(item);
       saveCustomShortcuts(arr);
       renderCustomShortcuts();
