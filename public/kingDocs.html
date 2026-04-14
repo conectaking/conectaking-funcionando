@@ -1921,6 +1921,7 @@
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
     document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
+    var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     list.forEach(function (entry) { applyOnePresetEntry(entry); });
     clearAtalhoActive();
