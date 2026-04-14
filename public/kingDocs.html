@@ -136,9 +136,24 @@
     .atalhos-block { margin: 1rem 0 1.25rem; }
     .atalhos-block .atalhos-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: .5rem; display: block; }
     .atalhos-btns { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
-    .btn-atalho { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .75rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; color: var(--ink); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s; }
+    .btn-atalho { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .75rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; color: var(--ink); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s, color .15s; }
     .btn-atalho:hover { background: #e8f0ea; border-color: var(--accent); color: var(--accent); }
     .btn-atalho.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    body.kd-theme-dark .btn-atalho:not(.active) {
+      background: #243028;
+      color: var(--ink);
+      border-color: var(--border);
+    }
+    body.kd-theme-dark .btn-atalho:not(.active):hover {
+      background: #2d3d34;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    body.kd-theme-dark .btn-atalho.active {
+      background: var(--accent);
+      color: #0d120f;
+      border-color: var(--accent);
+    }
     .mini-actions { font-size: .78rem; margin-top: .5rem; color: var(--muted); }
     .mini-actions button { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 0 .25rem; font: inherit; }
     .preview-de-envio { position: sticky; top: .75rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
@@ -172,6 +187,7 @@
     .doc-card:not(.selected) .dc-status { color: var(--muted); font-weight: 500; }
     .doc-card .dc-date { font-size: .62rem; color: var(--muted); margin-top: .25rem; }
     body.kd-theme-dark .doc-card .dc-status { color: var(--accent); }
+    body.kd-theme-dark .doc-badge { background: #243028; color: var(--muted); border-color: var(--border); }
     .doc-fallback-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 1rem 0 .5rem; }
     /* Painel pessoal — topo */
     .kd-hero-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.25rem 1.35rem; box-shadow: 0 4px 24px rgba(0,0,0,.07); margin-bottom: 1.25rem; }
@@ -223,6 +239,40 @@
     .kd-modal-field label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: .28rem; font-weight: 600; }
     .kd-modal-field input[type=text], .kd-modal-field select { width: 100%; }
     .kd-modal-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+    /* Seletor de emoji no modal de atalho */
+    .kd-sc-emoji-field { position: relative; z-index: 2; }
+    .kd-emoji-picker-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .kd-emoji-preview {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 2.5rem; height: 2.5rem; font-size: 1.5rem; line-height: 1;
+      background: var(--trust-bg); border: 1px solid var(--border); border-radius: 10px;
+    }
+    .kd-emoji-toggle { font-size: .78rem; }
+    .kd-emoji-popover {
+      position: absolute; left: 0; right: 0; top: 100%; margin-top: .4rem;
+      padding: .65rem; background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.18); z-index: 5;
+      max-height: min(240px, 45vh); overflow-y: auto;
+    }
+    .kd-emoji-popover[hidden] { display: none !important; }
+    .kd-emoji-popover-hint { font-size: .72rem; color: var(--muted); margin: 0 0 .5rem; }
+    .kd-emoji-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(2.35rem, 1fr)); gap: .35rem;
+    }
+    .kd-emoji-opt {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 2.35rem; padding: .2rem; font-size: 1.35rem; line-height: 1;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--trust-bg);
+      cursor: pointer; font-family: inherit;
+      transition: background .12s, border-color .12s, transform .1s;
+    }
+    .kd-emoji-opt:hover, .kd-emoji-opt:focus-visible {
+      background: var(--banner-bg); border-color: var(--accent); outline: none;
+    }
+    .kd-emoji-opt:active { transform: scale(0.96); }
+    .kd-emoji-manual-wrap { margin-top: .65rem; padding-top: .55rem; border-top: 1px dashed var(--border); }
+    .kd-emoji-manual-wrap label { font-size: .72rem; margin-bottom: .25rem; display: block; }
+    .kd-emoji-manual-input { width: 100%; font-size: .9rem; }
     #kd-qr-wrap { display: flex; justify-content: center; margin: 1rem 0; min-height: 200px; align-items: center; }
     #kd-qr-wrap canvas { border-radius: 8px; }
     .kd-badge { display: inline-block; font-size: .65rem; padding: .2rem .45rem; border-radius: 6px; font-weight: 600; }
@@ -412,9 +462,21 @@
           <label for="kd-sc-name">Nome do atalho</label>
           <input type="text" id="kd-sc-name" maxlength="32" placeholder="Ex.: Meu cliente X"/>
         </div>
-        <div class="kd-modal-field">
-          <label for="kd-sc-emoji">Ícone (emoji)</label>
-          <input type="text" id="kd-sc-emoji" maxlength="8" placeholder="📌"/>
+        <div class="kd-modal-field kd-sc-emoji-field">
+          <label for="kd-emoji-toggle">Ícone</label>
+          <div class="kd-emoji-picker-row">
+            <span class="kd-emoji-preview" id="kd-sc-emoji-preview" title="Ícone escolhido">📌</span>
+            <input type="hidden" id="kd-sc-emoji" value="📌"/>
+            <button type="button" class="btn secondary kd-emoji-toggle" id="kd-emoji-toggle" aria-expanded="false" aria-controls="kd-emoji-popover">Escolher ícone…</button>
+          </div>
+          <div id="kd-emoji-popover" class="kd-emoji-popover" hidden>
+            <p class="kd-emoji-popover-hint">Escolhe um emoji abaixo ou escreve/cola outro no fim.</p>
+            <div class="kd-emoji-grid" id="kd-emoji-grid" role="listbox" aria-label="Emojis para o atalho"></div>
+            <div class="kd-emoji-manual-wrap">
+              <label for="kd-sc-emoji-manual">Outro emoji (colar ou teclado)</label>
+              <input type="text" id="kd-sc-emoji-manual" class="kd-emoji-manual-input" maxlength="8" placeholder="ex.: ⭐ ou combinação" autocomplete="off"/>
+            </div>
+          </div>
         </div>
         <div class="kd-modal-field">
           <label for="kd-sc-img">Foto / ícone (opcional, máx. ~80 KB)</label>
@@ -672,8 +734,8 @@
     }
     var nameEl = document.getElementById('kd-sc-name');
     if (nameEl) nameEl.value = '';
-    var em = document.getElementById('kd-sc-emoji');
-    if (em) em.value = '';
+    setShortcutEmoji('📌');
+    closeEmojiPopover();
     var img = document.getElementById('kd-sc-img');
     if (img) img.value = '';
     var mode = document.getElementById('kd-sc-mode');
@@ -681,6 +743,7 @@
     syncShortcutModalMode();
   }
   function closeShortcutModal() {
+    closeEmojiPopover();
     var m = document.getElementById('kd-shortcut-modal');
     if (m) {
       m.classList.remove('kd-modal--open');
@@ -774,6 +837,78 @@
   }
   function escapeAttr(s) {
     return escapeHtml(s).replace(/"/g, '&quot;');
+  }
+
+  var KD_EMOJI_PICKER = (
+    '📌 ⭐ ✨ 🔥 💡 🎯 🏆 🎁 ❤️ 💛 💚 💙 💜 🤍 ' +
+    '🏠 🏡 🎉 🎊 🍾 ☕ 🎂 🎵 🎬 ' +
+    '💰 💵 💳 🏦 📊 📈 📉 💼 🧾 ' +
+    '🏢 🏬 🏛️ 🏙️ 🗺️ 📍 🚗 ✈️ 🚚 ' +
+    '📄 📃 📎 📝 📋 ✉️ 📩 📮 📦 ' +
+    '👤 👥 🤝 📞 📱 💬 🌐 🔐 ' +
+    '🪪 🆔 🖼️ 📸 🗂️ 📑 ' +
+    '⚡ 🚀 ✅ ❌ ❓ 💯 🔑 🛡️ 🎪 🏖️ 💎'
+  ).trim().split(/\s+/);
+
+  function setShortcutEmoji(ch, skipManual) {
+    var raw = ch != null ? String(ch) : '';
+    var v = raw.trim().slice(0, 8);
+    if (!v) v = '📌';
+    var hid = document.getElementById('kd-sc-emoji');
+    var prev = document.getElementById('kd-sc-emoji-preview');
+    var manual = document.getElementById('kd-sc-emoji-manual');
+    if (hid) hid.value = v;
+    if (prev) prev.textContent = v;
+    if (manual && !skipManual) manual.value = v;
+  }
+  function closeEmojiPopover() {
+    var pop = document.getElementById('kd-emoji-popover');
+    var toggle = document.getElementById('kd-emoji-toggle');
+    if (pop) pop.setAttribute('hidden', '');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+  function initKdEmojiPicker() {
+    var grid = document.getElementById('kd-emoji-grid');
+    var toggle = document.getElementById('kd-emoji-toggle');
+    var pop = document.getElementById('kd-emoji-popover');
+    var manual = document.getElementById('kd-sc-emoji-manual');
+    if (!grid) return;
+    grid.innerHTML = KD_EMOJI_PICKER.map(function (emo) {
+      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '" title="' + escapeAttr(emo) + '" aria-label="' + escapeAttr(emo) + '">' + emo + '</button>';
+    }).join('');
+    grid.querySelectorAll('.kd-emoji-opt').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        setShortcutEmoji(this.getAttribute('data-emoji') || this.textContent);
+        closeEmojiPopover();
+      };
+    });
+    if (toggle && pop) {
+      toggle.onclick = function (e) {
+        e.stopPropagation();
+        if (pop.hasAttribute('hidden')) {
+          pop.removeAttribute('hidden');
+          toggle.setAttribute('aria-expanded', 'true');
+        } else {
+          closeEmojiPopover();
+        }
+      };
+    }
+    if (manual) {
+      manual.addEventListener('input', function () {
+        var v = this.value.trim().slice(0, 8) || '📌';
+        var hid = document.getElementById('kd-sc-emoji');
+        var prev = document.getElementById('kd-sc-emoji-preview');
+        if (hid) hid.value = v;
+        if (prev) prev.textContent = v;
+      });
+    }
+    document.addEventListener('click', function (e) {
+      if (!pop || pop.hasAttribute('hidden')) return;
+      var t = e.target;
+      if (pop.contains(t) || (toggle && toggle.contains(t))) return;
+      closeEmojiPopover();
+    });
   }
 
   async function loadVault() {
@@ -1386,6 +1521,7 @@
   initTheme();
   renderModelsChips();
   renderCustomShortcuts();
+  initKdEmojiPicker();
   renderDocSelectCards();
   loadVault().then(loadProfileHints);
 })();
