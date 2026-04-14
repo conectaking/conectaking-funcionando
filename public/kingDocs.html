@@ -863,12 +863,7 @@
         rows.push({
           fk: fk,
           incl: !!incl.checked,
-          st: !!(tr.querySelector('.st[data-fid="' + fid + '"]') && tr.querySelector('.st[data-fid="' + fid + '"]').checked),
-          sf: !!(tr.querySelector('.sf[data-fid="' + fid + '"]') && tr.querySelector('.sf[data-fid="' + fid + '"]').checked),
-          fileId: (function () {
-            var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
-            return sel && sel.value ? sel.value : '';
-          })()
+          st: !!(tr.querySelector('.st[data-fid="' + fid + '"]') && tr.querySelector('.st[data-fid="' + fid + '"]').checked)
         });
       });
     }
@@ -901,11 +896,7 @@
         }
         incl.checked = !!saved.incl;
         var st = tr.querySelector('.st[data-fid="' + fid + '"]');
-        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
-        var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
         if (st) st.checked = !!saved.st;
-        if (sf) sf.checked = !!saved.sf;
-        if (sel && saved.fileId) sel.value = String(saved.fileId);
       });
     }
     if (extraRoot) {
@@ -983,7 +974,10 @@
     { docType: 'CARTÃO DO CNPJ', label: 'Cartão do CNPJ', icon: '📋' },
     { docType: 'CONTRATO SOCIAL', label: 'Contrato social', icon: '📝' },
     { docType: 'INSC. ESTADUAL', label: 'Insc. estadual', icon: '🏛️' },
-    { docType: 'INSC. MUNICIPAL', label: 'Insc. municipal', icon: '🏙️' }
+    { docType: 'INSC. MUNICIPAL', label: 'Insc. municipal', icon: '🏙️' },
+    { docType: 'CERTIDÃO DE NASCIMENTO', label: 'Certidão de nascimento', icon: '📜' },
+    { docType: 'CERTIDÃO DE CASAMENTO', label: 'Certidão de casamento', icon: '💒' },
+    { docType: 'CERTIDÃO DOS FILHOS', label: 'Certidão dos filhos', icon: '👨‍👩‍👧' }
   ];
   let pendingDocType = '';
   var docPreviewBlobUrls = {};
@@ -1280,6 +1274,7 @@
     }
     renderDocBrowseCards();
     refreshDocVaultPreview();
+    updateSharePreview();
   }
   function openQrModal(url) {
     var modal = document.getElementById('kd-qr-modal');
@@ -1376,7 +1371,6 @@
     if (fr) {
       fr.querySelectorAll('.incl').forEach(function (c) { c.checked = false; });
       fr.querySelectorAll('.st').forEach(function (c) { c.checked = true; });
-      fr.querySelectorAll('.sf').forEach(function (c) { c.checked = false; });
     }
     if (er) er.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
   }
@@ -1525,8 +1519,6 @@
     if (incl) incl.checked = true;
     var fid = incl && incl.getAttribute('data-fid');
     var st = block.querySelector('.st[data-fid="' + fid + '"]');
-    var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
-    var sel = block.querySelector('select[data-sel-for="' + fid + '"]');
     var fk = block.getAttribute('data-fk') || '';
     var parts = fk.split('|');
     var g = parts[0];
@@ -1534,11 +1526,7 @@
     var wantT = (m === 't' || m === 'b');
     var wantF = (m === 'f' || m === 'b');
     if (st) st.checked = wantT;
-    if (sf) sf.checked = wantF;
-    if (wantF && sel) {
-      var f = findFileForFieldHint(g, k);
-      if (f) sel.value = String(f.id);
-    }
+    if (wantF) ensureVaultDocTypeSelectedForField(g, k);
   }
   function applyExtraDocPresetEntry(docType, extraRootEl) {
     var root = extraRootEl || document.getElementById('extra-docs-wrap');
@@ -1903,6 +1891,35 @@
     var merged = getDocCardPresetsMerged();
     var p = merged.find(function (x) { return x.docType === t; });
     return p ? p.label : t;
+  }
+  /** Alinha o hint do campo (ex. RG) ao docType dos cartões (maiúsculas / acentos) */
+  function vaultDocTypeKeyForHint(hint) {
+    if (!hint) return null;
+    var h = String(hint).trim();
+    var merged = getDocCardPresetsMerged();
+    var found = merged.find(function (x) {
+      return normalizeDocTypeKey(x.docType) === normalizeDocTypeKey(h);
+    });
+    return found ? found.docType : h;
+  }
+  function docTypeSelectedInVault(dt) {
+    if (!dt) return false;
+    var canon = vaultDocTypeKeyForHint(dt);
+    if (!canon) return false;
+    var n = normalizeDocTypeKey(canon);
+    return docPreviewSelectedTypes.some(function (d) {
+      return normalizeDocTypeKey(d) === n || d === canon;
+    });
+  }
+  function ensureVaultDocTypeSelectedForField(g, k) {
+    var raw = fieldKeyToDocTypeHint(k, g);
+    if (!raw) return;
+    var dt = vaultDocTypeKeyForHint(raw);
+    if (!fileExistsForDocType(dt)) return;
+    if (docPreviewSelectedTypes.indexOf(dt) >= 0) return;
+    docPreviewSelectedTypes.push(dt);
+    renderDocBrowseCards();
+    refreshDocVaultPreview();
   }
   function formatVaultSavedHint() {
     try {
