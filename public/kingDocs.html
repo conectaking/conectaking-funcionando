@@ -84,6 +84,20 @@
     .preview-empty { color: var(--muted); font-size: .82rem; padding: .5rem 0; }
     .preview-footer-msg { background: #e8f0ea; color: var(--accent); padding: .45rem .65rem; font-size: .75rem; display: flex; align-items: center; gap: .35rem; }
     .preview-de-envio .btn-clear { width: 100%; margin: 0; border-radius: 0 0 11px 11px; border: none; border-top: 1px solid var(--border); padding: .55rem; font-size: .8rem; }
+    /* Documentos — grelha tipo cartões */
+    .doc-panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1rem 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,.06); margin-bottom: 1.25rem; }
+    .doc-badge { display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .35rem .85rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; font-size: .68rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 auto 1rem; width: fit-content; text-transform: uppercase; }
+    .doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 640px) { .doc-grid { grid-template-columns: repeat(2, 1fr); } }
+    .doc-card { border: 1px solid #3d5c45; border-radius: 8px; background: #e8f5ea; padding: .75rem .5rem; text-align: center; cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; font: inherit; color: inherit; width: 100%; }
+    .doc-card:hover { box-shadow: 0 2px 8px rgba(45,90,61,.12); }
+    .doc-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .doc-card.selected { background: #d4edda; border-color: #2d5a3d; }
+    .doc-card .dc-icon { font-size: 1.75rem; line-height: 1; margin-bottom: .35rem; }
+    .doc-card .dc-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); margin-bottom: .4rem; line-height: 1.25; }
+    .doc-card .dc-status { font-size: .7rem; color: #2d5a3d; font-weight: 600; }
+    .doc-card:not(.selected) .dc-status { color: var(--muted); font-weight: 500; }
+    .doc-fallback-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 1rem 0 .5rem; }
   </style>
 </head>
 <body>
@@ -102,9 +116,16 @@
 
     <div id="p-dados" class="panel active"></div>
     <div id="p-docs" class="panel">
-      <p class="sub">Envia PDF ou imagem. Depois podes associar cada ficheiro a um campo na aba «Criar link».</p>
+      <p class="sub">Envia PDF ou imagem. Usa os cartões abaixo para cada tipo de documento; depois podes associar cada ficheiro a um campo na aba «Criar link».</p>
+      <div class="doc-panel-card">
+        <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Documentos — selecionar</div>
+        <div id="doc-select-root" class="doc-grid"></div>
+        <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
+      </div>
+      <p class="doc-fallback-title">Outro documento</p>
+      <p class="sub" style="margin-top:0">Tipo livre (ex.: CPF, comprovante).</p>
       <input type="file" id="up-file"/>
-      <input type="text" id="up-type" placeholder="Tipo (ex.: CPF scan, RG)" style="max-width:220px; margin-left:.5rem"/>
+      <input type="text" id="up-type" placeholder="Tipo (ex.: CPF scan)" style="max-width:220px; margin-left:.5rem"/>
       <button type="button" class="btn" id="up-btn">Enviar</button>
       <div id="file-list" style="margin-top:1rem"></div>
     </div>
@@ -192,6 +213,18 @@
     if (t) h['Authorization'] = 'Bearer ' + t;
     return h;
   }
+
+  /** Cartões «Documentos — selecionar»: docType enviado no upload (tem de bater com a lista de ficheiros) */
+  const DOC_CARD_PRESETS = [
+    { docType: 'RG', label: 'RG', icon: '🪪' },
+    { docType: 'CNH', label: 'CNH', icon: '🚗' },
+    { docType: 'FOTO PESSOAL', label: 'Foto pessoal', icon: '🖼️' },
+    { docType: 'CARTÃO DO CNPJ', label: 'Cartão do CNPJ', icon: '📋' },
+    { docType: 'CONTRATO SOCIAL', label: 'Contrato social', icon: '📝' },
+    { docType: 'INSC. ESTADUAL', label: 'Insc. estadual', icon: '🏛️' },
+    { docType: 'INSC. MUNICIPAL', label: 'Insc. municipal', icon: '🏙️' }
+  ];
+  let pendingDocType = '';
 
   const GROUPS = [
     { id: 'pessoal', title: 'Dados pessoais', keys: ['Nome Completo','Data de Nasc.','RG','CPF'] },
@@ -312,13 +345,48 @@
     URL.revokeObjectURL(u);
   }
 
+  function fileExistsForDocType(docType) {
+    const t = String(docType).trim();
+    return filesList.some(function (f) { return String(f.doc_type || '').trim() === t; });
+  }
+
+  function renderDocSelectCards() {
+    const root = document.getElementById('doc-select-root');
+    if (!root) return;
+    root.innerHTML = DOC_CARD_PRESETS.map(function (p) {
+      var sel = fileExistsForDocType(p.docType);
+      var cls = 'doc-card' + (sel ? ' selected' : '');
+      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '" title="Enviar ' + escapeAttr(p.label) + '">' +
+        '<div class="dc-icon" aria-hidden="true">' + p.icon + '</div>' +
+        '<div class="dc-title">' + escapeHtml(p.label) + '</div>' +
+        '<div class="dc-status">' + (sel ? '✓ Selecionado' : 'Toca para enviar') + '</div>' +
+        '</button>';
+    }).join('');
+    root.querySelectorAll('.doc-card[data-doc-type]').forEach(function (btn) {
+      btn.onclick = function () {
+        pendingDocType = this.getAttribute('data-doc-type') || '';
+        var hid = document.getElementById('doc-file-hidden');
+        if (hid) { hid.value = ''; hid.click(); }
+      };
+    });
+  }
+
+  async function uploadKingDocFile(file, docTypeLabel) {
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('docType', docTypeLabel || 'documento');
+    var r = await fetch(api('/api/king-docs/files'), { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }, body: fd });
+    return r.ok;
+  }
+
   async function loadFiles() {
     const r = await fetch(api('/api/king-docs/files'), { headers: authHeaders() });
     if (!r.ok) return;
     const j = await r.json();
     filesList = (j.data && j.data.files) || [];
+    renderDocSelectCards();
     const el = document.getElementById('file-list');
-    if (!filesList.length) { el.innerHTML = '<p class="sub">Nenhum ficheiro.</p>'; renderShareTable(); return; }
+    if (!filesList.length) { el.innerHTML = '<p class="sub">Nenhum ficheiro.</p>'; renderShareTable(); renderExtraDocs(); return; }
     el.innerHTML = filesList.map(f => '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code></span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>').join('');
     el.querySelectorAll('.btn-del-file').forEach(b => {
       b.onclick = async function() {
@@ -472,14 +540,21 @@
     updateSharePreview();
   }
 
+  document.getElementById('doc-file-hidden').addEventListener('change', async function () {
+    var inp = this;
+    if (!inp.files || !inp.files[0] || !pendingDocType) { pendingDocType = ''; inp.value = ''; return; }
+    var ok = await uploadKingDocFile(inp.files[0], pendingDocType);
+    pendingDocType = '';
+    inp.value = '';
+    if (!ok) { alert('Erro no upload'); return; }
+    loadFiles();
+  });
+
   document.getElementById('up-btn').onclick = async function() {
     const inp = document.getElementById('up-file');
     if (!inp.files || !inp.files[0]) { alert('Escolhe um ficheiro'); return; }
-    const fd = new FormData();
-    fd.append('file', inp.files[0]);
-    fd.append('docType', document.getElementById('up-type').value || 'documento');
-    const r = await fetch(api('/api/king-docs/files'), { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }, body: fd });
-    if (!r.ok) { alert('Erro no upload'); return; }
+    var ok = await uploadKingDocFile(inp.files[0], document.getElementById('up-type').value || 'documento');
+    if (!ok) { alert('Erro no upload'); return; }
     inp.value = '';
     loadFiles();
   };
@@ -628,6 +703,7 @@
     } catch (e) {}
   }
 
+  renderDocSelectCards();
   loadVault().then(loadProfileHints);
 })();
   </script>
