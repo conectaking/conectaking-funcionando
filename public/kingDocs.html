@@ -26,21 +26,48 @@
   </script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;700&display=swap" rel="stylesheet"/>
   <style>
-    :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; --bad:#c0392b; }
+    :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; --bad:#c0392b; --banner-bg:#e8f0ea; --hero-name-bg:#faf9f7; --trust-bg:#faf9f7; --summary-bg:#faf9f7; }
+    body.kd-theme-dark {
+      --bg:#121814; --card:#1a221c; --ink:#e8ebe9; --muted:#9ca8a2; --accent:#7bc99a; --border:#2f3d35; --bad:#e57373;
+      --banner-bg:#1a2e22; --hero-name-bg:#222b26; --trust-bg:#1e2621; --summary-bg:#1e2621;
+    }
+    body.kd-theme-dark .banner { border-color: var(--accent); }
+    body.kd-theme-dark .tab { background: var(--card); }
+    body.kd-theme-dark .tab.active { background: #243028; }
+    body.kd-theme-dark .btn.secondary { background: #2a332e; color: var(--ink); }
+    body.kd-theme-dark .linkbox { background: #222b26; color: var(--ink); }
+    body.kd-theme-dark .doc-card { background: #1e2a22; border-color: var(--accent); }
+    body.kd-theme-dark .doc-card.selected { background: #243528; }
+    body.kd-theme-dark .kd-load-overlay { background: rgba(18,24,20,.88); }
     * { box-sizing: border-box; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); padding:1rem 1rem 3rem; }
     .wrap { max-width: 1100px; margin: 0 auto; }
-    .banner { background: #e8f0ea; border: 1px dashed var(--accent); color: var(--accent); padding: .65rem .9rem; border-radius: 8px; font-size: .82rem; margin-bottom: 1rem; }
+    .kd-top-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .banner { background: var(--banner-bg); border: 1px dashed var(--accent); color: var(--accent); padding: .65rem .9rem; border-radius: 8px; font-size: .82rem; margin: 0; flex: 1; min-width: min(100%, 240px); }
+    .kd-help { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 .85rem; margin-bottom: 1rem; font-size: .82rem; }
+    .kd-help summary { cursor: pointer; padding: .65rem 0; font-weight: 600; color: var(--accent); list-style: none; }
+    .kd-help summary::-webkit-details-marker { display: none; }
+    .kd-help[open] summary { border-bottom: 1px solid var(--border); margin-bottom: .5rem; }
+    .kd-help ul { margin: 0 0 .75rem; padding-left: 1.15rem; color: var(--muted); line-height: 1.5; }
+    .kd-theme-btn { white-space: nowrap; padding: .45rem .85rem; font-size: .78rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--ink); cursor: pointer; font-family: inherit; font-weight: 600; }
+    .kd-theme-btn:hover { border-color: var(--accent); color: var(--accent); }
     h1 { font-size: 1.45rem; margin: 0 0 .35rem; }
     .sub { color: var(--muted); font-size: .85rem; margin-bottom: 1.2rem; }
     .tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .tab { padding: .45rem .9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: .82rem; }
-    .tab.active { border-color: var(--accent); background: #e8f0ea; color: var(--accent); font-weight: 600; }
+    .tab { padding: .45rem .9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: .82rem; color: var(--ink); }
+    .tab.active { border-color: var(--accent); background: var(--banner-bg); color: var(--accent); font-weight: 600; }
+    .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
     .panel.active { display: block; }
     .group { margin-bottom: 1.2rem; }
     .group h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 .6rem; }
+    details.kd-collapsible { border: 1px solid var(--border); border-radius: 10px; margin-bottom: .75rem; background: var(--card); }
+    details.kd-collapsible summary { cursor: pointer; padding: .65rem .85rem; font-size: .78rem; font-weight: 700; color: var(--accent); letter-spacing: .04em; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    details.kd-collapsible summary::-webkit-details-marker { display: none; }
+    details.kd-collapsible summary::after { content: '▾'; font-size: .7rem; opacity: .7; }
+    details.kd-collapsible[open] summary::after { transform: rotate(180deg); }
+    details.kd-collapsible .kd-collapsible-body { padding: 0 .85rem .85rem; }
     .row { display: grid; grid-template-columns: 140px 1fr; gap: .5rem; align-items: center; margin-bottom: .45rem; font-size: .88rem; }
     .row label { color: var(--muted); font-size: .78rem; }
     input[type=text], input[type=password], input[type=number], select {
@@ -98,14 +125,16 @@
     .doc-card .dc-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); margin-bottom: .4rem; line-height: 1.25; }
     .doc-card .dc-status { font-size: .7rem; color: #2d5a3d; font-weight: 600; }
     .doc-card:not(.selected) .dc-status { color: var(--muted); font-weight: 500; }
+    .doc-card .dc-date { font-size: .62rem; color: var(--muted); margin-top: .25rem; }
+    body.kd-theme-dark .doc-card .dc-status { color: var(--accent); }
     .doc-fallback-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 1rem 0 .5rem; }
     /* Painel pessoal — topo */
     .kd-hero-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.25rem 1.35rem; box-shadow: 0 4px 24px rgba(0,0,0,.07); margin-bottom: 1.25rem; }
     .kd-hero-top { text-align: center; margin-bottom: 1.15rem; }
     .kd-hero-badge { display: inline-block; background: var(--accent); color: #fff; font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .38rem 1rem; border-radius: 999px; margin-bottom: .95rem; font-family: 'DM Sans', sans-serif; }
     .kd-hero-name { display: block; width: 100%; max-width: 560px; margin: 0 auto .55rem; text-align: center; font-family: 'Source Serif 4', Georgia, serif; font-size: clamp(1.65rem, 4vw, 2.2rem); font-weight: 700; color: var(--ink); border: none; border-bottom: 2px solid transparent; background: transparent; padding: .25rem .6rem; border-radius: 6px; transition: background .15s, border-color .15s; }
-    .kd-hero-name:hover { background: #faf9f7; }
-    .kd-hero-name:focus { outline: none; border-bottom-color: var(--accent); background: #faf9f7; }
+    .kd-hero-name:hover { background: var(--hero-name-bg); }
+    .kd-hero-name:focus { outline: none; border-bottom-color: var(--accent); background: var(--hero-name-bg); }
     .kd-hero-name::placeholder { color: #9a9590; font-weight: 600; }
     .kd-hero-sub { margin: 0 auto; font-size: .88rem; color: var(--muted); max-width: 26rem; line-height: 1.45; }
     .kd-hero-atalhos { text-align: left; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: .25rem; }
@@ -126,11 +155,26 @@
     /* Partilha — destaque + confiança */
     .kd-share-head { border-left: 4px solid var(--accent); padding-left: .85rem; margin-bottom: 1rem; }
     .kd-share-head h2 { font-size: 1.05rem; margin: 0 0 .35rem; font-weight: 700; color: var(--ink); }
-    .kd-trust-strip { background: #faf9f7; border: 1px solid var(--border); border-radius: 10px; padding: .75rem .9rem; margin-bottom: 1rem; font-size: .8rem; color: var(--muted); line-height: 1.5; }
+    .kd-trust-strip { background: var(--trust-bg); border: 1px solid var(--border); border-radius: 10px; padding: .75rem .9rem; margin-bottom: 1rem; font-size: .8rem; color: var(--muted); line-height: 1.5; }
     .kd-trust-strip strong { display: block; color: var(--accent); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem; }
     .kd-trust-strip ul { margin: 0; padding-left: 1.1rem; }
-    .kd-share-summary { margin: 0 0 .9rem; font-size: .84rem; color: var(--muted); padding: .55rem .65rem; border-radius: 8px; background: #faf9f7; border: 1px dashed var(--border); }
-    .kd-share-summary.kd-share-summary--ok { border-color: #b8d4c0; background: #e8f0ea; color: var(--accent); }
+    .kd-share-summary { margin: 0 0 .9rem; font-size: .84rem; color: var(--muted); padding: .55rem .65rem; border-radius: 8px; background: var(--summary-bg); border: 1px dashed var(--border); }
+    .kd-share-summary.kd-share-summary--ok { border-color: #b8d4c0; background: var(--banner-bg); color: var(--accent); }
+    .kd-models-bar { background: var(--trust-bg); border: 1px solid var(--border); border-radius: 10px; padding: .75rem .9rem; margin-bottom: 1rem; }
+    .kd-models-bar .kd-models-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: .5rem; display: block; }
+    .kd-models-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .5rem; }
+    .kd-models-row input[type=text] { max-width: 160px; }
+    .kd-models-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .kd-chip { display: inline-flex; align-items: center; gap: .25rem; padding: .28rem .55rem; border-radius: 999px; border: 1px solid var(--border); background: var(--card); font-size: .74rem; }
+    .kd-chip button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: .72rem; padding: 0 .2rem; font-weight: 700; }
+    .kd-hint { font-size: .75rem; color: var(--muted); margin: .25rem 0 0; line-height: 1.4; }
+    .kd-modal { display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; padding: 1rem; }
+    .kd-modal.kd-modal--open { display: flex; }
+    .kd-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+    .kd-modal-box { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; max-width: 320px; width: 100%; box-shadow: 0 16px 48px rgba(0,0,0,.2); }
+    .kd-modal-box h3 { margin: 0 0 .5rem; font-size: 1rem; }
+    #kd-qr-wrap { display: flex; justify-content: center; margin: 1rem 0; min-height: 200px; align-items: center; }
+    #kd-qr-wrap canvas { border-radius: 8px; }
     .kd-badge { display: inline-block; font-size: .65rem; padding: .2rem .45rem; border-radius: 6px; font-weight: 600; }
     .kd-badge-ok { background: #e8f0ea; color: var(--accent); }
     .kd-badge-muted { background: #eceae7; color: var(--muted); }
@@ -141,14 +185,27 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="banner"><strong>King Docs</strong> — cofre privado: estes dados não aparecem no teu cartão público. Só saem daqui quando <strong>crias um link temporário</strong> ou <strong>exportas / copias</strong> tu mesmo.</div>
+    <div class="kd-top-bar">
+      <div class="banner"><strong>King Docs</strong> — cofre privado: estes dados não aparecem no teu cartão público. Só saem daqui quando <strong>crias um link temporário</strong> ou <strong>exportas / copias</strong> tu mesmo.</div>
+      <button type="button" class="kd-theme-btn" id="kd-theme-toggle" title="Alternar tema claro/escuro">Tema escuro</button>
+    </div>
+
+    <details class="kd-help">
+      <summary>Como funciona o cofre? (ajuda rápida)</summary>
+      <ul>
+        <li><strong>Dados</strong> — preenche e guarda; podes importar do teu cartão Conecta King ou exportar PDF como backup.</li>
+        <li><strong>Documentos</strong> — envia PDFs ou imagens; ficam guardados até apagares.</li>
+        <li><strong>Criar link</strong> — escolhe o que entra no link; o destinatário só vê isso. Define prazo, senha ou limite de vistas.</li>
+        <li><strong>Os meus links</strong> — copia URLs ou revoga quando não precisares. Nada disto envia e-mail automaticamente.</li>
+      </ul>
+    </details>
 
     <section class="kd-hero-card" aria-label="Painel pessoal">
       <div class="kd-hero-top">
         <div class="kd-hero-badge">Painel pessoal</div>
         <label class="visually-hidden" for="sh-name">Nome a mostrar no link</label>
         <input type="text" id="sh-name" class="kd-hero-name" placeholder="Seu nome" autocomplete="name"/>
-        <p class="kd-hero-sub">Selecione o que quiser partilhar e copie com um clique</p>
+        <p class="kd-hero-sub">Escolhe o que queres partilhar e copia com um clique</p>
       </div>
       <div class="kd-hero-atalhos">
         <div class="atalhos-block">
@@ -171,15 +228,15 @@
 
     <p class="sub" id="auth-hint"></p>
 
-    <div class="tabs">
-      <button type="button" class="tab active" data-panel="p-dados">Dados</button>
-      <button type="button" class="tab" data-panel="p-docs">Documentos</button>
-      <button type="button" class="tab" data-panel="p-share">Criar link</button>
-      <button type="button" class="tab" data-panel="p-links">Os meus links</button>
+    <div class="tabs" id="kd-tabs" role="tablist" aria-label="Secções King Docs">
+      <button type="button" class="tab active" role="tab" aria-selected="true" aria-controls="p-dados" id="tab-p-dados" data-panel="p-dados">Dados</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-docs" id="tab-p-docs" data-panel="p-docs">Documentos</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-share" id="tab-p-share" data-panel="p-share">Criar link</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-links" id="tab-p-links" data-panel="p-links">Os meus links</button>
     </div>
 
-    <div id="p-dados" class="panel active"></div>
-    <div id="p-docs" class="panel">
+    <div id="p-dados" class="panel active" role="tabpanel" aria-labelledby="tab-p-dados"></div>
+    <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
       <p class="sub">Envia PDF ou imagem. Usa os cartões abaixo para cada tipo de documento; depois podes associar cada ficheiro a um campo na aba «Criar link».</p>
       <div class="doc-panel-card">
         <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Documentos — selecionar</div>
@@ -194,7 +251,7 @@
       <div id="file-list" style="margin-top:1rem"></div>
     </div>
 
-    <div id="p-share" class="panel">
+    <div id="p-share" class="panel" role="tabpanel" aria-labelledby="tab-p-share">
       <div class="kd-share-head">
         <h2>Criar link de partilha</h2>
         <p class="sub" style="margin-bottom:0">Escolhe o que entra no link: por campo podes enviar <strong>só texto</strong>, <strong>só ficheiro</strong> ou <strong>ambos</strong>. O <strong>nome</strong> no topo é o que editas no painel pessoal acima.</p>
@@ -206,6 +263,15 @@
           <li>Podes definir <strong>prazo</strong> (horas), <strong>senha</strong> e <strong>limite de visualizações</strong> abaixo.</li>
           <li>Depois de gerado, podes <strong>revogar</strong> o link na aba «Os meus links».</li>
         </ul>
+      </div>
+
+      <div class="kd-models-bar">
+        <span class="kd-models-title">Os teus modelos <span style="font-weight:400;text-transform:none;letter-spacing:0">(guardados neste dispositivo)</span></span>
+        <div class="kd-models-row">
+          <input type="text" id="kd-model-name" placeholder="Nome do modelo" maxlength="40" aria-label="Nome do modelo"/>
+          <button type="button" class="btn secondary" id="btn-save-model">Guardar seleção atual</button>
+        </div>
+        <div class="kd-models-chips" id="kd-models-chips"></div>
       </div>
 
       <p class="kd-share-summary" id="share-confirm-hint">Marca campos na grelha e confirma o resumo à direita antes de gerar o link.</p>
@@ -229,9 +295,12 @@
               <label>Senha (opcional)</label>
               <input type="password" id="sh-pass" placeholder="Vazio = sem senha"/>
             </div>
-            <div class="row" style="grid-template-columns: 160px 1fr;">
+            <div class="row" style="grid-template-columns: 160px 1fr; align-items: start;">
               <label>Máx. visualizações</label>
-              <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1"/>
+              <div>
+                <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1" aria-describedby="hint-maxv"/>
+                <p class="kd-hint" id="hint-maxv">Coloca <strong>1</strong> para um link de <strong>uso único</strong> (fecha após a primeira abertura bem-sucedida).</p>
+              </div>
             </div>
           </div>
           <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link seguro</button></p>
@@ -246,7 +315,7 @@
       </div>
     </div>
 
-    <div id="p-links" class="panel">
+    <div id="p-links" class="panel" role="tabpanel" aria-labelledby="tab-p-links">
       <p class="sub" style="margin-top:0">Links que criaste: copia, partilha ou revoga. <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
       <div id="links-list"></div>
     </div>
@@ -256,6 +325,16 @@
       <p class="kd-load-text">A carregar o teu cofre…</p>
     </div>
     <div id="kd-toast-host" aria-live="polite" aria-relevant="additions"></div>
+
+    <div id="kd-qr-modal" class="kd-modal" aria-hidden="true">
+      <div class="kd-modal-backdrop" id="kd-qr-backdrop"></div>
+      <div class="kd-modal-box" role="dialog" aria-modal="true" aria-labelledby="kd-qr-title">
+        <h3 id="kd-qr-title">QR Code do link</h3>
+        <p class="sub" style="margin:0 0 .5rem">Escaneia com o telemóvel. Trata o link como confidencial.</p>
+        <div id="kd-qr-wrap"></div>
+        <p style="margin:0"><button type="button" class="btn secondary" id="kd-qr-close">Fechar</button></p>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -283,6 +362,7 @@
     var host = document.getElementById('kd-toast-host');
     if (!host) return;
     var el = document.createElement('div');
+    el.setAttribute('role', 'status');
     el.className = 'kd-toast' + (variant === 'ok' ? ' kd-toast--ok' : variant === 'err' ? ' kd-toast--err' : ' kd-toast--neutral');
     el.textContent = message;
     host.appendChild(el);
@@ -304,6 +384,169 @@
       var o2 = document.getElementById('kd-load-overlay');
       if (o2) o2.setAttribute('aria-hidden', 'true');
     }
+  }
+
+  var THEME_KEY = 'kingDocs_theme';
+  function applyTheme(dark) {
+    document.body.classList.toggle('kd-theme-dark', !!dark);
+    var btn = document.getElementById('kd-theme-toggle');
+    if (btn) btn.textContent = dark ? 'Tema claro' : 'Tema escuro';
+    try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch (e) {}
+  }
+  function initTheme() {
+    try {
+      applyTheme(localStorage.getItem(THEME_KEY) === 'dark');
+    } catch (e) { applyTheme(false); }
+  }
+
+  var MODELS_KEY = 'kingDocs_models_v1';
+  function loadModels() {
+    try {
+      var raw = localStorage.getItem(MODELS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveModels(arr) {
+    try { localStorage.setItem(MODELS_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function collectShareState() {
+    var rows = [];
+    document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function (tr) {
+      var fk = tr.getAttribute('data-fk');
+      var incl = tr.querySelector('.incl');
+      if (!incl) return;
+      var fid = incl.getAttribute('data-fid');
+      rows.push({
+        fk: fk,
+        incl: !!incl.checked,
+        st: !!(tr.querySelector('.st[data-fid="' + fid + '"]') && tr.querySelector('.st[data-fid="' + fid + '"]').checked),
+        sf: !!(tr.querySelector('.sf[data-fid="' + fid + '"]') && tr.querySelector('.sf[data-fid="' + fid + '"]').checked),
+        fileId: (function () {
+          var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
+          return sel && sel.value ? sel.value : '';
+        })()
+      });
+    });
+    var extraFileIds = [];
+    document.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+      var id = ch.getAttribute('data-fid');
+      var lab = document.querySelector('.xd-label[data-fid="' + id + '"]');
+      extraFileIds.push({ id: id, label: lab ? lab.value : '' });
+    });
+    return { rows: rows, extraFileIds: extraFileIds, hours: document.getElementById('sh-hours').value };
+  }
+  function applyShareState(state) {
+    if (!state || !state.rows) return;
+    clearAtalhoActive();
+    document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function (tr) {
+      var fk = tr.getAttribute('data-fk');
+      var saved = state.rows.find(function (r) { return r.fk === fk; });
+      var incl = tr.querySelector('.incl');
+      if (!incl) return;
+      var fid = incl.getAttribute('data-fid');
+      if (!saved) {
+        incl.checked = false;
+        return;
+      }
+      incl.checked = !!saved.incl;
+      var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+      var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
+      var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
+      if (st) st.checked = !!saved.st;
+      if (sf) sf.checked = !!saved.sf;
+      if (sel && saved.fileId) sel.value = String(saved.fileId);
+    });
+    document.querySelectorAll('.xd-check').forEach(function (ch) { ch.checked = false; });
+    (state.extraFileIds || []).forEach(function (ex) {
+      var ch = document.querySelector('.xd-check[data-fid="' + ex.id + '"]');
+      if (ch) ch.checked = true;
+      var lab = document.querySelector('.xd-label[data-fid="' + ex.id + '"]');
+      if (lab && ex.label != null) lab.value = ex.label;
+    });
+    if (state.hours != null && document.getElementById('sh-hours')) document.getElementById('sh-hours').value = state.hours;
+    updateSharePreview();
+  }
+  function renderModelsChips() {
+    var el = document.getElementById('kd-models-chips');
+    if (!el) return;
+    var arr = loadModels();
+    el.innerHTML = arr.map(function (m, i) {
+      return '<span class="kd-chip">' + escapeHtml(m.name) +
+        ' <button type="button" data-apply="' + i + '">Aplicar</button>' +
+        ' <button type="button" data-del="' + i + '" aria-label="Remover modelo">×</button></span>';
+    }).join('');
+    el.querySelectorAll('[data-apply]').forEach(function (b) {
+      b.onclick = function () {
+        var list = loadModels();
+        var m = list[parseInt(this.getAttribute('data-apply'), 10)];
+        if (m && m.state) applyShareState(m.state);
+        showToast('Modelo aplicado.', 'ok');
+      };
+    });
+    el.querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = function () {
+        var list = loadModels();
+        list.splice(parseInt(this.getAttribute('data-del'), 10), 1);
+        saveModels(list);
+        renderModelsChips();
+        showToast('Modelo removido.', 'neutral');
+      };
+    });
+  }
+
+  function formatShortDate(d) {
+    if (!d || isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function latestForDocType(docType) {
+    var t = String(docType).trim();
+    var best = null;
+    filesList.forEach(function (f) {
+      if (String(f.doc_type || '').trim() !== t || !f.created_at) return;
+      var d = new Date(f.created_at);
+      if (!best || d > best) best = d;
+    });
+    return best;
+  }
+  function openQrModal(url) {
+    var modal = document.getElementById('kd-qr-modal');
+    var wrap = document.getElementById('kd-qr-wrap');
+    if (!modal || !wrap) return;
+    wrap.innerHTML = '';
+    modal.classList.add('kd-modal--open');
+    modal.setAttribute('aria-hidden', 'false');
+    function draw() {
+      if (typeof QRCode === 'undefined') {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        s.onload = function () { draw(); };
+        document.head.appendChild(s);
+        return;
+      }
+      var canvas = document.createElement('canvas');
+      var dark = document.body.classList.contains('kd-theme-dark');
+      QRCode.toCanvas(canvas, url, {
+        width: 220,
+        margin: 2,
+        color: { dark: dark ? '#e8ebe9' : '#1a1714', light: dark ? '#1a221c' : '#ffffff' }
+      }, function (err) {
+        if (err) {
+          wrap.textContent = 'Não foi possível gerar o QR.';
+          return;
+        }
+        wrap.appendChild(canvas);
+      });
+    }
+    draw();
+  }
+  function closeQrModal() {
+    var modal = document.getElementById('kd-qr-modal');
+    if (modal) {
+      modal.classList.remove('kd-modal--open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    var w = document.getElementById('kd-qr-wrap');
+    if (w) w.innerHTML = '';
   }
 
   /** Cartões «Documentos — selecionar»: docType enviado no upload (tem de bater com a lista de ficheiros) */
@@ -356,12 +599,12 @@
     html += '<button type="button" class="btn secondary" id="btn-export-pdf">Exportar PDF</button>';
     html += '</div>';
     GROUPS.forEach(g => {
-      html += '<div class="group"><h3>' + g.title + '</h3>';
+      html += '<details class="kd-collapsible" open><summary>' + escapeHtml(g.title) + '</summary><div class="kd-collapsible-body">';
       g.keys.forEach(k => {
         const v = (fieldData[g.id] && fieldData[g.id][k]) || '';
         html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '" data-k="' + escapeHtml(k) + '" value="' + escapeAttr(v) + '"/></div>';
       });
-      html += '</div>';
+      html += '</div></details>';
     });
     el.innerHTML = html;
     document.getElementById('btn-save-vault').onclick = saveVault;
@@ -458,10 +701,13 @@
     root.innerHTML = DOC_CARD_PRESETS.map(function (p) {
       var sel = fileExistsForDocType(p.docType);
       var cls = 'doc-card' + (sel ? ' selected' : '');
+      var lastD = latestForDocType(p.docType);
+      var dateLine = lastD ? '<div class="dc-date">Último envio: ' + escapeHtml(formatShortDate(lastD)) + '</div>' : '';
       return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '" title="Enviar ' + escapeAttr(p.label) + '">' +
         '<div class="dc-icon" aria-hidden="true">' + p.icon + '</div>' +
         '<div class="dc-title">' + escapeHtml(p.label) + '</div>' +
-        '<div class="dc-status">' + (sel ? '✓ Selecionado' : 'Toca para enviar') + '</div>' +
+        '<div class="dc-status">' + (sel ? '✓ No cofre' : 'Toca para enviar') + '</div>' +
+        dateLine +
         '</button>';
     }).join('');
     root.querySelectorAll('.doc-card[data-doc-type]').forEach(function (btn) {
@@ -489,7 +735,12 @@
     renderDocSelectCards();
     const el = document.getElementById('file-list');
     if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa os cartões acima ou «Outro documento» para enviar o primeiro.</p>'; renderShareTable(); renderExtraDocs(); return; }
-    el.innerHTML = filesList.map(f => '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code></span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>').join('');
+    el.innerHTML = filesList.map(f => {
+      var dt = f.created_at ? formatShortDate(new Date(f.created_at)) : '';
+      return '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
+        (dt ? ' <span style="opacity:.78;font-size:.78rem">· ' + escapeHtml(dt) + '</span>' : '') +
+        '</span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>';
+    }).join('');
     el.querySelectorAll('.btn-del-file').forEach(b => {
       b.onclick = async function() {
         if (!confirm('Apagar este ficheiro do cofre?')) return;
@@ -727,11 +978,12 @@
     const j = await r.json();
     const d = j.data || {};
     const fullUrl = window.location.origin + (d.shareUrl || '');
-    out.innerHTML = '<p class="okmsg">Link criado — já podes copiar ou enviar por WhatsApp.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p class="btn-row"><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button> <button type="button" class="btn secondary" id="btn-wa-link">WhatsApp</button></p>';
+    out.innerHTML = '<p class="okmsg">Link criado — já podes copiar, mostrar QR ou enviar por WhatsApp.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p class="btn-row"><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button> <button type="button" class="btn secondary" id="btn-qr-link">QR Code</button> <button type="button" class="btn secondary" id="btn-wa-link">WhatsApp</button></p>';
     showToast('Link gerado com sucesso.', 'ok');
     document.getElementById('btn-copy-link').onclick = function() {
       navigator.clipboard.writeText(fullUrl).then(function() { showToast('URL copiada para a área de transferência.', 'ok'); });
     };
+    document.getElementById('btn-qr-link').onclick = function() { openQrModal(fullUrl); };
     document.getElementById('btn-wa-link').onclick = function() {
       const msg = encodeURIComponent('Segue o link confidencial (King Docs):\n' + fullUrl);
       window.open('https://wa.me/?text=' + msg, '_blank', 'noopener,noreferrer');
@@ -811,12 +1063,37 @@
 
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', function() {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(function (x) {
+        x.classList.remove('active');
+        x.setAttribute('aria-selected', 'false');
+      });
       document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
       this.classList.add('active');
+      this.setAttribute('aria-selected', 'true');
       document.getElementById(this.getAttribute('data-panel')).classList.add('active');
       if (this.getAttribute('data-panel') === 'p-share') updateSharePreview();
     });
+  });
+
+  document.getElementById('kd-theme-toggle').onclick = function () {
+    applyTheme(!document.body.classList.contains('kd-theme-dark'));
+  };
+  document.getElementById('btn-save-model').onclick = function () {
+    var nameEl = document.getElementById('kd-model-name');
+    var name = nameEl && nameEl.value.trim();
+    if (!name) { showToast('Escreve um nome para o modelo.', 'neutral'); return; }
+    var arr = loadModels();
+    if (arr.length >= 12) { showToast('Limite de 12 modelos neste dispositivo. Remove um antes.', 'neutral'); return; }
+    arr.push({ name: name, state: collectShareState(), savedAt: Date.now() });
+    saveModels(arr);
+    if (nameEl) nameEl.value = '';
+    renderModelsChips();
+    showToast('Modelo guardado neste dispositivo.', 'ok');
+  };
+  document.getElementById('kd-qr-close').onclick = closeQrModal;
+  document.getElementById('kd-qr-backdrop').onclick = closeQrModal;
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeQrModal();
   });
 
   async function loadProfileHints() {
@@ -831,6 +1108,8 @@
     } catch (e) {}
   }
 
+  initTheme();
+  renderModelsChips();
   renderDocSelectCards();
   loadVault().then(loadProfileHints);
 })();
