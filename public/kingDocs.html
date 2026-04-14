@@ -315,6 +315,8 @@
     .kd-modal-field label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: .28rem; font-weight: 600; }
     .kd-modal-field input[type=text], .kd-modal-field select { width: 100%; }
     .kd-modal-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+    .kd-sc-actions { width: 100%; align-items: center; }
+    .kd-sc-actions-fill { flex: 1; min-width: .5rem; }
     /* Seletor de emoji no modal de atalho */
     .kd-sc-emoji-field { position: relative; z-index: 2; }
     .kd-emoji-picker-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
@@ -641,9 +643,11 @@
           <div id="kd-sc-extra-docs"></div>
         </div>
         <p class="kd-hint" style="margin:.35rem 0 0">Ao abrir, copiamos a seleção atual da página para editares. Podes <strong>substituir tudo</strong> marcando outra combinação.</p>
-        <div class="kd-modal-actions">
-          <button type="button" class="btn" id="kd-sc-save">Guardar atalho</button>
+        <div class="kd-modal-actions kd-sc-actions">
+          <button type="button" class="btn bad" id="kd-sc-delete" hidden>Excluir</button>
+          <span class="kd-sc-actions-fill" aria-hidden="true"></span>
           <button type="button" class="btn secondary" id="kd-sc-cancel">Cancelar</button>
+          <button type="button" class="btn" id="kd-sc-save">Guardar atalho</button>
         </div>
       </div>
     </div>
@@ -1216,6 +1220,7 @@
     }
     var editEl = document.getElementById('kd-sc-edit-id');
     if (editEl) editEl.value = editId || '';
+    setShortcutDeleteVisible(!!editId);
     var titleEl = document.getElementById('kd-shortcut-title');
     if (titleEl) titleEl.textContent = editId ? 'Editar atalho' : 'Novo atalho';
     var nameEl = document.getElementById('kd-sc-name');
@@ -1272,8 +1277,15 @@
     renderExtraDocsInto('kd-sc-extra-docs');
     applyShareStateToRoots(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), st, false);
   }
+  function setShortcutDeleteVisible(show) {
+    var delBtn = document.getElementById('kd-sc-delete');
+    if (!delBtn) return;
+    if (show) delBtn.removeAttribute('hidden');
+    else delBtn.setAttribute('hidden', '');
+  }
   function closeShortcutModal() {
     closeEmojiPopover();
+    setShortcutDeleteVisible(false);
     var m = document.getElementById('kd-shortcut-modal');
     if (m) {
       m.classList.remove('kd-modal--open');
@@ -1332,6 +1344,7 @@
     }
     var editEl = document.getElementById('kd-sc-edit-id');
     if (editEl) editEl.value = '';
+    setShortcutDeleteVisible(false);
     var titleEl = document.getElementById('kd-shortcut-title');
     if (titleEl) titleEl.textContent = 'Personalizar atalho';
     var meta = PRESET_BAR_META[presetId] || { name: String(presetId), emoji: '📌' };
@@ -2614,6 +2627,20 @@
   document.getElementById('btn-add-custom-atalho').onclick = function () { openShortcutModal(); };
   document.getElementById('kd-sc-cancel').onclick = closeShortcutModal;
   document.getElementById('kd-shortcut-backdrop').onclick = closeShortcutModal;
+  document.getElementById('kd-sc-delete').onclick = function () {
+    var editId = (document.getElementById('kd-sc-edit-id') && document.getElementById('kd-sc-edit-id').value || '').trim();
+    if (!editId) return;
+    if (!window.confirm('Excluir este atalho? Esta ação não pode ser desfeita.')) return;
+    var arr = loadCustomShortcuts();
+    var ix = arr.findIndex(function (x) { return x.id === editId; });
+    if (ix < 0) { showToast('Atalho não encontrado.', 'err'); return; }
+    arr.splice(ix, 1);
+    saveCustomShortcuts(arr);
+    renderCustomShortcuts();
+    clearAtalhoActive();
+    closeShortcutModal();
+    showToast('Atalho excluído.', 'ok');
+  };
   document.getElementById('kd-sc-save').onclick = function () {
     var name = document.getElementById('kd-sc-name').value.trim();
     if (!name) { showToast('Escreve um nome para o atalho.', 'neutral'); return; }
