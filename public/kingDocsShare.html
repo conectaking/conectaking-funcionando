@@ -38,6 +38,7 @@
     .sec { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--border); }
     .sec h2 { font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 .5rem; }
     .line { display: flex; justify-content: flex-start; gap: .5rem; font-size: .88rem; margin: .35rem 0; align-items: flex-start; flex-wrap: wrap; }
+    .line > div .kd-preview-slot--inline { width: 100%; text-align: center; margin: .35rem 0 .5rem; }
     .line label { color: var(--muted); font-size: .72rem; min-width: 90px; }
     .line .val { word-break: break-word; flex: 1; text-align: right; }
     .actions { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: flex-end; margin-top: .25rem; }
@@ -48,6 +49,11 @@
     .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; align-items: center; }
     .bad { color: #c0392b; font-size: .88rem; }
     .hint { font-size: .78rem; color: var(--muted); margin-top: .5rem; }
+    .kd-preview-slot { margin: .5rem 0; min-height: 1rem; }
+    .kd-preview-slot--inline { margin: .4rem 0 .5rem; width: 100%; }
+    .kd-share-preview-img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); display: block; background: #faf9f7; }
+    .kd-share-preview-pdf { width: 100%; min-height: 280px; border: 1px solid var(--border); border-radius: 10px; background: #1a1a1a; }
+    .kd-preview-loading { font-size: .78rem; color: var(--muted); margin: .25rem 0; }
   </style>
 </head>
 <body>
@@ -139,6 +145,41 @@
     return t.trim();
   }
 
+  function hydratePreviewSlots(scope) {
+    scope.querySelectorAll('.kd-preview-slot').forEach(function (slot) {
+      var id = slot.getAttribute('data-file-id');
+      var mimeHint = (slot.getAttribute('data-mime') || '').toLowerCase();
+      if (!id) return;
+      var fileUrl = api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + id);
+      fetch(fileUrl, { headers: headersDl() }).then(function (r) {
+        if (!r.ok) throw new Error('load');
+        return r.blob();
+      }).then(function (blob) {
+        var mime = mimeHint || (blob.type || '').toLowerCase();
+        slot.innerHTML = '';
+        var bu = URL.createObjectURL(blob);
+        if (mime.indexOf('image/') === 0) {
+          var img = document.createElement('img');
+          img.className = 'kd-share-preview-img';
+          img.alt = 'Pré-visualização do documento';
+          img.src = bu;
+          slot.appendChild(img);
+        } else if (mime.indexOf('pdf') >= 0 || (blob.type && String(blob.type).indexOf('pdf') >= 0)) {
+          var iframe = document.createElement('iframe');
+          iframe.className = 'kd-share-preview-pdf';
+          iframe.src = bu;
+          iframe.title = 'Documento PDF';
+          slot.appendChild(iframe);
+        } else {
+          URL.revokeObjectURL(bu);
+          slot.innerHTML = '<p class="hint" style="margin:0">Pré-visualização não disponível para este tipo de ficheiro. Usa o botão para descarregar.</p>';
+        }
+      }).catch(function () {
+        slot.innerHTML = '<p class="bad" style="margin:0;font-size:.85rem">Não foi possível mostrar a pré-visualização.</p>';
+      });
+    });
+  }
+
   async function showData() {
     const r = await fetch(api('/api/king-docs/public/' + encodeURIComponent(token) + '/data'), { headers: headersJson() });
     if (r.status === 401) {
@@ -174,6 +215,8 @@
           html += '<div class="val">' + esc(row.text) + '</div>';
         }
         if (row.file) {
+          const fm = esc(row.file.mime || '');
+          html += '<div class="kd-preview-slot kd-preview-slot--inline" data-file-id="' + row.file.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização…</p></div>';
           const url = api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + row.file.id);
           html += '<div class="actions"><a class="btn kd-dl" href="' + esc(url) + '">Baixar ficheiro</a></div>';
         }
@@ -188,14 +231,18 @@
 
     (snap.extraDocs || []).forEach(ed => {
       html += '<div class="sec"><h2>' + esc(ed.label || 'Documento') + '</h2>';
+      const fm = esc(ed.mime || '');
+      html += '<div class="kd-preview-slot" data-file-id="' + ed.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização…</p></div>';
       const url = api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + ed.id);
-      html += '<a class="btn primary kd-dl" href="' + esc(url) + '">Baixar</a></div>';
+      html += '<div class="actions" style="margin-top:.5rem"><a class="btn primary kd-dl" href="' + esc(url) + '">Baixar</a></div></div>';
     });
 
     html += '<p class="hint">Os links de download só funcionam neste browser enquanto a sessão de partilha for válida. Se usaste senha, não feches o separador sem guardar o que precisas.</p>';
     html += '</div>';
 
     root.innerHTML = html;
+
+    hydratePreviewSlots(root);
 
     root.querySelector('#copy-all').onclick = function() {
       const txt = buildTextFromSnapshot(snap);
