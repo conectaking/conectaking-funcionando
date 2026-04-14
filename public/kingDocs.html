@@ -282,6 +282,12 @@
     .preview-line { padding: .2rem 0; border-bottom: 1px solid #f0ede8; word-break: break-word; }
     .preview-line .pl { color: var(--muted); font-size: .72rem; display: block; }
     .preview-line .pv { color: var(--ink); }
+    .preview-line--merged { padding: .45rem 0 .55rem; border-bottom: 1px solid #f0ede8; }
+    .preview-line--merged > .pl { font-weight: 700; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: .35rem; }
+    .pv-merge { display: flex; flex-direction: column; gap: .3rem; }
+    .pv-row { display: grid; grid-template-columns: 76px 1fr; gap: .4rem; font-size: .78rem; align-items: start; }
+    .pv-sub { color: var(--muted); font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; padding-top: .1rem; }
+    .kd-share-vault-hint { font-size: .62rem; color: var(--muted); margin: .35rem 0 0; line-height: 1.4; }
     .preview-empty { color: var(--muted); font-size: .82rem; padding: .5rem 0; }
     .preview-footer-msg { background: #e8f0ea; color: var(--accent); padding: .45rem .65rem; font-size: .75rem; display: flex; align-items: center; gap: .35rem; }
     .preview-de-envio .btn-clear { width: 100%; margin: 0; border-radius: 0 0 11px 11px; border: none; border-top: 1px solid var(--border); padding: .55rem; font-size: .8rem; }
@@ -562,11 +568,11 @@
     </div>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub"><strong>Cofre:</strong> clica nos tipos à <strong>esquerda</strong> — podes marcar <strong>vários</strong>. A <strong>pré-visualização dos ficheiros</strong> fica na <strong>coluna ao lado</strong> (como o resumo do link mais à direita). <strong>Incluir no link:</strong> cartões por campo abaixo; combina texto, ficheiros do cofre e documentos extra como quiseres. Novos ficheiros: aba <strong>Upload</strong>. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+      <p class="sub">Escolhe os <strong>tipos de documento</strong> à esquerda (vários). A <strong>pré-visualização</strong> fica ao lado; o <strong>Preview de envio</strong> à direita junta <strong>texto + ficheiro</strong> no mesmo bloco quando fizer sentido. Os ficheiros entram pelos cartões de cima (e pelo Upload). <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
       <div class="share-layout kd-docs-unified-layout doc-browse-layout">
         <div class="kd-docs-left-col">
           <div class="doc-panel-card">
-            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipo de documento (cofre)</div>
+            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipos de documento</div>
             <div class="kd-doc-vault-row">
               <div class="kd-doc-vault-grid-col">
                 <div id="doc-browse-root" class="doc-grid"></div>
@@ -598,8 +604,8 @@
           </div>
 
           <div class="doc-panel-card kd-docs-link-wrap">
-            <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — dados do cofre</div>
-            <p class="sub" style="margin-top:.5rem">Cada <strong>cartão</strong> é um campo (como os tipos do cofre): marca incluir e escolhe <strong>Texto</strong>, <strong>Ficheiro</strong> ou ambos. Podes combinar só documentos, só dados, ou os dois no mesmo link. O resumo está no <strong>Preview de envio</strong> à direita. O <strong>nome</strong> no topo do link vem do painel <strong>Dados</strong>. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+            <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — textos do perfil</div>
+            <p class="sub" style="margin-top:.5rem">Cada <strong>cartão</strong> é um campo de texto do teu perfil. Para levar também a <strong>imagem/PDF</strong> desse tipo (ex.: RG), marca o mesmo tipo nos <strong>cartões de cima</strong> — no preview, texto e ficheiro aparecem <strong>juntos</strong>. Documentos só no cofre: secção <strong>Documentos extra</strong> abaixo.</p>
             <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerares o link na aba Partilhar.</p>
             <div class="share-main" style="max-width:100%">
               <div class="share-grid" id="share-table-wrap"></div>
