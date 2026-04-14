@@ -2161,6 +2161,7 @@
     ensureFieldData();
     const sections = {};
     let count = 0;
+    var consumedVault = {};
 
     document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
       var incl = tr.querySelector('.incl');
@@ -2171,21 +2172,29 @@
       var k = parts.slice(1).join('|');
       var fid = incl.getAttribute('data-fid');
       var st = tr.querySelector('.st[data-fid="' + fid + '"]');
-      var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
-      var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
+      var hasText = st && st.checked;
+      var val = (fieldData[g] && fieldData[g][k] != null) ? String(fieldData[g][k]) : '';
+      var valDisp = val.trim() ? val : '(vazio)';
       var gInfo = GROUPS.find(function (x) { return x.id === g; });
       var title = gInfo ? gInfo.title : g;
       if (!sections[title]) sections[title] = [];
 
-      if (st && st.checked) {
-        var val = (fieldData[g] && fieldData[g][k] != null) ? String(fieldData[g][k]) : '';
-        sections[title].push({ kind: 'text', label: k, val: val.trim() ? val : '(vazio)' });
+      var dtHint = fieldKeyToDocTypeHint(k, g);
+      var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
+      var fn = null;
+      if (canon && docTypeSelectedInVault(canon)) fn = getLatestFileForDocType(canon);
+      if (!fn && canon) fn = findFileForFieldHint(g, k);
+      var fileLabel = fn ? ('#' + fn.id + ' ' + (fn.doc_type || '')) : '';
+      if (fn && canon) consumedVault[normalizeDocTypeKey(canon)] = true;
+
+      if (hasText && fn) {
+        sections[title].push({ kind: 'merged', label: k, val: valDisp, fileLabel: fileLabel });
         count++;
-      }
-      if (sf && sf.checked && sel && sel.value) {
-        var fidNum = sel.value;
-        var fn = filesList.find(function (f) { return String(f.id) === String(fidNum); });
-        sections[title].push({ kind: 'file', label: k, fileLabel: fn ? ('#' + fn.id + ' ' + (fn.doc_type || '')) : ('#' + fidNum) });
+      } else if (hasText && !fn) {
+        sections[title].push({ kind: 'text', label: k, val: valDisp });
+        count++;
+      } else if (!hasText && fn) {
+        sections[title].push({ kind: 'file', label: k, fileLabel: fileLabel });
         count++;
       }
     });
@@ -2201,6 +2210,21 @@
         count++;
       });
     }
+
+    docPreviewSelectedTypes.forEach(function (dt) {
+      var n = normalizeDocTypeKey(dt);
+      if (consumedVault[n]) return;
+      var f = getLatestFileForDocType(dt);
+      if (!f) return;
+      if (!sections['Documentos']) sections['Documentos'] = [];
+      sections['Documentos'].push({
+        kind: 'vault',
+        label: docTypeLabel(dt),
+        fileLabel: '#' + f.id + ' ' + (f.doc_type || ''),
+        docType: dt
+      });
+      count++;
+    });
 
     var showName = document.getElementById('sh-name') && document.getElementById('sh-name').value.trim();
     var showPhoto = document.getElementById('sh-photo') && document.getElementById('sh-photo').value.trim();
