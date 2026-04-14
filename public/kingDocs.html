@@ -1187,21 +1187,69 @@
     var w = document.getElementById('kd-qr-wrap');
     if (w) w.innerHTML = '';
   }
-  function openShortcutModal() {
+  function openShortcutModal(editId) {
     var m = document.getElementById('kd-shortcut-modal');
     if (m) {
       m.classList.add('kd-modal--open');
       m.setAttribute('aria-hidden', 'false');
     }
+    var editEl = document.getElementById('kd-sc-edit-id');
+    if (editEl) editEl.value = editId || '';
+    var titleEl = document.getElementById('kd-shortcut-title');
+    if (titleEl) titleEl.textContent = editId ? 'Editar atalho' : 'Novo atalho';
     var nameEl = document.getElementById('kd-sc-name');
     if (nameEl) nameEl.value = '';
     setShortcutEmoji('📌');
     closeEmojiPopover();
     var img = document.getElementById('kd-sc-img');
     if (img) img.value = '';
-    var mode = document.getElementById('kd-sc-mode');
-    if (mode) mode.value = 'preset';
-    syncShortcutModalMode();
+    if (editId) {
+      var arr = loadCustomShortcuts();
+      var it = arr.find(function (x) { return x.id === editId; });
+      if (it) {
+        if (nameEl) nameEl.value = it.name || '';
+        setShortcutEmoji(it.icon || '📌');
+        if (it.pairs && it.pairs.length) {
+          renderShareTableInto('kd-sc-share-grid', 'msc');
+          renderExtraDocsInto('kd-sc-extra-docs');
+          clearModalShareRoots();
+          it.pairs.forEach(function (entry) {
+            var fr = document.getElementById('kd-sc-share-grid');
+            var er = document.getElementById('kd-sc-extra-docs');
+            applyOnePresetEntryIn(fr, er, entry);
+          });
+        } else if (it.presetKey && PRESETS[it.presetKey]) {
+          renderShareTableInto('kd-sc-share-grid', 'msc');
+          renderExtraDocsInto('kd-sc-extra-docs');
+          clearModalShareRoots();
+          PRESETS[it.presetKey].forEach(function (entry) {
+            applyOnePresetEntryIn(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), entry);
+          });
+        } else {
+          syncModalShareFromMain();
+        }
+      } else {
+        syncModalShareFromMain();
+      }
+    } else {
+      syncModalShareFromMain();
+    }
+  }
+  function clearModalShareRoots() {
+    var fr = document.getElementById('kd-sc-share-grid');
+    var er = document.getElementById('kd-sc-extra-docs');
+    if (fr) {
+      fr.querySelectorAll('.incl').forEach(function (c) { c.checked = false; });
+      fr.querySelectorAll('.st').forEach(function (c) { c.checked = true; });
+      fr.querySelectorAll('.sf').forEach(function (c) { c.checked = false; });
+    }
+    if (er) er.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+  }
+  function syncModalShareFromMain() {
+    var st = collectShareState();
+    renderShareTableInto('kd-sc-share-grid', 'msc');
+    renderExtraDocsInto('kd-sc-extra-docs');
+    applyShareStateToRoots(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), st, false);
   }
   function closeShortcutModal() {
     closeEmojiPopover();
@@ -1211,16 +1259,6 @@
       m.setAttribute('aria-hidden', 'true');
     }
   }
-  function syncShortcutModalMode() {
-    var mode = document.getElementById('kd-sc-mode');
-    var wrap = document.getElementById('kd-sc-preset-wrap');
-    var hint = document.getElementById('kd-sc-hint-selection');
-    if (!mode || !wrap || !hint) return;
-    var isSel = mode.value === 'selection';
-    wrap.style.display = isSel ? 'none' : 'block';
-    hint.style.display = isSel ? 'block' : 'none';
-  }
-
   const GROUPS = [
     { id: 'pessoal', title: 'Dados pessoais', icon: '🪪', keys: ['Nome Completo','Data de Nasc.','RG','CPF'] },
     { id: 'contato', title: 'Contato', icon: '📱', keys: ['WhatsApp','E-mail','Instagram'] },
