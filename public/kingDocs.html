@@ -292,7 +292,7 @@
       <div class="doc-panel-card">
         <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Documentos selecionáveis no link</div>
         <p class="sub" style="margin-top:0">Espelho dos mesmos tipos — o que está no cofre aparece como «no cofre». Na aba <strong>Criar link</strong> marcas o que entra na partilha.</p>
-        <div id="doc-select-root-mirror" class="doc-grid" aria-hidden="true"></div>
+        <div id="doc-select-root-mirror" class="doc-grid"></div>
       </div>
       <p class="doc-fallback-title">Outro documento</p>
       <p class="sub" style="margin-top:0">Tipo livre (ex.: CPF, comprovante).</p>
@@ -325,7 +325,7 @@
         <div class="kd-models-chips" id="kd-models-chips"></div>
       </div>
 
-      <p class="kd-share-summary" id="share-confirm-hint">Marca campos na grelha e confirma o resumo à direita antes de gerar o link.</p>
+      <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerar o link.</p>
 
       <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
         <label>Foto (URL)</label>
@@ -359,7 +359,7 @@
         </div>
         <aside class="preview-de-envio" aria-label="Preview de envio">
           <div class="preview-header">Preview de envio <span id="preview-count" class="badge">0 itens</span></div>
-          <div id="share-preview-body" class="preview-body"><p class="preview-empty">Marca campos à esquerda para ver o resumo.</p></div>
+          <div id="share-preview-body" class="preview-body"><p class="preview-empty">Selecione campos ao lado (aba «Criar link»).</p></div>
           <div class="preview-footer-msg"><span>✓</span> Agora é só colar aonde quiser (depois de gerares o link).</div>
           <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
         </aside>
@@ -649,6 +649,38 @@
     var w = document.getElementById('kd-qr-wrap');
     if (w) w.innerHTML = '';
   }
+  function openShortcutModal() {
+    var m = document.getElementById('kd-shortcut-modal');
+    if (m) {
+      m.classList.add('kd-modal--open');
+      m.setAttribute('aria-hidden', 'false');
+    }
+    var nameEl = document.getElementById('kd-sc-name');
+    if (nameEl) nameEl.value = '';
+    var em = document.getElementById('kd-sc-emoji');
+    if (em) em.value = '';
+    var img = document.getElementById('kd-sc-img');
+    if (img) img.value = '';
+    var mode = document.getElementById('kd-sc-mode');
+    if (mode) mode.value = 'preset';
+    syncShortcutModalMode();
+  }
+  function closeShortcutModal() {
+    var m = document.getElementById('kd-shortcut-modal');
+    if (m) {
+      m.classList.remove('kd-modal--open');
+      m.setAttribute('aria-hidden', 'true');
+    }
+  }
+  function syncShortcutModalMode() {
+    var mode = document.getElementById('kd-sc-mode');
+    var wrap = document.getElementById('kd-sc-preset-wrap');
+    var hint = document.getElementById('kd-sc-hint-selection');
+    if (!mode || !wrap || !hint) return;
+    var isSel = mode.value === 'selection';
+    wrap.style.display = isSel ? 'none' : 'block';
+    hint.style.display = isSel ? 'block' : 'none';
+  }
 
   /** Cartões «Documentos — selecionar»: docType enviado no upload (tem de bater com a lista de ficheiros) */
   const DOC_CARD_PRESETS = [
@@ -798,9 +830,7 @@
   }
 
   function renderDocSelectCards() {
-    const root = document.getElementById('doc-select-root');
-    if (!root) return;
-    root.innerHTML = DOC_CARD_PRESETS.map(function (p) {
+    var html = DOC_CARD_PRESETS.map(function (p) {
       var sel = fileExistsForDocType(p.docType);
       var cls = 'doc-card' + (sel ? ' selected' : '');
       var lastD = latestForDocType(p.docType);
@@ -812,12 +842,16 @@
         dateLine +
         '</button>';
     }).join('');
-    root.querySelectorAll('.doc-card[data-doc-type]').forEach(function (btn) {
-      btn.onclick = function () {
-        pendingDocType = this.getAttribute('data-doc-type') || '';
-        var hid = document.getElementById('doc-file-hidden');
-        if (hid) { hid.value = ''; hid.click(); }
-      };
+    [document.getElementById('doc-select-root'), document.getElementById('doc-select-root-mirror')].forEach(function (root) {
+      if (!root) return;
+      root.innerHTML = html;
+      root.querySelectorAll('.doc-card[data-doc-type]').forEach(function (btn) {
+        btn.onclick = function () {
+          pendingDocType = this.getAttribute('data-doc-type') || '';
+          var hid = document.getElementById('doc-file-hidden');
+          if (hid) { hid.value = ''; hid.click(); }
+        };
+      });
     });
   }
 
@@ -1011,7 +1045,7 @@
     var hintEl = document.getElementById('share-confirm-hint');
     if (hintEl) {
       if (count === 0) {
-        hintEl.textContent = 'Marca campos na grelha e confirma o resumo à direita antes de gerar o link.';
+        hintEl.textContent = 'Marca os campos nos cartões e confirma o resumo à direita antes de gerar o link.';
         hintEl.classList.remove('kd-share-summary--ok');
       } else {
         hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o preview à direita e clica em «Gerar link seguro» quando estiver correto.';
@@ -1277,8 +1311,49 @@
   };
   document.getElementById('kd-qr-close').onclick = closeQrModal;
   document.getElementById('kd-qr-backdrop').onclick = closeQrModal;
+  document.getElementById('btn-add-custom-atalho').onclick = openShortcutModal;
+  document.getElementById('kd-sc-cancel').onclick = closeShortcutModal;
+  document.getElementById('kd-shortcut-backdrop').onclick = closeShortcutModal;
+  document.getElementById('kd-sc-mode').addEventListener('change', syncShortcutModalMode);
+  document.getElementById('kd-sc-save').onclick = function () {
+    var name = document.getElementById('kd-sc-name').value.trim();
+    if (!name) { showToast('Escreve um nome para o atalho.', 'neutral'); return; }
+    var emoji = (document.getElementById('kd-sc-emoji').value || '📌').trim().slice(0, 8) || '📌';
+    var mode = document.getElementById('kd-sc-mode').value;
+    var imgInput = document.getElementById('kd-sc-img');
+    function pushItem(imgData) {
+      var arr = loadCustomShortcuts();
+      if (arr.length >= 24) { showToast('Limite de 24 atalhos personalizados.', 'neutral'); return; }
+      var item = { id: 'c' + Date.now(), name: name, icon: emoji };
+      if (imgData) item.imageDataUrl = imgData;
+      if (mode === 'preset') {
+        item.presetKey = document.getElementById('kd-sc-preset').value;
+      } else {
+        var pairs = collectCurrentPresetPairs();
+        if (!pairs.length) { showToast('Marca pelo menos um campo na aba «Criar link».', 'neutral'); return; }
+        item.pairs = pairs;
+      }
+      arr.push(item);
+      saveCustomShortcuts(arr);
+      renderCustomShortcuts();
+      closeShortcutModal();
+      showToast('Atalho guardado neste dispositivo.', 'ok');
+    }
+    var f = imgInput && imgInput.files && imgInput.files[0];
+    if (f) {
+      if (f.size > 96000) { showToast('Imagem demasiado grande (máx. ~80 KB).', 'err'); return; }
+      var fr = new FileReader();
+      fr.onload = function () { pushItem(String(fr.result || '')); };
+      fr.readAsDataURL(f);
+    } else {
+      pushItem('');
+    }
+  };
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeQrModal();
+    if (e.key === 'Escape') {
+      closeQrModal();
+      closeShortcutModal();
+    }
   });
 
   async function loadProfileHints() {
@@ -1295,6 +1370,7 @@
 
   initTheme();
   renderModelsChips();
+  renderCustomShortcuts();
   renderDocSelectCards();
   loadVault().then(loadProfileHints);
 })();
