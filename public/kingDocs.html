@@ -70,6 +70,7 @@
     }
     .kd-page-body { padding-top: .25rem; }
     .kd-top-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .kd-top-bar--minimal { justify-content: flex-end; margin-bottom: .5rem; }
     .banner { background: var(--banner-bg); border: 1px dashed var(--accent); color: var(--accent); padding: .65rem .9rem; border-radius: 8px; font-size: .82rem; margin: 0; flex: 1; min-width: min(100%, 240px); }
     .kd-help { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 .85rem; margin-bottom: 1rem; font-size: .82rem; }
     .kd-help summary { cursor: pointer; padding: .65rem 0; font-weight: 600; color: var(--accent); list-style: none; }
@@ -177,12 +178,8 @@
     .linkbox { word-break: break-all; background: #f0f0ec; padding: .6rem; border-radius: 8px; font-size: .78rem; margin: .5rem 0; }
     code { font-size: .78rem; }
     .share-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
-    @media (min-width: 960px) {
-      .share-layout { grid-template-columns: 1fr minmax(280px, 340px); }
-    }
-    @media (min-width: 1280px) {
-      .share-layout { grid-template-columns: 1fr minmax(300px, 400px); gap: 1.25rem; }
-    }
+    /* Aba Documentos: uma coluna — pré-visualização de ficheiros + resumo no mesmo bloco */
+    .share-layout.kd-docs-unified-layout { grid-template-columns: 1fr !important; gap: 1rem !important; }
     .atalhos-block { margin: 0.35rem 0 0.25rem; }
     .atalhos-block .atalhos-title { font-size: .65rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: .35rem; display: block; }
     .atalhos-btns { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
@@ -217,6 +214,9 @@
       align-items: start;
       margin-top: .5rem;
     }
+    @media (max-width: 959px) {
+      .kd-doc-vault-row { gap: .75rem; }
+    }
     @media (min-width: 960px) {
       .kd-doc-vault-row {
         grid-template-columns: minmax(0, 1fr) minmax(260px, 400px);
@@ -239,7 +239,7 @@
         position: sticky;
         top: 1rem;
         align-self: start;
-        max-height: calc(100vh - 5rem);
+        max-height: calc(100vh - 4rem);
       }
     }
     .kd-doc-vault-preview-col .preview-header--vault {
@@ -247,17 +247,65 @@
       border: none;
       border-bottom: 1px solid var(--border);
     }
-    .kd-doc-vault-preview-col .doc-preview-body--inline {
-      flex: 1;
-      min-height: 180px;
-      max-height: min(52vh, 440px);
+    .kd-doc-vault-preview-col .doc-preview-body--inline.kd-preview-files-scroll {
+      flex: 0 1 auto;
+      min-height: 140px;
+      max-height: min(42vh, 380px);
       overflow-y: auto;
       border: none;
       border-radius: 0;
     }
+    .kd-preview-resumo-block {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-top: 1px solid var(--border);
+    }
+    .preview-header--resumo {
+      background: var(--accent);
+      color: #fff;
+      padding: .45rem .65rem;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .preview-header--resumo .badge {
+      font-size: .65rem;
+      background: rgba(255,255,255,.25);
+      padding: .15rem .45rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .kd-preview-resumo-body {
+      font-size: .8rem;
+      max-height: min(36vh, 300px);
+      overflow-y: auto;
+      padding: .6rem .75rem .75rem;
+    }
+    .kd-preview-resumo-body .preview-sec h4 { font-size: .62rem; }
     .kd-doc-vault-preview-col .doc-preview-actions {
       flex-shrink: 0;
     }
+    .kd-preview-partilhar-hint {
+      margin: 0;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      font-size: .72rem;
+    }
+    .kd-share-hint-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin: 0 0 .75rem;
+    }
+    .kd-share-hint-row .kd-share-summary { flex: 1; min-width: 200px; margin: 0; }
     .preview-header--vault { background: var(--trust-bg); color: var(--ink); border: 1px solid var(--border); border-radius: 8px 8px 0 0; padding: .45rem .65rem; font-size: .72rem; font-weight: 700; }
     .doc-preview-body--inline { max-height: min(40vh, 360px); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 8px 8px; }
     .kd-modal-box.kd-modal-box--xlarge { max-width: min(96vw, 720px); max-height: min(92vh, 900px); display: flex; flex-direction: column; }
@@ -463,20 +511,9 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="kd-top-bar">
-      <div class="banner"><strong>King Docs</strong> — cofre privado: estes dados não aparecem no teu cartão público. Só saem daqui quando <strong>crias um link temporário</strong> ou <strong>exportas / copias</strong> tu mesmo.</div>
+    <div class="kd-top-bar kd-top-bar--minimal">
       <button type="button" class="kd-theme-btn" id="kd-theme-toggle" title="Alternar tema claro/escuro">Tema escuro</button>
     </div>
-
-    <details class="kd-help">
-      <summary>Como funciona o cofre? (ajuda rápida)</summary>
-      <ul>
-        <li><strong>Dados</strong> — preenche e guarda; podes importar do teu cartão Conecta King ou exportar PDF como backup.</li>
-        <li><strong>Upload</strong> — envia ficheiros por tipo (padrão ou <strong>tipos criados por ti</strong> com nome e ícone).</li>
-        <li><strong>Documentos</strong> — pré-visualiza ficheiros do cofre, escolhe o que <strong>incluir no link</strong> (dados pessoais, contactos, etc.) e vê o preview de envio.</li>
-        <li><strong>Partilhar</strong> — define prazo, senha e limite de vistas, <strong>gera o link</strong>, copia resumo em texto e gere <strong>a lista dos teus links</strong> (abrir, QR, revogar, excluir).</li>
-      </ul>
-    </details>
 
     <section class="kd-hero-card kd-hero-card--top" aria-label="Painel pessoal">
       <div class="kd-hero-top">
@@ -563,7 +600,7 @@
     </div>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Escolhe os <strong>tipos de documento</strong> à esquerda (vários). A <strong>pré-visualização</strong> fica ao lado; o <strong>Preview de envio</strong> à direita junta <strong>texto + ficheiro</strong> no mesmo bloco quando fizer sentido. Os ficheiros entram pelos cartões de cima (e pelo Upload). <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+      <p class="sub">Escolhe os <strong>tipos de documento</strong> nos cartões (vários). À <strong>direita</strong> vês <strong>ficheiros</strong> e, logo abaixo no mesmo painel, o <strong>resumo do link</strong> (texto + anexos). Os ficheiros vêm dos cartões e do Upload. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
       <div class="share-layout kd-docs-unified-layout doc-browse-layout">
         <div class="kd-docs-left-col">
           <div class="doc-panel-card">
@@ -572,11 +609,16 @@
               <div class="kd-doc-vault-grid-col">
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
-              <div class="kd-doc-vault-preview-col doc-vault-preview" id="doc-vault-preview-wrap" aria-label="Pré-visualização dos ficheiros selecionados">
+              <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
                 <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
-                <div id="doc-preview-body" class="preview-body doc-preview-body--inline">
+                <div id="doc-preview-body" class="preview-body doc-preview-body--inline kd-preview-files-scroll">
                   <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
                 </div>
+                <div class="kd-preview-resumo-block">
+                  <div class="preview-header preview-header--resumo">Resumo do link <span id="preview-count" class="badge">0 itens</span></div>
+                  <div id="share-preview-body" class="kd-preview-resumo-body"><p class="preview-empty">Marca campos em «Incluir no link» abaixo.</p></div>
+                </div>
+                <p class="preview-footer-msg kd-preview-partilhar-hint"><span>✓</span> Isto é só visualização. O URL gera-se na aba <strong>Partilhar</strong> (ou com os botões de link abaixo).</p>
                 <div class="doc-preview-actions" id="doc-preview-actions">
                   <div class="doc-preview-actions-row">
                     <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled>Limpar seleção</button>
@@ -600,8 +642,11 @@
 
           <div class="doc-panel-card kd-docs-link-wrap">
             <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — textos do perfil</div>
-            <p class="sub" style="margin-top:.5rem">Cada <strong>cartão</strong> é um campo de texto do teu perfil. Para levar também a <strong>imagem/PDF</strong> desse tipo (ex.: RG), marca o mesmo tipo nos <strong>cartões de cima</strong> — no preview, texto e ficheiro aparecem <strong>juntos</strong>. Documentos só no cofre: secção <strong>Documentos extra</strong> abaixo.</p>
-            <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerares o link na aba Partilhar.</p>
+            <p class="sub" style="margin-top:.5rem">Cada <strong>cartão</strong> é um campo de texto do teu perfil. Para levar também a <strong>imagem/PDF</strong> desse tipo (ex.: RG), marca o mesmo tipo nos <strong>cartões de cima</strong> — no painel à direita, texto e ficheiro aparecem <strong>juntos</strong>. Secção <strong>Documentos extra</strong> abaixo para anexos sem campo de texto.</p>
+            <div class="kd-share-hint-row">
+              <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo no painel acima antes de gerares o link na aba Partilhar.</p>
+              <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar campos</button>
+            </div>
             <div class="share-main" style="max-width:100%">
               <div class="share-grid" id="share-table-wrap"></div>
               <h3 class="group" style="margin-top:1rem;">Documentos extra (só ficheiro, sem campo de texto)</h3>
@@ -609,20 +654,6 @@
             </div>
           </div>
         </div>
-        <aside class="preview-de-envio kd-link-preview-sticky" aria-label="Preview de envio do link">
-          <div class="preview-header">Preview de envio <span id="preview-count" class="badge">0 itens</span></div>
-          <div id="share-preview-body" class="preview-body"><p class="preview-empty">Marca campos na secção «Incluir no link» à esquerda.</p></div>
-          <div class="kd-share-quick-actions">
-            <div class="kd-share-quick-row">
-              <button type="button" class="btn secondary" id="btn-copy-share-summary" disabled>Copiar resumo completo</button>
-              <button type="button" class="btn secondary" id="btn-copy-share-text-only" disabled>Copiar só textos</button>
-              <button type="button" class="btn secondary" id="btn-share-wa-summary" disabled>WhatsApp (resumo)</button>
-            </div>
-            <span class="kd-hint-inline">Junta texto e ficheiro no mesmo bloco quando marcas o tipo nos cartões de cima. «Só textos» copia só as linhas de texto. O URL gera-se na aba <strong>Partilhar</strong>.</span>
-          </div>
-          <div class="preview-footer-msg"><span>✓</span> Prazo, senha e <strong>Gerar link seguro</strong> ficam na aba <strong>Partilhar</strong>.</div>
-          <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
-        </aside>
       </div>
     </div>
 
@@ -634,7 +665,7 @@
       <div class="kd-trust-strip" role="note">
         <strong>Antes de gerar</strong>
         <ul>
-          <li>Escolhe os campos em <strong>Documentos</strong> — o <em>Preview de envio</em> fica lá.</li>
+          <li>Escolhe os campos em <strong>Documentos</strong> — o resumo aparece no mesmo painel que a pré-visualização dos ficheiros.</li>
           <li>Quem receber abre no <strong>browser</strong> (telefone ou PC).</li>
           <li>Depois de gerado, revoga ou exclui na <strong>lista abaixo</strong>.</li>
         </ul>
@@ -2351,24 +2382,18 @@
   function updateSharePreview() {
     const out = document.getElementById('share-preview-body');
     const badge = document.getElementById('preview-count');
-    const copyBtn = document.getElementById('btn-copy-share-summary');
-    const copyTxt = document.getElementById('btn-copy-share-text-only');
-    const waBtn = document.getElementById('btn-share-wa-summary');
     if (!out || !badge) return;
     const data = collectSharePreviewData();
     const count = data.count;
-    if (copyBtn) copyBtn.disabled = count === 0;
-    if (copyTxt) copyTxt.disabled = !formatSharePreviewPlainTextTextOnly(data);
-    if (waBtn) waBtn.disabled = count === 0;
 
     badge.textContent = count + ' itens';
     var hintEl = document.getElementById('share-confirm-hint');
     if (hintEl) {
       if (count === 0) {
-        hintEl.textContent = 'Marca os campos nos cartões e confirma o resumo à direita; o link gera-se na aba «Partilhar».';
+        hintEl.textContent = 'Marca os campos nos cartões e confirma o resumo no painel acima; o link gera-se na aba «Partilhar».';
         hintEl.classList.remove('kd-share-summary--ok');
       } else {
-        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o preview à direita; na aba «Partilhar» clica em «Gerar link seguro» quando estiver correto.';
+        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o resumo no painel acima; na aba «Partilhar» usa «Gerar link seguro» quando estiver correto.';
         hintEl.classList.add('kd-share-summary--ok');
       }
     }
@@ -2619,13 +2644,14 @@
     loadLinks();
   };
 
-  document.getElementById('btn-preview-clear').onclick = function() {
+  function clearShareFieldSelection() {
     clearAtalhoActive();
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     updateSharePreview();
-  };
+  }
+  document.getElementById('btn-share-fields-clear').onclick = clearShareFieldSelection;
 
   document.querySelector('.wrap').addEventListener('click', function (e) {
     var editPreset = e.target && e.target.closest && e.target.closest('[data-edit-preset]');
@@ -2646,22 +2672,6 @@
   });
   document.getElementById('sh-name').addEventListener('input', updateSharePreview);
   document.getElementById('sh-photo').addEventListener('input', updateSharePreview);
-  document.getElementById('btn-copy-share-summary').onclick = function () {
-    var t = formatSharePreviewPlainText(collectSharePreviewData());
-    if (!t) { showToast('Nada para copiar — marca campos no preview primeiro.', 'neutral'); return; }
-    navigator.clipboard.writeText(t).then(function () { showToast('Resumo completo copiado.', 'ok'); }).catch(function () { showToast('Não foi possível copiar.', 'err'); });
-  };
-  document.getElementById('btn-copy-share-text-only').onclick = function () {
-    var t = formatSharePreviewPlainTextTextOnly(collectSharePreviewData());
-    if (!t) { showToast('Não há campos de texto no resumo.', 'neutral'); return; }
-    navigator.clipboard.writeText(t).then(function () { showToast('Só textos copiados.', 'ok'); }).catch(function () { showToast('Não foi possível copiar.', 'err'); });
-  };
-  document.getElementById('btn-share-wa-summary').onclick = function () {
-    var t = formatSharePreviewPlainText(collectSharePreviewData());
-    if (!t) { showToast('Nada para enviar — marca campos primeiro.', 'neutral'); return; }
-    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
-  };
-
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', function() {
       document.querySelectorAll('.tab').forEach(function (x) {
