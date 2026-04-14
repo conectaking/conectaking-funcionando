@@ -156,6 +156,9 @@
     }
     .mini-actions { font-size: .78rem; margin-top: .5rem; color: var(--muted); }
     .mini-actions button { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 0 .25rem; font: inherit; }
+    .kd-doc-quick-block { margin-top: .75rem; padding-top: .65rem; border-top: 1px dashed var(--border); }
+    .kd-doc-quick-hint { font-size: .72rem; margin: 0 0 .5rem !important; color: var(--muted); line-height: 1.35; }
+    .btn-atalho--doc { font-size: .74rem; padding: .32rem .6rem; border-style: dashed; }
     .preview-de-envio { position: sticky; top: .75rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
     @media (min-width: 960px) {
       .preview-de-envio { top: 1rem; max-height: calc(100vh - 2rem); display: flex; flex-direction: column; }
@@ -377,11 +380,16 @@
         <div class="atalhos-block">
           <span class="atalhos-title">Atalhos rápidos</span>
           <div class="atalhos-btns">
-            <button type="button" class="btn-atalho" data-preset="festa" title="Endereço + WhatsApp">🏠 Festa em Casa</button>
+            <button type="button" class="btn-atalho" data-preset="festa" title="Morada, WhatsApp e RG (ficheiro do cofre)">🏠 Festa em Casa</button>
             <button type="button" class="btn-atalho" data-preset="receberPf" title="Nome, CPF e dados bancários PF">💰 Receber PF</button>
             <button type="button" class="btn-atalho" data-preset="receberPj" title="Empresa + dados bancários PJ">🏢 Receber PJ</button>
             <button type="button" class="btn-atalho" data-preset="correspondencia" title="Nome e morada para envio">📩 Correspondência</button>
             <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">📄 Enviar NF</button>
+          </div>
+          <div class="atalhos-block kd-doc-quick-block">
+            <span class="atalhos-title">Documentos do cofre (no link)</span>
+            <p class="kd-doc-quick-hint">Liga os <strong>tipos de ficheiro</strong> (RG, CNH, etc.) aos mesmos cartões de <strong>Documentos</strong>. Um clique inclui o <strong>ficheiro</strong> desse tipo; na aba Documentos podes mudar para <strong>só texto</strong> ou <strong>texto + ficheiro</strong> em cada campo.</p>
+            <div id="kd-doc-quick-chips" class="atalhos-btns" aria-label="Incluir documento do cofre no link"></div>
           </div>
           <div class="kd-custom-atalhos" id="kd-custom-atalhos-wrap">
             <span class="atalhos-title">Os teus atalhos</span>
@@ -1217,14 +1225,162 @@
   ];
   var CUSTOM_SHORTCUTS_KEY = 'kingDocs_custom_atalhos_v1';
 
-  /** Atalhos rápidos: lista de [groupId, key] a incluir com texto (e sem ficheiro por defeito) */
+  /** Atalhos rápidos: [groupId, key] ou [groupId, key, modo] — modo t=texto, f=ficheiro (foto/PDF), b=ambos */
   const PRESETS = {
-    festa: [['endereco','Rua'],['endereco','Bairro'],['endereco','Cidade'],['endereco','CEP'],['contato','WhatsApp']],
-    receberPf: [['pessoal','Nome Completo'],['pessoal','CPF'],['financeiro','PIX (CPF)'],['financeiro','Banco'],['financeiro','Agência'],['financeiro','Conta']],
-    receberPj: [['empresa','Razão Social'],['empresa','CNPJ'],['financeiropj','PIX (CNPJ)'],['financeiropj','Favorecido'],['financeiropj','Banco'],['financeiropj','Agência'],['financeiropj','Conta']],
-    correspondencia: [['pessoal','Nome Completo'],['endereco','Rua'],['endereco','Bairro'],['endereco','Cidade'],['endereco','CEP']],
-    enviarNf: [['empresa','Razão Social'],['empresa','CNPJ'],['empresa','IE'],['empresa','C.C.M'],['empresa','E-mail'],['empresa','Endereço'],['empresa','Bairro'],['empresa','Cidade'],['empresa','CEP']]
+    festa: [
+      ['endereco', 'Rua', 't'], ['endereco', 'Bairro', 't'], ['endereco', 'Cidade', 't'], ['endereco', 'CEP', 't'],
+      ['contato', 'WhatsApp', 't'],
+      ['pessoal', 'RG', 'f'],
+    ],
+    receberPf: [
+      ['pessoal', 'Nome Completo', 't'], ['pessoal', 'CPF', 't'],
+      ['financeiro', 'PIX (CPF)', 't'], ['financeiro', 'Banco', 't'], ['financeiro', 'Agência', 't'], ['financeiro', 'Conta', 't'],
+    ],
+    receberPj: [
+      ['empresa', 'Razão Social', 't'], ['empresa', 'CNPJ', 't'],
+      ['financeiropj', 'PIX (CNPJ)', 't'], ['financeiropj', 'Favorecido', 't'], ['financeiropj', 'Banco', 't'], ['financeiropj', 'Agência', 't'], ['financeiropj', 'Conta', 't'],
+    ],
+    correspondencia: [
+      ['pessoal', 'Nome Completo', 't'], ['endereco', 'Rua', 't'], ['endereco', 'Bairro', 't'], ['endereco', 'Cidade', 't'], ['endereco', 'CEP', 't'],
+    ],
+    enviarNf: [
+      ['empresa', 'Razão Social', 't'], ['empresa', 'CNPJ', 't'], ['empresa', 'IE', 't'], ['empresa', 'C.C.M', 't'], ['empresa', 'E-mail', 't'],
+      ['empresa', 'Endereço', 't'], ['empresa', 'Bairro', 't'], ['empresa', 'Cidade', 't'], ['empresa', 'CEP', 't'],
+    ],
   };
+
+  function normalizePresetMode(m) {
+    var s = String(m == null ? 't' : m).toLowerCase();
+    if (s === 'text' || s === 'txt') return 't';
+    if (s === 'file' || s === 'foto' || s === 'ficheiro') return 'f';
+    if (s === 'both' || s === 'b' || s === 'tf' || s === 'ambos') return 'b';
+    if (s === 't' || s === 'f' || s === 'b') return s;
+    return 't';
+  }
+  function fieldKeyToDocTypeHint(key, g) {
+    var k = String(key || '');
+    var gg = String(g || '');
+    if (gg === 'pessoal') {
+      if (k === 'RG') return 'RG';
+      if (k === 'CPF') return 'CPF';
+    }
+    if (gg === 'empresa') {
+      if (k === 'CNPJ') return 'CARTÃO DO CNPJ';
+      if (k === 'IE') return 'INSC. ESTADUAL';
+    }
+    return k;
+  }
+  function findFileForFieldHint(g, k) {
+    var hint = fieldKeyToDocTypeHint(k, g);
+    var f = getLatestFileForDocType(hint);
+    if (f) return f;
+    f = getLatestFileForDocType(k);
+    if (f) return f;
+    var want = normalizeDocTypeKey(hint);
+    var best = null;
+    filesList.forEach(function (x) {
+      if (normalizeDocTypeKey(x.doc_type) === want) best = x;
+    });
+    return best;
+  }
+  function fieldPairForDocType(dt) {
+    var d = normalizeDocTypeKey(dt);
+    var map = [
+      ['RG', ['pessoal', 'RG']],
+      ['CPF', ['pessoal', 'CPF']],
+      ['CARTÃO DO CNPJ', ['empresa', 'CNPJ']],
+      ['CARTAO DO CNPJ', ['empresa', 'CNPJ']],
+      ['INSC. ESTADUAL', ['empresa', 'IE']],
+    ];
+    for (var i = 0; i < map.length; i++) {
+      if (normalizeDocTypeKey(map[i][0]) === d) return map[i][1];
+    }
+    return null;
+  }
+  function applyFieldModeToBlock(block, mode) {
+    var m = normalizePresetMode(mode);
+    var incl = block.querySelector('.incl');
+    if (incl) incl.checked = true;
+    var fid = incl && incl.getAttribute('data-fid');
+    var st = block.querySelector('.st[data-fid="' + fid + '"]');
+    var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
+    var sel = block.querySelector('select[data-sel-for="' + fid + '"]');
+    var fk = block.getAttribute('data-fk') || '';
+    var parts = fk.split('|');
+    var g = parts[0];
+    var k = parts.slice(1).join('|');
+    var wantT = (m === 't' || m === 'b');
+    var wantF = (m === 'f' || m === 'b');
+    if (st) st.checked = wantT;
+    if (sf) sf.checked = wantF;
+    if (wantF && sel) {
+      var f = findFileForFieldHint(g, k);
+      if (f) sel.value = String(f.id);
+    }
+  }
+  function applyExtraDocPresetEntry(docType) {
+    var dt = String(docType || '').trim();
+    if (!dt) return;
+    var f = getLatestFileForDocType(dt);
+    if (!f) {
+      var want = normalizeDocTypeKey(dt);
+      filesList.forEach(function (x) {
+        if (!f && normalizeDocTypeKey(x.doc_type) === want) f = x;
+      });
+    }
+    if (!f) return;
+    var ch = document.querySelector('.xd-check[data-fid="' + f.id + '"]');
+    if (!ch) return;
+    ch.checked = true;
+    var lab = document.querySelector('.xd-label[data-fid="' + f.id + '"]');
+    if (lab && !String(lab.value || '').trim()) {
+      var preset = DOC_CARD_PRESETS.find(function (p) { return normalizeDocTypeKey(p.docType) === normalizeDocTypeKey(f.doc_type); });
+      lab.value = preset ? preset.label : (f.doc_type || 'Documento');
+    }
+  }
+  function applyOnePresetEntry(entry) {
+    if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.extraDoc) {
+      applyExtraDocPresetEntry(String(entry.extraDoc));
+      return;
+    }
+    if (!Array.isArray(entry) || entry.length < 2) return;
+    var g = entry[0];
+    var k = entry[1];
+    var mode = entry.length >= 3 ? entry[2] : 't';
+    var fk = g + '|' + k;
+    var block = shareFieldBlock(fk);
+    if (!block) return;
+    applyFieldModeToBlock(block, mode);
+  }
+  function applyDocTypeQuick(docType) {
+    ensureFieldData();
+    var dt = String(docType || '').trim();
+    if (!dt) return;
+    var pair = fieldPairForDocType(dt);
+    if (pair) {
+      var block = shareFieldBlock(pair[0] + '|' + pair[1]);
+      if (block) {
+        applyFieldModeToBlock(block, 'f');
+        if (!findFileForFieldHint(pair[0], pair[1])) {
+          showToast('Marca o campo no link e envia o ficheiro «' + dt + '» no cofre (aba Upload).', 'neutral');
+        } else {
+          showToast('Ficheiro ligado ao campo. Em Documentos podes mudar para só texto ou texto+ficheiro.', 'ok');
+        }
+        clearAtalhoActive();
+        updateSharePreview();
+        return;
+      }
+    }
+    var hadFile = !!(getLatestFileForDocType(dt) || filesList.find(function (x) { return normalizeDocTypeKey(x.doc_type) === normalizeDocTypeKey(dt); }));
+    if (!hadFile) {
+      showToast('Ainda não tens este tipo no cofre. Envia em Upload (aba Upload).', 'neutral');
+      return;
+    }
+    applyExtraDocPresetEntry(dt);
+    clearAtalhoActive();
+    updateSharePreview();
+    showToast('Documento extra incluído (ficheiro). Ajusta em Documentos se precisares.', 'ok');
+  }
 
   let fieldData = {};
   let filesList = [];
@@ -1519,6 +1675,18 @@
     var p = merged.find(function (x) { return x.docType === t; });
     return p ? p.label : t;
   }
+  function renderDocQuickChips() {
+    var host = document.getElementById('kd-doc-quick-chips');
+    if (!host) return;
+    var list = getDocCardPresetsMerged();
+    host.innerHTML = list.map(function (p) {
+      return '<button type="button" class="btn-atalho btn-atalho--doc" data-doc-quick="' + escapeAttr(p.docType) + '" title="Incluir ' + escapeAttr(p.label) + ' (ficheiro). Ajusta texto/ficheiro em Documentos.">' +
+        '<span aria-hidden="true">' + p.icon + '</span> <span>' + escapeHtml(p.label) + '</span></button>';
+    }).join('');
+    host.querySelectorAll('[data-doc-quick]').forEach(function (btn) {
+      btn.onclick = function () { applyDocTypeQuick(this.getAttribute('data-doc-quick') || ''); };
+    });
+  }
   function formatVaultSavedHint() {
     try {
       var raw = localStorage.getItem(VAULT_SAVED_AT_KEY);
@@ -1603,6 +1771,7 @@
   function renderDocCards() {
     renderDocUploadCards();
     renderDocBrowseCards();
+    renderDocQuickChips();
     if (docPreviewSelectedTypes.length) {
       var pruned = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
       if (pruned.length !== docPreviewSelectedTypes.length) {
@@ -1668,7 +1837,18 @@
       var parts = fk.split('|');
       var gid = parts[0];
       var k = parts.slice(1).join('|');
-      pairs.push([gid, k]);
+      var fid = incl.getAttribute('data-fid');
+      var st = block.querySelector('.st[data-fid="' + fid + '"]');
+      var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
+      var wantT = st && st.checked;
+      var wantF = sf && sf.checked;
+      var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
+      pairs.push([gid, k, mode]);
+    });
+    document.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+      var id = ch.getAttribute('data-fid');
+      var f = filesList.find(function (x) { return String(x.id) === String(id); });
+      if (f && f.doc_type) pairs.push({ extraDoc: String(f.doc_type) });
     });
     return pairs;
   }
@@ -1703,23 +1883,10 @@
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
     document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
     if (!list) return;
-    list.forEach(function (pair) {
-      var fk = pair[0] + '|' + pair[1];
-      var block = shareFieldBlock(fk);
-      if (!block) return;
-      var incl = block.querySelector('.incl');
-      if (incl) incl.checked = true;
-      var fid = incl && incl.getAttribute('data-fid');
-      if (fid) {
-        var st = block.querySelector('.st[data-fid="' + fid + '"]');
-        var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
-        if (st) st.checked = true;
-        if (sf) sf.checked = false;
-      }
-    });
-    document.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    list.forEach(function (entry) { applyOnePresetEntry(entry); });
     clearAtalhoActive();
     var b = document.querySelector('.btn-atalho[data-custom-id="' + id + '"]');
     if (b) b.classList.add('active');
@@ -1733,21 +1900,8 @@
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
     document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
-    list.forEach(function (pair) {
-      var fk = pair[0] + '|' + pair[1];
-      var tr = shareFieldBlock(fk);
-      if (!tr) return;
-      var incl = tr.querySelector('.incl');
-      if (incl) incl.checked = true;
-      var fid = incl && incl.getAttribute('data-fid');
-      if (fid) {
-        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
-        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
-        if (st) st.checked = true;
-        if (sf) sf.checked = false;
-      }
-    });
     document.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    list.forEach(function (entry) { applyOnePresetEntry(entry); });
     clearAtalhoActive();
     var activeBtn = document.querySelector('.btn-atalho[data-preset="' + presetId + '"]');
     if (activeBtn) activeBtn.classList.add('active');
@@ -2321,7 +2475,7 @@
         item.presetKey = document.getElementById('kd-sc-preset').value;
       } else {
         var pairs = collectCurrentPresetPairs();
-        if (!pairs.length) { showToast('Marca pelo menos um campo em Documentos (secção «Incluir no link»).', 'neutral'); return; }
+        if (!pairs.length) { showToast('Marca pelo menos um campo ou documento extra em Documentos (secção «Incluir no link»).', 'neutral'); return; }
         item.pairs = pairs;
       }
       arr.push(item);
