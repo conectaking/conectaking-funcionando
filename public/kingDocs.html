@@ -161,11 +161,6 @@
       justify-content: flex-start;
       gap: .35rem;
     }
-    .kd-share-field-card .kd-field-adv select[data-sel-for] {
-      width: 100%;
-      max-width: 100%;
-      font-size: .72rem;
-    }
     .kd-field-block { padding: .35rem 0; border-bottom: 1px solid var(--border); }
     .kd-field-block:last-child { border-bottom: none; }
     .kd-share-field-card.kd-field-block { padding: 0; border-bottom: none; }
@@ -2050,12 +2045,6 @@
     renderExtraDocs();
   }
 
-  function fileSelectHtml(fieldId) {
-    let o = '<option value="">— ficheiro —</option>';
-    filesList.forEach(f => { o += '<option value="' + f.id + '">#' + f.id + ' ' + escapeHtml(f.doc_type) + '</option>'; });
-    return '<select data-sel-for="' + fieldId + '">' + o + '</select>';
-  }
-
   function clearAtalhoActive() {
     document.querySelectorAll('.btn-atalho[data-preset]').forEach(function (b) { b.classList.remove('active'); });
     document.querySelectorAll('.btn-atalho[data-custom-id]').forEach(function (b) { b.classList.remove('active'); });
@@ -2073,9 +2062,10 @@
         var k = parts.slice(1).join('|');
         var fid = incl.getAttribute('data-fid');
         var st = block.querySelector('.st[data-fid="' + fid + '"]');
-        var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
         var wantT = st && st.checked;
-        var wantF = sf && sf.checked;
+        var dt = fieldKeyToDocTypeHint(k, gid);
+        var canon = dt ? vaultDocTypeKeyForHint(dt) : null;
+        var wantF = !!(canon && docTypeSelectedInVault(canon) && getLatestFileForDocType(canon));
         var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
         pairs.push([gid, k, mode]);
       });
@@ -2129,7 +2119,6 @@
     ensureFieldData();
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
-    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
@@ -2147,7 +2136,6 @@
     ensureFieldData();
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
-    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     list.forEach(function (entry) { applyOnePresetEntry(entry); });
@@ -2182,8 +2170,9 @@
       var dtHint = fieldKeyToDocTypeHint(k, g);
       var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
       var fn = null;
-      if (canon && docTypeSelectedInVault(canon)) fn = getLatestFileForDocType(canon);
-      if (!fn && canon) fn = findFileForFieldHint(g, k);
+      if (canon && docTypeSelectedInVault(canon)) {
+        fn = getLatestFileForDocType(canon) || findFileForFieldHint(g, k);
+      }
       var fileLabel = fn ? ('#' + fn.id + ' ' + (fn.doc_type || '')) : '';
       if (fn && canon) consumedVault[normalizeDocTypeKey(canon)] = true;
 
@@ -2247,8 +2236,11 @@
     Object.keys(data.sections).forEach(function (title) {
       lines.push('▸ ' + title);
       data.sections[title].forEach(function (item) {
-        if (item.kind === 'text') lines.push('  • ' + item.label + ': ' + item.val);
+        if (item.kind === 'merged') {
+          lines.push('  • ' + item.label + ': ' + item.val + ' | ficheiro: ' + item.fileLabel);
+        } else if (item.kind === 'text') lines.push('  • ' + item.label + ': ' + item.val);
         else if (item.kind === 'file') lines.push('  • ' + item.label + ' (ficheiro): ' + item.fileLabel);
+        else if (item.kind === 'vault') lines.push('  • ' + item.label + ': ' + item.fileLabel);
         else lines.push('  • Documento extra: ' + item.label);
       });
       lines.push('');
@@ -2270,11 +2262,14 @@
       lines.push('');
     }
     Object.keys(data.sections).forEach(function (title) {
-      var items = (data.sections[title] || []).filter(function (item) { return item.kind === 'text'; });
+      var items = (data.sections[title] || []).filter(function (item) {
+        return item.kind === 'text' || item.kind === 'merged';
+      });
       if (!items.length) return;
       lines.push('▸ ' + title);
       items.forEach(function (item) {
-        lines.push('  • ' + item.label + ': ' + item.val);
+        if (item.kind === 'merged') lines.push('  • ' + item.label + ': ' + item.val);
+        else lines.push('  • ' + item.label + ': ' + item.val);
       });
       lines.push('');
     });
@@ -2320,10 +2315,16 @@
     Object.keys(data.sections).forEach(function (title) {
       html += '<div class="preview-sec"><h4>' + escapeHtml(title) + '</h4>';
       data.sections[title].forEach(function (item) {
-        if (item.kind === 'text') {
+        if (item.kind === 'merged') {
+          html += '<div class="preview-line preview-line--merged"><span class="pl">' + escapeHtml(item.label) + '</span><div class="pv-merge">';
+          html += '<div class="pv-row"><span class="pv-sub">Texto</span><span class="pv">' + escapeHtml(item.val) + '</span></div>';
+          html += '<div class="pv-row"><span class="pv-sub">Ficheiro</span><span class="pv">' + escapeHtml(item.fileLabel) + '</span></div>';
+          html += '</div></div>';
+        } else if (item.kind === 'text') {
           html += '<div class="preview-line"><span class="pl">' + escapeHtml(item.label) + '</span><span class="pv">' + escapeHtml(item.val) + '</span></div>';
-        } else if (item.kind === 'file') {
-          html += '<div class="preview-line"><span class="pl">' + escapeHtml(item.label) + ' (ficheiro)</span><span class="pv">' + escapeHtml(item.fileLabel) + '</span></div>';
+        } else if (item.kind === 'file' || item.kind === 'vault') {
+          html += '<div class="preview-line preview-line--merged"><span class="pl">' + escapeHtml(item.label) + '</span><div class="pv-merge">';
+          html += '<div class="pv-row"><span class="pv-sub">Ficheiro</span><span class="pv">' + escapeHtml(item.fileLabel) + '</span></div></div></div>';
         } else {
           html += '<div class="preview-line"><span class="pl">Anexo</span><span class="pv">' + escapeHtml(item.label) + '</span></div>';
         }
@@ -2355,8 +2356,7 @@
         html += '</div>';
         html += '<div class="kd-field-adv">';
         html += '<label class="kd-mini"><input type="checkbox" class="st" data-fid="' + fid + '" checked/> Texto</label>';
-        html += '<label class="kd-mini"><input type="checkbox" class="sf" data-fid="' + fid + '"/> Ficheiro</label>';
-        html += fileSelectHtml(fid);
+        html += '<p class="kd-share-vault-hint">Para anexar o ficheiro deste tipo, marca o mesmo tipo nos <strong>cartões de documento</strong> acima (após envio em Upload).</p>';
         html += '</div></div>';
       });
       html += '</div></div>';
@@ -2423,16 +2423,16 @@
         if (!incl || !incl.checked) return;
         const fid = incl.getAttribute('data-fid');
         const st = tr.querySelector('.st[data-fid="' + fid + '"]');
-        const sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
-        const sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
-        const fileId = sel && sel.value ? parseInt(sel.value, 10) : null;
+        const dt = fieldKeyToDocTypeHint(k, g.id);
+        const canon = dt ? vaultDocTypeKeyForHint(dt) : null;
+        const vaultFile = canon && docTypeSelectedInVault(canon) ? (getLatestFileForDocType(canon) || findFileForFieldHint(g.id, k)) : null;
         rows.push({
           group: g.id,
           key: k,
           label: k,
           showText: !!(st && st.checked),
-          showFile: !!(sf && sf.checked),
-          fileId: fileId || null
+          showFile: !!vaultFile,
+          fileId: vaultFile ? vaultFile.id : null
         });
       });
       if (rows.length) sections.push({ title: g.title, rows });
