@@ -172,6 +172,16 @@
     .preview-empty { color: var(--muted); font-size: .82rem; padding: .5rem 0; }
     .preview-footer-msg { background: #e8f0ea; color: var(--accent); padding: .45rem .65rem; font-size: .75rem; display: flex; align-items: center; gap: .35rem; }
     .preview-de-envio .btn-clear { width: 100%; margin: 0; border-radius: 0 0 11px 11px; border: none; border-top: 1px solid var(--border); padding: .55rem; font-size: .8rem; }
+    /* Documentos — pré-visualização ao lado (aba Documentos) */
+    .doc-browse-layout { align-items: stretch; }
+    .doc-vault-preview .preview-body { min-height: 180px; }
+    .doc-preview-img { display: block; max-width: 100%; height: auto; border-radius: 8px; }
+    .doc-preview-iframe { width: 100%; min-height: 260px; border: 0; border-radius: 8px; background: #1a1a1a; }
+    body.kd-theme-dark .doc-preview-iframe { background: #0d0d0d; }
+    .doc-preview-actions { padding: .65rem .75rem; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; background: var(--trust-bg); }
+    .doc-preview-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .doc-card--browse { cursor: pointer; text-align: center; }
+    .doc-card--browse.doc-card--active { box-shadow: 0 0 0 2px var(--accent); border-color: var(--accent); }
     /* Documentos — grelha tipo cartões */
     .doc-panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1rem 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,.06); margin-bottom: 1.25rem; }
     .doc-badge { display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .35rem .85rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; font-size: .68rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 auto 1rem; width: fit-content; text-transform: uppercase; }
@@ -294,7 +304,8 @@
       <summary>Como funciona o cofre? (ajuda rápida)</summary>
       <ul>
         <li><strong>Dados</strong> — preenche e guarda; podes importar do teu cartão Conecta King ou exportar PDF como backup.</li>
-        <li><strong>Documentos</strong> — envia PDFs ou imagens; ficam guardados até apagares.</li>
+        <li><strong>Upload</strong> — envia PDFs ou imagens para o cofre por tipo de documento.</li>
+        <li><strong>Documentos</strong> — vê pré-visualização e gera link ou envia por WhatsApp (sem novo upload aqui).</li>
         <li><strong>Criar link</strong> — escolhe o que entra no link; o destinatário só vê isso. Define prazo, senha ou limite de vistas.</li>
         <li><strong>Os meus links</strong> — copia URLs ou revoga quando não precisares. Nada disto envia e-mail automaticamente.</li>
       </ul>
@@ -341,23 +352,20 @@
 
     <div class="tabs" id="kd-tabs" role="tablist" aria-label="Secções King Docs">
       <button type="button" class="tab active" role="tab" aria-selected="true" aria-controls="p-dados" id="tab-p-dados" data-panel="p-dados">Dados</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-upload" id="tab-p-upload" data-panel="p-upload">Upload</button>
       <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-docs" id="tab-p-docs" data-panel="p-docs">Documentos</button>
       <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-share" id="tab-p-share" data-panel="p-share">Criar link</button>
       <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-links" id="tab-p-links" data-panel="p-links">Os meus links</button>
     </div>
 
     <div id="p-dados" class="panel active" role="tabpanel" aria-labelledby="tab-p-dados"></div>
-    <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Envia PDF ou imagem. Usa os cartões abaixo para cada tipo de documento; depois podes associar cada ficheiro a um campo na aba «Criar link».</p>
+
+    <div id="p-upload" class="panel" role="tabpanel" aria-labelledby="tab-p-upload">
+      <p class="sub">Envia PDF ou imagem <strong>para o cofre</strong>. Cada cartão abre o explorador para esse tipo de documento. Depois usa a aba <strong>Documentos</strong> para pré-visualizar e partilhar.</p>
       <div class="doc-panel-card">
-        <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Documentos — enviar ao cofre</div>
-        <div id="doc-select-root" class="doc-grid"></div>
+        <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Enviar ao cofre</div>
+        <div id="doc-upload-root" class="doc-grid"></div>
         <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
-      </div>
-      <div class="doc-panel-card">
-        <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Documentos selecionáveis no link</div>
-        <p class="sub" style="margin-top:0">Espelho dos mesmos tipos — o que está no cofre aparece como «no cofre». Na aba <strong>Criar link</strong> marcas o que entra na partilha.</p>
-        <div id="doc-select-root-mirror" class="doc-grid"></div>
       </div>
       <p class="doc-fallback-title">Outro documento</p>
       <p class="sub" style="margin-top:0">Tipo livre (ex.: CPF, comprovante).</p>
@@ -365,6 +373,28 @@
       <input type="text" id="up-type" placeholder="Tipo (ex.: CPF scan)" style="max-width:220px; margin-left:.5rem"/>
       <button type="button" class="btn" id="up-btn">Enviar</button>
       <div id="file-list" style="margin-top:1rem"></div>
+    </div>
+
+    <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
+      <p class="sub">Clica num tipo à esquerda para ver a <strong>pré-visualização</strong> ao lado. Aqui não envias ficheiros — usa a aba <strong>Upload</strong>. Podes <strong>gerar um link</strong> ou enviar por <strong>WhatsApp</strong>.</p>
+      <div class="share-layout doc-browse-layout">
+        <div class="share-main">
+          <div class="doc-panel-card" style="margin-bottom:0">
+            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipos no cofre</div>
+            <div id="doc-browse-root" class="doc-grid"></div>
+          </div>
+        </div>
+        <aside class="preview-de-envio doc-vault-preview" aria-label="Pré-visualização do documento">
+          <div class="preview-header">Pré-visualização</div>
+          <div id="doc-preview-body" class="preview-body">
+            <p class="preview-empty">Escolhe um documento à esquerda.</p>
+          </div>
+          <div class="doc-preview-actions">
+            <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
+            <button type="button" class="btn secondary" id="btn-doc-wa" disabled>WhatsApp</button>
+          </div>
+        </aside>
+      </div>
     </div>
 
     <div id="p-share" class="panel" role="tabpanel" aria-labelledby="tab-p-share">
@@ -686,6 +716,120 @@
     });
     return best;
   }
+  /** Último ficheiro deste tipo (para pré-visualização / link rápido) */
+  function getLatestFileForDocType(docType) {
+    var t = String(docType).trim();
+    var best = null;
+    filesList.forEach(function (f) {
+      if (String(f.doc_type || '').trim() !== t) return;
+      var d = f.created_at ? new Date(f.created_at).getTime() : 0;
+      var bd = best && best.created_at ? new Date(best.created_at).getTime() : 0;
+      if (!best || d > bd) best = f;
+    });
+    return best;
+  }
+  function revokeDocPreviewBlob() {
+    if (docPreviewBlobUrl) {
+      try { URL.revokeObjectURL(docPreviewBlobUrl); } catch (e) {}
+      docPreviewBlobUrl = null;
+    }
+  }
+  async function quickShareVaultFile(fileId, label) {
+    var body = {
+      expiresInHours: 72,
+      password: '',
+      maxViews: '',
+      selection: {
+        displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
+        profileImageUrl: (document.getElementById('sh-photo') && document.getElementById('sh-photo').value) || '',
+        sections: [],
+        extraDocs: [{ fileId: parseInt(fileId, 10), label: label || 'Documento' }]
+      }
+    };
+    var r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (!r.ok) {
+      showToast('Não foi possível criar o link.', 'err');
+      return null;
+    }
+    var j = await r.json();
+    var d = j.data || {};
+    return window.location.origin + (d.shareUrl || '');
+  }
+  async function updateDocVaultPreview(docType) {
+    revokeDocPreviewBlob();
+    var bodyEl = document.getElementById('doc-preview-body');
+    var btnLink = document.getElementById('btn-doc-copy-link');
+    var btnWa = document.getElementById('btn-doc-wa');
+    if (!bodyEl) return;
+    var f = getLatestFileForDocType(docType);
+    if (!f) {
+      bodyEl.innerHTML = '<p class="preview-empty">Ainda não tens <strong>' + escapeHtml(docType) + '</strong> no cofre. Vai à aba <strong>Upload</strong> para enviar.</p>';
+      if (btnLink) { btnLink.disabled = true; btnLink.removeAttribute('data-file-id'); }
+      if (btnWa) { btnWa.disabled = true; btnWa.removeAttribute('data-file-id'); }
+      return;
+    }
+    if (btnLink) {
+      btnLink.disabled = false;
+      btnLink.setAttribute('data-file-id', String(f.id));
+    }
+    if (btnWa) {
+      btnWa.disabled = false;
+      btnWa.setAttribute('data-file-id', String(f.id));
+    }
+    var mime = (f.mime || '').toLowerCase();
+    bodyEl.innerHTML = '<p class="sub" style="margin:0 0 .5rem">#' + f.id + ' · ' + escapeHtml(f.doc_type || '') + ' · ' + escapeHtml(mime) + '</p><p class="kd-hint">A carregar…</p>';
+    try {
+      var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
+      if (!res.ok) {
+        bodyEl.innerHTML = '<p class="err">Não foi possível carregar o ficheiro.</p>';
+        return;
+      }
+      var blob = await res.blob();
+      docPreviewBlobUrl = URL.createObjectURL(blob);
+      bodyEl.innerHTML = '';
+      var meta = document.createElement('p');
+      meta.className = 'sub';
+      meta.style.margin = '0 0 .5rem';
+      meta.textContent = '#' + f.id + ' · ' + (f.doc_type || '') + ' · ' + (f.mime || '');
+      bodyEl.appendChild(meta);
+      if (mime.indexOf('image/') === 0) {
+        var img = document.createElement('img');
+        img.className = 'doc-preview-img';
+        img.alt = f.doc_type || '';
+        img.src = docPreviewBlobUrl;
+        bodyEl.appendChild(img);
+      } else if (mime.indexOf('pdf') >= 0) {
+        var iframe = document.createElement('iframe');
+        iframe.className = 'doc-preview-iframe';
+        iframe.title = 'PDF';
+        iframe.src = docPreviewBlobUrl;
+        bodyEl.appendChild(iframe);
+      } else {
+        var p = document.createElement('p');
+        p.className = 'sub';
+        p.textContent = 'Pré-visualização indisponível para este tipo. Gera um link ou descarrega.';
+        bodyEl.appendChild(p);
+        var a = document.createElement('a');
+        a.href = docPreviewBlobUrl;
+        a.download = (f.original_name || 'documento').replace(/[\\/]/g, '');
+        a.className = 'btn secondary';
+        a.textContent = 'Descarregar';
+        bodyEl.appendChild(a);
+      }
+    } catch (err) {
+      bodyEl.innerHTML = '<p class="err">Erro ao carregar a pré-visualização.</p>';
+    }
+  }
+  function selectDocBrowse(docType) {
+    docPreviewSelectedType = docType;
+    var root = document.getElementById('doc-browse-root');
+    if (root) {
+      root.querySelectorAll('.doc-card--browse').forEach(function (btn) {
+        btn.classList.toggle('doc-card--active', btn.getAttribute('data-doc-type') === docType);
+      });
+    }
+    updateDocVaultPreview(docType);
+  }
   function openQrModal(url) {
     var modal = document.getElementById('kd-qr-modal');
     var wrap = document.getElementById('kd-qr-wrap');
@@ -793,6 +937,8 @@
 
   let fieldData = {};
   let filesList = [];
+  var docPreviewBlobUrl = null;
+  var docPreviewSelectedType = null;
 
   function ensureFieldData() {
     GROUPS.forEach(g => {
@@ -979,7 +1125,9 @@
     return filesList.some(function (f) { return String(f.doc_type || '').trim() === t; });
   }
 
-  function renderDocSelectCards() {
+  function renderDocUploadCards() {
+    var root = document.getElementById('doc-upload-root');
+    if (!root) return;
     var html = DOC_CARD_PRESETS.map(function (p) {
       var sel = fileExistsForDocType(p.docType);
       var cls = 'doc-card' + (sel ? ' selected' : '');
@@ -992,17 +1140,55 @@
         dateLine +
         '</button>';
     }).join('');
-    [document.getElementById('doc-select-root'), document.getElementById('doc-select-root-mirror')].forEach(function (root) {
-      if (!root) return;
-      root.innerHTML = html;
-      root.querySelectorAll('.doc-card[data-doc-type]').forEach(function (btn) {
-        btn.onclick = function () {
-          pendingDocType = this.getAttribute('data-doc-type') || '';
-          var hid = document.getElementById('doc-file-hidden');
-          if (hid) { hid.value = ''; hid.click(); }
-        };
-      });
+    root.innerHTML = html;
+    root.querySelectorAll('.doc-card[data-doc-type]').forEach(function (btn) {
+      btn.onclick = function () {
+        pendingDocType = this.getAttribute('data-doc-type') || '';
+        var hid = document.getElementById('doc-file-hidden');
+        if (hid) { hid.value = ''; hid.click(); }
+      };
     });
+  }
+  function renderDocBrowseCards() {
+    var root = document.getElementById('doc-browse-root');
+    if (!root) return;
+    var html = DOC_CARD_PRESETS.map(function (p) {
+      var sel = fileExistsForDocType(p.docType);
+      var cls = 'doc-card doc-card--browse' + (sel ? ' selected' : '') + (docPreviewSelectedType === p.docType ? ' doc-card--active' : '');
+      var lastD = latestForDocType(p.docType);
+      var dateLine = lastD ? '<div class="dc-date">Último: ' + escapeHtml(formatShortDate(lastD)) + '</div>' : '';
+      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '" title="Ver ' + escapeAttr(p.label) + '">' +
+        '<div class="dc-icon" aria-hidden="true">' + p.icon + '</div>' +
+        '<div class="dc-title">' + escapeHtml(p.label) + '</div>' +
+        '<div class="dc-status">' + (sel ? '✓ Ver pré-visualização' : 'Não enviado') + '</div>' +
+        dateLine +
+        '</button>';
+    }).join('');
+    root.innerHTML = html;
+    root.querySelectorAll('.doc-card--browse[data-doc-type]').forEach(function (btn) {
+      btn.onclick = function () {
+        selectDocBrowse(this.getAttribute('data-doc-type') || '');
+      };
+    });
+  }
+  function renderDocCards() {
+    renderDocUploadCards();
+    renderDocBrowseCards();
+    if (docPreviewSelectedType) {
+      var still = fileExistsForDocType(docPreviewSelectedType);
+      if (still) updateDocVaultPreview(docPreviewSelectedType);
+      else {
+        revokeDocPreviewBlob();
+        docPreviewSelectedType = null;
+        var bodyEl = document.getElementById('doc-preview-body');
+        var btnLink = document.getElementById('btn-doc-copy-link');
+        var btnWa = document.getElementById('btn-doc-wa');
+        if (bodyEl) bodyEl.innerHTML = '<p class="preview-empty">Escolhe um documento à esquerda.</p>';
+        if (btnLink) { btnLink.disabled = true; btnLink.removeAttribute('data-file-id'); }
+        if (btnWa) { btnWa.disabled = true; btnWa.removeAttribute('data-file-id'); }
+        renderDocBrowseCards();
+      }
+    }
   }
 
   async function uploadKingDocFile(file, docTypeLabel) {
@@ -1018,9 +1204,9 @@
     if (!r.ok) return;
     const j = await r.json();
     filesList = (j.data && j.data.files) || [];
-    renderDocSelectCards();
+    renderDocCards();
     const el = document.getElementById('file-list');
-    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa os cartões acima ou «Outro documento» para enviar o primeiro.</p>'; renderShareTable(); renderExtraDocs(); return; }
+    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa a aba <strong>Upload</strong> ou «Outro documento» abaixo para enviar o primeiro.</p>'; renderShareTable(); renderExtraDocs(); return; }
     el.innerHTML = filesList.map(f => {
       var dt = f.created_at ? formatShortDate(new Date(f.created_at)) : '';
       return '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
@@ -1441,8 +1627,34 @@
       this.setAttribute('aria-selected', 'true');
       document.getElementById(this.getAttribute('data-panel')).classList.add('active');
       if (this.getAttribute('data-panel') === 'p-share') updateSharePreview();
+      if (this.getAttribute('data-panel') === 'p-docs' && docPreviewSelectedType) updateDocVaultPreview(docPreviewSelectedType);
     });
   });
+  document.getElementById('btn-doc-copy-link').onclick = async function () {
+    var id = this.getAttribute('data-file-id');
+    if (!id) return;
+    var f = filesList.find(function (x) { return String(x.id) === String(id); });
+    var url = await quickShareVaultFile(parseInt(id, 10), f ? (f.doc_type || 'Documento') : 'Documento');
+    if (url) {
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('Link copiado.', 'ok');
+      } catch (e) {
+        showToast(url, 'neutral');
+      }
+      loadLinks();
+    }
+  };
+  document.getElementById('btn-doc-wa').onclick = async function () {
+    var id = this.getAttribute('data-file-id');
+    if (!id) return;
+    var f = filesList.find(function (x) { return String(x.id) === String(id); });
+    var url = await quickShareVaultFile(parseInt(id, 10), f ? (f.doc_type || 'Documento') : 'Documento');
+    if (url) {
+      window.open('https://wa.me/?text=' + encodeURIComponent('Documento (King Docs):\n' + url), '_blank', 'noopener,noreferrer');
+      loadLinks();
+    }
+  };
 
   document.getElementById('kd-theme-toggle').onclick = function () {
     applyTheme(!document.body.classList.contains('kd-theme-dark'));
@@ -1522,7 +1734,7 @@
   renderModelsChips();
   renderCustomShortcuts();
   initKdEmojiPicker();
-  renderDocSelectCards();
+  renderDocCards();
   loadVault().then(loadProfileHints);
 })();
   </script>

@@ -71,6 +71,19 @@ async function deleteFile(req, res) {
   }
 }
 
+async function downloadFile(req, res) {
+  try {
+    const { buffer, mime, filename } = await service.downloadFileForOwner(req.user.userId, req.params.id);
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
+    return res.send(buffer);
+  } catch (e) {
+    logger.error('kingDocs downloadFile', e);
+    const code = e.statusCode || 500;
+    return responseFormatter.error(res, e.message || 'Erro', code);
+  }
+}
+
 async function createShare(req, res) {
   try {
     const out = await service.createShare(req.user.userId, req.body || {});
@@ -187,6 +200,7 @@ module.exports = {
   listFiles,
   uploadFile,
   deleteFile,
+  downloadFile,
   createShare,
   listShares,
   revokeShare,

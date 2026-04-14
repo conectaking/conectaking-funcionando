@@ -26,6 +26,7 @@ router.put('/vault', protectUser, requireModule('king_docs'), express.json({ lim
 router.post('/vault/import-profile', protectUser, requireModule('king_docs'), asyncHandler(controller.importProfile));
 router.get('/vault/export-pdf', protectUser, requireModule('king_docs'), asyncHandler(controller.exportPdf));
 
+router.get('/files/:id/download', protectUser, requireModule('king_docs'), asyncHandler(controller.downloadFile));
 router.get('/files', protectUser, requireModule('king_docs'), asyncHandler(controller.listFiles));
 router.post(
   '/files',

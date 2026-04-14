@@ -398,6 +398,33 @@ async function exportVaultPdf(userId) {
   return Buffer.from(await pdfDoc.save());
 }
 
+/** Download do dono (autenticado) — pré-visualização no painel Documentos */
+async function downloadFileForOwner(userId, fileId) {
+  const fid = parseInt(fileId, 10);
+  if (!Number.isFinite(fid) || fid < 1) {
+    const err = new Error('ID inválido.');
+    err.statusCode = 400;
+    throw err;
+  }
+  const file = await repo.getFileByIdForUser(fid, userId);
+  if (!file) {
+    const err = new Error('Ficheiro não encontrado.');
+    err.statusCode = 404;
+    throw err;
+  }
+  const buf = await r2GetObjectBuffer(file.storage_key);
+  if (!buf) {
+    const err = new Error('Não foi possível obter o ficheiro.');
+    err.statusCode = 503;
+    throw err;
+  }
+  return {
+    buffer: buf,
+    mime: file.mime || 'application/octet-stream',
+    filename: file.original_name || `documento-${fid}`
+  };
+}
+
 module.exports = {
   buildSnapshot,
   createShare,
@@ -405,6 +432,7 @@ module.exports = {
   saveVault,
   saveUploadedFile,
   removeFile,
+  downloadFileForOwner,
   publicMeta,
   publicUnlock,
   publicData,
