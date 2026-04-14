@@ -425,6 +425,10 @@ async function downloadFileForOwner(userId, fileId) {
   };
 }
 
+async function deleteSharePermanent(userId, shareId) {
+  return repo.deleteSharePermanent(shareId, userId);
+}
+
 module.exports = {
   buildSnapshot,
   createShare,
@@ -441,5 +445,6 @@ module.exports = {
   exportVaultPdf,
   listFiles: (uid) => repo.listFiles(uid),
   listShares: (uid) => repo.listShares(uid),
-  revokeShare: (uid, id) => repo.revokeShare(id, uid)
+  revokeShare: (uid, id) => repo.revokeShare(id, uid),
+  deleteSharePermanent
 };

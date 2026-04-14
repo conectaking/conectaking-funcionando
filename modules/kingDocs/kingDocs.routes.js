@@ -39,6 +39,7 @@ router.delete('/files/:id', protectUser, requireModule('king_docs'), asyncHandle
 
 router.post('/shares', protectUser, requireModule('king_docs'), express.json({ limit: '512kb' }), asyncHandler(controller.createShare));
 router.get('/shares', protectUser, requireModule('king_docs'), asyncHandler(controller.listShares));
+router.delete('/shares/:id/permanent', protectUser, requireModule('king_docs'), asyncHandler(controller.deleteSharePermanent));
 router.delete('/shares/:id', protectUser, requireModule('king_docs'), asyncHandler(controller.revokeShare));
 
 module.exports = router;

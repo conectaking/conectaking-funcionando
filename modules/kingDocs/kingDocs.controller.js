@@ -117,6 +117,19 @@ async function revokeShare(req, res) {
   }
 }
 
+async function deleteSharePermanent(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return responseFormatter.error(res, 'ID inválido.', 400);
+    const r = await service.deleteSharePermanent(req.user.userId, id);
+    if (!r) return responseFormatter.error(res, 'Partilha não encontrada.', 404);
+    return responseFormatter.success(res, { ok: true });
+  } catch (e) {
+    logger.error('kingDocs deleteSharePermanent', e);
+    return responseFormatter.error(res, e.message || 'Erro', 500);
+  }
+}
+
 async function publicMeta(req, res) {
   try {
     const meta = await service.publicMeta(req.params.token);
@@ -204,6 +217,7 @@ module.exports = {
   createShare,
   listShares,
   revokeShare,
+  deleteSharePermanent,
   publicMeta,
   publicUnlock,
   publicData,

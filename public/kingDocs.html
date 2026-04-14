@@ -217,6 +217,10 @@
     .kd-cdt-emoji-pop .kd-emoji-opt:hover { background: var(--trust-bg); }
     .links-actions { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
     .links-actions .btn { font-size: .72rem; padding: .28rem .5rem; }
+    .kd-links-bulk { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin-bottom: .65rem; }
+    .kd-links-bulk .kd-links-bulk-hint { margin: 0; font-size: .74rem; color: var(--muted); flex: 1; min-width: 200px; }
+    #links-list table input[type="checkbox"] { cursor: pointer; width: 1.05rem; height: 1.05rem; vertical-align: middle; }
+    .kd-links-col-actions { display: flex; flex-direction: column; gap: .35rem; align-items: stretch; }
     .panel.active { box-shadow: 0 2px 24px rgba(0,0,0,.06); }
     body.kd-theme-dark .panel.active { box-shadow: 0 2px 28px rgba(0,0,0,.35); }
     .doc-card--browse { cursor: pointer; text-align: center; }
@@ -542,7 +546,12 @@
     </div>
 
     <div id="p-links" class="panel" role="tabpanel" aria-labelledby="tab-p-links">
-      <p class="sub" style="margin-top:0">Links que criaste: copia, partilha ou revoga. <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
+      <p class="sub" style="margin-top:0">Links que criaste: copia, partilha, <strong>revoga</strong> (invalida) ou <strong>exclui</strong> (remove da lista). <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
+      <div class="kd-links-bulk">
+        <button type="button" class="btn secondary" id="btn-links-revoke-sel">Revogar selecionados</button>
+        <button type="button" class="btn bad" id="btn-links-delete-sel">Excluir selecionados</button>
+        <p class="kd-links-bulk-hint">Marca as linhas à esquerda. <strong>Revogar</strong> mantém o registo como revogado; <strong>Excluir</strong> apaga o registo (não volta a aparecer).</p>
+      </div>
       <div class="kd-filter-links">
         <label for="links-filter" class="visually-hidden">Filtrar lista</label>
         <input type="search" id="links-filter" placeholder="Filtrar por ID, estado ou data…" autocomplete="off"/>
@@ -1999,6 +2008,15 @@
     return '<span class="kd-badge kd-badge-ok">Ativo</span>';
   }
 
+  function getSelectedShareIds() {
+    var ids = [];
+    document.querySelectorAll('#links-list .links-sel:checked').forEach(function (cb) {
+      var id = parseInt(cb.getAttribute('data-id'), 10);
+      if (id) ids.push(id);
+    });
+    return ids;
+  }
+
   async function loadLinks() {
     const el = document.getElementById('links-list');
     const r = await fetch(api('/api/king-docs/shares'), { headers: authHeaders() });
@@ -2006,10 +2024,10 @@
     const j = await r.json();
     const arr = (j.data && j.data.shares) || [];
     if (!arr.length) { el.innerHTML = '<p class="sub">Ainda não criaste nenhum link. Vai à aba «Criar link» quando quiseres partilhar.</p>'; return; }
-    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th>ID</th><th>Estado</th><th>Ações</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th></th></tr>' +
+    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th style="width:2.2rem"><input type="checkbox" id="links-sel-all" title="Selecionar todos"/></th><th>ID</th><th>Estado</th><th>Ações</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th>Gestão</th></tr>' +
       arr.map(s => {
         const u = window.location.origin + '/kingDocsShare.html?t=' + encodeURIComponent(s.token);
-        return '<tr><td>' + s.id + '</td><td>' + shareLinkStatusBadge(s) + '</td><td class="links-actions"><a class="btn secondary" href="' + escapeAttr(u) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block;font-size:.72rem;padding:.28rem .5rem">Abrir</a> <button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar</button> <button type="button" class="btn secondary btn-qr-row" data-u="' + escapeAttr(u) + '">QR</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button></td></tr>';
+        return '<tr><td><input type="checkbox" class="links-sel" data-id="' + s.id + '" aria-label="Selecionar link #' + s.id + '"/></td><td>' + s.id + '</td><td>' + shareLinkStatusBadge(s) + '</td><td class="links-actions"><a class="btn secondary" href="' + escapeAttr(u) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block;font-size:.72rem;padding:.28rem .5rem">Abrir</a> <button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar</button> <button type="button" class="btn secondary btn-qr-row" data-u="' + escapeAttr(u) + '">QR</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td class="kd-links-col-actions"><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button><button type="button" class="btn secondary btn-del-perm" data-id="' + s.id + '">Excluir</button></td></tr>';
       }).join('') + '</table>';
     el.querySelectorAll('.btn-copyt').forEach(b => {
       b.onclick = function() { navigator.clipboard.writeText(this.getAttribute('data-u')); showToast('URL copiada.', 'ok'); };
@@ -2019,12 +2037,30 @@
     });
     el.querySelectorAll('.btn-rev').forEach(b => {
       b.onclick = async function() {
-        if (!confirm('Revogar este link?')) return;
+        if (!confirm('Revogar este link? O URL deixa de funcionar, mas o registo continua na lista como «Revogado».')) return;
         await fetch(api('/api/king-docs/shares/' + this.getAttribute('data-id')), { method: 'DELETE', headers: authHeaders() });
         showToast('Link revogado.', 'ok');
         loadLinks();
       };
     });
+    el.querySelectorAll('.btn-del-perm').forEach(function (b) {
+      b.onclick = async function () {
+        if (!confirm('Excluir este registo da lista? O link deixa de existir no teu histórico (ação definitiva).')) return;
+        var id = this.getAttribute('data-id');
+        var r = await fetch(api('/api/king-docs/shares/' + id + '/permanent'), { method: 'DELETE', headers: authHeaders() });
+        if (!r.ok) { showToast('Não foi possível excluir.', 'err'); return; }
+        showToast('Link excluído da lista.', 'ok');
+        loadLinks();
+      };
+    });
+    var selAll = document.getElementById('links-sel-all');
+    if (selAll) {
+      selAll.checked = false;
+      selAll.onchange = function () {
+        var on = selAll.checked;
+        el.querySelectorAll('.links-sel').forEach(function (cb) { cb.checked = on; });
+      };
+    }
     (function bindLinksFilterOnce() {
       var inp = document.getElementById('links-filter');
       if (!inp || inp._kdBound) return;

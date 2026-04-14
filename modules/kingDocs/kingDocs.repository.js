@@ -95,6 +95,15 @@ async function revokeShare(shareId, userId) {
   return rows[0] || null;
 }
 
+/** Remove o registo da partilha (deixa de aparecer na lista). */
+async function deleteSharePermanent(shareId, userId) {
+  const { rows } = await db.query(
+    'DELETE FROM king_docs_share_links WHERE id = $1 AND user_id = $2 RETURNING id',
+    [shareId, userId]
+  );
+  return rows[0] || null;
+}
+
 async function setViewerToken(shareId, viewerToken) {
   await db.query('UPDATE king_docs_share_links SET viewer_token = $1 WHERE id = $2', [viewerToken, shareId]);
 }
@@ -117,6 +126,7 @@ module.exports = {
   findShareByToken,
   listShares,
   revokeShare,
+  deleteSharePermanent,
   setViewerToken,
   incrementViewCount
 };
