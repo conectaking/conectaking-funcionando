@@ -184,10 +184,24 @@
     .doc-preview-actions .doc-act-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); width: 100%; margin-bottom: .15rem; }
     .doc-preview-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
     .doc-preview-stack-item { border: 1px solid var(--border); border-radius: 10px; padding: .5rem; margin-bottom: .75rem; background: var(--card); }
+    .doc-preview-stack-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; margin-bottom: .4rem; }
+    .doc-preview-stack-title { font-size: .82rem; font-weight: 700; color: var(--ink); letter-spacing: .02em; }
+    .doc-preview-sel-chip { font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; background: #e8f0ea; color: var(--accent); padding: .2rem .45rem; border-radius: 6px; border: 1px solid rgba(45,90,61,.25); }
+    body.kd-theme-dark .doc-preview-sel-chip { background: #243528; border-color: rgba(123,201,154,.35); }
     .doc-preview-stack-item h4 { margin: 0 0 .4rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
     .doc-preview-stack-item:last-child { margin-bottom: 0; }
+    .kd-custom-doctypes { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border); }
+    .kd-custom-doctype-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .65rem; }
+    .kd-custom-doctype-form input[type=text] { max-width: 220px; }
+    .kd-cdt-list { list-style: none; margin: 0; padding: 0; font-size: .82rem; }
+    .kd-cdt-item { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; padding: .4rem 0; border-bottom: 1px solid var(--border); }
+    .kd-cdt-item .btn { font-size: .74rem; padding: .28rem .55rem; }
+    .kd-cdt-empty { color: var(--muted); font-size: .8rem; padding: .25rem 0; }
+    .kd-cdt-ico { font-size: 1.2rem; }
+    .kd-filter-links { margin-bottom: .65rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .kd-filter-links input { max-width: 220px; }
+    .kd-dados-saved-hint { font-size: .74rem; color: var(--muted); margin: -.5rem 0 .75rem; }
     .doc-card--browse { cursor: pointer; text-align: center; }
-    .doc-card--browse.doc-card--active { box-shadow: 0 0 0 2px var(--accent); border-color: var(--accent); }
     /* Documentos — grelha tipo cartões */
     .doc-panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1rem 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,.06); margin-bottom: 1.25rem; }
     .doc-badge { display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .35rem .85rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; font-size: .68rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 auto 1rem; width: fit-content; text-transform: uppercase; }
@@ -195,6 +209,16 @@
     @media (max-width: 640px) { .doc-grid { grid-template-columns: repeat(2, 1fr); } }
     .doc-card { border: 1px solid #3d5c45; border-radius: 8px; background: #e8f5ea; padding: .75rem .5rem; text-align: center; cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; font: inherit; color: inherit; width: 100%; }
     .doc-card:hover { box-shadow: 0 2px 8px rgba(45,90,61,.12); }
+    .doc-card.doc-card--browse.doc-card--active { background: #d4edda; border-color: #2d5a3d; box-shadow: 0 0 0 2px var(--accent); }
+    .doc-card.doc-card--browse.doc-card--active:hover {
+      background: #ecf6d4;
+      border-color: #6b8f3a;
+      box-shadow: 0 0 0 2px var(--accent), 0 4px 16px rgba(234, 179, 8, 0.42);
+    }
+    body.kd-theme-dark .doc-card.doc-card--browse.doc-card--active:hover {
+      background: #2a3828;
+      box-shadow: 0 0 0 2px var(--accent), 0 4px 18px rgba(250, 204, 21, 0.25);
+    }
     .doc-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .doc-card.selected { background: #d4edda; border-color: #2d5a3d; }
     .doc-card .dc-icon { font-size: 1.75rem; line-height: 1; margin-bottom: .35rem; }
@@ -310,7 +334,7 @@
       <summary>Como funciona o cofre? (ajuda rápida)</summary>
       <ul>
         <li><strong>Dados</strong> — preenche e guarda; podes importar do teu cartão Conecta King ou exportar PDF como backup.</li>
-        <li><strong>Upload</strong> — envia PDFs ou imagens para o cofre por tipo de documento.</li>
+        <li><strong>Upload</strong> — envia ficheiros por tipo (padrão ou <strong>tipos criados por ti</strong> com nome e ícone).</li>
         <li><strong>Documentos</strong> — vê pré-visualização e gera link ou envia por WhatsApp (sem novo upload aqui).</li>
         <li><strong>Criar link</strong> — escolhe o que entra no link; o destinatário só vê isso. Define prazo, senha ou limite de vistas.</li>
         <li><strong>Os meus links</strong> — copia URLs ou revoga quando não precisares. Nada disto envia e-mail automaticamente.</li>
@@ -367,11 +391,21 @@
     <div id="p-dados" class="panel active" role="tabpanel" aria-labelledby="tab-p-dados"></div>
 
     <div id="p-upload" class="panel" role="tabpanel" aria-labelledby="tab-p-upload">
-      <p class="sub">Envia PDF ou imagem <strong>para o cofre</strong>. Cada cartão abre o explorador para esse tipo de documento. Depois usa a aba <strong>Documentos</strong> para pré-visualizar e partilhar.</p>
+      <p class="sub">Envia PDF ou imagem <strong>para o cofre</strong>. Cada cartão abre o explorador para esse tipo. Em <strong>Tipos extra</strong> crias novos tipos (nome + ícone) — aparecem como cartões em cima. Depois usa <strong>Documentos</strong> para pré-visualizar e partilhar.</p>
       <div class="doc-panel-card">
         <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Enviar ao cofre</div>
         <div id="doc-upload-root" class="doc-grid"></div>
         <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
+        <div class="kd-custom-doctypes" id="kd-custom-doctypes-wrap">
+          <p class="group" style="margin:0 0 .5rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Tipos extra (nome + ícone)</p>
+          <p class="sub" style="margin-top:0">Cria quantos quiseres. O nome vira a chave do tipo (maiúsculas). Não podes duplicar um tipo que já existe nos cartões padrão.</p>
+          <div class="kd-custom-doctype-form">
+            <input type="text" id="kd-cdt-label" placeholder="Nome (ex.: Passaporte)" maxlength="60" aria-label="Nome do novo tipo"/>
+            <input type="text" id="kd-cdt-icon" placeholder="Ícone" maxlength="8" value="📎" aria-label="Ícone emoji" title="Um emoji ou símbolo"/>
+            <button type="button" class="btn secondary" id="kd-cdt-add">Adicionar tipo</button>
+          </div>
+          <ul id="kd-cdt-list" class="kd-cdt-list" aria-label="Tipos extra guardados neste dispositivo"></ul>
+        </div>
       </div>
       <p class="doc-fallback-title">Outro documento</p>
       <p class="sub" style="margin-top:0">Tipo livre (ex.: CPF, comprovante).</p>
@@ -391,12 +425,13 @@
           </div>
         </div>
         <aside class="preview-de-envio doc-vault-preview" aria-label="Pré-visualização dos documentos">
-          <div class="preview-header">Pré-visualização</div>
+          <div class="preview-header">Pré-visualização <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span></div>
           <div id="doc-preview-body" class="preview-body">
             <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
           </div>
           <div class="doc-preview-actions" id="doc-preview-actions">
             <div class="doc-preview-actions-row">
+              <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled>Limpar seleção</button>
               <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
             </div>
             <div class="doc-preview-actions-row">
@@ -423,6 +458,7 @@
       <div class="kd-trust-strip" role="note">
         <strong>Antes de gerar o link</strong>
         <ul>
+          <li>Quem receber abre o link no <strong>browser</strong> (telefone ou PC) — não precisa de app.</li>
           <li>Quem receber o link só vê o que aparece no painel <em>Preview de envio</em> à direita.</li>
           <li>Podes definir <strong>prazo</strong> (horas), <strong>senha</strong> e <strong>limite de visualizações</strong> abaixo.</li>
           <li>Depois de gerado, podes <strong>revogar</strong> o link na aba «Os meus links».</li>
@@ -481,6 +517,10 @@
 
     <div id="p-links" class="panel" role="tabpanel" aria-labelledby="tab-p-links">
       <p class="sub" style="margin-top:0">Links que criaste: copia, partilha ou revoga. <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
+      <div class="kd-filter-links">
+        <label for="links-filter" class="visually-hidden">Filtrar lista</label>
+        <input type="search" id="links-filter" placeholder="Filtrar por ID, estado ou data…" autocomplete="off"/>
+      </div>
       <div id="links-list"></div>
     </div>
     </div>
@@ -760,10 +800,7 @@
   let pendingDocType = '';
   var docPreviewBlobUrls = {};
   var docPreviewSelectedTypes = [];
-  function docTypeLabel(docType) {
-    var p = DOC_CARD_PRESETS.find(function (x) { return x.docType === docType; });
-    return p ? p.label : docType;
-  }
+  var docPreviewRefreshGen = 0;
 
   function revokeDocPreviewBlobAll() {
     Object.keys(docPreviewBlobUrls).forEach(function (k) {
@@ -826,7 +863,7 @@
     return out;
   }
   function setDocPreviewActionButtons(enabled) {
-    ['btn-doc-copy-link', 'btn-doc-wa-link', 'btn-doc-wa-list', 'btn-doc-wa-sep', 'btn-doc-pdf-dl', 'btn-doc-pdf-share'].forEach(function (id) {
+    ['btn-doc-clear-sel', 'btn-doc-copy-link', 'btn-doc-wa-link', 'btn-doc-wa-list', 'btn-doc-wa-sep', 'btn-doc-pdf-dl', 'btn-doc-pdf-share'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = !enabled;
     });
@@ -891,11 +928,27 @@
     return new Blob([out], { type: 'application/pdf' });
   }
   async function refreshDocVaultPreview() {
-    revokeDocPreviewBlobAll();
+    var gen = ++docPreviewRefreshGen;
     var bodyEl = document.getElementById('doc-preview-body');
+    var badgeEl = document.getElementById('doc-preview-sel-badge');
     if (!bodyEl) return;
+
     var types = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
     docPreviewSelectedTypes = types.slice();
+
+    if (badgeEl) {
+      if (types.length) {
+        badgeEl.style.display = '';
+        badgeEl.textContent = types.length === 1 ? '1 selecionado' : types.length + ' selecionados';
+      } else {
+        badgeEl.style.display = 'none';
+        badgeEl.textContent = '';
+      }
+    }
+
+    revokeDocPreviewBlobAll();
+    if (gen !== docPreviewRefreshGen) return;
+
     if (!types.length) {
       bodyEl.innerHTML = '<p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>';
       setDocPreviewActionButtons(false);
@@ -906,26 +959,37 @@
     try {
       var frag = document.createDocumentFragment();
       for (var ti = 0; ti < types.length; ti++) {
+        if (gen !== docPreviewRefreshGen) return;
         var docType = types[ti];
         var f = getLatestFileForDocType(docType);
         if (!f) continue;
         var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
+        if (gen !== docPreviewRefreshGen) return;
         if (!res.ok) {
           var errDiv = document.createElement('div');
           errDiv.className = 'doc-preview-stack-item';
-          errDiv.innerHTML = '<h4>' + escapeHtml(docTypeLabel(docType)) + '</h4><p class="err">Não foi possível carregar.</p>';
+          errDiv.innerHTML = '<div class="doc-preview-stack-head"><span class="doc-preview-stack-title">' + escapeHtml(docTypeLabel(docType)) + '</span><span class="doc-preview-sel-chip">Selecionado</span></div><p class="err">Não foi possível carregar.</p>';
           frag.appendChild(errDiv);
           continue;
         }
         var blob = await res.blob();
+        if (gen !== docPreviewRefreshGen) return;
         var url = URL.createObjectURL(blob);
         docPreviewBlobUrls[docType] = url;
         var mime = (f.mime || '').toLowerCase();
         var wrap = document.createElement('div');
         wrap.className = 'doc-preview-stack-item';
-        var h4 = document.createElement('h4');
-        h4.textContent = docTypeLabel(docType);
-        wrap.appendChild(h4);
+        var head = document.createElement('div');
+        head.className = 'doc-preview-stack-head';
+        var title = document.createElement('span');
+        title.className = 'doc-preview-stack-title';
+        title.textContent = docTypeLabel(docType);
+        var chip = document.createElement('span');
+        chip.className = 'doc-preview-sel-chip';
+        chip.textContent = 'Selecionado';
+        head.appendChild(title);
+        head.appendChild(chip);
+        wrap.appendChild(head);
         var meta = document.createElement('p');
         meta.className = 'sub';
         meta.style.margin = '0 0 .45rem';
@@ -957,9 +1021,11 @@
         }
         frag.appendChild(wrap);
       }
+      if (gen !== docPreviewRefreshGen) return;
       bodyEl.innerHTML = '';
       bodyEl.appendChild(frag);
     } catch (err) {
+      if (gen !== docPreviewRefreshGen) return;
       bodyEl.innerHTML = '<p class="err">Erro ao carregar a pré-visualização.</p>';
       setDocPreviewActionButtons(false);
     }
@@ -1089,7 +1155,9 @@
   function renderDados() {
     ensureFieldData();
     const el = document.getElementById('p-dados');
+    var vaultHint = formatVaultSavedHint();
     let html = '<p class="sub">Preenche os campos que quiseres. <strong>Guardar dados</strong> grava no cofre (servidor). <strong>Exportar PDF</strong> faz um backup teu no dispositivo.</p>';
+    if (vaultHint) html += '<p class="kd-dados-saved-hint">' + escapeHtml(vaultHint) + '</p>';
     html += '<div class="btn-row">';
     html += '<button type="button" class="btn" id="btn-save-vault">Guardar dados</button>';
     html += '<button type="button" class="btn secondary" id="btn-import-profile">Importar do perfil (cartão)</button>';
@@ -1231,7 +1299,9 @@
   async function saveVault() {
     const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
     if (!r.ok) { showToast('Não foi possível guardar. Tenta outra vez.', 'err'); return; }
+    try { localStorage.setItem(VAULT_SAVED_AT_KEY, String(Date.now())); } catch (e) {}
     showToast('Dados guardados no servidor.', 'ok');
+    renderDados();
   }
 
   async function importFromProfile() {
@@ -1264,10 +1334,94 @@
     return filesList.some(function (f) { return String(f.doc_type || '').trim() === t; });
   }
 
+  var CUSTOM_DOC_TYPES_KEY = 'kingDocs_custom_doc_types_v1';
+  var VAULT_SAVED_AT_KEY = 'kingDocs_vault_saved_hint_v1';
+  function loadCustomDocTypes() {
+    try {
+      var raw = localStorage.getItem(CUSTOM_DOC_TYPES_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter(function (x) { return x && String(x.docType || '').trim(); }) : [];
+    } catch (e) { return []; }
+  }
+  function saveCustomDocTypes(arr) {
+    try { localStorage.setItem(CUSTOM_DOC_TYPES_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function normalizeDocTypeKey(s) {
+    return String(s || '').trim().toUpperCase().slice(0, 80);
+  }
+  function getDocCardPresetsMerged() {
+    var seen = {};
+    var out = [];
+    DOC_CARD_PRESETS.forEach(function (p) {
+      seen[p.docType] = true;
+      out.push({ docType: p.docType, label: p.label, icon: p.icon, isCustom: false });
+    });
+    loadCustomDocTypes().forEach(function (c) {
+      var dt = normalizeDocTypeKey(c.docType);
+      if (!dt || seen[dt]) return;
+      seen[dt] = true;
+      out.push({
+        docType: dt,
+        label: String(c.label || dt).trim().slice(0, 60),
+        icon: (String(c.icon || '📎').trim().slice(0, 8) || '📎'),
+        isCustom: true
+      });
+    });
+    if (filesList && filesList.length) {
+      filesList.forEach(function (f) {
+        var raw = String(f.doc_type || '').trim();
+        if (!raw) return;
+        if (seen[raw]) return;
+        seen[raw] = true;
+        out.push({ docType: raw, label: raw, icon: '📄', isCustom: true, orphan: true });
+      });
+    }
+    return out;
+  }
+  function docTypeLabel(docType) {
+    var t = String(docType || '').trim();
+    var merged = getDocCardPresetsMerged();
+    var p = merged.find(function (x) { return x.docType === t; });
+    return p ? p.label : t;
+  }
+  function formatVaultSavedHint() {
+    try {
+      var raw = localStorage.getItem(VAULT_SAVED_AT_KEY);
+      if (!raw) return '';
+      var d = new Date(parseInt(raw, 10));
+      if (isNaN(d.getTime())) return '';
+      return 'Última gravação neste dispositivo: ' + d.toLocaleString('pt-BR');
+    } catch (e) { return ''; }
+  }
+  function renderCustomDocTypesList() {
+    var ul = document.getElementById('kd-cdt-list');
+    if (!ul) return;
+    var arr = loadCustomDocTypes();
+    if (!arr.length) {
+      ul.innerHTML = '<li class="kd-cdt-empty">Nenhum tipo extra. Usa o formulário acima.</li>';
+      return;
+    }
+    ul.innerHTML = arr.map(function (c, i) {
+      return '<li class="kd-cdt-item"><span class="kd-cdt-ico" aria-hidden="true">' + escapeHtml(String(c.icon || '📎').slice(0, 8)) + '</span> <strong>' + escapeHtml(String(c.label || '').slice(0, 60)) + '</strong> <code style="font-size:.72rem;opacity:.85">' + escapeHtml(normalizeDocTypeKey(c.docType)) + '</code> ' +
+        '<button type="button" class="btn secondary btn-kd-cdt-rem" data-i="' + i + '">Remover</button></li>';
+    }).join('');
+    ul.querySelectorAll('.btn-kd-cdt-rem').forEach(function (b) {
+      b.onclick = function () {
+        var ix = parseInt(this.getAttribute('data-i'), 10);
+        var a = loadCustomDocTypes();
+        if (ix < 0 || ix >= a.length) return;
+        a.splice(ix, 1);
+        saveCustomDocTypes(a);
+        renderCustomDocTypesList();
+        renderDocCards();
+      };
+    });
+  }
+
   function renderDocUploadCards() {
     var root = document.getElementById('doc-upload-root');
     if (!root) return;
-    var html = DOC_CARD_PRESETS.map(function (p) {
+    var html = getDocCardPresetsMerged().map(function (p) {
       var sel = fileExistsForDocType(p.docType);
       var cls = 'doc-card' + (sel ? ' selected' : '');
       var lastD = latestForDocType(p.docType);
@@ -1291,7 +1445,7 @@
   function renderDocBrowseCards() {
     var root = document.getElementById('doc-browse-root');
     if (!root) return;
-    var html = DOC_CARD_PRESETS.map(function (p) {
+    var html = getDocCardPresetsMerged().map(function (p) {
       var sel = fileExistsForDocType(p.docType);
       var active = docPreviewSelectedTypes.indexOf(p.docType) >= 0;
       var cls = 'doc-card doc-card--browse' + (sel ? ' selected' : '') + (active ? ' doc-card--active' : '');
@@ -1709,6 +1863,21 @@
         loadLinks();
       };
     });
+    (function bindLinksFilterOnce() {
+      var inp = document.getElementById('links-filter');
+      if (!inp || inp._kdBound) return;
+      inp._kdBound = true;
+      inp.addEventListener('input', function () {
+        var q = (inp.value || '').toLowerCase().trim();
+        var table = document.querySelector('#links-list table');
+        if (!table) return;
+        var rows = table.querySelectorAll('tr');
+        rows.forEach(function (tr, i) {
+          if (i === 0) return;
+          tr.style.display = !q || (tr.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+        });
+      });
+    })();
   }
 
   document.getElementById('btn-preset-all').onclick = function() {
@@ -1763,6 +1932,36 @@
       if (this.getAttribute('data-panel') === 'p-docs' && docPreviewSelectedTypes.length) refreshDocVaultPreview();
     });
   });
+  document.getElementById('btn-doc-clear-sel').onclick = function () {
+    docPreviewSelectedTypes = [];
+    revokeDocPreviewBlobAll();
+    renderDocBrowseCards();
+    refreshDocVaultPreview();
+  };
+  document.getElementById('kd-cdt-add').onclick = function () {
+    var labelEl = document.getElementById('kd-cdt-label');
+    var iconEl = document.getElementById('kd-cdt-icon');
+    var label = labelEl && labelEl.value.trim();
+    var icon = (iconEl && iconEl.value ? iconEl.value : '📎').trim().slice(0, 8) || '📎';
+    if (!label) { showToast('Escreve um nome para o tipo.', 'neutral'); return; }
+    var dt = normalizeDocTypeKey(label);
+    if (!dt) { showToast('Nome inválido.', 'neutral'); return; }
+    if (DOC_CARD_PRESETS.some(function (p) { return p.docType === dt; })) {
+      showToast('Já existe um cartão padrão com esse nome.', 'neutral');
+      return;
+    }
+    var arr = loadCustomDocTypes();
+    if (arr.some(function (x) { return normalizeDocTypeKey(x.docType) === dt; })) {
+      showToast('Esse tipo extra já existe.', 'neutral');
+      return;
+    }
+    arr.push({ docType: dt, label: label.slice(0, 60), icon: icon });
+    saveCustomDocTypes(arr);
+    if (labelEl) labelEl.value = '';
+    renderCustomDocTypesList();
+    renderDocCards();
+    showToast('Tipo criado. Clica no cartão «Enviar ao cofre» para enviar.', 'ok');
+  };
   document.getElementById('btn-doc-copy-link').onclick = async function () {
     var extra = getSelectedExtraDocs();
     if (!extra.length) return;
@@ -1932,6 +2131,7 @@
   renderModelsChips();
   renderCustomShortcuts();
   initKdEmojiPicker();
+  renderCustomDocTypesList();
   renderDocCards();
   loadVault().then(loadProfileHints);
 })();
