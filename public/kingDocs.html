@@ -110,11 +110,38 @@
     .kd-hero-sub { margin: 0 auto; font-size: .88rem; color: var(--muted); max-width: 26rem; line-height: 1.45; }
     .kd-hero-atalhos { text-align: left; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: .25rem; }
     .kd-hero-atalhos .atalhos-block { margin: 0; }
+    /* Toasts */
+    #kd-toast-host { position: fixed; bottom: 1rem; right: 1rem; left: 1rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; pointer-events: none; max-width: 420px; margin-left: auto; }
+    .kd-toast { pointer-events: auto; background: var(--ink); color: #fff; padding: .65rem .9rem; border-radius: 10px; font-size: .84rem; box-shadow: 0 8px 32px rgba(0,0,0,.18); animation: kdToastIn .22s ease; max-width: 100%; line-height: 1.35; }
+    .kd-toast.kd-toast--ok { background: var(--accent); }
+    .kd-toast.kd-toast--err { background: #a33030; }
+    .kd-toast.kd-toast--neutral { background: #3a3632; }
+    @keyframes kdToastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    /* Carregamento inicial */
+    .kd-load-overlay { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(247,244,239,.82); backdrop-filter: blur(4px); align-items: center; justify-content: center; flex-direction: column; gap: .75rem; }
+    body.kd-app-loading .kd-load-overlay { display: flex; }
+    .kd-load-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: kdSpin .7s linear infinite; }
+    @keyframes kdSpin { to { transform: rotate(360deg); } }
+    .kd-load-text { font-size: .88rem; color: var(--muted); }
+    /* Partilha — destaque + confiança */
+    .kd-share-head { border-left: 4px solid var(--accent); padding-left: .85rem; margin-bottom: 1rem; }
+    .kd-share-head h2 { font-size: 1.05rem; margin: 0 0 .35rem; font-weight: 700; color: var(--ink); }
+    .kd-trust-strip { background: #faf9f7; border: 1px solid var(--border); border-radius: 10px; padding: .75rem .9rem; margin-bottom: 1rem; font-size: .8rem; color: var(--muted); line-height: 1.5; }
+    .kd-trust-strip strong { display: block; color: var(--accent); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem; }
+    .kd-trust-strip ul { margin: 0; padding-left: 1.1rem; }
+    .kd-share-summary { margin: 0 0 .9rem; font-size: .84rem; color: var(--muted); padding: .55rem .65rem; border-radius: 8px; background: #faf9f7; border: 1px dashed var(--border); }
+    .kd-share-summary.kd-share-summary--ok { border-color: #b8d4c0; background: #e8f0ea; color: var(--accent); }
+    .kd-badge { display: inline-block; font-size: .65rem; padding: .2rem .45rem; border-radius: 6px; font-weight: 600; }
+    .kd-badge-ok { background: #e8f0ea; color: var(--accent); }
+    .kd-badge-muted { background: #eceae7; color: var(--muted); }
+    .kd-badge-bad { background: #fde8e8; color: #922b21; }
+    .file-list-skel .skel-line { height: 10px; background: linear-gradient(90deg, #eceae7 0%, #f5f3ef 50%, #eceae7 100%); background-size: 200% 100%; animation: kdSkel 1.2s ease infinite; border-radius: 4px; margin-bottom: .5rem; }
+    @keyframes kdSkel { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="banner"><strong>King Docs</strong> — dados confidenciais. Não aparecem no teu cartão público. Só são enviados quando crias um link ou copias daqui.</div>
+    <div class="banner"><strong>King Docs</strong> — cofre privado: estes dados não aparecem no teu cartão público. Só saem daqui quando <strong>crias um link temporário</strong> ou <strong>exportas / copias</strong> tu mesmo.</div>
 
     <section class="kd-hero-card" aria-label="Painel pessoal">
       <div class="kd-hero-top">
@@ -168,7 +195,20 @@
     </div>
 
     <div id="p-share" class="panel">
-      <p class="sub">Marca o que entra no link. Por campo: podes enviar <strong>só texto</strong>, <strong>só ficheiro</strong> ou <strong>ambos</strong>. O <strong>nome</strong> no topo do link é o que editas no painel acima.</p>
+      <div class="kd-share-head">
+        <h2>Criar link de partilha</h2>
+        <p class="sub" style="margin-bottom:0">Escolhe o que entra no link: por campo podes enviar <strong>só texto</strong>, <strong>só ficheiro</strong> ou <strong>ambos</strong>. O <strong>nome</strong> no topo é o que editas no painel pessoal acima.</p>
+      </div>
+      <div class="kd-trust-strip" role="note">
+        <strong>Antes de gerar o link</strong>
+        <ul>
+          <li>Quem receber o link só vê o que aparece no painel <em>Preview de envio</em> à direita.</li>
+          <li>Podes definir <strong>prazo</strong> (horas), <strong>senha</strong> e <strong>limite de visualizações</strong> abaixo.</li>
+          <li>Depois de gerado, podes <strong>revogar</strong> o link na aba «Os meus links».</li>
+        </ul>
+      </div>
+
+      <p class="kd-share-summary" id="share-confirm-hint">Marca campos na grelha e confirma o resumo à direita antes de gerar o link.</p>
 
       <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
         <label>Foto (URL)</label>
@@ -194,7 +234,7 @@
               <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1"/>
             </div>
           </div>
-          <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link</button></p>
+          <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link seguro</button></p>
           <div id="share-out"></div>
         </div>
         <aside class="preview-de-envio" aria-label="Preview de envio">
@@ -207,8 +247,15 @@
     </div>
 
     <div id="p-links" class="panel">
+      <p class="sub" style="margin-top:0">Links que criaste: copia, partilha ou revoga. <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
       <div id="links-list"></div>
     </div>
+
+    <div id="kd-load-overlay" class="kd-load-overlay" aria-hidden="true" aria-busy="true">
+      <div class="kd-load-spinner" aria-hidden="true"></div>
+      <p class="kd-load-text">A carregar o teu cofre…</p>
+    </div>
+    <div id="kd-toast-host" aria-live="polite" aria-relevant="additions"></div>
   </div>
 
   <script>
@@ -229,6 +276,34 @@
     const h = { 'Content-Type': 'application/json' };
     if (t) h['Authorization'] = 'Bearer ' + t;
     return h;
+  }
+
+  var _toastTimer = null;
+  function showToast(message, variant) {
+    var host = document.getElementById('kd-toast-host');
+    if (!host) return;
+    var el = document.createElement('div');
+    el.className = 'kd-toast' + (variant === 'ok' ? ' kd-toast--ok' : variant === 'err' ? ' kd-toast--err' : ' kd-toast--neutral');
+    el.textContent = message;
+    host.appendChild(el);
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(function() {
+      el.style.opacity = '0';
+      el.style.transition = 'opacity .2s ease';
+      setTimeout(function() { try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 200);
+    }, 4000);
+  }
+
+  function setAppLoading(on) {
+    if (on) {
+      document.body.classList.add('kd-app-loading');
+      var o = document.getElementById('kd-load-overlay');
+      if (o) o.setAttribute('aria-hidden', 'false');
+    } else {
+      document.body.classList.remove('kd-app-loading');
+      var o2 = document.getElementById('kd-load-overlay');
+      if (o2) o2.setAttribute('aria-hidden', 'true');
+    }
   }
 
   /** Cartões «Documentos — selecionar»: docType enviado no upload (tem de bater com a lista de ficheiros) */
@@ -274,7 +349,7 @@
   function renderDados() {
     ensureFieldData();
     const el = document.getElementById('p-dados');
-    let html = '<p class="sub">Preenche os dados que quiseres guardar. «Guardar» grava no servidor.</p>';
+    let html = '<p class="sub">Preenche os campos que quiseres. <strong>Guardar dados</strong> grava no cofre (servidor). <strong>Exportar PDF</strong> faz um backup teu no dispositivo.</p>';
     html += '<div class="btn-row">';
     html += '<button type="button" class="btn" id="btn-save-vault">Guardar dados</button>';
     html += '<button type="button" class="btn secondary" id="btn-import-profile">Importar do perfil (cartão)</button>';
@@ -316,43 +391,52 @@
       return;
     }
     document.getElementById('auth-hint').textContent = '';
-    const r = await fetch(api('/api/king-docs/vault'), { headers: authHeaders() });
-    if (r.status === 403) {
-      document.getElementById('auth-hint').textContent = 'O módulo King Docs não está disponível no teu plano.';
-      return;
+    setAppLoading(true);
+    try {
+      const r = await fetch(api('/api/king-docs/vault'), { headers: authHeaders() });
+      if (r.status === 403) {
+        document.getElementById('auth-hint').textContent = 'O módulo King Docs não está disponível no teu plano.';
+        return;
+      }
+      if (!r.ok) {
+        document.getElementById('auth-hint').textContent = 'Não foi possível carregar o cofre. Atualiza a página ou tenta mais tarde.';
+        showToast('Erro ao carregar o cofre.', 'err');
+        return;
+      }
+      const j = await r.json();
+      const d = j.data && j.data.fieldData;
+      if (d && typeof d === 'object') fieldData = d;
+      ensureFieldData();
+      renderDados();
+      renderShareTable();
+      await loadFiles();
+      await loadLinks();
+    } finally {
+      setAppLoading(false);
     }
-    if (!r.ok) { document.getElementById('auth-hint').textContent = 'Erro ao carregar cofre.'; return; }
-    const j = await r.json();
-    const d = j.data && j.data.fieldData;
-    if (d && typeof d === 'object') fieldData = d;
-    ensureFieldData();
-    renderDados();
-    renderShareTable();
-    loadFiles();
-    loadLinks();
   }
 
   async function saveVault() {
     const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
-    if (!r.ok) { alert('Erro ao guardar'); return; }
-    alert('Guardado.');
+    if (!r.ok) { showToast('Não foi possível guardar. Tenta outra vez.', 'err'); return; }
+    showToast('Dados guardados no servidor.', 'ok');
   }
 
   async function importFromProfile() {
     const r = await fetch(api('/api/king-docs/vault/import-profile'), { method: 'POST', headers: authHeaders() });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) { alert(j.message || 'Não foi possível importar o perfil.'); return; }
+    if (!r.ok) { showToast(j.message || 'Não foi possível importar o perfil.', 'err'); return; }
     const d = j.data && j.data.fieldData;
     if (d && typeof d === 'object') fieldData = d;
     ensureFieldData();
     renderDados();
     renderShareTable();
-    alert(j.message || 'Importado.');
+    showToast(j.message || 'Dados do perfil importados.', 'ok');
   }
 
   async function exportVaultPdf() {
     const r = await fetch(api('/api/king-docs/vault/export-pdf'), { headers: { Authorization: 'Bearer ' + getToken() } });
-    if (!r.ok) { alert('Erro ao gerar PDF.'); return; }
+    if (!r.ok) { showToast('Erro ao gerar o PDF.', 'err'); return; }
     const blob = await r.blob();
     const u = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -360,6 +444,7 @@
     a.download = 'king-docs-cofre.pdf';
     a.click();
     URL.revokeObjectURL(u);
+    showToast('PDF exportado — backup do cofre descarregado.', 'ok');
   }
 
   function fileExistsForDocType(docType) {
@@ -403,13 +488,14 @@
     filesList = (j.data && j.data.files) || [];
     renderDocSelectCards();
     const el = document.getElementById('file-list');
-    if (!filesList.length) { el.innerHTML = '<p class="sub">Nenhum ficheiro.</p>'; renderShareTable(); renderExtraDocs(); return; }
+    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa os cartões acima ou «Outro documento» para enviar o primeiro.</p>'; renderShareTable(); renderExtraDocs(); return; }
     el.innerHTML = filesList.map(f => '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code></span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>').join('');
     el.querySelectorAll('.btn-del-file').forEach(b => {
       b.onclick = async function() {
         if (!confirm('Apagar este ficheiro do cofre?')) return;
         const id = this.getAttribute('data-id');
         await fetch(api('/api/king-docs/files/' + id), { method: 'DELETE', headers: authHeaders() });
+        showToast('Ficheiro removido do cofre.', 'ok');
         loadFiles();
       };
     });
@@ -504,6 +590,16 @@
     });
 
     badge.textContent = count + ' itens';
+    var hintEl = document.getElementById('share-confirm-hint');
+    if (hintEl) {
+      if (count === 0) {
+        hintEl.textContent = 'Marca campos na grelha e confirma o resumo à direita antes de gerar o link.';
+        hintEl.classList.remove('kd-share-summary--ok');
+      } else {
+        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o preview à direita e clica em «Gerar link seguro» quando estiver correto.';
+        hintEl.classList.add('kd-share-summary--ok');
+      }
+    }
     if (count === 0) {
       out.innerHTML = '<p class="preview-empty">Marca campos na grelha para ver o resumo do que vai no link.</p>';
       return;
@@ -563,16 +659,18 @@
     var ok = await uploadKingDocFile(inp.files[0], pendingDocType);
     pendingDocType = '';
     inp.value = '';
-    if (!ok) { alert('Erro no upload'); return; }
+    if (!ok) { showToast('Erro ao enviar o ficheiro. Tenta outra vez.', 'err'); return; }
+    showToast('Documento guardado no cofre.', 'ok');
     loadFiles();
   });
 
   document.getElementById('up-btn').onclick = async function() {
     const inp = document.getElementById('up-file');
-    if (!inp.files || !inp.files[0]) { alert('Escolhe um ficheiro'); return; }
+    if (!inp.files || !inp.files[0]) { showToast('Escolhe um ficheiro primeiro.', 'neutral'); return; }
     var ok = await uploadKingDocFile(inp.files[0], document.getElementById('up-type').value || 'documento');
-    if (!ok) { alert('Erro no upload'); return; }
+    if (!ok) { showToast('Erro no upload.', 'err'); return; }
     inp.value = '';
+    showToast('Ficheiro enviado.', 'ok');
     loadFiles();
   };
 
@@ -621,13 +719,18 @@
     };
     const r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     const out = document.getElementById('share-out');
-    if (!r.ok) { out.innerHTML = '<p class="err">Erro ao criar link.</p>'; return; }
+    if (!r.ok) {
+      out.innerHTML = '<p class="err">Não foi possível criar o link.</p>';
+      showToast('Erro ao criar o link. Verifica a rede ou tenta mais tarde.', 'err');
+      return;
+    }
     const j = await r.json();
     const d = j.data || {};
     const fullUrl = window.location.origin + (d.shareUrl || '');
-    out.innerHTML = '<p class="okmsg">Link criado.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p class="btn-row"><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button> <button type="button" class="btn secondary" id="btn-wa-link">WhatsApp</button></p>';
+    out.innerHTML = '<p class="okmsg">Link criado — já podes copiar ou enviar por WhatsApp.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p class="btn-row"><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button> <button type="button" class="btn secondary" id="btn-wa-link">WhatsApp</button></p>';
+    showToast('Link gerado com sucesso.', 'ok');
     document.getElementById('btn-copy-link').onclick = function() {
-      navigator.clipboard.writeText(fullUrl).then(function() { alert('Copiado.'); });
+      navigator.clipboard.writeText(fullUrl).then(function() { showToast('URL copiada para a área de transferência.', 'ok'); });
     };
     document.getElementById('btn-wa-link').onclick = function() {
       const msg = encodeURIComponent('Segue o link confidencial (King Docs):\n' + fullUrl);
@@ -636,25 +739,33 @@
     loadLinks();
   };
 
+  function shareLinkStatusBadge(s) {
+    if (s.revoked_at) return '<span class="kd-badge kd-badge-bad">Revogado</span>';
+    var exp = s.expires_at ? new Date(s.expires_at) : null;
+    if (exp && !isNaN(exp.getTime()) && exp.getTime() < Date.now()) return '<span class="kd-badge kd-badge-muted">Expirado</span>';
+    return '<span class="kd-badge kd-badge-ok">Ativo</span>';
+  }
+
   async function loadLinks() {
     const el = document.getElementById('links-list');
     const r = await fetch(api('/api/king-docs/shares'), { headers: authHeaders() });
-    if (!r.ok) { el.innerHTML = '<p class="err">Erro ao listar.</p>'; return; }
+    if (!r.ok) { el.innerHTML = '<p class="err">Não foi possível carregar a lista de links.</p>'; showToast('Erro ao listar os links.', 'err'); return; }
     const j = await r.json();
     const arr = (j.data && j.data.shares) || [];
-    if (!arr.length) { el.innerHTML = '<p class="sub">Nenhum link.</p>'; return; }
-    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th>ID</th><th>Link</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th></th></tr>' +
+    if (!arr.length) { el.innerHTML = '<p class="sub">Ainda não criaste nenhum link. Vai à aba «Criar link» quando quiseres partilhar.</p>'; return; }
+    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th>ID</th><th>Estado</th><th>Link</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th></th></tr>' +
       arr.map(s => {
         const u = window.location.origin + '/kingDocsShare.html?t=' + encodeURIComponent(s.token);
-        return '<tr><td>' + s.id + '</td><td><button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar URL</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button></td></tr>';
+        return '<tr><td>' + s.id + '</td><td>' + shareLinkStatusBadge(s) + '</td><td><button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar URL</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button></td></tr>';
       }).join('') + '</table>';
     el.querySelectorAll('.btn-copyt').forEach(b => {
-      b.onclick = function() { navigator.clipboard.writeText(this.getAttribute('data-u')); alert('URL copiada.'); };
+      b.onclick = function() { navigator.clipboard.writeText(this.getAttribute('data-u')); showToast('URL copiada.', 'ok'); };
     });
     el.querySelectorAll('.btn-rev').forEach(b => {
       b.onclick = async function() {
         if (!confirm('Revogar este link?')) return;
         await fetch(api('/api/king-docs/shares/' + this.getAttribute('data-id')), { method: 'DELETE', headers: authHeaders() });
+        showToast('Link revogado.', 'ok');
         loadLinks();
       };
     });
