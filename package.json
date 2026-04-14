@@ -18,7 +18,8 @@
     "cleanup:r2:dry": "node -e \"process.env.DRY_RUN='1';require('./scripts/cleanup-r2-orphans.js')\"",
     "cleanup:r2": "node scripts/cleanup-r2-orphans.js",
     "push": "powershell -ExecutionPolicy Bypass -File ./push-auto.ps1",
-    "config-auth": "powershell -ExecutionPolicy Bypass -File ./configurar-autenticacao.ps1"
+    "config-auth": "powershell -ExecutionPolicy Bypass -File ./configurar-autenticacao.ps1",
+    "sync:king-docs": "node scripts/sync-king-docs-to-public-html.js"
   },
   "keywords": [],
   "author": "",

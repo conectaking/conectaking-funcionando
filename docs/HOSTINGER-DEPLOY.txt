@@ -27,6 +27,13 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
    Envie TODO o conteúdo da pasta public_html (no teu PC) para essa raiz no
    servidor. Inclua ficheiros ocultos: .htaccess
 
+2b) KING DOCS (kingDocs.html)
+   O site na Hostinger lê public_html/, NÃO a pasta public/ do back-end no Git.
+   Depois de alterar public/kingDocs.html ou public/kingDocsShare.html no projeto,
+   corre na raiz do repo:  npm run sync:king-docs
+   Isto copia os dois ficheiros para public_html/. Volta a enviar public_html/kingDocs.html
+   (e kingDocsShare.html se mudaste) para o hosting.
+
 3) PASTA kingSelection VAZIA (causa de 404 em /kingSelection/)
    Se existir uma pasta chamada "kingSelection" vazia (ou sem index) dentro de
    public_html, apague-a. O Apache pode servir essa pasta em vez do rewrite e

@@ -43,14 +43,15 @@ public/uploads/
 .cache/
 
 # =============================================================================
-# FRONT-END: NÃO COMMITAR — deploy manual no hosting
-# Caminho do front-end: .../conectaking-funcionando/public_html
-# Caminho do back-end (ponto de envio Git): .../conectaking-funcionando
-# Nada de public_html sobe para o repositório; front-end sobe manualmente.
+# FRONT-END: deploy manual na Hostinger (public_html)
+# King Docs: versão canónica em public/; cópia em public_html/ para o domínio servir
+# (npm run sync:king-docs). Estes HTML são versionados para não desalinharem.
 # Exceção: PHP usado no Hostinger (.htaccess) para OG + HTML da galeria cliente.
-# Guia de deploy: docs/HOSTINGER-DEPLOY.txt
+# Guia: docs/HOSTINGER-DEPLOY.txt
 # =============================================================================
 public_html/
 !public_html/kingSelectionGallery.php
+!public_html/kingDocs.html
+!public_html/kingDocsShare.html
 
 # Backend - arquivos na raiz (server.js, routes/, views/, etc.) são commitados
