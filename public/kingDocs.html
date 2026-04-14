@@ -41,25 +41,25 @@
     body.kd-theme-dark .kd-load-overlay { background: rgba(18,24,20,.88); }
     * { box-sizing: border-box; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-    body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); padding:1rem 1rem 3rem; }
-    .wrap { max-width: 1100px; margin: 0 auto; }
+    body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); padding:1rem 0 3rem; }
+    .wrap { width: 100%; max-width: min(100%, 1680px); margin: 0 auto; padding: 0 clamp(0.65rem, 2.5vw, 2rem); box-sizing: border-box; }
     /* Só a barra de atalhos fica fixa ao scroll (banner, ajuda e nome rolam) */
     .kd-sticky-atalhos-bar {
       position: sticky;
       top: 0;
       z-index: 300;
-      margin: 0 0 1.25rem;
-      padding: .35rem 0 0;
+      margin: 0 0 0.85rem;
+      padding: .25rem 0 0;
       background: var(--bg);
       border-bottom: 1px solid var(--border);
-      box-shadow: 0 8px 28px rgba(0,0,0,.07);
+      box-shadow: 0 6px 20px rgba(0,0,0,.06);
     }
     .kd-sticky-atalhos-inner {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 0 0 16px 16px;
-      padding: 1rem 1.25rem 1.25rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,.05);
+      border-radius: 0 0 14px 14px;
+      padding: .55rem .75rem .7rem;
+      box-shadow: 0 3px 16px rgba(0,0,0,.04);
     }
     .kd-hero-card--top {
       margin-bottom: 0;
@@ -133,7 +133,7 @@
     @media (min-width: 960px) {
       .share-layout { grid-template-columns: 1fr minmax(280px, 320px); }
     }
-    .atalhos-block { margin: 1rem 0 1.25rem; }
+    .atalhos-block { margin: 0.35rem 0 0.25rem; }
     .atalhos-block .atalhos-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: .5rem; display: block; }
     .atalhos-btns { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
     .btn-atalho { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .75rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; color: var(--ink); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s, color .15s; }
@@ -274,8 +274,8 @@
     .kd-hero-atalhos { text-align: left; border-top: none; padding-top: 0; margin-top: 0; }
     .kd-hero-atalhos .atalhos-block { margin: 0; }
     /* Toasts */
-    #kd-toast-host { position: fixed; bottom: 1rem; right: 1rem; left: 1rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; pointer-events: none; max-width: 420px; margin-left: auto; }
-    .kd-toast { pointer-events: auto; background: var(--ink); color: #fff; padding: .65rem .9rem; border-radius: 10px; font-size: .84rem; box-shadow: 0 8px 32px rgba(0,0,0,.18); animation: kdToastIn .22s ease; max-width: 100%; line-height: 1.35; }
+    #kd-toast-host { position: fixed; bottom: 1rem; right: clamp(0.5rem, 2vw, 1.25rem); left: auto; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; pointer-events: none; max-width: min(420px, calc(100vw - 1.5rem)); margin: 0; }
+    .kd-toast { pointer-events: auto; background: var(--ink); color: #fff; padding: .55rem .8rem; border-radius: 10px; font-size: .82rem; box-shadow: 0 8px 32px rgba(0,0,0,.18); animation: kdToastIn .22s ease; max-width: 100%; line-height: 1.35; }
     .kd-toast.kd-toast--ok { background: var(--accent); }
     .kd-toast.kd-toast--err { background: #a33030; }
     .kd-toast.kd-toast--neutral { background: #3a3632; }
