@@ -178,8 +178,14 @@
     .doc-preview-img { display: block; max-width: 100%; height: auto; border-radius: 8px; }
     .doc-preview-iframe { width: 100%; min-height: 260px; border: 0; border-radius: 8px; background: #1a1a1a; }
     body.kd-theme-dark .doc-preview-iframe { background: #0d0d0d; }
-    .doc-preview-actions { padding: .65rem .75rem; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; background: var(--trust-bg); }
+    .doc-preview-actions { padding: .65rem .75rem; border-top: 1px solid var(--border); background: var(--trust-bg); }
+    .doc-preview-actions .doc-preview-actions-row { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin-bottom: .55rem; }
+    .doc-preview-actions .doc-preview-actions-row:last-child { margin-bottom: 0; }
+    .doc-preview-actions .doc-act-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); width: 100%; margin-bottom: .15rem; }
     .doc-preview-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .doc-preview-stack-item { border: 1px solid var(--border); border-radius: 10px; padding: .5rem; margin-bottom: .75rem; background: var(--card); }
+    .doc-preview-stack-item h4 { margin: 0 0 .4rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+    .doc-preview-stack-item:last-child { margin-bottom: 0; }
     .doc-card--browse { cursor: pointer; text-align: center; }
     .doc-card--browse.doc-card--active { box-shadow: 0 0 0 2px var(--accent); border-color: var(--accent); }
     /* Documentos — grelha tipo cartões */
@@ -376,22 +382,34 @@
     </div>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Clica num tipo à esquerda para ver a <strong>pré-visualização</strong> ao lado. Aqui não envias ficheiros — usa a aba <strong>Upload</strong>. Podes <strong>gerar um link</strong> ou enviar por <strong>WhatsApp</strong>.</p>
+      <p class="sub">Clica nos tipos que quiseres — podes marcar <strong>vários</strong>. A pré-visualização mostra todos ao mesmo tempo. Aqui não envias ficheiros — usa a aba <strong>Upload</strong>.</p>
       <div class="share-layout doc-browse-layout">
         <div class="share-main">
           <div class="doc-panel-card" style="margin-bottom:0">
-            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipos no cofre</div>
+            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipo de documento</div>
             <div id="doc-browse-root" class="doc-grid"></div>
           </div>
         </div>
-        <aside class="preview-de-envio doc-vault-preview" aria-label="Pré-visualização do documento">
+        <aside class="preview-de-envio doc-vault-preview" aria-label="Pré-visualização dos documentos">
           <div class="preview-header">Pré-visualização</div>
           <div id="doc-preview-body" class="preview-body">
-            <p class="preview-empty">Escolhe um documento à esquerda.</p>
+            <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
           </div>
-          <div class="doc-preview-actions">
-            <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
-            <button type="button" class="btn secondary" id="btn-doc-wa" disabled>WhatsApp</button>
+          <div class="doc-preview-actions" id="doc-preview-actions">
+            <div class="doc-preview-actions-row">
+              <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
+            </div>
+            <div class="doc-preview-actions-row">
+              <span class="doc-act-label">WhatsApp</span>
+              <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled>Com link único</button>
+              <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled>Mensagem com lista</button>
+              <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled>Um link por documento</button>
+            </div>
+            <div class="doc-preview-actions-row">
+              <span class="doc-act-label">PDF</span>
+              <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled>Gerar PDF e descarregar</button>
+              <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled>Partilhar PDF…</button>
+            </div>
           </div>
         </aside>
       </div>
@@ -728,11 +746,30 @@
     });
     return best;
   }
-  function revokeDocPreviewBlob() {
-    if (docPreviewBlobUrl) {
-      try { URL.revokeObjectURL(docPreviewBlobUrl); } catch (e) {}
-      docPreviewBlobUrl = null;
-    }
+
+  /** Cartões «Documentos»: docType enviado no upload (tem de bater com a lista de ficheiros) */
+  const DOC_CARD_PRESETS = [
+    { docType: 'RG', label: 'RG', icon: '🪪' },
+    { docType: 'CNH', label: 'CNH', icon: '🚗' },
+    { docType: 'FOTO PESSOAL', label: 'Foto pessoal', icon: '🖼️' },
+    { docType: 'CARTÃO DO CNPJ', label: 'Cartão do CNPJ', icon: '📋' },
+    { docType: 'CONTRATO SOCIAL', label: 'Contrato social', icon: '📝' },
+    { docType: 'INSC. ESTADUAL', label: 'Insc. estadual', icon: '🏛️' },
+    { docType: 'INSC. MUNICIPAL', label: 'Insc. municipal', icon: '🏙️' }
+  ];
+  let pendingDocType = '';
+  var docPreviewBlobUrls = {};
+  var docPreviewSelectedTypes = [];
+  function docTypeLabel(docType) {
+    var p = DOC_CARD_PRESETS.find(function (x) { return x.docType === docType; });
+    return p ? p.label : docType;
+  }
+
+  function revokeDocPreviewBlobAll() {
+    Object.keys(docPreviewBlobUrls).forEach(function (k) {
+      try { URL.revokeObjectURL(docPreviewBlobUrls[k]); } catch (e) {}
+    });
+    docPreviewBlobUrls = {};
   }
   async function quickShareVaultFile(fileId, label) {
     var body = {
@@ -755,80 +792,196 @@
     var d = j.data || {};
     return window.location.origin + (d.shareUrl || '');
   }
-  async function updateDocVaultPreview(docType) {
-    revokeDocPreviewBlob();
+  async function quickShareVaultMulti(extraDocs) {
+    if (!extraDocs || !extraDocs.length) return null;
+    var body = {
+      expiresInHours: 72,
+      password: '',
+      maxViews: '',
+      selection: {
+        displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
+        profileImageUrl: (document.getElementById('sh-photo') && document.getElementById('sh-photo').value) || '',
+        sections: [],
+        extraDocs: extraDocs.map(function (ed) {
+          return { fileId: parseInt(ed.fileId, 10), label: ed.label || 'Documento' };
+        })
+      }
+    };
+    var r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (!r.ok) {
+      showToast('Não foi possível criar o link.', 'err');
+      return null;
+    }
+    var j = await r.json();
+    var d = j.data || {};
+    return window.location.origin + (d.shareUrl || '');
+  }
+  function getSelectedExtraDocs() {
+    var out = [];
+    docPreviewSelectedTypes.forEach(function (dt) {
+      if (!fileExistsForDocType(dt)) return;
+      var f = getLatestFileForDocType(dt);
+      if (f) out.push({ fileId: f.id, label: docTypeLabel(dt), docType: dt });
+    });
+    return out;
+  }
+  function setDocPreviewActionButtons(enabled) {
+    ['btn-doc-copy-link', 'btn-doc-wa-link', 'btn-doc-wa-list', 'btn-doc-wa-sep', 'btn-doc-pdf-dl', 'btn-doc-pdf-share'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = !enabled;
+    });
+  }
+  function ensurePdfLib() {
+    return new Promise(function (resolve, reject) {
+      if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) return resolve(PDFLib);
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+      s.onload = function () {
+        if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) resolve(PDFLib);
+        else reject(new Error('pdf-lib'));
+      };
+      s.onerror = function () { reject(new Error('pdf-lib')); };
+      document.head.appendChild(s);
+    });
+  }
+  async function buildMergedPdfBlob() {
+    var PDFLibMod = await ensurePdfLib();
+    var PDFDocument = PDFLibMod.PDFDocument;
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return null;
+    var pdfDoc = await PDFDocument.create();
+    var pageW = 595.28;
+    var pageH = 841.89;
+    for (var i = 0; i < extra.length; i++) {
+      var ed = extra[i];
+      var f = getLatestFileForDocType(ed.docType);
+      if (!f) continue;
+      var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
+      if (!res.ok) continue;
+      var blob = await res.blob();
+      var mime = (f.mime || '').toLowerCase();
+      var ab = await blob.arrayBuffer();
+      try {
+        if (mime.indexOf('image/jpeg') === 0 || mime === 'image/jpg') {
+          var jpg = await pdfDoc.embedJpg(ab);
+          var page = pdfDoc.addPage([pageW, pageH]);
+          var sc = jpg.scaleToFit(pageW - 40, pageH - 40);
+          page.drawImage(jpg, { x: (pageW - sc.width) / 2, y: (pageH - sc.height) / 2, width: sc.width, height: sc.height });
+        } else if (mime.indexOf('image/png') === 0) {
+          var png = await pdfDoc.embedPng(ab);
+          var page2 = pdfDoc.addPage([pageW, pageH]);
+          var sc2 = png.scaleToFit(pageW - 40, pageH - 40);
+          page2.drawImage(png, { x: (pageW - sc2.width) / 2, y: (pageH - sc2.height) / 2, width: sc2.width, height: sc2.height });
+        } else if (mime.indexOf('pdf') >= 0) {
+          var srcPdf = await PDFDocument.load(ab);
+          var copied = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
+          copied.forEach(function (pg) { pdfDoc.addPage(pg); });
+        } else {
+          var page3 = pdfDoc.addPage([pageW, pageH]);
+          var font3 = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+          page3.drawText('Formato não incluído no PDF: ' + String(f.doc_type || mime).slice(0, 120), { x: 40, y: pageH - 60, size: 11, font: font3 });
+        }
+      } catch (e) {
+        var pageE = pdfDoc.addPage([pageW, pageH]);
+        var fontE = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+        pageE.drawText('Erro ao incluir: ' + String(f.doc_type || ''), { x: 40, y: pageH - 60, size: 11, font: fontE });
+      }
+    }
+    var out = await pdfDoc.save();
+    return new Blob([out], { type: 'application/pdf' });
+  }
+  async function refreshDocVaultPreview() {
+    revokeDocPreviewBlobAll();
     var bodyEl = document.getElementById('doc-preview-body');
-    var btnLink = document.getElementById('btn-doc-copy-link');
-    var btnWa = document.getElementById('btn-doc-wa');
     if (!bodyEl) return;
-    var f = getLatestFileForDocType(docType);
-    if (!f) {
-      bodyEl.innerHTML = '<p class="preview-empty">Ainda não tens <strong>' + escapeHtml(docType) + '</strong> no cofre. Vai à aba <strong>Upload</strong> para enviar.</p>';
-      if (btnLink) { btnLink.disabled = true; btnLink.removeAttribute('data-file-id'); }
-      if (btnWa) { btnWa.disabled = true; btnWa.removeAttribute('data-file-id'); }
+    var types = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
+    docPreviewSelectedTypes = types.slice();
+    if (!types.length) {
+      bodyEl.innerHTML = '<p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>';
+      setDocPreviewActionButtons(false);
       return;
     }
-    if (btnLink) {
-      btnLink.disabled = false;
-      btnLink.setAttribute('data-file-id', String(f.id));
-    }
-    if (btnWa) {
-      btnWa.disabled = false;
-      btnWa.setAttribute('data-file-id', String(f.id));
-    }
-    var mime = (f.mime || '').toLowerCase();
-    bodyEl.innerHTML = '<p class="sub" style="margin:0 0 .5rem">#' + f.id + ' · ' + escapeHtml(f.doc_type || '') + ' · ' + escapeHtml(mime) + '</p><p class="kd-hint">A carregar…</p>';
+    setDocPreviewActionButtons(true);
+    bodyEl.innerHTML = '<p class="kd-hint">A carregar…</p>';
     try {
-      var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
-      if (!res.ok) {
-        bodyEl.innerHTML = '<p class="err">Não foi possível carregar o ficheiro.</p>';
-        return;
+      var frag = document.createDocumentFragment();
+      for (var ti = 0; ti < types.length; ti++) {
+        var docType = types[ti];
+        var f = getLatestFileForDocType(docType);
+        if (!f) continue;
+        var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
+        if (!res.ok) {
+          var errDiv = document.createElement('div');
+          errDiv.className = 'doc-preview-stack-item';
+          errDiv.innerHTML = '<h4>' + escapeHtml(docTypeLabel(docType)) + '</h4><p class="err">Não foi possível carregar.</p>';
+          frag.appendChild(errDiv);
+          continue;
+        }
+        var blob = await res.blob();
+        var url = URL.createObjectURL(blob);
+        docPreviewBlobUrls[docType] = url;
+        var mime = (f.mime || '').toLowerCase();
+        var wrap = document.createElement('div');
+        wrap.className = 'doc-preview-stack-item';
+        var h4 = document.createElement('h4');
+        h4.textContent = docTypeLabel(docType);
+        wrap.appendChild(h4);
+        var meta = document.createElement('p');
+        meta.className = 'sub';
+        meta.style.margin = '0 0 .45rem';
+        meta.textContent = '#' + f.id + ' · ' + (f.doc_type || '') + ' · ' + (f.mime || '');
+        wrap.appendChild(meta);
+        if (mime.indexOf('image/') === 0) {
+          var img = document.createElement('img');
+          img.className = 'doc-preview-img';
+          img.alt = f.doc_type || '';
+          img.src = url;
+          wrap.appendChild(img);
+        } else if (mime.indexOf('pdf') >= 0) {
+          var iframe = document.createElement('iframe');
+          iframe.className = 'doc-preview-iframe';
+          iframe.title = 'PDF';
+          iframe.src = url;
+          wrap.appendChild(iframe);
+        } else {
+          var p = document.createElement('p');
+          p.className = 'sub';
+          p.textContent = 'Pré-visualização limitada. Gera link ou PDF.';
+          wrap.appendChild(p);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = (f.original_name || 'documento').replace(/[\\/]/g, '');
+          a.className = 'btn secondary';
+          a.textContent = 'Descarregar';
+          wrap.appendChild(a);
+        }
+        frag.appendChild(wrap);
       }
-      var blob = await res.blob();
-      docPreviewBlobUrl = URL.createObjectURL(blob);
       bodyEl.innerHTML = '';
-      var meta = document.createElement('p');
-      meta.className = 'sub';
-      meta.style.margin = '0 0 .5rem';
-      meta.textContent = '#' + f.id + ' · ' + (f.doc_type || '') + ' · ' + (f.mime || '');
-      bodyEl.appendChild(meta);
-      if (mime.indexOf('image/') === 0) {
-        var img = document.createElement('img');
-        img.className = 'doc-preview-img';
-        img.alt = f.doc_type || '';
-        img.src = docPreviewBlobUrl;
-        bodyEl.appendChild(img);
-      } else if (mime.indexOf('pdf') >= 0) {
-        var iframe = document.createElement('iframe');
-        iframe.className = 'doc-preview-iframe';
-        iframe.title = 'PDF';
-        iframe.src = docPreviewBlobUrl;
-        bodyEl.appendChild(iframe);
-      } else {
-        var p = document.createElement('p');
-        p.className = 'sub';
-        p.textContent = 'Pré-visualização indisponível para este tipo. Gera um link ou descarrega.';
-        bodyEl.appendChild(p);
-        var a = document.createElement('a');
-        a.href = docPreviewBlobUrl;
-        a.download = (f.original_name || 'documento').replace(/[\\/]/g, '');
-        a.className = 'btn secondary';
-        a.textContent = 'Descarregar';
-        bodyEl.appendChild(a);
-      }
+      bodyEl.appendChild(frag);
     } catch (err) {
       bodyEl.innerHTML = '<p class="err">Erro ao carregar a pré-visualização.</p>';
+      setDocPreviewActionButtons(false);
     }
   }
-  function selectDocBrowse(docType) {
-    docPreviewSelectedType = docType;
-    var root = document.getElementById('doc-browse-root');
-    if (root) {
-      root.querySelectorAll('.doc-card--browse').forEach(function (btn) {
-        btn.classList.toggle('doc-card--active', btn.getAttribute('data-doc-type') === docType);
-      });
+  function toggleDocBrowse(docType) {
+    var dt = String(docType).trim();
+    if (!fileExistsForDocType(dt)) {
+      showToast('Este documento ainda não está no cofre. Usa a aba Upload.', 'neutral');
+      return;
     }
-    updateDocVaultPreview(docType);
+    var ix = docPreviewSelectedTypes.indexOf(dt);
+    if (ix >= 0) {
+      docPreviewSelectedTypes.splice(ix, 1);
+      if (docPreviewBlobUrls[dt]) {
+        try { URL.revokeObjectURL(docPreviewBlobUrls[dt]); } catch (e) {}
+        delete docPreviewBlobUrls[dt];
+      }
+    } else {
+      docPreviewSelectedTypes.push(dt);
+    }
+    renderDocBrowseCards();
+    refreshDocVaultPreview();
   }
   function openQrModal(url) {
     var modal = document.getElementById('kd-qr-modal');
@@ -904,18 +1057,6 @@
     hint.style.display = isSel ? 'block' : 'none';
   }
 
-  /** Cartões «Documentos — selecionar»: docType enviado no upload (tem de bater com a lista de ficheiros) */
-  const DOC_CARD_PRESETS = [
-    { docType: 'RG', label: 'RG', icon: '🪪' },
-    { docType: 'CNH', label: 'CNH', icon: '🚗' },
-    { docType: 'FOTO PESSOAL', label: 'Foto pessoal', icon: '🖼️' },
-    { docType: 'CARTÃO DO CNPJ', label: 'Cartão do CNPJ', icon: '📋' },
-    { docType: 'CONTRATO SOCIAL', label: 'Contrato social', icon: '📝' },
-    { docType: 'INSC. ESTADUAL', label: 'Insc. estadual', icon: '🏛️' },
-    { docType: 'INSC. MUNICIPAL', label: 'Insc. municipal', icon: '🏙️' }
-  ];
-  let pendingDocType = '';
-
   const GROUPS = [
     { id: 'pessoal', title: 'Dados pessoais', icon: '🪪', keys: ['Nome Completo','Data de Nasc.','RG','CPF'] },
     { id: 'contato', title: 'Contato', icon: '📱', keys: ['WhatsApp','E-mail','Instagram'] },
@@ -937,8 +1078,6 @@
 
   let fieldData = {};
   let filesList = [];
-  var docPreviewBlobUrl = null;
-  var docPreviewSelectedType = null;
 
   function ensureFieldData() {
     GROUPS.forEach(g => {
@@ -1154,40 +1293,34 @@
     if (!root) return;
     var html = DOC_CARD_PRESETS.map(function (p) {
       var sel = fileExistsForDocType(p.docType);
-      var cls = 'doc-card doc-card--browse' + (sel ? ' selected' : '') + (docPreviewSelectedType === p.docType ? ' doc-card--active' : '');
+      var active = docPreviewSelectedTypes.indexOf(p.docType) >= 0;
+      var cls = 'doc-card doc-card--browse' + (sel ? ' selected' : '') + (active ? ' doc-card--active' : '');
       var lastD = latestForDocType(p.docType);
       var dateLine = lastD ? '<div class="dc-date">Último: ' + escapeHtml(formatShortDate(lastD)) + '</div>' : '';
-      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '" title="Ver ' + escapeAttr(p.label) + '">' +
+      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '" title="Clica para marcar / desmarcar — ' + escapeAttr(p.label) + '">' +
         '<div class="dc-icon" aria-hidden="true">' + p.icon + '</div>' +
         '<div class="dc-title">' + escapeHtml(p.label) + '</div>' +
-        '<div class="dc-status">' + (sel ? '✓ Ver pré-visualização' : 'Não enviado') + '</div>' +
+        '<div class="dc-status">' + (sel ? (active ? '✓ Na pré-visualização' : '✓ Ver pré-visualização') : 'Não enviado') + '</div>' +
         dateLine +
         '</button>';
     }).join('');
     root.innerHTML = html;
     root.querySelectorAll('.doc-card--browse[data-doc-type]').forEach(function (btn) {
       btn.onclick = function () {
-        selectDocBrowse(this.getAttribute('data-doc-type') || '');
+        toggleDocBrowse(this.getAttribute('data-doc-type') || '');
       };
     });
   }
   function renderDocCards() {
     renderDocUploadCards();
     renderDocBrowseCards();
-    if (docPreviewSelectedType) {
-      var still = fileExistsForDocType(docPreviewSelectedType);
-      if (still) updateDocVaultPreview(docPreviewSelectedType);
-      else {
-        revokeDocPreviewBlob();
-        docPreviewSelectedType = null;
-        var bodyEl = document.getElementById('doc-preview-body');
-        var btnLink = document.getElementById('btn-doc-copy-link');
-        var btnWa = document.getElementById('btn-doc-wa');
-        if (bodyEl) bodyEl.innerHTML = '<p class="preview-empty">Escolhe um documento à esquerda.</p>';
-        if (btnLink) { btnLink.disabled = true; btnLink.removeAttribute('data-file-id'); }
-        if (btnWa) { btnWa.disabled = true; btnWa.removeAttribute('data-file-id'); }
-        renderDocBrowseCards();
+    if (docPreviewSelectedTypes.length) {
+      var pruned = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
+      if (pruned.length !== docPreviewSelectedTypes.length) {
+        docPreviewSelectedTypes = pruned;
+        revokeDocPreviewBlobAll();
       }
+      refreshDocVaultPreview();
     }
   }
 
@@ -1627,32 +1760,97 @@
       this.setAttribute('aria-selected', 'true');
       document.getElementById(this.getAttribute('data-panel')).classList.add('active');
       if (this.getAttribute('data-panel') === 'p-share') updateSharePreview();
-      if (this.getAttribute('data-panel') === 'p-docs' && docPreviewSelectedType) updateDocVaultPreview(docPreviewSelectedType);
+      if (this.getAttribute('data-panel') === 'p-docs' && docPreviewSelectedTypes.length) refreshDocVaultPreview();
     });
   });
   document.getElementById('btn-doc-copy-link').onclick = async function () {
-    var id = this.getAttribute('data-file-id');
-    if (!id) return;
-    var f = filesList.find(function (x) { return String(x.id) === String(id); });
-    var url = await quickShareVaultFile(parseInt(id, 10), f ? (f.doc_type || 'Documento') : 'Documento');
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return;
+    var url = await quickShareVaultMulti(extra);
     if (url) {
       try {
         await navigator.clipboard.writeText(url);
-        showToast('Link copiado.', 'ok');
+        showToast('Link copiado (documentos selecionados).', 'ok');
       } catch (e) {
         showToast(url, 'neutral');
       }
       loadLinks();
     }
   };
-  document.getElementById('btn-doc-wa').onclick = async function () {
-    var id = this.getAttribute('data-file-id');
-    if (!id) return;
-    var f = filesList.find(function (x) { return String(x.id) === String(id); });
-    var url = await quickShareVaultFile(parseInt(id, 10), f ? (f.doc_type || 'Documento') : 'Documento');
+  document.getElementById('btn-doc-wa-link').onclick = async function () {
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return;
+    var url = await quickShareVaultMulti(extra);
     if (url) {
-      window.open('https://wa.me/?text=' + encodeURIComponent('Documento (King Docs):\n' + url), '_blank', 'noopener,noreferrer');
+      window.open('https://wa.me/?text=' + encodeURIComponent('Documentos (King Docs):\n' + url), '_blank', 'noopener,noreferrer');
       loadLinks();
+    }
+  };
+  document.getElementById('btn-doc-wa-list').onclick = async function () {
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return;
+    var url = await quickShareVaultMulti(extra);
+    if (!url) return;
+    var lines = extra.map(function (e, i) { return (i + 1) + '. ' + e.label; }).join('\n');
+    var text = 'Documentos (King Docs)\n' + lines + '\n\n' + url;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
+    loadLinks();
+  };
+  document.getElementById('btn-doc-wa-sep').onclick = async function () {
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return;
+    var parts = [];
+    for (var i = 0; i < extra.length; i++) {
+      var ed = extra[i];
+      var u = await quickShareVaultFile(ed.fileId, ed.label);
+      if (u) parts.push(ed.label + ':\n' + u);
+    }
+    if (!parts.length) return;
+    var text = 'Documentos (King Docs)\n\n' + parts.join('\n\n');
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
+    loadLinks();
+  };
+  document.getElementById('btn-doc-pdf-dl').onclick = async function () {
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return;
+    try {
+      showToast('A gerar PDF…', 'neutral');
+      var blob = await buildMergedPdfBlob();
+      if (!blob) { showToast('Não foi possível gerar o PDF.', 'err'); return; }
+      var u = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = u;
+      a.download = 'king-docs-documentos.pdf';
+      a.click();
+      URL.revokeObjectURL(u);
+      showToast('PDF descarregado.', 'ok');
+    } catch (e) {
+      showToast('Erro ao gerar PDF.', 'err');
+    }
+  };
+  document.getElementById('btn-doc-pdf-share').onclick = async function () {
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return;
+    try {
+      var blob = await buildMergedPdfBlob();
+      if (!blob) { showToast('Não foi possível gerar o PDF.', 'err'); return; }
+      var file = new File([blob], 'king-docs-documentos.pdf', { type: 'application/pdf' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'King Docs', text: 'Documentos em PDF' });
+      } else if (navigator.share) {
+        await navigator.share({ title: 'King Docs', text: 'Descarrega o PDF na pasta de transferências ou usa «Gerar PDF e descarregar» e envia pelo WhatsApp.' });
+      } else {
+        var u = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = u;
+        a.download = 'king-docs-documentos.pdf';
+        a.click();
+        URL.revokeObjectURL(u);
+        showToast('PDF descarregado — envia manualmente pelo WhatsApp.', 'neutral');
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      showToast('Não foi possível partilhar o PDF.', 'err');
     }
   };
 
