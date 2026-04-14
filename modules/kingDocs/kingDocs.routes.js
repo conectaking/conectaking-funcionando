@@ -2,11 +2,34 @@
  * Rotas King Docs — módulo isolado sob /api/king-docs
  */
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const multer = require('multer');
+const config = require('../../config');
 const { protectUser } = require('../../middleware/protectUser');
 const { requireModule } = require('../../middleware/requireModule');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const controller = require('./kingDocs.controller');
+
+const skipOptions = (req) => req.method === 'OPTIONS';
+
+const kingDocsUnlockLimiter = rateLimit({
+  windowMs: config.rateLimit.kingDocsUnlock.windowMs,
+  max: config.rateLimit.kingDocsUnlock.max,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { trustProxy: false },
+  skip: skipOptions,
+  message: 'Muitas tentativas de senha. Aguarde alguns minutos.',
+  handler: (req, res) => {
+    const retryAfter = Math.ceil(config.rateLimit.kingDocsUnlock.windowMs / 1000);
+    res.set('Retry-After', retryAfter);
+    res.status(429).json({
+      success: false,
+      message: 'Muitas tentativas de senha. Aguarde alguns minutos.',
+      retryAfter
+    });
+  }
+});
 
 const router = express.Router();
 const upload = multer({
@@ -16,7 +39,12 @@ const upload = multer({
 
 /* ---------- Rotas públicas (sem auth) ---------- */
 router.get('/public/:token/meta', asyncHandler(controller.publicMeta));
-router.post('/public/:token/unlock', express.json(), asyncHandler(controller.publicUnlock));
+router.post(
+  '/public/:token/unlock',
+  kingDocsUnlockLimiter,
+  express.json(),
+  asyncHandler(controller.publicUnlock)
+);
 router.get('/public/:token/data', asyncHandler(controller.publicData));
 router.get('/public/:token/file/:fileId', asyncHandler(controller.publicDownloadFile));
 

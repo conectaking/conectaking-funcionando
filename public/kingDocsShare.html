@@ -54,12 +54,21 @@
     .kd-share-preview-img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); display: block; background: #faf9f7; }
     .kd-share-preview-pdf { width: 100%; min-height: 280px; border: 1px solid var(--border); border-radius: 10px; background: #1a1a1a; }
     .kd-preview-loading { font-size: .78rem; color: var(--muted); margin: .25rem 0; }
+    .kd-toast {
+      position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%) translateY(120%);
+      max-width: min(92vw, 360px); padding: .65rem 1rem; font-size: .85rem;
+      background: var(--ink); color: #fff; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.2);
+      z-index: 9999; opacity: 0; transition: transform .28s ease, opacity .28s ease; pointer-events: none;
+    }
+    .kd-toast.kd-toast--show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .kd-toast.kd-toast--err { background: #8b2e2e; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div id="root"></div>
   </div>
+  <div id="kd-toast" class="kd-toast" role="status" aria-live="polite"></div>
   <script>
 (function(){
   function apiBase() {
@@ -84,16 +93,38 @@
     const h = { 'Content-Type': 'application/json' };
     const v = getViewer();
     if (v) h['X-King-Docs-Viewer'] = v;
+    try {
+      if (sessionStorage.getItem('kingDocsRepeat_' + token) === '1') {
+        h['X-King-Docs-Repeat-Visit'] = '1';
+      }
+    } catch (e) {}
     return h;
   }
   function headersDl() {
     const h = {};
     const v = getViewer();
     if (v) h['X-King-Docs-Viewer'] = v;
+    try {
+      if (sessionStorage.getItem('kingDocsRepeat_' + token) === '1') {
+        h['X-King-Docs-Repeat-Visit'] = '1';
+      }
+    } catch (e) {}
     return h;
   }
 
   const root = document.getElementById('root');
+  const toastEl = document.getElementById('kd-toast');
+  var toastTimer = null;
+  function showToast(msg, isErr) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.toggle('kd-toast--err', !!isErr);
+    toastEl.classList.add('kd-toast--show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+      toastEl.classList.remove('kd-toast--show');
+    }, 2600);
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -198,6 +229,9 @@
     }
     const j = await r.json();
     const snap = (j.data && j.data.snapshot) || {};
+    try {
+      sessionStorage.setItem('kingDocsRepeat_' + token, '1');
+    } catch (e) {}
 
     let html = '<div class="card"><div class="head">';
     if (snap.profileImageUrl) html += '<img src="' + esc(snap.profileImageUrl) + '" alt=""/>';
@@ -250,7 +284,7 @@
 
     root.querySelector('#copy-all').onclick = function() {
       const txt = buildTextFromSnapshot(snap);
-      navigator.clipboard.writeText(txt).then(function() { alert('Texto copiado.'); });
+      navigator.clipboard.writeText(txt).then(function() { showToast('Texto copiado.'); });
     };
     var btnWa = root.querySelector('#btn-wa-share');
     if (btnWa) btnWa.onclick = function() {
@@ -263,13 +297,13 @@
       root.querySelectorAll('.pick:checked').forEach(function(cb) {
         parts.push(decodeURIComponent(cb.getAttribute('data-enc') || ''));
       });
-      if (!parts.length) { alert('Marca pelo menos uma linha.'); return; }
-      navigator.clipboard.writeText(parts.join('\n')).then(function() { alert('Copiado.'); });
+      if (!parts.length) { showToast('Marca pelo menos uma linha.', true); return; }
+      navigator.clipboard.writeText(parts.join('\n')).then(function() { showToast('Copiado.'); });
     };
     root.querySelectorAll('.copy-one').forEach(b => {
       b.onclick = function() {
         const t = decodeURIComponent(this.getAttribute('data-enc') || '');
-        navigator.clipboard.writeText(t).then(function() { alert('Copiado.'); });
+        navigator.clipboard.writeText(t).then(function() { showToast('Copiado.'); });
       };
     });
 
@@ -277,7 +311,7 @@
       a.addEventListener('click', function(ev) {
         ev.preventDefault();
         fetch(this.href, { headers: headersDl() }).then(function(r) {
-          if (!r.ok) { alert('Não foi possível descarregar.'); return; }
+          if (!r.ok) { showToast('Não foi possível descarregar.', true); return; }
           return r.blob();
         }).then(function(blob) {
           if (!blob) return;

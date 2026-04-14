@@ -271,10 +271,12 @@ async function publicUnlock(token, password) {
   }
   const viewerToken = randomToken(16);
   await repo.setViewerToken(share.id, viewerToken);
+  /** Uma visualização por desbloqueio bem-sucedido (refreshes do /data não somam de novo). */
+  await repo.incrementViewCount(share.id);
   return { viewerToken };
 }
 
-async function publicData(token, viewerHeader) {
+async function publicData(token, viewerHeader, repeatVisit) {
   const share = await repo.findShareByToken(token);
   if (!share) {
     const err = new Error('Link não encontrado.');
@@ -283,7 +285,14 @@ async function publicData(token, viewerHeader) {
   }
   assertShareUsable(share);
   assertViewer(share, viewerHeader);
-  await repo.incrementViewCount(share.id);
+  /** Links sem senha: conta na primeira carga da sessão; o cliente envia X-King-Docs-Repeat-Visit nos refreshes. */
+  if (!share.password_hash) {
+    const skip =
+      repeatVisit === '1' ||
+      repeatVisit === 'true' ||
+      String(repeatVisit || '').toLowerCase() === 'yes';
+    if (!skip) await repo.incrementViewCount(share.id);
+  }
   return { snapshot: share.snapshot || {} };
 }
 

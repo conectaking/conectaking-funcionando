@@ -154,7 +154,8 @@ async function publicUnlock(req, res) {
 async function publicData(req, res) {
   try {
     const viewer = req.headers['x-king-docs-viewer'];
-    const out = await service.publicData(req.params.token, viewer);
+    const repeatVisit = req.headers['x-king-docs-repeat-visit'];
+    const out = await service.publicData(req.params.token, viewer, repeatVisit);
     return responseFormatter.success(res, out);
   } catch (e) {
     const code = e.statusCode || 500;

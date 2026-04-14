@@ -102,7 +102,18 @@ const config = {
         })(),
         credentials: true,
         methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires'],
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'Accept',
+            'Origin',
+            'X-Requested-With',
+            'Cache-Control',
+            'Pragma',
+            'Expires',
+            'X-King-Docs-Viewer',
+            'X-King-Docs-Repeat-Visit'
+        ],
         exposedHeaders: ['Content-Disposition', 'Retry-After'],
         optionsSuccessStatus: 204,
         maxAge: 86400
@@ -125,6 +136,11 @@ const config = {
         kingbrief: {
             windowMs: 60 * 60 * 1000, // 1 hora
             max: parseInt(process.env.KINGBRIEF_RATE_LIMIT_MAX || '200', 10) // 200 por hora (evita 429; ajustável via KINGBRIEF_RATE_LIMIT_MAX)
+        },
+        /** Tentativas de senha em links partilhados King Docs (anti brute-force no POST /public/:token/unlock) */
+        kingDocsUnlock: {
+            windowMs: parseInt(process.env.KING_DOCS_UNLOCK_WINDOW_MS || String(15 * 60 * 1000), 10),
+            max: parseInt(process.env.KING_DOCS_UNLOCK_MAX || '12', 10)
         }
     },
     
