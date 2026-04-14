@@ -357,9 +357,8 @@
       <ul>
         <li><strong>Dados</strong> — preenche e guarda; podes importar do teu cartão Conecta King ou exportar PDF como backup.</li>
         <li><strong>Upload</strong> — envia ficheiros por tipo (padrão ou <strong>tipos criados por ti</strong> com nome e ícone).</li>
-        <li><strong>Documentos</strong> — vê pré-visualização e gera link ou envia por WhatsApp (sem novo upload aqui).</li>
-        <li><strong>Criar link</strong> — escolhe o que entra no link; podes <strong>copiar o resumo em texto</strong> antes de gerar. Define prazo, senha ou limite de vistas.</li>
-        <li><strong>Os meus links</strong> — abre, copia, <strong>QR</strong> ou revoga. Nada disto envia e-mail automaticamente.</li>
+        <li><strong>Documentos</strong> — pré-visualiza ficheiros do cofre, escolhe o que <strong>incluir no link</strong> (dados pessoais, contactos, etc.) e vê o preview de envio.</li>
+        <li><strong>Partilhar</strong> — define prazo, senha e limite de vistas, <strong>gera o link</strong>, copia resumo em texto e gere <strong>a lista dos teus links</strong> (abrir, QR, revogar, excluir).</li>
       </ul>
     </details>
 
@@ -406,8 +405,7 @@
       <button type="button" class="tab active" role="tab" aria-selected="true" aria-controls="p-dados" id="tab-p-dados" data-panel="p-dados">Dados</button>
       <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-upload" id="tab-p-upload" data-panel="p-upload">Upload</button>
       <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-docs" id="tab-p-docs" data-panel="p-docs">Documentos</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-share" id="tab-p-share" data-panel="p-share">Criar link</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-links" id="tab-p-links" data-panel="p-links">Os meus links</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-partilha" id="tab-p-partilha" data-panel="p-partilha">Partilhar</button>
     </div>
 
     <div id="p-dados" class="panel active" role="tabpanel" aria-labelledby="tab-p-dados"></div>
@@ -442,7 +440,7 @@
     </div>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Clica nos tipos que quiseres — podes marcar <strong>vários</strong>. Na pré-visualização, <strong>arrasta</strong> os blocos para mudar a ordem (ou usa <kbd style="font-size:.75rem;border:1px solid var(--border);padding:0 .25rem;border-radius:4px">Esc</kbd> para limpar a seleção). Aqui não envias ficheiros — usa a aba <strong>Upload</strong>.</p>
+      <p class="sub"><strong>Cofre:</strong> clica nos tipos à esquerda — podes marcar <strong>vários</strong>. Na pré-visualização, <strong>arrasta</strong> os blocos para ordenar (ou <kbd style="font-size:.75rem;border:1px solid var(--border);padding:0 .25rem;border-radius:4px">Esc</kbd> para limpar). Novos ficheiros: aba <strong>Upload</strong>. <strong>Incluir no link:</strong> na secção de baixo escolhe que dados entram no próximo link; <strong>prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
       <div class="share-layout doc-browse-layout">
         <div class="share-main">
           <div class="doc-panel-card" style="margin-bottom:0">
@@ -474,20 +472,42 @@
           </div>
         </aside>
       </div>
+
+      <div class="doc-panel-card kd-docs-link-wrap" style="margin-top:1.35rem">
+        <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — dados do cofre</div>
+        <p class="sub" style="margin-top:.5rem">Por cada campo marca incluir e escolhe <strong>Texto</strong>, <strong>Ficheiro</strong> ou ambos. O resumo aparece à direita. O <strong>nome</strong> no topo do link é o que editas no painel pessoal acima. Depois vai à aba <strong>Partilhar</strong> para prazo, senha e gerar o URL.</p>
+        <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerares o link na aba Partilhar.</p>
+        <div class="share-layout kd-share-in-docs">
+          <div class="share-main">
+            <div class="share-grid" id="share-table-wrap"></div>
+            <h3 class="group" style="margin-top:1rem;">Documentos extra (só ficheiro, sem campo de texto)</h3>
+            <div id="extra-docs-wrap"></div>
+          </div>
+          <aside class="preview-de-envio" aria-label="Preview de envio">
+            <div class="preview-header">Preview de envio <span id="preview-count" class="badge">0 itens</span></div>
+            <div id="share-preview-body" class="preview-body"><p class="preview-empty">Marca campos nos cartões à esquerda (secção «Incluir no link»).</p></div>
+            <div class="kd-share-quick-actions">
+              <button type="button" class="btn secondary" id="btn-copy-share-summary" disabled>Copiar resumo (texto)</button>
+              <span class="kd-hint-inline">Útil para colar no WhatsApp ou e-mail; o link gera-se na aba <strong>Partilhar</strong>.</span>
+            </div>
+            <div class="preview-footer-msg"><span>✓</span> Prazo, senha e <strong>Gerar link seguro</strong> ficam na aba <strong>Partilhar</strong>.</div>
+            <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
+          </aside>
+        </div>
+      </div>
     </div>
 
-    <div id="p-share" class="panel" role="tabpanel" aria-labelledby="tab-p-share">
+    <div id="p-partilha" class="panel" role="tabpanel" aria-labelledby="tab-p-partilha">
       <div class="kd-share-head">
-        <h2>Criar link de partilha</h2>
-        <p class="sub" style="margin-bottom:0">Escolhe o que entra no link: por campo podes enviar <strong>só texto</strong>, <strong>só ficheiro</strong> ou <strong>ambos</strong>. O <strong>nome</strong> no topo é o que editas no painel pessoal acima.</p>
+        <h2>Partilhar</h2>
+        <p class="sub" style="margin-bottom:0">Aqui defines <strong>foto no link</strong> (URL), <strong>prazo</strong> (horas), <strong>senha</strong> e <strong>limite de vistas</strong>, geras o URL e geres a <strong>lista dos teus links</strong>. Os dados a incluir escolhes em <strong>Documentos</strong> (secção «Incluir no link»).</p>
       </div>
       <div class="kd-trust-strip" role="note">
-        <strong>Antes de gerar o link</strong>
+        <strong>Antes de gerar</strong>
         <ul>
-          <li>Quem receber abre o link no <strong>browser</strong> (telefone ou PC) — não precisa de app.</li>
-          <li>Quem receber o link só vê o que aparece no painel <em>Preview de envio</em> à direita.</li>
-          <li>Podes definir <strong>prazo</strong> (horas), <strong>senha</strong> e <strong>limite de visualizações</strong> abaixo.</li>
-          <li>Depois de gerado, podes <strong>revogar</strong> o link na aba «Os meus links».</li>
+          <li>Escolhe os campos em <strong>Documentos</strong> — o <em>Preview de envio</em> fica lá.</li>
+          <li>Quem receber abre no <strong>browser</strong> (telefone ou PC).</li>
+          <li>Depois de gerado, revoga ou exclui na <strong>lista abaixo</strong>.</li>
         </ul>
       </div>
 
@@ -500,63 +520,48 @@
         <div class="kd-models-chips" id="kd-models-chips"></div>
       </div>
 
-      <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerar o link.</p>
-
-      <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
-        <label>Foto (URL)</label>
-        <input type="text" id="sh-photo" placeholder="Opcional — URL da imagem de perfil"/>
-      </div>
-
-      <div class="share-layout">
-        <div class="share-main">
-          <div class="share-grid" id="share-table-wrap"></div>
-          <h3 class="group" style="margin-top:1rem;">Documentos extra (só ficheiro, sem campo de texto)</h3>
-          <div id="extra-docs-wrap"></div>
-          <div style="margin-top:1rem; display:grid; gap:.6rem; max-width: 420px;">
-            <div class="row" style="grid-template-columns: 160px 1fr;">
-              <label>Expira em (horas)</label>
-              <input type="number" id="sh-hours" value="24" min="1" max="720"/>
-            </div>
-            <div class="row" style="grid-template-columns: 160px 1fr;">
-              <label>Senha (opcional)</label>
-              <input type="password" id="sh-pass" placeholder="Vazio = sem senha"/>
-            </div>
-            <div class="row" style="grid-template-columns: 160px 1fr; align-items: start;">
-              <label>Máx. visualizações</label>
-              <div>
-                <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1" aria-describedby="hint-maxv"/>
-                <p class="kd-hint" id="hint-maxv">Coloca <strong>1</strong> para um link de <strong>uso único</strong> (fecha após a primeira abertura bem-sucedida).</p>
-              </div>
-            </div>
-          </div>
-          <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link seguro</button></p>
-          <div id="share-out"></div>
+      <div class="doc-panel-card" style="margin-top:1rem">
+        <div class="doc-badge" role="status"><span aria-hidden="true">⚙️</span> Opções do link</div>
+        <p class="sub" style="margin-top:.5rem">Ajusta foto (URL), tempo de vida e proteção; depois gera o link.</p>
+        <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
+          <label>Foto (URL)</label>
+          <input type="text" id="sh-photo" placeholder="Opcional — URL da imagem de perfil"/>
         </div>
-        <aside class="preview-de-envio" aria-label="Preview de envio">
-          <div class="preview-header">Preview de envio <span id="preview-count" class="badge">0 itens</span></div>
-          <div id="share-preview-body" class="preview-body"><p class="preview-empty">Selecione campos ao lado (aba «Criar link»).</p></div>
-          <div class="kd-share-quick-actions">
-            <button type="button" class="btn secondary" id="btn-copy-share-summary" disabled>Copiar resumo (texto)</button>
-            <span class="kd-hint-inline">Útil para colar no WhatsApp ou e-mail <em>antes</em> de gerares o link.</span>
+        <div style="display:grid; gap:.6rem; max-width: 420px;">
+          <div class="row" style="grid-template-columns: 160px 1fr;">
+            <label>Expira em (horas)</label>
+            <input type="number" id="sh-hours" value="24" min="1" max="720"/>
           </div>
-          <div class="preview-footer-msg"><span>✓</span> Depois de gerares o link, usa Copiar URL ou QR no resultado abaixo.</div>
-          <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
-        </aside>
+          <div class="row" style="grid-template-columns: 160px 1fr;">
+            <label>Senha (opcional)</label>
+            <input type="password" id="sh-pass" placeholder="Vazio = sem senha"/>
+          </div>
+          <div class="row" style="grid-template-columns: 160px 1fr; align-items: start;">
+            <label>Máx. visualizações</label>
+            <div>
+              <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1" aria-describedby="hint-maxv"/>
+              <p class="kd-hint" id="hint-maxv">Coloca <strong>1</strong> para um link de <strong>uso único</strong> (fecha após a primeira abertura bem-sucedida).</p>
+            </div>
+          </div>
+        </div>
+        <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link seguro</button></p>
+        <div id="share-out"></div>
       </div>
-    </div>
 
-    <div id="p-links" class="panel" role="tabpanel" aria-labelledby="tab-p-links">
-      <p class="sub" style="margin-top:0">Links que criaste: copia, partilha, <strong>revoga</strong> (invalida) ou <strong>exclui</strong> (remove da lista). <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
-      <div class="kd-links-bulk">
-        <button type="button" class="btn secondary" id="btn-links-revoke-sel">Revogar selecionados</button>
-        <button type="button" class="btn bad" id="btn-links-delete-sel">Excluir selecionados</button>
-        <p class="kd-links-bulk-hint">Marca as linhas à esquerda. <strong>Revogar</strong> mantém o registo como revogado; <strong>Excluir</strong> apaga o registo (não volta a aparecer).</p>
+      <div class="doc-panel-card" style="margin-top:1.25rem">
+        <div class="doc-badge" role="status"><span aria-hidden="true">🔗</span> Os meus links</div>
+        <p class="sub" style="margin-top:.5rem">Copia, partilha, <strong>revoga</strong> (invalida) ou <strong>exclui</strong> (remove da lista). <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
+        <div class="kd-links-bulk">
+          <button type="button" class="btn secondary" id="btn-links-revoke-sel">Revogar selecionados</button>
+          <button type="button" class="btn bad" id="btn-links-delete-sel">Excluir selecionados</button>
+          <p class="kd-links-bulk-hint">Marca as linhas à esquerda. <strong>Revogar</strong> mantém o registo como revogado; <strong>Excluir</strong> apaga o registo (não volta a aparecer).</p>
+        </div>
+        <div class="kd-filter-links">
+          <label for="links-filter" class="visually-hidden">Filtrar lista</label>
+          <input type="search" id="links-filter" placeholder="Filtrar por ID, estado ou data…" autocomplete="off"/>
+        </div>
+        <div id="links-list"></div>
       </div>
-      <div class="kd-filter-links">
-        <label for="links-filter" class="visually-hidden">Filtrar lista</label>
-        <input type="search" id="links-filter" placeholder="Filtrar por ID, estado ou data…" autocomplete="off"/>
-      </div>
-      <div id="links-list"></div>
     </div>
     </div>
 
@@ -609,7 +614,7 @@
           <label for="kd-sc-mode">Conteúdo do atalho</label>
           <select id="kd-sc-mode">
             <option value="preset">Copiar um atalho fixo (abaixo)</option>
-            <option value="selection">Usar a seleção atual na aba «Criar link»</option>
+            <option value="selection">Usar a seleção atual (Documentos — Incluir no link)</option>
           </select>
         </div>
         <div class="kd-modal-field" id="kd-sc-preset-wrap">
@@ -622,7 +627,7 @@
             <option value="enviarNf">📄 Enviar NF</option>
           </select>
         </div>
-        <p class="kd-hint" id="kd-sc-hint-selection" style="display:none">Abre a aba <strong>Criar link</strong>, marca os campos que queres e volta aqui para guardar.</p>
+        <p class="kd-hint" id="kd-sc-hint-selection" style="display:none">Abre a aba <strong>Documentos</strong>, na secção «Incluir no link» marca os campos que queres e volta aqui para guardar.</p>
         <div class="kd-modal-actions">
           <button type="button" class="btn" id="kd-sc-save">Guardar atalho</button>
           <button type="button" class="btn secondary" id="kd-sc-cancel">Cancelar</button>
@@ -1837,12 +1842,12 @@
         hintEl.textContent = 'Marca os campos nos cartões e confirma o resumo à direita antes de gerar o link.';
         hintEl.classList.remove('kd-share-summary--ok');
       } else {
-        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o preview à direita e clica em «Gerar link seguro» quando estiver correto.';
+        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o preview à direita; na aba «Partilhar» clica em «Gerar link seguro» quando estiver correto.';
         hintEl.classList.add('kd-share-summary--ok');
       }
     }
     if (count === 0) {
-      out.innerHTML = '<p class="preview-empty">Selecione campos ao lado (aba «Criar link»).</p>';
+      out.innerHTML = '<p class="preview-empty">Marca campos na secção «Incluir no link» (esta aba — Documentos).</p>';
       return;
     }
 
@@ -2023,7 +2028,7 @@
     if (!r.ok) { el.innerHTML = '<p class="err">Não foi possível carregar a lista de links.</p>'; showToast('Erro ao listar os links.', 'err'); return; }
     const j = await r.json();
     const arr = (j.data && j.data.shares) || [];
-    if (!arr.length) { el.innerHTML = '<p class="sub">Ainda não criaste nenhum link. Vai à aba «Criar link» quando quiseres partilhar.</p>'; return; }
+    if (!arr.length) { el.innerHTML = '<p class="sub">Ainda não criaste nenhum link. Escolhe dados em <strong>Documentos</strong> e gera o URL na aba <strong>Partilhar</strong>.</p>'; return; }
     el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th style="width:2.2rem"><input type="checkbox" id="links-sel-all" title="Selecionar todos"/></th><th>ID</th><th>Estado</th><th>Ações</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th>Gestão</th></tr>' +
       arr.map(s => {
         const u = window.location.origin + '/kingDocsShare.html?t=' + encodeURIComponent(s.token);
@@ -2132,7 +2137,7 @@
     e.preventDefault();
     applyPreset(btn.getAttribute('data-preset'));
   });
-  document.getElementById('p-share').addEventListener('change', function () {
+  document.getElementById('p-docs').addEventListener('change', function () {
     clearAtalhoActive();
     updateSharePreview();
   });
@@ -2154,8 +2159,9 @@
       this.classList.add('active');
       this.setAttribute('aria-selected', 'true');
       document.getElementById(this.getAttribute('data-panel')).classList.add('active');
-      if (this.getAttribute('data-panel') === 'p-share') updateSharePreview();
-      if (this.getAttribute('data-panel') === 'p-docs' && docPreviewSelectedTypes.length) refreshDocVaultPreview();
+      var panelId = this.getAttribute('data-panel');
+      if (panelId === 'p-partilha') { updateSharePreview(); loadLinks(); }
+      if (panelId === 'p-docs') { updateSharePreview(); if (docPreviewSelectedTypes.length) refreshDocVaultPreview(); }
     });
   });
   document.getElementById('btn-doc-clear-sel').onclick = function () {
@@ -2315,7 +2321,7 @@
         item.presetKey = document.getElementById('kd-sc-preset').value;
       } else {
         var pairs = collectCurrentPresetPairs();
-        if (!pairs.length) { showToast('Marca pelo menos um campo na aba «Criar link».', 'neutral'); return; }
+        if (!pairs.length) { showToast('Marca pelo menos um campo em Documentos (secção «Incluir no link»).', 'neutral'); return; }
         item.pairs = pairs;
       }
       arr.push(item);
