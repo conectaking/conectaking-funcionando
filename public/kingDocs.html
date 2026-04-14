@@ -391,11 +391,26 @@
         <div class="atalhos-block">
           <span class="atalhos-title">Atalhos</span>
           <div class="atalhos-btns" id="kd-atalhos-merged">
-            <button type="button" class="btn-atalho" data-preset="festa" title="Morada, WhatsApp e RG (ficheiro do cofre)">🏠 Festa em Casa</button>
-            <button type="button" class="btn-atalho" data-preset="receberPf" title="Nome, CPF e dados bancários PF">💰 Receber PF</button>
-            <button type="button" class="btn-atalho" data-preset="receberPj" title="Empresa + dados bancários PJ">🏢 Receber PJ</button>
-            <button type="button" class="btn-atalho" data-preset="correspondencia" title="Nome e morada para envio">📩 Correspondência</button>
-            <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">📄 Enviar NF</button>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="festa" title="Morada, WhatsApp e RG (ficheiro do cofre)">🏠 Festa em Casa</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="festa" aria-label="Personalizar Festa em Casa" title="Personalizar">✎</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="receberPf" title="Nome, CPF e dados bancários PF">💰 Receber PF</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPf" aria-label="Personalizar Receber PF" title="Personalizar">✎</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="receberPj" title="Empresa + dados bancários PJ">🏢 Receber PJ</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPj" aria-label="Personalizar Receber PJ" title="Personalizar">✎</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="correspondencia" title="Nome e morada para envio">📩 Correspondência</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="correspondencia" aria-label="Personalizar Correspondência" title="Personalizar">✎</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">📄 Enviar NF</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="enviarNf" aria-label="Personalizar Enviar NF" title="Personalizar">✎</button>
+            </span>
             <span id="kd-custom-atalhos-inner" class="atalhos-btns" style="display:contents"></span>
             <button type="button" class="btn secondary" id="btn-add-custom-atalho" style="font-size:.78rem;padding:.38rem .75rem;border-radius:999px">+ Criar atalho</button>
           </div>
@@ -1298,6 +1313,41 @@
       ['empresa', 'Endereço', 't'], ['empresa', 'Bairro', 't'], ['empresa', 'Cidade', 't'], ['empresa', 'CEP', 't'],
     ],
   };
+
+  /** Nome e ícone sugeridos ao personalizar um atalho fixo (✎) */
+  var PRESET_BAR_META = {
+    festa: { name: 'Festa em Casa', emoji: '🏠' },
+    receberPf: { name: 'Receber PF', emoji: '💰' },
+    receberPj: { name: 'Receber PJ', emoji: '🏢' },
+    correspondencia: { name: 'Correspondência', emoji: '📩' },
+    enviarNf: { name: 'Enviar NF', emoji: '📄' },
+  };
+  function openShortcutModalFromPreset(presetId) {
+    var list = PRESETS[presetId];
+    if (!list) return;
+    var m = document.getElementById('kd-shortcut-modal');
+    if (m) {
+      m.classList.add('kd-modal--open');
+      m.setAttribute('aria-hidden', 'false');
+    }
+    var editEl = document.getElementById('kd-sc-edit-id');
+    if (editEl) editEl.value = '';
+    var titleEl = document.getElementById('kd-shortcut-title');
+    if (titleEl) titleEl.textContent = 'Personalizar atalho';
+    var meta = PRESET_BAR_META[presetId] || { name: String(presetId), emoji: '📌' };
+    var nameEl = document.getElementById('kd-sc-name');
+    if (nameEl) nameEl.value = meta.name;
+    setShortcutEmoji(meta.emoji);
+    closeEmojiPopover();
+    var img = document.getElementById('kd-sc-img');
+    if (img) img.value = '';
+    renderShareTableInto('kd-sc-share-grid', 'msc');
+    renderExtraDocsInto('kd-sc-extra-docs');
+    clearModalShareRoots();
+    list.forEach(function (entry) {
+      applyOnePresetEntryIn(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), entry);
+    });
+  }
 
   function normalizePresetMode(m) {
     var s = String(m == null ? 't' : m).toLowerCase();
@@ -2374,6 +2424,13 @@
   };
 
   document.querySelector('.wrap').addEventListener('click', function (e) {
+    var editPreset = e.target && e.target.closest && e.target.closest('[data-edit-preset]');
+    if (editPreset) {
+      e.preventDefault();
+      e.stopPropagation();
+      openShortcutModalFromPreset(editPreset.getAttribute('data-edit-preset'));
+      return;
+    }
     var btn = e.target && e.target.closest && e.target.closest('.btn-atalho[data-preset]');
     if (!btn) return;
     e.preventDefault();
