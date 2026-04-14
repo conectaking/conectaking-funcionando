@@ -201,6 +201,24 @@
     .kd-filter-links { margin-bottom: .65rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
     .kd-filter-links input { max-width: 220px; }
     .kd-dados-saved-hint { font-size: .74rem; color: var(--muted); margin: -.5rem 0 .75rem; }
+    .kd-dirty-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem; padding: .65rem .85rem; margin-bottom: 1rem; border-radius: 10px; border: 1px solid rgba(234, 179, 8, 0.55); background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #78350f; font-size: .84rem; font-weight: 600; }
+    body.kd-theme-dark .kd-dirty-banner { background: linear-gradient(135deg, #2a2418 0%, #3d3420 100%); color: #fde68a; border-color: rgba(250, 204, 21, 0.35); }
+    .kd-share-quick-actions { padding: .55rem .75rem; border-top: 1px solid var(--border); background: var(--trust-bg); display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+    .kd-share-quick-actions .kd-hint-inline { font-size: .72rem; color: var(--muted); flex: 1; min-width: 140px; }
+    .doc-preview-stack-item--draggable { cursor: grab; }
+    .doc-preview-stack-item--draggable:active { cursor: grabbing; }
+    .doc-preview-stack-item--dragging { opacity: 0.55; }
+    .doc-preview-stack-item--drag-over { box-shadow: 0 0 0 2px var(--accent); background: rgba(45, 90, 61, 0.06); }
+    .doc-preview-drag-hint { font-size: .65rem; color: rgba(255,255,255,.85); font-weight: 500; margin-left: .35rem; }
+    .kd-cdt-emoji-wrap { position: relative; display: inline-flex; align-items: center; gap: .35rem; }
+    .kd-cdt-emoji-pop { position: absolute; left: 0; top: 100%; margin-top: 4px; z-index: 400; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: .5rem; box-shadow: 0 12px 40px rgba(0,0,0,.12); max-width: min(280px, 92vw); max-height: 220px; overflow: auto; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+    .kd-cdt-emoji-pop[hidden] { display: none !important; }
+    .kd-cdt-emoji-pop .kd-emoji-opt { font-size: 1.1rem; padding: .25rem; border: none; background: transparent; cursor: pointer; border-radius: 6px; line-height: 1; }
+    .kd-cdt-emoji-pop .kd-emoji-opt:hover { background: var(--trust-bg); }
+    .links-actions { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+    .links-actions .btn { font-size: .72rem; padding: .28rem .5rem; }
+    .panel.active { box-shadow: 0 2px 24px rgba(0,0,0,.06); }
+    body.kd-theme-dark .panel.active { box-shadow: 0 2px 28px rgba(0,0,0,.35); }
     .doc-card--browse { cursor: pointer; text-align: center; }
     /* Documentos — grelha tipo cartões */
     .doc-panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1rem 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,.06); margin-bottom: 1.25rem; }
@@ -336,8 +354,8 @@
         <li><strong>Dados</strong> — preenche e guarda; podes importar do teu cartão Conecta King ou exportar PDF como backup.</li>
         <li><strong>Upload</strong> — envia ficheiros por tipo (padrão ou <strong>tipos criados por ti</strong> com nome e ícone).</li>
         <li><strong>Documentos</strong> — vê pré-visualização e gera link ou envia por WhatsApp (sem novo upload aqui).</li>
-        <li><strong>Criar link</strong> — escolhe o que entra no link; o destinatário só vê isso. Define prazo, senha ou limite de vistas.</li>
-        <li><strong>Os meus links</strong> — copia URLs ou revoga quando não precisares. Nada disto envia e-mail automaticamente.</li>
+        <li><strong>Criar link</strong> — escolhe o que entra no link; podes <strong>copiar o resumo em texto</strong> antes de gerar. Define prazo, senha ou limite de vistas.</li>
+        <li><strong>Os meus links</strong> — abre, copia, <strong>QR</strong> ou revoga. Nada disto envia e-mail automaticamente.</li>
       </ul>
     </details>
 
@@ -399,9 +417,13 @@
         <div class="kd-custom-doctypes" id="kd-custom-doctypes-wrap">
           <p class="group" style="margin:0 0 .5rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Tipos extra (nome + ícone)</p>
           <p class="sub" style="margin-top:0">Cria quantos quiseres. O nome vira a chave do tipo (maiúsculas). Não podes duplicar um tipo que já existe nos cartões padrão.</p>
-          <div class="kd-custom-doctype-form">
+          <div class="kd-custom-doctype-form" style="position:relative">
             <input type="text" id="kd-cdt-label" placeholder="Nome (ex.: Passaporte)" maxlength="60" aria-label="Nome do novo tipo"/>
-            <input type="text" id="kd-cdt-icon" placeholder="Ícone" maxlength="8" value="📎" aria-label="Ícone emoji" title="Um emoji ou símbolo"/>
+            <span class="kd-cdt-emoji-wrap">
+              <input type="text" id="kd-cdt-icon" placeholder="Ícone" maxlength="8" value="📎" aria-label="Ícone emoji" title="Um emoji ou símbolo" style="max-width:3.2rem"/>
+              <button type="button" class="btn secondary" id="kd-cdt-emoji-btn" title="Grelha de emojis" aria-label="Abrir grelha de emojis" style="padding:.35rem .5rem;font-size:1rem;line-height:1">😀</button>
+              <div id="kd-cdt-emoji-pop" class="kd-cdt-emoji-pop" hidden role="listbox" aria-label="Escolher emoji"></div>
+            </span>
             <button type="button" class="btn secondary" id="kd-cdt-add">Adicionar tipo</button>
           </div>
           <ul id="kd-cdt-list" class="kd-cdt-list" aria-label="Tipos extra guardados neste dispositivo"></ul>
@@ -416,7 +438,7 @@
     </div>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Clica nos tipos que quiseres — podes marcar <strong>vários</strong>. A pré-visualização mostra todos ao mesmo tempo. Aqui não envias ficheiros — usa a aba <strong>Upload</strong>.</p>
+      <p class="sub">Clica nos tipos que quiseres — podes marcar <strong>vários</strong>. Na pré-visualização, <strong>arrasta</strong> os blocos para mudar a ordem (ou usa <kbd style="font-size:.75rem;border:1px solid var(--border);padding:0 .25rem;border-radius:4px">Esc</kbd> para limpar a seleção). Aqui não envias ficheiros — usa a aba <strong>Upload</strong>.</p>
       <div class="share-layout doc-browse-layout">
         <div class="share-main">
           <div class="doc-panel-card" style="margin-bottom:0">
@@ -425,7 +447,7 @@
           </div>
         </div>
         <aside class="preview-de-envio doc-vault-preview" aria-label="Pré-visualização dos documentos">
-          <div class="preview-header">Pré-visualização <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span></div>
+          <div class="preview-header">Pré-visualização <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none">Arrasta para ordenar</span></div>
           <div id="doc-preview-body" class="preview-body">
             <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
           </div>
@@ -509,7 +531,11 @@
         <aside class="preview-de-envio" aria-label="Preview de envio">
           <div class="preview-header">Preview de envio <span id="preview-count" class="badge">0 itens</span></div>
           <div id="share-preview-body" class="preview-body"><p class="preview-empty">Selecione campos ao lado (aba «Criar link»).</p></div>
-          <div class="preview-footer-msg"><span>✓</span> Agora é só colar aonde quiser (depois de gerares o link).</div>
+          <div class="kd-share-quick-actions">
+            <button type="button" class="btn secondary" id="btn-copy-share-summary" disabled>Copiar resumo (texto)</button>
+            <span class="kd-hint-inline">Útil para colar no WhatsApp ou e-mail <em>antes</em> de gerares o link.</span>
+          </div>
+          <div class="preview-footer-msg"><span>✓</span> Depois de gerares o link, usa Copiar URL ou QR no resultado abaixo.</div>
           <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
         </aside>
       </div>
@@ -945,6 +971,8 @@
         badgeEl.textContent = '';
       }
     }
+    var dragHintEl = document.getElementById('doc-preview-drag-hint');
+    if (dragHintEl) dragHintEl.style.display = types.length > 1 ? '' : 'none';
 
     revokeDocPreviewBlobAll();
     if (gen !== docPreviewRefreshGen) return;
@@ -998,6 +1026,7 @@
         if (mime.indexOf('image/') === 0) {
           var img = document.createElement('img');
           img.className = 'doc-preview-img';
+          img.draggable = false;
           img.alt = f.doc_type || '';
           img.src = url;
           wrap.appendChild(img);
@@ -1019,6 +1048,35 @@
           a.textContent = 'Descarregar';
           wrap.appendChild(a);
         }
+        wrap.classList.add('doc-preview-stack-item--draggable');
+        wrap.setAttribute('draggable', 'true');
+        wrap.dataset.docType = docType;
+        wrap.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('application/x-kd-doctype', docType);
+          e.dataTransfer.effectAllowed = 'move';
+          wrap.classList.add('doc-preview-stack-item--dragging');
+        });
+        wrap.addEventListener('dragend', function () {
+          wrap.classList.remove('doc-preview-stack-item--dragging');
+          if (bodyEl) bodyEl.querySelectorAll('.doc-preview-stack-item--drag-over').forEach(function (n) { n.classList.remove('doc-preview-stack-item--drag-over'); });
+        });
+        wrap.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        });
+        wrap.addEventListener('dragenter', function (e) {
+          e.preventDefault();
+          wrap.classList.add('doc-preview-stack-item--drag-over');
+        });
+        wrap.addEventListener('dragleave', function (e) {
+          if (!wrap.contains(e.relatedTarget)) wrap.classList.remove('doc-preview-stack-item--drag-over');
+        });
+        wrap.addEventListener('drop', function (e) {
+          e.preventDefault();
+          wrap.classList.remove('doc-preview-stack-item--drag-over');
+          var from = e.dataTransfer.getData('application/x-kd-doctype');
+          if (from && from !== docType) reorderDocPreviewTypes(from, docType);
+        });
         frag.appendChild(wrap);
       }
       if (gen !== docPreviewRefreshGen) return;
@@ -1029,6 +1087,18 @@
       bodyEl.innerHTML = '<p class="err">Erro ao carregar a pré-visualização.</p>';
       setDocPreviewActionButtons(false);
     }
+  }
+  function reorderDocPreviewTypes(fromDt, toDt) {
+    var a = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
+    var fromI = a.indexOf(fromDt);
+    var toI = a.indexOf(toDt);
+    if (fromI < 0 || toI < 0 || fromI === toI) return;
+    var item = a.splice(fromI, 1)[0];
+    toI = a.indexOf(toDt);
+    a.splice(toI, 0, item);
+    docPreviewSelectedTypes = a;
+    renderDocBrowseCards();
+    refreshDocVaultPreview();
   }
   function toggleDocBrowse(docType) {
     var dt = String(docType).trim();
@@ -1144,6 +1214,13 @@
 
   let fieldData = {};
   let filesList = [];
+  var vaultDirty = false;
+
+  function setVaultDirty(on) {
+    vaultDirty = !!on;
+    var b = document.getElementById('kd-dados-dirty-banner');
+    if (b) b.hidden = !vaultDirty;
+  }
 
   function ensureFieldData() {
     GROUPS.forEach(g => {
@@ -1156,7 +1233,8 @@
     ensureFieldData();
     const el = document.getElementById('p-dados');
     var vaultHint = formatVaultSavedHint();
-    let html = '<p class="sub">Preenche os campos que quiseres. <strong>Guardar dados</strong> grava no cofre (servidor). <strong>Exportar PDF</strong> faz um backup teu no dispositivo.</p>';
+    let html = '<div id="kd-dados-dirty-banner" class="kd-dirty-banner" ' + (vaultDirty ? '' : 'hidden') + '><span>Tens alterações por guardar no servidor.</span><button type="button" class="btn" id="kd-dados-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar agora</button></div>';
+    html += '<p class="sub">Preenche os campos que quiseres. <strong>Guardar dados</strong> grava no cofre (servidor). <strong>Exportar PDF</strong> faz um backup teu no dispositivo.</p>';
     if (vaultHint) html += '<p class="kd-dados-saved-hint">' + escapeHtml(vaultHint) + '</p>';
     html += '<div class="btn-row">';
     html += '<button type="button" class="btn" id="btn-save-vault">Guardar dados</button>';
@@ -1173,15 +1251,20 @@
     });
     el.innerHTML = html;
     document.getElementById('btn-save-vault').onclick = saveVault;
+    var qSave = document.getElementById('kd-dados-save-quick');
+    if (qSave) qSave.onclick = function () { saveVault(); };
     document.getElementById('btn-import-profile').onclick = importFromProfile;
     document.getElementById('btn-export-pdf').onclick = exportVaultPdf;
     el.querySelectorAll('input[data-g]').forEach(inp => {
-      inp.addEventListener('change', function() {
-        const g = this.getAttribute('data-g');
-        const k = this.getAttribute('data-k');
+      function syncField() {
+        const g = inp.getAttribute('data-g');
+        const k = inp.getAttribute('data-k');
         if (!fieldData[g]) fieldData[g] = {};
-        fieldData[g][k] = this.value;
-      });
+        fieldData[g][k] = inp.value;
+        setVaultDirty(true);
+      }
+      inp.addEventListener('input', syncField);
+      inp.addEventListener('change', syncField);
     });
   }
 
@@ -1264,6 +1347,41 @@
     });
   }
 
+  function initKdCdtEmojiPicker() {
+    var grid = document.getElementById('kd-cdt-emoji-pop');
+    var btn = document.getElementById('kd-cdt-emoji-btn');
+    var iconInp = document.getElementById('kd-cdt-icon');
+    if (!grid || !btn || !KD_EMOJI_PICKER.length) return;
+    grid.innerHTML = KD_EMOJI_PICKER.map(function (emo) {
+      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '" aria-label="' + escapeAttr(emo) + '">' + emo + '</button>';
+    }).join('');
+    grid.querySelectorAll('.kd-emoji-opt').forEach(function (b) {
+      b.onclick = function (ev) {
+        ev.stopPropagation();
+        var ch = (this.getAttribute('data-emoji') || this.textContent || '').trim().slice(0, 8);
+        if (iconInp) iconInp.value = ch || '📎';
+        grid.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', 'false');
+      };
+    });
+    btn.onclick = function (ev) {
+      ev.stopPropagation();
+      if (grid.hasAttribute('hidden')) {
+        grid.removeAttribute('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      } else {
+        grid.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    };
+    document.addEventListener('click', function cdtEmojiDocClick(ev) {
+      if (grid.hasAttribute('hidden')) return;
+      if (grid.contains(ev.target) || btn.contains(ev.target)) return;
+      grid.setAttribute('hidden', '');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
   async function loadVault() {
     const tok = getToken();
     if (!tok) {
@@ -1287,6 +1405,7 @@
       const d = j.data && j.data.fieldData;
       if (d && typeof d === 'object') fieldData = d;
       ensureFieldData();
+      setVaultDirty(false);
       renderDados();
       renderShareTable();
       await loadFiles();
@@ -1300,6 +1419,7 @@
     const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
     if (!r.ok) { showToast('Não foi possível guardar. Tenta outra vez.', 'err'); return; }
     try { localStorage.setItem(VAULT_SAVED_AT_KEY, String(Date.now())); } catch (e) {}
+    setVaultDirty(false);
     showToast('Dados guardados no servidor.', 'ok');
     renderDados();
   }
@@ -1311,6 +1431,7 @@
     const d = j.data && j.data.fieldData;
     if (d && typeof d === 'object') fieldData = d;
     ensureFieldData();
+    setVaultDirty(false);
     renderDados();
     renderShareTable();
     showToast(j.message || 'Dados do perfil importados.', 'ok');
@@ -1619,10 +1740,7 @@
     updateSharePreview();
   }
 
-  function updateSharePreview() {
-    const out = document.getElementById('share-preview-body');
-    const badge = document.getElementById('preview-count');
-    if (!out || !badge) return;
+  function collectSharePreviewData() {
     ensureFieldData();
     const sections = {};
     let count = 0;
@@ -1664,6 +1782,45 @@
       count++;
     });
 
+    var showName = document.getElementById('sh-name') && document.getElementById('sh-name').value.trim();
+    var showPhoto = document.getElementById('sh-photo') && document.getElementById('sh-photo').value.trim();
+    return { sections: sections, count: count, showName: showName, showPhoto: showPhoto };
+  }
+
+  function formatSharePreviewPlainText(data) {
+    if (!data || !data.count) return '';
+    var lines = [];
+    lines.push('King Docs — resumo do conteúdo do link');
+    lines.push('');
+    if (data.showName) {
+      lines.push('Nome no topo: ' + data.showName);
+      lines.push('');
+    }
+    if (data.showPhoto) {
+      lines.push('Foto (URL): ' + data.showPhoto);
+      lines.push('');
+    }
+    Object.keys(data.sections).forEach(function (title) {
+      lines.push('▸ ' + title);
+      data.sections[title].forEach(function (item) {
+        if (item.kind === 'text') lines.push('  • ' + item.label + ': ' + item.val);
+        else if (item.kind === 'file') lines.push('  • ' + item.label + ' (ficheiro): ' + item.fileLabel);
+        else lines.push('  • Documento extra: ' + item.label);
+      });
+      lines.push('');
+    });
+    return lines.join('\n').trim();
+  }
+
+  function updateSharePreview() {
+    const out = document.getElementById('share-preview-body');
+    const badge = document.getElementById('preview-count');
+    const copyBtn = document.getElementById('btn-copy-share-summary');
+    if (!out || !badge) return;
+    const data = collectSharePreviewData();
+    const count = data.count;
+    if (copyBtn) copyBtn.disabled = count === 0;
+
     badge.textContent = count + ' itens';
     var hintEl = document.getElementById('share-confirm-hint');
     if (hintEl) {
@@ -1680,14 +1837,16 @@
       return;
     }
 
-    var showName = document.getElementById('sh-name') && document.getElementById('sh-name').value.trim();
     var html = '';
-    if (showName) {
-      html += '<div class="preview-sec"><h4>No topo do link</h4><div class="preview-line"><span class="pl">Nome</span><span class="pv">' + escapeHtml(showName) + '</span></div></div>';
+    if (data.showName || data.showPhoto) {
+      html += '<div class="preview-sec"><h4>No topo do link</h4>';
+      if (data.showName) html += '<div class="preview-line"><span class="pl">Nome</span><span class="pv">' + escapeHtml(data.showName) + '</span></div>';
+      if (data.showPhoto) html += '<div class="preview-line"><span class="pl">Foto (URL)</span><span class="pv">' + escapeHtml(data.showPhoto) + '</span></div>';
+      html += '</div>';
     }
-    Object.keys(sections).forEach(function (title) {
+    Object.keys(data.sections).forEach(function (title) {
       html += '<div class="preview-sec"><h4>' + escapeHtml(title) + '</h4>';
-      sections[title].forEach(function (item) {
+      data.sections[title].forEach(function (item) {
         if (item.kind === 'text') {
           html += '<div class="preview-line"><span class="pl">' + escapeHtml(item.label) + '</span><span class="pv">' + escapeHtml(item.val) + '</span></div>';
         } else if (item.kind === 'file') {
@@ -1847,13 +2006,16 @@
     const j = await r.json();
     const arr = (j.data && j.data.shares) || [];
     if (!arr.length) { el.innerHTML = '<p class="sub">Ainda não criaste nenhum link. Vai à aba «Criar link» quando quiseres partilhar.</p>'; return; }
-    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th>ID</th><th>Estado</th><th>Link</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th></th></tr>' +
+    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th>ID</th><th>Estado</th><th>Ações</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th></th></tr>' +
       arr.map(s => {
         const u = window.location.origin + '/kingDocsShare.html?t=' + encodeURIComponent(s.token);
-        return '<tr><td>' + s.id + '</td><td>' + shareLinkStatusBadge(s) + '</td><td><button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar URL</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button></td></tr>';
+        return '<tr><td>' + s.id + '</td><td>' + shareLinkStatusBadge(s) + '</td><td class="links-actions"><a class="btn secondary" href="' + escapeAttr(u) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block;font-size:.72rem;padding:.28rem .5rem">Abrir</a> <button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar</button> <button type="button" class="btn secondary btn-qr-row" data-u="' + escapeAttr(u) + '">QR</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button></td></tr>';
       }).join('') + '</table>';
     el.querySelectorAll('.btn-copyt').forEach(b => {
       b.onclick = function() { navigator.clipboard.writeText(this.getAttribute('data-u')); showToast('URL copiada.', 'ok'); };
+    });
+    el.querySelectorAll('.btn-qr-row').forEach(function (b) {
+      b.onclick = function () { openQrModal(this.getAttribute('data-u')); };
     });
     el.querySelectorAll('.btn-rev').forEach(b => {
       b.onclick = async function() {
@@ -1917,6 +2079,11 @@
   });
   document.getElementById('sh-name').addEventListener('input', updateSharePreview);
   document.getElementById('sh-photo').addEventListener('input', updateSharePreview);
+  document.getElementById('btn-copy-share-summary').onclick = function () {
+    var t = formatSharePreviewPlainText(collectSharePreviewData());
+    if (!t) { showToast('Nada para copiar — marca campos no preview primeiro.', 'neutral'); return; }
+    navigator.clipboard.writeText(t).then(function () { showToast('Resumo em texto copiado.', 'ok'); }).catch(function () { showToast('Não foi possível copiar.', 'err'); });
+  };
 
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', function() {
@@ -2109,9 +2276,24 @@
     }
   };
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      closeQrModal();
-      closeShortcutModal();
+    if (e.key !== 'Escape') return;
+    var cdtPop = document.getElementById('kd-cdt-emoji-pop');
+    if (cdtPop && !cdtPop.hasAttribute('hidden')) {
+      cdtPop.setAttribute('hidden', '');
+      var cdtBtn = document.getElementById('kd-cdt-emoji-btn');
+      if (cdtBtn) cdtBtn.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    var scOpen = document.getElementById('kd-shortcut-modal') && document.getElementById('kd-shortcut-modal').classList.contains('kd-modal--open');
+    var qrOpen = document.getElementById('kd-qr-modal') && document.getElementById('kd-qr-modal').classList.contains('kd-modal--open');
+    if (scOpen) { closeShortcutModal(); return; }
+    if (qrOpen) { closeQrModal(); return; }
+    closeQrModal();
+    closeShortcutModal();
+    var pDocs = document.getElementById('p-docs');
+    if (pDocs && pDocs.classList.contains('active') && docPreviewSelectedTypes.length) {
+      var btnClear = document.getElementById('btn-doc-clear-sel');
+      if (btnClear) btnClear.click();
     }
   });
 
@@ -2131,6 +2313,7 @@
   renderModelsChips();
   renderCustomShortcuts();
   initKdEmojiPicker();
+  initKdCdtEmojiPicker();
   renderCustomDocTypesList();
   renderDocCards();
   loadVault().then(loadProfileHints);
