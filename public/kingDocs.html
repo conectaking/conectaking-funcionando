@@ -43,6 +43,20 @@
     .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); padding:1rem 1rem 3rem; }
     .wrap { max-width: 1100px; margin: 0 auto; }
+    /* Cabeçalho fixo: nome + atalhos sempre visíveis ao scroll */
+    .kd-sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      background: var(--bg);
+      padding: .35rem 0 .85rem;
+      margin: 0 -1rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 6px 24px rgba(0,0,0,.06);
+    }
+    .kd-page-body { padding-top: .25rem; }
     .kd-top-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
     .banner { background: var(--banner-bg); border: 1px dashed var(--accent); color: var(--accent); padding: .65rem .9rem; border-radius: 8px; font-size: .82rem; margin: 0; flex: 1; min-width: min(100%, 240px); }
     .kd-help { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 .85rem; margin-bottom: 1rem; font-size: .82rem; }
@@ -81,9 +95,24 @@
     .preset-row .btn { font-size: .78rem; padding: .35rem .65rem; }
     .file-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem 0; border-bottom: 1px solid var(--border); font-size: .85rem; }
     .share-grid { font-size: .82rem; }
-    .share-grid table { width: 100%; border-collapse: collapse; }
-    .share-grid th, .share-grid td { border: 1px solid var(--border); padding: .35rem .4rem; text-align: left; vertical-align: middle; }
-    .share-grid th { background: #faf9f7; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    /* Cartões por categoria (estilo mockup) */
+    .kd-share-cat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: .85rem; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,.04); }
+    .kd-share-cat-head { display: flex; align-items: center; gap: .5rem; padding: .55rem .75rem; background: var(--trust-bg); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .kd-share-cat-ico { font-size: 1.25rem; line-height: 1; }
+    .kd-share-cat-title { flex: 1; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+    .kd-link-btn { background: none; border: none; color: var(--accent); font-size: .72rem; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; font-family: inherit; padding: .2rem 0; }
+    .kd-link-btn:hover { text-decoration: underline; }
+    .kd-share-cat-body { padding: .5rem .75rem .65rem; }
+    .kd-field-block { padding: .35rem 0; border-bottom: 1px solid var(--border); }
+    .kd-field-block:last-child { border-bottom: none; }
+    .kd-field-main { display: flex; align-items: flex-start; gap: .5rem; cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--ink); }
+    .kd-field-main input { margin-top: .2rem; }
+    .kd-field-adv { margin: .4rem 0 0 1.5rem; display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; font-size: .74rem; color: var(--muted); }
+    .kd-mini { display: inline-flex; align-items: center; gap: .25rem; cursor: pointer; font-weight: 500; }
+    .kd-field-adv select { max-width: 200px; font-size: .78rem; }
+    .kd-custom-atalhos { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-top: .65rem; padding-top: .65rem; border-top: 1px dashed var(--border); }
+    .kd-custom-atalhos .atalhos-title { width: 100%; margin-bottom: 0 !important; }
+    .btn-atalho .kd-atalho-img { width: 1.15rem; height: 1.15rem; border-radius: 4px; object-fit: cover; vertical-align: middle; }
     .err { color: var(--bad); font-size: .85rem; margin: .5rem 0; }
     .okmsg { color: var(--accent); font-size: .85rem; margin: .5rem 0; }
     .linkbox { word-break: break-all; background: #f0f0ec; padding: .6rem; border-radius: 8px; font-size: .78rem; margin: .5rem 0; }
@@ -101,6 +130,10 @@
     .mini-actions { font-size: .78rem; margin-top: .5rem; color: var(--muted); }
     .mini-actions button { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 0 .25rem; font: inherit; }
     .preview-de-envio { position: sticky; top: .75rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
+    @media (min-width: 960px) {
+      .preview-de-envio { top: 1rem; max-height: calc(100vh - 2rem); display: flex; flex-direction: column; }
+      .preview-de-envio .preview-body { flex: 1; min-height: 0; }
+    }
     .preview-de-envio .preview-header { background: var(--accent); color: #fff; padding: .55rem .75rem; font-size: .72rem; font-weight: 700; letter-spacing: .06em; display: flex; justify-content: space-between; align-items: center; }
     .preview-de-envio .preview-header .badge { font-size: .65rem; background: rgba(255,255,255,.25); padding: .15rem .45rem; border-radius: 999px; font-weight: 600; }
     .preview-body { padding: .65rem .75rem; max-height: min(55vh, 420px); overflow-y: auto; font-size: .8rem; }
@@ -172,7 +205,12 @@
     .kd-modal.kd-modal--open { display: flex; }
     .kd-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
     .kd-modal-box { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; max-width: 320px; width: 100%; box-shadow: 0 16px 48px rgba(0,0,0,.2); }
+    .kd-modal-box.kd-modal-box--wide { max-width: 420px; }
     .kd-modal-box h3 { margin: 0 0 .5rem; font-size: 1rem; }
+    .kd-modal-field { margin-bottom: .75rem; }
+    .kd-modal-field label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: .28rem; font-weight: 600; }
+    .kd-modal-field input[type=text], .kd-modal-field select { width: 100%; }
+    .kd-modal-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
     #kd-qr-wrap { display: flex; justify-content: center; margin: 1rem 0; min-height: 200px; align-items: center; }
     #kd-qr-wrap canvas { border-radius: 8px; }
     .kd-badge { display: inline-block; font-size: .65rem; padding: .2rem .45rem; border-radius: 6px; font-weight: 600; }
@@ -185,6 +223,7 @@
 </head>
 <body>
   <div class="wrap">
+    <div class="kd-sticky-header">
     <div class="kd-top-bar">
       <div class="banner"><strong>King Docs</strong> — cofre privado: estes dados não aparecem no teu cartão público. Só saem daqui quando <strong>crias um link temporário</strong> ou <strong>exportas / copias</strong> tu mesmo.</div>
       <button type="button" class="kd-theme-btn" id="kd-theme-toggle" title="Alternar tema claro/escuro">Tema escuro</button>
@@ -205,7 +244,7 @@
         <div class="kd-hero-badge">Painel pessoal</div>
         <label class="visually-hidden" for="sh-name">Nome a mostrar no link</label>
         <input type="text" id="sh-name" class="kd-hero-name" placeholder="Seu nome" autocomplete="name"/>
-        <p class="kd-hero-sub">Escolhe o que queres partilhar e copia com um clique</p>
+        <p class="kd-hero-sub">Selecione o que quiser compartilhar e copie com um clique</p>
       </div>
       <div class="kd-hero-atalhos">
         <div class="atalhos-block">
@@ -217,6 +256,11 @@
             <button type="button" class="btn-atalho" data-preset="correspondencia" title="Nome e morada para envio">📩 Correspondência</button>
             <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">📄 Enviar NF</button>
           </div>
+          <div class="kd-custom-atalhos" id="kd-custom-atalhos-wrap">
+            <span class="atalhos-title">Os teus atalhos</span>
+            <div id="kd-custom-atalhos-inner" class="atalhos-btns"></div>
+            <button type="button" class="btn secondary" id="btn-add-custom-atalho" style="font-size:.78rem;padding:.38rem .75rem;border-radius:8px">+ Criar atalho</button>
+          </div>
           <div class="mini-actions">
             <button type="button" id="btn-preset-all">Incluir todos os campos</button> ·
             <button type="button" id="btn-preset-none">Limpar inclusões</button> ·
@@ -225,7 +269,9 @@
         </div>
       </div>
     </section>
+    </div>
 
+    <div class="kd-page-body">
     <p class="sub" id="auth-hint"></p>
 
     <div class="tabs" id="kd-tabs" role="tablist" aria-label="Secções King Docs">
@@ -239,9 +285,14 @@
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
       <p class="sub">Envia PDF ou imagem. Usa os cartões abaixo para cada tipo de documento; depois podes associar cada ficheiro a um campo na aba «Criar link».</p>
       <div class="doc-panel-card">
-        <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Documentos — selecionar</div>
+        <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Documentos — enviar ao cofre</div>
         <div id="doc-select-root" class="doc-grid"></div>
         <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
+      </div>
+      <div class="doc-panel-card">
+        <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Documentos selecionáveis no link</div>
+        <p class="sub" style="margin-top:0">Espelho dos mesmos tipos — o que está no cofre aparece como «no cofre». Na aba <strong>Criar link</strong> marcas o que entra na partilha.</p>
+        <div id="doc-select-root-mirror" class="doc-grid" aria-hidden="true"></div>
       </div>
       <p class="doc-fallback-title">Outro documento</p>
       <p class="sub" style="margin-top:0">Tipo livre (ex.: CPF, comprovante).</p>
@@ -319,6 +370,7 @@
       <p class="sub" style="margin-top:0">Links que criaste: copia, partilha ou revoga. <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
       <div id="links-list"></div>
     </div>
+    </div>
 
     <div id="kd-load-overlay" class="kd-load-overlay" aria-hidden="true" aria-busy="true">
       <div class="kd-load-spinner" aria-hidden="true"></div>
@@ -333,6 +385,48 @@
         <p class="sub" style="margin:0 0 .5rem">Escaneia com o telemóvel. Trata o link como confidencial.</p>
         <div id="kd-qr-wrap"></div>
         <p style="margin:0"><button type="button" class="btn secondary" id="kd-qr-close">Fechar</button></p>
+      </div>
+    </div>
+
+    <div id="kd-shortcut-modal" class="kd-modal" aria-hidden="true">
+      <div class="kd-modal-backdrop" id="kd-shortcut-backdrop"></div>
+      <div class="kd-modal-box kd-modal-box--wide" role="dialog" aria-modal="true" aria-labelledby="kd-shortcut-title">
+        <h3 id="kd-shortcut-title">Novo atalho rápido</h3>
+        <p class="sub" style="margin:0 0 .75rem">Nome e ícone aparecem na barra fixa. Opcional: foto pequena (substitui o emoji se carregares).</p>
+        <div class="kd-modal-field">
+          <label for="kd-sc-name">Nome do atalho</label>
+          <input type="text" id="kd-sc-name" maxlength="32" placeholder="Ex.: Meu cliente X"/>
+        </div>
+        <div class="kd-modal-field">
+          <label for="kd-sc-emoji">Ícone (emoji)</label>
+          <input type="text" id="kd-sc-emoji" maxlength="8" placeholder="📌"/>
+        </div>
+        <div class="kd-modal-field">
+          <label for="kd-sc-img">Foto / ícone (opcional, máx. ~80 KB)</label>
+          <input type="file" id="kd-sc-img" accept="image/*"/>
+        </div>
+        <div class="kd-modal-field">
+          <label for="kd-sc-mode">Conteúdo do atalho</label>
+          <select id="kd-sc-mode">
+            <option value="preset">Copiar um atalho fixo (abaixo)</option>
+            <option value="selection">Usar a seleção atual na aba «Criar link»</option>
+          </select>
+        </div>
+        <div class="kd-modal-field" id="kd-sc-preset-wrap">
+          <label for="kd-sc-preset">Atalho base</label>
+          <select id="kd-sc-preset">
+            <option value="festa">🏠 Festa em Casa</option>
+            <option value="receberPf">💰 Receber PF</option>
+            <option value="receberPj">🏢 Receber PJ</option>
+            <option value="correspondencia">📩 Correspondência</option>
+            <option value="enviarNf">📄 Enviar NF</option>
+          </select>
+        </div>
+        <p class="kd-hint" id="kd-sc-hint-selection" style="display:none">Abre a aba <strong>Criar link</strong>, marca os campos que queres e volta aqui para guardar.</p>
+        <div class="kd-modal-actions">
+          <button type="button" class="btn" id="kd-sc-save">Guardar atalho</button>
+          <button type="button" class="btn secondary" id="kd-sc-cancel">Cancelar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -409,9 +503,16 @@
   function saveModels(arr) {
     try { localStorage.setItem(MODELS_KEY, JSON.stringify(arr)); } catch (e) {}
   }
+  function shareFieldBlock(fk) {
+    var found = null;
+    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (b) {
+      if (b.getAttribute('data-fk') === fk) found = b;
+    });
+    return found;
+  }
   function collectShareState() {
     var rows = [];
-    document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function (tr) {
+    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
       var fk = tr.getAttribute('data-fk');
       var incl = tr.querySelector('.incl');
       if (!incl) return;
@@ -438,7 +539,7 @@
   function applyShareState(state) {
     if (!state || !state.rows) return;
     clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function (tr) {
+    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
       var fk = tr.getAttribute('data-fk');
       var saved = state.rows.find(function (r) { return r.fk === fk; });
       var incl = tr.querySelector('.incl');
@@ -562,13 +663,14 @@
   let pendingDocType = '';
 
   const GROUPS = [
-    { id: 'pessoal', title: 'Dados pessoais', keys: ['Nome Completo','Data de Nasc.','RG','CPF'] },
-    { id: 'contato', title: 'Contato', keys: ['WhatsApp','E-mail','Instagram'] },
-    { id: 'endereco', title: 'Endereço', keys: ['Rua','Bairro','Cidade','CEP'] },
-    { id: 'financeiro', title: 'Financeiro (PF)', keys: ['PIX (CPF)','Banco','Agência','Conta'] },
-    { id: 'empresa', title: 'Empresa', keys: ['Razão Social','CNPJ','IE','C.C.M','E-mail','Site','Endereço','Bairro','Cidade','CEP'] },
-    { id: 'financeiropj', title: 'Financeiro (PJ)', keys: ['PIX (CNPJ)','Favorecido','Banco','Agência','Conta'] }
+    { id: 'pessoal', title: 'Dados pessoais', icon: '🪪', keys: ['Nome Completo','Data de Nasc.','RG','CPF'] },
+    { id: 'contato', title: 'Contato', icon: '📱', keys: ['WhatsApp','E-mail','Instagram'] },
+    { id: 'endereco', title: 'Endereço pessoal', icon: '📍', keys: ['Rua','Bairro','Cidade','CEP'] },
+    { id: 'financeiro', title: 'Financeiro & PIX (PF)', icon: '💳', keys: ['PIX (CPF)','Banco','Agência','Conta'] },
+    { id: 'empresa', title: 'Dados da empresa', icon: '🏢', keys: ['Razão Social','CNPJ','IE','C.C.M','E-mail','Site','Endereço','Bairro','Cidade','CEP'] },
+    { id: 'financeiropj', title: 'Financeiro & PIX (PJ)', icon: '🏦', keys: ['PIX (CNPJ)','Favorecido','Banco','Agência','Conta'] }
   ];
+  var CUSTOM_SHORTCUTS_KEY = 'kingDocs_custom_atalhos_v1';
 
   /** Atalhos rápidos: lista de [groupId, key] a incluir com texto (e sem ficheiro por defeito) */
   const PRESETS = {
@@ -762,6 +864,74 @@
 
   function clearAtalhoActive() {
     document.querySelectorAll('.btn-atalho[data-preset]').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelectorAll('.btn-atalho[data-custom-id]').forEach(function (b) { b.classList.remove('active'); });
+  }
+
+  function collectCurrentPresetPairs() {
+    var pairs = [];
+    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (block) {
+      var incl = block.querySelector('.incl');
+      if (!incl || !incl.checked) return;
+      var fk = block.getAttribute('data-fk') || '';
+      var parts = fk.split('|');
+      var gid = parts[0];
+      var k = parts.slice(1).join('|');
+      pairs.push([gid, k]);
+    });
+    return pairs;
+  }
+
+  function loadCustomShortcuts() {
+    try {
+      var raw = localStorage.getItem(CUSTOM_SHORTCUTS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveCustomShortcuts(arr) {
+    try { localStorage.setItem(CUSTOM_SHORTCUTS_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function renderCustomShortcuts() {
+    var host = document.getElementById('kd-custom-atalhos-inner');
+    if (!host) return;
+    var arr = loadCustomShortcuts();
+    if (!arr.length) { host.innerHTML = ''; return; }
+    host.innerHTML = arr.map(function (it) {
+      var img = it.imageDataUrl ? '<img src="' + escapeAttr(it.imageDataUrl) + '" alt="" class="kd-atalho-img"/>' : '<span aria-hidden="true">' + escapeHtml(it.icon || '📌') + '</span>';
+      return '<button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="' + escapeAttr(it.name) + '">' + img + ' <span>' + escapeHtml(it.name) + '</span></button>';
+    }).join('');
+    host.querySelectorAll('[data-custom-id]').forEach(function (btn) {
+      btn.onclick = function () { applyCustomShortcut(this.getAttribute('data-custom-id')); };
+    });
+  }
+  function applyCustomShortcut(id) {
+    var arr = loadCustomShortcuts();
+    var it = arr.find(function (x) { return x.id === id; });
+    if (!it) return;
+    ensureFieldData();
+    document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
+    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
+    var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
+    if (!list) return;
+    list.forEach(function (pair) {
+      var fk = pair[0] + '|' + pair[1];
+      var block = shareFieldBlock(fk);
+      if (!block) return;
+      var incl = block.querySelector('.incl');
+      if (incl) incl.checked = true;
+      var fid = incl && incl.getAttribute('data-fid');
+      if (fid) {
+        var st = block.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
+        if (st) st.checked = true;
+        if (sf) sf.checked = false;
+      }
+    });
+    document.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    clearAtalhoActive();
+    var b = document.querySelector('.btn-atalho[data-custom-id="' + id + '"]');
+    if (b) b.classList.add('active');
+    updateSharePreview();
   }
 
   function applyPreset(presetId) {
@@ -773,10 +943,7 @@
     document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
     list.forEach(function (pair) {
       var fk = pair[0] + '|' + pair[1];
-      var tr = null;
-      document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function (row) {
-        if (row.getAttribute('data-fk') === fk) tr = row;
-      });
+      var tr = shareFieldBlock(fk);
       if (!tr) return;
       var incl = tr.querySelector('.incl');
       if (incl) incl.checked = true;
@@ -803,7 +970,7 @@
     const sections = {};
     let count = 0;
 
-    document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function (tr) {
+    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
       var incl = tr.querySelector('.incl');
       if (!incl || !incl.checked) return;
       var fk = tr.getAttribute('data-fk') || '';
@@ -852,7 +1019,7 @@
       }
     }
     if (count === 0) {
-      out.innerHTML = '<p class="preview-empty">Marca campos na grelha para ver o resumo do que vai no link.</p>';
+      out.innerHTML = '<p class="preview-empty">Selecione campos ao lado (aba «Criar link»).</p>';
       return;
     }
 
@@ -879,21 +1046,39 @@
 
   function renderShareTable() {
     const wrap = document.getElementById('share-table-wrap');
-    let rows = '';
     let idx = 0;
-    GROUPS.forEach(g => {
-      g.keys.forEach(k => {
+    let html = '';
+    GROUPS.forEach(function (g) {
+      html += '<div class="kd-share-cat" data-gid="' + escapeAttr(g.id) + '">';
+      html += '<div class="kd-share-cat-head">';
+      html += '<span class="kd-share-cat-ico" aria-hidden="true">' + (g.icon || '📋') + '</span>';
+      html += '<span class="kd-share-cat-title">' + escapeHtml(g.title) + '</span>';
+      html += '<button type="button" class="kd-link-btn" data-select-all-gid="' + escapeAttr(g.id) + '">Selecionar todos</button>';
+      html += '</div><div class="kd-share-cat-body">';
+      g.keys.forEach(function (k) {
         const fid = 'f' + (idx++);
-        rows += '<tr data-fk="' + escapeHtml(g.id + '|' + k) + '">' +
-          '<td><input type="checkbox" class="incl" data-fid="' + fid + '"/></td>' +
-          '<td>' + escapeHtml(g.title) + '</td>' +
-          '<td>' + escapeHtml(k) + '</td>' +
-          '<td><input type="checkbox" class="st" data-fid="' + fid + '" checked/></td>' +
-          '<td><input type="checkbox" class="sf" data-fid="' + fid + '"/></td>' +
-          '<td>' + fileSelectHtml(fid) + '</td></tr>';
+        const fk = g.id + '|' + k;
+        html += '<div class="kd-field-block" data-fk="' + escapeAttr(fk) + '">';
+        html += '<label class="kd-field-main"><input type="checkbox" class="incl" data-fid="' + fid + '"/> ' + escapeHtml(k) + '</label>';
+        html += '<div class="kd-field-adv">';
+        html += '<label class="kd-mini"><input type="checkbox" class="st" data-fid="' + fid + '" checked/> Texto</label>';
+        html += '<label class="kd-mini"><input type="checkbox" class="sf" data-fid="' + fid + '"/> Ficheiro</label>';
+        html += fileSelectHtml(fid);
+        html += '</div></div>';
       });
+      html += '</div></div>';
     });
-    wrap.innerHTML = '<table><thead><tr><th>Incluir</th><th>Grupo</th><th>Campo</th><th>Texto</th><th>Ficheiro</th><th>Ficheiro (scan)</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('[data-select-all-gid]').forEach(function (btn) {
+      btn.onclick = function () {
+        var gid = this.getAttribute('data-select-all-gid');
+        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
+        if (!cat) return;
+        cat.querySelectorAll('.kd-field-block .incl').forEach(function (c) { c.checked = true; });
+        clearAtalhoActive();
+        updateSharePreview();
+      };
+    });
     updateSharePreview();
   }
 
@@ -930,7 +1115,7 @@
     GROUPS.forEach(g => {
       const rows = [];
       g.keys.forEach(k => {
-        const tr = document.querySelector('tr[data-fk="' + g.id + '|' + k + '"]');
+        const tr = shareFieldBlock(g.id + '|' + k);
         if (!tr) return;
         const incl = tr.querySelector('.incl');
         if (!incl || !incl.checked) return;
@@ -1036,7 +1221,7 @@
   };
   document.getElementById('btn-preset-contact').onclick = function() {
     clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap tr[data-fk]').forEach(function(tr) {
+    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function(tr) {
       var fk = tr.getAttribute('data-fk') || '';
       var incl = tr.querySelector('.incl');
       if (!incl) return;
