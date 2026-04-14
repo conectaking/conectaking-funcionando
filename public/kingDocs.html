@@ -114,9 +114,61 @@
     .kd-share-cat-title { flex: 1; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
     .kd-link-btn { background: none; border: none; color: var(--accent); font-size: .72rem; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; font-family: inherit; padding: .2rem 0; }
     .kd-link-btn:hover { text-decoration: underline; }
-    .kd-share-cat-body { padding: .5rem .75rem .65rem; }
+    .kd-share-cat-body {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+      gap: 10px;
+      padding: .65rem .75rem .85rem;
+    }
+    @media (max-width: 520px) {
+      .kd-share-cat-body { grid-template-columns: 1fr; }
+    }
+    .kd-share-field-card {
+      border: 1px solid #3d5c45;
+      border-radius: 8px;
+      background: #e8f5ea;
+      padding: .55rem .45rem .65rem;
+      display: flex;
+      flex-direction: column;
+      gap: .45rem;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .kd-share-field-card:hover { box-shadow: 0 2px 8px rgba(45,90,61,.12); }
+    body.kd-theme-dark .kd-share-field-card {
+      background: #1e2a22;
+      border-color: var(--accent);
+    }
+    .kd-share-field-card-head {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: .3rem;
+    }
+    .kd-share-field-card-ico { font-size: 1.65rem; line-height: 1; }
+    .kd-share-field-main { justify-content: center; flex-wrap: wrap; gap: .3rem; width: 100%; text-align: center; }
+    .kd-share-field-name {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      line-height: 1.25;
+    }
+    .kd-share-field-card .kd-field-adv {
+      margin: 0;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: .35rem;
+    }
+    .kd-share-field-card .kd-field-adv select[data-sel-for] {
+      width: 100%;
+      max-width: 100%;
+      font-size: .72rem;
+    }
     .kd-field-block { padding: .35rem 0; border-bottom: 1px solid var(--border); }
     .kd-field-block:last-child { border-bottom: none; }
+    .kd-share-field-card.kd-field-block { padding: 0; border-bottom: none; }
     .kd-field-main { display: flex; align-items: flex-start; gap: .5rem; cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--ink); }
     .kd-field-main input { margin-top: .2rem; }
     .kd-field-adv { margin: .4rem 0 0 1.5rem; display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; font-size: .74rem; color: var(--muted); }
@@ -163,7 +215,54 @@
     .kd-atalho-cog { font-size: .72rem !important; padding: .28rem .45rem !important; min-width: auto; line-height: 1; border-radius: 8px; }
     .kd-docs-unified-layout { align-items: start; }
     .kd-docs-left-col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-    .doc-vault-inline-wrap { margin-top: 1rem; padding-top: .85rem; border-top: 1px dashed var(--border); }
+    .kd-doc-vault-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: start;
+      margin-top: .5rem;
+    }
+    @media (min-width: 960px) {
+      .kd-doc-vault-row {
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 400px);
+        gap: 1.1rem;
+      }
+    }
+    .kd-doc-vault-grid-col { min-width: 0; }
+    .kd-doc-vault-preview-col {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    }
+    @media (min-width: 960px) {
+      .kd-doc-vault-preview-col {
+        position: sticky;
+        top: 1rem;
+        align-self: start;
+        max-height: calc(100vh - 5rem);
+      }
+    }
+    .kd-doc-vault-preview-col .preview-header--vault {
+      border-radius: 0;
+      border: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .kd-doc-vault-preview-col .doc-preview-body--inline {
+      flex: 1;
+      min-height: 180px;
+      max-height: min(52vh, 440px);
+      overflow-y: auto;
+      border: none;
+      border-radius: 0;
+    }
+    .kd-doc-vault-preview-col .doc-preview-actions {
+      flex-shrink: 0;
+    }
     .preview-header--vault { background: var(--trust-bg); color: var(--ink); border: 1px solid var(--border); border-radius: 8px 8px 0 0; padding: .45rem .65rem; font-size: .72rem; font-weight: 700; }
     .doc-preview-body--inline { max-height: min(40vh, 360px); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 8px 8px; }
     .kd-modal-box.kd-modal-box--xlarge { max-width: min(96vw, 720px); max-height: min(92vh, 900px); display: flex; flex-direction: column; }
@@ -463,32 +562,36 @@
     </div>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub"><strong>Cofre:</strong> clica nos tipos em cima — podes marcar <strong>vários</strong>. A pré-visualização dos ficheiros fica <strong>abaixo dos cartões</strong>. <strong>Incluir no link:</strong> marca campos e texto/ficheiro; à <strong>direita</strong> há um único resumo do link. Novos ficheiros: aba <strong>Upload</strong>. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+      <p class="sub"><strong>Cofre:</strong> clica nos tipos à <strong>esquerda</strong> — podes marcar <strong>vários</strong>. A <strong>pré-visualização dos ficheiros</strong> fica na <strong>coluna ao lado</strong> (como o resumo do link mais à direita). <strong>Incluir no link:</strong> cartões por campo abaixo; combina texto, ficheiros do cofre e documentos extra como quiseres. Novos ficheiros: aba <strong>Upload</strong>. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
       <div class="share-layout kd-docs-unified-layout doc-browse-layout">
         <div class="kd-docs-left-col">
           <div class="doc-panel-card">
             <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipo de documento (cofre)</div>
-            <div id="doc-browse-root" class="doc-grid"></div>
-            <div class="doc-vault-inline-wrap" id="doc-vault-inline-wrap">
-              <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
-              <div id="doc-preview-body" class="preview-body doc-preview-body--inline">
-                <p class="preview-empty">Clica nos documentos acima (podes escolher vários).</p>
+            <div class="kd-doc-vault-row">
+              <div class="kd-doc-vault-grid-col">
+                <div id="doc-browse-root" class="doc-grid"></div>
               </div>
-              <div class="doc-preview-actions" id="doc-preview-actions">
-                <div class="doc-preview-actions-row">
-                  <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled>Limpar seleção</button>
-                  <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
+              <div class="kd-doc-vault-preview-col doc-vault-preview" id="doc-vault-preview-wrap" aria-label="Pré-visualização dos ficheiros selecionados">
+                <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
+                <div id="doc-preview-body" class="preview-body doc-preview-body--inline">
+                  <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
                 </div>
-                <div class="doc-preview-actions-row">
-                  <span class="doc-act-label">WhatsApp</span>
-                  <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled>Com link único</button>
-                  <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled>Mensagem com lista</button>
-                  <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled>Um link por documento</button>
-                </div>
-                <div class="doc-preview-actions-row">
-                  <span class="doc-act-label">PDF</span>
-                  <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled>Gerar PDF e descarregar</button>
-                  <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled>Partilhar PDF…</button>
+                <div class="doc-preview-actions" id="doc-preview-actions">
+                  <div class="doc-preview-actions-row">
+                    <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled>Limpar seleção</button>
+                    <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
+                  </div>
+                  <div class="doc-preview-actions-row">
+                    <span class="doc-act-label">WhatsApp</span>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled>Com link único</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled>Mensagem com lista</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled>Um link por documento</button>
+                  </div>
+                  <div class="doc-preview-actions-row">
+                    <span class="doc-act-label">PDF</span>
+                    <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled>Gerar PDF e descarregar</button>
+                    <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled>Partilhar PDF…</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -496,7 +599,7 @@
 
           <div class="doc-panel-card kd-docs-link-wrap">
             <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — dados do cofre</div>
-            <p class="sub" style="margin-top:.5rem">Por cada campo marca incluir e escolhe <strong>Texto</strong>, <strong>Ficheiro</strong> ou ambos. O resumo do link está à <strong>direita</strong> (único preview). O <strong>nome</strong> no topo do link é o painel pessoal acima. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+            <p class="sub" style="margin-top:.5rem">Cada <strong>cartão</strong> é um campo (como os tipos do cofre): marca incluir e escolhe <strong>Texto</strong>, <strong>Ficheiro</strong> ou ambos. Podes combinar só documentos, só dados, ou os dois no mesmo link. O resumo está no <strong>Preview de envio</strong> à direita. O <strong>nome</strong> no topo do link vem do painel <strong>Dados</strong>. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
             <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerares o link na aba Partilhar.</p>
             <div class="share-main" style="max-width:100%">
               <div class="share-grid" id="share-table-wrap"></div>
@@ -2198,8 +2301,11 @@
       g.keys.forEach(function (k) {
         const fid = idPrefix + (idx++);
         const fk = g.id + '|' + k;
-        html += '<div class="kd-field-block" data-fk="' + escapeAttr(fk) + '">';
-        html += '<label class="kd-field-main"><input type="checkbox" class="incl" data-fid="' + fid + '"/> ' + escapeHtml(k) + '</label>';
+        html += '<div class="kd-field-block kd-share-field-card" data-fk="' + escapeAttr(fk) + '">';
+        html += '<div class="kd-share-field-card-head">';
+        html += '<span class="kd-share-field-card-ico" aria-hidden="true">' + (g.icon || '📋') + '</span>';
+        html += '<label class="kd-field-main kd-share-field-main"><input type="checkbox" class="incl" data-fid="' + fid + '"/> <span class="kd-share-field-name">' + escapeHtml(k) + '</span></label>';
+        html += '</div>';
         html += '<div class="kd-field-adv">';
         html += '<label class="kd-mini"><input type="checkbox" class="st" data-fid="' + fid + '" checked/> Texto</label>';
         html += '<label class="kd-mini"><input type="checkbox" class="sf" data-fid="' + fid + '"/> Ficheiro</label>';
