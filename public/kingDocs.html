@@ -2078,6 +2078,29 @@
     })();
   }
 
+  document.getElementById('btn-links-revoke-sel').onclick = async function () {
+    var ids = getSelectedShareIds();
+    if (!ids.length) { showToast('Seleciona pelo menos um link.', 'neutral'); return; }
+    if (!confirm('Revogar ' + ids.length + ' link(s)? O URL deixa de funcionar; os registos ficam como «Revogado» na lista.')) return;
+    for (var i = 0; i < ids.length; i++) {
+      var r = await fetch(api('/api/king-docs/shares/' + ids[i]), { method: 'DELETE', headers: authHeaders() });
+      if (!r.ok) { showToast('Erro ao revogar o link #' + ids[i], 'err'); loadLinks(); return; }
+    }
+    showToast(ids.length === 1 ? 'Link revogado.' : 'Links revogados.', 'ok');
+    loadLinks();
+  };
+  document.getElementById('btn-links-delete-sel').onclick = async function () {
+    var ids = getSelectedShareIds();
+    if (!ids.length) { showToast('Seleciona pelo menos um link.', 'neutral'); return; }
+    if (!confirm('Excluir DEFINITIVAMENTE ' + ids.length + ' registo(s)? Deixam de aparecer nesta lista.')) return;
+    for (var i = 0; i < ids.length; i++) {
+      var r = await fetch(api('/api/king-docs/shares/' + ids[i] + '/permanent'), { method: 'DELETE', headers: authHeaders() });
+      if (!r.ok) { showToast('Erro ao excluir o link #' + ids[i], 'err'); loadLinks(); return; }
+    }
+    showToast(ids.length === 1 ? 'Link excluído da lista.' : 'Links excluídos da lista.', 'ok');
+    loadLinks();
+  };
+
   document.getElementById('btn-preset-all').onclick = function() {
     clearAtalhoActive();
     document.querySelectorAll('#share-table-wrap .incl').forEach(function(c) { c.checked = true; });
