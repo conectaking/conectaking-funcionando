@@ -139,8 +139,12 @@
       t += '*' + sec.title + '*\n';
       (sec.rows || []).forEach(row => {
         if (row.showText && row.text !== undefined) t += row.label + ': ' + row.text + '\n';
+        if (row.showFile && row.file) t += row.label + ' (ficheiro): #' + row.file.id + '\n';
       });
       t += '\n';
+    });
+    (snap.extraDocs || []).forEach(ed => {
+      t += '*' + (ed.label || 'Documento') + '* (anexo)\n';
     });
     return t.trim();
   }

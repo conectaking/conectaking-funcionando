@@ -1006,21 +1006,81 @@
     var d = j.data || {};
     return window.location.origin + (d.shareUrl || '');
   }
-  async function quickShareVaultMulti(extraDocs) {
-    if (!extraDocs || !extraDocs.length) return null;
-    var body = {
-      expiresInHours: 72,
-      password: '',
-      maxViews: '',
-      selection: {
-        displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
-        profileImageUrl: (document.getElementById('sh-photo') && document.getElementById('sh-photo').value) || '',
-        sections: [],
-        extraDocs: extraDocs.map(function (ed) {
-          return { fileId: parseInt(ed.fileId, 10), label: ed.label || 'Documento' };
-        })
-      }
+  /** Secções + documentos extra (checkboxes) — mesmo critério que «Gerar link seguro» */
+  function buildShareSectionsAndExtraFromTable() {
+    const sections = [];
+    GROUPS.forEach(function (g) {
+      const rows = [];
+      g.keys.forEach(function (k) {
+        const tr = shareFieldBlock(g.id + '|' + k);
+        if (!tr) return;
+        const incl = tr.querySelector('.incl');
+        if (!incl || !incl.checked) return;
+        const fid = incl.getAttribute('data-fid');
+        const st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        const dt = fieldKeyToDocTypeHint(k, g.id);
+        const canon = dt ? vaultDocTypeKeyForHint(dt) : null;
+        const vaultFile = canon && docTypeSelectedInVault(canon) ? (getLatestFileForDocType(canon) || findFileForFieldHint(g.id, k)) : null;
+        rows.push({
+          group: g.id,
+          key: k,
+          label: k,
+          showText: !!(st && st.checked),
+          showFile: !!vaultFile,
+          fileId: vaultFile ? vaultFile.id : null
+        });
+      });
+      if (rows.length) sections.push({ title: g.title, rows });
+    });
+    const extraDocs = [];
+    var exW = document.getElementById('extra-docs-wrap');
+    if (exW) {
+      exW.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+        const id = parseInt(ch.getAttribute('data-fid'), 10);
+        const lab = exW.querySelector('.xd-label[data-fid="' + id + '"]');
+        extraDocs.push({ fileId: id, label: (lab && lab.value) ? lab.value : 'Documento' });
+      });
+    }
+    return { sections: sections, extraDocs: extraDocs };
+  }
+  function fileIdsUsedInSections(sections) {
+    var used = new Set();
+    (sections || []).forEach(function (sec) {
+      (sec.rows || []).forEach(function (row) {
+        if (row.fileId != null) used.add(parseInt(row.fileId, 10));
+      });
+    });
+    return used;
+  }
+  /** Um único payload: textos do perfil + ficheiros ligados aos campos + cartões de documento + «documentos extra» */
+  function buildUnifiedShareSelection() {
+    var built = buildShareSectionsAndExtraFromTable();
+    var sections = built.sections;
+    var extraDocs = built.extraDocs.slice();
+    var used = fileIdsUsedInSections(sections);
+    extraDocs.forEach(function (ed) { used.add(parseInt(ed.fileId, 10)); });
+    getSelectedExtraDocs().forEach(function (ed) {
+      var fid = parseInt(ed.fileId, 10);
+      if (used.has(fid)) return;
+      used.add(fid);
+      extraDocs.push({ fileId: fid, label: ed.label || 'Documento' });
+    });
+    return {
+      displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
+      profileImageUrl: (document.getElementById('sh-photo') && document.getElementById('sh-photo').value) || '',
+      sections: sections,
+      extraDocs: extraDocs
     };
+  }
+  function hasUnifiedShareContent(sel) {
+    if (!sel) return false;
+    if (sel.extraDocs && sel.extraDocs.length) return true;
+    if (sel.sections && sel.sections.some(function (s) { return (s.rows || []).length; })) return true;
+    if (String(sel.displayName || '').trim()) return true;
+    if (String(sel.profileImageUrl || '').trim()) return true;
+    return false;
+  }
+  async function postKingDocsShare(body) {
     var r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     if (!r.ok) {
       showToast('Não foi possível criar o link.', 'err');
@@ -1029,6 +1089,18 @@
     var j = await r.json();
     var d = j.data || {};
     return window.location.origin + (d.shareUrl || '');
+  }
+  /** Link único King Docs: mesmo URL para texto + ficheiros (usa seleção actual da página) */
+  async function quickShareVaultMulti() {
+    var selection = buildUnifiedShareSelection();
+    if (!hasUnifiedShareContent(selection)) return null;
+    var body = {
+      expiresInHours: 72,
+      password: '',
+      maxViews: '',
+      selection: selection
+    };
+    return postKingDocsShare(body);
   }
   function getSelectedExtraDocs() {
     var out = [];
@@ -2413,50 +2485,16 @@
   };
 
   document.getElementById('btn-create-link').onclick = async function() {
-    const sections = [];
-    GROUPS.forEach(g => {
-      const rows = [];
-      g.keys.forEach(k => {
-        const tr = shareFieldBlock(g.id + '|' + k);
-        if (!tr) return;
-        const incl = tr.querySelector('.incl');
-        if (!incl || !incl.checked) return;
-        const fid = incl.getAttribute('data-fid');
-        const st = tr.querySelector('.st[data-fid="' + fid + '"]');
-        const dt = fieldKeyToDocTypeHint(k, g.id);
-        const canon = dt ? vaultDocTypeKeyForHint(dt) : null;
-        const vaultFile = canon && docTypeSelectedInVault(canon) ? (getLatestFileForDocType(canon) || findFileForFieldHint(g.id, k)) : null;
-        rows.push({
-          group: g.id,
-          key: k,
-          label: k,
-          showText: !!(st && st.checked),
-          showFile: !!vaultFile,
-          fileId: vaultFile ? vaultFile.id : null
-        });
-      });
-      if (rows.length) sections.push({ title: g.title, rows });
-    });
-    const extraDocs = [];
-    var exW = document.getElementById('extra-docs-wrap');
-    if (exW) {
-      exW.querySelectorAll('.xd-check:checked').forEach(function (ch) {
-        const id = parseInt(ch.getAttribute('data-fid'), 10);
-        const lab = exW.querySelector('.xd-label[data-fid="' + id + '"]');
-        extraDocs.push({ fileId: id, label: (lab && lab.value) ? lab.value : 'Documento' });
-      });
+    var selection = buildUnifiedShareSelection();
+    if (!hasUnifiedShareContent(selection)) {
+      showToast('Marca campos ou documentos na aba Documentos antes de gerar o link.', 'neutral');
+      return;
     }
-
     const body = {
       expiresInHours: parseInt(document.getElementById('sh-hours').value, 10) || 24,
       password: document.getElementById('sh-pass').value || '',
       maxViews: document.getElementById('sh-maxv').value || '',
-      selection: {
-        displayName: document.getElementById('sh-name').value || '',
-        profileImageUrl: document.getElementById('sh-photo').value || '',
-        sections,
-        extraDocs
-      }
+      selection: selection
     };
     const r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     const out = document.getElementById('share-out');
@@ -2670,35 +2708,37 @@
     showToast('Tipo criado. Clica no cartão «Enviar ao cofre» para enviar.', 'ok');
   };
   document.getElementById('btn-doc-copy-link').onclick = async function () {
-    var extra = getSelectedExtraDocs();
-    if (!extra.length) return;
-    var url = await quickShareVaultMulti(extra);
-    if (url) {
-      try {
-        await navigator.clipboard.writeText(url);
-        showToast('Link copiado (documentos selecionados).', 'ok');
-      } catch (e) {
-        showToast(url, 'neutral');
-      }
-      loadLinks();
+    var url = await quickShareVaultMulti();
+    if (!url) {
+      showToast('Marca documentos nos cartões ou campos em «Incluir no link» (e nome no topo, se quiseres).', 'neutral');
+      return;
     }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copiado — inclui textos e documentos na mesma partilha.', 'ok');
+    } catch (e) {
+      showToast(url, 'neutral');
+    }
+    loadLinks();
   };
   document.getElementById('btn-doc-wa-link').onclick = async function () {
-    var extra = getSelectedExtraDocs();
-    if (!extra.length) return;
-    var url = await quickShareVaultMulti(extra);
-    if (url) {
-      window.open('https://wa.me/?text=' + encodeURIComponent('Documentos (King Docs):\n' + url), '_blank', 'noopener,noreferrer');
-      loadLinks();
+    var url = await quickShareVaultMulti();
+    if (!url) {
+      showToast('Marca documentos ou campos para incluir no link.', 'neutral');
+      return;
     }
+    window.open('https://wa.me/?text=' + encodeURIComponent('Partilha King Docs (texto + documentos):\n' + url), '_blank', 'noopener,noreferrer');
+    loadLinks();
   };
   document.getElementById('btn-doc-wa-list').onclick = async function () {
     var extra = getSelectedExtraDocs();
-    if (!extra.length) return;
-    var url = await quickShareVaultMulti(extra);
-    if (!url) return;
+    var url = await quickShareVaultMulti();
+    if (!url) {
+      showToast('Marca documentos ou campos para incluir no link.', 'neutral');
+      return;
+    }
     var lines = extra.map(function (e, i) { return (i + 1) + '. ' + e.label; }).join('\n');
-    var text = 'Documentos (King Docs)\n' + lines + '\n\n' + url;
+    var text = 'Partilha King Docs (texto + documentos no mesmo link)' + (lines ? '\n\nFicheiros do cofre: \n' + lines : '') + '\n\n' + url;
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
     loadLinks();
   };
