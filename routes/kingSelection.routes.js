@@ -1440,7 +1440,7 @@ async function fetchWatermarkBufferFromDescriptor(raw) {
   if (low.startsWith('http://') || low.startsWith('https://')) {
     try {
       const res = await fetch(r);
-      if (res.ok) return res.buffer();
+      return await ksFetchResponseToBuffer(res);
     } catch (_) { }
     return null;
   }
@@ -1582,6 +1582,23 @@ async function deleteCloudflareImage(imageId) {
   }
 }
 
+/** node-fetch v2: Response.buffer(); fetch nativo (Node 18+): só arrayBuffer() — evita 500 na capa/prévias. */
+async function ksFetchResponseToBuffer(res) {
+  if (!res || !res.ok) return null;
+  try {
+    if (typeof res.buffer === 'function') {
+      const b = await res.buffer();
+      return b && b.length ? b : null;
+    }
+  } catch (_) { /* usar arrayBuffer */ }
+  try {
+    const ab = await res.arrayBuffer();
+    return Buffer.from(ab);
+  } catch (_) {
+    return null;
+  }
+}
+
 async function fetchCloudflareImageBuffer(imageId) {
   // 1) Preferir delivery (menos rate-limit e costuma estar em cache)
   const deliveryUrl = buildCfUrl(imageId);
@@ -1591,7 +1608,10 @@ async function fetchCloudflareImageBuffer(imageId) {
     for (const v of variants) {
       // eslint-disable-next-line no-await-in-loop
       const r = await fetch(`https://imagedelivery.net/${getAccountHash()}/${imageId}/${v}`);
-      if (r.ok) return r.buffer();
+      if (r.ok) {
+        const b = await ksFetchResponseToBuffer(r);
+        if (b) return b;
+      }
     }
   }
 
@@ -1606,7 +1626,10 @@ async function fetchCloudflareImageBuffer(imageId) {
     while (true) {
       // eslint-disable-next-line no-await-in-loop
       const imgRes = await fetch(url, { headers });
-      if (imgRes.ok) return imgRes.buffer();
+      if (imgRes.ok) {
+        const b = await ksFetchResponseToBuffer(imgRes);
+        if (b) return b;
+      }
       // Retry em 429/5xx (Cloudflare pode rate-limitar)
       if ((imgRes.status === 429 || imgRes.status >= 500) && attempt < 4) {
         const ra = parseInt(imgRes.headers.get('retry-after') || '0', 10);
@@ -1705,8 +1728,7 @@ async function fetchPhotoBufferFromHttpsUrl(fp) {
     const res = await fetch(raw.replace(/^http:\/\//i, 'https://'), {
       headers: { Accept: 'image/*' }
     });
-    if (!res.ok) return null;
-    const buf = await res.buffer();
+    const buf = await ksFetchResponseToBuffer(res);
     if (!buf || buf.length > 18 * 1024 * 1024) return null;
     return buf;
   } catch (_) {
@@ -1715,29 +1737,34 @@ async function fetchPhotoBufferFromHttpsUrl(fp) {
 }
 
 async function fetchPhotoFileBufferFromFilePath(filePath) {
-  const fp = String(filePath || '').trim();
-  if (!fp) return null;
-  const low = fp.toLowerCase();
-  if (low.startsWith('cfimage:')) {
-    const imageId = fp.slice('cfimage:'.length).trim();
-    if (!imageId) return null;
-    return await fetchCloudflareImageBuffer(imageId);
-  }
-  if (low.startsWith('https://') || low.startsWith('http://')) {
-    const fromHttp = await fetchPhotoBufferFromHttpsUrl(fp);
-    if (fromHttp) return fromHttp;
-  }
-  const key = extractR2Key(filePath);
-  if (key) {
-    const cfg = getR2Config();
-    // Priorizar URL pública (evita SSL do Render -> R2)
-    if (cfg.publicBaseUrl) {
-      const buf = await r2GetObjectViaPublicUrl(key);
-      if (buf) return buf;
+  try {
+    const fp = String(filePath || '').trim();
+    if (!fp) return null;
+    const low = fp.toLowerCase();
+    if (low.startsWith('cfimage:')) {
+      const imageId = fp.slice('cfimage:'.length).trim();
+      if (!imageId) return null;
+      return await fetchCloudflareImageBuffer(imageId);
     }
-    return await r2GetObjectBuffer(key);
+    if (low.startsWith('https://') || low.startsWith('http://')) {
+      const fromHttp = await fetchPhotoBufferFromHttpsUrl(fp);
+      if (fromHttp) return fromHttp;
+    }
+    const key = extractR2Key(filePath);
+    if (key) {
+      const cfg = getR2Config();
+      // Priorizar URL pública (evita SSL do Render -> R2)
+      if (cfg.publicBaseUrl) {
+        const buf = await r2GetObjectViaPublicUrl(key);
+        if (buf) return buf;
+      }
+      return await r2GetObjectBuffer(key);
+    }
+    return null;
+  } catch (e) {
+    logger.error('[king-selection] fetchPhotoFileBufferFromFilePath', { filePath: String(filePath).slice(0, 200), message: e && e.message });
+    return null;
   }
-  return null;
 }
 
 function clampInt(n, a, b) {
@@ -7625,49 +7652,54 @@ function ksPickPhotoStoragePath(photoRow) {
  * usa a foto escolhida na galeria e depois a regra is_cover / primeira foto.
  */
 async function ksFetchGalleryLinkCoverBuffer(pgClient, galleryId) {
-  const hasEdited = await hasColumn(pgClient, 'king_photos', 'edited_file_path');
-  const photoSelect = hasEdited ? 'file_path, edited_file_path' : 'file_path';
-  const hasLinkCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
-  const hasLinkCoverFile = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_file_path');
-  if (hasLinkCoverPhoto || hasLinkCoverFile) {
-    const cols = [];
-    if (hasLinkCoverPhoto) cols.push('gallery_link_cover_photo_id');
-    if (hasLinkCoverFile) cols.push('gallery_link_cover_file_path');
-    const gRes = await pgClient.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1 LIMIT 1`, [galleryId]);
-    if (gRes.rows.length) {
-      const row = gRes.rows[0] || {};
-      const customPath = String(row.gallery_link_cover_file_path || '').trim();
-      if (customPath) {
-        const buf = await fetchPhotoFileBufferFromFilePath(customPath);
-        if (buf) return buf;
-      }
-      const coverPhotoId = parseInt(row.gallery_link_cover_photo_id, 10) || 0;
-      if (coverPhotoId > 0) {
-        const pById = await pgClient.query(
-          `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 AND id=$2 LIMIT 1`,
-          [galleryId, coverPhotoId]
-        );
-        const byIdPath = ksPickPhotoStoragePath(pById.rows?.[0]);
-        if (byIdPath) {
-          const buf = await fetchPhotoFileBufferFromFilePath(byIdPath);
+  try {
+    const hasEdited = await hasColumn(pgClient, 'king_photos', 'edited_file_path');
+    const photoSelect = hasEdited ? 'file_path, edited_file_path' : 'file_path';
+    const hasLinkCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
+    const hasLinkCoverFile = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_file_path');
+    if (hasLinkCoverPhoto || hasLinkCoverFile) {
+      const cols = [];
+      if (hasLinkCoverPhoto) cols.push('gallery_link_cover_photo_id');
+      if (hasLinkCoverFile) cols.push('gallery_link_cover_file_path');
+      const gRes = await pgClient.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1 LIMIT 1`, [galleryId]);
+      if (gRes.rows.length) {
+        const row = gRes.rows[0] || {};
+        const customPath = String(row.gallery_link_cover_file_path || '').trim();
+        if (customPath) {
+          const buf = await fetchPhotoFileBufferFromFilePath(customPath);
           if (buf) return buf;
+        }
+        const coverPhotoId = parseInt(row.gallery_link_cover_photo_id, 10) || 0;
+        if (coverPhotoId > 0) {
+          const pById = await pgClient.query(
+            `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 AND id=$2 LIMIT 1`,
+            [galleryId, coverPhotoId]
+          );
+          const byIdPath = ksPickPhotoStoragePath(pById.rows?.[0]);
+          if (byIdPath) {
+            const buf = await fetchPhotoFileBufferFromFilePath(byIdPath);
+            if (buf) return buf;
+          }
         }
       }
     }
+    const hasCover = await hasColumn(pgClient, 'king_photos', 'is_cover');
+    const pRes = hasCover
+      ? await pgClient.query(
+          `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1`,
+          [galleryId]
+        )
+      : await pgClient.query(
+          `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1`,
+          [galleryId]
+        );
+    const fallbackPath = ksPickPhotoStoragePath(pRes.rows?.[0]);
+    if (!fallbackPath) return null;
+    return await fetchPhotoFileBufferFromFilePath(fallbackPath);
+  } catch (e) {
+    logger.error('[king-selection] ksFetchGalleryLinkCoverBuffer', { galleryId, message: e && e.message });
+    return null;
   }
-  const hasCover = await hasColumn(pgClient, 'king_photos', 'is_cover');
-  const pRes = hasCover
-    ? await pgClient.query(
-        `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1`,
-        [galleryId]
-      )
-    : await pgClient.query(
-        `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1`,
-        [galleryId]
-      );
-  const fallbackPath = ksPickPhotoStoragePath(pRes.rows?.[0]);
-  if (!fallbackPath) return null;
-  return await fetchPhotoFileBufferFromFilePath(fallbackPath);
 }
 
 router.get('/public/cover', asyncHandler(async (req, res) => {

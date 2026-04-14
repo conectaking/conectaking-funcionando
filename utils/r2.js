@@ -108,9 +108,13 @@ async function r2GetObjectBuffer(key) {
   const cfg = getR2Config();
   const client = getR2Client();
   if (!cfg.enabled || !client) return null;
-  const out = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
-  if (!out || !out.Body) return null;
-  return await streamToBuffer(out.Body);
+  try {
+    const out = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+    if (!out || !out.Body) return null;
+    return await streamToBuffer(out.Body);
+  } catch (_) {
+    return null;
+  }
 }
 
 /** Retorna metadados do objeto (ETag, ContentLength). Para cache e idempotência no Rekognition. */
