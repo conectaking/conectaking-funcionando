@@ -156,9 +156,17 @@
     }
     .mini-actions { font-size: .78rem; margin-top: .5rem; color: var(--muted); }
     .mini-actions button { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 0 .25rem; font: inherit; }
-    .kd-doc-quick-block { margin-top: .75rem; padding-top: .65rem; border-top: 1px dashed var(--border); }
-    .kd-doc-quick-hint { font-size: .72rem; margin: 0 0 .5rem !important; color: var(--muted); line-height: 1.35; }
-    .btn-atalho--doc { font-size: .74rem; padding: .32rem .6rem; border-style: dashed; }
+    .kd-atalho-item { display: inline-flex; align-items: center; gap: .25rem; flex-wrap: nowrap; }
+    .kd-atalho-cog { font-size: .72rem !important; padding: .28rem .45rem !important; min-width: auto; line-height: 1; border-radius: 8px; }
+    .kd-docs-unified-layout { align-items: start; }
+    .kd-docs-left-col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+    .doc-vault-inline-wrap { margin-top: 1rem; padding-top: .85rem; border-top: 1px dashed var(--border); }
+    .preview-header--vault { background: var(--trust-bg); color: var(--ink); border: 1px solid var(--border); border-radius: 8px 8px 0 0; padding: .45rem .65rem; font-size: .72rem; font-weight: 700; }
+    .doc-preview-body--inline { max-height: min(40vh, 360px); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 8px 8px; }
+    .kd-modal-box.kd-modal-box--xlarge { max-width: min(96vw, 720px); max-height: min(92vh, 900px); display: flex; flex-direction: column; }
+    .kd-sc-modal-scroll { max-height: min(50vh, 420px); overflow-y: auto; padding-right: .35rem; margin-bottom: .5rem; border: 1px solid var(--border); border-radius: 10px; padding: .65rem; background: var(--trust-bg); }
+    .kd-share-quick-actions { flex-direction: column; align-items: stretch !important; }
+    .kd-share-quick-actions .kd-share-quick-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
     .preview-de-envio { position: sticky; top: .75rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
     @media (min-width: 960px) {
       .preview-de-envio { top: 1rem; max-height: calc(100vh - 2rem); display: flex; flex-direction: column; }
@@ -378,28 +386,15 @@
       <div class="kd-sticky-atalhos-inner">
         <div class="kd-hero-atalhos">
         <div class="atalhos-block">
-          <span class="atalhos-title">Atalhos rápidos</span>
-          <div class="atalhos-btns">
+          <span class="atalhos-title">Atalhos</span>
+          <div class="atalhos-btns" id="kd-atalhos-merged">
             <button type="button" class="btn-atalho" data-preset="festa" title="Morada, WhatsApp e RG (ficheiro do cofre)">🏠 Festa em Casa</button>
             <button type="button" class="btn-atalho" data-preset="receberPf" title="Nome, CPF e dados bancários PF">💰 Receber PF</button>
             <button type="button" class="btn-atalho" data-preset="receberPj" title="Empresa + dados bancários PJ">🏢 Receber PJ</button>
             <button type="button" class="btn-atalho" data-preset="correspondencia" title="Nome e morada para envio">📩 Correspondência</button>
             <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">📄 Enviar NF</button>
-          </div>
-          <div class="atalhos-block kd-doc-quick-block">
-            <span class="atalhos-title">Documentos do cofre (no link)</span>
-            <p class="kd-doc-quick-hint">Liga os <strong>tipos de ficheiro</strong> (RG, CNH, etc.) aos mesmos cartões de <strong>Documentos</strong>. Um clique inclui o <strong>ficheiro</strong> desse tipo; na aba Documentos podes mudar para <strong>só texto</strong> ou <strong>texto + ficheiro</strong> em cada campo.</p>
-            <div id="kd-doc-quick-chips" class="atalhos-btns" aria-label="Incluir documento do cofre no link"></div>
-          </div>
-          <div class="kd-custom-atalhos" id="kd-custom-atalhos-wrap">
-            <span class="atalhos-title">Os teus atalhos</span>
-            <div id="kd-custom-atalhos-inner" class="atalhos-btns"></div>
-            <button type="button" class="btn secondary" id="btn-add-custom-atalho" style="font-size:.78rem;padding:.38rem .75rem;border-radius:8px">+ Criar atalho</button>
-          </div>
-          <div class="mini-actions">
-            <button type="button" id="btn-preset-all">Incluir todos os campos</button> ·
-            <button type="button" id="btn-preset-none">Limpar inclusões</button> ·
-            <button type="button" id="btn-preset-contact">Só pessoal + contato</button>
+            <span id="kd-custom-atalhos-inner" class="atalhos-btns" style="display:contents"></span>
+            <button type="button" class="btn secondary" id="btn-add-custom-atalho" style="font-size:.78rem;padding:.38rem .75rem;border-radius:999px">+ Criar atalho</button>
           </div>
         </div>
         </div>
@@ -448,60 +443,62 @@
     </div>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub"><strong>Cofre:</strong> clica nos tipos à esquerda — podes marcar <strong>vários</strong>. Na pré-visualização, <strong>arrasta</strong> os blocos para ordenar (ou <kbd style="font-size:.75rem;border:1px solid var(--border);padding:0 .25rem;border-radius:4px">Esc</kbd> para limpar). Novos ficheiros: aba <strong>Upload</strong>. <strong>Incluir no link:</strong> na secção de baixo escolhe que dados entram no próximo link; <strong>prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
-      <div class="share-layout doc-browse-layout">
-        <div class="share-main">
-          <div class="doc-panel-card" style="margin-bottom:0">
-            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipo de documento</div>
+      <p class="sub"><strong>Cofre:</strong> clica nos tipos em cima — podes marcar <strong>vários</strong>. A pré-visualização dos ficheiros fica <strong>abaixo dos cartões</strong>. <strong>Incluir no link:</strong> marca campos e texto/ficheiro; à <strong>direita</strong> há um único resumo do link. Novos ficheiros: aba <strong>Upload</strong>. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+      <div class="share-layout kd-docs-unified-layout doc-browse-layout">
+        <div class="kd-docs-left-col">
+          <div class="doc-panel-card">
+            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipo de documento (cofre)</div>
             <div id="doc-browse-root" class="doc-grid"></div>
-          </div>
-        </div>
-        <aside class="preview-de-envio doc-vault-preview" aria-label="Pré-visualização dos documentos">
-          <div class="preview-header">Pré-visualização <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none">Arrasta para ordenar</span></div>
-          <div id="doc-preview-body" class="preview-body">
-            <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
-          </div>
-          <div class="doc-preview-actions" id="doc-preview-actions">
-            <div class="doc-preview-actions-row">
-              <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled>Limpar seleção</button>
-              <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
+            <div class="doc-vault-inline-wrap" id="doc-vault-inline-wrap">
+              <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
+              <div id="doc-preview-body" class="preview-body doc-preview-body--inline">
+                <p class="preview-empty">Clica nos documentos acima (podes escolher vários).</p>
+              </div>
+              <div class="doc-preview-actions" id="doc-preview-actions">
+                <div class="doc-preview-actions-row">
+                  <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled>Limpar seleção</button>
+                  <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
+                </div>
+                <div class="doc-preview-actions-row">
+                  <span class="doc-act-label">WhatsApp</span>
+                  <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled>Com link único</button>
+                  <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled>Mensagem com lista</button>
+                  <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled>Um link por documento</button>
+                </div>
+                <div class="doc-preview-actions-row">
+                  <span class="doc-act-label">PDF</span>
+                  <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled>Gerar PDF e descarregar</button>
+                  <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled>Partilhar PDF…</button>
+                </div>
+              </div>
             </div>
-            <div class="doc-preview-actions-row">
-              <span class="doc-act-label">WhatsApp</span>
-              <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled>Com link único</button>
-              <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled>Mensagem com lista</button>
-              <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled>Um link por documento</button>
-            </div>
-            <div class="doc-preview-actions-row">
-              <span class="doc-act-label">PDF</span>
-              <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled>Gerar PDF e descarregar</button>
-              <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled>Partilhar PDF…</button>
-            </div>
           </div>
-        </aside>
-      </div>
 
-      <div class="doc-panel-card kd-docs-link-wrap" style="margin-top:1.35rem">
-        <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — dados do cofre</div>
-        <p class="sub" style="margin-top:.5rem">Por cada campo marca incluir e escolhe <strong>Texto</strong>, <strong>Ficheiro</strong> ou ambos. O resumo aparece à direita. O <strong>nome</strong> no topo do link é o que editas no painel pessoal acima. Depois vai à aba <strong>Partilhar</strong> para prazo, senha e gerar o URL.</p>
-        <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerares o link na aba Partilhar.</p>
-        <div class="share-layout kd-share-in-docs">
-          <div class="share-main">
-            <div class="share-grid" id="share-table-wrap"></div>
-            <h3 class="group" style="margin-top:1rem;">Documentos extra (só ficheiro, sem campo de texto)</h3>
-            <div id="extra-docs-wrap"></div>
-          </div>
-          <aside class="preview-de-envio" aria-label="Preview de envio">
-            <div class="preview-header">Preview de envio <span id="preview-count" class="badge">0 itens</span></div>
-            <div id="share-preview-body" class="preview-body"><p class="preview-empty">Marca campos nos cartões à esquerda (secção «Incluir no link»).</p></div>
-            <div class="kd-share-quick-actions">
-              <button type="button" class="btn secondary" id="btn-copy-share-summary" disabled>Copiar resumo (texto)</button>
-              <span class="kd-hint-inline">Útil para colar no WhatsApp ou e-mail; o link gera-se na aba <strong>Partilhar</strong>.</span>
+          <div class="doc-panel-card kd-docs-link-wrap">
+            <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — dados do cofre</div>
+            <p class="sub" style="margin-top:.5rem">Por cada campo marca incluir e escolhe <strong>Texto</strong>, <strong>Ficheiro</strong> ou ambos. O resumo do link está à <strong>direita</strong> (único preview). O <strong>nome</strong> no topo do link é o painel pessoal acima. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+            <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo à direita antes de gerares o link na aba Partilhar.</p>
+            <div class="share-main" style="max-width:100%">
+              <div class="share-grid" id="share-table-wrap"></div>
+              <h3 class="group" style="margin-top:1rem;">Documentos extra (só ficheiro, sem campo de texto)</h3>
+              <div id="extra-docs-wrap"></div>
             </div>
-            <div class="preview-footer-msg"><span>✓</span> Prazo, senha e <strong>Gerar link seguro</strong> ficam na aba <strong>Partilhar</strong>.</div>
-            <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
-          </aside>
+          </div>
         </div>
+        <aside class="preview-de-envio kd-link-preview-sticky" aria-label="Preview de envio do link">
+          <div class="preview-header">Preview de envio <span id="preview-count" class="badge">0 itens</span></div>
+          <div id="share-preview-body" class="preview-body"><p class="preview-empty">Marca campos na secção «Incluir no link» à esquerda.</p></div>
+          <div class="kd-share-quick-actions">
+            <div class="kd-share-quick-row">
+              <button type="button" class="btn secondary" id="btn-copy-share-summary" disabled>Copiar resumo completo</button>
+              <button type="button" class="btn secondary" id="btn-copy-share-text-only" disabled>Copiar só textos</button>
+              <button type="button" class="btn secondary" id="btn-share-wa-summary" disabled>WhatsApp (resumo)</button>
+            </div>
+            <span class="kd-hint-inline">Inclui nome do topo, campos de texto e referências a ficheiros. «Só textos» omite ficheiros/anexos. O URL gera-se na aba <strong>Partilhar</strong>.</span>
+          </div>
+          <div class="preview-footer-msg"><span>✓</span> Prazo, senha e <strong>Gerar link seguro</strong> ficam na aba <strong>Partilhar</strong>.</div>
+          <button type="button" class="btn secondary btn-clear" id="btn-preview-clear">Limpar seleção</button>
+        </aside>
       </div>
     </div>
 
@@ -591,9 +588,10 @@
 
     <div id="kd-shortcut-modal" class="kd-modal" aria-hidden="true">
       <div class="kd-modal-backdrop" id="kd-shortcut-backdrop"></div>
-      <div class="kd-modal-box kd-modal-box--wide" role="dialog" aria-modal="true" aria-labelledby="kd-shortcut-title">
-        <h3 id="kd-shortcut-title">Novo atalho rápido</h3>
-        <p class="sub" style="margin:0 0 .75rem">Nome e ícone aparecem na barra fixa. Opcional: foto pequena (substitui o emoji se carregares).</p>
+      <div class="kd-modal-box kd-modal-box--wide kd-modal-box--xlarge" role="dialog" aria-modal="true" aria-labelledby="kd-shortcut-title">
+        <h3 id="kd-shortcut-title">Novo atalho</h3>
+        <p class="sub" style="margin:0 0 .75rem">Define o <strong>nome</strong> e o que entra no atalho (campos e documentos). Isto fica guardado neste dispositivo.</p>
+        <input type="hidden" id="kd-sc-edit-id" value=""/>
         <div class="kd-modal-field">
           <label for="kd-sc-name">Nome do atalho</label>
           <input type="text" id="kd-sc-name" maxlength="32" placeholder="Ex.: Meu cliente X"/>
@@ -618,24 +616,13 @@
           <label for="kd-sc-img">Foto / ícone (opcional, máx. ~80 KB)</label>
           <input type="file" id="kd-sc-img" accept="image/*"/>
         </div>
-        <div class="kd-modal-field">
-          <label for="kd-sc-mode">Conteúdo do atalho</label>
-          <select id="kd-sc-mode">
-            <option value="preset">Copiar um atalho fixo (abaixo)</option>
-            <option value="selection">Usar a seleção atual (Documentos — Incluir no link)</option>
-          </select>
+        <p class="group" style="margin:.5rem 0 .35rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">O que o atalho inclui (texto / ficheiro por campo)</p>
+        <div class="kd-sc-modal-scroll" id="kd-sc-modal-scroll">
+          <div class="share-grid" id="kd-sc-share-grid"></div>
+          <h3 class="group" style="margin-top:.85rem;font-size:.78rem;">Documentos extra (só ficheiro)</h3>
+          <div id="kd-sc-extra-docs"></div>
         </div>
-        <div class="kd-modal-field" id="kd-sc-preset-wrap">
-          <label for="kd-sc-preset">Atalho base</label>
-          <select id="kd-sc-preset">
-            <option value="festa">🏠 Festa em Casa</option>
-            <option value="receberPf">💰 Receber PF</option>
-            <option value="receberPj">🏢 Receber PJ</option>
-            <option value="correspondencia">📩 Correspondência</option>
-            <option value="enviarNf">📄 Enviar NF</option>
-          </select>
-        </div>
-        <p class="kd-hint" id="kd-sc-hint-selection" style="display:none">Abre a aba <strong>Documentos</strong>, na secção «Incluir no link» marca os campos que queres e volta aqui para guardar.</p>
+        <p class="kd-hint" style="margin:.35rem 0 0">Ao abrir, copiamos a seleção atual da página para editares. Podes <strong>substituir tudo</strong> marcando outra combinação.</p>
         <div class="kd-modal-actions">
           <button type="button" class="btn" id="kd-sc-save">Guardar atalho</button>
           <button type="button" class="btn secondary" id="kd-sc-cancel">Cancelar</button>
@@ -716,69 +703,88 @@
   function saveModels(arr) {
     try { localStorage.setItem(MODELS_KEY, JSON.stringify(arr)); } catch (e) {}
   }
-  function shareFieldBlock(fk) {
+  function shareFieldBlockIn(rootEl, fk) {
+    if (!rootEl) return null;
     var found = null;
-    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (b) {
+    rootEl.querySelectorAll('.kd-field-block[data-fk]').forEach(function (b) {
       if (b.getAttribute('data-fk') === fk) found = b;
     });
     return found;
   }
+  function shareFieldBlock(fk) {
+    var w = document.getElementById('share-table-wrap');
+    return shareFieldBlockIn(w, fk);
+  }
   function collectShareState() {
+    return collectShareStateFrom(document.getElementById('share-table-wrap'), document.getElementById('extra-docs-wrap'));
+  }
+  function collectShareStateFrom(fieldRoot, extraRoot) {
     var rows = [];
-    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
-      var fk = tr.getAttribute('data-fk');
-      var incl = tr.querySelector('.incl');
-      if (!incl) return;
-      var fid = incl.getAttribute('data-fid');
-      rows.push({
-        fk: fk,
-        incl: !!incl.checked,
-        st: !!(tr.querySelector('.st[data-fid="' + fid + '"]') && tr.querySelector('.st[data-fid="' + fid + '"]').checked),
-        sf: !!(tr.querySelector('.sf[data-fid="' + fid + '"]') && tr.querySelector('.sf[data-fid="' + fid + '"]').checked),
-        fileId: (function () {
-          var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
-          return sel && sel.value ? sel.value : '';
-        })()
+    if (fieldRoot) {
+      fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (tr) {
+        var fk = tr.getAttribute('data-fk');
+        var incl = tr.querySelector('.incl');
+        if (!incl) return;
+        var fid = incl.getAttribute('data-fid');
+        rows.push({
+          fk: fk,
+          incl: !!incl.checked,
+          st: !!(tr.querySelector('.st[data-fid="' + fid + '"]') && tr.querySelector('.st[data-fid="' + fid + '"]').checked),
+          sf: !!(tr.querySelector('.sf[data-fid="' + fid + '"]') && tr.querySelector('.sf[data-fid="' + fid + '"]').checked),
+          fileId: (function () {
+            var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
+            return sel && sel.value ? sel.value : '';
+          })()
+        });
       });
-    });
+    }
     var extraFileIds = [];
-    document.querySelectorAll('.xd-check:checked').forEach(function (ch) {
-      var id = ch.getAttribute('data-fid');
-      var lab = document.querySelector('.xd-label[data-fid="' + id + '"]');
-      extraFileIds.push({ id: id, label: lab ? lab.value : '' });
-    });
-    return { rows: rows, extraFileIds: extraFileIds, hours: document.getElementById('sh-hours').value };
+    if (extraRoot) {
+      extraRoot.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+        var id = ch.getAttribute('data-fid');
+        var lab = extraRoot.querySelector('.xd-label[data-fid="' + id + '"]');
+        extraFileIds.push({ id: id, label: lab ? lab.value : '' });
+      });
+    }
+    return { rows: rows, extraFileIds: extraFileIds, hours: document.getElementById('sh-hours') ? document.getElementById('sh-hours').value : '' };
   }
   function applyShareState(state) {
+    applyShareStateToRoots(document.getElementById('share-table-wrap'), document.getElementById('extra-docs-wrap'), state, true);
+  }
+  function applyShareStateToRoots(fieldRoot, extraRoot, state, runPreview) {
     if (!state || !state.rows) return;
     clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
-      var fk = tr.getAttribute('data-fk');
-      var saved = state.rows.find(function (r) { return r.fk === fk; });
-      var incl = tr.querySelector('.incl');
-      if (!incl) return;
-      var fid = incl.getAttribute('data-fid');
-      if (!saved) {
-        incl.checked = false;
-        return;
-      }
-      incl.checked = !!saved.incl;
-      var st = tr.querySelector('.st[data-fid="' + fid + '"]');
-      var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
-      var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
-      if (st) st.checked = !!saved.st;
-      if (sf) sf.checked = !!saved.sf;
-      if (sel && saved.fileId) sel.value = String(saved.fileId);
-    });
-    document.querySelectorAll('.xd-check').forEach(function (ch) { ch.checked = false; });
-    (state.extraFileIds || []).forEach(function (ex) {
-      var ch = document.querySelector('.xd-check[data-fid="' + ex.id + '"]');
-      if (ch) ch.checked = true;
-      var lab = document.querySelector('.xd-label[data-fid="' + ex.id + '"]');
-      if (lab && ex.label != null) lab.value = ex.label;
-    });
+    if (fieldRoot) {
+      fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (tr) {
+        var fk = tr.getAttribute('data-fk');
+        var saved = state.rows.find(function (r) { return r.fk === fk; });
+        var incl = tr.querySelector('.incl');
+        if (!incl) return;
+        var fid = incl.getAttribute('data-fid');
+        if (!saved) {
+          incl.checked = false;
+          return;
+        }
+        incl.checked = !!saved.incl;
+        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
+        var sel = tr.querySelector('select[data-sel-for="' + fid + '"]');
+        if (st) st.checked = !!saved.st;
+        if (sf) sf.checked = !!saved.sf;
+        if (sel && saved.fileId) sel.value = String(saved.fileId);
+      });
+    }
+    if (extraRoot) {
+      extraRoot.querySelectorAll('.xd-check').forEach(function (ch) { ch.checked = false; });
+      (state.extraFileIds || []).forEach(function (ex) {
+        var ch = extraRoot.querySelector('.xd-check[data-fid="' + ex.id + '"]');
+        if (ch) ch.checked = true;
+        var lab = extraRoot.querySelector('.xd-label[data-fid="' + ex.id + '"]');
+        if (lab && ex.label != null) lab.value = ex.label;
+      });
+    }
     if (state.hours != null && document.getElementById('sh-hours')) document.getElementById('sh-hours').value = state.hours;
-    updateSharePreview();
+    if (runPreview) updateSharePreview();
   }
   function renderModelsChips() {
     var el = document.getElementById('kd-models-chips');
@@ -1318,7 +1324,9 @@
       if (f) sel.value = String(f.id);
     }
   }
-  function applyExtraDocPresetEntry(docType) {
+  function applyExtraDocPresetEntry(docType, extraRootEl) {
+    var root = extraRootEl || document.getElementById('extra-docs-wrap');
+    if (!root) root = document;
     var dt = String(docType || '').trim();
     if (!dt) return;
     var f = getLatestFileForDocType(dt);
@@ -1329,18 +1337,18 @@
       });
     }
     if (!f) return;
-    var ch = document.querySelector('.xd-check[data-fid="' + f.id + '"]');
+    var ch = root.querySelector('.xd-check[data-fid="' + f.id + '"]');
     if (!ch) return;
     ch.checked = true;
-    var lab = document.querySelector('.xd-label[data-fid="' + f.id + '"]');
+    var lab = root.querySelector('.xd-label[data-fid="' + f.id + '"]');
     if (lab && !String(lab.value || '').trim()) {
       var preset = DOC_CARD_PRESETS.find(function (p) { return normalizeDocTypeKey(p.docType) === normalizeDocTypeKey(f.doc_type); });
       lab.value = preset ? preset.label : (f.doc_type || 'Documento');
     }
   }
-  function applyOnePresetEntry(entry) {
+  function applyOnePresetEntryIn(fieldRoot, extraRoot, entry) {
     if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.extraDoc) {
-      applyExtraDocPresetEntry(String(entry.extraDoc));
+      applyExtraDocPresetEntry(String(entry.extraDoc), extraRoot);
       return;
     }
     if (!Array.isArray(entry) || entry.length < 2) return;
@@ -1348,9 +1356,14 @@
     var k = entry[1];
     var mode = entry.length >= 3 ? entry[2] : 't';
     var fk = g + '|' + k;
-    var block = shareFieldBlock(fk);
+    var block = shareFieldBlockIn(fieldRoot, fk);
     if (!block) return;
     applyFieldModeToBlock(block, mode);
+  }
+  function applyOnePresetEntry(entry) {
+    var w = document.getElementById('share-table-wrap');
+    var ex = document.getElementById('extra-docs-wrap');
+    applyOnePresetEntryIn(w, ex, entry);
   }
   function applyDocTypeQuick(docType) {
     ensureFieldData();
@@ -1828,29 +1841,36 @@
     document.querySelectorAll('.btn-atalho[data-custom-id]').forEach(function (b) { b.classList.remove('active'); });
   }
 
-  function collectCurrentPresetPairs() {
+  function collectCurrentPresetPairsFrom(fieldRoot, extraRoot) {
     var pairs = [];
-    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (block) {
-      var incl = block.querySelector('.incl');
-      if (!incl || !incl.checked) return;
-      var fk = block.getAttribute('data-fk') || '';
-      var parts = fk.split('|');
-      var gid = parts[0];
-      var k = parts.slice(1).join('|');
-      var fid = incl.getAttribute('data-fid');
-      var st = block.querySelector('.st[data-fid="' + fid + '"]');
-      var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
-      var wantT = st && st.checked;
-      var wantF = sf && sf.checked;
-      var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
-      pairs.push([gid, k, mode]);
-    });
-    document.querySelectorAll('.xd-check:checked').forEach(function (ch) {
-      var id = ch.getAttribute('data-fid');
-      var f = filesList.find(function (x) { return String(x.id) === String(id); });
-      if (f && f.doc_type) pairs.push({ extraDoc: String(f.doc_type) });
-    });
+    if (fieldRoot) {
+      fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (block) {
+        var incl = block.querySelector('.incl');
+        if (!incl || !incl.checked) return;
+        var fk = block.getAttribute('data-fk') || '';
+        var parts = fk.split('|');
+        var gid = parts[0];
+        var k = parts.slice(1).join('|');
+        var fid = incl.getAttribute('data-fid');
+        var st = block.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
+        var wantT = st && st.checked;
+        var wantF = sf && sf.checked;
+        var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
+        pairs.push([gid, k, mode]);
+      });
+    }
+    if (extraRoot) {
+      extraRoot.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+        var id = ch.getAttribute('data-fid');
+        var f = filesList.find(function (x) { return String(x.id) === String(id); });
+        if (f && f.doc_type) pairs.push({ extraDoc: String(f.doc_type) });
+      });
+    }
     return pairs;
+  }
+  function collectCurrentPresetPairs() {
+    return collectCurrentPresetPairsFrom(document.getElementById('share-table-wrap'), document.getElementById('extra-docs-wrap'));
   }
 
   function loadCustomShortcuts() {
@@ -1883,7 +1903,8 @@
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
     document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
-    document.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    var exw = document.getElementById('extra-docs-wrap');
+    if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
     if (!list) return;
     list.forEach(function (entry) { applyOnePresetEntry(entry); });
@@ -1900,7 +1921,7 @@
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
     document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
-    document.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     list.forEach(function (entry) { applyOnePresetEntry(entry); });
     clearAtalhoActive();
     var activeBtn = document.querySelector('.btn-atalho[data-preset="' + presetId + '"]');
@@ -1941,14 +1962,17 @@
       }
     });
 
-    document.querySelectorAll('.xd-check:checked').forEach(function (ch) {
-      var id = ch.getAttribute('data-fid');
-      var lab = document.querySelector('.xd-label[data-fid="' + id + '"]');
-      var label = (lab && lab.value) ? lab.value : 'Documento';
-      if (!sections['Documentos extra']) sections['Documentos extra'] = [];
-      sections['Documentos extra'].push({ kind: 'extra', label: label, id: id });
-      count++;
-    });
+    var extraWrap = document.getElementById('extra-docs-wrap');
+    if (extraWrap) {
+      extraWrap.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+        var id = ch.getAttribute('data-fid');
+        var lab = extraWrap.querySelector('.xd-label[data-fid="' + id + '"]');
+        var label = (lab && lab.value) ? lab.value : 'Documento';
+        if (!sections['Documentos extra']) sections['Documentos extra'] = [];
+        sections['Documentos extra'].push({ kind: 'extra', label: label, id: id });
+        count++;
+      });
+    }
 
     var showName = document.getElementById('sh-name') && document.getElementById('sh-name').value.trim();
     var showPhoto = document.getElementById('sh-photo') && document.getElementById('sh-photo').value.trim();
@@ -2120,11 +2144,14 @@
       if (rows.length) sections.push({ title: g.title, rows });
     });
     const extraDocs = [];
-    document.querySelectorAll('.xd-check:checked').forEach(ch => {
-      const id = parseInt(ch.getAttribute('data-fid'), 10);
-      const lab = document.querySelector('.xd-label[data-fid="' + id + '"]');
-      extraDocs.push({ fileId: id, label: (lab && lab.value) ? lab.value : 'Documento' });
-    });
+    var exW = document.getElementById('extra-docs-wrap');
+    if (exW) {
+      exW.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+        const id = parseInt(ch.getAttribute('data-fid'), 10);
+        const lab = exW.querySelector('.xd-label[data-fid="' + id + '"]');
+        extraDocs.push({ fileId: id, label: (lab && lab.value) ? lab.value : 'Documento' });
+      });
+    }
 
     const body = {
       expiresInHours: parseInt(document.getElementById('sh-hours').value, 10) || 24,
