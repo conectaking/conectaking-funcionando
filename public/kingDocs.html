@@ -131,10 +131,13 @@
     code { font-size: .78rem; }
     .share-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
     @media (min-width: 960px) {
-      .share-layout { grid-template-columns: 1fr minmax(280px, 320px); }
+      .share-layout { grid-template-columns: 1fr minmax(280px, 340px); }
+    }
+    @media (min-width: 1280px) {
+      .share-layout { grid-template-columns: 1fr minmax(300px, 400px); gap: 1.25rem; }
     }
     .atalhos-block { margin: 0.35rem 0 0.25rem; }
-    .atalhos-block .atalhos-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: .5rem; display: block; }
+    .atalhos-block .atalhos-title { font-size: .65rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: .35rem; display: block; }
     .atalhos-btns { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
     .btn-atalho { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .75rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; color: var(--ink); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s, color .15s; }
     .btn-atalho:hover { background: #e8f0ea; border-color: var(--accent); color: var(--accent); }
@@ -651,7 +654,8 @@
     return h;
   }
 
-  var _toastTimer = null;
+  /** Cada toast tem o seu próprio temporizador (evita que vários toasts fiquem presos quando clearTimeout cancelava o anterior). */
+  var KD_TOAST_MS = 2000;
   function showToast(message, variant) {
     var host = document.getElementById('kd-toast-host');
     if (!host) return;
@@ -660,12 +664,14 @@
     el.className = 'kd-toast' + (variant === 'ok' ? ' kd-toast--ok' : variant === 'err' ? ' kd-toast--err' : ' kd-toast--neutral');
     el.textContent = message;
     host.appendChild(el);
-    clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(function() {
+    while (host.children.length > 5) {
+      try { host.removeChild(host.firstChild); } catch (e) { break; }
+    }
+    setTimeout(function () {
       el.style.opacity = '0';
-      el.style.transition = 'opacity .2s ease';
-      setTimeout(function() { try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 200);
-    }, 4000);
+      el.style.transition = 'opacity .18s ease';
+      setTimeout(function () { try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 200);
+    }, KD_TOAST_MS);
   }
 
   function setAppLoading(on) {
