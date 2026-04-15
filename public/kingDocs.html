@@ -636,7 +636,7 @@
                   <div class="doc-preview-actions-row kd-doc-act-row--wrap">
                     <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled title="Abre o WhatsApp só com o URL da partilha">WhatsApp · só link</button>
                     <button type="button" class="btn secondary" id="btn-doc-wa-text" disabled title="Mensagem só com texto (sem URL)">WhatsApp · só texto</button>
-                    <button type="button" class="btn secondary" id="btn-doc-wa-text-img" disabled title="Texto + imagem de perfil (se houver); no telemóvel pode abrir o menu de partilhar">WhatsApp · texto + imagem</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-text-img" disabled title="No telemóvel abre o menu Partilhar com imagem + texto. No PC o WhatsApp Web não anexa imagem pelo browser — usa PDF ou envia a foto à parte.">WhatsApp · texto + imagem</button>
                     <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled title="Link único + lista dos nomes dos ficheiros escolhidos nos cartões">WhatsApp · link + lista</button>
                     <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled title="Um URL diferente para cada ficheiro dos cartões (sem misturar num só link)">WhatsApp · um link por ficheiro</button>
                   </div>
@@ -2981,27 +2981,75 @@
     var t = formatSharePreviewPlainText(data);
     if (!t) { showToast('Marca conteúdo no resumo primeiro.', 'neutral'); return; }
     var fid = getProfileImageFileIdForUi();
-    if (navigator.share && fid) {
+    if (!fid) {
+      window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+      showToast('Sem foto no topo — enviei só o texto. Adiciona foto em Partilhar.', 'neutral');
+      return;
+    }
+    var r = await fetch(api('/api/king-docs/files/' + fid + '/download'), { headers: authHeaders() });
+    if (!r.ok) {
+      window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+      showToast('Não foi possível carregar a foto — só texto.', 'err');
+      return;
+    }
+    var rawBlob = await r.blob();
+    var hdr = (r.headers.get('Content-Type') || '').split(';')[0].trim();
+    var mime = rawBlob.type && rawBlob.type.indexOf('image/') === 0 ? rawBlob.type : (hdr.indexOf('image/') === 0 ? hdr : 'image/jpeg');
+    var imgBlob = new Blob([rawBlob], { type: mime });
+    var ext = mime.indexOf('png') >= 0 ? 'png' : 'jpeg';
+    var file = new File([imgBlob], 'king-docs-foto.' + ext, { type: mime });
+
+    /** wa.me só envia texto — imagem tem de ir por partilha nativa ou área de transferência */
+    if (navigator.share) {
       try {
-        var r = await fetch(api('/api/king-docs/files/' + fid + '/download'), { headers: authHeaders() });
-        if (r.ok) {
-          var blob = await r.blob();
-          if (blob.type.indexOf('image/') === 0) {
-            var ext = blob.type.indexOf('png') >= 0 ? 'png' : 'jpeg';
-            var file = new File([blob], 'foto-perfil.' + ext, { type: blob.type });
-            var shareData = { text: t, files: [file] };
-            if (navigator.canShare && navigator.canShare(shareData)) {
-              await navigator.share(shareData);
-              return;
-            }
-          }
+        await navigator.share({ text: t, files: [file] });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+      try {
+        await navigator.share({ files: [file], title: 'King Docs', text: t });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+      try {
+        await navigator.share({ files: [file] });
+        try {
+          await navigator.clipboard.writeText(t);
+          showToast('Imagem enviada — texto copiado; cola na mensagem no WhatsApp.', 'ok');
+        } catch (e2) {
+          showToast('Imagem enviada — escreve o texto na mensagem.', 'neutral');
         }
+        return;
       } catch (e) {
         if (e && e.name === 'AbortError') return;
       }
     }
-    var msg = t + (fid ? '\n\n— Anexa a foto de perfil na conversa (já está em Partilhar → Foto no link).' : '');
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener,noreferrer');
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        var plain = new Blob([t], { type: 'text/plain' });
+        var item = new ClipboardItem((function () {
+          var o = { 'text/plain': plain };
+          o[mime] = imgBlob;
+          return o;
+        })());
+        await navigator.clipboard.write([item]);
+        window.open('https://wa.me/', '_blank', 'noopener,noreferrer');
+        showToast('Texto e imagem na área de transferência — no WhatsApp mantém premido e cola, ou cola a imagem e depois o texto.', 'ok');
+        return;
+      }
+    } catch (e) {
+      /* continua */
+    }
+    try {
+      await navigator.clipboard.writeText(t);
+      window.open('https://wa.me/', '_blank', 'noopener,noreferrer');
+      showToast('Texto copiado. Abre a galeria e envia a foto manualmente (Partilhar → Foto no link).', 'neutral');
+    } catch (e2) {
+      window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+      showToast('Só foi possível enviar texto pelo link. Usa «PDF · enviar» ou envia a foto à parte.', 'neutral');
+    }
   };
   document.getElementById('btn-doc-wa-list').onclick = async function () {
     var extra = getSelectedExtraDocs();
