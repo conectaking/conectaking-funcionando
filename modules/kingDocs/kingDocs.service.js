@@ -39,9 +39,19 @@ function getFieldValue(fieldData, group, key) {
  */
 async function buildSnapshot(userId, fieldData, selection) {
   const displayName = selection.displayName != null ? String(selection.displayName).trim() : '';
-  const profileImageUrl = selection.profileImageUrl != null ? String(selection.profileImageUrl).trim() : '';
+  let profileImageUrl = selection.profileImageUrl != null ? String(selection.profileImageUrl).trim() : '';
+  const profileImageFileId =
+    selection.profileImageFileId != null ? parseInt(selection.profileImageFileId, 10) : null;
   const sectionsOut = [];
   const fileIdsUsed = new Set();
+
+  if (profileImageFileId && Number.isFinite(profileImageFileId)) {
+    const pf = await repo.getFileByIdForUser(profileImageFileId, userId);
+    if (pf) {
+      fileIdsUsed.add(pf.id);
+      profileImageUrl = '';
+    }
+  }
 
   for (const sec of selection.sections || []) {
     const title = sec.title != null ? String(sec.title).trim() : 'Secção';
@@ -106,13 +116,17 @@ async function buildSnapshot(userId, fieldData, selection) {
     });
   }
 
-  return {
+  const out = {
     displayName,
     profileImageUrl,
     sections: sectionsOut,
     extraDocs,
     fileIds: Array.from(fileIdsUsed)
   };
+  if (profileImageFileId && fileIdsUsed.has(profileImageFileId)) {
+    out.profileImageFileId = profileImageFileId;
+  }
+  return out;
 }
 
 function assertShareUsable(share) {
@@ -251,7 +265,8 @@ async function publicMeta(token) {
     needsPassword: !!share.password_hash,
     expiresAt: share.expires_at,
     displayName: snap.displayName || '',
-    profileImageUrl: snap.profileImageUrl || ''
+    profileImageUrl: snap.profileImageUrl || '',
+    profileImageFileId: snap.profileImageFileId != null ? snap.profileImageFileId : null
   };
 }
 

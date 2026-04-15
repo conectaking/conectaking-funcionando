@@ -234,7 +234,11 @@
     } catch (e) {}
 
     let html = '<div class="card"><div class="head">';
-    if (snap.profileImageUrl) html += '<img src="' + esc(snap.profileImageUrl) + '" alt=""/>';
+    if (snap.profileImageFileId) {
+      html += '<div id="kd-profile-top-img" data-fid="' + esc(String(snap.profileImageFileId)) + '" style="width:88px;height:88px;margin:0 auto;border-radius:50%;background:#e8e4df;overflow:hidden"></div>';
+    } else if (snap.profileImageUrl) {
+      html += '<img src="' + esc(snap.profileImageUrl) + '" alt=""/>';
+    }
     html += '<p class="tag">Partilha confidencial</p>';
     html += '<h1>' + esc(snap.displayName || 'Dados partilhados') + '</h1></div>';
 
@@ -279,6 +283,24 @@
     html += '</div>';
 
     root.innerHTML = html;
+
+    var topSlot = document.getElementById('kd-profile-top-img');
+    if (topSlot && topSlot.getAttribute('data-fid')) {
+      var pfid = topSlot.getAttribute('data-fid');
+      fetch(api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + pfid), { headers: headersDl() })
+        .then(function (r) { return r.ok ? r.blob() : null; })
+        .then(function (blob) {
+          if (!blob) return;
+          var im = document.createElement('img');
+          im.src = URL.createObjectURL(blob);
+          im.alt = 'Foto de perfil';
+          im.style.width = '100%';
+          im.style.height = '100%';
+          im.style.objectFit = 'cover';
+          topSlot.innerHTML = '';
+          topSlot.appendChild(im);
+        });
+    }
 
     hydratePreviewSlots(root);
 

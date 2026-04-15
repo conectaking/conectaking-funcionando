@@ -111,6 +111,8 @@
     /* Cartões por categoria (estilo mockup) */
     .kd-share-cat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: .85rem; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,.04); }
     .kd-share-cat-head { display: flex; align-items: center; gap: .5rem; padding: .55rem .75rem; background: var(--trust-bg); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .kd-share-cat-bulk { display: inline-flex; gap: .35rem; flex-wrap: wrap; align-items: center; margin-left: auto; }
+    .doc-card--add-type { border-style: dashed; opacity: .95; }
     .kd-share-cat-ico { font-size: 1.25rem; line-height: 1; }
     .kd-share-cat-title { flex: 1; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
     .kd-link-btn { background: none; border: none; color: var(--accent); font-size: .72rem; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; font-family: inherit; padding: .2rem 0; }
@@ -607,6 +609,7 @@
             <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipos de documento</div>
             <div class="kd-doc-vault-row">
               <div class="kd-doc-vault-grid-col">
+                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Precisas de mais um tipo? Usa <strong>➕ Novo tipo</strong> no fim da grelha (abre Upload para criares nome + ícone).</p>
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
               <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
@@ -625,8 +628,14 @@
                     <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
                   </div>
                   <div class="doc-preview-actions-row">
+                    <span class="doc-act-label">Texto</span>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-plain" disabled>Copiar resumo (texto)</button>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-textonly" disabled>Copiar só texto dos campos</button>
+                  </div>
+                  <div class="doc-preview-actions-row">
                     <span class="doc-act-label">WhatsApp</span>
                     <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled>Com link único</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-text" disabled>Mensagem (só texto)</button>
                     <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled>Mensagem com lista</button>
                     <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled>Um link por documento</button>
                   </div>
@@ -645,7 +654,7 @@
             <p class="sub" style="margin-top:.5rem">Cada <strong>cartão</strong> é um campo de texto do teu perfil. Para levar também a <strong>imagem/PDF</strong> desse tipo (ex.: RG), marca o mesmo tipo nos <strong>cartões de cima</strong> — no painel à direita, texto e ficheiro aparecem <strong>juntos</strong>. Secção <strong>Documentos extra</strong> abaixo para anexos sem campo de texto.</p>
             <div class="kd-share-hint-row">
               <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo no painel acima antes de gerares o link na aba Partilhar.</p>
-              <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar campos</button>
+              <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar toda a seleção</button>
             </div>
             <div class="share-main" style="max-width:100%">
               <div class="share-grid" id="share-table-wrap"></div>
@@ -660,7 +669,7 @@
     <div id="p-partilha" class="panel" role="tabpanel" aria-labelledby="tab-p-partilha">
       <div class="kd-share-head">
         <h2>Partilhar</h2>
-        <p class="sub" style="margin-bottom:0">Aqui defines <strong>foto no link</strong> (URL), <strong>prazo</strong> (horas), <strong>senha</strong> e <strong>limite de vistas</strong>, geras o URL e geres a <strong>lista dos teus links</strong>. Os dados a incluir escolhes em <strong>Documentos</strong> (secção «Incluir no link»).</p>
+        <p class="sub" style="margin-bottom:0">Aqui envias a <strong>foto do topo do link</strong> (upload — fica no cofre), defines <strong>prazo</strong>, <strong>senha</strong> e <strong>limite de vistas</strong>, geras o URL e geres a <strong>lista dos teus links</strong>. O que vai no link escolhes em <strong>Documentos</strong>.</p>
       </div>
       <div class="kd-trust-strip" role="note">
         <strong>Antes de gerar</strong>
@@ -682,10 +691,16 @@
 
       <div class="doc-panel-card" style="margin-top:1rem">
         <div class="doc-badge" role="status"><span aria-hidden="true">⚙️</span> Opções do link</div>
-        <p class="sub" style="margin-top:.5rem">Ajusta foto (URL), tempo de vida e proteção; depois gera o link.</p>
+        <p class="sub" style="margin-top:.5rem">Foto do topo do link (upload), tempo de vida e proteção; depois gera o link.</p>
         <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
-          <label>Foto (URL)</label>
-          <input type="text" id="sh-photo" placeholder="Opcional — URL da imagem de perfil"/>
+          <label>Foto no link</label>
+          <div>
+            <input type="hidden" id="sh-profile-file-id" value=""/>
+            <input type="file" id="sh-profile-file" accept="image/*"/>
+            <p class="kd-hint" style="margin:.35rem 0 0">A imagem é guardada no cofre (tipo <strong>FOTO PESSOAL</strong>) e aparece no topo da partilha — não precisas de URL.</p>
+            <div id="sh-profile-preview-wrap" style="display:none;margin-top:.5rem"></div>
+            <button type="button" class="btn secondary" id="sh-profile-clear" style="display:none;margin-top:.4rem;font-size:.78rem">Remover foto do link</button>
+          </div>
         </div>
         <div style="display:grid; gap:.6rem; max-width: 420px;">
           <div class="row" style="grid-template-columns: 160px 1fr;">
@@ -1023,7 +1038,13 @@
       maxViews: '',
       selection: {
         displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
-        profileImageUrl: (document.getElementById('sh-photo') && document.getElementById('sh-photo').value) || '',
+        profileImageUrl: '',
+        profileImageFileId: (function () {
+          var el = document.getElementById('sh-profile-file-id');
+          if (!el || !el.value) return null;
+          var n = parseInt(el.value, 10);
+          return Number.isFinite(n) ? n : null;
+        })(),
         sections: [],
         extraDocs: [{ fileId: parseInt(fileId, 10), label: label || 'Documento' }]
       }
@@ -1096,19 +1117,22 @@
       used.add(fid);
       extraDocs.push({ fileId: fid, label: ed.label || 'Documento' });
     });
+    var profileFileEl = document.getElementById('sh-profile-file-id');
+    var profileImageFileId = profileFileEl && profileFileEl.value ? parseInt(profileFileEl.value, 10) : null;
+    if (profileImageFileId != null && !Number.isFinite(profileImageFileId)) profileImageFileId = null;
     return {
       displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
-      profileImageUrl: (document.getElementById('sh-photo') && document.getElementById('sh-photo').value) || '',
+      profileImageUrl: '',
+      profileImageFileId: profileImageFileId,
       sections: sections,
       extraDocs: extraDocs
     };
   }
   function hasUnifiedShareContent(sel) {
     if (!sel) return false;
+    if (sel.profileImageFileId != null && Number.isFinite(parseInt(sel.profileImageFileId, 10))) return true;
     if (sel.extraDocs && sel.extraDocs.length) return true;
     if (sel.sections && sel.sections.some(function (s) { return (s.rows || []).length; })) return true;
-    if (String(sel.displayName || '').trim()) return true;
-    if (String(sel.profileImageUrl || '').trim()) return true;
     return false;
   }
   async function postKingDocsShare(body) {
@@ -1142,11 +1166,27 @@
     });
     return out;
   }
-  function setDocPreviewActionButtons(enabled) {
-    ['btn-doc-clear-sel', 'btn-doc-copy-link', 'btn-doc-wa-link', 'btn-doc-wa-list', 'btn-doc-wa-sep', 'btn-doc-pdf-dl', 'btn-doc-pdf-share'].forEach(function (id) {
+  function updateUnifiedActionButtons() {
+    var hasShare = hasUnifiedShareContent(buildUnifiedShareSelection());
+    var hasDocSel = docPreviewSelectedTypes.some(function (dt) { return fileExistsForDocType(dt); });
+    var extraSep = getSelectedExtraDocs();
+    [
+      'btn-doc-copy-link',
+      'btn-doc-wa-link',
+      'btn-doc-wa-list',
+      'btn-doc-pdf-dl',
+      'btn-doc-pdf-share',
+      'btn-doc-copy-plain',
+      'btn-doc-copy-textonly',
+      'btn-doc-wa-text'
+    ].forEach(function (id) {
       var el = document.getElementById(id);
-      if (el) el.disabled = !enabled;
+      if (el) el.disabled = !hasShare;
     });
+    var clr = document.getElementById('btn-doc-clear-sel');
+    if (clr) clr.disabled = !hasDocSel;
+    var waSep = document.getElementById('btn-doc-wa-sep');
+    if (waSep) waSep.disabled = !extraSep.length;
   }
   function ensurePdfLib() {
     return new Promise(function (resolve, reject) {
@@ -1161,48 +1201,98 @@
       document.head.appendChild(s);
     });
   }
+  async function appendFileToUnifiedPdf(pdfDoc, PDFLibMod, f) {
+    var PDFDocument = PDFLibMod.PDFDocument;
+    var pageW = 595.28;
+    var pageH = 841.89;
+    var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
+    if (!res.ok) return;
+    var blob = await res.blob();
+    var mime = (f.mime || '').toLowerCase();
+    var ab = await blob.arrayBuffer();
+    try {
+      if (mime.indexOf('image/jpeg') === 0 || mime === 'image/jpg') {
+        var jpg = await pdfDoc.embedJpg(ab);
+        var page = pdfDoc.addPage([pageW, pageH]);
+        var sc = jpg.scaleToFit(pageW - 40, pageH - 40);
+        page.drawImage(jpg, { x: (pageW - sc.width) / 2, y: (pageH - sc.height) / 2, width: sc.width, height: sc.height });
+      } else if (mime.indexOf('image/png') === 0) {
+        var png = await pdfDoc.embedPng(ab);
+        var page2 = pdfDoc.addPage([pageW, pageH]);
+        var sc2 = png.scaleToFit(pageW - 40, pageH - 40);
+        page2.drawImage(png, { x: (pageW - sc2.width) / 2, y: (pageH - sc2.height) / 2, width: sc2.width, height: sc2.height });
+      } else if (mime.indexOf('pdf') >= 0) {
+        var srcPdf = await PDFDocument.load(ab);
+        var copied = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
+        copied.forEach(function (pg) { pdfDoc.addPage(pg); });
+      } else {
+        var page3 = pdfDoc.addPage([pageW, pageH]);
+        var font3 = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+        page3.drawText('Formato não incluído no PDF: ' + String(f.doc_type || mime).slice(0, 120), { x: 40, y: pageH - 60, size: 11, font: font3 });
+      }
+    } catch (e) {
+      var pageE = pdfDoc.addPage([pageW, pageH]);
+      var fontE = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+      pageE.drawText('Erro ao incluir: ' + String(f.doc_type || ''), { x: 40, y: pageH - 60, size: 11, font: fontE });
+    }
+  }
+  /** PDF = textos da mesma seleção do link + todos os ficheiros (perfil, campos, extras, cartões). */
   async function buildMergedPdfBlob() {
+    var sel = buildUnifiedShareSelection();
+    if (!hasUnifiedShareContent(sel)) return null;
     var PDFLibMod = await ensurePdfLib();
     var PDFDocument = PDFLibMod.PDFDocument;
-    var extra = getSelectedExtraDocs();
-    if (!extra.length) return null;
     var pdfDoc = await PDFDocument.create();
     var pageW = 595.28;
     var pageH = 841.89;
-    for (var i = 0; i < extra.length; i++) {
-      var ed = extra[i];
-      var f = getLatestFileForDocType(ed.docType);
-      if (!f) continue;
-      var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
-      if (!res.ok) continue;
-      var blob = await res.blob();
-      var mime = (f.mime || '').toLowerCase();
-      var ab = await blob.arrayBuffer();
-      try {
-        if (mime.indexOf('image/jpeg') === 0 || mime === 'image/jpg') {
-          var jpg = await pdfDoc.embedJpg(ab);
-          var page = pdfDoc.addPage([pageW, pageH]);
-          var sc = jpg.scaleToFit(pageW - 40, pageH - 40);
-          page.drawImage(jpg, { x: (pageW - sc.width) / 2, y: (pageH - sc.height) / 2, width: sc.width, height: sc.height });
-        } else if (mime.indexOf('image/png') === 0) {
-          var png = await pdfDoc.embedPng(ab);
-          var page2 = pdfDoc.addPage([pageW, pageH]);
-          var sc2 = png.scaleToFit(pageW - 40, pageH - 40);
-          page2.drawImage(png, { x: (pageW - sc2.width) / 2, y: (pageH - sc2.height) / 2, width: sc2.width, height: sc2.height });
-        } else if (mime.indexOf('pdf') >= 0) {
-          var srcPdf = await PDFDocument.load(ab);
-          var copied = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
-          copied.forEach(function (pg) { pdfDoc.addPage(pg); });
-        } else {
-          var page3 = pdfDoc.addPage([pageW, pageH]);
-          var font3 = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
-          page3.drawText('Formato não incluído no PDF: ' + String(f.doc_type || mime).slice(0, 120), { x: 40, y: pageH - 60, size: 11, font: font3 });
+    var font = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+    var textLines = ['King Docs — resumo da partilha', ''];
+    if (sel.displayName) textLines.push('Nome: ' + sel.displayName);
+    (sel.sections || []).forEach(function (sec) {
+      textLines.push('');
+      textLines.push('— ' + (sec.title || 'Secção') + ' —');
+      (sec.rows || []).forEach(function (row) {
+        if (!row.showText) return;
+        var g = row.group;
+        var k = row.key;
+        var val = '';
+        if (g && k && fieldData[g] && fieldData[g][k] != null) val = String(fieldData[g][k]);
+        textLines.push((row.label || k || '') + ': ' + val);
+      });
+    });
+    var page = pdfDoc.addPage([pageW, pageH]);
+    var y = pageH - 48;
+    textLines.forEach(function (line) {
+      var t = String(line).replace(/\r/g, '');
+      for (var o = 0; o < t.length; o += 88) {
+        var chunk = t.slice(o, o + 88);
+        if (y < 44) {
+          page = pdfDoc.addPage([pageW, pageH]);
+          y = pageH - 48;
         }
-      } catch (e) {
-        var pageE = pdfDoc.addPage([pageW, pageH]);
-        var fontE = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
-        pageE.drawText('Erro ao incluir: ' + String(f.doc_type || ''), { x: 40, y: pageH - 60, size: 11, font: fontE });
+        page.drawText(chunk, { x: 40, y: y, size: 10, font: font });
+        y -= 12;
       }
+    });
+    var orderedIds = [];
+    var seen = new Set();
+    function pushId(id) {
+      id = parseInt(id, 10);
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      orderedIds.push(id);
+    }
+    if (sel.profileImageFileId) pushId(sel.profileImageFileId);
+    (sel.sections || []).forEach(function (sec) {
+      (sec.rows || []).forEach(function (row) {
+        if (row.showFile && row.fileId) pushId(row.fileId);
+      });
+    });
+    (sel.extraDocs || []).forEach(function (ed) { pushId(ed.fileId); });
+    for (var i = 0; i < orderedIds.length; i++) {
+      var fid = orderedIds[i];
+      var f = filesList.find(function (x) { return x.id === fid; });
+      if (f) await appendFileToUnifiedPdf(pdfDoc, PDFLibMod, f);
     }
     var out = await pdfDoc.save();
     return new Blob([out], { type: 'application/pdf' });
@@ -1233,10 +1323,10 @@
 
     if (!types.length) {
       bodyEl.innerHTML = '<p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>';
-      setDocPreviewActionButtons(false);
+      updateUnifiedActionButtons();
       return;
     }
-    setDocPreviewActionButtons(true);
+    updateUnifiedActionButtons();
     bodyEl.innerHTML = '<p class="kd-hint">A carregar…</p>';
     try {
       var frag = document.createDocumentFragment();
@@ -1339,7 +1429,7 @@
     } catch (err) {
       if (gen !== docPreviewRefreshGen) return;
       bodyEl.innerHTML = '<p class="err">Erro ao carregar a pré-visualização.</p>';
-      setDocPreviewActionButtons(false);
+      updateUnifiedActionButtons();
     }
   }
   function reorderDocPreviewTypes(fromDt, toDt) {
@@ -2080,7 +2170,11 @@
   function renderDocBrowseCards() {
     var root = document.getElementById('doc-browse-root');
     if (!root) return;
-    var html = getDocCardPresetsMerged().map(function (p) {
+    var addCard = '<button type="button" class="doc-card doc-card--browse doc-card--add-type" id="btn-kd-browse-new-type" title="Criar outro tipo de documento (nome + ícone)">' +
+      '<div class="dc-icon" aria-hidden="true">➕</div>' +
+      '<div class="dc-title">Novo tipo</div>' +
+      '<div class="dc-status">Criar + ícone</div></button>';
+    var html = addCard + getDocCardPresetsMerged().map(function (p) {
       var sel = fileExistsForDocType(p.docType);
       var active = docPreviewSelectedTypes.indexOf(p.docType) >= 0;
       var cls = 'doc-card doc-card--browse' + (sel ? ' selected' : '') + (active ? ' doc-card--active' : '');
@@ -2094,6 +2188,20 @@
         '</button>';
     }).join('');
     root.innerHTML = html;
+    var btnNew = document.getElementById('btn-kd-browse-new-type');
+    if (btnNew) {
+      btnNew.onclick = function (e) {
+        e.preventDefault();
+        var tab = document.getElementById('tab-p-upload');
+        if (tab) tab.click();
+        var el = document.getElementById('kd-custom-doctypes-wrap');
+        if (el) {
+          try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e2) {}
+        }
+        var inp = document.getElementById('kd-cdt-label');
+        if (inp) inp.focus();
+      };
+    }
     root.querySelectorAll('.doc-card--browse[data-doc-type]').forEach(function (btn) {
       btn.onclick = function () {
         toggleDocBrowse(this.getAttribute('data-doc-type') || '');
@@ -2146,6 +2254,7 @@
     });
     renderShareTable();
     renderExtraDocs();
+    refreshProfilePhotoPreview();
   }
 
   function clearAtalhoActive() {
@@ -2221,7 +2330,7 @@
     if (!it) return;
     ensureFieldData();
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
-    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
+    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
@@ -2238,7 +2347,7 @@
     if (!list) return;
     ensureFieldData();
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
-    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = true; });
+    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     list.forEach(function (entry) { applyOnePresetEntry(entry); });
@@ -2319,8 +2428,11 @@
     });
 
     var showName = document.getElementById('sh-name') && document.getElementById('sh-name').value.trim();
-    var showPhoto = document.getElementById('sh-photo') && document.getElementById('sh-photo').value.trim();
-    return { sections: sections, count: count, showName: showName, showPhoto: showPhoto };
+    var pfId = document.getElementById('sh-profile-file-id') && document.getElementById('sh-profile-file-id').value.trim();
+    var showPhoto = !!pfId;
+    if (showName) count++;
+    if (showPhoto) count++;
+    return { sections: sections, count: count, showName: showName, showPhoto: showPhoto, showPhotoIsFile: showPhoto };
   }
 
   function formatSharePreviewPlainText(data) {
@@ -2333,7 +2445,7 @@
       lines.push('');
     }
     if (data.showPhoto) {
-      lines.push('Foto (URL): ' + data.showPhoto);
+      lines.push('Foto no topo: imagem enviada para o cofre.');
       lines.push('');
     }
     Object.keys(data.sections).forEach(function (title) {
@@ -2358,10 +2470,6 @@
     lines.push('');
     if (data.showName) {
       lines.push('Nome no topo: ' + data.showName);
-      lines.push('');
-    }
-    if (data.showPhoto) {
-      lines.push('Foto (URL): ' + data.showPhoto);
       lines.push('');
     }
     Object.keys(data.sections).forEach(function (title) {
@@ -2399,6 +2507,7 @@
     }
     if (count === 0) {
       out.innerHTML = '<p class="preview-empty">Marca campos na secção «Incluir no link» (esta aba — Documentos).</p>';
+      updateUnifiedActionButtons();
       return;
     }
 
@@ -2406,7 +2515,7 @@
     if (data.showName || data.showPhoto) {
       html += '<div class="preview-sec"><h4>No topo do link</h4>';
       if (data.showName) html += '<div class="preview-line"><span class="pl">Nome</span><span class="pv">' + escapeHtml(data.showName) + '</span></div>';
-      if (data.showPhoto) html += '<div class="preview-line"><span class="pl">Foto (URL)</span><span class="pv">' + escapeHtml(data.showPhoto) + '</span></div>';
+      if (data.showPhoto) html += '<div class="preview-line"><span class="pl">Foto no topo</span><span class="pv">Imagem do cofre (enviada por ti)</span></div>';
       html += '</div>';
     }
     Object.keys(data.sections).forEach(function (title) {
@@ -2429,6 +2538,7 @@
       html += '</div>';
     });
     out.innerHTML = html;
+    updateUnifiedActionButtons();
   }
 
   function renderShareTableInto(wrapId, idPrefix) {
@@ -2441,7 +2551,10 @@
       html += '<div class="kd-share-cat-head">';
       html += '<span class="kd-share-cat-ico" aria-hidden="true">' + (g.icon || '📋') + '</span>';
       html += '<span class="kd-share-cat-title">' + escapeHtml(g.title) + '</span>';
+      html += '<span class="kd-share-cat-bulk">';
       html += '<button type="button" class="kd-link-btn" data-select-all-gid="' + escapeAttr(g.id) + '">Selecionar todos</button>';
+      html += '<button type="button" class="kd-link-btn" data-clear-all-gid="' + escapeAttr(g.id) + '">Limpar todos</button>';
+      html += '</span>';
       html += '</div><div class="kd-share-cat-body">';
       g.keys.forEach(function (k) {
         const fid = idPrefix + (idx++);
@@ -2452,7 +2565,7 @@
         html += '<label class="kd-field-main kd-share-field-main"><input type="checkbox" class="incl" data-fid="' + fid + '"/> <span class="kd-share-field-name">' + escapeHtml(k) + '</span></label>';
         html += '</div>';
         html += '<div class="kd-field-adv">';
-        html += '<label class="kd-mini"><input type="checkbox" class="st" data-fid="' + fid + '" checked/> Texto</label>';
+        html += '<label class="kd-mini"><input type="checkbox" class="st" data-fid="' + fid + '"/> Texto</label>';
         html += '<p class="kd-share-vault-hint">Para anexar o ficheiro deste tipo, marca o mesmo tipo nos <strong>cartões de documento</strong> acima (após envio em Upload).</p>';
         html += '</div></div>';
       });
@@ -2465,6 +2578,17 @@
         var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
         if (!cat) return;
         cat.querySelectorAll('.kd-field-block .incl').forEach(function (c) { c.checked = true; });
+        clearAtalhoActive();
+        if (idPrefix === 'f') updateSharePreview();
+      };
+    });
+    wrap.querySelectorAll('[data-clear-all-gid]').forEach(function (btn) {
+      btn.onclick = function () {
+        var gid = this.getAttribute('data-clear-all-gid');
+        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
+        if (!cat) return;
+        cat.querySelectorAll('.kd-field-block .incl').forEach(function (c) { c.checked = false; });
+        cat.querySelectorAll('.kd-field-block .st').forEach(function (c) { c.checked = false; });
         clearAtalhoActive();
         if (idPrefix === 'f') updateSharePreview();
       };
@@ -2647,6 +2771,7 @@
   function clearShareFieldSelection() {
     clearAtalhoActive();
     document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     updateSharePreview();
@@ -2671,7 +2796,62 @@
     updateSharePreview();
   });
   document.getElementById('sh-name').addEventListener('input', updateSharePreview);
-  document.getElementById('sh-photo').addEventListener('input', updateSharePreview);
+  function refreshProfilePhotoPreview() {
+    var wrap = document.getElementById('sh-profile-preview-wrap');
+    var clearBtn = document.getElementById('sh-profile-clear');
+    var fidEl = document.getElementById('sh-profile-file-id');
+    if (!fidEl || !wrap) return;
+    var id = parseInt(fidEl.value, 10);
+    if (!id) {
+      wrap.style.display = 'none';
+      wrap.innerHTML = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      return;
+    }
+    var f = filesList.find(function (x) { return x.id === id; });
+    if (!f || String(f.mime || '').indexOf('image/') !== 0) {
+      wrap.style.display = 'none';
+      if (clearBtn) clearBtn.style.display = '';
+      return;
+    }
+    wrap.style.display = '';
+    if (clearBtn) clearBtn.style.display = '';
+    wrap.innerHTML = '<p class="kd-hint" style="margin:0 0 .35rem">Pré-visualização</p><img alt="" style="max-width:140px;max-height:140px;border-radius:10px;border:1px solid var(--border);object-fit:cover"/>';
+    var img = wrap.querySelector('img');
+    fetch(api('/api/king-docs/files/' + id + '/download'), { headers: authHeaders() }).then(function (r) {
+      return r.ok ? r.blob() : null;
+    }).then(function (blob) {
+      if (!blob || !img) return;
+      img.src = URL.createObjectURL(blob);
+    });
+  }
+  var shProf = document.getElementById('sh-profile-file');
+  if (shProf) {
+    shProf.addEventListener('change', async function () {
+      if (!this.files || !this.files[0]) return;
+      showToast('A enviar foto…', 'neutral');
+      var ok = await uploadKingDocFile(this.files[0], 'FOTO PESSOAL');
+      this.value = '';
+      if (!ok) { showToast('Erro ao enviar a foto.', 'err'); return; }
+      await loadFiles();
+      var latest = getLatestFileForDocType('FOTO PESSOAL');
+      if (latest) {
+        var hid = document.getElementById('sh-profile-file-id');
+        if (hid) hid.value = String(latest.id);
+        refreshProfilePhotoPreview();
+        updateSharePreview();
+      }
+    });
+  }
+  var shClr = document.getElementById('sh-profile-clear');
+  if (shClr) {
+    shClr.onclick = function () {
+      var hid = document.getElementById('sh-profile-file-id');
+      if (hid) hid.value = '';
+      refreshProfilePhotoPreview();
+      updateSharePreview();
+    };
+  }
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', function() {
       document.querySelectorAll('.tab').forEach(function (x) {
@@ -2740,6 +2920,24 @@
     window.open('https://wa.me/?text=' + encodeURIComponent('Partilha King Docs (texto + documentos):\n' + url), '_blank', 'noopener,noreferrer');
     loadLinks();
   };
+  document.getElementById('btn-doc-copy-plain').onclick = function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainText(data);
+    if (!t) { showToast('Marca campos ou documentos em «Incluir no link».', 'neutral'); return; }
+    navigator.clipboard.writeText(t).then(function () { showToast('Texto copiado.', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
+  };
+  document.getElementById('btn-doc-copy-textonly').onclick = function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainTextTextOnly(data);
+    if (!t) { showToast('Marca campos de texto em «Incluir no link» (sem só ficheiros).', 'neutral'); return; }
+    navigator.clipboard.writeText(t).then(function () { showToast('Só texto dos campos — copiado.', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
+  };
+  document.getElementById('btn-doc-wa-text').onclick = function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainTextTextOnly(data);
+    if (!t) { showToast('Marca campos de texto para enviar a mensagem.', 'neutral'); return; }
+    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+  };
   document.getElementById('btn-doc-wa-list').onclick = async function () {
     var extra = getSelectedExtraDocs();
     var url = await quickShareVaultMulti();
@@ -2767,12 +2965,10 @@
     loadLinks();
   };
   document.getElementById('btn-doc-pdf-dl').onclick = async function () {
-    var extra = getSelectedExtraDocs();
-    if (!extra.length) return;
     try {
       showToast('A gerar PDF…', 'neutral');
       var blob = await buildMergedPdfBlob();
-      if (!blob) { showToast('Não foi possível gerar o PDF.', 'err'); return; }
+      if (!blob) { showToast('Marca o que queres partilhar em «Incluir no link» (textos, foto, documentos).', 'neutral'); return; }
       var u = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = u;
@@ -2785,11 +2981,9 @@
     }
   };
   document.getElementById('btn-doc-pdf-share').onclick = async function () {
-    var extra = getSelectedExtraDocs();
-    if (!extra.length) return;
     try {
       var blob = await buildMergedPdfBlob();
-      if (!blob) { showToast('Não foi possível gerar o PDF.', 'err'); return; }
+      if (!blob) { showToast('Marca o que queres partilhar em «Incluir no link».', 'neutral'); return; }
       var file = new File([blob], 'king-docs-documentos.pdf', { type: 'application/pdf' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: 'King Docs', text: 'Documentos em PDF' });
@@ -2917,7 +3111,6 @@
       if (!r.ok) return;
       const u = await r.json();
       if (u.name && !document.getElementById('sh-name').value) document.getElementById('sh-name').value = u.name;
-      if (u.profileImageUrl && !document.getElementById('sh-photo').value) document.getElementById('sh-photo').value = u.profileImageUrl;
     } catch (e) {}
   }
 
@@ -2928,6 +3121,7 @@
   initKdCdtEmojiPicker();
   renderCustomDocTypesList();
   renderDocCards();
+  updateUnifiedActionButtons();
   loadVault().then(loadProfileHints);
 })();
   </script>
