@@ -345,6 +345,7 @@
     .doc-preview-actions { padding: .65rem .75rem; border-top: 1px solid var(--border); background: var(--trust-bg); }
     .doc-preview-actions .doc-preview-actions-row { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin-bottom: .55rem; }
     .doc-preview-actions .doc-preview-actions-row:last-child { margin-bottom: 0; }
+    .doc-preview-actions .kd-doc-act-row--wrap .btn.secondary { font-size: .74rem; padding: .32rem .5rem; }
     .doc-preview-actions .doc-act-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); width: 100%; margin-bottom: .15rem; }
     .doc-preview-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
     .doc-preview-stack-item { border: 1px solid var(--border); border-radius: 10px; padding: .5rem; margin-bottom: .75rem; background: var(--card); }
@@ -624,25 +625,24 @@
                 <p class="preview-footer-msg kd-preview-partilhar-hint"><span>✓</span> Isto é só visualização. O URL gera-se na aba <strong>Partilhar</strong> (ou com os botões de link abaixo).</p>
                 <div class="doc-preview-actions" id="doc-preview-actions">
                   <div class="doc-preview-actions-row">
-                    <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled>Limpar seleção</button>
-                    <button type="button" class="btn" id="btn-doc-copy-link" disabled>Gerar e copiar link</button>
+                    <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled title="Limpa só a escolha dos cartões de documento à esquerda">Limpar cartões</button>
+                    <button type="button" class="btn" id="btn-doc-copy-link" disabled title="Cria o link e copia — inclui tudo o que marcaste">Copiar link único</button>
+                  </div>
+                  <div class="doc-preview-actions-row kd-doc-act-row--wrap">
+                    <button type="button" class="btn secondary" id="btn-doc-copy-plain" disabled title="Texto do resumo: nome, campos e referências a ficheiros">Copiar mensagem (tudo)</button>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-textonly" disabled title="Só linhas de texto dos campos (sem lista de anexos)">Copiar só texto</button>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-with-img" disabled title="Requer foto no topo (aba Partilhar). Se o browser não suportar, usa o botão WhatsApp abaixo">Copiar com imagem</button>
+                  </div>
+                  <div class="doc-preview-actions-row kd-doc-act-row--wrap">
+                    <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled title="Abre o WhatsApp só com o URL da partilha">WhatsApp · só link</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-text" disabled title="Mensagem só com texto (sem URL)">WhatsApp · só texto</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-text-img" disabled title="Texto + imagem de perfil (se houver); no telemóvel pode abrir o menu de partilhar">WhatsApp · texto + imagem</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled title="Link único + lista dos nomes dos ficheiros escolhidos nos cartões">WhatsApp · link + lista</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled title="Um URL diferente para cada ficheiro dos cartões (sem misturar num só link)">WhatsApp · um link por ficheiro</button>
                   </div>
                   <div class="doc-preview-actions-row">
-                    <span class="doc-act-label">Texto</span>
-                    <button type="button" class="btn secondary" id="btn-doc-copy-plain" disabled>Copiar mensagem (resumo completo)</button>
-                    <button type="button" class="btn secondary" id="btn-doc-copy-textonly" disabled>Copiar só texto (sem anexos)</button>
-                  </div>
-                  <div class="doc-preview-actions-row">
-                    <span class="doc-act-label">WhatsApp</span>
-                    <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled>Com link único</button>
-                    <button type="button" class="btn secondary" id="btn-doc-wa-text" disabled>Mensagem (só texto)</button>
-                    <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled>Mensagem com lista</button>
-                    <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled>Um link por documento</button>
-                  </div>
-                  <div class="doc-preview-actions-row">
-                    <span class="doc-act-label">PDF</span>
-                    <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled>Gerar PDF e descarregar</button>
-                    <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled>Partilhar PDF…</button>
+                    <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled title="PDF com texto, foto e documentos — igual ao resumo completo">PDF · descarregar</button>
+                    <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled title="Partilha o mesmo PDF completo (telefone: menu nativo)">PDF · enviar</button>
                   </div>
                 </div>
               </div>
@@ -1166,16 +1166,25 @@
     });
     return out;
   }
+  function getProfileImageFileIdForUi() {
+    var el = document.getElementById('sh-profile-file-id');
+    if (!el || !el.value) return null;
+    var n = parseInt(el.value, 10);
+    return Number.isFinite(n) ? n : null;
+  }
   function updateUnifiedActionButtons() {
     var hasShare = hasUnifiedShareContent(buildUnifiedShareSelection());
     var preview = collectSharePreviewData();
     var hasPreviewContent = !!(preview && preview.count > 0);
+    var hasProfImg = !!getProfileImageFileIdForUi();
     var hasDocSel = docPreviewSelectedTypes.some(function (dt) { return fileExistsForDocType(dt); });
     var extraSep = getSelectedExtraDocs();
-    ['btn-doc-copy-plain', 'btn-doc-copy-textonly', 'btn-doc-wa-text'].forEach(function (id) {
+    ['btn-doc-copy-plain', 'btn-doc-copy-textonly', 'btn-doc-wa-text', 'btn-doc-wa-text-img'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = !hasPreviewContent;
     });
+    var elCopyImg = document.getElementById('btn-doc-copy-with-img');
+    if (elCopyImg) elCopyImg.disabled = !hasPreviewContent || !hasProfImg;
     ['btn-doc-copy-link', 'btn-doc-wa-link', 'btn-doc-wa-list', 'btn-doc-pdf-dl', 'btn-doc-pdf-share'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = !hasShare;
@@ -2902,7 +2911,7 @@
     }
     try {
       await navigator.clipboard.writeText(url);
-      showToast('Link copiado — inclui textos e documentos na mesma partilha.', 'ok');
+      showToast('Link único copiado.', 'ok');
     } catch (e) {
       showToast(url, 'neutral');
     }
@@ -2914,26 +2923,85 @@
       showToast('Marca documentos ou campos para incluir no link.', 'neutral');
       return;
     }
-    window.open('https://wa.me/?text=' + encodeURIComponent('Partilha King Docs (texto + documentos):\n' + url), '_blank', 'noopener,noreferrer');
+    window.open('https://wa.me/?text=' + encodeURIComponent(url), '_blank', 'noopener,noreferrer');
     loadLinks();
   };
   document.getElementById('btn-doc-copy-plain').onclick = function () {
     var data = collectSharePreviewData();
     var t = formatSharePreviewPlainText(data);
     if (!t) { showToast('Marca campos ou documentos em «Incluir no link».', 'neutral'); return; }
-    navigator.clipboard.writeText(t).then(function () { showToast('Texto copiado.', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
+    navigator.clipboard.writeText(t).then(function () { showToast('Mensagem copiada (tudo).', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
   };
   document.getElementById('btn-doc-copy-textonly').onclick = function () {
     var data = collectSharePreviewData();
     var t = formatSharePreviewPlainTextTextOnly(data);
-    if (!t) { showToast('Marca campos de texto em «Incluir no link» (sem só ficheiros).', 'neutral'); return; }
-    navigator.clipboard.writeText(t).then(function () { showToast('Só texto dos campos — copiado.', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
+    if (!t) { showToast('Marca campos de texto em «Incluir no link».', 'neutral'); return; }
+    navigator.clipboard.writeText(t).then(function () { showToast('Só texto copiado.', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
+  };
+  document.getElementById('btn-doc-copy-with-img').onclick = async function () {
+    var data = collectSharePreviewData();
+    var text = formatSharePreviewPlainText(data);
+    if (!text) { showToast('Sem resumo para copiar.', 'neutral'); return; }
+    var fid = getProfileImageFileIdForUi();
+    if (!fid) { showToast('Envia a foto em Partilhar → Foto no link.', 'neutral'); return; }
+    try {
+      var r = await fetch(api('/api/king-docs/files/' + fid + '/download'), { headers: authHeaders() });
+      if (!r.ok) throw new Error('x');
+      var blob = await r.blob();
+      var mime = blob.type || 'image/jpeg';
+      if (mime.indexOf('image/') !== 0) {
+        await navigator.clipboard.writeText(text);
+        showToast('Ficheiro não é imagem — copiei só o texto.', 'neutral');
+        return;
+      }
+      if (typeof ClipboardItem === 'undefined') {
+        showToast('Este browser não copia imagem — usa «WhatsApp · texto + imagem».', 'neutral');
+        return;
+      }
+      var plain = new Blob([text], { type: 'text/plain' });
+      var item = new ClipboardItem((function () {
+        var o = { 'text/plain': plain };
+        o[mime] = blob;
+        return o;
+      })());
+      await navigator.clipboard.write([item]);
+      showToast('Texto e imagem copiados.', 'ok');
+    } catch (e) {
+      showToast('Não foi possível copiar a imagem — usa «WhatsApp · texto + imagem».', 'neutral');
+    }
   };
   document.getElementById('btn-doc-wa-text').onclick = function () {
     var data = collectSharePreviewData();
     var t = formatSharePreviewPlainTextTextOnly(data);
-    if (!t) { showToast('Marca campos de texto para enviar a mensagem.', 'neutral'); return; }
+    if (!t) { showToast('Marca campos de texto primeiro.', 'neutral'); return; }
     window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+  };
+  document.getElementById('btn-doc-wa-text-img').onclick = async function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainText(data);
+    if (!t) { showToast('Marca conteúdo no resumo primeiro.', 'neutral'); return; }
+    var fid = getProfileImageFileIdForUi();
+    if (navigator.share && fid) {
+      try {
+        var r = await fetch(api('/api/king-docs/files/' + fid + '/download'), { headers: authHeaders() });
+        if (r.ok) {
+          var blob = await r.blob();
+          if (blob.type.indexOf('image/') === 0) {
+            var ext = blob.type.indexOf('png') >= 0 ? 'png' : 'jpeg';
+            var file = new File([blob], 'foto-perfil.' + ext, { type: blob.type });
+            var shareData = { text: t, files: [file] };
+            if (navigator.canShare && navigator.canShare(shareData)) {
+              await navigator.share(shareData);
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    var msg = t + (fid ? '\n\n— Anexa a foto de perfil na conversa (já está em Partilhar → Foto no link).' : '');
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener,noreferrer');
   };
   document.getElementById('btn-doc-wa-list').onclick = async function () {
     var extra = getSelectedExtraDocs();
@@ -2943,7 +3011,7 @@
       return;
     }
     var lines = extra.map(function (e, i) { return (i + 1) + '. ' + e.label; }).join('\n');
-    var text = 'Partilha King Docs (texto + documentos no mesmo link)' + (lines ? '\n\nFicheiros do cofre: \n' + lines : '') + '\n\n' + url;
+    var text = (lines ? 'Lista dos ficheiros no link:\n' + lines + '\n\n' : '') + 'Link (tudo no mesmo URL):\n' + url;
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
     loadLinks();
   };
@@ -2983,9 +3051,9 @@
       if (!blob) { showToast('Marca o que queres partilhar em «Incluir no link».', 'neutral'); return; }
       var file = new File([blob], 'king-docs-documentos.pdf', { type: 'application/pdf' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'King Docs', text: 'Documentos em PDF' });
+        await navigator.share({ files: [file], title: 'King Docs', text: 'PDF com texto, foto e documentos (resumo completo).' });
       } else if (navigator.share) {
-        await navigator.share({ title: 'King Docs', text: 'Descarrega o PDF na pasta de transferências ou usa «Gerar PDF e descarregar» e envia pelo WhatsApp.' });
+        await navigator.share({ title: 'King Docs', text: 'PDF King Docs (resumo completo). Se não anexar, usa «PDF · descarregar».' });
       } else {
         var u = URL.createObjectURL(blob);
         var a = document.createElement('a');
