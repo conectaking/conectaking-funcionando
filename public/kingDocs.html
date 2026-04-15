@@ -629,8 +629,8 @@
                   </div>
                   <div class="doc-preview-actions-row">
                     <span class="doc-act-label">Texto</span>
-                    <button type="button" class="btn secondary" id="btn-doc-copy-plain" disabled>Copiar resumo (texto)</button>
-                    <button type="button" class="btn secondary" id="btn-doc-copy-textonly" disabled>Copiar só texto dos campos</button>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-plain" disabled>Copiar mensagem (resumo completo)</button>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-textonly" disabled>Copiar só texto (sem anexos)</button>
                   </div>
                   <div class="doc-preview-actions-row">
                     <span class="doc-act-label">WhatsApp</span>
@@ -1168,18 +1168,15 @@
   }
   function updateUnifiedActionButtons() {
     var hasShare = hasUnifiedShareContent(buildUnifiedShareSelection());
+    var preview = collectSharePreviewData();
+    var hasPreviewContent = !!(preview && preview.count > 0);
     var hasDocSel = docPreviewSelectedTypes.some(function (dt) { return fileExistsForDocType(dt); });
     var extraSep = getSelectedExtraDocs();
-    [
-      'btn-doc-copy-link',
-      'btn-doc-wa-link',
-      'btn-doc-wa-list',
-      'btn-doc-pdf-dl',
-      'btn-doc-pdf-share',
-      'btn-doc-copy-plain',
-      'btn-doc-copy-textonly',
-      'btn-doc-wa-text'
-    ].forEach(function (id) {
+    ['btn-doc-copy-plain', 'btn-doc-copy-textonly', 'btn-doc-wa-text'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = !hasPreviewContent;
+    });
+    ['btn-doc-copy-link', 'btn-doc-wa-link', 'btn-doc-wa-list', 'btn-doc-pdf-dl', 'btn-doc-pdf-share'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = !hasShare;
     });
