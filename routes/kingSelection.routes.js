@@ -862,12 +862,12 @@ async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload
 
   let allowedList = [];
   if (hasPromoEnabled && galleryRow.promo_enabled) {
-    const freePromoCap = 5000;
-    const freePromoN = Math.max(
-      1,
-      Math.min(freePromoCap, parseInt(galleryRow.promo_free_photo_count, 10) || 1)
-    );
-    allowedList = ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN);
+    /**
+     * Galeria pública + cupom: depois de validar, o cliente pode baixar **todas** as fotos que marcou
+     * (com marca d'água). Limitar só às primeiras N gerava «1 de 1» no painel com várias selecionadas.
+     * O N do cupom continua em `promo.quota_photo_ids` (primeiras N na ordem de seleção) para texto/estatística.
+     */
+    allowedList = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
   } else if (cidJwt) {
     allowedList = orderedGalleryPhotoIds.slice();
   }
@@ -9270,7 +9270,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         if (!promoValidatedClient) {
           approvedPhotoIdsOut = [];
         } else {
-          approvedPhotoIdsOut = ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN);
+          approvedPhotoIdsOut = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
         }
       } else if (cid) {
         approvedPhotoIdsOut = orderedGalleryPhotoIds.slice();
