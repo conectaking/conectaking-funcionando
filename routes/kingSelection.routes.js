@@ -1360,6 +1360,19 @@ function ksPublicPromoCappedPhotoIds(selectedOrderedIds, maxDownloads) {
   return out;
 }
 
+/** Une duas listas de photo_id sem duplicar; preserva ordem (primeira lista primeiro). */
+function ksMergeDedupePhotoIdsKeepOrder(primaryIds, secondaryIds) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of ([]).concat(primaryIds || [], secondaryIds || [])) {
+    const id = parseInt(raw, 10);
+    if (!Number.isFinite(id) || id <= 0 || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 /**
  * URL da imagem da tela inicial (splash): sempre servida pela API.
  * Usa `ksFetchGalleryLinkCoverBuffer` (igual à prévia «Capa do link» no painel) — evita 404 em URLs
@@ -8982,15 +8995,21 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           );
         }
       } else if (!salesModeActive) {
-        const sRes = await client.query(
-          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL${hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : ''} ORDER BY id ASC`,
-          [gallery.id]
-        );
-        selectedPhotoIds = sRes.rows.map(r => r.photo_id);
-        if (hasSelBatch) {
-          selectionBatchByPhotoId = Object.fromEntries(
-            sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
+        /**
+         * Galeria pública: NUNCA usar este fallback (seleções órfãs com session_key vazio).
+         * Misturava visitantes e fazia aparecer 1+ fotos «liberadas pelo cupom» sem o cliente ter escolhido.
+         */
+        if (galleryAccessMode !== 'public') {
+          const sRes = await client.query(
+            `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL${hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : ''} ORDER BY id ASC`,
+            [gallery.id]
           );
+          selectedPhotoIds = sRes.rows.map(r => r.photo_id);
+          if (hasSelBatch) {
+            selectionBatchByPhotoId = Object.fromEntries(
+              sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
+            );
+          }
         }
       } /* modo pago + sem cid e sem session_key no JWT: sem seleção anónima legível */
     } else {
@@ -9009,6 +9028,39 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         }
       }
     }
+
+    /**
+     * Visitante público: o JWT pode passar a incluir `clientId` da linha técnica de sessão (cupom/reconhecimento)
+     * enquanto as seleções ainda estão gravadas só com `session_key`. Fundir para o cupom não «inventar» quota
+     * nem esconder escolhas reais.
+     */
+    if (
+      galleryAccessMode === 'public' &&
+      hasSelClientId &&
+      cid &&
+      sk &&
+      hasSessionKey
+    ) {
+      const cidNum = parseInt(cid, 10) || 0;
+      const sessTechnicalId = cidNum ? (await getSessionKingGalleryClientIdIfExists(client, gallery.id, sk)) || 0 : 0;
+      if (sessTechnicalId && sessTechnicalId === cidNum) {
+        const sSk = await client.query(
+          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 ORDER BY id ASC`,
+          [gallery.id, sk]
+        );
+        const idsSk = (sSk.rows || []).map((r) => r.photo_id);
+        if (idsSk.length) {
+          selectedPhotoIds = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, idsSk);
+          if (hasSelBatch && (sSk.rows || []).length) {
+            const extra = Object.fromEntries(
+              (sSk.rows || []).map((r) => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
+            );
+            selectionBatchByPhotoId = { ...selectionBatchByPhotoId, ...extra };
+          }
+        }
+      }
+    }
+
     const currentSelectionRound = await ksGetCurrentSelectionRound(client, gallery.id, cid);
     const salesConfig = salesModeActive ? await ksLoadGallerySalesConfig(client, gallery.id) : null;
     const salePackages = salesModeActive ? (await ksListSalePackages(client, gallery.id)).filter((p) => p.active !== false) : [];
@@ -9295,10 +9347,11 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
               }
             }
             if (!Array.isArray(links)) links = [];
-            const pubDlCount =
+            const quotaIds =
               galleryAccessMode === 'public' && promoValidatedClient
-                ? ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN).length
-                : 0;
+                ? ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN)
+                : [];
+            const pubDlCount = quotaIds.length;
             return {
               active: !!gallery.promo_enabled,
               expired: !!(gallery.promo_enabled && !ksPromoWindowStillValid(gallery)),
@@ -9314,7 +9367,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
               entered_code: promoClientRow ? String(promoClientRow.promo_coupon_entered || '').trim() || null : null,
               billable_photo_count: billableForPricing,
               promo_photos_applied: promoEligible ? Math.min(freePromoN, selectedCountForPricing) : 0,
-              public_download_slots_used: galleryAccessMode === 'public' ? pubDlCount : undefined
+              public_download_slots_used: galleryAccessMode === 'public' ? pubDlCount : undefined,
+              /** Fotos cobertas pela quota do cupom (primeiras N na ordem da seleção). Para o cliente distinguir de `selectedPhotoIds`. */
+              quota_photo_ids: galleryAccessMode === 'public' && promoValidatedClient ? quotaIds : undefined
             };
           })()
         : undefined,
