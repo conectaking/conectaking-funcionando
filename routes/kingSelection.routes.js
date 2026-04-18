@@ -831,6 +831,23 @@ async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload
     return out;
   }
 
+  /** Igual ao GET /client/gallery: com cupom ativo, só permite baixar depois do envio da seleção (status revisão). */
+  if (hasPromoEnabled && galleryRow.promo_enabled && promoValidatedClient) {
+    const hasCliStDl = await hasColumn(pgClient, 'king_gallery_clients', 'status');
+    if (hasCliStDl && promoResolveCid) {
+      const stDl = await pgClient.query(
+        'SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1',
+        [promoResolveCid, galleryId]
+      );
+      const snDl = normKsStatus(stDl.rows?.[0]?.status);
+      if (!isKsClientLockedStatus(snDl)) {
+        out.denyMessage =
+          'Confirme o envio da seleção (nome, e-mail e WhatsApp) antes de baixar as fotos.';
+        return out;
+      }
+    }
+  }
+
   out.rateLimitClientId = cidJwt || promoResolveCid || 0;
 
   const hasSelClientId = await hasColumn(pgClient, 'king_selections', 'client_id');
@@ -9249,7 +9266,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       if (!photographerAllowsDownload) {
         effectiveAllowDownload = false;
       } else if (hasPromoEnabled && gallery.promo_enabled) {
-        effectiveAllowDownload = promoValidatedClient;
+        /** Cupom válido só libera downloads depois de «confirmar seleção» + cadastro (cliente em revisão). */
+        effectiveAllowDownload = !!(promoValidatedClient && locked);
       } else {
         effectiveAllowDownload = !!cid;
       }
@@ -9267,7 +9285,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       publicDlGate
     ) {
       if (hasPromoEnabled && gallery.promo_enabled) {
-        if (!promoValidatedClient) {
+        if (!promoValidatedClient || !locked) {
           approvedPhotoIdsOut = [];
         } else {
           approvedPhotoIdsOut = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
@@ -9348,7 +9366,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             }
             if (!Array.isArray(links)) links = [];
             const quotaIds =
-              galleryAccessMode === 'public' && promoValidatedClient
+              galleryAccessMode === 'public' && promoValidatedClient && locked
                 ? ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN)
                 : [];
             const pubDlCount = quotaIds.length;
@@ -9369,7 +9387,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
               promo_photos_applied: promoEligible ? Math.min(freePromoN, selectedCountForPricing) : 0,
               public_download_slots_used: galleryAccessMode === 'public' ? pubDlCount : undefined,
               /** Fotos cobertas pela quota do cupom (primeiras N na ordem da seleção). Para o cliente distinguir de `selectedPhotoIds`. */
-              quota_photo_ids: galleryAccessMode === 'public' && promoValidatedClient ? quotaIds : undefined
+              quota_photo_ids: galleryAccessMode === 'public' && promoValidatedClient && locked ? quotaIds : undefined
             };
           })()
         : undefined,
