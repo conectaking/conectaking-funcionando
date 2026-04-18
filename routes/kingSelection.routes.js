@@ -1192,6 +1192,38 @@ function ksMoneyToCents(v) {
   return Math.max(0, Math.round(n * 100));
 }
 
+/** Valores iniciais recomendados para «Marca d'água da Conecta King» (tile_dense) ao criar galeria. */
+const KS_WM_CONECTA_KING_DEFAULTS = Object.freeze({
+  opacity: 0.22,
+  scalePortrait: 1.5,
+  scaleLandscape: 0.2,
+  rotatePortrait: 0,
+  rotateLandscape: 90
+});
+
+/**
+ * Painel KingSelection envia opacidade como fração (0.22) ou percentagem (22).
+ * Sem isto, 22 gravava-se como 1.0 e as configurações «não ficavam salvas» ao reabrir.
+ */
+function ksNormalizeWatermarkOpacityInput(raw) {
+  const n = parseFloat(raw);
+  if (!Number.isFinite(n)) return null;
+  let v = n;
+  if (v > 1 && v <= 100) v /= 100;
+  return Math.max(0.0, Math.min(1.0, Math.round(v * 10000) / 10000));
+}
+
+/**
+ * Painel pode enviar escala como multiplicador (1.5) ou percentagem inteira (150, 28).
+ */
+function ksNormalizeWatermarkScaleInput(raw) {
+  if (raw === '' || raw === null || raw === 'null' || typeof raw === 'undefined') return null;
+  let n = parseFloat(raw);
+  if (!Number.isFinite(n)) return null;
+  if (n >= 10 && n <= 500) n /= 100;
+  return Math.max(0.1, Math.min(5.0, Math.round(n * 100) / 100));
+}
+
 /**
  * Mesma lógica de `estimateClientTotalByPackages` no kingSelectionCliente.js (interpolar entre pacotes).
  * Usada quando "Pacotes + extra" tem unitário 0 ou para alinhar total exibido ao cliente.
@@ -2888,8 +2920,28 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
       if (hasWmMode) {
         metaSets.push(`watermark_mode=COALESCE(NULLIF(watermark_mode,''),'tile_dense')`);
       }
-      if (hasWmOpacity) metaSets.push('watermark_opacity=COALESCE(watermark_opacity,0.15)');
-      if (hasWmScale) metaSets.push('watermark_scale=COALESCE(watermark_scale,1.19)');
+      if (hasWmOpacity) {
+        metaSets.push(`watermark_opacity=COALESCE(watermark_opacity,${KS_WM_CONECTA_KING_DEFAULTS.opacity})`);
+      }
+      if (hasWmScale) {
+        metaSets.push(`watermark_scale=COALESCE(watermark_scale,${KS_WM_CONECTA_KING_DEFAULTS.scalePortrait})`);
+      }
+      const hasWmScaleP = await hasColumn(client, 'king_galleries', 'watermark_scale_portrait');
+      const hasWmScaleL = await hasColumn(client, 'king_galleries', 'watermark_scale_landscape');
+      const hasRotP = await hasColumn(client, 'king_galleries', 'watermark_rotate_portrait');
+      const hasRotL = await hasColumn(client, 'king_galleries', 'watermark_rotate_landscape');
+      if (hasWmScaleP) {
+        metaSets.push(`watermark_scale_portrait=COALESCE(watermark_scale_portrait,${KS_WM_CONECTA_KING_DEFAULTS.scalePortrait})`);
+      }
+      if (hasWmScaleL) {
+        metaSets.push(`watermark_scale_landscape=COALESCE(watermark_scale_landscape,${KS_WM_CONECTA_KING_DEFAULTS.scaleLandscape})`);
+      }
+      if (hasRotP) {
+        metaSets.push(`watermark_rotate_portrait=COALESCE(watermark_rotate_portrait,${KS_WM_CONECTA_KING_DEFAULTS.rotatePortrait})`);
+      }
+      if (hasRotL) {
+        metaSets.push(`watermark_rotate_landscape=COALESCE(watermark_rotate_landscape,${KS_WM_CONECTA_KING_DEFAULTS.rotateLandscape})`);
+      }
     } else if (hasWmMode) {
       metaSets.push(`watermark_mode=$${p++}`);
       metaVals.push('none');
@@ -2902,8 +2954,8 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
           `UPDATE king_galleries SET ${metaSets.join(', ')}, updated_at=NOW() WHERE id=$${p}`,
           metaVals
         );
-        if (useWatermark && hasWmOpacity) ins.rows[0].watermark_opacity = 0.15;
-        if (useWatermark && hasWmScale) ins.rows[0].watermark_scale = 1.19;
+        if (useWatermark && hasWmOpacity) ins.rows[0].watermark_opacity = KS_WM_CONECTA_KING_DEFAULTS.opacity;
+        if (useWatermark && hasWmScale) ins.rows[0].watermark_scale = KS_WM_CONECTA_KING_DEFAULTS.scalePortrait;
         if (hasAccessMode) {
           ins.rows[0].access_mode = accessType === 'public'
             ? 'public'
@@ -7119,22 +7171,19 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'cliente_email') val = String(val || '').toLowerCase().trim();
       if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
       if (key === 'watermark_opacity') {
-        const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.0, Math.min(1.0, n)) : 0.15;
+        const norm = ksNormalizeWatermarkOpacityInput(val);
+        val = norm != null ? norm : 0.15;
         val = Math.round(val * 100) / 100;
       }
       if (key === 'watermark_scale') {
-        const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : 1.19;
-        val = Math.round(val * 100) / 100;
+        const norm = ksNormalizeWatermarkScaleInput(val);
+        val = norm != null ? norm : 1.19;
       }
       if (key === 'watermark_scale_portrait' || key === 'watermark_scale_landscape') {
         if (val === '' || val === null || val === 'null' || typeof val === 'undefined') {
           val = null;
         } else {
-          const n = parseFloat(val);
-          val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : null;
-          if (val != null) val = Math.round(val * 100) / 100;
+          val = ksNormalizeWatermarkScaleInput(val);
         }
       }
       if (key === 'watermark_rotate' || key === 'watermark_rotate_portrait' || key === 'watermark_rotate_landscape') {
