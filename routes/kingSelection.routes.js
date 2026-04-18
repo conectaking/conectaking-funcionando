@@ -26,7 +26,12 @@ const {
   deleteFacesFromCollection
 } = require('../utils/rekognition/rekognitionService');
 const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition/imageService');
-const { fetchKingSelectionOgData, buildShareMetaPayload } = require('../utils/kingSelectionOg');
+const {
+  fetchKingSelectionOgData,
+  buildShareMetaPayload,
+  kingPhotoFilePathToPublicUrl,
+  ensureHttpsUrl
+} = require('../utils/kingSelectionOg');
 
 const router = express.Router();
 const KS_PAYMENT_PROOF_DIR = path.resolve(process.cwd(), 'uploads', 'kingselection-payment-proofs');
@@ -1139,18 +1144,21 @@ function ksPublicPromoCappedPhotoIds(orderedGalleryIds, selectedIds, maxDownload
 async function ksResolveEntrySplashPublicUrl(pgClient, galleryRow, slug) {
   const hasCoverFile = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_file_path');
   const hasCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
+  /** Mesma resolução que WhatsApp/OG (`kingPhotoFilePathToPublicUrl`): cfimage:, r2:, https, galleries/… */
   if (hasCoverFile && galleryRow.gallery_link_cover_file_path) {
-    const fp = String(galleryRow.gallery_link_cover_file_path);
-    if (fp.toLowerCase().startsWith('r2:')) {
-      const key = fp.slice(3).trim().replace(/^\/+/, '');
-      const u = r2PublicUrl(key);
-      if (u) return u;
+    const fp = String(galleryRow.gallery_link_cover_file_path).trim();
+    if (fp) {
+      const u = kingPhotoFilePathToPublicUrl(fp);
+      if (u) return ensureHttpsUrl(u);
     }
   }
   if (hasCoverPhoto && galleryRow.gallery_link_cover_photo_id && slug) {
     const pid = parseInt(galleryRow.gallery_link_cover_photo_id, 10) || 0;
     if (pid) {
-      return `/api/king-selection/public/photos/${pid}/preview?slug=${encodeURIComponent(String(slug))}`;
+      const rel = `/api/king-selection/public/photos/${pid}/preview?slug=${encodeURIComponent(String(slug))}`;
+      const apiBase = String(process.env.API_URL || (config.urls && config.urls.api) || '').trim().replace(/\/$/, '');
+      if (apiBase) return ensureHttpsUrl(`${apiBase}${rel}`);
+      return rel;
     }
   }
   return null;
