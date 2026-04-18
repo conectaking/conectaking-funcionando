@@ -1123,13 +1123,19 @@ function ksClientPromoEligibleForPricing(galleryRow, clientRow) {
   return !!want && want === got;
 }
 
-/** Ordem da galeria: primeiras fotos selecionadas até ao limite do cupom (modo público + download). */
-function ksPublicPromoCappedPhotoIds(orderedGalleryIds, selectedIds, maxDownloads) {
+/**
+ * Modo público + cupom: primeiras N fotos na ordem em que o cliente as selecionou
+ * (`king_selections.id` → array `selectedPhotoIds` ordenado na query).
+ * Antes usava-se a ordem da galeria, o que podia liberar outras fotos que não as escolhidas primeiro.
+ */
+function ksPublicPromoCappedPhotoIds(selectedOrderedIds, maxDownloads) {
   const cap = Math.max(0, parseInt(maxDownloads, 10) || 0);
-  const selSet = new Set((selectedIds || []).map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0));
+  const seen = new Set();
   const out = [];
-  for (const id of orderedGalleryIds || []) {
-    if (!selSet.has(id)) continue;
+  for (const raw of selectedOrderedIds || []) {
+    const id = parseInt(raw, 10);
+    if (!Number.isFinite(id) || id <= 0 || seen.has(id)) continue;
+    seen.add(id);
     out.push(id);
     if (cap > 0 && out.length >= cap) break;
   }
@@ -8719,7 +8725,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     if (hasSelClientId) {
       if (cid) {
         const sRes = await client.query(
-          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id=$2`,
+          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id=$2 ORDER BY id ASC`,
           [gallery.id, cid]
         );
         selectedPhotoIds = sRes.rows.map(r => r.photo_id);
@@ -8731,7 +8737,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       } else if (sk && hasSessionKey) {
         /* Mesmo em modo pago: JWT só com session_key (cadastro ao enviar) precisa ler as mesmas linhas que o select-bulk grava. */
         const sRes = await client.query(
-          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2`,
+          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 ORDER BY id ASC`,
           [gallery.id, sk]
         );
         selectedPhotoIds = sRes.rows.map(r => r.photo_id);
@@ -8742,7 +8748,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         }
       } else if (!salesModeActive) {
         const sRes = await client.query(
-          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL${hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : ''}`,
+          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL${hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : ''} ORDER BY id ASC`,
           [gallery.id]
         );
         selectedPhotoIds = sRes.rows.map(r => r.photo_id);
@@ -8973,11 +8979,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         if (!promoValidatedClient) {
           approvedPhotoIdsOut = [];
         } else {
-          approvedPhotoIdsOut = ksPublicPromoCappedPhotoIds(
-            orderedGalleryPhotoIds,
-            selectedPhotoIds,
-            freePromoN
-          );
+          approvedPhotoIdsOut = ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN);
         }
       } else {
         approvedPhotoIdsOut = orderedGalleryPhotoIds.slice();
@@ -9054,7 +9056,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             if (!Array.isArray(links)) links = [];
             const pubDlCount =
               galleryAccessMode === 'public' && promoValidatedClient
-                ? ksPublicPromoCappedPhotoIds(orderedGalleryPhotoIds, selectedPhotoIds, freePromoN).length
+                ? ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN).length
                 : 0;
             return {
               active: !!gallery.promo_enabled,
