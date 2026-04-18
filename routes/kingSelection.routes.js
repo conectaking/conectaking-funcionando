@@ -1196,7 +1196,7 @@ function ksMoneyToCents(v) {
 const KS_WM_CONECTA_KING_DEFAULTS = Object.freeze({
   opacity: 0.22,
   scalePortrait: 1.5,
-  scaleLandscape: 0.2,
+  scaleLandscape: 0.28,
   rotatePortrait: 0,
   rotateLandscape: 90
 });
