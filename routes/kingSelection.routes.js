@@ -11064,7 +11064,9 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       let am = hasAm ? String(gx.rows[0]?.access_mode || 'private').toLowerCase() : 'private';
       if (am === 'password') am = 'signup';
       const allow = hasSelf ? !!gx.rows[0]?.allow_self_signup : ksAccessModeAllowsSelfSignup(am);
-      if (!ksAccessModeAllowsSelfSignup(am) || !allow) {
+      /** Público: visitante sem client_id pode cadastrar ao enviar seleção (nome/e-mail/WhatsApp), como no app cliente. */
+      const publicFinalizeOk = am === 'public';
+      if (!(publicFinalizeOk || (ksAccessModeAllowsSelfSignup(am) && allow))) {
         return res.status(403).json({ message: 'Este envio não está disponível para esta galeria.' });
       }
 
