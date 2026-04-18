@@ -26,12 +26,7 @@ const {
   deleteFacesFromCollection
 } = require('../utils/rekognition/rekognitionService');
 const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition/imageService');
-const {
-  fetchKingSelectionOgData,
-  buildShareMetaPayload,
-  kingPhotoFilePathToPublicUrl,
-  ensureHttpsUrl
-} = require('../utils/kingSelectionOg');
+const { fetchKingSelectionOgData, buildShareMetaPayload, ensureHttpsUrl } = require('../utils/kingSelectionOg');
 
 const router = express.Router();
 const KS_PAYMENT_PROOF_DIR = path.resolve(process.cwd(), 'uploads', 'kingselection-payment-proofs');
@@ -1141,27 +1136,17 @@ function ksPublicPromoCappedPhotoIds(orderedGalleryIds, selectedIds, maxDownload
   return out;
 }
 
+/**
+ * URL da imagem da tela inicial (splash): sempre servida pela API.
+ * Usa `ksFetchGalleryLinkCoverBuffer` (igual à prévia «Capa do link» no painel) — evita 404 em URLs
+ * diretas (imagedelivery/R2) quando hash ou ficheiro público falham no browser.
+ */
 async function ksResolveEntrySplashPublicUrl(pgClient, galleryRow, slug) {
-  const hasCoverFile = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_file_path');
-  const hasCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
-  /** Mesma resolução que WhatsApp/OG (`kingPhotoFilePathToPublicUrl`): cfimage:, r2:, https, galleries/… */
-  if (hasCoverFile && galleryRow.gallery_link_cover_file_path) {
-    const fp = String(galleryRow.gallery_link_cover_file_path).trim();
-    if (fp) {
-      const u = kingPhotoFilePathToPublicUrl(fp);
-      if (u) return ensureHttpsUrl(u);
-    }
-  }
-  if (hasCoverPhoto && galleryRow.gallery_link_cover_photo_id && slug) {
-    const pid = parseInt(galleryRow.gallery_link_cover_photo_id, 10) || 0;
-    if (pid) {
-      const rel = `/api/king-selection/public/photos/${pid}/preview?slug=${encodeURIComponent(String(slug))}`;
-      const apiBase = String(process.env.API_URL || (config.urls && config.urls.api) || '').trim().replace(/\/$/, '');
-      if (apiBase) return ensureHttpsUrl(`${apiBase}${rel}`);
-      return rel;
-    }
-  }
-  return null;
+  const s = String(slug || '').trim();
+  if (!s) return null;
+  const apiBase = String(process.env.API_URL || (config.urls && config.urls.api) || '').trim().replace(/\/$/, '');
+  if (!apiBase) return null;
+  return ensureHttpsUrl(`${apiBase}/api/king-selection/public/entry-splash?slug=${encodeURIComponent(s)}`);
 }
 
 async function ksListSalePackages(pgClient, galleryId) {
@@ -7811,6 +7796,49 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=900'); // 15min
+    res.send(out);
+  } finally {
+    client.release();
+  }
+}));
+
+/** Capa do splash (cliente): JPEG via mesma leitura que o painel — evita 404 em URLs públicas CF/R2 no navegador. */
+router.get('/public/entry-splash', asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || '').toString().trim();
+  if (!slug) return res.status(400).type('text/plain').send('slug é obrigatório');
+
+  const client = await db.pool.connect();
+  try {
+    const gRes = await client.query(
+      'SELECT id FROM king_galleries WHERE lower(trim(slug)) = lower(trim($1)) LIMIT 1',
+      [slug]
+    );
+    if (!gRes.rows.length) return res.status(404).type('text/plain').send('Galeria não encontrada');
+    const galleryId = gRes.rows[0].id;
+
+    const buf = await ksFetchGalleryLinkCoverBuffer(client, galleryId);
+    if (!buf || buf.length < 12) return res.status(404).type('text/plain').send('Sem capa');
+
+    let out;
+    try {
+      const meta = await sharp(buf).rotate().metadata();
+      const { width, height } = getDisplayDimensions(meta, 1600, 1600);
+      const max = 1600;
+      const scale = Math.min(max / Math.max(width, height), 1);
+      const outW = Math.max(1, Math.round(width * scale));
+      const outH = Math.max(1, Math.round(height * scale));
+      out = await sharp(buf)
+        .rotate()
+        .resize(outW, outH, { fit: 'inside' })
+        .jpeg({ quality: 88, progressive: true })
+        .toBuffer();
+    } catch (err) {
+      logger.error('[public/entry-splash] processamento', { slug, message: err && err.message });
+      return res.status(502).type('text/plain').send('Falha ao processar capa');
+    }
+
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=600');
     res.send(out);
   } finally {
     client.release();
