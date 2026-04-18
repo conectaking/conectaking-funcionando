@@ -854,9 +854,17 @@ function normalizeClientImageQuality(raw) {
   return 'low';
 }
 
-/** Preview/download cliente: thumb fixo; resto conforme qualidade da galeria. */
-function getClientPreviewOutputSpec(quality, useThumb) {
+/**
+ * Preview na galeria: thumb fixo; resto conforme qualidade da galeria.
+ * Download com marca d'água (GET …&download=1, sem ser entrega paga «limpa»): usa dimensões
+ * nativas da foto — não reduzir para 1200px como na pré-visualização.
+ */
+function getClientPreviewOutputSpec(quality, useThumb, opts) {
+  const o = opts && typeof opts === 'object' ? opts : {};
   if (useThumb) return { max: 400, jpegQuality: 76 };
+  if (o.fullResolutionDownload) {
+    return { max: 65535, jpegQuality: 94 };
+  }
   const q = normalizeClientImageQuality(quality);
   if (q === 'max') return { max: 5000, jpegQuality: 92 };
   if (q === 'hd') return { max: 2400, jpegQuality: 88 };
@@ -9292,13 +9300,16 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       });
       archivePub.pipe(res);
 
-      const wmZip = await loadWatermarkForGallery(client, payload.galleryId);
+      let wmZip = await loadWatermarkForGallery(client, payload.galleryId);
+      if (String(wmZip.mode || '').toLowerCase() === 'none') {
+        wmZip = { ...wmZip, mode: 'tile_dense' };
+      }
       let galleryQualityZip = 'low';
       if (await hasColumn(client, 'king_galleries', 'client_image_quality')) {
         const gqZip = await client.query('SELECT client_image_quality FROM king_galleries WHERE id=$1', [payload.galleryId]);
         galleryQualityZip = normalizeClientImageQuality(gqZip.rows[0]?.client_image_quality);
       }
-      const specZip = getClientPreviewOutputSpec(galleryQualityZip, false);
+      const specZip = getClientPreviewOutputSpec(galleryQualityZip, false, { fullResolutionDownload: true });
 
       const usedNamesPub = new Set();
       for (const photo of rowsZip) {
@@ -11636,10 +11647,22 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       const gq = await client.query('SELECT client_image_quality FROM king_galleries WHERE id=$1', [payload.galleryId]);
       galleryQuality = normalizeClientImageQuality(gq.rows[0]?.client_image_quality);
     }
-    const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
-    const wm = (isDownload && ksIsPaidEventAccessMode(accessMode))
+    const spec = getClientPreviewOutputSpec(galleryQuality, useThumb, {
+      fullResolutionDownload: !!(isDownload && !isPaidEventMode)
+    });
+    let wm = (isDownload && ksIsPaidEventAccessMode(accessMode))
       ? { mode: 'none', opacity: 0, scale: 1.0, scalePortrait: null, scaleLandscape: null, rotate: 0, tileAngleLandscape: 0, tileAnglePortrait: 0, logoFineRotate: 0, logoBuffer: null }
       : await loadWatermarkForGallery(client, payload.galleryId);
+    /* Galeria pública com download: «sem marca» no painel não deve entregar ficheiro limpo ao visitante */
+    if (
+      isDownload &&
+      accessMode === 'public' &&
+      allowDownload &&
+      wm &&
+      String(wm.mode || '').toLowerCase() === 'none'
+    ) {
+      wm = { ...wm, mode: 'tile_dense' };
+    }
     const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
     if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
