@@ -737,6 +737,147 @@ async function getSessionKingGalleryClientIdIfExists(pgClient, galleryId, sessio
   return existing.rows.length ? parseInt(existing.rows[0].id, 10) : null;
 }
 
+/** Copia dados de promo da linha origem para o cliente destino (finalize / merge técnico por e-mail). */
+async function mergePromoKingGalleryClients(pgClient, galleryId, fromClientId, toClientId) {
+  const fid = parseInt(fromClientId, 10) || 0;
+  const tid = parseInt(toClientId, 10) || 0;
+  if (!fid || !tid || fid === tid) return;
+  if (!(await hasColumn(pgClient, 'king_gallery_clients', 'promo_coupon_validated_at'))) return;
+  await pgClient.query(
+    `UPDATE king_gallery_clients AS tgt
+     SET promo_social_confirmed_at = COALESCE(tgt.promo_social_confirmed_at, src.promo_social_confirmed_at),
+         promo_coupon_validated_at = COALESCE(tgt.promo_coupon_validated_at, src.promo_coupon_validated_at),
+         promo_coupon_entered = COALESCE(
+           NULLIF(BTRIM(COALESCE(tgt.promo_coupon_entered::text, '')), ''),
+           src.promo_coupon_entered
+         ),
+         updated_at = NOW()
+     FROM king_gallery_clients AS src
+     WHERE tgt.id = $1 AND src.id = $2 AND tgt.gallery_id = $3 AND src.gallery_id = $3`,
+    [tid, fid, galleryId]
+  );
+}
+
+/**
+ * Galeria pública: quem pode baixar e quais photo_ids — espelha GET /client/gallery (cadastro OU cupom na sessão).
+ * Usado em ZIP e download=1 na prévia (visitante sem clientId no JWT).
+ */
+async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload) {
+  const out = {
+    ok: false,
+    denyMessage: 'Download não disponível.',
+    rateLimitClientId: 0,
+    allowedPhotoIdSet: new Set()
+  };
+  const hasAccessModeCol = await hasColumn(pgClient, 'king_galleries', 'access_mode');
+  const hasPromoEnabled = await hasColumn(pgClient, 'king_galleries', 'promo_enabled');
+  const hasAllowDownload = await hasColumn(pgClient, 'king_galleries', 'allow_download');
+  const cols = ['id']
+    .concat(hasAccessModeCol ? ['access_mode'] : [])
+    .concat(hasAllowDownload ? ['allow_download'] : [])
+    .concat(hasPromoEnabled ? ['promo_enabled', 'promo_coupon_code', 'promo_valid_until', 'promo_free_photo_count'] : []);
+  const gRes = await pgClient.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1 LIMIT 1`, [galleryId]);
+  const galleryRow = gRes.rows[0];
+  if (!galleryRow) {
+    out.denyMessage = 'Galeria não encontrada.';
+    return out;
+  }
+  const accessMode = ksNormAccessMode(hasAccessModeCol ? galleryRow.access_mode : 'private');
+  if (accessMode !== 'public') {
+    out.denyMessage = 'Esta galeria não está em modo público.';
+    return out;
+  }
+  const photographerAllowsDownload = hasAllowDownload ? !!galleryRow.allow_download : false;
+  if (!photographerAllowsDownload) {
+    out.denyMessage = 'Download não liberado pelo fotógrafo.';
+    return out;
+  }
+
+  const cidJwt = parseInt(payload.clientId || 0, 10) || 0;
+  const sk = String(payload.sk || '').trim();
+  let promoResolveCid = cidJwt;
+  if (!promoResolveCid && sk && hasPromoEnabled && galleryRow.promo_enabled) {
+    promoResolveCid = (await getSessionKingGalleryClientIdIfExists(pgClient, galleryId, sk)) || 0;
+  }
+
+  let promoClientRow = null;
+  if (promoResolveCid && hasPromoEnabled && (await hasColumn(pgClient, 'king_gallery_clients', 'promo_coupon_validated_at'))) {
+    try {
+      const pr = await pgClient.query(
+        `SELECT promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
+         FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
+        [promoResolveCid, galleryId]
+      );
+      promoClientRow = pr.rows[0] || null;
+    } catch (_) {
+      promoClientRow = null;
+    }
+  }
+  const promoValidatedClient =
+    !!(hasPromoEnabled && galleryRow.promo_enabled && ksClientPromoEligibleForPricing(galleryRow, promoClientRow));
+
+  let effectiveAllowDownload = photographerAllowsDownload;
+  if (hasPromoEnabled && galleryRow.promo_enabled) {
+    effectiveAllowDownload = promoValidatedClient;
+  } else {
+    effectiveAllowDownload = !!cidJwt;
+  }
+  const publicDlGate = !!(cidJwt || promoResolveCid);
+  if (!effectiveAllowDownload || !publicDlGate) {
+    out.denyMessage =
+      hasPromoEnabled && galleryRow.promo_enabled && !promoValidatedClient
+        ? 'Conclua as etapas do cupom (redes + código) para liberar o download.'
+        : 'Cadastre-se nesta galeria para baixar as fotos.';
+    return out;
+  }
+
+  out.rateLimitClientId = cidJwt || promoResolveCid || 0;
+
+  const hasSelClientId = await hasColumn(pgClient, 'king_selections', 'client_id');
+  const hasSessionKey = await hasColumn(pgClient, 'king_selections', 'session_key');
+  let selectedPhotoIds = [];
+  if (hasSelClientId) {
+    if (cidJwt) {
+      const sRes = await pgClient.query(
+        'SELECT photo_id FROM king_selections WHERE gallery_id=$1 AND client_id=$2 ORDER BY id ASC',
+        [galleryId, cidJwt]
+      );
+      selectedPhotoIds = (sRes.rows || []).map((r) => r.photo_id);
+    } else if (sk && hasSessionKey) {
+      const sRes = await pgClient.query(
+        'SELECT photo_id FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 ORDER BY id ASC',
+        [galleryId, sk]
+      );
+      selectedPhotoIds = (sRes.rows || []).map((r) => r.photo_id);
+    }
+  }
+
+  const pOrd = await pgClient.query(
+    'SELECT id FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC',
+    [galleryId]
+  );
+  const orderedGalleryPhotoIds = (pOrd.rows || [])
+    .map((r) => parseInt(r.id, 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+
+  let allowedList = [];
+  if (hasPromoEnabled && galleryRow.promo_enabled) {
+    const freePromoCap = 5000;
+    const freePromoN = Math.max(
+      1,
+      Math.min(freePromoCap, parseInt(galleryRow.promo_free_photo_count, 10) || 1)
+    );
+    allowedList = ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN);
+  } else if (cidJwt) {
+    allowedList = orderedGalleryPhotoIds.slice();
+  }
+
+  out.allowedPhotoIdSet = new Set(allowedList);
+  out.ok = true;
+  out.denyMessage = '';
+  return out;
+}
+
 async function ensureDefaultKingGalleryClientForFace(pgClient, galleryId) {
   const email = `__ks_face_default_${galleryId}@internal.king`;
   const existing = await pgClient.query(
@@ -869,6 +1010,43 @@ function getClientPreviewOutputSpec(quality, useThumb, opts) {
   if (q === 'max') return { max: 5000, jpegQuality: 92 };
   if (q === 'hd') return { max: 2400, jpegQuality: 88 };
   return { max: 1200, jpegQuality: 80 };
+}
+
+async function ksDetectBufferImageType(buf) {
+  let contentType = 'application/octet-stream';
+  let ext = '';
+  try {
+    const metaOrig = await sharp(buf).metadata();
+    const fmt = String(metaOrig?.format || '').toLowerCase();
+    if (fmt === 'jpeg' || fmt === 'jpg') {
+      contentType = 'image/jpeg';
+      ext = '.jpg';
+    } else if (fmt === 'png') {
+      contentType = 'image/png';
+      ext = '.png';
+    } else if (fmt === 'webp') {
+      contentType = 'image/webp';
+      ext = '.webp';
+    } else if (fmt === 'gif') {
+      contentType = 'image/gif';
+      ext = '.gif';
+    } else if (fmt === 'tiff') {
+      contentType = 'image/tiff';
+      ext = '.tif';
+    } else if (fmt === 'avif') {
+      contentType = 'image/avif';
+      ext = '.avif';
+    }
+  } catch (_) { }
+  return { contentType, ext };
+}
+
+/** Anexo: se original_name já tem extensão, não acrescentar outra (evita foto.JPG.jpg). */
+function ksClientDownloadAttachmentFilename(photo, photoId, extGuess) {
+  const baseName = (photo.original_name || `foto-${photoId}`).toString().replace(/[\/\\:*?"<>|]+/g, '-').trim();
+  if (!baseName) return `foto-${photoId}${extGuess || '.jpg'}`;
+  if (/\.[a-z0-9]{2,5}$/i.test(baseName)) return baseName;
+  return `${baseName}${extGuess || '.jpg'}`;
 }
 
 const KS_GALLERY_STATUS_ORDER = Object.freeze({
@@ -8960,28 +9138,32 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     }
 
     const photographerAllowsDownload = hasAllowDownload ? !!gallery.allow_download : false;
+    /**
+     * Modo público + cupom: o visitante pode ter só session_key no JWT (sem clientId) mas já validou cupom
+     * na linha técnica de sessão — a regra antiga «!cid ⇒ allow_download=false» bloqueava download e fazia
+     * sumir o painel / promo «desativado» após recarregar.
+     */
     let effectiveAllowDownload = salesModeActive ? false : photographerAllowsDownload;
-    if (galleryAccessMode === 'public' && !cid) {
-      effectiveAllowDownload = false;
-    }
-    if (
-      galleryAccessMode === 'public' &&
-      cid &&
-      photographerAllowsDownload &&
-      hasPromoEnabled &&
-      gallery.promo_enabled
-    ) {
-      effectiveAllowDownload = promoValidatedClient;
+    if (galleryAccessMode === 'public') {
+      if (!photographerAllowsDownload) {
+        effectiveAllowDownload = false;
+      } else if (hasPromoEnabled && gallery.promo_enabled) {
+        effectiveAllowDownload = promoValidatedClient;
+      } else {
+        effectiveAllowDownload = !!cid;
+      }
     }
     let approvedPhotoIdsOut = salesModeActive ? approvedPhotoIds : [];
     const orderedGalleryPhotoIds = (pRes.rows || [])
       .map((r) => parseInt(r.id, 10))
       .filter((n) => Number.isFinite(n) && n > 0);
+    const publicDlGate =
+      !!(parseInt(cid, 10) || promoResolveCid);
     if (
       !salesModeActive &&
       galleryAccessMode === 'public' &&
-      cid &&
-      photographerAllowsDownload
+      photographerAllowsDownload &&
+      publicDlGate
     ) {
       if (hasPromoEnabled && gallery.promo_enabled) {
         if (!promoValidatedClient) {
@@ -8989,8 +9171,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         } else {
           approvedPhotoIdsOut = ksPublicPromoCappedPhotoIds(selectedPhotoIds, freePromoN);
         }
-      } else {
+      } else if (cid) {
         approvedPhotoIdsOut = orderedGalleryPhotoIds.slice();
+      } else {
+        approvedPhotoIdsOut = [];
       }
     }
 
@@ -9089,7 +9273,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       approvalsState: salesModeActive ? approvalsState : undefined,
       approvedPhotoIds: salesModeActive
         ? approvedPhotoIds
-        : (galleryAccessMode === 'public' && photographerAllowsDownload && cid && approvedPhotoIdsOut.length
+        : (galleryAccessMode === 'public' && photographerAllowsDownload && publicDlGate && approvedPhotoIdsOut.length
           ? approvedPhotoIdsOut
           : undefined),
       clientAuthenticated: !!salesClientId,
@@ -9254,21 +9438,18 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
     }
 
     if (accessMode === 'public') {
-      const hasAllowDlCol = await hasColumn(client, 'king_galleries', 'allow_download');
-      const galDl = await client.query(
-        `SELECT id${hasAllowDlCol ? ', allow_download' : ''} FROM king_galleries WHERE id=$1 LIMIT 1`,
-        [payload.galleryId]
-      );
-      if (!galDl.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
-      const photographerDl = !hasAllowDlCol || !!galDl.rows[0].allow_download;
-      if (!photographerDl) {
-        return res.status(403).json({ message: 'Download não liberado pelo fotógrafo.' });
+      const rightsZip = await ksResolvePublicVisitorDownloadRights(client, payload.galleryId, payload);
+      if (!rightsZip.ok) {
+        return res.status(403).json({ message: rightsZip.denyMessage || 'Download não disponível.' });
       }
-      const cidPub = parseInt(payload.clientId || 0, 10) || 0;
-      if (!cidPub) {
-        return res.status(403).json({ message: 'Cadastre-se para baixar em ZIP.' });
+      if (
+        wantedIds.some((wid) => !rightsZip.allowedPhotoIdSet.has(parseInt(wid, 10) || 0))
+      ) {
+        return res.status(403).json({
+          message: 'Algumas fotos não estão liberadas para o seu download (cupom ou seleção).'
+        });
       }
-      if (!ksEnforceDownloadRateLimit(payload.galleryId, cidPub, req.ip)) {
+      if (!ksEnforceDownloadRateLimit(payload.galleryId, rightsZip.rateLimitClientId, req.ip)) {
         return res.status(429).json({ message: 'Muitas tentativas de download. Tente novamente em instantes.' });
       }
 
@@ -9300,44 +9481,19 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       });
       archivePub.pipe(res);
 
-      let wmZip = await loadWatermarkForGallery(client, payload.galleryId);
-      if (String(wmZip.mode || '').toLowerCase() === 'none') {
-        wmZip = { ...wmZip, mode: 'tile_dense' };
-      }
-      let galleryQualityZip = 'low';
-      if (await hasColumn(client, 'king_galleries', 'client_image_quality')) {
-        const gqZip = await client.query('SELECT client_image_quality FROM king_galleries WHERE id=$1', [payload.galleryId]);
-        galleryQualityZip = normalizeClientImageQuality(gqZip.rows[0]?.client_image_quality);
-      }
-      const specZip = getClientPreviewOutputSpec(galleryQualityZip, false, { fullResolutionDownload: true });
-
       const usedNamesPub = new Set();
       for (const photo of rowsZip) {
         // eslint-disable-next-line no-await-in-loop
         const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
         if (!buf) continue;
-        const img = sharp(buf).rotate();
-        const meta = await img.metadata();
-        const { width, height } = getDisplayDimensions(meta, specZip.max, specZip.max);
-        const scale = Math.min(specZip.max / Math.max(width, height), 1);
-        const outW = Math.max(1, Math.round(width * scale));
-        const outH = Math.max(1, Math.round(height * scale));
         // eslint-disable-next-line no-await-in-loop
-        const out = await buildWatermarkedJpeg({
-          imgBuffer: buf,
-          outW,
-          outH,
-          watermark: wmZip,
-          jpegOpts: { quality: specZip.jpegQuality, progressive: true }
-        });
+        const { ext: extZip } = await ksDetectBufferImageType(buf);
         const pid = parseInt(photo.id, 10) || 0;
-        let fname = String(photo.original_name || `foto-${pid}`).replace(/[\/\\:*?"<>|]+/g, '-').trim();
-        if (!fname) fname = `foto-${pid}.jpg`;
-        if (!/\.[a-z0-9]{2,5}$/i.test(fname)) fname = `${fname}.jpg`;
+        let fname = ksClientDownloadAttachmentFilename(photo, pid, extZip);
         if (usedNamesPub.has(fname.toLowerCase())) {
           const dot = fname.lastIndexOf('.');
           const base = dot > 0 ? fname.slice(0, dot) : fname;
-          const ext = dot > 0 ? fname.slice(dot) : '.jpg';
+          const ext = dot > 0 ? fname.slice(dot) : extZip || '.jpg';
           let k = 2;
           let candidate = `${base} (${k})${ext}`;
           while (usedNamesPub.has(candidate.toLowerCase())) {
@@ -9347,7 +9503,7 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
           fname = candidate;
         }
         usedNamesPub.add(fname.toLowerCase());
-        archivePub.append(out, { name: fname });
+        archivePub.append(buf, { name: fname });
       }
 
       await archivePub.finalize();
@@ -11073,6 +11229,7 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
                   [nome, galleryId, exId]
                 );
               }
+              await mergePromoKingGalleryClients(client, galleryId, cid, exId);
               await client.query(
                 'DELETE FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2',
                 [galleryId, cid]
@@ -11226,6 +11383,9 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
           'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id IS NULL AND session_key=$3',
           [newClientId, galleryId, sk]
         );
+
+        const sessPromoSrc = await getSessionKingGalleryClientIdIfExists(client, galleryId, sk);
+        if (sessPromoSrc) await mergePromoKingGalleryClients(client, galleryId, sessPromoSrc, newClientId);
 
         if (reactivateExistingClient) {
           if (hasCliTelCol && mergeBackfillPhone) {
@@ -11578,9 +11738,15 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     }
 
     if (isDownload && accessMode === 'public' && allowDownload) {
-      const cidDl = parseInt(payload.clientId || 0, 10) || 0;
-      if (!cidDl) {
-        return res.status(403).send('Cadastre-se nesta galeria para baixar as fotos.');
+      const rightsPv = await ksResolvePublicVisitorDownloadRights(client, payload.galleryId, payload);
+      if (!rightsPv.ok) {
+        return res.status(403).send(rightsPv.denyMessage || 'Download não disponível.');
+      }
+      if (!rightsPv.allowedPhotoIdSet.has(photoId)) {
+        return res.status(403).send('Esta foto não está liberada para o seu download.');
+      }
+      if (!ksEnforceDownloadRateLimit(payload.galleryId, rightsPv.rateLimitClientId, req.ip)) {
+        return res.status(429).send('Muitas tentativas de download. Tente novamente em instantes.');
       }
     }
 
@@ -11620,20 +11786,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       // Download pago/aprovado deve sair SEM redimensionar e SEM recompressão (qualidade original).
       const originalBuf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
       if (!originalBuf) return res.status(500).send('Não foi possível carregar a imagem original.');
-      let contentType = 'application/octet-stream';
-      let ext = '';
-      try {
-        const metaOrig = await sharp(originalBuf).metadata();
-        const fmt = String(metaOrig?.format || '').toLowerCase();
-        if (fmt === 'jpeg' || fmt === 'jpg') { contentType = 'image/jpeg'; ext = '.jpg'; }
-        else if (fmt === 'png') { contentType = 'image/png'; ext = '.png'; }
-        else if (fmt === 'webp') { contentType = 'image/webp'; ext = '.webp'; }
-        else if (fmt === 'gif') { contentType = 'image/gif'; ext = '.gif'; }
-        else if (fmt === 'tiff') { contentType = 'image/tiff'; ext = '.tif'; }
-        else if (fmt === 'avif') { contentType = 'image/avif'; ext = '.avif'; }
-      } catch (_) { }
-      const baseName = (photo.original_name || `foto-${photoId}`).toString().replace(/[\/\\:*?"<>|]+/g, '-').trim();
-      const finalName = /\.[a-z0-9]{2,5}$/i.test(baseName) ? baseName : `${baseName}${ext || '.jpg'}`;
+      const { contentType, ext } = await ksDetectBufferImageType(originalBuf);
+      const finalName = ksClientDownloadAttachmentFilename(photo, photoId, ext);
       res.set('Content-Type', contentType);
       res.set('Cross-Origin-Resource-Policy', 'cross-origin');
       res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
@@ -11642,29 +11796,28 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       return res.send(originalBuf);
     }
 
+    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
+
+    /* Download não-evento-pago (ex.: galeria pública após seleção): entregar original sem marca d’água */
+    if (isDownload && !isPaidEventMode) {
+      const { contentType: ctDl, ext: extDl } = await ksDetectBufferImageType(buf);
+      const attachName = ksClientDownloadAttachmentFilename(photo, photoId, extDl);
+      res.set('Content-Type', ctDl);
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+      res.set('Content-Disposition', `attachment; filename="${attachName}"`);
+      return res.send(buf);
+    }
+
     let galleryQuality = 'low';
     if (await hasColumn(client, 'king_galleries', 'client_image_quality')) {
       const gq = await client.query('SELECT client_image_quality FROM king_galleries WHERE id=$1', [payload.galleryId]);
       galleryQuality = normalizeClientImageQuality(gq.rows[0]?.client_image_quality);
     }
-    const spec = getClientPreviewOutputSpec(galleryQuality, useThumb, {
-      fullResolutionDownload: !!(isDownload && !isPaidEventMode)
-    });
-    let wm = (isDownload && ksIsPaidEventAccessMode(accessMode))
-      ? { mode: 'none', opacity: 0, scale: 1.0, scalePortrait: null, scaleLandscape: null, rotate: 0, tileAngleLandscape: 0, tileAnglePortrait: 0, logoFineRotate: 0, logoBuffer: null }
-      : await loadWatermarkForGallery(client, payload.galleryId);
-    /* Galeria pública com download: «sem marca» no painel não deve entregar ficheiro limpo ao visitante */
-    if (
-      isDownload &&
-      accessMode === 'public' &&
-      allowDownload &&
-      wm &&
-      String(wm.mode || '').toLowerCase() === 'none'
-    ) {
-      wm = { ...wm, mode: 'tile_dense' };
-    }
-    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
-    if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
+    const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
+    const wm = await loadWatermarkForGallery(client, payload.galleryId);
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
@@ -11684,16 +11837,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    if (isDownload) {
-      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
-      res.set('Pragma', 'no-cache');
-    } else {
-      res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
-    }
-    if (isDownload && (allowDownload || isPaidEventMode)) {
-      const fn = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
-      res.set('Content-Disposition', `attachment; filename="${fn.endsWith('.jpg') || fn.endsWith('.jpeg') ? fn : fn + '.jpg'}"`);
-    }
+    res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
     res.send(out);
   } finally {
     client.release();
