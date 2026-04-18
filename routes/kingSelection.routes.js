@@ -1123,6 +1123,39 @@ function ksClientPromoEligibleForPricing(galleryRow, clientRow) {
   return !!want && want === got;
 }
 
+/** Ordem da galeria: primeiras fotos selecionadas até ao limite do cupom (modo público + download). */
+function ksPublicPromoCappedPhotoIds(orderedGalleryIds, selectedIds, maxDownloads) {
+  const cap = Math.max(0, parseInt(maxDownloads, 10) || 0);
+  const selSet = new Set((selectedIds || []).map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0));
+  const out = [];
+  for (const id of orderedGalleryIds || []) {
+    if (!selSet.has(id)) continue;
+    out.push(id);
+    if (cap > 0 && out.length >= cap) break;
+  }
+  return out;
+}
+
+async function ksResolveEntrySplashPublicUrl(pgClient, galleryRow, slug) {
+  const hasCoverFile = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_file_path');
+  const hasCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
+  if (hasCoverFile && galleryRow.gallery_link_cover_file_path) {
+    const fp = String(galleryRow.gallery_link_cover_file_path);
+    if (fp.toLowerCase().startsWith('r2:')) {
+      const key = fp.slice(3).trim().replace(/^\/+/, '');
+      const u = r2PublicUrl(key);
+      if (u) return u;
+    }
+  }
+  if (hasCoverPhoto && galleryRow.gallery_link_cover_photo_id && slug) {
+    const pid = parseInt(galleryRow.gallery_link_cover_photo_id, 10) || 0;
+    if (pid) {
+      return `/api/king-selection/public/photos/${pid}/preview?slug=${encodeURIComponent(String(slug))}`;
+    }
+  }
+  return null;
+}
+
 async function ksListSalePackages(pgClient, galleryId) {
   if (!(await hasTable(pgClient, 'king_gallery_sale_packages'))) return [];
   const rows = (await pgClient.query(
@@ -6728,7 +6761,9 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'promo_social_links',
     'promo_instructions',
     'share_link_custom_append',
-    'share_link_full_message'
+    'share_link_full_message',
+    'client_folder_layout',
+    'client_entry_splash_enabled'
   ];
 
   const body = req.body || {};
@@ -7007,7 +7042,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         }
       }
       if (key === 'promo_free_photo_count') {
-        val = Math.max(1, Math.min(50, parseInt(val || 1, 10) || 1));
+        val = Math.max(1, Math.min(5000, parseInt(val || 1, 10) || 1));
       }
       if (key === 'promo_social_links') {
         let arr = val;
@@ -7035,6 +7070,11 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         if (val === '' || val === 'null' || val == null) val = null;
         else val = String(val).trim().replace(/\u0000/g, '').slice(0, 2000);
       }
+      if (key === 'client_folder_layout') {
+        const m = String(val || 'folders').toLowerCase().trim();
+        val = m === 'flat' ? 'flat' : 'folders';
+      }
+      if (key === 'client_entry_splash_enabled') val = !!val;
       if (key === 'share_link_custom_append' || key === 'share_link_full_message') {
         if (val === '' || val === 'null' || val == null) val = null;
         else val = String(val).trim().slice(0, key === 'share_link_full_message' ? 12000 : 4000);
@@ -7480,8 +7520,12 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
     const hasEnabled = await hasColumn(client, 'king_galleries', 'client_enabled');
     const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasClientFolderLayout = await hasColumn(client, 'king_galleries', 'client_folder_layout');
+    const hasEntrySplash = await hasColumn(client, 'king_galleries', 'client_entry_splash_enabled');
+    const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
+    const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}${hasAccessMode ? ', access_mode' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}${hasAccessMode ? ', access_mode' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}
        FROM king_galleries
        WHERE slug=$1`,
       [slug]
@@ -7500,6 +7544,14 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     const totalPhotos = totalPhotosRes.rows[0]?.c || 0;
 
     const deferredSignupFlow = ksAccessModeAllowsSelfSignup(accessMode) && allowSelfSignup;
+    let entrySplashUrl = null;
+    if (hasEntrySplash && g.client_entry_splash_enabled) {
+      entrySplashUrl = await ksResolveEntrySplashPublicUrl(client, g, slug);
+    }
+    const clientFolderLayoutNorm =
+      hasClientFolderLayout && String(g.client_folder_layout || '').toLowerCase().trim() === 'flat'
+        ? 'flat'
+        : 'folders';
     res.json({
       success: true,
       gallery: {
@@ -7514,7 +7566,10 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         access_mode: accessMode,
         total_photos: totalPhotos,
         cover_photo_id: coverPhotoId,
-        deferred_signup_flow: deferredSignupFlow
+        deferred_signup_flow: deferredSignupFlow,
+        client_folder_layout: clientFolderLayoutNorm,
+        client_entry_splash_enabled: hasEntrySplash ? !!g.client_entry_splash_enabled : false,
+        entry_splash_url: entrySplashUrl || null
       }
     });
   } finally {
@@ -8458,7 +8513,12 @@ router.post('/client/register', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
 
-    if (!hasSelf || !g.allow_self_signup) {
+    const hasAmReg = await hasColumn(client, 'king_galleries', 'access_mode');
+    const accessModeReg = hasAmReg ? ksNormAccessMode(g.access_mode || 'private') : 'private';
+    const allowRegister =
+      (hasSelf && !!g.allow_self_signup) || accessModeReg === 'public';
+
+    if (!allowRegister) {
       return res.status(403).json({ message: 'Autocadastro desativado nesta galeria.' });
     }
 
@@ -8588,8 +8648,12 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasAccessModeG = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasAllowSelfG = await hasColumn(client, 'king_galleries', 'allow_self_signup');
     const hasPromoEnabled = await hasColumn(client, 'king_galleries', 'promo_enabled');
+    const hasClientFolderLayout = await hasColumn(client, 'king_galleries', 'client_folder_layout');
+    const hasEntrySplash = await hasColumn(client, 'king_galleries', 'client_entry_splash_enabled');
+    const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
+    const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -8687,11 +8751,13 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         promoClientRow = pr.rows[0] || null;
       } catch (_) { }
     }
-    const promoEligible =
-      !!(salesModeActive && hasPromoEnabled && ksClientPromoEligibleForPricing(gallery, promoClientRow));
+    const promoValidatedClient =
+      !!(hasPromoEnabled && gallery.promo_enabled && ksClientPromoEligibleForPricing(gallery, promoClientRow));
+    const promoEligible = !!(salesModeActive && promoValidatedClient);
+    const freePromoCap = galleryAccessMode === 'public' ? 5000 : 50;
     const freePromoN =
       hasPromoEnabled && gallery.promo_enabled
-        ? Math.max(1, Math.min(50, parseInt(gallery.promo_free_photo_count, 10) || 1))
+        ? Math.max(1, Math.min(freePromoCap, parseInt(gallery.promo_free_photo_count, 10) || 1))
         : 0;
     const billableForPricing = salesModeActive
       ? ksBillablePhotoCountAfterPromo(selectedCountForPricing, freePromoN, promoEligible)
@@ -8823,6 +8889,55 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       }
     }
 
+    const photographerAllowsDownload = hasAllowDownload ? !!gallery.allow_download : false;
+    let effectiveAllowDownload = salesModeActive ? false : photographerAllowsDownload;
+    if (galleryAccessMode === 'public' && !cid) {
+      effectiveAllowDownload = false;
+    }
+    if (
+      galleryAccessMode === 'public' &&
+      cid &&
+      photographerAllowsDownload &&
+      hasPromoEnabled &&
+      gallery.promo_enabled
+    ) {
+      effectiveAllowDownload = promoValidatedClient;
+    }
+    let approvedPhotoIdsOut = salesModeActive ? approvedPhotoIds : [];
+    const orderedGalleryPhotoIds = (pRes.rows || [])
+      .map((r) => parseInt(r.id, 10))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (
+      !salesModeActive &&
+      galleryAccessMode === 'public' &&
+      cid &&
+      photographerAllowsDownload
+    ) {
+      if (hasPromoEnabled && gallery.promo_enabled) {
+        if (!promoValidatedClient) {
+          approvedPhotoIdsOut = [];
+        } else {
+          approvedPhotoIdsOut = ksPublicPromoCappedPhotoIds(
+            orderedGalleryPhotoIds,
+            selectedPhotoIds,
+            freePromoN
+          );
+        }
+      } else {
+        approvedPhotoIdsOut = orderedGalleryPhotoIds.slice();
+      }
+    }
+
+    let entrySplashUrl = null;
+    if (hasEntrySplash && gallery.client_entry_splash_enabled) {
+      entrySplashUrl = await ksResolveEntrySplashPublicUrl(client, gallery, slug);
+    }
+
+    const clientFolderLayoutNorm =
+      hasClientFolderLayout && String(gallery.client_folder_layout || '').toLowerCase().trim() === 'flat'
+        ? 'flat'
+        : 'folders';
+
     res.json({
       success: true,
       gallery: {
@@ -8830,11 +8945,15 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         photos,
         folders,
         locked,
-        allow_download: salesModeActive ? false : (hasAllowDownload ? !!gallery.allow_download : false),
+        allow_download: effectiveAllowDownload,
+        photographer_allows_download: photographerAllowsDownload,
         face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false,
         client_image_quality: hasClientImgQ ? normalizeClientImageQuality(gallery.client_image_quality) : 'low',
         client_card_height_px: hasClientCardH ? Math.max(160, Math.min(420, parseInt(gallery.client_card_height_px, 10) || 220)) : 220,
-        access_mode: galleryAccessMode
+        access_mode: galleryAccessMode,
+        client_folder_layout: clientFolderLayoutNorm,
+        client_entry_splash_enabled: hasEntrySplash ? !!gallery.client_entry_splash_enabled : false,
+        entry_splash_url: entrySplashUrl || null
       },
       resolvedClientId: resolvedClientId || undefined,
       faceRecognitionUsable: faceRecognitionUsable || undefined,
@@ -8866,7 +8985,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         over_limit_warn: overLimitWarn || undefined,
         promo_applied: promoEligible || undefined
       } : undefined,
-      promo: salesModeActive && hasPromoEnabled
+      promo: hasPromoEnabled && gallery.promo_enabled && (salesModeActive || galleryAccessMode === 'public')
         ? (() => {
             let links = gallery.promo_social_links;
             if (typeof links === 'string') {
@@ -8877,6 +8996,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
               }
             }
             if (!Array.isArray(links)) links = [];
+            const pubDlCount =
+              galleryAccessMode === 'public' && promoValidatedClient
+                ? ksPublicPromoCappedPhotoIds(orderedGalleryPhotoIds, selectedPhotoIds, freePromoN).length
+                : 0;
             return {
               active: !!gallery.promo_enabled,
               expired: !!(gallery.promo_enabled && !ksPromoWindowStillValid(gallery)),
@@ -8884,17 +9007,23 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
               free_photo_count: freePromoN,
               social_links: links,
               instructions: gallery.promo_instructions ? String(gallery.promo_instructions).trim().slice(0, 2000) : null,
-              validated: promoEligible,
+              validated: promoValidatedClient,
+              mode: salesModeActive ? 'sales_pricing' : 'public_download',
               social_confirmed: !!promoClientRow?.promo_social_confirmed_at,
               coupon_validated: !!promoClientRow?.promo_coupon_validated_at,
               billable_photo_count: billableForPricing,
-              promo_photos_applied: promoEligible ? Math.min(freePromoN, selectedCountForPricing) : 0
+              promo_photos_applied: promoEligible ? Math.min(freePromoN, selectedCountForPricing) : 0,
+              public_download_slots_used: galleryAccessMode === 'public' ? pubDlCount : undefined
             };
           })()
         : undefined,
       paymentState: salesModeActive ? paymentState : undefined,
       approvalsState: salesModeActive ? approvalsState : undefined,
-      approvedPhotoIds: salesModeActive ? approvedPhotoIds : undefined,
+      approvedPhotoIds: salesModeActive
+        ? approvedPhotoIds
+        : (galleryAccessMode === 'public' && photographerAllowsDownload && cid && approvedPhotoIdsOut.length
+          ? approvedPhotoIdsOut
+          : undefined),
       clientAuthenticated: !!salesClientId
     });
   } finally {
@@ -8926,9 +9055,8 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
     );
     if (!gRes.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const accessMode = ksNormAccessMode(gRes.rows[0]?.access_mode || 'private');
-    if (!ksIsPaidEventAccessMode(accessMode)) {
-      return res.status(403).json({ message: 'ZIP disponível apenas no modo Fotos vendidas por evento.' });
-    }
+
+    if (ksIsPaidEventAccessMode(accessMode)) {
     if (!(await hasTable(client, 'king_selection_photo_approvals'))) {
       return res.status(503).json({ message: 'Aprovação de download indisponível no servidor.' });
     }
@@ -9053,6 +9181,108 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
     }
 
     await archive.finalize();
+    return;
+    }
+
+    if (accessMode === 'public') {
+      const hasAllowDlCol = await hasColumn(client, 'king_galleries', 'allow_download');
+      const galDl = await client.query(
+        `SELECT id${hasAllowDlCol ? ', allow_download' : ''} FROM king_galleries WHERE id=$1 LIMIT 1`,
+        [payload.galleryId]
+      );
+      if (!galDl.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
+      const photographerDl = !hasAllowDlCol || !!galDl.rows[0].allow_download;
+      if (!photographerDl) {
+        return res.status(403).json({ message: 'Download não liberado pelo fotógrafo.' });
+      }
+      const cidPub = parseInt(payload.clientId || 0, 10) || 0;
+      if (!cidPub) {
+        return res.status(403).json({ message: 'Cadastre-se para baixar em ZIP.' });
+      }
+      if (!ksEnforceDownloadRateLimit(payload.galleryId, cidPub, req.ip)) {
+        return res.status(429).json({ message: 'Muitas tentativas de download. Tente novamente em instantes.' });
+      }
+
+      const prZip = await client.query(
+        'SELECT id, original_name, file_path FROM king_photos WHERE gallery_id=$1 AND id = ANY($2::int[])',
+        [payload.galleryId, wantedIds]
+      );
+      const rowsZip = prZip.rows || [];
+      const foundZip = new Set(rowsZip.map((r) => parseInt(r.id, 10) || 0));
+      if (wantedIds.some((id) => !foundZip.has(id))) {
+        return res.status(400).json({ message: 'Algumas fotos não pertencem a esta galeria.' });
+      }
+      if (!rowsZip.length) {
+        return res.status(404).json({ message: 'Nenhuma foto encontrada para o ZIP.' });
+      }
+
+      const zipNameBasePub = String(gRes.rows[0]?.nome_projeto || payload.slug || 'fotos')
+        .replace(/[^\w\-]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 60) || 'fotos';
+      res.set('Content-Type', 'application/zip');
+      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+      res.set('Content-Disposition', `attachment; filename="${zipNameBasePub}_galeria.zip"`);
+
+      const archivePub = archiver('zip', { zlib: { level: 9 } });
+      archivePub.on('error', (err) => {
+        try { res.destroy(err); } catch (_) { }
+      });
+      archivePub.pipe(res);
+
+      const wmZip = await loadWatermarkForGallery(client, payload.galleryId);
+      let galleryQualityZip = 'low';
+      if (await hasColumn(client, 'king_galleries', 'client_image_quality')) {
+        const gqZip = await client.query('SELECT client_image_quality FROM king_galleries WHERE id=$1', [payload.galleryId]);
+        galleryQualityZip = normalizeClientImageQuality(gqZip.rows[0]?.client_image_quality);
+      }
+      const specZip = getClientPreviewOutputSpec(galleryQualityZip, false);
+
+      const usedNamesPub = new Set();
+      for (const photo of rowsZip) {
+        // eslint-disable-next-line no-await-in-loop
+        const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+        if (!buf) continue;
+        const img = sharp(buf).rotate();
+        const meta = await img.metadata();
+        const { width, height } = getDisplayDimensions(meta, specZip.max, specZip.max);
+        const scale = Math.min(specZip.max / Math.max(width, height), 1);
+        const outW = Math.max(1, Math.round(width * scale));
+        const outH = Math.max(1, Math.round(height * scale));
+        // eslint-disable-next-line no-await-in-loop
+        const out = await buildWatermarkedJpeg({
+          imgBuffer: buf,
+          outW,
+          outH,
+          watermark: wmZip,
+          jpegOpts: { quality: specZip.jpegQuality, progressive: true }
+        });
+        const pid = parseInt(photo.id, 10) || 0;
+        let fname = String(photo.original_name || `foto-${pid}`).replace(/[\/\\:*?"<>|]+/g, '-').trim();
+        if (!fname) fname = `foto-${pid}.jpg`;
+        if (!/\.[a-z0-9]{2,5}$/i.test(fname)) fname = `${fname}.jpg`;
+        if (usedNamesPub.has(fname.toLowerCase())) {
+          const dot = fname.lastIndexOf('.');
+          const base = dot > 0 ? fname.slice(0, dot) : fname;
+          const ext = dot > 0 ? fname.slice(dot) : '.jpg';
+          let k = 2;
+          let candidate = `${base} (${k})${ext}`;
+          while (usedNamesPub.has(candidate.toLowerCase())) {
+            k += 1;
+            candidate = `${base} (${k})${ext}`;
+          }
+          fname = candidate;
+        }
+        usedNamesPub.add(fname.toLowerCase());
+        archivePub.append(out, { name: fname });
+      }
+
+      await archivePub.finalize();
+      return;
+    }
+
+    return res.status(403).json({ message: 'ZIP não disponível neste modo de galeria.' });
   } finally {
     client.release();
   }
@@ -11271,6 +11501,13 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 
     if (isDownload && !allowDownload && !isPaidEventMode) {
       return res.status(403).send('Download desativado para esta galeria.');
+    }
+
+    if (isDownload && accessMode === 'public' && allowDownload) {
+      const cidDl = parseInt(payload.clientId || 0, 10) || 0;
+      if (!cidDl) {
+        return res.status(403).send('Cadastre-se nesta galeria para baixar as fotos.');
+      }
     }
 
     if (isDownload && isPaidEventMode) {
