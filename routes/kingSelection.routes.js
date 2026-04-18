@@ -8774,8 +8774,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const selectedCountForPricing = selectedPhotoIds.length;
     let promoClientRow = null;
     let promoResolveCid = cid ? parseInt(cid, 10) || 0 : 0;
-    if (!promoResolveCid && sk && salesModeActive && hasPromoEnabled) {
-      promoResolveCid = (await getSessionKingGalleryClientIdIfExists(client, gallery.id, sk)) || 0;
+    if (!promoResolveCid && sk && hasPromoEnabled) {
+      if (salesModeActive || galleryAccessMode === 'public') {
+        promoResolveCid = (await getSessionKingGalleryClientIdIfExists(client, gallery.id, sk)) || 0;
+      }
     }
     if (promoResolveCid && hasPromoEnabled && (await hasColumn(client, 'king_gallery_clients', 'promo_coupon_validated_at'))) {
       try {
@@ -8812,6 +8814,24 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       && maxPackageQty > 0
       && selectedCountForPricing > maxPackageQty);
     const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid, sk);
+
+    let clientContactPrefill = null;
+    if (galleryAccessMode === 'public' && resolvedClientId) {
+      try {
+        const pc = await client.query(
+          `SELECT nome, email, telefone FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
+          [resolvedClientId, gallery.id]
+        );
+        const row = pc.rows[0];
+        if (row && row.email && !isTechnicalFaceGalleryClientEmail(row.email)) {
+          clientContactPrefill = {
+            nome: String(row.nome || '').trim() || null,
+            email: String(row.email || '').trim() || null,
+            telefone: row.telefone != null && String(row.telefone).trim() ? String(row.telefone).trim() : null
+          };
+        }
+      } catch (_) { }
+    }
     // Modo pago: nunca usar fallback de sessão para evitar cruzar dados entre clientes.
     const salesClientId = salesModeActive
       ? (parseInt(cid, 10) || 0)
@@ -9047,6 +9067,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
               mode: salesModeActive ? 'sales_pricing' : 'public_download',
               social_confirmed: !!promoClientRow?.promo_social_confirmed_at,
               coupon_validated: !!promoClientRow?.promo_coupon_validated_at,
+              coupon_code_display: String(gallery.promo_coupon_code || '').trim() || null,
+              entered_code: promoClientRow ? String(promoClientRow.promo_coupon_entered || '').trim() || null : null,
               billable_photo_count: billableForPricing,
               promo_photos_applied: promoEligible ? Math.min(freePromoN, selectedCountForPricing) : 0,
               public_download_slots_used: galleryAccessMode === 'public' ? pubDlCount : undefined
@@ -9060,7 +9082,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         : (galleryAccessMode === 'public' && photographerAllowsDownload && cid && approvedPhotoIdsOut.length
           ? approvedPhotoIdsOut
           : undefined),
-      clientAuthenticated: !!salesClientId
+      clientAuthenticated: !!salesClientId,
+      clientContactPrefill: clientContactPrefill || undefined
     });
   } finally {
     client.release();
