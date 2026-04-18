@@ -9322,7 +9322,11 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         access_mode: galleryAccessMode,
         client_folder_layout: clientFolderLayoutNorm,
         client_entry_splash_enabled: hasEntrySplash ? !!gallery.client_entry_splash_enabled : false,
-        entry_splash_url: entrySplashUrl || null
+        entry_splash_url: entrySplashUrl || null,
+        watermark_download_notice:
+          galleryAccessMode === 'public' && photographerAllowsDownload
+            ? "Download com marca d'água. Selecione as fotos; se houver cupom, conclua a validação (redes e código). Depois clique em «Confirmar seleção» e informe nome, e-mail e WhatsApp. Só após esse envio as opções «Baixar» e «Fotos para baixar» ficam disponíveis para as fotos que você escolheu."
+            : undefined
       },
       resolvedClientId: resolvedClientId || undefined,
       faceRecognitionUsable: faceRecognitionUsable || undefined,
