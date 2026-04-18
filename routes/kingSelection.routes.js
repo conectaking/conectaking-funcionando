@@ -11252,6 +11252,46 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
 
     const hasSessionKeyCol = await hasColumn(client, 'king_selections', 'session_key');
 
+    /**
+     * Galeria pública + cupom ativo: não permitir «confirmar seleção» sem validar redes + código antes.
+     * Sem isto o visitante enviava, a seleção bloqueava e ficava sem baixar — fluxo quebrado.
+     */
+    const hasPromoEnabledFinalize = await hasColumn(client, 'king_galleries', 'promo_enabled');
+    if (hasPromoEnabledFinalize && accessModeFinalize === 'public') {
+      const gp = await client.query(
+        `SELECT promo_enabled, promo_coupon_code, promo_valid_until FROM king_galleries WHERE id=$1`,
+        [galleryId]
+      );
+      const grow = gp.rows?.[0];
+      if (grow?.promo_enabled) {
+        if (!(await hasColumn(client, 'king_gallery_clients', 'promo_coupon_validated_at'))) {
+          return res.status(503).json({ message: 'Cupom indisponível neste servidor.' });
+        }
+        let promoResolveCid = ctxCid ? parseInt(ctxCid, 10) || 0 : 0;
+        if (!promoResolveCid && sk && hasSessionKeyCol) {
+          promoResolveCid = (await getSessionKingGalleryClientIdIfExists(client, galleryId, sk)) || 0;
+        }
+        if (!promoResolveCid) {
+          return res.status(400).json({
+            message:
+              'Valide o cupom (siga os perfis e informe o código) antes de confirmar o envio da seleção.'
+          });
+        }
+        const pr = await client.query(
+          `SELECT promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
+           FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
+          [promoResolveCid, galleryId]
+        );
+        const promoClientRowFinalize = pr.rows[0] || null;
+        if (!ksClientPromoEligibleForPricing(grow, promoClientRowFinalize)) {
+          return res.status(400).json({
+            message:
+              'Valide o cupom (siga os perfis e informe o código) antes de confirmar o envio da seleção.'
+          });
+        }
+      }
+    }
+
     // Quando a sessão caiu num cadastro técnico (visitante+...invalid), converte para cadastro real
     // usando os dados informados no envio, para não "misturar" clientes no mesmo link.
     if (cid && hasClientTable) {
