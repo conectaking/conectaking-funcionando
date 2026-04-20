@@ -14,7 +14,16 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
-const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer, r2HeadObject } = require('../utils/r2');
+const {
+  getR2Config,
+  r2PublicUrl,
+  r2GetObjectBuffer,
+  r2GetObjectBodyStream,
+  r2GetObjectViaPublicUrl,
+  r2PresignPut,
+  r2PutObjectBuffer,
+  r2HeadObject
+} = require('../utils/r2');
 const { getStagingConfig, buildStagingKey, putStagingObject, getStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
 const {
   getRekogConfig,
@@ -29,6 +38,14 @@ const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition
 const { fetchKingSelectionOgData, buildShareMetaPayload, ensureHttpsUrl } = require('../utils/kingSelectionOg');
 
 const router = express.Router();
+const KS_ZIP_MAX_PHOTOS = 10000;
+/** Tamanho alvo por ficheiro ZIP (vários downloads). Override: KINGSELECTION_ZIP_PART_MAX_BYTES (bytes, min 256MB, max 4GB). */
+function ksZipPartMaxBytes() {
+  const raw = process.env.KINGSELECTION_ZIP_PART_MAX_BYTES;
+  const n = raw ? parseInt(raw, 10) : NaN;
+  if (Number.isFinite(n) && n >= 256 * 1024 * 1024) return Math.min(n, 4 * 1024 * 1024 * 1024);
+  return 2 * 1024 * 1024 * 1024;
+}
 const KS_PAYMENT_PROOF_DIR = path.resolve(process.cwd(), 'uploads', 'kingselection-payment-proofs');
 
 const uploadMem = multer({

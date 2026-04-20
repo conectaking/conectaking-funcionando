@@ -117,6 +117,20 @@ async function r2GetObjectBuffer(key) {
   }
 }
 
+/** Stream do objeto (ZIP grande sem carregar tudo em RAM). */
+async function r2GetObjectBodyStream(key) {
+  const cfg = getR2Config();
+  const client = getR2Client();
+  if (!cfg.enabled || !client || !key) return null;
+  try {
+    const out = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+    if (!out || !out.Body) return null;
+    return out.Body;
+  } catch (_) {
+    return null;
+  }
+}
+
 /** Retorna metadados do objeto (ETag, ContentLength). Para cache e idempotência no Rekognition. */
 async function r2HeadObject(key) {
   const cfg = getR2Config();
@@ -314,6 +328,7 @@ module.exports = {
   getR2ClientTts,
   r2PublicUrl,
   r2GetObjectBuffer,
+  r2GetObjectBodyStream,
   r2GetObjectViaPublicUrl,
   r2HeadObject,
   r2ListObjectsV2,
