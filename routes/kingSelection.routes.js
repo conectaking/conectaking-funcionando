@@ -2064,6 +2064,59 @@ async function fetchPhotoFileBufferFromFilePath(filePath) {
   }
 }
 
+async function ksApproxBytesForGalleryFilePath(filePath) {
+  const fp = String(filePath || '').trim();
+  const k = extractR2Key(fp) || extractR2KeyFromPublicHttpsUrl(fp);
+  if (k) {
+    const h = await r2HeadObject(k);
+    if (h && Number.isFinite(h.contentLength) && h.contentLength > 0) return h.contentLength;
+  }
+  return 4 * 1024 * 1024;
+}
+
+function ksPartitionZipItemsByMaxBytes(items, maxPartBytes) {
+  const parts = [];
+  let cur = { photo_ids: [], approx_bytes: 0 };
+  for (const it of items) {
+    const sz = Math.max(0, parseInt(it.approx_bytes, 10) || 0);
+    if (cur.photo_ids.length && cur.approx_bytes + sz > maxPartBytes) {
+      parts.push(cur);
+      cur = { photo_ids: [], approx_bytes: 0 };
+    }
+    cur.photo_ids.push(it.photo_id);
+    cur.approx_bytes += sz;
+  }
+  if (cur.photo_ids.length) parts.push(cur);
+  return parts.map((p, i) => ({
+    part: i + 1,
+    photo_count: p.photo_ids.length,
+    approx_bytes: p.approx_bytes,
+    photo_ids: p.photo_ids
+  }));
+}
+
+/** ZIP: stream R2 → menos RAM; fallback buffer (Cloudflare, etc.). */
+async function ksAppendPhotoPathToZipArchive(archive, filePath, fname) {
+  const fp = String(filePath || '').trim();
+  const key = extractR2Key(fp) || extractR2KeyFromPublicHttpsUrl(fp);
+  if (key) {
+    const stream = await r2GetObjectBodyStream(key);
+    if (stream) {
+      try {
+        stream.on('error', () => {});
+      } catch (_) { }
+      archive.append(stream, { name: fname });
+      return true;
+    }
+  }
+  const buf = await fetchPhotoFileBufferFromFilePath(fp);
+  if (buf && buf.length) {
+    archive.append(buf, { name: fname });
+    return true;
+  }
+  return false;
+}
+
 function clampInt(n, a, b) {
   const x = parseInt(n, 10);
   if (!Number.isFinite(x)) return 0;
@@ -9432,6 +9485,137 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
   }
 }));
 
+/**
+ * Plano de ZIP em partes (~2 GiB cada por defeito): o cliente chama depois POST /client/download-zip
+ * com photo_ids = parts[i].photo_ids para cada parte (fila sequencial).
+ */
+router.post('/client/download-zip-plan', requireClient, asyncHandler(async (req, res) => {
+  const payload = req.ksClient;
+  const body = req.body || {};
+  const slug = String(body.slug || '').trim();
+  if (slug && slug !== payload.slug) {
+    return res.status(403).json({ message: 'Sem permissão para esta galeria.' });
+  }
+  const wantedIds = Array.isArray(body.photo_ids)
+    ? Array.from(new Set(body.photo_ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0))).slice(0, KS_ZIP_MAX_PHOTOS)
+    : [];
+  if (!wantedIds.length) {
+    return res.status(400).json({ message: 'Selecione pelo menos 1 foto para planear o ZIP.' });
+  }
+  const maxPart = ksZipPartMaxBytes();
+  const client = await db.pool.connect();
+  try {
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const gRes = await client.query(
+      `SELECT id, nome_projeto${hasAccessMode ? ', access_mode' : ''} FROM king_galleries WHERE id=$1 LIMIT 1`,
+      [payload.galleryId]
+    );
+    if (!gRes.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const accessMode = ksNormAccessMode(gRes.rows[0]?.access_mode || 'private');
+    const items = [];
+
+    if (ksIsPaidEventAccessMode(accessMode)) {
+      if (!(await hasTable(client, 'king_selection_photo_approvals'))) {
+        return res.status(503).json({ message: 'Aprovação de download indisponível no servidor.' });
+      }
+      let cid = parseInt(payload.clientId || 0, 10) || 0;
+      if (!cid) {
+        cid = await resolveFaceClientIdForSession(client, payload.galleryId, payload.clientId, payload.sk);
+      }
+      if (!cid) return res.status(403).json({ message: 'Faça login para planear o download.' });
+      const hasEditedPath = await hasColumn(client, 'king_photos', 'edited_file_path');
+      let rows = (await client.query(
+        `SELECT DISTINCT ON (a.photo_id) a.photo_id, a.selection_batch, a.delivery_mode, p.original_name, p.file_path${hasEditedPath ? ', p.edited_file_path' : ', NULL::text AS edited_file_path'}
+         FROM king_selection_photo_approvals a
+         JOIN king_photos p ON p.id = a.photo_id AND p.gallery_id = a.gallery_id
+         WHERE a.gallery_id=$1
+           AND a.client_id=$2
+           AND lower(a.status)='approved'
+           AND a.photo_id = ANY($3::int[])
+         ORDER BY a.photo_id ASC, a.selection_batch DESC`,
+        [payload.galleryId, cid, wantedIds]
+      )).rows || [];
+      const foundIds = new Set(rows.map((r) => parseInt(r.photo_id, 10) || 0));
+      const missingIds = wantedIds.filter((id) => !foundIds.has(id));
+      for (const photoId of missingIds) {
+        // eslint-disable-next-line no-await-in-loop
+        const d = await ksClientDownloadApprovedOrPaid(client, payload.galleryId, cid, photoId);
+        if (!d.ok) continue;
+        // eslint-disable-next-line no-await-in-loop
+        const pr = await client.query(
+          `SELECT $1::int AS photo_id, $2::int AS selection_batch, $3::text AS delivery_mode, p.original_name, p.file_path${hasEditedPath ? ', p.edited_file_path' : ', NULL::text AS edited_file_path'}
+           FROM king_photos p
+           WHERE p.id=$1 AND p.gallery_id=$4
+           LIMIT 1`,
+          [photoId, d.selection_batch, d.delivery_mode, payload.galleryId]
+        );
+        if (pr.rows.length) rows.push(pr.rows[0]);
+      }
+      const byPhoto = new Map();
+      for (const r of rows) {
+        const pid = parseInt(r.photo_id, 10) || 0;
+        if (!pid) continue;
+        const prev = byPhoto.get(pid);
+        const sb = parseInt(r.selection_batch, 10) || 0;
+        const psb = prev ? parseInt(prev.selection_batch, 10) || 0 : -1;
+        if (!prev || sb >= psb) byPhoto.set(pid, r);
+      }
+      for (const id of wantedIds) {
+        const r = byPhoto.get(id);
+        if (!r) continue;
+        const mode = ksNormDeliveryMode(r.delivery_mode);
+        if (mode === 'edited' && !String(r.edited_file_path || '').trim()) continue;
+        const sourcePath = mode === 'edited' ? String(r.edited_file_path || '').trim() : String(r.file_path || '').trim();
+        if (!sourcePath) continue;
+        // eslint-disable-next-line no-await-in-loop
+        const approx = await ksApproxBytesForGalleryFilePath(sourcePath);
+        items.push({ photo_id: id, approx_bytes: approx });
+      }
+    } else if (accessMode === 'public') {
+      const rightsZip = await ksResolvePublicVisitorDownloadRights(client, payload.galleryId, payload);
+      if (!rightsZip.ok) {
+        return res.status(403).json({ message: rightsZip.denyMessage || 'Download não disponível.' });
+      }
+      if (wantedIds.some((wid) => !rightsZip.allowedPhotoIdSet.has(parseInt(wid, 10) || 0))) {
+        return res.status(403).json({
+          message: 'Algumas fotos não estão liberadas para o seu download (cupom ou seleção).'
+        });
+      }
+      const prZip = await client.query(
+        'SELECT id, original_name, file_path FROM king_photos WHERE gallery_id=$1 AND id = ANY($2::int[])',
+        [payload.galleryId, wantedIds]
+      );
+      const rowById = new Map((prZip.rows || []).map((r) => [parseInt(r.id, 10) || 0, r]));
+      for (const id of wantedIds) {
+        const r = rowById.get(id);
+        if (!r || !r.file_path) continue;
+        // eslint-disable-next-line no-await-in-loop
+        const approx = await ksApproxBytesForGalleryFilePath(r.file_path);
+        items.push({ photo_id: id, approx_bytes: approx });
+      }
+    } else {
+      return res.status(403).json({ message: 'Plano de ZIP não disponível neste modo de galeria.' });
+    }
+
+    const totalApprox = items.reduce((s, it) => s + (it.approx_bytes || 0), 0);
+    const parts = ksPartitionZipItemsByMaxBytes(items, maxPart);
+    res.json({
+      success: true,
+      gallery_name: String(gRes.rows[0]?.nome_projeto || '').trim() || null,
+      part_max_bytes: maxPart,
+      total_photos: items.length,
+      total_approx_bytes: totalApprox,
+      parts,
+      hint:
+        parts.length > 1
+          ? `São ${parts.length} partes. Para cada uma, chame POST /api/king-selection/client/download-zip com o mesmo token e body.photo_ids = parts[n].photo_ids (n de 1 a ${parts.length}).`
+          : 'Pode gerar um único ZIP com POST /client/download-zip com estes photo_ids.'
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 router.post('/client/download-zip', requireClient, asyncHandler(async (req, res) => {
   const payload = req.ksClient;
   const body = req.body || {};
@@ -9440,9 +9624,8 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
     return res.status(403).json({ message: 'Sem permissão para esta galeria.' });
   }
 
-  const maxZipPhotos = 5000;
   const wantedIds = Array.isArray(body.photo_ids)
-    ? Array.from(new Set(body.photo_ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0))).slice(0, maxZipPhotos)
+    ? Array.from(new Set(body.photo_ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0))).slice(0, KS_ZIP_MAX_PHOTOS)
     : [];
   if (!wantedIds.length) {
     return res.status(400).json({ message: 'Selecione pelo menos 1 foto liberada para gerar ZIP.' });
@@ -9532,9 +9715,10 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
     res.set('Content-Type', 'application/zip');
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
     res.set('Pragma', 'no-cache');
-    res.set('Content-Disposition', `attachment; filename="${zipNameBase}_aprovadas.zip"`);
+    const partLabel = body.zip_part != null && parseInt(body.zip_part, 10) > 0 ? `_part${parseInt(body.zip_part, 10)}` : '';
+    res.set('Content-Disposition', `attachment; filename="${zipNameBase}_aprovadas${partLabel}.zip"`);
 
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = archiver('zip', { zlib: { level: 0 } });
     archive.on('error', (err) => {
       try { res.destroy(err); } catch (_) { }
     });
@@ -9546,9 +9730,6 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       const mode = ksNormDeliveryMode(r.delivery_mode);
       const sourcePath = mode === 'edited' ? String(r.edited_file_path || '').trim() : String(r.file_path || '').trim();
       if (!sourcePath) continue;
-      // eslint-disable-next-line no-await-in-loop
-      const buf = await fetchPhotoFileBufferFromFilePath(sourcePath);
-      if (!buf) continue;
       let fname = String(r.original_name || `foto-${r.photo_id}`).replace(/[\/\\:*?"<>|]+/g, '-').trim();
       if (!fname) fname = `foto-${r.photo_id}.jpg`;
       if (!/\.[a-z0-9]{2,5}$/i.test(fname)) fname = `${fname}.jpg`;
@@ -9565,7 +9746,9 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
         fname = candidate;
       }
       usedNames.add(fname.toLowerCase());
-      archive.append(buf, { name: fname });
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await ksAppendPhotoPathToZipArchive(archive, sourcePath, fname);
+      if (!ok) continue;
       toAudit.push({ photoId: parseInt(r.photo_id, 10) || 0, selectionBatch: parseInt(r.selection_batch, 10) || null });
     }
 
@@ -9622,9 +9805,10 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       res.set('Content-Type', 'application/zip');
       res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
       res.set('Pragma', 'no-cache');
-      res.set('Content-Disposition', `attachment; filename="${zipNameBasePub}_galeria.zip"`);
+      const partLabelPub = body.zip_part != null && parseInt(body.zip_part, 10) > 0 ? `_part${parseInt(body.zip_part, 10)}` : '';
+      res.set('Content-Disposition', `attachment; filename="${zipNameBasePub}_galeria${partLabelPub}.zip"`);
 
-      const archivePub = archiver('zip', { zlib: { level: 9 } });
+      const archivePub = archiver('zip', { zlib: { level: 0 } });
       archivePub.on('error', (err) => {
         try { res.destroy(err); } catch (_) { }
       });
@@ -9632,17 +9816,12 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
 
       const usedNamesPub = new Set();
       for (const photo of rowsZip) {
-        // eslint-disable-next-line no-await-in-loop
-        const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
-        if (!buf) continue;
-        // eslint-disable-next-line no-await-in-loop
-        const { ext: extZip } = await ksDetectBufferImageType(buf);
         const pid = parseInt(photo.id, 10) || 0;
-        let fname = ksClientDownloadAttachmentFilename(photo, pid, extZip);
+        let fname = ksClientDownloadAttachmentFilename(photo, pid, '.jpg');
         if (usedNamesPub.has(fname.toLowerCase())) {
           const dot = fname.lastIndexOf('.');
           const base = dot > 0 ? fname.slice(0, dot) : fname;
-          const ext = dot > 0 ? fname.slice(dot) : extZip || '.jpg';
+          const ext = dot > 0 ? fname.slice(dot) : '.jpg';
           let k = 2;
           let candidate = `${base} (${k})${ext}`;
           while (usedNamesPub.has(candidate.toLowerCase())) {
@@ -9652,7 +9831,8 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
           fname = candidate;
         }
         usedNamesPub.add(fname.toLowerCase());
-        archivePub.append(buf, { name: fname });
+        // eslint-disable-next-line no-await-in-loop
+        await ksAppendPhotoPathToZipArchive(archivePub, photo.file_path, fname);
       }
 
       await archivePub.finalize();
