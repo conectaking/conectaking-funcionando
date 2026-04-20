@@ -11555,6 +11555,12 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
           'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id IS NULL AND session_key=$3',
           [newClientId, galleryId, sk]
         );
+        if (hasSessionKeyCol) {
+          await client.query(
+            'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2',
+            [galleryId, sk]
+          );
+        }
 
         const sessPromoSrc = await getSessionKingGalleryClientIdIfExists(client, galleryId, sk);
         if (sessPromoSrc) await mergePromoKingGalleryClients(client, galleryId, sessPromoSrc, newClientId);
