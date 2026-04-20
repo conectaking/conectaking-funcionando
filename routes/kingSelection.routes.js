@@ -869,14 +869,6 @@ async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload
     }
   }
 
-  const pOrd = await pgClient.query(
-    'SELECT id FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC',
-    [galleryId]
-  );
-  const orderedGalleryPhotoIds = (pOrd.rows || [])
-    .map((r) => parseInt(r.id, 10))
-    .filter((n) => Number.isFinite(n) && n > 0);
-
   let allowedList = [];
   if (hasPromoEnabled && galleryRow.promo_enabled) {
     /**
@@ -886,7 +878,7 @@ async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload
      */
     allowedList = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
   } else if (cidJwt) {
-    allowedList = orderedGalleryPhotoIds.slice();
+    allowedList = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
   }
 
   out.allowedPhotoIdSet = new Set(allowedList);
@@ -989,7 +981,15 @@ async function resolveFaceClientIdForSession(pgClient, galleryId, jwtCid, sessio
     [galleryId]
   );
   const realRows = cr.rows.filter((r) => !isTechnicalFaceGalleryClientEmail(r.email));
-  if (realRows.length === 1) return parseInt(realRows[0].id, 10);
+  if (realRows.length === 1) {
+    let am = 'private';
+    try {
+      const gAm = await pgClient.query('SELECT access_mode FROM king_galleries WHERE id=$1 LIMIT 1', [galleryId]);
+      am = ksNormAccessMode(gAm.rows?.[0]?.access_mode || 'private');
+    } catch (_) { }
+    /** Em galeria pública nunca «roubar» o único cadastro real para outro visitante sem JWT/sk. */
+    if (am !== 'public') return parseInt(realRows[0].id, 10);
+  }
   if (realRows.length === 0 && cr.rows.length === 1 && isTechnicalFaceGalleryClientEmail(cr.rows[0].email)) {
     return parseInt(cr.rows[0].id, 10);
   }
@@ -9030,7 +9030,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         }
       } /* modo pago + sem cid e sem session_key no JWT: sem seleção anónima legível */
     } else {
-      if (!salesModeActive) {
+      if (!salesModeActive && galleryAccessMode !== 'public') {
         const sRes = await client.query(
           hasSelBatch
             ? 'SELECT photo_id, selection_batch FROM king_selections WHERE gallery_id=$1'
@@ -9046,17 +9046,21 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       }
     }
 
+    const locked = await ksResolveClientSelectionLocked(client, req, gallery.id, gallery);
+
     /**
      * Visitante público: o JWT pode passar a incluir `clientId` da linha técnica de sessão (cupom/reconhecimento)
      * enquanto as seleções ainda estão gravadas só com `session_key`. Fundir para o cupom não «inventar» quota
      * nem esconder escolhas reais.
+     * Após envio (locked), não fundir: linhas antigas por session_key podem somar milhares de fotos à seleção real.
      */
     if (
       galleryAccessMode === 'public' &&
       hasSelClientId &&
       cid &&
       sk &&
-      hasSessionKey
+      hasSessionKey &&
+      !locked
     ) {
       const cidNum = parseInt(cid, 10) || 0;
       const sessTechnicalId = cidNum ? (await getSessionKingGalleryClientIdIfExists(client, gallery.id, sk)) || 0 : 0;
@@ -9126,21 +9130,24 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid, sk);
 
     let clientContactPrefill = null;
-    if (galleryAccessMode === 'public' && resolvedClientId) {
-      try {
-        const pc = await client.query(
-          `SELECT nome, email, telefone FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
-          [resolvedClientId, gallery.id]
-        );
-        const row = pc.rows[0];
-        if (row && row.email && !isTechnicalFaceGalleryClientEmail(row.email)) {
-          clientContactPrefill = {
-            nome: String(row.nome || '').trim() || null,
-            email: String(row.email || '').trim() || null,
-            telefone: row.telefone != null && String(row.telefone).trim() ? String(row.telefone).trim() : null
-          };
-        }
-      } catch (_) { }
+    if (galleryAccessMode === 'public') {
+      const prefillCid = (parseInt(cid, 10) || 0) || (promoResolveCid || 0);
+      if (prefillCid) {
+        try {
+          const pc = await client.query(
+            `SELECT nome, email, telefone FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
+            [prefillCid, gallery.id]
+          );
+          const row = pc.rows[0];
+          if (row && row.email && !isTechnicalFaceGalleryClientEmail(row.email)) {
+            clientContactPrefill = {
+              nome: String(row.nome || '').trim() || null,
+              email: String(row.email || '').trim() || null,
+              telefone: row.telefone != null && String(row.telefone).trim() ? String(row.telefone).trim() : null
+            };
+          }
+        } catch (_) { }
+      }
     }
     // Modo pago: nunca usar fallback de sessão para evitar cruzar dados entre clientes.
     const salesClientId = salesModeActive
@@ -9180,8 +9187,6 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 
     const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
-
-    const locked = await ksResolveClientSelectionLocked(client, req, gallery.id, gallery);
 
     const frozenSelectionPhotoIds = hasSelBatch
       ? selectedPhotoIds.filter((pid) => (selectionBatchByPhotoId[String(pid)] || 1) < currentSelectionRound)
@@ -9291,7 +9296,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           approvedPhotoIdsOut = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
         }
       } else if (cid) {
-        approvedPhotoIdsOut = orderedGalleryPhotoIds.slice();
+        approvedPhotoIdsOut = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
       } else {
         approvedPhotoIdsOut = [];
       }
@@ -9418,8 +9423,9 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
     return res.status(403).json({ message: 'Sem permissão para esta galeria.' });
   }
 
+  const maxZipPhotos = 5000;
   const wantedIds = Array.isArray(body.photo_ids)
-    ? Array.from(new Set(body.photo_ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0))).slice(0, 1000)
+    ? Array.from(new Set(body.photo_ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0))).slice(0, maxZipPhotos)
     : [];
   if (!wantedIds.length) {
     return res.status(400).json({ message: 'Selecione pelo menos 1 foto liberada para gerar ZIP.' });
