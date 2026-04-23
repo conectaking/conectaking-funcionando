@@ -175,8 +175,6 @@
     #ck-plan-block-ok:hover{background:#4b5563}
     #ck-plan-block-exit{background:linear-gradient(135deg,#facc15,#eab308);color:#111}
     #ck-plan-block-exit:hover{filter:brightness(1.05)}
-    a.ck-emergency-exit{position:fixed;bottom:14px;right:14px;z-index:2147483000;padding:10px 14px;background:rgba(20,20,20,.92);border:1px solid #444;border-radius:8px;color:#facc15;font-size:0.8rem;font-weight:600;text-decoration:none;font-family:Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.4)}
-    a.ck-emergency-exit:hover{border-color:#facc15;color:#fff}
     </style>
     <div id="ck-plan-block-overlay" role="dialog" aria-modal="true" aria-label="Acesso ao painel" aria-hidden="true">
         <div class="ck-plan-block-card">
@@ -187,7 +185,6 @@
             </div>
         </div>
     </div>
-    <a href="#" id="ck-emergency-exit" class="ck-emergency-exit" title="Limpa a sessão e volta à página inicial">Sair da conta</a>
     <script>
     (function () {
         function apiBase() {
@@ -228,7 +225,6 @@
         var msgEl = document.getElementById('ck-plan-block-msg');
         var btnOk = document.getElementById('ck-plan-block-ok');
         var btnExit = document.getElementById('ck-plan-block-exit');
-        var emergency = document.getElementById('ck-emergency-exit');
 
         function hidePlanOverlay() {
             if (!overlay) return;
@@ -247,12 +243,6 @@
 
         if (btnOk) btnOk.addEventListener('click', hidePlanOverlay);
         if (btnExit) btnExit.addEventListener('click', exitToLogin);
-        if (emergency) {
-            emergency.addEventListener('click', function (e) {
-                e.preventDefault();
-                if (window.confirm('Sair desta conta e voltar à página inicial?')) exitToLogin();
-            });
-        }
 
         var orig = window.alert;
         window.__ckOrigAlert = orig;
