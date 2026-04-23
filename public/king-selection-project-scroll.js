@@ -8,6 +8,12 @@
 (function () {
   'use strict';
 
+  /** Evita centenas de varreduras pesadas por segundo (Vue/React atualizam o DOM em rajada). */
+  var MO_DEBOUNCE_MS = 280;
+  var moTimer = null;
+  var lastUnstickAt = 0;
+  var MIN_UNSTICK_INTERVAL_MS = 120;
+
   function isKingSelectionPhotographerUi() {
     var path = (location.pathname || '/').toLowerCase();
     // Hostinger: /kingSelectionProject.html?itemId=… (URL real do utilizador)
@@ -38,6 +44,13 @@
       document.documentElement.classList.remove('ks-project-mobile-unstick');
       return;
     }
+
+    var now = Date.now();
+    if (now - lastUnstickAt < MIN_UNSTICK_INTERVAL_MS) {
+      return;
+    }
+    lastUnstickAt = now;
+
     document.documentElement.classList.add('ks-project-mobile-unstick');
 
     /* Raiz da app: muitas vezes é aqui que fica overflow:hidden + height:100% */
@@ -72,18 +85,39 @@
     }
   }
 
-  function init() {
-    unstick();
-    window.addEventListener('resize', function () {
+  function scheduleUnstickDebounced() {
+    if (moTimer) clearTimeout(moTimer);
+    moTimer = setTimeout(function () {
+      moTimer = null;
       unstick();
-    });
-    var t = [0, 200, 500, 1000, 2000, 3500];
+    }, MO_DEBOUNCE_MS);
+  }
+
+  var resizeTimer = null;
+  function onResize() {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      resizeTimer = null;
+      unstick();
+    }, 160);
+  }
+
+  function init() {
+    lastUnstickAt = 0;
+    unstick();
+    try {
+      window.addEventListener('resize', onResize, { passive: true });
+    } catch (e) {
+      window.addEventListener('resize', onResize);
+    }
+    /* Menos repetições: o MutationObserver já cobre mudanças tardias do SPA. */
+    var t = [400, 1200, 2800];
     for (var j = 0; j < t.length; j++) {
       setTimeout(unstick, t[j]);
     }
     if (typeof MutationObserver !== 'undefined') {
       var mo = new MutationObserver(function () {
-        unstick();
+        scheduleUnstickDebounced();
       });
       mo.observe(document.documentElement, { childList: true, subtree: true });
       setTimeout(function () {

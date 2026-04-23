@@ -3,7 +3,7 @@
  * Um único scroll (barra “de fora”): o documento; sem scroll preso na coluna “Atividades”.
  *
  * Incluir em kingSelectionProject.html depois dos outros CSS:
- *   <link rel="stylesheet" href="/king-selection-project-mobile.css?v=3">
+ *   <link rel="stylesheet" href="/king-selection-project-mobile.css?v=4">
  */
 @media (max-width: 900px) {
   /*
