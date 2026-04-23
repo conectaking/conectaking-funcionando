@@ -31,7 +31,8 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
    O site na Hostinger lê public_html/, NÃO a pasta public/ do back-end no Git.
    Depois de alterar public/kingDocs.html ou public/kingDocsShare.html no projeto,
    corre na raiz do repo:  npm run sync:king-docs
-   Isto copia os dois ficheiros e também public/js/landing-exit.js → public_html/js/.
+   Isto copia os dois ficheiros e também public/js/landing-exit.js,
+   dashboard-cropper-enhance.js e image-crop-modal.js → public_html/js/.
    Volta a enviar public_html/kingDocs.html (e kingDocsShare.html se mudaste) para o hosting.
 
 2c) SAIR NA PÁGINA INICIAL (index.html)

@@ -46,3 +46,12 @@ if (fs.existsSync(cropEnhanceFrom)) {
   fs.copyFileSync(cropEnhanceFrom, path.join(destJsDir, 'dashboard-cropper-enhance.js'));
   console.log('[sync-king-docs] OK js/dashboard-cropper-enhance.js → public_html/js/');
 }
+
+const imageCropModalFrom = path.join(srcDir, 'js', 'image-crop-modal.js');
+if (fs.existsSync(imageCropModalFrom)) {
+  if (!fs.existsSync(destJsDir)) {
+    fs.mkdirSync(destJsDir, { recursive: true });
+  }
+  fs.copyFileSync(imageCropModalFrom, path.join(destJsDir, 'image-crop-modal.js'));
+  console.log('[sync-king-docs] OK js/image-crop-modal.js → public_html/js/');
+}

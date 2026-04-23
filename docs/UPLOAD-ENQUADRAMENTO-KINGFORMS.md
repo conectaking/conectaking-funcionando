@@ -11,7 +11,8 @@
 2. **Componente reutilizável**  
    - `public/js/image-crop-modal.js`: modal **"Ajuste sua Imagem"** com botão **"Cortar e Enviar"** (mesma estrutura do ajuste de foto de perfil).  
    - Usa Cropper.js (CSS + JS) em CDN.  
-   - Uso: `ImageCropModal.open(ficheiro, { aspectRatio: 16/9 }, callback(url, errMsg))`.
+   - Uso: `ImageCropModal.open(ficheiro, { aspectRatio: 16/9 }, callback(url, errMsg))`.  
+   - O modal mostra **medidas em px** e **proporção** do recorte, dicas para **16:9** ou **1:1**, faixa tracejada **referência telemóvel** (opcional) e `POST /api/upload/crop` com base em `window.API_BASE` quando existir (senão `location.origin`).
 
 3. **Tamanho da logo (modo botão)**  
    - O limite do **Tamanho da Logo** no modo botão foi aumentado de **80 px** para **300 px** (backend e exibição no cartão/formulário).
