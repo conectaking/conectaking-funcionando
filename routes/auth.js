@@ -9,6 +9,7 @@ const { asyncHandler, ValidationError, UnauthorizedError } = require('../middlew
 const { validateRegistration, validateLogin, handleValidationErrors } = require('../utils/validation');
 const { generateTokenPair, saveRefreshToken, validateRefreshToken, revokeRefreshToken } = require('../middleware/refreshToken');
 const { emailLocalPartWithoutDots } = require('../utils/emailHelpers');
+const { ensureDefaultProfileItemsForUser } = require('../utils/ensureDefaultProfileItems');
 
 const router = express.Router();
 
@@ -67,16 +68,7 @@ router.post(
 
             await client.query('INSERT INTO user_profiles (user_id, display_name) VALUES ($1, $2)', [newUser.id, newUser.email]);
 
-            // Módulo Bíblia ativo por padrão em todo cartão virtual
-            const bibleItem = await client.query(
-                `INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
-                 VALUES ($1, 'bible', 'Bíblia', true, 0) RETURNING id`,
-                [newUser.id]
-            );
-            await client.query(
-                `INSERT INTO bible_items (profile_item_id, translation_code, is_visible) VALUES ($1, 'nvi', true)`,
-                [bibleItem.rows[0].id]
-            );
+            await ensureDefaultProfileItemsForUser(client, newUser.id);
 
             await client.query('UPDATE registration_codes SET is_claimed = TRUE, claimed_by_user_id = $1, claimed_at = NOW() WHERE code = $2', [newUser.id, registrationCode]);
             

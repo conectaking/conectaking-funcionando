@@ -7,6 +7,7 @@ const config = require('../config');
 const informacoesService = require('../modules/editarCartao/informacoes/informacoes.service');
 const personalizarService = require('../modules/editarCartao/personalizar/personalizar.service');
 const cartaoItensController = require('../modules/cartaoItens/cartaoItens.controller');
+const { ensureDefaultProfileItemsForUser } = require('../utils/ensureDefaultProfileItems');
 
 const router = express.Router();
 
@@ -172,6 +173,12 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
         const details = { ...info, ...theme };
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
+
+        try {
+            await ensureDefaultProfileItemsForUser(client, userId);
+        } catch (seedErr) {
+            console.warn('[GET /api/profile] ensureDefaultProfileItemsForUser:', seedErr.message);
+        }
 
         // Buscar TODOS os itens (ativos e inativos) para o dashboard
         const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC', [userId]);
