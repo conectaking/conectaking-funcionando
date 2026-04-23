@@ -65,15 +65,15 @@
         };
 
         var map = [
-            { key: 'hasFinance', module: 'finance', labels: ['Gestão Financeira', 'Gestao Financeira'] },
-            { key: 'hasContract', module: 'contract', labels: ['Contratos'] },
-            { key: 'hasAgenda', module: 'agenda', labels: ['Agenda Inteligente', 'Agenda'] },
-            { key: 'hasModoEmpresa', module: 'modo_empresa', labels: ['Modo Empresa'] },
-            { key: 'hasBranding', module: 'branding', labels: ['Personalização da Marca', 'Personalizacao da Marca'] },
-            { key: 'hasKingBrief', module: 'kingbrief', labels: ['KingBrief'] },
-            { key: 'hasKingSelection', module: 'king_selection', labels: ['King Selection'] },
-            { key: 'hasDigitalForm', module: 'digital_form', labels: ['King Forms', 'Formulário King'] },
-            { key: 'hasKingDocs', module: 'king_docs', labels: ['King Docs'] }
+            { key: 'hasFinance', module: 'finance' },
+            { key: 'hasContract', module: 'contract' },
+            { key: 'hasAgenda', module: 'agenda' },
+            { key: 'hasModoEmpresa', module: 'modo_empresa' },
+            { key: 'hasBranding', module: 'branding' },
+            { key: 'hasKingBrief', module: 'kingbrief' },
+            { key: 'hasKingSelection', module: 'king_selection' },
+            { key: 'hasDigitalForm', module: 'digital_form' },
+            { key: 'hasKingDocs', module: 'king_docs' }
         ];
 
         function resolveMenuRow(el) {
@@ -88,12 +88,16 @@
             // Verificar se o módulo está ativo (true ou 1 ou 'true')
             var raw = user[item.key];
             var show = raw === true || raw === 1 || raw === 'true';
-            // API antiga sem hasDigitalForm: manter visível (evita sumir o menu antes do deploy do back-end)
-            if (item.key === 'hasDigitalForm' && raw === undefined) {
-                show = true;
-            }
-            if (item.key === 'hasKingDocs' && raw === undefined) {
-                show = true;
+            /* Contas novas: API por vezes omite chaves — não assumir "sem módulo" (ocultaria atalhos). */
+            if (raw === undefined) {
+                if (
+                    item.key === 'hasDigitalForm' ||
+                    item.key === 'hasKingDocs' ||
+                    item.key === 'hasKingSelection' ||
+                    item.key === 'hasKingBrief'
+                ) {
+                    show = true;
+                }
             }
             
             var arr = Array.prototype.slice.call(document.querySelectorAll('[data-module="' + item.module + '"]'));
@@ -103,9 +107,7 @@
                     if (n) arr.push(n);
                 });
             }
-            if (arr.length === 0) {
-                arr = findElementsByText(item.labels);
-            }
+            /* Não usar busca por texto: o seletor "aside a.nav-link" apanha Editar/Compartilhar e falsos positivos. */
             
             console.log('[applyModulesVisibility] Módulo ' + item.module + ': show=' + show + ', encontrados ' + arr.length + ' elementos');
             
@@ -128,38 +130,38 @@
                 }
             });
         });
+
+        ensureCoreSidebarNavVisible();
     }
 
     /**
-     * Só ligações diretas da barra lateral — nunca <nav> (o texto agregado contém todos os rótulos
-     * e fazia match de "King Forms" no container inteiro, escondendo Editar/Compartilhar/QR).
+     * Itens que não são "módulos por plano" — nunca devem ficar escondidos por engano de CSS/JS antigo.
      */
-    function getSidebarNavAnchorCandidates() {
-        var nav = document.querySelector('#sidebar .sidebar-nav, aside.sidebar .sidebar-nav, .sidebar .sidebar-nav, nav.sidebar-nav');
-        if (!nav || !nav.children) return [];
-        var out = [];
-        for (var i = 0; i < nav.children.length; i++) {
-            if (nav.children[i].tagName === 'A') out.push(nav.children[i]);
-        }
-        return out;
-    }
-
-    function findElementsByText(labels) {
-        var found = [];
-        var candidates = getSidebarNavAnchorCandidates();
-        if (!candidates.length) {
-            candidates = Array.prototype.slice.call(document.querySelectorAll('a.nav-link-by-plan[data-module], aside a.nav-link'));
-        }
-        for (var i = 0; i < candidates.length; i++) {
-            var text = (candidates[i].textContent || '').trim();
-            for (var j = 0; j < labels.length; j++) {
-                if (text.indexOf(labels[j]) !== -1) {
-                    found.push(candidates[i]);
-                    break;
-                }
+    function ensureCoreSidebarNavVisible() {
+        var sel = [
+            '.sidebar-nav a[data-target="editar-pane"]',
+            '.sidebar-nav a[data-target="compartilhar-pane"]',
+            '.sidebar-nav a[data-target="relatorios-pane"]',
+            '#bible-sidebar-link'
+        ];
+        try {
+            var nav = document.querySelector('#sidebar .sidebar-nav, aside .sidebar-nav, nav.sidebar-nav');
+            if (nav) {
+                nav.style.display = '';
+                nav.style.visibility = '';
+                nav.classList.remove('hidden', 'd-none');
             }
-        }
-        return found;
+        } catch (e) {}
+        sel.forEach(function (s) {
+            try {
+                var el = document.querySelector(s);
+                if (!el) return;
+                el.style.display = '';
+                el.style.visibility = '';
+                el.removeAttribute('hidden');
+                el.classList.remove('hidden', 'd-none');
+            } catch (e2) {}
+        });
     }
 
     /**
@@ -176,18 +178,26 @@
             .catch(function (err) {
                 if (err && err.status === 404) return;
                 console.warn('[initModulesByPlan] API indisponível ou não autenticado.');
+                ensureCoreSidebarNavVisible();
             });
     }
 
     // Executar quando DOM estiver pronto
     if (typeof document !== 'undefined') {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() { setTimeout(initModulesByPlan, 100); });
-        } else {
+        function bootOcultarModulos() {
+            ensureCoreSidebarNavVisible();
             setTimeout(initModulesByPlan, 100);
         }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootOcultarModulos);
+        } else {
+            bootOcultarModulos();
+        }
         if (typeof window !== 'undefined') {
-            window.addEventListener('load', function() { setTimeout(initModulesByPlan, 500); });
+            window.addEventListener('load', function () {
+                ensureCoreSidebarNavVisible();
+                setTimeout(initModulesByPlan, 500);
+            });
         }
     }
 
