@@ -37,6 +37,27 @@
     <!-- Cache-buster para CSS - Atualizado para forçar reload -->
     <link rel="stylesheet" href="style.css?v=2025-01-31-01">
     <link rel="stylesheet" href="dashboard.css?v=2025-01-31-01">
+    <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
+    <script>
+    (function (w) {
+        function ensureCoreSidebarNavStub() {
+            try {
+                var nav = document.querySelector('#sidebar .sidebar-nav, aside .sidebar-nav, nav.sidebar-nav');
+                if (nav) { nav.style.display = ''; nav.style.visibility = ''; nav.classList.remove('hidden', 'd-none'); }
+                ['.sidebar-nav a[data-target="editar-pane"]', '.sidebar-nav a[data-target="compartilhar-pane"]', '.sidebar-nav a[data-target="relatorios-pane"]', '#bible-sidebar-link', '#logout-btn', '#assinatura-link'].forEach(function (sel) {
+                    var el = document.querySelector(sel);
+                    if (!el) return;
+                    el.style.display = '';
+                    el.style.visibility = '';
+                    el.removeAttribute('hidden');
+                    el.classList.remove('hidden', 'd-none');
+                });
+            } catch (e) {}
+        }
+        w.applyModulesVisibility = function (user) { if (user) { /* noop até o script real carregar */ } ensureCoreSidebarNavStub(); };
+        w.initModulesByPlan = function () {};
+    })(typeof window !== 'undefined' ? window : this);
+    </script>
     <!-- Deve carregar antes do dashboard.js para evitar erro "applyModulesVisibility não está disponível" -->
     <script src="js/dashboard-ocultar-modulos-por-plano.js?v=2026-04-23-api-fetch-log"></script>
 
@@ -110,6 +131,109 @@
     setTimeout(removeBodyTextNodes, 50);
 })();
 </script>
+    <style id="ck-dashboard-rescue-styles">
+    #ck-plan-block-overlay{position:fixed;inset:0;z-index:2147483640;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
+    #ck-plan-block-overlay[aria-hidden="false"]{display:flex}
+    .ck-plan-block-card{max-width:420px;width:100%;background:#141414;border:1px solid #333;border-radius:12px;padding:24px;color:#e5e5e5;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+    .ck-plan-block-card p{margin:0 0 20px;line-height:1.45;font-size:0.95rem}
+    .ck-plan-block-actions{display:flex;flex-direction:column;gap:10px}
+    .ck-plan-block-actions button{border:none;border-radius:8px;padding:12px 16px;font-size:0.9rem;font-weight:600;cursor:pointer}
+    #ck-plan-block-ok{background:#374151;color:#fff}
+    #ck-plan-block-ok:hover{background:#4b5563}
+    #ck-plan-block-exit{background:linear-gradient(135deg,#facc15,#eab308);color:#111}
+    #ck-plan-block-exit:hover{filter:brightness(1.05)}
+    a.ck-emergency-exit{position:fixed;bottom:14px;right:14px;z-index:2147483000;padding:10px 14px;background:rgba(20,20,20,.92);border:1px solid #444;border-radius:8px;color:#facc15;font-size:0.8rem;font-weight:600;text-decoration:none;font-family:Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+    a.ck-emergency-exit:hover{border-color:#facc15;color:#fff}
+    </style>
+    <div id="ck-plan-block-overlay" role="dialog" aria-modal="true" aria-label="Acesso ao painel" aria-hidden="true">
+        <div class="ck-plan-block-card">
+            <p id="ck-plan-block-msg" class="ck-plan-block-msg"></p>
+            <div class="ck-plan-block-actions">
+                <button type="button" id="ck-plan-block-ok">Entendi</button>
+                <button type="button" id="ck-plan-block-exit">Sair e entrar com outra conta</button>
+            </div>
+        </div>
+    </div>
+    <a href="#" id="ck-emergency-exit" class="ck-emergency-exit" title="Limpa a sessão e volta à página inicial">Sair da conta</a>
+    <script>
+    (function () {
+        function apiBase() {
+            try {
+                if (window.API_BASE) return String(window.API_BASE).replace(/\/$/, '');
+            } catch (e) {}
+            return 'https://conectaking-api.onrender.com';
+        }
+        function clearAuthLocal() {
+            var keys = ['token', 'conectaKingToken', 'refreshToken', 'user', 'conectaKingUser', 'dashboard_last_pane'];
+            keys.forEach(function (k) {
+                try { localStorage.removeItem(k); } catch (e) {}
+                try { sessionStorage.removeItem(k); } catch (e2) {}
+            });
+        }
+        function exitToLogin() {
+            var rt = null;
+            try { rt = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken'); } catch (e) {}
+            var base = apiBase();
+            function go() {
+                clearAuthLocal();
+                window.location.href = 'index.html';
+            }
+            if (rt) {
+                fetch(base + '/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken: rt }),
+                    credentials: 'omit'
+                }).catch(function () {}).finally(go);
+            } else {
+                go();
+            }
+        }
+        window.ckExitToLogin = exitToLogin;
+
+        var overlay = document.getElementById('ck-plan-block-overlay');
+        var msgEl = document.getElementById('ck-plan-block-msg');
+        var btnOk = document.getElementById('ck-plan-block-ok');
+        var btnExit = document.getElementById('ck-plan-block-exit');
+        var emergency = document.getElementById('ck-emergency-exit');
+
+        function hidePlanOverlay() {
+            if (!overlay) return;
+            overlay.style.display = 'none';
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+        function showPlanOverlay(text) {
+            if (!overlay || !msgEl) {
+                window.__ckOrigAlert(text);
+                return;
+            }
+            msgEl.textContent = text;
+            overlay.style.display = 'flex';
+            overlay.setAttribute('aria-hidden', 'false');
+        }
+
+        if (btnOk) btnOk.addEventListener('click', hidePlanOverlay);
+        if (btnExit) btnExit.addEventListener('click', exitToLogin);
+        if (emergency) {
+            emergency.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (window.confirm('Sair desta conta e voltar à página inicial?')) exitToLogin();
+            });
+        }
+
+        var orig = window.alert;
+        window.__ckOrigAlert = orig;
+        window.alert = function (message) {
+            var text = String(message == null ? '' : message);
+            var planBlock = /acesso\s+negado/i.test(text) && (/upgrade|plano|assinatura|dashboard/i.test(text));
+            if (planBlock) {
+                showPlanOverlay(text);
+                return;
+            }
+            return orig.call(window, message);
+        };
+    })();
+    </script>
     <div class="dashboard-layout"><button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Menu">
     <i class="fas fa-bars"></i>
 </button>
