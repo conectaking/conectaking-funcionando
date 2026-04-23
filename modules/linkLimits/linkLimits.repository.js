@@ -1,4 +1,5 @@
 const db = require('../../db');
+const { normalizePlanCodeForModuleAvailability } = require('../../utils/plan-module-code');
 const logger = require('../../utils/logger');
 
 class LinkLimitsRepository {
@@ -194,7 +195,7 @@ class LinkLimitsRepository {
             
             // Prioridade 1: plano da assinatura (se ativo)
             if (user.subscription_id && user.plan_code && user.plan_is_active) {
-                return user.plan_code;
+                return normalizePlanCodeForModuleAvailability(user.plan_code);
             }
 
             // Prioridade 2: mapear account_type para plan_code

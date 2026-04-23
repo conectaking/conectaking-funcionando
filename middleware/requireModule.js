@@ -5,21 +5,27 @@
  */
 
 const db = require('../db');
+const { normalizePlanCodeForModuleAvailability } = require('../utils/plan-module-code');
 
 const accountTypeToPlanCode = {
     'individual': 'basic',
     'individual_com_logo': 'premium',
     'basic': 'basic',
+    'king_start': 'basic',
     'premium': 'premium',
+    'king_prime': 'premium',
     'business_owner': 'king_corporate',
     'enterprise': 'king_corporate',
     'king_base': 'king_base',
-    'king_essential': 'king_essential',
+    'king_essential': 'king_base',
     'king_finance': 'king_finance',
     'king_finance_plus': 'king_finance_plus',
     'king_premium_plus': 'king_premium_plus',
     'king_corporate': 'king_corporate',
-    'free': 'free'
+    'free': 'free',
+    'adm_principal': 'adm_principal',
+    'abm': 'adm_principal',
+    'team_member': 'basic'
 };
 
 /**
@@ -55,12 +61,13 @@ function requireModule(moduleType) {
                     [user.subscription_id]
                 );
                 if (planRow.rows.length > 0) {
-                    planCode = planRow.rows[0].plan_code;
+                    planCode = normalizePlanCodeForModuleAvailability(planRow.rows[0].plan_code);
                 }
             }
             if (!planCode) {
                 planCode = accountTypeToPlanCode[user.account_type] || user.account_type;
             }
+            planCode = normalizePlanCodeForModuleAvailability(planCode);
 
             // Planos individuais: "tirar do plano" (exclusão) remove acesso mesmo que o plano tenha
             const exclRow = await db.query(

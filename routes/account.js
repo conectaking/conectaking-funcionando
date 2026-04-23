@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { protectUser } = require('../middleware/protectUser');
+const { normalizePlanCodeForModuleAvailability } = require('../utils/plan-module-code');
 
 const router = express.Router();
 
@@ -82,8 +83,8 @@ router.get('/status', protectUser, async (req, res) => {
             if (planRow.rows.length > 0) {
                 const plan = planRow.rows[0];
                 if (plan.is_active) {
-                    planCode = plan.plan_code;
-                    planSource = `subscription_id=${user.subscriptionId} (${plan.plan_name}, ${plan.plan_code})`;
+                    planCode = normalizePlanCodeForModuleAvailability(plan.plan_code);
+                    planSource = `subscription_id=${user.subscriptionId} (${plan.plan_name}, ${plan.plan_code}→${planCode})`;
                 } else {
                     console.warn(`⚠️ Usuário ${user.email} (${req.user.userId}) tem subscription_id=${user.subscriptionId} mas o plano ${plan.plan_code} está INATIVO. Usando account_type como fallback.`);
                 }
@@ -108,6 +109,8 @@ router.get('/status', protectUser, async (req, res) => {
             planCode = 'basic';
             planSource = 'fallback (sem subscription_id e sem account_type válido)';
         }
+
+        planCode = normalizePlanCodeForModuleAvailability(planCode);
         
         console.log(`📦 Usuário ${user.email} (${req.user.userId}): planCode=${planCode} (${planSource})`);
 
@@ -231,7 +234,7 @@ router.get('/debug-plan/:email', protectUser, async (req, res) => {
             if (planRow.rows.length > 0) {
                 planInfo = planRow.rows[0];
                 if (planInfo.is_active) {
-                    planCode = planInfo.plan_code;
+                    planCode = normalizePlanCodeForModuleAvailability(planInfo.plan_code);
                     planSource = `subscription_id=${user.subscription_id}`;
                 } else {
                     planSource = `subscription_id=${user.subscription_id} (PLANO INATIVO: ${planInfo.plan_code})`;
@@ -257,6 +260,8 @@ router.get('/debug-plan/:email', protectUser, async (req, res) => {
             planCode = 'basic';
             planSource = 'fallback (sem subscription_id e sem account_type válido)';
         }
+
+        planCode = normalizePlanCodeForModuleAvailability(planCode);
         
         // Buscar módulos disponíveis
         const modulesRes = await db.query(
