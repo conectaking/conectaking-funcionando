@@ -4,6 +4,7 @@
  */
 const repo = require('./moduleAvailability.repository');
 const logger = require('../../utils/logger');
+const { normalizePlanCodeForModuleAvailability } = require('../../utils/plan-module-code');
 
 const ACCOUNT_TYPE_TO_PLAN_CODE = {
     individual: 'basic',
@@ -145,6 +146,7 @@ async function getAvailableModules(client, userId, planCodeQuery) {
     if (planCodeQuery) {
         planCode = ACCOUNT_TYPE_TO_PLAN_CODE[planCodeQuery] || planCodeQuery;
         accountType = planCodeQuery;
+        planCode = normalizePlanCodeForModuleAvailability(planCode);
     } else {
         const user = await repo.getUserWithSubscription(client, userId);
         if (!user) return { notFound: true };
@@ -152,11 +154,12 @@ async function getAvailableModules(client, userId, planCodeQuery) {
         if (user.subscription_id) {
             const plan = await repo.getPlanBySubscriptionId(client, user.subscription_id);
             if (plan && plan.is_active) {
-                planCode = plan.plan_code;
+                planCode = normalizePlanCodeForModuleAvailability(plan.plan_code);
             }
         }
         if (!planCode) planCode = ACCOUNT_TYPE_TO_PLAN_CODE[accountType] || accountType;
         if (!planCode) planCode = 'basic';
+        planCode = normalizePlanCodeForModuleAvailability(planCode);
     }
     let availableModules = await repo.getAvailableModuleTypesByPlan(client, planCode);
     if (availableModules.length === 0) {
@@ -198,8 +201,9 @@ async function resolvePlanCodeForUser(client, targetUserId) {
     let planCode = userWithSub.account_type || 'free';
     if (userWithSub.subscription_id) {
         const planRow = await repo.getPlanBySubscriptionId(client, userWithSub.subscription_id);
-        if (planRow && planRow.is_active) planCode = planRow.plan_code;
+        if (planRow && planRow.is_active) planCode = normalizePlanCodeForModuleAvailability(planRow.plan_code);
     }
+    planCode = normalizePlanCodeForModuleAvailability(planCode);
     const availablePlanCodes = await repo.getAvailablePlanCodes(client);
     if (availablePlanCodes.includes(planCode)) return planCode;
     const mapped = PLAN_CODE_MAP_FALLBACK[planCode];
@@ -267,8 +271,9 @@ async function updateIndividualPlansForUser(client, adminUserId, targetUserId, b
     let planCode = userResult.account_type || 'free';
     if (userResult.subscription_id) {
         const plan = await repo.getPlanBySubscriptionId(client, userResult.subscription_id);
-        if (plan && plan.is_active) planCode = plan.plan_code;
+        if (plan && plan.is_active) planCode = normalizePlanCodeForModuleAvailability(plan.plan_code);
     }
+    planCode = normalizePlanCodeForModuleAvailability(planCode);
     const baseModules = await repo.getBaseModulesForPlan(client, planCode);
     const baseSet = new Set(baseModules);
     const activeSet = new Set(modules);
