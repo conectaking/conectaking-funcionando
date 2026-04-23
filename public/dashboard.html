@@ -85,6 +85,39 @@
     .contracts-status-card { outline: none; }
     .contracts-status-card:hover { filter: brightness(1.08); }
     .contracts-status-card.active { box-shadow: 0 0 0 2px currentColor; }
+    /* Modal de crop — medidas e pré-visualização “tipo telemóvel” */
+    .cropper-meta-bar {
+        padding: 10px 14px 12px;
+        margin: 0 -4px 12px -4px;
+        background: rgba(250, 204, 21, 0.06);
+        border: 1px solid rgba(255, 199, 0, 0.2);
+        border-radius: 10px;
+        font-size: 0.82rem;
+        color: #ccc;
+        line-height: 1.45;
+    }
+    .cropper-meta-bar strong { color: #facc15; }
+    .cropper-meta-bar .cropper-tip { margin: 8px 0 0; font-size: 0.78rem; color: #9ca3af; }
+    .cropper-mobile-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; color: #e5e5e5; font-size: 0.8rem; user-select: none; }
+    .cropper-mobile-toggle input { width: 16px; height: 16px; accent-color: #facc15; }
+    #crop-size-readout, #crop-aspect-readout { color: #fff; font-weight: 600; }
+    .cropper-body .cropper-container { position: relative; }
+    .ck-crop-mobile-strip {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: 38%;
+        max-width: 100%;
+        border: 2px dashed rgba(255, 255, 255, 0.85);
+        box-sizing: border-box;
+        pointer-events: none;
+        z-index: 5;
+        border-radius: 4px;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+        display: none;
+    }
     </style>
 
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
@@ -1342,6 +1375,11 @@
         <div class="modal-header">
             <h4>Ajuste sua Imagem</h4>
         </div>
+        <div class="cropper-meta-bar" id="cropper-meta-bar">
+            <div><strong>Medidas do corte (pixels na imagem final):</strong> <span id="crop-size-readout">—</span> · <strong>Proporção:</strong> <span id="crop-aspect-readout">—</span></div>
+            <p class="cropper-tip">Sugestão para fundo do cartão: <strong>1920×1080</strong> (16:9) ou <strong>1600×900</strong>. Prepare a foto nesse tamanho ou aproxime ao cortar. No telemóvel o fundo cobre o ecrã todo (centrado); detalhes nas bordas laterais podem sair fora.</p>
+            <label class="cropper-mobile-toggle"><input type="checkbox" id="cropper-mobile-preview-toggle" checked> Mostrar faixa central tipo telemóvel (referência visual)</label>
+        </div>
         <div class="modal-body cropper-body">
             <div class="cropper-container">
                 <img id="image-to-crop" src="">
@@ -1476,6 +1514,7 @@
     <script src="android-fix.js?v=2026-03-22-no-fetch-patch"></script>
     <script src="js/planRenderer.js?v=2025-01-31-01" defer></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="js/dashboard-cropper-enhance.js?v=2026-04-23-bg-mobile" defer></script>
     <script src="dashboard.js?v=2026-03-23-anticache-a1" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
