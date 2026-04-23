@@ -53,5 +53,6 @@ public_html/
 !public_html/kingSelectionGallery.php
 !public_html/kingDocs.html
 !public_html/kingDocsShare.html
+!public_html/index.html
 
 # Backend - arquivos na raiz (server.js, routes/, views/, etc.) são commitados

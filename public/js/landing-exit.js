@@ -108,6 +108,8 @@
     }
 
     function findPainelAnchor() {
+        var byId = document.getElementById('access-panel-btn');
+        if (byId && byId.parentNode) return byId;
         var lists = document.querySelectorAll('header a, .header a, .site-header a, nav a, [class*="nav"] a, [class*="header"] a');
         var i;
         var a;
