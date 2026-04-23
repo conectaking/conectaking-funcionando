@@ -37,3 +37,12 @@ if (fs.existsSync(landingExitFrom)) {
   fs.copyFileSync(landingExitFrom, path.join(destJsDir, 'landing-exit.js'));
   console.log('[sync-king-docs] OK js/landing-exit.js → public_html/js/');
 }
+
+const cropEnhanceFrom = path.join(srcDir, 'js', 'dashboard-cropper-enhance.js');
+if (fs.existsSync(cropEnhanceFrom)) {
+  if (!fs.existsSync(destJsDir)) {
+    fs.mkdirSync(destJsDir, { recursive: true });
+  }
+  fs.copyFileSync(cropEnhanceFrom, path.join(destJsDir, 'dashboard-cropper-enhance.js'));
+  console.log('[sync-king-docs] OK js/dashboard-cropper-enhance.js → public_html/js/');
+}

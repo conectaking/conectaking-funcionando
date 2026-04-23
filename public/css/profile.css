@@ -845,10 +845,20 @@ body.light-theme .branding-logo span {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: -1; 
+    min-height: 100vh;
+    min-height: 100dvh;
+    z-index: -1;
     background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    background-position: center center;
+    background-repeat: no-repeat;
+    /* scroll: evita fundo a desaparecer em Safari/iOS com "fixed" */
+    background-attachment: scroll;
+}
+
+@media (min-width: 900px) {
+    .background-image-overlay {
+        background-attachment: fixed;
+    }
 }
 
 .profile-embed-item.instagram-embed-container {
