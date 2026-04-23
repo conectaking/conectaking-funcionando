@@ -8,6 +8,22 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
    Quem serve o site é só a Hostinger: ficheiros em public_html + .htaccess + PHP.
    Alterações na API não alteram o teu hosting até fazeres deploy de ficheiros lá.
 
+0c) ONDE VIVE O PAINEL (dashboard.html) — NÃO confundir com “subir para o back-end”
+   - No projeto Git, o ficheiro que editas costuma estar em **public/dashboard.html**
+     (código-fonte / referência no repositório).
+   - O comando **npm run sync:king-docs** só corre **na tua máquina**: copia alguns
+     ficheiros de **public/** para a pasta **public_html/** para preparares o pacote
+     que vais **enviar por FTP/File Manager à Hostinger**. Não envia nada ao Render
+     nem substitui o deploy da API.
+   - O painel que os clientes abrem em **conectaking.com.br** é sempre o que está
+     na **Hostinger** (o public_html do servidor). Se não subires o dashboard.html
+     novo para lá, o site continua com a versão antiga — por isso às vezes parece
+     que “não atualiza”: falta o upload ao hosting, não falta o back-end.
+   - O servidor Node no Render **pode** ter uma rota que também serve um
+     /dashboard.html a partir de public/ (útil em testes ou URL da API). Isso
+     **não é** o teu site principal na Hostinger; não dependas disso para o domínio
+     do cliente.
+
 0b) .HTACCESS MÍNIMO (recuperar o site)
    O public_html/.htaccess foi reduzido ao MÍNIMO (só DirectoryIndex + UTF-8), sem
    mod_rewrite nem headers, para não bloquear login, dashboard nem o resto.
@@ -31,8 +47,8 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
    O site na Hostinger lê public_html/, NÃO a pasta public/ do back-end no Git.
    Depois de alterar public/kingDocs.html ou public/kingDocsShare.html no projeto,
    corre na raiz do repo:  npm run sync:king-docs
-   Isto copia os dois ficheiros e também public/js/landing-exit.js,
-   dashboard-cropper-enhance.js e image-crop-modal.js → public_html/js/.
+   Isto copia os dois ficheiros, public/dashboard.html → public_html/dashboard.html
+   e também public/js/landing-exit.js, dashboard-cropper-enhance.js e image-crop-modal.js → public_html/js/.
    Volta a enviar public_html/kingDocs.html (e kingDocsShare.html se mudaste) para o hosting.
 
 2c) SAIR NA PÁGINA INICIAL (index.html)

@@ -1,6 +1,10 @@
 /**
- * Copia King Docs (e landing-exit.js) de public/ para public_html/.
- * Na Hostinger, o domínio aponta para public_html — sem isto, o site mostra HTML antigo.
+ * Cópia LOCAL apenas: public/ → public_html/ (pasta que depois envias à Hostinger).
+ * Não faz deploy no Render nem “sobe” nada para o back-end — só alinha ficheiros
+ * no disco para o teu FTP/File Manager.
+ *
+ * Inclui: kingDocs*, dashboard.html, landing-exit.js, dashboard-cropper-enhance.js,
+ * image-crop-modal.js
  *
  * Uso: node scripts/sync-king-docs-to-public-html.js
  *      npm run sync:king-docs
@@ -26,6 +30,13 @@ for (const name of files) {
   }
   fs.copyFileSync(from, to);
   console.log('[sync-king-docs] OK', name, '→ public_html/');
+}
+
+const dashboardFrom = path.join(srcDir, 'dashboard.html');
+const dashboardTo = path.join(destDir, 'dashboard.html');
+if (fs.existsSync(dashboardFrom)) {
+  fs.copyFileSync(dashboardFrom, dashboardTo);
+  console.log('[sync-king-docs] OK dashboard.html → public_html/');
 }
 
 const landingExitFrom = path.join(srcDir, 'js', 'landing-exit.js');

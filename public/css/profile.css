@@ -839,26 +839,25 @@ body.light-theme .branding-logo span {
     image-rendering: auto;
 }
 
-.background-image-overlay {
+/* Fundo do cartão público: <img> fixo + object-fit (evita fundo a “mexer” ao scroll no mobile) */
+.background-image-overlay-img {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     min-height: 100vh;
     min-height: 100dvh;
+    object-fit: cover;
+    object-position: center center;
     z-index: -1;
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    /* scroll: evita fundo a desaparecer em Safari/iOS com "fixed" */
-    background-attachment: scroll;
-}
-
-@media (min-width: 900px) {
-    .background-image-overlay {
-        background-attachment: fixed;
-    }
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .profile-embed-item.instagram-embed-container {

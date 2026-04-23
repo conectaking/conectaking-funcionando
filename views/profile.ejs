@@ -273,10 +273,10 @@ if (typeof details === 'undefined' || !details) {
     <%# SEÇÃO: BACKGROUND IMAGE (se configurado) %>
     <%# ========================================================== %>
         <% if (details && details.background_type === 'image' && details.background_image_url) { %>
-        <div class="background-image-overlay" style="
-            background-image: url('<%= details.background_image_url %>');
+        <%# img + object-fit evita “parallax”/zoom falso no iOS ao rolar (comum com background-image em position:fixed) %>
+        <img class="background-image-overlay-img" src="<%= details.background_image_url %>" alt="" aria-hidden="true" decoding="async" fetchpriority="low" style="
             opacity: <%= (details.background_image_opacity !== undefined) ? details.background_image_opacity : 1 %>;
-        "></div>
+        ">
     <% } %>
 
     <%# ========================================================== %>

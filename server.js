@@ -842,7 +842,8 @@ app.get('/admin-devocionais-365.html', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.type('html').sendFile(adminDev365HtmlPath);
 });
-// Painel do utilizador: versão canónica em public/ (public_html costuma ser cópia antiga do Hostinger/Live Server)
+// Painel: cópia em public/ para testes pela URL da API (Render). O site em produção
+// na Hostinger usa o dashboard.html do public_html do cliente — não confundir.
 const dashboardHtmlPath = path.join(__dirname, 'public', 'dashboard.html');
 app.get('/dashboard.html', (req, res) => {
     if (!fs.existsSync(dashboardHtmlPath)) {
