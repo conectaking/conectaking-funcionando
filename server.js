@@ -842,6 +842,15 @@ app.get('/admin-devocionais-365.html', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.type('html').sendFile(adminDev365HtmlPath);
 });
+// Painel do utilizador: versão canónica em public/ (public_html costuma ser cópia antiga do Hostinger/Live Server)
+const dashboardHtmlPath = path.join(__dirname, 'public', 'dashboard.html');
+app.get('/dashboard.html', (req, res) => {
+    if (!fs.existsSync(dashboardHtmlPath)) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.type('html').sendFile(dashboardHtmlPath);
+});
 
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {

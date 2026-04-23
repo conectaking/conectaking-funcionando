@@ -38,7 +38,7 @@
     <link rel="stylesheet" href="style.css?v=2025-01-31-01">
     <link rel="stylesheet" href="dashboard.css?v=2025-01-31-01">
     <!-- Deve carregar antes do dashboard.js para evitar erro "applyModulesVisibility não está disponível" -->
-    <script src="js/dashboard-ocultar-modulos-por-plano.js?v=2026-04-23-core-nav-safeguard"></script>
+    <script src="js/dashboard-ocultar-modulos-por-plano.js?v=2026-04-23-api-fetch-log"></script>
 
     <style>
     /* Detalhes expansíveis: orçamento e arquétipo (aparecem abaixo da linha) */
@@ -1318,7 +1318,19 @@
                 panes.forEach(function(p){ p.classList.remove('active'); p.style.display='none'; });
                 target.classList.add('active'); target.style.display='flex';
                 var link = document.querySelector('.sidebar .nav-link[data-target="'+tid+'"]');
-                if (link) { document.querySelectorAll('.sidebar .nav-link').forEach(function(l){ l.classList.remove('active'); }); link.classList.add('active'); }
+                /* Itens da conta (Assinatura, ADM, etc.) ficam em .sidebar-footer: não limpar .active
+                   do .sidebar-nav — muitos temas usam .sidebar-nav .nav-link:not(.active){display:none}
+                   e o menu principal sumiria ao abrir #assinatura-pane. */
+                if (link) {
+                    var inFooter = !!(link.closest && link.closest('.sidebar-footer'));
+                    if (inFooter) {
+                        document.querySelectorAll('.sidebar-footer .nav-link').forEach(function(l){ l.classList.remove('active'); });
+                    } else {
+                        document.querySelectorAll('.sidebar-nav .nav-link').forEach(function(l){ l.classList.remove('active'); });
+                        document.querySelectorAll('.sidebar-footer .nav-link').forEach(function(l){ l.classList.remove('active'); });
+                    }
+                    link.classList.add('active');
+                }
                 if (editorTab) {
                     var el = document.querySelector('[data-editor-target="'+editorTab+'"]');
                     var pane = document.getElementById(editorTab);

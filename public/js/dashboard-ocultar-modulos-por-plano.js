@@ -100,7 +100,9 @@
                 }
             }
             
-            var arr = Array.prototype.slice.call(document.querySelectorAll('[data-module="' + item.module + '"]'));
+            var arr = Array.prototype.slice.call(
+                document.querySelectorAll('#sidebar .sidebar-nav a.nav-link[data-module="' + item.module + '"]')
+            );
             if (arr.length === 0 && explicitSidebarIds[item.module]) {
                 explicitSidebarIds[item.module].forEach(function (sel) {
                     var n = document.querySelector(sel);
@@ -169,7 +171,11 @@
      * Chame após o DOM estar pronto (ex.: no load do dashboard).
      */
     function initModulesByPlan() {
-        var base = API_BASE || (typeof window !== 'undefined' && window.API_URL) || '';
+        var base =
+            (typeof window !== 'undefined' && window.API_BASE) ||
+            (typeof window !== 'undefined' && window.API_URL) ||
+            API_BASE ||
+            '';
         if (!base || String(base).trim() === '') return;
         var url = String(base).replace(/\/$/, '') + '/api/account/status';
         fetch(url, { credentials: 'include', headers: getAuthHeaders() })
@@ -177,7 +183,12 @@
             .then(applyModulesVisibility)
             .catch(function (err) {
                 if (err && err.status === 404) return;
-                console.warn('[initModulesByPlan] API indisponível ou não autenticado.');
+                /* Isto é só JSON do plano/módulos; a página HTML continua no front (origem atual). */
+                console.warn(
+                    '[initModulesByPlan] Falha ao falar com a API (não é o HTML do dashboard):',
+                    url,
+                    err && err.status ? 'HTTP ' + err.status : err
+                );
                 ensureCoreSidebarNavVisible();
             });
     }
