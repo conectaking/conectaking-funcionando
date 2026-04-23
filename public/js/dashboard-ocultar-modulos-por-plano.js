@@ -33,6 +33,13 @@
             return;
         }
 
+        try {
+            var navHeal = document.querySelector('#sidebar .sidebar-nav, aside .sidebar-nav, nav.sidebar-nav');
+            if (navHeal && navHeal.style.display === 'none') {
+                navHeal.style.display = '';
+            }
+        } catch (e) {}
+
         console.log('[applyModulesVisibility] Aplicando visibilidade dos módulos:', {
             hasFinance: user.hasFinance,
             hasContract: user.hasContract,
@@ -42,6 +49,20 @@
             hasKingSelection: user.hasKingSelection,
             hasDigitalForm: user.hasDigitalForm
         });
+
+        /** IDs estáveis do dashboard — evita fallback por texto quando o HTML ainda não tem data-module. */
+        var explicitSidebarIds = {
+            finance: ['#finance-link'],
+            contract: ['#contratos-link'],
+            agenda: ['#agenda-link'],
+            branding: ['#branding-link'],
+            kingbrief: ['#kingbrief-sidebar-link'],
+            king_selection: ['#king-selection-sidebar-link'],
+            digital_form: ['#king-forms-sidebar-link'],
+            king_docs: ['#king-docs-sidebar-link'],
+            photographer_site: ['#meusite-sidebar-link'],
+            recibos_orcamentos: ['#recibos-orcamentos-sidebar-link']
+        };
 
         var map = [
             { key: 'hasFinance', module: 'finance', labels: ['Gestão Financeira', 'Gestao Financeira'] },
@@ -55,6 +76,14 @@
             { key: 'hasKingDocs', module: 'king_docs', labels: ['King Docs'] }
         ];
 
+        function resolveMenuRow(el) {
+            if (!el || el.nodeType !== 1) return null;
+            if (el.tagName === 'NAV' || (el.classList && el.classList.contains('sidebar-nav'))) return null;
+            if (el.tagName === 'A') return el;
+            var a = el.closest && el.closest('a');
+            return a || null;
+        }
+
         map.forEach(function (item) {
             // Verificar se o módulo está ativo (true ou 1 ou 'true')
             var raw = user[item.key];
@@ -67,43 +96,65 @@
                 show = true;
             }
             
-            // Buscar elementos por data-module primeiro
-            var els = document.querySelectorAll('[data-module="' + item.module + '"]');
-            
-            // Se não encontrou, buscar por texto
-            if (els.length === 0) {
-                els = findElementsByText(item.labels);
+            var arr = Array.prototype.slice.call(document.querySelectorAll('[data-module="' + item.module + '"]'));
+            if (arr.length === 0 && explicitSidebarIds[item.module]) {
+                explicitSidebarIds[item.module].forEach(function (sel) {
+                    var n = document.querySelector(sel);
+                    if (n) arr.push(n);
+                });
+            }
+            if (arr.length === 0) {
+                arr = findElementsByText(item.labels);
             }
             
-            console.log('[applyModulesVisibility] Módulo ' + item.module + ': show=' + show + ', encontrados ' + els.length + ' elementos');
+            console.log('[applyModulesVisibility] Módulo ' + item.module + ': show=' + show + ', encontrados ' + arr.length + ' elementos');
             
-            els.forEach(function (el) {
-                var parent = el.closest('a, li, .nav-item, .menu-item, [role="menuitem"]') || el;
+            arr.forEach(function (el) {
+                var target = resolveMenuRow(el);
+                if (!target) {
+                    console.warn('[applyModulesVisibility] Ignorado (evita esconder <nav>):', item.module, el);
+                    return;
+                }
                 
                 if (show) {
-                    // Mostrar: remover display:none e garantir que está visível
-                    parent.style.display = '';
-                    parent.style.visibility = '';
-                    parent.removeAttribute('hidden');
-                    parent.classList.remove('hidden', 'd-none');
-                    console.log('[applyModulesVisibility] ✅ Mostrando:', item.module, parent);
+                    target.style.display = '';
+                    target.style.visibility = '';
+                    target.removeAttribute('hidden');
+                    target.classList.remove('hidden', 'd-none');
+                    console.log('[applyModulesVisibility] ✅ Mostrando:', item.module, target);
                 } else {
-                    // Ocultar: definir display:none
-                    parent.style.display = 'none';
-                    console.log('[applyModulesVisibility] ❌ Ocultando:', item.module, parent);
+                    target.style.display = 'none';
+                    console.log('[applyModulesVisibility] ❌ Ocultando:', item.module, target);
                 }
             });
         });
     }
 
+    /**
+     * Só ligações diretas da barra lateral — nunca <nav> (o texto agregado contém todos os rótulos
+     * e fazia match de "King Forms" no container inteiro, escondendo Editar/Compartilhar/QR).
+     */
+    function getSidebarNavAnchorCandidates() {
+        var nav = document.querySelector('#sidebar .sidebar-nav, aside.sidebar .sidebar-nav, .sidebar .sidebar-nav, nav.sidebar-nav');
+        if (!nav || !nav.children) return [];
+        var out = [];
+        for (var i = 0; i < nav.children.length; i++) {
+            if (nav.children[i].tagName === 'A') out.push(nav.children[i]);
+        }
+        return out;
+    }
+
     function findElementsByText(labels) {
         var found = [];
-        var all = document.querySelectorAll('a, button, [role="button"], .nav-link, .sidebar a, [class*="nav"], [class*="menu"]');
-        for (var i = 0; i < all.length; i++) {
-            var text = (all[i].textContent || '').trim();
+        var candidates = getSidebarNavAnchorCandidates();
+        if (!candidates.length) {
+            candidates = Array.prototype.slice.call(document.querySelectorAll('a.nav-link-by-plan[data-module], aside a.nav-link'));
+        }
+        for (var i = 0; i < candidates.length; i++) {
+            var text = (candidates[i].textContent || '').trim();
             for (var j = 0; j < labels.length; j++) {
                 if (text.indexOf(labels[j]) !== -1) {
-                    found.push(all[i]);
+                    found.push(candidates[i]);
                     break;
                 }
             }
