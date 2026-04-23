@@ -31,8 +31,17 @@ CONECTA KING — Deploy na Hostinger (front-end em public_html)
    O site na Hostinger lê public_html/, NÃO a pasta public/ do back-end no Git.
    Depois de alterar public/kingDocs.html ou public/kingDocsShare.html no projeto,
    corre na raiz do repo:  npm run sync:king-docs
-   Isto copia os dois ficheiros para public_html/. Volta a enviar public_html/kingDocs.html
-   (e kingDocsShare.html se mudaste) para o hosting.
+   Isto copia os dois ficheiros e também public/js/landing-exit.js → public_html/js/.
+   Volta a enviar public_html/kingDocs.html (e kingDocsShare.html se mudaste) para o hosting.
+
+2c) SAIR NA PÁGINA INICIAL (index.html)
+   Copie public/js/landing-exit.js para public_html/js/landing-exit.js (upload ou espelho local).
+   No index.html, antes de </body>, adicione uma linha:
+     <script src="js/landing-exit.js?v=2026-04-23" defer></script>
+   Com sessão (token no navegador), o script mostra o botão "Sair" ao lado de "Acessar Painel"
+   (deteção automática). Se o layout for muito diferente, coloque no header:
+     <span id="landing-sair-slot"></span>
+   e o "Sair" aparece dentro desse elemento.
 
 3) PASTA kingSelection VAZIA (causa de 404 em /kingSelection/)
    Se existir uma pasta chamada "kingSelection" vazia (ou sem index) dentro de
