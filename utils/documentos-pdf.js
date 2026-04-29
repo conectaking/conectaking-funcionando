@@ -84,6 +84,64 @@ function wrapText(text, maxChars = 65) {
     return lines;
 }
 
+/**
+ * Quebra texto por largura real no PDF (evita invadir colunas).
+ * Mantém palavras inteiras quando possível; se uma palavra for maior que a largura,
+ * quebra “na marra” por caracteres.
+ */
+function wrapTextByWidth(text, font, fontSize, maxWidth) {
+    if (!text || !String(text).trim()) return [];
+    const s = String(text).trim();
+    const words = s.split(/\s+/).filter(Boolean);
+    const lines = [];
+    let cur = '';
+
+    function widthOf(t) {
+        try {
+            return font.widthOfTextAtSize(t, fontSize);
+        } catch (_) {
+            // fallback: aproximação
+            return String(t).length * (fontSize * 0.55);
+        }
+    }
+
+    function pushCur() {
+        if (cur && cur.trim()) lines.push(cur.trim());
+        cur = '';
+    }
+
+    for (const w of words) {
+        const next = cur ? (cur + ' ' + w) : w;
+        if (widthOf(next) <= maxWidth) {
+            cur = next;
+            continue;
+        }
+        // Se a linha atual já tem algo, fecha e tenta colocar a palavra na próxima linha
+        if (cur) {
+            pushCur();
+        }
+        // Palavra sozinha não cabe: quebrar por caracteres
+        if (widthOf(w) > maxWidth) {
+            let chunk = '';
+            for (const ch of String(w)) {
+                const test = chunk + ch;
+                if (widthOf(test) <= maxWidth) {
+                    chunk = test;
+                } else {
+                    if (chunk) lines.push(chunk);
+                    chunk = ch;
+                }
+            }
+            if (chunk) lines.push(chunk);
+            cur = '';
+        } else {
+            cur = w;
+        }
+    }
+    pushCur();
+    return lines;
+}
+
 async function fetchImage(url) {
     // Headers para evitar bloqueio por Cloudflare/CDN (alguns bloqueiam requests sem User-Agent)
     const headers = {
@@ -246,6 +304,7 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     const colData = colDesc + 155;
     const colQtd = PAGE_WIDTH - MARGIN - 210;
     const colUnit = PAGE_WIDTH - MARGIN - 78;
+    const descMaxWidth = (colData - 10) - colDesc;
 
     const tableRight = PAGE_WIDTH - MARGIN;
     page.drawRectangle({
@@ -263,21 +322,43 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
 
     let totalGeral = 0;
     for (const item of itens) {
-        if (y < MARGIN + LINE_HEIGHT) {
+        // Quebrar a descrição pela largura (não por caracteres) para não invadir a coluna "Data"
+        const descRaw = (item.descricao || '-').toString().trim() || '-';
+        const descLines = wrapTextByWidth(descRaw, font, FONT_SIZE, descMaxWidth);
+        const rowLineH = LINE_HEIGHT; // altura base para linhas da tabela
+        const rowHeight = Math.max(1, descLines.length) * (rowLineH + 2);
+
+        if (y < MARGIN + rowHeight + 30) {
             page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
             if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
             y = PAGE_HEIGHT - MARGIN;
         }
-        const descricao = (item.descricao || '-').slice(0, 38);
+
         const dataStr = (item.data || '').toString().slice(0, 10);
         const qtd = item.quantidade != null ? item.quantidade : 1;
         const valorUnit = item.valor_unitario != null ? item.valor_unitario : item.valor;
         const valor = item.valor != null ? item.valor : (valorUnit * qtd);
         totalGeral += valor;
-        page.drawText(descricao, { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
+
+        // Primeira linha da descrição + colunas (Data/Qtd/Valor) alinhadas com a 1ª linha
+        const firstLine = descLines[0] || '-';
+        page.drawText(firstLine, { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
         page.drawText(dataStr, { x: colData, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cText() });
         page.drawText(String(qtd), { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
         page.drawText(formatMoney(valorUnit), { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
+
+        // Linhas extras da descrição (se houver)
+        for (let li = 1; li < descLines.length; li++) {
+            y -= (rowLineH + 2);
+            if (y < MARGIN + 20) {
+                page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
+                y = PAGE_HEIGHT - MARGIN;
+            }
+            page.drawText(descLines[li], { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
+        }
+
+        // Avança após a altura da linha (já descontamos as extras acima)
         y -= LINE_HEIGHT + 4;
         const conteudoPacote = (item.conteudo_pacote || item.detalhes || '').toString().trim();
         if (conteudoPacote) {
