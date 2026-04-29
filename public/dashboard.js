@@ -10040,7 +10040,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formHTML = `
                     <div class="input-group">
                         <label>Título no cartão</label>
-                        <input type="text" id="edit-title" value="${escN(tempItem.title || 'Wi‑Fi')}" placeholder="Ex: Wi‑Fi da loja">
+                        <input type="text" id="edit-title" value="${escN(tempItem.title || 'Wi‑Fi')}" placeholder="Texto do botão (ex: Wi‑Fi da loja)">
                     </div>
                     <div class="input-group">
                         <label>Formato</label>
@@ -10056,8 +10056,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="input-group">
-                        <label>Nome da rede (SSID)</label>
-                        <input type="text" id="edit-wifi-ssid" value="${escN(ws)}" placeholder="Ex: MinhaRede_5G" maxlength="32">
+                        <label>Nome da rede Wi‑Fi (SSID)</label>
+                        <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">Obrigatório. Nome que aparece na lista de redes do celular.</small>
+                        <input type="text" id="edit-wifi-ssid" value="${escN(ws)}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
                     </div>
                     <div class="input-group">
                         <label>Segurança</label>
