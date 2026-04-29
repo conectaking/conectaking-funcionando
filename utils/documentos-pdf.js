@@ -301,10 +301,15 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
 
     // Tabela de itens — Valor unit. colado no canto direito (sem espaço branco)
     const colDesc = colLeft;
-    const colData = colDesc + 155;
-    const colQtd = PAGE_WIDTH - MARGIN - 210;
+    /**
+     * Colunas mais à direita para dar mais espaço para a descrição:
+     * - Descrição usa a maior parte da largura
+     * - Data / Qtd / Valor unit. ficam concentrados no lado direito
+     */
     const colUnit = PAGE_WIDTH - MARGIN - 78;
-    const descMaxWidth = (colData - 10) - colDesc;
+    const colQtd = colUnit - 90;
+    const colData = colQtd - 88;
+    const descMaxWidth = (colData - 12) - colDesc;
 
     const tableRight = PAGE_WIDTH - MARGIN;
     page.drawRectangle({
