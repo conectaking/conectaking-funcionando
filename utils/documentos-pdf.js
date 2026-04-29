@@ -17,6 +17,7 @@ const LINE_HEIGHT = 14;
 const FONT_SIZE = 10;
 const FONT_SIZE_TITLE = 18;
 const FONT_SIZE_SMALL = 9;
+const LINE_HEIGHT_SMALL = 12;
 
 // Cores estilo fatura (azul + laranja + branco) - padrão
 function hexToRgb(hex) {
@@ -280,13 +281,15 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
         y -= LINE_HEIGHT + 4;
         const conteudoPacote = (item.conteudo_pacote || item.detalhes || '').toString().trim();
         if (conteudoPacote) {
+            // Espaçamento mínimo antes dos detalhes (evita texto "colado" e sobreposição visual)
+            y -= 2;
             const linhas = conteudoPacote.split(/\n/);
             for (const linha of linhas) {
                 const wrapped = wrapText('  • ' + linha.trim(), 52);
                 for (let i = 0; i < wrapped.length; i++) {
-                    if (y < MARGIN + 10) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
-                    page.drawText(wrapped[i].slice(0, 70), { x: colDesc, y: y - 9, size: FONT_SIZE_SMALL, font, color: cMuted() });
-                    y -= 10;
+                    if (y < MARGIN + LINE_HEIGHT_SMALL + 6) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
+                    page.drawText(wrapped[i].slice(0, 110), { x: colDesc, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cMuted() });
+                    y -= LINE_HEIGHT_SMALL;
                 }
             }
             y -= 6;
