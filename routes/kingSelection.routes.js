@@ -804,11 +804,11 @@ async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload
     out.denyMessage = 'Esta galeria não está em modo público.';
     return out;
   }
-  const photographerAllowsDownload = hasAllowDownload ? !!galleryRow.allow_download : false;
-  if (!photographerAllowsDownload) {
-    out.denyMessage = 'Download não liberado pelo fotógrafo.';
-    return out;
-  }
+  /**
+   * Regra nova: se a galeria está em modo "public", é porque as fotos são gratuitas.
+   * Então o download (com marca d'água) não depende mais do toggle `allow_download`.
+   */
+  const photographerAllowsDownload = true;
 
   const cidJwt = parseInt(payload.clientId || 0, 10) || 0;
   const sk = String(payload.sk || '').trim();
@@ -859,7 +859,7 @@ async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload
       const snDl = normKsStatus(stDl.rows?.[0]?.status);
       if (!isKsClientLockedStatus(snDl)) {
         out.denyMessage =
-          'Confirme o envio da seleção (nome, e-mail e WhatsApp) antes de baixar as fotos.';
+          'Confirme para baixar (nome, e-mail e WhatsApp) antes de baixar as fotos.';
         return out;
       }
     }
@@ -7100,10 +7100,18 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'share_link_custom_append',
     'share_link_full_message',
     'client_folder_layout',
-    'client_entry_splash_enabled'
+    'client_entry_splash_enabled',
+    'tutorial_video_url'
   ];
 
   const body = req.body || {};
+  // Modo público = fotos gratuitas: não exigir toggle "permitir download".
+  if (Object.prototype.hasOwnProperty.call(body, 'access_mode')) {
+    const am = ksNormAccessMode(body.access_mode);
+    if (am === 'public') {
+      body.allow_download = true;
+    }
+  }
   // Capa do link: `gallery_link_cover_file_path` tem prioridade na leitura. Se o cliente grava só
   // `gallery_link_cover_photo_id` (foto da galeria) sem limpar o caminho externo antigo, a capa fica
   // presa a um ficheiro inválido/apagado. Alinhar os dois campos quando só um lado é enviado no PATCH.
@@ -7858,8 +7866,9 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     const hasEntrySplash = await hasColumn(client, 'king_galleries', 'client_entry_splash_enabled');
     const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
     const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
+    const hasTutorialVideo = await hasColumn(client, 'king_galleries', 'tutorial_video_url');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}${hasAccessMode ? ', access_mode' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}${hasAccessMode ? ', access_mode' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}
        FROM king_galleries
        WHERE slug=$1`,
       [slug]
@@ -7903,7 +7912,8 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         deferred_signup_flow: deferredSignupFlow,
         client_folder_layout: clientFolderLayoutNorm,
         client_entry_splash_enabled: hasEntrySplash ? !!g.client_entry_splash_enabled : false,
-        entry_splash_url: entrySplashUrl || null
+        entry_splash_url: entrySplashUrl || null,
+        tutorial_video_url: hasTutorialVideo ? (g.tutorial_video_url ? String(g.tutorial_video_url).trim() : null) : undefined
       }
     });
   } finally {
@@ -7922,8 +7932,9 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
+    const hasTutorialVideo = await hasColumn(client, 'king_galleries', 'tutorial_video_url');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasAccessMode ? ', access_mode' : ''}${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasAccessMode ? ', access_mode' : ''}${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}
        FROM king_galleries WHERE slug=$1`,
       [slug]
     );
@@ -7936,9 +7947,13 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     const gallery = {
       ...g,
       min_selections: hasMin ? (g.min_selections || 0) : 0,
-      allow_download: hasAllowDownload ? !!g.allow_download : false,
+      // Modo público: download (com marca d'água) não depende mais do toggle allow_download
+      allow_download: true,
       face_recognition_enabled: hasFaceEnabled ? !!g.face_recognition_enabled : false
     };
+    if (hasTutorialVideo) {
+      gallery.tutorial_video_url = g.tutorial_video_url ? String(g.tutorial_video_url).trim() : null;
+    }
 
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
     const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
@@ -7988,7 +8003,8 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     if (accessMode === 'password') accessMode = 'signup';
     if (accessMode !== 'public') return res.status(403).send('Galeria não é pública');
     const galleryId = gRes.rows[0].id;
-    const allowDownload = hasAllowDownload && !!gRes.rows[0].allow_download;
+    // Modo público: download (com marca d'água) não depende mais do toggle allow_download
+    const allowDownload = true;
     const isDownload = String(req.query.download || '') === '1';
 
     const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, galleryId]);
@@ -9019,6 +9035,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasClientCardH = await hasColumn(client, 'king_galleries', 'client_card_height_px');
     const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_title');
     const hasThankYouName = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
+    const hasTutorialVideo = await hasColumn(client, 'king_galleries', 'tutorial_video_url');
     const hasSupportWhats = await hasColumn(client, 'king_galleries', 'support_whatsapp_number');
     const hasSupportLabel = await hasColumn(client, 'king_galleries', 'support_whatsapp_label');
     const hasSupportMsg = await hasColumn(client, 'king_galleries', 'support_whatsapp_message');
@@ -9030,7 +9047,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
     const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -9330,7 +9347,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       }
     }
 
-    const photographerAllowsDownload = hasAllowDownload ? !!gallery.allow_download : false;
+    const photographerAllowsDownload =
+      galleryAccessMode === 'public'
+        ? true
+        : (hasAllowDownload ? !!gallery.allow_download : false);
     /**
      * Modo público + cupom: o visitante pode ter só session_key no JWT (sem clientId) mas já validou cupom
      * na linha técnica de sessão — a regra antiga «!cid ⇒ allow_download=false» bloqueava download e fazia
@@ -9338,12 +9358,11 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
      */
     let effectiveAllowDownload = salesModeActive ? false : photographerAllowsDownload;
     if (galleryAccessMode === 'public') {
-      if (!photographerAllowsDownload) {
-        effectiveAllowDownload = false;
-      } else if (hasPromoEnabled && gallery.promo_enabled) {
-        /** Cupom válido só libera downloads depois de «confirmar seleção» + cadastro (cliente em revisão). */
+      if (hasPromoEnabled && gallery.promo_enabled) {
+        /** Cupom válido só libera downloads depois de «confirmar para baixar» + cadastro (cliente em revisão). */
         effectiveAllowDownload = !!(promoValidatedClient && locked);
       } else {
+        // Público "gratuito": liberar download quando o cliente tiver cadastro/login (clientId no JWT)
         effectiveAllowDownload = !!cid;
       }
     }
@@ -9398,9 +9417,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         client_folder_layout: clientFolderLayoutNorm,
         client_entry_splash_enabled: hasEntrySplash ? !!gallery.client_entry_splash_enabled : false,
         entry_splash_url: entrySplashUrl || null,
+        tutorial_video_url: hasTutorialVideo ? (gallery.tutorial_video_url ? String(gallery.tutorial_video_url).trim() : null) : undefined,
         watermark_download_notice:
           galleryAccessMode === 'public' && photographerAllowsDownload
-            ? "Download com marca d'água. Selecione as fotos; se houver cupom, conclua a validação (redes e código). Depois clique em «Confirmar seleção» e informe nome, e-mail e WhatsApp. Só após esse envio as opções «Baixar» e «Fotos para baixar» ficam disponíveis para as fotos que você escolheu."
+            ? "Download com marca d'água. Selecione as fotos; se houver cupom, conclua a validação (redes e código). Depois clique em «Confirmar para baixar» e informe nome, e-mail e WhatsApp. Só após esse envio as opções «Baixar» e «Fotos para baixar» ficam disponíveis para as fotos que você escolheu."
             : undefined
       },
       resolvedClientId: resolvedClientId || undefined,
