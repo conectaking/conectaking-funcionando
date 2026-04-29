@@ -52,12 +52,17 @@
         var loader = document.getElementById('wifi-qrcode-loader');
         var passEl = document.getElementById('wifi-password-visible');
         var copyBtn = document.getElementById('wifi-copy-password-btn');
+        var ssidEl = document.getElementById('wifi-ssid-visible');
         if (!modal || !qrHost) return;
 
         var ssid = (cfg && cfg.ssid != null) ? String(cfg.ssid).trim() : '';
         if (!ssid) {
-            window.alert('SSID não configurado.');
+            window.alert('Nome da rede (SSID) não configurado. Edite o módulo Wi‑Fi no painel e informe o nome da rede.');
             return;
+        }
+
+        if (ssidEl) {
+            ssidEl.textContent = ssid;
         }
 
         modal.classList.add('active');

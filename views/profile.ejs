@@ -2895,12 +2895,17 @@ document.addEventListener('DOMContentLoaded', () => {
     <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
         <div class="wifi-modal-content">
             <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
-            <h4>Wi‑Fi — escaneie para ligar</h4>
+            <h4 id="wifi-modal-title">Conectar ao Wi‑Fi</h4>
+            <div class="wifi-ssid-block">
+                <span class="wifi-ssid-label">Nome da rede</span>
+                <strong id="wifi-ssid-visible" class="wifi-ssid-value"></strong>
+            </div>
+            <p class="wifi-modal-hint">Escaneie o QR Code no celular ou copie só a senha abaixo.</p>
             <div id="wifi-qrcode-container">
                 <div id="wifi-qrcode-image"></div>
                 <div id="wifi-qrcode-loader"></div>
             </div>
-            <div class="wifi-password-row">Senha: <strong id="wifi-password-visible"></strong></div>
+            <div class="wifi-password-row">Senha da rede: <strong id="wifi-password-visible"></strong></div>
             <div class="wifi-copy-row">
                 <button type="button" id="wifi-copy-password-btn">Copiar senha</button>
             </div>

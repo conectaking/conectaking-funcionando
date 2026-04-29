@@ -3488,13 +3488,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const moduleTitle = (item.title && String(item.title).trim()) ? String(item.title).trim() : 'Wi‑Fi';
                         const destLabel = wifiSsid
-                            ? `${wifiDisplay === 'banner' ? 'Banner' : 'Botão'} · ${wifiSsid}`
-                            : 'Defina o SSID da rede';
+                            ? `${wifiDisplay === 'banner' ? 'Banner' : 'Botão'} · Rede: ${wifiSsid}`
+                            : 'Informe o nome da rede (SSID)';
                         displayHTML = `<div class="item-display-title">${moduleTitle}</div><div class="item-display-dest">${destLabel}</div>`;
 
                         editHTML = `
             <label>Título no cartão</label>
-            <input type="text" class="item-title-input" value="${moduleTitle.replace(/"/g, '&quot;')}" placeholder="Ex: Wi‑Fi da loja">
+            <input type="text" class="item-title-input" value="${moduleTitle.replace(/"/g, '&quot;')}" placeholder="Ex: Wi‑Fi da loja (texto do botão no cartão)">
             <div class="input-group">
                 <label>Formato</label>
                 <div style="display: flex; gap: 15px; margin-top: 10px;">
@@ -3508,8 +3508,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </label>
                 </div>
             </div>
-            <label>Nome da rede (SSID)</label>
-            <input type="text" class="wifi-ssid-input" value="${wifiSsid.replace(/"/g, '&quot;')}" placeholder="Ex: MinhaRede_5G" maxlength="32">
+            <label>Nome da rede Wi‑Fi (SSID)</label>
+            <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">É o nome que aparece na lista de redes do celular — obrigatório para gerar o QR Code.</small>
+            <input type="text" class="wifi-ssid-input" value="${wifiSsid.replace(/"/g, '&quot;')}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
             <label>SeguranÃ§a</label>
             <select class="wifi-security-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
                 <option value="WPA" ${wifiSecurity === 'WPA' || wifiSecurity === 'WPA2' || wifiSecurity === 'WPA3' ? 'selected' : ''}>WPA/WPA2/WPA3</option>
@@ -4052,8 +4053,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const mode = sel ? sel.value : 'button';
                         if (displayDest) {
                             displayDest.textContent = ssid
-                                ? `${mode === 'banner' ? 'Banner' : 'Botão'} · ${ssid}`
-                                : 'Defina o SSID da rede';
+                                ? `${mode === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}`
+                                : 'Informe o nome da rede (SSID)';
                         }
                     };
                     if (ssidInput) ssidInput.addEventListener('input', syncSsidLabel);
@@ -5186,7 +5187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const cfg = JSON.parse(apiResult.destination_url);
                         const ssid = (cfg.ssid || '').trim();
                         const fmt = cfg.display_format === 'banner' ? 'banner' : 'button';
-                        destDisplay.textContent = ssid ? `${fmt === 'banner' ? 'Banner' : 'Botão'} · ${ssid}` : 'Defina o SSID da rede';
+                        destDisplay.textContent = ssid ? `${fmt === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
                     } catch (e) {
                         destDisplay.textContent = displayDest || '#';
                     }
@@ -5654,7 +5655,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ssid = (itemEl.querySelector('.wifi-ssid-input')?.value || '').trim();
             const displayDest = itemEl.querySelector('.item-display-dest');
             if (displayDest) {
-                displayDest.textContent = ssid ? `${fmtModal === 'banner' ? 'Banner' : 'Botão'} · ${ssid}` : 'Defina o SSID da rede';
+                displayDest.textContent = ssid ? `${fmtModal === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
             }
         } else if (itemType === 'digital_form') {
             // Sincronizar dados do formulário digital do modal para o item da lista
@@ -8731,7 +8732,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formHTML = `
                 <div class="input-group">
                     <label>Título no cartão</label>
-                    <input type="text" id="edit-title" value="${escWifiModal(currentTitle)}" placeholder="Ex: Wi‑Fi da loja">
+                    <input type="text" id="edit-title" value="${escWifiModal(currentTitle)}" placeholder="Texto do botão (ex: Conectar ao Wi‑Fi)">
                 </div>
                 <div class="input-group">
                     <label>Formato</label>
@@ -8747,8 +8748,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Nome da rede (SSID)</label>
-                    <input type="text" id="edit-wifi-ssid" value="${escWifiModal(wSsid)}" placeholder="Ex: MinhaRede_5G" maxlength="32">
+                    <label>Nome da rede Wi‑Fi (SSID)</label>
+                    <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">Obrigatório. É o nome exato que aparece na lista de redes do celular (usado no QR Code).</small>
+                    <input type="text" id="edit-wifi-ssid" value="${escWifiModal(wSsid)}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
                 </div>
                 <div class="input-group">
                     <label>Segurança</label>
@@ -10926,7 +10928,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const displayDest = itemEl.querySelector('.item-display-dest');
                 const ssid = (itemEl.querySelector('.wifi-ssid-input')?.value || '').trim();
                 if (displayDest) {
-                    displayDest.textContent = ssid ? `${v === 'banner' ? 'Banner' : 'Botão'} · ${ssid}` : 'Defina o SSID da rede';
+                    displayDest.textContent = ssid ? `${v === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
                 }
                 updateLivePreviewFromForm();
             }
@@ -11095,7 +11097,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fmt = modal.querySelector('.wifi-display-format-input:checked')?.value || 'button';
                     const ssid = (v || '').trim();
                     if (displayDest) {
-                        displayDest.textContent = ssid ? `${fmt === 'banner' ? 'Banner' : 'Botão'} · ${ssid}` : 'Defina o SSID da rede';
+                        displayDest.textContent = ssid ? `${fmt === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
                     }
                 }
                 if (targetId === 'edit-wifi-password' && modal && listPass) {

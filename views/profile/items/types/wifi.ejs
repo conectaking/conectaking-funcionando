@@ -28,18 +28,28 @@ const payloadEnc = encodeURIComponent(JSON.stringify({
 %>
 <% if (display === 'banner' && bannerUrl && !bannerUrl.includes('placeholder')) { %>
 <div class="wifi-banner-root profile-banner-container" style="width: 100%; margin: 10px 0;">
-    <button type="button" class="wifi-banner-btn" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="Abrir QR Wi‑Fi" style="width:100%;padding:0;border:none;background:transparent;cursor:pointer;display:block;">
-        <img src="<%= bannerUrl %>" alt="<%= safeTitle %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px;" loading="lazy">
+    <button type="button" class="wifi-banner-btn" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="<%= ssid ? 'Wi‑Fi: rede ' + ssid + '. Abrir QR Code e senha.' : 'Abrir QR Wi‑Fi e senha' %>" style="width:100%;padding:0;border:none;background:transparent;cursor:pointer;display:block;">
+        <img src="<%= bannerUrl %>" alt="<%= ssid ? ('Rede Wi‑Fi: ' + ssid) : safeTitle %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px;" loading="lazy">
     </button>
+    <% if (ssid) { %>
+    <p class="wifi-public-network-name">Nome da rede: <strong><%= ssid %></strong></p>
+    <% } %>
 </div>
 <% } else { %>
-<button type="button" class="profile-link wifi-profile-button" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>">
+<button type="button" class="profile-link wifi-profile-button" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="<%= ssid ? ('Wi‑Fi: rede ' + ssid + '. Toque para QR e senha.') : ('Wi‑Fi: ' + safeTitle) %>">
     <% if (logoUrl && !logoUrl.includes('placeholder')) { %>
         <img src="<%= logoUrl %>" alt="" class="wifi-logo-img" style="width: <%= logoSizePx %>px; height: <%= logoSizePx %>px; object-fit: contain; border-radius: 8px; flex-shrink: 0;" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
         <i class="<%= item.icon_class || 'fas fa-wifi' %>" style="display:none;"></i>
     <% } else { %>
         <i class="<%= item.icon_class || 'fas fa-wifi' %>"></i>
     <% } %>
-    <span><%= safeTitle %></span>
+    <span class="wifi-button-labels">
+        <% if (ssid) { %>
+        <span class="wifi-btn-ssid"><%= ssid %></span>
+        <% if (safeTitle && safeTitle !== ssid) { %><span class="wifi-btn-card-title"><%= safeTitle %></span><% } %>
+        <% } else { %>
+        <span class="wifi-btn-fallback"><%= safeTitle %></span>
+        <% } %>
+    </span>
 </button>
 <% } %>
