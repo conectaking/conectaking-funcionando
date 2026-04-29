@@ -7933,6 +7933,7 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
     const hasTutorialVideo = await hasColumn(client, 'king_galleries', 'tutorial_video_url');
+    const hasClientFolderLayout = await hasColumn(client, 'king_galleries', 'client_folder_layout');
     const gRes = await client.query(
       `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasAccessMode ? ', access_mode' : ''}${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}
        FROM king_galleries WHERE slug=$1`,
@@ -7954,6 +7955,11 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     if (hasTutorialVideo) {
       gallery.tutorial_video_url = g.tutorial_video_url ? String(g.tutorial_video_url).trim() : null;
     }
+    const clientFolderLayoutNorm =
+      hasClientFolderLayout && String(g.client_folder_layout || '').toLowerCase().trim() === 'flat'
+        ? 'flat'
+        : 'folders';
+    gallery.client_folder_layout = clientFolderLayoutNorm;
 
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
     const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
@@ -7972,7 +7978,12 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
       }
       return out;
     });
-    const folders = await listFoldersForGallery(client, gallery.id);
+    let folders = await listFoldersForGallery(client, gallery.id);
+    // Layout "solto": não expor pastas no cliente
+    if (clientFolderLayoutNorm === 'flat') {
+      folders = [];
+      for (const p of photos) p.folder_id = null;
+    }
     res.json({
       success: true,
       gallery: { ...gallery, photos, folders, locked: true, allow_download: !!gallery.allow_download, face_recognition_enabled: !!gallery.face_recognition_enabled },
@@ -9400,13 +9411,19 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       hasClientFolderLayout && String(gallery.client_folder_layout || '').toLowerCase().trim() === 'flat'
         ? 'flat'
         : 'folders';
+    // Layout "solto": não expor pastas no cliente
+    let foldersOut = folders;
+    if (clientFolderLayoutNorm === 'flat') {
+      foldersOut = [];
+      for (const p of photos) p.folder_id = null;
+    }
 
     res.json({
       success: true,
       gallery: {
         ...gallery,
         photos,
-        folders,
+        folders: foldersOut,
         locked,
         allow_download: effectiveAllowDownload,
         photographer_allows_download: photographerAllowsDownload,
@@ -12125,7 +12142,11 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       [payload.galleryId]
     );
     const accessMode = ksNormAccessMode(gResMeta.rows?.[0]?.access_mode || 'private');
-    const allowDownload = !!(hasAllowDownload ? gResMeta.rows?.[0]?.allow_download : true);
+    // Regra nova: modo público = fotos gratuitas ⇒ download não depende do toggle allow_download
+    const allowDownload =
+      accessMode === 'public'
+        ? true
+        : !!(hasAllowDownload ? gResMeta.rows?.[0]?.allow_download : true);
     const isPaidEventMode = ksIsPaidEventAccessMode(accessMode);
 
     if (isDownload && !allowDownload && !isPaidEventMode) {
