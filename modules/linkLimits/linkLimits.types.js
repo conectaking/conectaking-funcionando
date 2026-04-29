@@ -23,7 +23,8 @@ module.exports = {
         'sales_page',
         'digital_form',
         'pix',
-        'pix_qrcode'
+        'pix_qrcode',
+        'wifi'
     ],
     
     // Valores padrão

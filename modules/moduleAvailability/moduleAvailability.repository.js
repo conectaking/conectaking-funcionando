@@ -4,7 +4,7 @@
  */
 
 const MODULE_TYPES_PUBLIC = [
-    'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
+    'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
     'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
     'spotify', 'linkedin', 'pinterest',
     'link', 'portfolio', 'banner', 'carousel',

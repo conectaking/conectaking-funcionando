@@ -104,6 +104,19 @@ function buildVcard(identifier, profile, items) {
                 if (item.pix_key) notes.push(`Chave PIX: ${item.pix_key}`);
                 if (url.startsWith('http')) vCard += `URL;TYPE=PIX:${url}\n`;
                 break;
+            case 'wifi': {
+                let wifiSsid = '';
+                try {
+                    if (item.destination_url && String(item.destination_url).trim().startsWith('{')) {
+                        const w = JSON.parse(item.destination_url);
+                        wifiSsid = (w && w.ssid) ? String(w.ssid).trim() : '';
+                    }
+                } catch (e) {
+                    wifiSsid = '';
+                }
+                if (wifiSsid) notes.push(`Wi-Fi SSID: ${wifiSsid}`);
+                break;
+            }
             default: {
                 let defaultUrl = url;
                 if (!defaultUrl.startsWith('http')) defaultUrl = `https://${defaultUrl}`;

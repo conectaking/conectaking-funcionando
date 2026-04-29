@@ -3,6 +3,8 @@
 if (typeof details === 'undefined' || !details) {
     throw new Error('Variável details não está definida');
 }
+const profileItems = (typeof items !== 'undefined' && Array.isArray(items)) ? items : [];
+const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wifi'; });
 %>
 <!DOCTYPE html>
 <html lang="pt-BR" style="background-color: <%= (details && details.background_color) ? details.background_color : '#0D0D0F' %>;">
@@ -22,6 +24,9 @@ if (typeof details === 'undefined' || !details) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <link rel="stylesheet" href="/css/profile.css?v=<%= typeof cacheBuster !== 'undefined' ? cacheBuster : Date.now() %>">
+    <% if (hasWifi) { %>
+    <link rel="stylesheet" href="/css/profile-wifi.css?v=<%= typeof cacheBuster !== 'undefined' ? cacheBuster : Date.now() %>">
+    <% } %>
     
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -933,6 +938,9 @@ if (typeof details === 'undefined' || !details) {
 
                     <% } else if (item.item_type === 'pix_qrcode') { %>
                         <%- include('profile/items/types/pix_qrcode', { item }) %>
+
+                    <% } else if (item.item_type === 'wifi') { %>
+                        <%- include('profile/items/types/wifi', { item }) %>
 
                     <%# ========================================================== %>
                     <%# TIPOS: EMBEDS DE REDES SOCIAIS (Instagram, YouTube, TikTok, etc.) %>
@@ -2882,5 +2890,23 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         </div>
     </div>
+
+    <% if (hasWifi) { %>
+    <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
+        <div class="wifi-modal-content">
+            <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
+            <h4>Wi‑Fi — escaneie para ligar</h4>
+            <div id="wifi-qrcode-container">
+                <div id="wifi-qrcode-image"></div>
+                <div id="wifi-qrcode-loader"></div>
+            </div>
+            <div class="wifi-password-row">Senha: <strong id="wifi-password-visible"></strong></div>
+            <div class="wifi-copy-row">
+                <button type="button" id="wifi-copy-password-btn">Copiar senha</button>
+            </div>
+        </div>
+    </div>
+    <script defer src="/js/profile-wifi.js?v=<%= typeof cacheBuster !== 'undefined' ? cacheBuster : Date.now() %>"></script>
+    <% } %>
 </body>
 </html>

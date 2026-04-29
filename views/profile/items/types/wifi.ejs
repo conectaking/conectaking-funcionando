@@ -1,0 +1,45 @@
+<%# Partial: item tipo wifi — botão ou banner; variável: item %>
+<%
+let wifi = {};
+try {
+    if (item.destination_url && String(item.destination_url).trim().startsWith('{')) {
+        wifi = JSON.parse(item.destination_url);
+    }
+} catch (e) {
+    wifi = {};
+}
+const display = (wifi.display_format === 'banner') ? 'banner' : 'button';
+const ssid = (wifi.ssid || '').trim();
+const password = wifi.password != null ? String(wifi.password) : '';
+const security = (wifi.security || 'WPA').toString();
+const hidden = !!wifi.hidden;
+const bannerUrl = (wifi.banner_image_url || item.image_url || '').trim();
+const logoUrl = (wifi.logo_url || item.image_url || '').trim();
+const rawLogoSize = wifi.logo_size || item.logo_size || 48;
+const logoSizePx = Math.min(600, Math.max(20, parseInt(rawLogoSize, 10) || 48));
+const safeTitle = (item.title || 'Wi‑Fi').trim();
+const payloadEnc = encodeURIComponent(JSON.stringify({
+    ssid,
+    password,
+    security,
+    hidden,
+    display_format: display
+}));
+%>
+<% if (display === 'banner' && bannerUrl && !bannerUrl.includes('placeholder')) { %>
+<div class="wifi-banner-root profile-banner-container" style="width: 100%; margin: 10px 0;">
+    <button type="button" class="wifi-banner-btn" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="Abrir QR Wi‑Fi" style="width:100%;padding:0;border:none;background:transparent;cursor:pointer;display:block;">
+        <img src="<%= bannerUrl %>" alt="<%= safeTitle %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px;" loading="lazy">
+    </button>
+</div>
+<% } else { %>
+<button type="button" class="profile-link wifi-profile-button" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>">
+    <% if (logoUrl && !logoUrl.includes('placeholder')) { %>
+        <img src="<%= logoUrl %>" alt="" class="wifi-logo-img" style="width: <%= logoSizePx %>px; height: <%= logoSizePx %>px; object-fit: contain; border-radius: 8px; flex-shrink: 0;" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+        <i class="<%= item.icon_class || 'fas fa-wifi' %>" style="display:none;"></i>
+    <% } else { %>
+        <i class="<%= item.icon_class || 'fas fa-wifi' %>"></i>
+    <% } %>
+    <span><%= safeTitle %></span>
+</button>
+<% } %>
