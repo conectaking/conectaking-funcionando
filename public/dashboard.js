@@ -4353,6 +4353,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     thumbList.src = finalUrl;
                     thumbList.style.display = 'block';
                 }
+                const editId = SELECTORS.editItemModal?.dataset?.editingId;
+                if (editId && String(itemElement.dataset.id) === String(editId)) {
+                    const modalBan = document.querySelector(`#edit-item-modal[data-editing-id="${editId}"] #edit-wifi-banner-url`);
+                    const modalPrev = document.querySelector(`#edit-item-modal[data-editing-id="${editId}"] #edit-wifi-banner-preview`);
+                    if (modalBan) modalBan.value = finalUrl;
+                    if (modalPrev) {
+                        modalPrev.src = finalUrl;
+                        modalPrev.style.display = 'block';
+                    }
+                }
                 updateLivePreviewFromForm();
             } catch (error) {
                 console.error('Erro no upload Wi‑Fi banner:', error);
@@ -5171,6 +5181,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (e) {
                         destDisplay.textContent = displayDest || '#';
                     }
+                } else if (itemType === 'wifi' && apiResult.destination_url && String(apiResult.destination_url).trim().startsWith('{')) {
+                    try {
+                        const cfg = JSON.parse(apiResult.destination_url);
+                        const ssid = (cfg.ssid || '').trim();
+                        const fmt = cfg.display_format === 'banner' ? 'banner' : 'button';
+                        destDisplay.textContent = ssid ? `${fmt === 'banner' ? 'Banner' : 'Botão'} · ${ssid}` : 'Defina o SSID da rede';
+                    } catch (e) {
+                        destDisplay.textContent = displayDest || '#';
+                    }
                 } else {
                     destDisplay.textContent = displayDest || '#';
                 }
@@ -5566,6 +5585,76 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (pixDescriptionModal !== undefined && pixDescriptionInput) {
                 pixDescriptionInput.value = pixDescriptionModal;
+            }
+        } else if (itemType === 'wifi') {
+            const modal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`);
+            if (!modal) return;
+            const titleModal = modal.querySelector('#edit-title')?.value;
+            const ssidModal = modal.querySelector('#edit-wifi-ssid')?.value;
+            const passModal = modal.querySelector('#edit-wifi-password')?.value;
+            const secModal = modal.querySelector('#edit-wifi-security')?.value;
+            const hiddenModal = modal.querySelector('#edit-wifi-hidden')?.checked;
+            const bannerModal = modal.querySelector('#edit-wifi-banner-url')?.value;
+            const logoModal = modal.querySelector('#edit-wifi-logo-url')?.value;
+            const logoSizeModal = modal.querySelector('#edit-wifi-logo-size')?.value;
+            const fmtModal = modal.querySelector('.wifi-display-format-input:checked')?.value || 'button';
+
+            const titleInput = itemEl.querySelector('.item-title-input');
+            const displayTitle = itemEl.querySelector('.item-display-title');
+            const moduleName = itemEl.querySelector('.module-name');
+            if (titleModal !== undefined && titleInput) {
+                titleInput.value = titleModal;
+                if (displayTitle) displayTitle.textContent = titleModal;
+                if (moduleName) moduleName.textContent = titleModal;
+            }
+            if (ssidModal !== undefined && itemEl.querySelector('.wifi-ssid-input')) {
+                itemEl.querySelector('.wifi-ssid-input').value = ssidModal;
+            }
+            if (passModal !== undefined && itemEl.querySelector('.wifi-password-input')) {
+                itemEl.querySelector('.wifi-password-input').value = passModal;
+            }
+            if (secModal !== undefined && itemEl.querySelector('.wifi-security-input')) {
+                itemEl.querySelector('.wifi-security-input').value = secModal;
+            }
+            const hidList = itemEl.querySelector('.wifi-hidden-input');
+            if (hidList) hidList.checked = !!hiddenModal;
+            if (bannerModal !== undefined && itemEl.querySelector('.wifi-banner-url-input')) {
+                itemEl.querySelector('.wifi-banner-url-input').value = bannerModal;
+                const bp = itemEl.querySelector('.wifi-banner-preview');
+                const bt = itemEl.querySelector('.banner-preview-thumb');
+                if (bannerModal && bp) {
+                    bp.src = bannerModal;
+                    bp.style.display = 'block';
+                }
+                if (bannerModal && bt) {
+                    bt.src = bannerModal;
+                    bt.style.display = 'block';
+                }
+            }
+            if (logoModal !== undefined && itemEl.querySelector('.wifi-logo-url-input')) {
+                itemEl.querySelector('.wifi-logo-url-input').value = logoModal;
+                const lp = itemEl.querySelector('.wifi-logo-preview');
+                if (logoModal && lp) {
+                    lp.src = logoModal;
+                    lp.style.display = 'block';
+                }
+            }
+            if (logoSizeModal !== undefined && itemEl.querySelector('.wifi-logo-size-input')) {
+                itemEl.querySelector('.wifi-logo-size-input').value = logoSizeModal;
+                itemEl.dataset.logoSize = logoSizeModal;
+            }
+            itemEl.querySelectorAll('.wifi-display-format-input').forEach(r => {
+                r.checked = r.value === fmtModal;
+            });
+            const logoSec = itemEl.querySelector('.wifi-logo-section');
+            const banSec = itemEl.querySelector('.wifi-banner-section');
+            if (logoSec) logoSec.style.display = fmtModal === 'banner' ? 'none' : 'block';
+            if (banSec) banSec.style.display = fmtModal === 'banner' ? 'block' : 'none';
+
+            const ssid = (itemEl.querySelector('.wifi-ssid-input')?.value || '').trim();
+            const displayDest = itemEl.querySelector('.item-display-dest');
+            if (displayDest) {
+                displayDest.textContent = ssid ? `${fmtModal === 'banner' ? 'Banner' : 'Botão'} · ${ssid}` : 'Defina o SSID da rede';
             }
         } else if (itemType === 'digital_form') {
             // Sincronizar dados do formulário digital do modal para o item da lista
@@ -6134,6 +6223,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Sincronizar dados do modal para o item da lista ANTES de capturar os dados
         syncModalDataToItem();
 
+        const wifiMissingSsid = Array.from(document.querySelectorAll('#items-container .item, #items-container .module-item')).some(el => {
+            if (el.dataset.itemType !== 'wifi') return false;
+            return !(el.querySelector('.wifi-ssid-input')?.value || '').trim();
+        });
+        if (wifiMissingSsid) {
+            alert('Preencha o nome da rede (SSID) em todos os módulos Wi‑Fi antes de publicar.');
+            return;
+        }
+
         // Encontrar o botão que foi clicado ou usar o header-save-btn
         const clickedBtn = (event && event.target) || (event && event.currentTarget) || document.getElementById('header-save-btn') || document.getElementById('mobile-save-all-btn');
         const originalHTML = clickedBtn ? clickedBtn.innerHTML : '';
@@ -6294,6 +6392,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             destinationUrl = destinationUrl.replace(/\D/g, '');
                         }
 
+                        if (itemType === 'wifi') {
+                            const fmt = itemEl.querySelector('.wifi-display-format-input:checked')?.value || 'button';
+                            const ssid = itemEl.querySelector('.wifi-ssid-input')?.value?.trim() || '';
+                            const password = itemEl.querySelector('.wifi-password-input')?.value ?? '';
+                            const security = itemEl.querySelector('.wifi-security-input')?.value || 'WPA';
+                            const hidden = !!itemEl.querySelector('.wifi-hidden-input')?.checked;
+                            const banner_image_url = itemEl.querySelector('.wifi-banner-url-input')?.value?.trim() || '';
+                            const logo_url = itemEl.querySelector('.wifi-logo-url-input')?.value?.trim() || '';
+                            let logo_size = parseInt(itemEl.querySelector('.wifi-logo-size-input')?.value, 10);
+                            if (isNaN(logo_size) || logo_size < 20) logo_size = parseInt(itemEl.dataset.logoSize, 10) || 48;
+                            logo_size = Math.min(600, Math.max(20, logo_size));
+                            destinationUrl = JSON.stringify({ ssid, password, security, hidden, display_format: fmt, banner_image_url, logo_url, logo_size });
+                        }
+
                         const tempItemData = {
                             item_type: itemType,
                             title: itemEl.querySelector('.item-title-input')?.value || getItemTypeName(itemType),
@@ -6308,6 +6420,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             is_active: itemEl.querySelector('.module-toggle-input')?.checked !== false,
                             display_order: tempItem.index + 1
                         };
+
+                        if (itemType === 'wifi') {
+                            const fmt = itemEl.querySelector('.wifi-display-format-input:checked')?.value || 'button';
+                            const bannerUrl = itemEl.querySelector('.wifi-banner-url-input')?.value?.trim() || '';
+                            const logoUrl = itemEl.querySelector('.wifi-logo-url-input')?.value?.trim() || '';
+                            let logo_size = parseInt(itemEl.querySelector('.wifi-logo-size-input')?.value, 10);
+                            if (isNaN(logo_size) || logo_size < 20) logo_size = parseInt(itemEl.dataset.logoSize, 10) || 48;
+                            logo_size = Math.min(600, Math.max(20, logo_size));
+                            tempItemData.image_url = fmt === 'banner' && bannerUrl ? bannerUrl : (logoUrl || null);
+                            tempItemData.logo_size = logo_size;
+                        }
 
                         console.log(`📤 Criando item temporário ${tempId} no servidor...`);
                         const createResponse = await fetch(`${API_URL}/api/profile/items`, {
@@ -6911,6 +7034,41 @@ document.addEventListener('DOMContentLoaded', () => {
                             itemData.pix_description = itemEl.querySelector('.item-pix-description-input')?.value;
                             itemData.icon_class = itemEl.querySelector('.item-icon-picker')?.className.replace(' item-icon-picker', '').trim();
                             break;
+                        case 'wifi': {
+                            const titleWifiModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-title`)?.value;
+                            itemData.title = (titleWifiModal !== undefined ? titleWifiModal : itemEl.querySelector('.item-title-input')?.value)?.trim() || 'Wi‑Fi';
+                            const fmt = itemEl.querySelector('.wifi-display-format-input:checked')?.value || 'button';
+                            const ssid = itemEl.querySelector('.wifi-ssid-input')?.value?.trim() || '';
+                            const password = itemEl.querySelector('.wifi-password-input')?.value ?? '';
+                            const security = itemEl.querySelector('.wifi-security-input')?.value || 'WPA';
+                            const hidden = !!itemEl.querySelector('.wifi-hidden-input')?.checked;
+                            const bannerUrl = itemEl.querySelector('.wifi-banner-url-input')?.value?.trim() || '';
+                            const logoUrl = itemEl.querySelector('.wifi-logo-url-input')?.value?.trim() || '';
+                            let logoSizeVal = parseInt(itemEl.querySelector('.wifi-logo-size-input')?.value, 10);
+                            if (isNaN(logoSizeVal) || logoSizeVal < 20) {
+                                logoSizeVal = parseInt(itemEl.dataset.logoSize, 10);
+                            }
+                            if (isNaN(logoSizeVal) || logoSizeVal < 20) logoSizeVal = 48;
+                            logoSizeVal = Math.min(600, Math.max(20, logoSizeVal));
+                            const wifiPayload = {
+                                ssid,
+                                password,
+                                security,
+                                hidden,
+                                display_format: fmt,
+                                banner_image_url: bannerUrl,
+                                logo_url: logoUrl,
+                                logo_size: logoSizeVal
+                            };
+                            itemData.destination_url = JSON.stringify(wifiPayload);
+                            itemData.pix_key = null;
+                            itemData.pdf_url = null;
+                            itemData.image_url = fmt === 'banner' && bannerUrl ? bannerUrl : (logoUrl || null);
+                            itemData.logo_size = logoSizeVal;
+                            const wifiIconEl = itemEl.querySelector('.item-icon-picker i');
+                            itemData.icon_class = wifiIconEl ? wifiIconEl.className.trim() : getDefaultIcon('wifi');
+                            break;
+                        }
                         case 'pdf': case 'pdf_embed':
                             const pdfUrl = itemEl.querySelector('.item-pdf-url-input')?.value;
                             itemData.title = itemEl.querySelector('.item-title-input')?.value;
@@ -8559,6 +8717,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
                 break;
+            case 'wifi': {
+                const escWifiModal = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                const wFmt = itemEl.querySelector('.wifi-display-format-input:checked')?.value || 'button';
+                const wSsid = itemEl.querySelector('.wifi-ssid-input')?.value || '';
+                const wPass = itemEl.querySelector('.wifi-password-input')?.value || '';
+                const wSec = itemEl.querySelector('.wifi-security-input')?.value || 'WPA';
+                const wHidden = !!itemEl.querySelector('.wifi-hidden-input')?.checked;
+                const wBanner = itemEl.querySelector('.wifi-banner-url-input')?.value || '';
+                const wLogo = itemEl.querySelector('.wifi-logo-url-input')?.value || '';
+                const wLogoSize = itemEl.querySelector('.wifi-logo-size-input')?.value || '48';
+                const banPrevDisp = wBanner && !wBanner.includes('placeholder') ? 'block' : 'none';
+                formHTML = `
+                <div class="input-group">
+                    <label>Título no cartão</label>
+                    <input type="text" id="edit-title" value="${escWifiModal(currentTitle)}" placeholder="Ex: Wi‑Fi da loja">
+                </div>
+                <div class="input-group">
+                    <label>Formato</label>
+                    <div style="display: flex; gap: 15px; margin-top: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" class="wifi-display-format-input" name="wifi-modal-df-${itemId}" value="button" ${wFmt === 'button' ? 'checked' : ''}>
+                            <span>Botão</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" class="wifi-display-format-input" name="wifi-modal-df-${itemId}" value="banner" ${wFmt === 'banner' ? 'checked' : ''}>
+                            <span>Banner</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Nome da rede (SSID)</label>
+                    <input type="text" id="edit-wifi-ssid" value="${escWifiModal(wSsid)}" placeholder="Ex: MinhaRede_5G" maxlength="32">
+                </div>
+                <div class="input-group">
+                    <label>Segurança</label>
+                    <select id="edit-wifi-security" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
+                        <option value="WPA" ${wSec === 'WPA' || wSec === 'WPA2' || wSec === 'WPA3' ? 'selected' : ''}>WPA/WPA2/WPA3</option>
+                        <option value="WEP" ${wSec === 'WEP' ? 'selected' : ''}>WEP</option>
+                        <option value="nopass" ${wSec === 'nopass' || wSec === 'NONE' ? 'selected' : ''}>Rede aberta (sem senha)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Senha (opcional)</label>
+                    <input type="text" id="edit-wifi-password" value="${escWifiModal(wPass)}" placeholder="Deixe vazio se for rede aberta" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label style="display:flex;align-items:center;gap:10px;">
+                        <input type="checkbox" id="edit-wifi-hidden" ${wHidden ? 'checked' : ''}>
+                        Rede oculta (SSID não transmitido)
+                    </label>
+                </div>
+                <div class="wifi-modal-logo-section" style="display: ${wFmt === 'banner' ? 'none' : 'block'};">
+                    <div class="input-group">
+                        <label>Tamanho da logo (px)</label>
+                        <input type="number" id="edit-wifi-logo-size" value="${escWifiModal(wLogoSize)}" min="20" max="600" step="1" style="width: 120px;">
+                    </div>
+                    <input type="hidden" id="edit-wifi-logo-url" value="${escWifiModal(wLogo)}">
+                    <p style="color:#888;font-size:0.85rem;">Upload de logo/imagem: use a área na lista do módulo ao lado.</p>
+                </div>
+                <div class="wifi-modal-banner-section" style="display: ${wFmt === 'banner' ? 'block' : 'none'};">
+                    <div class="input-group">
+                        <label>URL da imagem do banner</label>
+                        <input type="text" id="edit-wifi-banner-url" value="${escWifiModal(wBanner)}" placeholder="https://...">
+                    </div>
+                    <img id="edit-wifi-banner-preview" alt="" src="${escWifiModal(wBanner)}" style="max-width:100%;max-height:160px;margin-top:10px;display:${banPrevDisp};border-radius:8px;">
+                </div>
+            `;
+                break;
+            }
             case 'pdf':
                 formHTML = `
                 <div class="input-group">
@@ -9161,6 +9388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'carousel': 'Editar Carrossel',
             'digital_form': 'Editar Formulário King',
             'location': 'Editar Localização',
+            'wifi': 'Editar Wi‑Fi (QR Code)',
         };
         SELECTORS.editModalTitle.textContent = modalTitleMap[itemType] || (itemType === 'banner' ? 'Editar Banner' : `Editar ${itemType.replace('_', ' ').charAt(0).toUpperCase() + itemType.replace('_', ' ').slice(1)}`);
         SELECTORS.editModalBody.innerHTML = formHTML;
@@ -9788,6 +10016,82 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 break;
+            case 'wifi': {
+                let wifiCfgNew = {};
+                try {
+                    if (tempItem.destination_url && String(tempItem.destination_url).trim().startsWith('{')) {
+                        wifiCfgNew = JSON.parse(tempItem.destination_url);
+                    }
+                } catch (e) {
+                    wifiCfgNew = {};
+                }
+                const escN = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                const wf = (wifiCfgNew.display_format === 'banner') ? 'banner' : 'button';
+                const ws = (wifiCfgNew.ssid || '').trim();
+                const wp = wifiCfgNew.password != null ? String(wifiCfgNew.password) : '';
+                const wsec = (wifiCfgNew.security || 'WPA').toString();
+                const wh = !!wifiCfgNew.hidden;
+                const wb = (wifiCfgNew.banner_image_url || '').trim();
+                const wl = (wifiCfgNew.logo_url || '').trim();
+                const wls = String(wifiCfgNew.logo_size || 48);
+                const bpd = wb && !wb.includes('placeholder') ? 'block' : 'none';
+                formHTML = `
+                    <div class="input-group">
+                        <label>Título no cartão</label>
+                        <input type="text" id="edit-title" value="${escN(tempItem.title || 'Wi‑Fi')}" placeholder="Ex: Wi‑Fi da loja">
+                    </div>
+                    <div class="input-group">
+                        <label>Formato</label>
+                        <div style="display: flex; gap: 15px; margin-top: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" class="wifi-display-format-input" name="wifi-modal-df-new" value="button" ${wf === 'button' ? 'checked' : ''}>
+                                <span>Botão</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" class="wifi-display-format-input" name="wifi-modal-df-new" value="banner" ${wf === 'banner' ? 'checked' : ''}>
+                                <span>Banner</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Nome da rede (SSID)</label>
+                        <input type="text" id="edit-wifi-ssid" value="${escN(ws)}" placeholder="Ex: MinhaRede_5G" maxlength="32">
+                    </div>
+                    <div class="input-group">
+                        <label>Segurança</label>
+                        <select id="edit-wifi-security" style="width:100%;padding:10px;border-radius:8px;">
+                            <option value="WPA" ${wsec === 'WPA' || wsec === 'WPA2' || wsec === 'WPA3' ? 'selected' : ''}>WPA/WPA2/WPA3</option>
+                            <option value="WEP" ${wsec === 'WEP' ? 'selected' : ''}>WEP</option>
+                            <option value="nopass" ${wsec === 'nopass' || wsec === 'NONE' ? 'selected' : ''}>Rede aberta (sem senha)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Senha (opcional)</label>
+                        <input type="text" id="edit-wifi-password" value="${escN(wp)}" placeholder="Deixe vazio se for rede aberta" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label style="display:flex;align-items:center;gap:10px;">
+                            <input type="checkbox" id="edit-wifi-hidden" ${wh ? 'checked' : ''}>
+                            Rede oculta (SSID não transmitido)
+                        </label>
+                    </div>
+                    <div class="wifi-modal-logo-section" style="display: ${wf === 'banner' ? 'none' : 'block'};">
+                        <div class="input-group">
+                            <label>Tamanho da logo (px)</label>
+                            <input type="number" id="edit-wifi-logo-size" value="${escN(wls)}" min="20" max="600" step="1" style="width: 120px;">
+                        </div>
+                        <input type="hidden" id="edit-wifi-logo-url" value="${escN(wl)}">
+                    </div>
+                    <div class="wifi-modal-banner-section" style="display: ${wf === 'banner' ? 'block' : 'none'};">
+                        <div class="input-group">
+                            <label>URL da imagem do banner</label>
+                            <input type="text" id="edit-wifi-banner-url" value="${escN(wb)}" placeholder="https://...">
+                        </div>
+                        <img id="edit-wifi-banner-preview" alt="" src="${escN(wb)}" style="max-width:100%;max-height:160px;margin-top:10px;display:${bpd};border-radius:8px;">
+                    </div>
+                `;
+                break;
+            }
             case 'banner':
                 formHTML = `
                     <div class="input-group">
@@ -10284,7 +10588,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: tempId,
                         item_type: itemType,
                         title: getItemTypeName(itemType),
-                        destination_url: itemType === 'whatsapp' ? '' : (itemType === 'email' ? '' : '#'),
+                        destination_url: itemType === 'wifi'
+                            ? JSON.stringify({ ssid: '', password: '', security: 'WPA', hidden: false, display_format: 'button', banner_image_url: '', logo_url: '', logo_size: 48 })
+                            : itemType === 'whatsapp' ? '' : (itemType === 'email' ? '' : '#'),
                         pix_key: '',
                         recipient_name: '',
                         pix_amount: '',
@@ -10295,7 +10601,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         is_active: true,
                         display_order: 999,
                         image_url: null,
-                        logo_size: 24
+                        logo_size: itemType === 'wifi' ? 48 : 24
                     };
                     window.currentProfileData.items.push(newItem);
                 }
@@ -10600,6 +10906,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`📐 [ASPECT RATIO] Aspect ratio atualizado para: ${e.target.value}`);
                     // Atualizar preview em tempo real
                     updateLivePreviewFromForm();
+                }
+            }
+
+            if (e.target.classList.contains('wifi-display-format-input')) {
+                const itemId = SELECTORS.editItemModal?.dataset?.editingId;
+                const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
+                if (!itemEl || itemEl.dataset.itemType !== 'wifi') return;
+                const v = e.target.value;
+                itemEl.querySelectorAll('.wifi-display-format-input').forEach(r => { r.checked = r.value === v; });
+                const logoSec = itemEl.querySelector('.wifi-logo-section');
+                const banSec = itemEl.querySelector('.wifi-banner-section');
+                if (logoSec) logoSec.style.display = v === 'banner' ? 'none' : 'block';
+                if (banSec) banSec.style.display = v === 'banner' ? 'block' : 'none';
+                const mLogo = SELECTORS.editItemModal?.querySelector('.wifi-modal-logo-section');
+                const mBan = SELECTORS.editItemModal?.querySelector('.wifi-modal-banner-section');
+                if (mLogo) mLogo.style.display = v === 'banner' ? 'none' : 'block';
+                if (mBan) mBan.style.display = v === 'banner' ? 'block' : 'none';
+                const displayDest = itemEl.querySelector('.item-display-dest');
+                const ssid = (itemEl.querySelector('.wifi-ssid-input')?.value || '').trim();
+                if (displayDest) {
+                    displayDest.textContent = ssid ? `${v === 'banner' ? 'Banner' : 'Botão'} · ${ssid}` : 'Defina o SSID da rede';
+                }
+                updateLivePreviewFromForm();
+            }
+
+            if (e.target.id === 'edit-wifi-hidden') {
+                const itemId = SELECTORS.editItemModal?.dataset?.editingId;
+                const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
+                if (itemEl && itemEl.dataset.itemType === 'wifi') {
+                    const h = itemEl.querySelector('.wifi-hidden-input');
+                    if (h) h.checked = !!e.target.checked;
+                }
+            }
+
+            if (e.target.id === 'edit-wifi-security') {
+                const itemId = SELECTORS.editItemModal?.dataset?.editingId;
+                const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
+                if (itemEl && itemEl.dataset.itemType === 'wifi') {
+                    const s = itemEl.querySelector('.wifi-security-input');
+                    if (s) s.value = e.target.value;
                 }
             }
 
