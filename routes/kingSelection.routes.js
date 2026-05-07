@@ -7144,6 +7144,53 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     );
     if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
 
+    // =========================================================
+    // Regras de transição de acesso (evita "privado sem cliente")
+    // =========================================================
+    const curRes = await client.query(
+      'SELECT id, access_mode, cliente_email, senha_hash, senha_enc FROM king_galleries WHERE id=$1 LIMIT 1',
+      [galleryId]
+    );
+    const cur = curRes.rows?.[0] || {};
+    const curAccessMode = ksNormAccessMode(cur.access_mode || 'private');
+    const nextAccessMode = Object.prototype.hasOwnProperty.call(body, 'access_mode')
+      ? ksNormAccessMode(body.access_mode)
+      : curAccessMode;
+    const isNextPrivate = nextAccessMode === 'private';
+    const providedEmail = Object.prototype.hasOwnProperty.call(body, 'cliente_email');
+    const nextEmailRaw = providedEmail ? body.cliente_email : cur.cliente_email;
+    const nextEmail = String(nextEmailRaw || '').toLowerCase().trim();
+    const emailLooksValid = !!(nextEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail) && !isTechnicalFaceGalleryClientEmail(nextEmail));
+
+    // Permitir que o painel envie senha aqui (além do endpoint /reset-password),
+    // porque na prática o fotógrafo muda "Privado" e espera configurar tudo na mesma tela.
+    const rawPw =
+      body.senha ??
+      body.password ??
+      body.client_password ??
+      body.clientPassword ??
+      body.senha_cliente ??
+      null;
+    const nextPassword = rawPw == null ? null : String(rawPw);
+
+    // Se está a mudar para privado (ou já está privado), garantir que existe e-mail real
+    // (o modo público usa e-mails técnicos @publico.kingselection.invalid).
+    if (isNextPrivate) {
+      // Só bloquear de verdade quando não há e-mail válido disponível
+      // (especialmente quando vem de modo public/signup → private).
+      if (!emailLooksValid) {
+        return res.status(400).json({
+          message:
+            'Acesso privado: informe um e-mail real do cliente (em "Dados/Acesso e privacidade"). ' +
+            'O e-mail técnico do modo público não serve para acesso privado.'
+        });
+      }
+      // Se o painel mandou senha aqui, validar mínimo.
+      if (nextPassword != null && nextPassword.length < 6) {
+        return res.status(400).json({ message: 'Acesso privado: a senha deve ter pelo menos 6 caracteres.' });
+      }
+    }
+
     invalidateSchemaColumnCache('king_galleries', 'face_recognition_enabled');
     invalidateSchemaColumnCache('king_galleries', 'client_image_quality');
 
@@ -7425,6 +7472,28 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       values.push(val);
     }
 
+    // Se veio senha no PUT, atualizar senha_hash/senha_enc (se existirem as colunas)
+    // e depois garantir o backfill de king_gallery_clients com as credenciais reais.
+    let computedSenhaHash = null;
+    let computedSenhaEnc = null;
+    if (nextPassword != null && String(nextPassword).trim()) {
+      const pw = String(nextPassword);
+      if (pw.length >= 6) {
+        const hasSenhaHashCol = await hasColumn(client, 'king_galleries', 'senha_hash');
+        if (hasSenhaHashCol) {
+          computedSenhaHash = await bcrypt.hash(pw, 10);
+          sets.push(`senha_hash=$${idx++}`);
+          values.push(computedSenhaHash);
+        }
+        const hasEnc = await hasColumn(client, 'king_galleries', 'senha_enc');
+        if (hasEnc) {
+          computedSenhaEnc = encryptPassword(pw);
+          sets.push(`senha_enc=$${idx++}`);
+          values.push(computedSenhaEnc);
+        }
+      }
+    }
+
     if (!sets.length) return res.json({ success: true });
     values.push(galleryId);
     try {
@@ -7450,6 +7519,20 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       }
       throw err;
     }
+
+    // Auto-heal: ao entrar (ou permanecer) em privado, garantir que existe o cliente primário no multi-client
+    // para o painel conseguir listar/editar e para "Atividade do cliente" ter onde amarrar estado.
+    try {
+      if (isNextPrivate && emailLooksValid) {
+        await ensurePrimaryKingGalleryClientFromGalleryRow(client, cur, {
+          id: galleryId,
+          access_mode: nextAccessMode,
+          cliente_email: nextEmail,
+          senha_hash: computedSenhaHash || cur.senha_hash,
+          senha_enc: computedSenhaEnc || cur.senha_enc
+        });
+      }
+    } catch (_) { /* auto-heal opcional */ }
 
     // Reativação: ao colocar galeria em "andamento", desbloquear todos os clientes (status por cliente)
     if (body.status === 'andamento' && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
