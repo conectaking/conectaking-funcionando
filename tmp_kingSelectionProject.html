@@ -1,0 +1,3491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>KingSelection - Projeto</title>
+  <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
+  <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <script>
+    // Suprime aviso do Tailwind CDN no console (evita "should not be used in production")
+    (function () {
+      var o = console.warn; console.warn = function (m) { if (typeof m === 'string' && m.indexOf('cdn.tailwindcss.com') !== -1) return; o.apply(console, arguments); };
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      /* Tema V2 (preto + amarelo) */
+      --ks-primary: #facc15;
+      /* amarelo */
+      --ks-accent: #facc15;
+      /* mesmo amarelo */
+      --ks-black: #000000;
+      --ks-card: rgba(10, 10, 10, .78);
+      --ks-line: rgba(255, 255, 255, .10);
+      --ks-muted: rgba(255, 255, 255, .50);
+      --ks-text: #ffffff;
+      --ks-glow: 0 0 18px rgba(250, 204, 21, .24);
+    }
+
+    body {
+      background:
+        radial-gradient(900px 520px at 20% 0%, rgba(250, 204, 21, .11), transparent 62%),
+        radial-gradient(700px 460px at 85% 0%, rgba(255, 255, 255, .06), transparent 62%),
+        var(--ks-black);
+      color: var(--ks-text);
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Helvetica Neue, Arial;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* “Sistema” no fundo (preenche o preto vazio) */
+    body:before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(800px 420px at 18% 18%, rgba(250, 204, 21, .10), transparent 60%),
+        radial-gradient(640px 360px at 82% 22%, rgba(250, 204, 21, .06), transparent 62%),
+        linear-gradient(to bottom, rgba(255, 255, 255, .03), transparent 25%, transparent 75%, rgba(255, 255, 255, .02)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .06) 0 1px, transparent 1px 44px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 44px);
+      opacity: .10;
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+
+    body:after {
+      content: "";
+      position: fixed;
+      inset: -200px;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 20%, rgba(250, 204, 21, .10), transparent 55%);
+      opacity: .35;
+      z-index: 0;
+      filter: blur(24px);
+    }
+
+    .ks-top {
+      background: rgba(0, 0, 0, .88);
+      border-bottom: 1px solid var(--ks-line);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px)
+    }
+
+    /* Mais espaço útil no desktop (menos “preto vazio” nas laterais) */
+    .ks-wrap {
+      max-width: min(1920px, 98vw);
+      width: 100%;
+      margin: 0 auto;
+      padding: 18px 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Força Tailwind "text-slate-900" ficar claro no tema escuro */
+    .text-slate-900 {
+      color: #f8fafc !important
+    }
+
+    .text-slate-700 {
+      color: #cbd5e1 !important
+    }
+
+    .text-slate-600 {
+      color: rgba(255, 255, 255, .55) !important
+    }
+
+    .text-slate-500 {
+      color: rgba(255, 255, 255, .45) !important
+    }
+
+    .bg-white {
+      background: rgba(15, 15, 15, .72) !important
+    }
+
+    .bg-slate-50 {
+      background: rgba(2, 6, 23, .35) !important
+    }
+
+    .border-slate-200 {
+      border-color: var(--ks-line) !important
+    }
+
+    .border-slate-300 {
+      border-color: var(--ks-line) !important
+    }
+
+    .border-slate-100 {
+      border-color: var(--ks-line) !important
+    }
+
+    /* Modal “Dados do cliente”: .bg-white global é escuro; forçar cartão claro + texto escuro */
+    #ks-act-contact-modal .ks-modal-light {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+    }
+
+    #ks-act-contact-modal .ks-modal-light .border-slate-200 {
+      border-color: #e2e8f0 !important;
+    }
+
+    #ks-act-contact-modal .ks-modal-light .text-slate-500 {
+      color: #64748b !important;
+    }
+
+    #ks-act-contact-modal .ks-modal-light .text-slate-800 {
+      color: #0f172a !important;
+    }
+
+    #ks-act-contact-modal .ks-modal-light .text-slate-900 {
+      color: #0f172a !important;
+    }
+
+    #ks-act-contact-modal .ks-modal-light #ks-act-contact-close {
+      color: #64748b !important;
+    }
+
+    #ks-act-contact-modal .ks-modal-light #ks-act-contact-close:hover {
+      color: #0f172a !important;
+    }
+
+    #ks-act-contact-modal .ks-modal-light .ks-btn:not(.ks-btn-primary) {
+      background: rgba(15, 23, 42, 0.06);
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+
+    #ks-act-contact-modal .ks-modal-light .ks-btn:not(.ks-btn-primary):hover {
+      background: rgba(15, 23, 42, 0.1);
+      border-color: #94a3b8;
+    }
+
+    .ks-nav a {
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 950;
+      color: var(--ks-muted);
+      border: 1px solid transparent;
+      transition: all .18s ease;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 11px
+    }
+
+    .ks-nav a:hover {
+      color: #fff;
+      border-color: var(--ks-line);
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .ks-nav a.active {
+      color: var(--ks-accent);
+      border-color: rgba(250, 204, 21, .28);
+      background: rgba(255, 255, 255, .03);
+      box-shadow: var(--ks-glow);
+    }
+
+    .ks-card {
+      background: var(--ks-card);
+      border: 1px solid var(--ks-line);
+      border-radius: 16px;
+      box-shadow: inset 0 0 18px rgba(250, 204, 21, .06), 0 18px 60px rgba(0, 0, 0, .40);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Fotos: evita “segunda” rolagem interna; a página rola naturalmente */
+    .ks-card[data-pane="photos"] {
+      overflow: visible;
+    }
+
+    /* Menu de abas do projeto (Atividades… Marca d’água): no mobile a página rola por fora — sem coluna presa */
+    .ks-card.ks-card--side-nav {
+      overflow: visible;
+    }
+
+    /* "Racing border" (linha lateral) estilo seu V2 */
+    .ks-card:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--ks-accent);
+      opacity: .85;
+    }
+
+    .ks-side a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      font-weight: 900;
+      color: var(--ks-muted);
+      border: 1px solid transparent;
+      transition: all .18s ease
+    }
+
+    .ks-side a:hover {
+      color: #fff;
+      border-color: var(--ks-line);
+      background: rgba(255, 255, 255, .02)
+    }
+
+    .ks-side a.active {
+      color: var(--ks-accent);
+      border-color: rgba(250, 204, 21, .22);
+      background: rgba(255, 255, 255, .03);
+      box-shadow: var(--ks-glow);
+    }
+
+    .ks-field label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, .45);
+      font-weight: 950;
+      letter-spacing: .28em;
+      text-transform: uppercase
+    }
+
+    .ks-input {
+      width: 100%;
+      border: 1px solid var(--ks-line);
+      border-radius: 12px;
+      padding: 12px 12px;
+      outline: none;
+      font-size: 16px;
+      background: rgba(10, 10, 10, .72);
+      color: #fff;
+    }
+
+    .ks-input::placeholder {
+      color: rgba(148, 163, 184, .55)
+    }
+
+    .ks-input:focus {
+      border-color: rgba(250, 204, 21, .42);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, .12)
+    }
+
+    /* Modal exportar: leitura nítida (evita textarea “branca” / texto ilegível) */
+    #ks-export-modal textarea.ks-export-ta,
+    #ks-export-modal textarea#ks-export-filter-input {
+      background: rgba(6, 6, 6, .94) !important;
+      color: #f3f4f6 !important;
+      border: 1px solid rgba(255, 255, 255, .16) !important;
+      caret-color: var(--ks-accent, #facc15);
+      -webkit-text-fill-color: #f3f4f6;
+    }
+
+    #ks-export-modal textarea.ks-export-ta::placeholder,
+    #ks-export-modal textarea#ks-export-filter-input::placeholder {
+      color: rgba(255, 255, 255, .42) !important;
+      -webkit-text-fill-color: rgba(255, 255, 255, .42);
+    }
+
+    #ks-export-modal textarea.ks-export-ta:focus,
+    #ks-export-modal textarea#ks-export-filter-input:focus {
+      border-color: rgba(250, 204, 21, .45) !important;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, .12) !important;
+    }
+
+    .ks-btn {
+      border: 1px solid var(--ks-line);
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-weight: 950;
+      background: rgba(255, 255, 255, .02);
+      color: #fff;
+      transition: all .18s ease;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 11px;
+    }
+
+    .ks-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, .16);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .30)
+    }
+
+    .ks-btn:active {
+      transform: translateY(0)
+    }
+
+    .ks-btn-primary {
+      background: var(--ks-primary);
+      color: #000;
+      border-color: rgba(250, 204, 21, .55);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, .10), 0 18px 50px rgba(0, 0, 0, .32);
+    }
+
+    .ks-btn-primary:hover {
+      filter: saturate(1.05) brightness(1.02);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, .14), 0 18px 70px rgba(0, 0, 0, .42)
+    }
+
+    /* Seletor da Capa do link: no mobile abre estilo modal full-screen */
+    #ks-link-cover-picker {
+      position: relative;
+    }
+    @media (max-width: 900px) {
+      body.ks-link-cover-modal-open { overflow: hidden; }
+      #ks-link-cover-picker {
+        position: fixed;
+        inset: 0;
+        margin: 0 !important;
+        padding: 14px;
+        border: none !important;
+        border-radius: 0 !important;
+        background: rgba(2, 6, 23, .94);
+        z-index: 1200;
+        overflow-y: auto;
+      }
+      #ks-link-cover-picker .ks-link-cover-picker-card {
+        max-width: 980px;
+        margin: 0 auto;
+        background: rgba(2, 6, 23, .98);
+        border: 1px solid rgba(148, 163, 184, .35);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      #ks-link-cover-picker .ks-link-cover-picker-head {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: rgba(2, 6, 23, .98);
+        padding-bottom: 8px;
+      }
+      #ks-link-cover-picker .ks-link-cover-picker-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .ks-pagebtn {
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: .06em;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .ks-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: rgba(250, 204, 21, .08);
+      color: var(--ks-accent);
+      font-size: 12px;
+      font-weight: 950;
+      border: 1px solid rgba(250, 204, 21, .20)
+    }
+
+    .ks-photo {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff
+    }
+
+    /* o tile pode “vazar” para mostrar o menu */
+    .ks-photo-tile {
+      position: relative;
+      overflow: visible
+    }
+
+    /* a mídia (foto) continua recortada */
+    .ks-photo-media {
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, .45);
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ks-photo-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block
+    }
+
+    .ks-muted {
+      color: var(--ks-muted)
+    }
+
+    /* Chip (ex.: CAPA) mais discreto no topo da foto */
+    .ks-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, .55);
+      color: var(--ks-accent);
+      font-weight: 950;
+      font-size: 11px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    }
+
+    .ks-chip i {
+      opacity: .92
+    }
+
+    .ks-mini {
+      font-size: 12px;
+      color: var(--ks-muted)
+    }
+
+    .ks-link {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: var(--ks-accent);
+      word-break: break-all
+    }
+
+    .ks-photo-top {
+      position: absolute;
+      inset: 10px 10px auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      z-index: 5
+    }
+
+    .ks-ico {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .7);
+      background: rgba(255, 255, 255, .92);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .ks-ico:hover {
+      background: #fff
+    }
+
+    .ks-star {
+      color: #f59e0b
+    }
+
+    /* menu abre fora da foto (premium: fundo claro + texto preto) */
+    .ks-menu {
+      position: absolute;
+      top: 48px;
+      right: 10px;
+      background: rgba(255, 255, 255, .96);
+      border: 1px solid rgba(0, 0, 0, .10);
+      border-radius: 14px;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .35);
+      min-width: 230px;
+      display: none;
+      z-index: 50;
+      overflow: hidden
+    }
+
+    .ks-menu.open {
+      display: block
+    }
+
+    .ks-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 11px 12px;
+      font-weight: 900;
+      color: #0b0f1a;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ks-menu button i {
+      width: 18px;
+      opacity: .85
+    }
+
+    .ks-menu button:hover {
+      background: rgba(0, 0, 0, .05)
+    }
+
+    .ks-menu button:disabled {
+      color: rgba(2, 6, 23, .35);
+      cursor: not-allowed
+    }
+
+    .ks-menu button:disabled i {
+      opacity: .35
+    }
+
+    .ks-menu .danger {
+      color: #dc2626
+    }
+
+    /* seleção estilo Alboom (círculo no topo) */
+    .ks-selbtn {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .20);
+      background: rgba(0, 0, 0, .55);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .ks-selbtn[data-selected="1"] {
+      background: var(--ks-accent);
+      color: #000;
+      border-color: rgba(250, 204, 21, .60);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, .10), 0 16px 50px rgba(0, 0, 0, .35);
+    }
+
+    .ks-selbtn i {
+      font-size: 14px
+    }
+
+    /* legenda do arquivo (não cortar tanto) */
+    .ks-cap {
+      padding: 8px 10px 10px 10px;
+      font-size: 11px;
+      color: var(--ks-muted);
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .ks-cap-id {
+      display: inline-block;
+      margin-right: 6px;
+      font-size: 10px;
+      font-weight: 950;
+      color: var(--ks-accent);
+      opacity: .88;
+      vertical-align: baseline;
+    }
+
+    /* Barra de ações ao selecionar fotos (tema escuro, alto contraste) */
+    .ks-selected-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--ks-line);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, .38);
+      color: #fff;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .ks-selected-bar.active {
+      display: flex
+    }
+
+    .ks-selected-bar b {
+      color: var(--ks-accent)
+    }
+
+    .ks-wm-frame {
+      border: 1px solid #3f3f46;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000000
+    }
+
+    .ks-wm-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block
+    }
+
+    /* Prévias retrato/paisagem: preenchem o moldura (crop visual), sem “faixas” pretas */
+    .ks-wm-preview-frame {
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .ks-wm-preview-frame--portrait {
+      aspect-ratio: 3 / 4;
+      max-height: min(78vh, 900px);
+    }
+
+    .ks-wm-preview-frame--landscape {
+      aspect-ratio: 16 / 9;
+      max-height: min(52vh, 560px);
+    }
+
+    .ks-wm-preview-frame--portrait img,
+    .ks-wm-preview-frame--landscape img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    .ks-wm-rot-btn {
+      min-width: 3.25rem;
+    }
+
+    .ks-wm-rot-btn.is-active-p,
+    .ks-wm-rot-btn.is-active-l {
+      border-color: rgba(250, 204, 21, .55);
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, .18);
+      color: #000;
+      background: var(--ks-primary, #facc15);
+    }
+
+    .ks-wm-ph {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e4e4e7;
+      font-weight: 900;
+      font-size: 12px;
+      padding: 22px
+    }
+
+    .ks-wm-preview-frame .ks-wm-ph {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .ks-wm-preview-frame img:not(.hidden) {
+      z-index: 2;
+    }
+
+    .ks-range {
+      width: 100%
+    }
+
+    .ks-range::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #111827;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .18)
+    }
+
+    .ks-range::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #e5e7eb
+    }
+
+    .ks-range-on-dark::-webkit-slider-runnable-track {
+      background: #3f3f46
+    }
+
+    .ks-range-on-dark::-webkit-slider-thumb {
+      background: #fbbf24;
+      border: 2px solid #18181b
+    }
+
+    .ks-range-on-dark::-moz-range-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #3f3f46
+    }
+
+    .ks-range-on-dark::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #fbbf24;
+      border: 2px solid #18181b
+    }
+
+    .ks-drop {
+      border: 1px dashed rgba(255, 255, 255, .18);
+      border-radius: 18px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, .02);
+      position: relative;
+      overflow: hidden
+    }
+
+    /* Área de envio fica visível no topo ao descer a grelha de fotos */
+    .ks-photos-upload-sticky {
+      position: sticky;
+      top: 8px;
+      z-index: 22;
+      padding-bottom: 10px;
+      margin-bottom: 6px;
+      background: linear-gradient(180deg, rgba(10, 10, 10, .97) 0%, rgba(10, 10, 10, .94) 70%, rgba(10, 10, 10, .88) 100%);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, .06);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+    }
+
+    .ks-drop:before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(250, 204, 21, .22), rgba(255, 255, 255, .10));
+      opacity: .22;
+      pointer-events: none
+    }
+
+    .ks-drop.drag {
+      border-color: rgba(250, 204, 21, .45);
+      background: rgba(255, 255, 255, .04)
+    }
+
+    .ks-drop>* {
+      position: relative;
+      z-index: 1
+    }
+
+    /* Upload "bolinha" moderna */
+    /* Upload overlay (escuro, sem “branco do lado”) */
+    .ks-bubble {
+      /* Ancorado no topo do drop: visível sem rolar quando há muitas fotos */
+      position: absolute;
+      left: 14px;
+      right: auto;
+      top: 14px;
+      bottom: auto;
+      transform: none;
+      z-index: 30;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+
+    .ks-bubble.hidden {
+      display: none
+    }
+
+    .ks-bubble-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-radius: 999px;
+      background: rgba(10, 10, 10, .95);
+      color: #e5e7eb;
+      border: 1px solid rgba(250, 204, 21, .15);
+      box-shadow: 0 18px 70px rgba(0, 0, 0, .6);
+      width: min(400px, 88vw);
+      pointer-events: auto;
+    }
+
+    .ks-bubble-title {
+      font-size: 14px
+    }
+
+    .ks-bubble-meta {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .03em
+    }
+
+    .ks-ring {
+      width: 52px;
+      height: 52px;
+      position: relative;
+      flex: 0 0 auto
+    }
+
+    .ks-ring svg {
+      width: 52px;
+      height: 52px;
+      transform: rotate(-90deg)
+    }
+
+    .ks-ring circle {
+      fill: none;
+      stroke-width: 10
+    }
+
+    .ks-ring .trk {
+      stroke: rgba(148, 163, 184, .28)
+    }
+
+    .ks-ring .bar {
+      stroke: var(--ks-accent);
+      stroke-linecap: round;
+      stroke-dasharray: 276;
+      stroke-dashoffset: 276;
+      transition: stroke-dashoffset .12s linear
+    }
+
+    .ks-ring .glow {
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, .45))
+    }
+
+    .ks-bubble-txt {
+      min-width: 0;
+      max-width: 320px
+    }
+
+    .ks-bubble-title {
+      font-weight: 950;
+      color: #fff;
+      line-height: 1.05;
+      font-size: 13px
+    }
+
+    .ks-bubble-file {
+      display: none
+    }
+
+    .ks-bubble-meta {
+      margin-top: 2px;
+      font-size: 12px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .ks-bubble-actions {
+      margin-top: 0
+    }
+
+    .ks-bubble-actions .ks-btn {
+      padding: 6px 10px;
+      font-size: 12px
+    }
+
+    .ks-bubble-ok .bar {
+      stroke: #22c55e
+    }
+
+    .ks-bubble-ok .ks-bubble-title {
+      color: #bbf7d0
+    }
+
+    /* ======================================================
+       Upload overlay (estilo Alboom): cobre a área de Fotos
+       ====================================================== */
+    .ks-upload-ov {
+      position: fixed;
+      inset: 0;
+      z-index: 260;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, .62);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .ks-upload-ov.hidden {
+      display: none
+    }
+
+    .ks-upload-ov:not(.hidden) {
+      display: flex
+    }
+
+    .ks-upload-card {
+      width: min(480px, 92%);
+      border-radius: 20px;
+      border: 1px solid rgba(250, 204, 21, .2);
+      background: rgba(8, 8, 8, .95);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .05);
+      padding: 24px 22px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: #e5e7eb;
+    }
+
+    .ks-upload-card .ttl {
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.2;
+      font-size: 15px;
+      letter-spacing: .02em
+    }
+
+    .ks-upload-card .sub {
+      margin-top: 4px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, .5);
+      display: none
+    }
+
+    .ks-upload-card .meta {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #cbd5e1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .03em
+    }
+
+    .ks-upload-actions {
+      margin-top: 10px
+    }
+
+    /* ======================================================
+       Modal: fotos repetidas
+       ====================================================== */
+    .ks-dupe-ov {
+      position: fixed;
+      inset: 0;
+      z-index: 220;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: max(12px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+      background: rgba(0, 0, 0, .62);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .ks-dupe-ov.hidden {
+      display: none
+    }
+
+    .ks-dupe-card {
+      width: min(780px, 96vw);
+      max-height: min(92vh, 900px);
+      margin: auto 0;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(10, 10, 10, .92);
+      box-shadow: 0 22px 90px rgba(0, 0, 0, .60);
+      overflow: hidden;
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .ks-dupe-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, .10);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .ks-dupe-title {
+      font-weight: 950;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: #fff
+    }
+
+    .ks-dupe-body {
+      padding: 16px;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .ks-dupe-body .hint {
+      color: #cbd5e1;
+      font-size: 13px
+    }
+
+    .ks-dupe-list {
+      margin-top: 12px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .35);
+      max-height: 240px;
+      overflow: auto
+    }
+
+    .ks-dupe-list div {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: #e5e7eb
+    }
+
+    .ks-dupe-list div:last-child {
+      border-bottom: 0
+    }
+
+    .ks-dupe-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255, 255, 255, .10);
+      flex-shrink: 0;
+      background: rgba(8, 8, 8, .98);
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+    }
+
+    .ks-dupe-actions .ks-btn {
+      flex: 1;
+      min-width: min(220px, 100%)
+    }
+
+    /* ======================================================
+       Toast (popup bonito) - feedback sem alert()
+       ====================================================== */
+    .ks-toast-host {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 240;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .ks-toast {
+      pointer-events: auto;
+      width: min(420px, 92vw);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(10, 10, 10, .92);
+      box-shadow: 0 18px 70px rgba(0, 0, 0, .55);
+      padding: 12px 14px;
+      color: #e5e7eb;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transform: translateY(8px);
+      opacity: 0;
+      animation: ksToastIn .18s ease forwards;
+    }
+
+    .ks-toast .ic {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06)
+    }
+
+    .ks-toast .tx {
+      min-width: 0
+    }
+
+    .ks-toast .ttl {
+      font-weight: 950;
+      color: #fff;
+      line-height: 1.1
+    }
+
+    .ks-toast .msg {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #cbd5e1
+    }
+
+    .ks-toast .x {
+      margin-left: auto
+    }
+
+    .ks-toast .x button {
+      border: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, .65);
+      cursor: pointer
+    }
+
+    .ks-toast.ok .ic {
+      border-color: rgba(34, 197, 94, .35);
+      background: rgba(34, 197, 94, .12);
+      color: #22c55e
+    }
+
+    .ks-toast.warn .ic {
+      border-color: rgba(250, 204, 21, .35);
+      background: rgba(250, 204, 21, .12);
+      color: var(--ks-accent)
+    }
+
+    .ks-toast.err .ic {
+      border-color: rgba(239, 68, 68, .35);
+      background: rgba(239, 68, 68, .12);
+      color: #ef4444
+    }
+
+    @keyframes ksToastIn {
+      to {
+        transform: translateY(0);
+        opacity: 1
+      }
+    }
+
+    @keyframes ksToastOut {
+      to {
+        transform: translateY(8px);
+        opacity: 0
+      }
+    }
+
+    /* ===== Activity (estilo Alboom) ===== */
+    .ks-abo {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px
+    }
+
+    .ks-abo-card {
+      border: 1px solid var(--ks-line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .02);
+      overflow: hidden
+    }
+
+    .ks-abo-head {
+      padding: 14px;
+      border-bottom: 1px solid var(--ks-line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px
+    }
+
+    .ks-abo-title {
+      font-weight: 950;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-size: 12px
+    }
+
+    .ks-abo-search {
+      position: relative;
+      padding: 12px;
+      border-bottom: 1px solid var(--ks-line)
+    }
+
+    .ks-abo-search i {
+      position: absolute;
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ks-accent);
+      opacity: .9
+    }
+
+    .ks-abo-search input {
+      width: 100%;
+      padding: 12px 12px 12px 40px;
+      border-radius: 14px;
+      border: 1px solid rgba(250, 204, 21, .22);
+      background: rgba(255, 255, 255, .03);
+      color: #fff;
+      outline: none;
+      font-size: 16px
+    }
+
+    .ks-abo-search input:focus {
+      border-color: rgba(250, 204, 21, .45);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, .10)
+    }
+
+    .ks-abo-group {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--ks-line)
+    }
+
+    .ks-abo-ghead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 950;
+      font-size: 12px
+    }
+
+    .ks-abo-ghead span {
+      color: rgba(255, 255, 255, .85)
+    }
+
+    .ks-abo-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 22px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-weight: 950;
+      font-size: 11px;
+      border: 1px solid rgba(250, 204, 21, .20);
+      background: rgba(250, 204, 21, .10);
+      color: var(--ks-accent)
+    }
+
+    .ks-abo-item {
+      margin-top: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(0, 0, 0, .35);
+      padding: 10px;
+      cursor: pointer
+    }
+
+    .ks-abo-item.active {
+      border-color: rgba(250, 204, 21, .35);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, .08)
+    }
+
+    .ks-abo-item .nm {
+      font-weight: 950
+    }
+
+    .ks-abo-item .sm {
+      margin-top: 6px;
+      color: var(--ks-muted);
+      font-size: 12px
+    }
+
+    .ks-abo-main {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0
+    }
+
+    .ks-abo-item .nm,
+    .ks-abo-item .sm {
+      overflow-wrap: anywhere;
+      word-break: break-word
+    }
+
+    .ks-abo-client {
+      padding: 14px
+    }
+
+    .ks-abo-client-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .ks-abo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(250, 204, 21, .20);
+      background: rgba(250, 204, 21, .10);
+      color: var(--ks-accent);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 950;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase
+    }
+
+    .ks-abo-client-name {
+      font-weight: 950;
+      font-size: 16px
+    }
+
+    .ks-abo-client-sub {
+      margin-top: 6px;
+      color: var(--ks-muted);
+      font-size: 12px
+    }
+
+    .ks-abo-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .ks-abo-actions button {
+      white-space: nowrap
+    }
+
+    .ks-act-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end
+    }
+
+    .ks-act-split {
+      display: flex;
+      align-items: center;
+      gap: 0
+    }
+
+    .ks-act-split .ks-btn {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0
+    }
+
+    .ks-act-split .ks-btn+.ks-btn {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      min-width: 44px;
+      padding-left: 10px;
+      padding-right: 10px
+    }
+
+    .ks-act-menu {
+      position: absolute;
+      top: 46px;
+      right: 0
+    }
+
+    .ks-abo-grid2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px
+    }
+
+    .ks-abo-grid2 > .ks-abo-box {
+      min-width: 0
+    }
+
+    .ks-abo-box {
+      padding: 14px;
+      border: 1px solid var(--ks-line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .02);
+      min-width: 0
+    }
+
+    .ks-abo-box h4 {
+      margin: 0 0 10px 0;
+      font-weight: 950;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .85)
+    }
+
+    .ks-abo-kpi {
+      display: grid;
+      /* Quebra para a linha seguinte quando a caixa “Resumo” fica estreita (evita texto a invadir a coluna ao lado) */
+      grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+      gap: 10px
+    }
+
+    .ks-abo-kpi .k {
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .28);
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch
+    }
+
+    .ks-abo-kpi .k .l {
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--ks-muted);
+      font-weight: 900;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.35
+    }
+
+    .ks-abo-kpi .k .v {
+      margin-top: 6px;
+      font-weight: 950;
+      font-size: clamp(14px, 1.05vw + 12px, 18px);
+      color: #fff;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      max-width: 100%;
+      min-width: 0
+    }
+
+    .ks-abo-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--ks-line);
+      padding: 0 14px
+    }
+
+    .ks-abo-tab {
+      padding: 12px 10px;
+      font-weight: 950;
+      font-size: 12px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--ks-muted);
+      border-bottom: 2px solid transparent;
+      cursor: pointer
+    }
+
+    .ks-abo-tab.active {
+      color: var(--ks-accent);
+      border-bottom-color: var(--ks-accent)
+    }
+
+    .ks-abo-pane {
+      padding: 14px
+    }
+
+    .ks-abo-photos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+      gap: 10px
+    }
+
+    .ks-abo-ph {
+      border: 1px solid rgba(255, 255, 255, .10);
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, .35)
+    }
+
+    .ks-abo-ph img {
+      width: 100%;
+      height: 110px;
+      object-fit: contain;
+      display: block;
+      background: rgba(0, 0, 0, .45)
+    }
+
+    .ks-abo-cap {
+      padding: 8px 8px 10px 8px;
+      font-size: 11px;
+      color: var(--ks-muted);
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
+      line-height: 1.35;
+      word-break: break-word
+    }
+
+    .ks-abo-empty {
+      padding: 22px;
+      border: 1px dashed rgba(255, 255, 255, .14);
+      border-radius: 16px;
+      color: var(--ks-muted);
+      text-align: center;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.45
+    }
+
+    @media (max-width: 980px) {
+      .ks-abo {
+        grid-template-columns: 1fr
+      }
+    }
+
+    @media (max-width: 560px) {
+      .ks-abo-photos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .ks-abo-grid2 {
+        grid-template-columns: 1fr
+      }
+    }
+
+    /* Tiles de foto mais premium */
+    .ks-photo {
+      background: rgba(255, 255, 255, .02) !important;
+      border-color: var(--ks-line) !important
+    }
+
+    .ks-photo:hover {
+      border-color: rgba(250, 204, 21, .30) !important;
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, .08), 0 22px 70px rgba(0, 0, 0, .45)
+    }
+
+    .ks-photo-media {
+      background: rgba(255, 255, 255, .02) !important
+    }
+
+    .ks-ico {
+      border-color: rgba(255, 255, 255, .16) !important;
+      background: rgba(0, 0, 0, .58) !important;
+      color: #fff
+    }
+
+    /* manter coerência com o menu premium (não escurecer aqui) */
+    .ks-menu {
+      background: rgba(255, 255, 255, .96) !important;
+      border-color: rgba(0, 0, 0, .10) !important
+    }
+
+    .ks-menu button {
+      color: #0b0f1a !important
+    }
+
+    .ks-menu button:hover {
+      background: rgba(0, 0, 0, .05) !important
+    }
+
+    .ks-menu .danger {
+      color: #dc2626 !important
+    }
+
+    /* Alertas / erros */
+    #ks-error {
+      border-color: rgba(255, 90, 90, .22) !important;
+      background: rgba(255, 90, 90, .08) !important;
+      color: #fecaca !important
+    }
+
+    /* Remove o "pill" branco do topo (CK CONECTA) */
+    #ks-user-pill {
+      display: none !important
+    }
+
+    /* Radios/checkbox mais premium */
+    input[type="radio"],
+    input[type="checkbox"] {
+      accent-color: var(--ks-accent);
+    }
+
+    label.rounded-xl {
+      background: rgba(255, 255, 255, .02) !important;
+      border-color: var(--ks-line) !important
+    }
+
+    label.rounded-xl:hover {
+      border-color: rgba(255, 234, 0, .22) !important
+    }
+
+    /* Viewer */
+    #p-viewer>div {
+      background: rgba(2, 6, 23, .92) !important;
+      border-color: rgba(255, 255, 255, .10) !important
+    }
+
+    #p-viewer-dots {
+      min-height: 32px
+    }
+
+    .ks-viewer-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .35);
+      border: none;
+      cursor: pointer;
+      transition: all .2s;
+      padding: 0
+    }
+
+    .ks-viewer-dot:hover {
+      background: rgba(255, 255, 255, .6)
+    }
+
+    .ks-viewer-dot.active {
+      background: var(--ks-accent);
+      width: 24px;
+      border-radius: 4px
+    }
+
+    #p-viewer .border-b {
+      border-color: rgba(255, 255, 255, .10) !important
+    }
+
+    #p-viewer-title,
+    #p-viewer-meta {
+      color: #e5e7eb !important
+    }
+
+    #p-viewer img {
+      background: #000
+    }
+
+    /* Botões compactos ícone-only */
+    #btn-reset-pass {
+      min-width: 48px
+    }
+
+    /* Mobile: mais largura + mais “respiro” */
+    @media (max-width: 560px) {
+      .ks-wrap {
+        padding: 12px;
+        width: 100%
+      }
+
+      .ks-top .ks-wrap {
+        padding: 12px
+      }
+
+      .ks-nav {
+        overflow: auto;
+        white-space: nowrap;
+        padding-bottom: 6px
+      }
+
+      .ks-nav a {
+        flex: 0 0 auto
+      }
+
+      .ks-card.p-5 {
+        padding: 14px
+      }
+
+      /* Botões do topo viram grid 2x2 (não fica apertado) */
+      #ks-back,
+      #ks-panel,
+      #ks-share,
+      #ks-publish {
+        flex: 1
+      }
+
+      /* Menu lateral vira “tabs” horizontais no mobile — só rolagem horizontal; a página rola por fora */
+      .ks-side {
+        flex-direction: row;
+        gap: 8px;
+        overflow-x: auto;
+        overflow-y: visible;
+        white-space: nowrap;
+        padding: 6px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .ks-side a {
+        flex: 0 0 auto;
+        padding: 10px 12px
+      }
+
+      .ks-side a i {
+        opacity: .9
+      }
+
+      /* ===== Activity (mobile) ===== */
+      .ks-abo {
+        gap: 12px
+      }
+
+      .ks-abo-head {
+        padding: 12px
+      }
+
+      .ks-abo-search {
+        padding: 10px
+      }
+
+      .ks-abo-search i {
+        left: 18px
+      }
+
+      .ks-abo-search input {
+        border-radius: 14px
+      }
+
+      .ks-abo-group {
+        padding: 10px
+      }
+
+      .ks-abo-item {
+        padding: 10px
+      }
+
+      /* Cabeçalho do cliente não pode “apertar”/cortar */
+      .ks-abo-client {
+        padding: 12px
+      }
+
+      .ks-abo-client-top {
+        flex-direction: column;
+        align-items: stretch
+      }
+
+      .ks-abo-actions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap
+      }
+
+      .ks-act-wrap {
+        justify-content: flex-start
+      }
+
+      .ks-abo-actions .ks-btn {
+        flex: 1;
+        min-width: calc(50% - 6px)
+      }
+
+      /* KPIs: 3 colunas no mobile fica ilegível */
+      .ks-abo-kpi {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+
+      .ks-abo-kpi .k {
+        padding: 12px
+      }
+
+      .ks-abo-kpi .k .l {
+        letter-spacing: .1em;
+        font-size: 9px
+      }
+
+      .ks-abo-kpi .k .v {
+        font-size: 16px;
+        overflow-wrap: anywhere;
+        word-break: break-word
+      }
+
+      /* Tabs: scroll horizontal em vez de cortar */
+      .ks-abo-tabsbox {
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch
+      }
+
+      /* Menu de ações não pode ser cortado no mobile */
+      .ks-abo-client {
+        overflow: visible
+      }
+
+      .ks-act-wrap {
+        position: relative;
+        overflow: visible
+      }
+
+      .ks-act-menu {
+        z-index: 200
+      }
+
+      .ks-abo-tabs {
+        overflow: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding: 0 12px;
+      }
+
+      .ks-abo-tabs::-webkit-scrollbar {
+        height: 0
+      }
+
+      .ks-abo-tab {
+        white-space: nowrap;
+        padding: 12px 10px;
+        flex: 0 0 auto
+      }
+
+      .ks-abo-pane {
+        padding: 12px
+      }
+
+      /* Finalizar + exportar: coluna em ecrãs estreitos (evita “FINALIZ…”) */
+      .ks-abo-actions {
+        flex-direction: column;
+        align-items: stretch
+      }
+
+      .ks-act-wrap {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%
+      }
+
+      .ks-act-split {
+        width: 100%;
+        display: flex
+      }
+
+      .ks-act-split .ks-btn:first-child {
+        flex: 1 1 auto;
+        min-width: 0
+      }
+
+      .ks-act-split .ks-btn:last-child {
+        flex: 0 0 48px
+      }
+
+      .ks-abo-actions .ks-btn,
+      .ks-abo-actions #ks-open-export {
+        flex: none !important;
+        min-width: 0 !important;
+        width: 100%
+      }
+    }
+
+    @media (max-width: 400px) {
+      .ks-abo-kpi {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ks-top">
+    <div class="ks-wrap flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div>
+          <div class="font-black uppercase tracking-[0.38em] text-[10px] text-slate-500 hidden">— — —</div>
+          <div class="font-extrabold text-slate-900 tracking-tight">KingSelection</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 text-sm text-slate-600">
+        <span id="ks-user-pill"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-100 border border-slate-200">
+          <span class="w-7 h-7 rounded-full bg-slate-200 inline-flex items-center justify-center font-black">CK</span>
+          <span class="font-extrabold">CONECTA</span>
+        </span>
+      </div>
+    </div>
+    <div class="ks-wrap pt-0">
+      <div class="ks-nav flex items-center gap-2">
+        <a href="#" id="ks-nav-projects" class="active">Meus projetos</a>
+        <a href="#" id="ks-nav-clients">Clientes</a>
+        <a href="#" id="ks-nav-settings">Configurações</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="ks-wrap">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="text-sm font-extrabold text-slate-900" id="ks-project-title">Projeto</div>
+        <div class="text-sm ks-muted" id="ks-project-sub">KingSelection</div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        <button class="ks-btn" id="ks-back" title="Voltar"><i class="fas fa-arrow-left"></i> Voltar</button>
+        <button class="ks-btn" id="ks-panel" title="Ir para o painel"><i class="fas fa-house"></i> Painel</button>
+        <button class="ks-btn" id="ks-share"><i class="fas fa-share"></i> Compartilhar</button>
+        <button class="ks-btn ks-btn-primary" id="ks-publish"><i class="fas fa-bullhorn"></i> Publicar</button>
+        <button class="ks-btn" id="ks-delete-project" title="Excluir projeto inteiro"
+          style="color:#f87171;border-color:rgba(248,113,113,.45)"><i class="fas fa-trash"></i> Excluir projeto</button>
+      </div>
+    </div>
+
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="ks-card ks-card--side-nav p-3 lg:col-span-3">
+        <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible overflow-x-auto overscroll-x-contain pr-1 md:overflow-x-visible md:pr-0">
+          <a href="#" data-tab="activity" class="active"><i class="fas fa-wave-square"></i> Atividades do cliente</a>
+          <a href="#" data-tab="photos"><i class="fas fa-images"></i> Fotos</a>
+          <a href="#" data-tab="facial"><i class="fas fa-face-smile"></i> Reconhecimento Facial</a>
+          <a href="#" data-tab="details"><i class="fas fa-pen"></i> Dados da galeria de fotos</a>
+          <a href="#" id="ks-link-config-finalizacao" title="Configurar título, mensagem e imagem da tela de obrigado"><i class="fas fa-hand-holding-heart"></i> Página de finalização</a>
+          <a href="#" data-tab="privacy"><i class="fas fa-lock"></i> Acesso e privacidade</a>
+          <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
+          <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
+          <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
+          <a href="#" data-tab="link-cover"><i class="fas fa-image"></i> Capa do link</a>
+          <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
+          <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
+          <a href="#" data-tab="image-quality"><i class="fas fa-expand"></i> Resolução da foto</a>
+          <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
+        </div>
+      </div>
+
+      <div class="lg:col-span-9">
+        <div id="ks-error" class="hidden mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700"></div>
+
+        <!-- Activity (igual Alboom: lista + painel + tabs + fotos) -->
+        <div class="ks-card p-5" data-pane="activity">
+          <div class="ks-abo">
+            <!-- Lista de clientes -->
+            <div class="ks-abo-card">
+              <div class="ks-abo-head">
+                <div class="ks-abo-title">Atividades do cliente</div>
+              </div>
+              <div class="ks-abo-search">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input id="ks-activity-search" placeholder="Buscar cliente..." autocomplete="off" />
+              </div>
+              <div class="ks-abo-filters flex flex-col gap-2 mt-2 mb-1 px-0.5">
+                <div class="flex flex-wrap gap-2 items-center">
+                  <label for="ks-activity-sort" class="text-[10px] uppercase tracking-widest font-extrabold text-slate-500 whitespace-nowrap">Ordenar</label>
+                  <select id="ks-activity-sort" class="ks-input text-xs py-1.5 px-2 rounded-lg flex-1 min-w-[min(100%,200px)] max-w-[260px]" title="Ordem da lista em cada grupo">
+                    <option value="name_asc">Nome A–Z</option>
+                    <option value="name_desc">Nome Z–A</option>
+                    <option value="order_asc">Pedido: mais antigo primeiro</option>
+                    <option value="order_desc">Pedido: mais recente primeiro</option>
+                  </select>
+                </div>
+                <div class="flex flex-wrap gap-2 items-center">
+                  <label for="ks-activity-pay-filter" class="text-[10px] uppercase tracking-widest font-extrabold text-slate-500 whitespace-nowrap">Pagamento</label>
+                  <select id="ks-activity-pay-filter" class="ks-input text-xs py-1.5 px-2 rounded-lg flex-1 min-w-[min(100%,200px)] max-w-[280px]" title="Filtrar por situação de pagamento (modo Fotos vendidas)">
+                    <option value="all">Todos</option>
+                    <option value="paid">Já pagou (confirmado)</option>
+                    <option value="unpaid">Ainda não pagou / pendente</option>
+                    <option value="courtesy">Cortesia</option>
+                  </select>
+                </div>
+              </div>
+              <div class="ks-abo-group">
+                <div class="ks-abo-ghead"><span>Em andamento</span><span class="ks-abo-count"
+                    id="ks-activity-count-andamento">0</span></div>
+                <div id="ks-activity-list-andamento"></div>
+              </div>
+              <div class="ks-abo-group">
+                <div class="ks-abo-ghead"><span>Em revisão</span><span class="ks-abo-count"
+                    id="ks-activity-count-revisao">0</span></div>
+                <div id="ks-activity-list-revisao"></div>
+              </div>
+              <div class="ks-abo-group" style="border-bottom:0">
+                <div class="ks-abo-ghead"><span>Finalizado</span><span class="ks-abo-count"
+                    id="ks-activity-count-finalizado">0</span></div>
+                <div id="ks-activity-list-finalizado"></div>
+              </div>
+            </div>
+
+            <!-- Painel -->
+            <div class="ks-abo-main">
+              <div class="ks-abo-box ks-abo-client">
+                <div class="ks-abo-client-top">
+                  <div>
+                    <div class="ks-abo-client-name" id="ks-activity-client-name">-</div>
+                    <div class="ks-abo-client-sub" id="ks-activity-contact-line">
+                      <span id="ks-activity-email">-</span>
+                      <span class="opacity-40 ks-activity-contact-sep"> • </span>
+                      <span id="ks-activity-phone">-</span>
+                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-open-whatsapp" style="margin-left:8px;padding:4px 9px">
+                        <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
+                      </button>
+                    </div>
+                    <div class="ks-abo-client-sub mt-2 flex flex-wrap items-center gap-2" id="ks-activity-pass-row" style="display:none">
+                      <span class="text-xs text-slate-500">Senha de acesso (login do cliente):</span>
+                      <span class="ks-pass-mask font-mono text-sm text-slate-800" id="ks-activity-pass">••••••</span>
+                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-reveal-pass" data-ks-reveal-pass="0">Mostrar</button>
+                    </div>
+                    <div class="ks-abo-client-sub" style="margin-top:8px">
+                      <span class="ks-abo-badge" id="ks-activity-badge">-</span>
+                    </div>
+                    <div class="ks-abo-client-sub" id="ks-activity-sales-mini" style="margin-top:6px;display:none">
+                      <span class="ks-abo-badge" id="ks-activity-sales-pending-mini" style="display:none"></span>
+                      <span class="ks-abo-badge" id="ks-activity-sales-approved-mini" style="display:none"></span>
+                    </div>
+                  </div>
+                  <div class="ks-abo-actions">
+                    <div class="ks-act-wrap">
+                      <div class="ks-act-split">
+                        <button class="ks-btn ks-btn-primary" id="ks-act-main"><i class="fas fa-flag-checkered"></i>
+                          Finalizar</button>
+                        <button class="ks-btn" id="ks-act-more" title="Mais ações"><i
+                            class="fas fa-chevron-down"></i></button>
+                      </div>
+                      <button type="button" class="ks-btn" id="ks-act-open-round" data-ks-open-round
+                        title="Com o cliente em revisão: abre nova seleção para ele escolher mais fotos sem perder as já enviadas.">
+                        <i class="fas fa-layer-group"></i> Nova seleção
+                      </button>
+                      <button type="button" class="ks-btn" id="ks-act-clear-review" data-ks-clear-review
+                        title="Apaga as fotos em revisão do cliente selecionado (não apaga o projeto).">
+                        <i class="fas fa-trash"></i> Excluir revisão
+                      </button>
+                      <button type="button" class="ks-btn" id="ks-act-delete-current-round"
+                        title="Apaga apenas a rodada atual (mantém o cadastro do cliente).">
+                        <i class="fas fa-layer-group"></i> Excluir só rodada
+                      </button>
+                      <button type="button" class="ks-btn" id="ks-act-delete-round-client"
+                        title="Apaga a rodada atual e exclui o cadastro do cliente nesta galeria.">
+                        <i class="fas fa-user-slash"></i> Excluir rodada + cadastro
+                      </button>
+                      <div class="text-xs ks-muted" style="line-height:1.4;margin-top:6px">
+                        <b>Excluir só rodada:</b> remove apenas a seleção atual. &nbsp;|&nbsp;
+                        <b>Excluir rodada + cadastro:</b> remove seleção e cadastro do cliente.
+                      </div>
+                      <button class="ks-btn" id="ks-open-export"><i class="fas fa-file-export"></i> Exportar</button>
+                      <div class="ks-menu ks-act-menu" id="ks-act-menu">
+                        <button type="button" id="ks-act-open-round-dd" data-ks-open-round><i class="fas fa-layer-group"></i> Nova seleção</button>
+                        <button type="button" id="ks-act-clear-review-dd" data-ks-clear-review><i class="fas fa-trash"></i> Excluir revisão</button>
+                        <button id="ks-act-finalize"><i class="fas fa-flag-checkered"></i> Finalizar</button>
+                        <button id="ks-act-reactivate"><i class="fas fa-rotate-left"></i> Reativar</button>
+                        <button id="ks-act-share"><i class="fas fa-share"></i> Compartilhar</button>
+                        <button type="button" id="ks-act-delete-client" class="danger" title="Exclui o cadastro do cliente nesta galeria (remove seleções/liberações vinculadas).">
+                          <i class="fas fa-user-slash"></i> Excluir cliente
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ks-abo-grid2">
+                <div class="ks-abo-box">
+                  <h4>Resumo das atividades</h4>
+                  <div class="ks-abo-kpi">
+                    <div class="k">
+                      <div class="l">Início</div>
+                      <div class="v" id="ks-updated-at">-</div>
+                    </div>
+                    <div class="k">
+                      <div class="l">Selecionadas</div>
+                      <div class="v"><span id="ks-selected-count">0</span></div>
+                      <div class="text-xs ks-muted mt-1 leading-snug min-h-[1rem]" id="ks-selected-count-sub"></div>
+                    </div>
+                    <div class="k">
+                      <div class="l">Status</div>
+                      <div class="v" id="ks-status">-</div>
+                    </div>
+                  </div>
+                  <div class="text-xs ks-muted mt-3 leading-relaxed hidden" id="ks-activity-rounds-detail"></div>
+                </div>
+                <div class="ks-abo-box">
+                  <h4>Mensagem do cliente</h4>
+                  <div id="ks-feedback" class="ks-abo-empty">Nenhuma mensagem enviada</div>
+                </div>
+              </div>
+
+              <div class="ks-abo-box ks-abo-tabsbox" style="padding:0">
+                <div class="ks-abo-tabs">
+                  <div class="ks-abo-tab active" data-abo-tab="photos">Fotos selecionadas</div>
+                  <div class="ks-abo-tab" data-abo-tab="comments">Comentários</div>
+                </div>
+                <div class="ks-abo-pane" data-abo-pane="photos">
+                  <div class="hidden flex-wrap items-center gap-3 mb-3 px-3 pt-3 border-b border-slate-200/80 pb-3"
+                    id="ks-activity-batch-toolbar">
+                    <label for="ks-activity-batch-filter" class="text-sm font-extrabold text-slate-800 shrink-0">Ver seleção</label>
+                    <select id="ks-activity-batch-filter" class="ks-input max-w-md min-w-[200px]"
+                      title="Mostrar só as fotos desta rodada ou todas">
+                      <option value="all">Todas as rodadas</option>
+                    </select>
+                    <button type="button" class="ks-btn hidden border-red-400/60 text-red-600" id="ks-activity-delete-batch"
+                      title="Apaga todas as fotos desta rodada só para o cliente selecionado (testes ou envio errado)">Excluir esta rodada</button>
+                    <button type="button" class="ks-btn hidden" id="ks-activity-reactivate-batch"
+                      title="Reativa esta rodada para o cliente voltar a selecionar nela">Reativar esta rodada</button>
+                    <button type="button" class="ks-btn hidden" id="ks-activity-open-next-round"
+                      title="Abre uma nova seleção sem mexer nas fotos desta rodada">Nova seleção</button>
+                    <button type="button" class="ks-btn hidden" id="ks-activity-sales-approve-all"
+                      title="Aprova todas as fotos desta seleção para download original (modo Fotos vendidas por evento)."><i class="fas fa-check-double"></i> Aprovar todas</button>
+                    <span class="text-xs ks-muted leading-snug">A contagem em “Selecionadas” segue este filtro. Exportar usa o mesmo critério ao abrir o modal.</span>
+                  </div>
+                  <div class="ks-abo-photos" id="ks-activity-selected-photos"></div>
+                  <div class="ks-abo-empty hidden" id="ks-activity-selected-empty">Nenhuma foto selecionada ainda</div>
+                </div>
+                <div class="ks-abo-pane hidden" data-abo-pane="comments">
+                  <div class="ks-abo-empty" id="ks-activity-comments-box">Nenhum comentário</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="ks-card p-5 hidden" data-pane="details">
+          <div class="font-extrabold text-slate-900">Dados da galeria de fotos</div>
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="ks-field">
+              <label>Nome da galeria de fotos</label>
+              <input class="ks-input mt-2" id="f-nome" />
+            </div>
+            <div class="ks-field">
+              <label>Categoria</label>
+              <select class="ks-input mt-2" id="f-categoria">
+                <option value="">— Selecione (opcional) —</option>
+                <option value="Casamento">Casamento</option>
+                <option value="Corporativo">Corporativo</option>
+                <option value="Ensaio">Ensaio</option>
+                <option value="Eventos">Eventos</option>
+                <option value="Newborn">Newborn</option>
+                <option value="Gestante">Gestante</option>
+                <option value="Família">Família</option>
+                <option value="Formatura">Formatura</option>
+                <option value="Batizado">Batizado</option>
+                <option value="Moda / Editorial">Moda / Editorial</option>
+                <option value="Produto / Still">Produto / Still</option>
+                <option value="Esportes">Esportes</option>
+                <option value="Arquitetura / Imóveis">Arquitetura / Imóveis</option>
+                <option value="_outro">Outra (digitar abaixo)</option>
+              </select>
+              <input class="ks-input mt-2 hidden" id="f-categoria-outro" placeholder="Digite a categoria"
+                style="margin-top:8px" />
+            </div>
+            <div class="ks-field">
+              <label>Limite de seleção (0 = livre)</label>
+              <input class="ks-input mt-2" id="f-max-selections" type="number" min="0" placeholder="0 = livre" title="Igual ao campo ao criar a galeria (máx. de fotos selecionáveis)" />
+            </div>
+            <div class="ks-field">
+              <label>Seleção mínima (0 = livre)</label>
+              <input class="ks-input mt-2" id="f-min-selections" type="number" min="0" placeholder="0 = livre" />
+            </div>
+            <div class="ks-field">
+              <label>Tamanho do card no cliente</label>
+              <input class="ks-input mt-2" id="f-client-card-height" type="range" min="160" max="420" step="10" value="220" />
+              <div class="text-xs ks-muted mt-1">Altura do quadro da foto no cliente: <b id="f-client-card-height-val">220px</b></div>
+            </div>
+            <div class="ks-field">
+              <label>Data do trabalho</label>
+              <input class="ks-input mt-2" id="f-data" type="date" />
+            </div>
+            <div class="ks-field">
+              <label>Idioma</label>
+              <select class="ks-input mt-2" id="f-idioma">
+                <option value="pt-BR">Português (BR)</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+            <div class="ks-field md:col-span-2">
+              <label>Mensagem de acesso</label>
+              <textarea class="ks-input mt-2" id="f-mensagem" style="min-height:120px"></textarea>
+            </div>
+            <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-1">Cliente(s) e acesso</div>
+              <p class="text-xs text-slate-500 mb-3 leading-relaxed">E-mail e senha que o cliente usa na <b>tela de login</b> da galeria (modo <b>Privado</b>). O nome do projeto acima é o título da galeria; os dados de login vêm dos cadastros abaixo.</p>
+              <div id="ks-details-client-summary" class="text-sm text-slate-800 space-y-2"></div>
+            </div>
+            <div class="md:col-span-2">
+              <button class="ks-btn ks-btn-primary" id="btn-save-details"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy -->
+        <div class="ks-card p-5 hidden" data-pane="privacy">
+          <div class="font-extrabold text-slate-900">Acesso e privacidade</div>
+          <div class="mt-4 space-y-3">
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+              <input type="radio" name="access_mode" value="private" class="mt-1" />
+              <div>
+                <div class="font-extrabold">Privado</div>
+                <div class="text-sm ks-muted">Apenas clientes cadastrados podem acessar a galeria.</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+              <input type="radio" name="access_mode" value="signup" class="mt-1" />
+              <div>
+                <div class="font-extrabold">Visitantes podem se cadastrar</div>
+                <div class="text-sm ks-muted">Qualquer pessoa com o link pode se cadastrar na tela de login e acessar a
+                  galeria como cliente.</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+              <input type="radio" name="access_mode" value="paid_event_photos" class="mt-1" />
+              <div>
+                <div class="font-extrabold">Fotos vendidas</div>
+                <div class="text-sm ks-muted">Ativa fluxo comercial: pacotes, comprovante PIX, aprovação por foto e aba de downloads liberados.</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+              <input type="radio" name="access_mode" value="public" class="mt-1" />
+              <div>
+                <div class="font-extrabold">Público</div>
+                <div class="text-sm ks-muted">Qualquer pessoa com o link pode acessar a galeria.</div>
+              </div>
+            </label>
+            <div class="mt-3">
+              <button class="ks-btn ks-btn-primary" id="btn-save-privacy"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sales / pagamento por evento -->
+        <div class="ks-card p-5 hidden" data-pane="sales">
+          <div class="font-extrabold text-slate-900">Fotos vendidas</div>
+          <div class="text-sm ks-muted mt-2">Configure PIX, pacotes e aprove os downloads por cliente/rodada. Este fluxo funciona apenas no modo de acesso <b>Fotos vendidas</b>.</div>
+          <div class="text-xs mt-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 px-3 py-2">
+            No modo <b>Fotos vendidas</b>, o download pago/aprovado em alta qualidade <b>não depende</b> da opção geral <b>Permissão de download</b>.
+          </div>
+
+          <div id="ks-sales-disabled-note" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 hidden">
+            Este painel está oculto porque a galeria não está no modo <b>Fotos vendidas</b>.
+            Vá em <b>Acesso e privacidade</b>, marque essa modalidade e clique em <b>Salvar</b>.
+          </div>
+
+          <div id="ks-sales-wrap" class="mt-4 space-y-4">
+            <div class="rounded-2xl border border-slate-700 bg-slate-900/85 p-4 text-slate-100">
+              <div class="font-extrabold text-slate-100">Dashboard de vendas</div>
+              <div class="mt-3 grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 min-w-0">
+                <div class="rounded-xl border border-emerald-500/45 bg-emerald-500/10 p-3 min-w-0">
+                  <div class="text-xs text-emerald-200 uppercase tracking-widest font-extrabold">Recebido (dinheiro)</div>
+                  <button type="button" class="mt-1 w-full min-w-0 text-left rounded-lg border border-transparent hover:border-emerald-400/50 hover:bg-emerald-500/15 transition px-1 py-0.5" id="ks-sales-dash-received-btn" data-sales-dash-detail="received" title="Ver quem pagou e quanto">
+                    <div class="text-xl min-[480px]:text-2xl font-black text-emerald-100 leading-tight break-words" id="ks-sales-dash-received">R$ 0,00</div>
+                    <div class="text-[10px] text-emerald-300/90 mt-0.5">Clique para ver o detalhe</div>
+                  </button>
+                </div>
+                <div class="rounded-xl border border-amber-400/45 bg-amber-400/10 p-3 min-w-0">
+                  <div class="text-xs text-amber-200 uppercase tracking-widest font-extrabold">Falta receber (estimado)</div>
+                  <button type="button" class="mt-1 w-full min-w-0 text-left rounded-lg border border-transparent hover:border-amber-400/50 hover:bg-amber-500/15 transition px-1 py-0.5" id="ks-sales-dash-missing-btn" data-sales-dash-detail="missing" title="Ver onde ainda falta">
+                    <div class="text-xl min-[480px]:text-2xl font-black text-amber-100 leading-tight break-words" id="ks-sales-dash-missing">R$ 0,00</div>
+                    <div class="text-[10px] text-amber-200/90 mt-0.5" id="ks-sales-dash-missing-period">No período: semana</div>
+                  </button>
+                </div>
+                <div class="rounded-xl border border-fuchsia-500/40 bg-fuchsia-500/10 p-3 min-w-0">
+                  <div class="text-xs text-fuchsia-200 uppercase tracking-widest font-extrabold">Cortesias (abonos)</div>
+                  <button type="button" class="mt-1 w-full min-w-0 text-left rounded-lg border border-transparent hover:border-fuchsia-400/50 hover:bg-fuchsia-500/15 transition px-1 py-0.5" id="ks-sales-dash-courtesy-btn" data-sales-dash-detail="courtesy" title="Ver cortesias por cliente">
+                    <div class="text-xl min-[480px]:text-2xl font-black text-fuchsia-100 leading-tight break-words" id="ks-sales-dash-courtesy">R$ 0,00</div>
+                    <div class="text-[10px] text-fuchsia-300/90 mt-0.5">Clique para ver o detalhe</div>
+                  </button>
+                </div>
+                <div class="rounded-xl border border-sky-400/45 bg-sky-400/10 p-3 min-w-0">
+                  <div class="text-xs text-sky-200 uppercase tracking-widest font-extrabold">Clientes com pendência</div>
+                  <div class="text-xl min-[480px]:text-2xl font-black text-sky-100 break-words" id="ks-sales-dash-clients-pending">0</div>
+                </div>
+                <div class="rounded-xl border border-violet-400/45 bg-violet-400/10 p-3 min-w-0">
+                  <div class="text-xs text-violet-200 uppercase tracking-widest font-extrabold">Sessões pendentes</div>
+                  <div class="text-xl min-[480px]:text-2xl font-black text-violet-100 break-words" id="ks-sales-dash-rounds-pending">0</div>
+                </div>
+              </div>
+              <div class="mt-3 rounded-xl border border-amber-300/35 bg-amber-400/10 p-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="text-xs text-amber-100 uppercase tracking-widest font-extrabold">Top pendências</div>
+                  <div class="flex items-center gap-2">
+                    <select id="ks-sales-top-pending-period" class="ks-input" style="min-width:120px;padding:4px 8px;font-size:12px;line-height:1.2">
+                      <option value="today">Hoje</option>
+                      <option value="week" selected>Semana</option>
+                      <option value="month">Mês</option>
+                    </select>
+                    <div class="text-[11px] text-amber-200">Quem mais falta receber</div>
+                  </div>
+                </div>
+                <div id="ks-sales-top-pending" class="mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 text-sm text-slate-100">
+                  <div class="text-xs text-slate-300">Nenhuma pendência no momento.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+              <div class="font-extrabold text-slate-900">Configuração PIX</div>
+              <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" id="ks-sales-pix-enabled" />
+                  <span class="text-sm">Ativar pagamento por PIX nesta galeria</span>
+                </label>
+                <div></div>
+                <div class="ks-field">
+                  <label>Chave PIX</label>
+                  <input class="ks-input mt-2" id="ks-sales-pix-key" placeholder="CPF, e-mail, telefone ou chave aleatória" />
+                </div>
+                <div class="ks-field">
+                  <label>Favorecido</label>
+                  <input class="ks-input mt-2" id="ks-sales-pix-holder" placeholder="Nome do favorecido" />
+                </div>
+                <div class="ks-field md:col-span-2">
+                  <label>Instruções para pagamento</label>
+                  <textarea class="ks-input mt-2" id="ks-sales-pix-instructions" style="min-height:90px" placeholder="Ex.: Envie o comprovante logo após o pagamento para liberar o download."></textarea>
+                  <div class="mt-2">
+                    <button class="ks-btn" id="ks-sales-pix-generate" type="button"><i class="fas fa-wand-magic-sparkles"></i> Gerar instrução automática</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-700 bg-slate-900/85 p-4 text-slate-100">
+              <div class="font-extrabold text-slate-100">Pacotes e precificação</div>
+              <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="ks-field">
+                  <label class="text-slate-300">Regra acima do pacote</label>
+                  <select class="ks-input mt-2" id="ks-sales-over-limit">
+                    <option value="allow_and_warn">Permitir e avisar negociação</option>
+                    <option value="block_selection">Bloquear acima do limite</option>
+                    <option value="allow_extra_per_photo">Permitir com foto extra automática</option>
+                  </select>
+                </div>
+                <div class="ks-field">
+                  <label class="text-slate-300">Modo de preço</label>
+                  <select class="ks-input mt-2" id="ks-sales-price-mode">
+                    <option value="best_price_auto">Melhor preço automático (pacotes + desconto)</option>
+                    <option value="packages_only">Somente pacotes</option>
+                    <option value="packages_plus_unit">Pacotes + valor por foto extra</option>
+                  </select>
+                </div>
+                <div class="ks-field">
+                  <label class="text-slate-300">Valor unitário (R$)</label>
+                  <input class="ks-input mt-2" id="ks-sales-unit-price" type="text" inputmode="decimal" placeholder="Ex.: 400,00" />
+                </div>
+              </div>
+              <div class="mt-3 flex items-center gap-2 flex-wrap">
+                <button class="ks-btn" id="ks-sales-add-package" type="button"><i class="fas fa-plus"></i> Novo pacote</button>
+                <span class="text-xs ks-muted">Ex.: 3 fotos = R$ 200,00</span>
+              </div>
+              <div id="ks-sales-packages" class="mt-3 space-y-2"></div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-700 bg-slate-900/85 p-4 text-slate-100">
+              <div class="font-extrabold text-slate-100">Comprovantes e aprovação</div>
+              <div class="mt-3 hidden">
+                <div class="ks-field">
+                  <label>Cliente</label>
+                  <select class="ks-input mt-2" id="ks-sales-client"></select>
+                </div>
+              </div>
+              <div class="mt-3">
+                <label class="text-slate-300 text-xs font-extrabold tracking-widest uppercase">Clientes</label>
+                <div class="mt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+                  <input class="ks-input flex-1 min-w-[200px]" id="ks-sales-client-search" placeholder="Buscar cliente por nome ou e-mail..." />
+                  <div class="flex items-center gap-2 shrink-0">
+                    <label for="ks-sales-clients-filter" class="text-[11px] text-slate-400 whitespace-nowrap">Filtrar:</label>
+                    <select id="ks-sales-clients-filter" class="ks-input" style="min-width:200px;padding:8px 10px;font-size:13px">
+                      <option value="all">Tudo</option>
+                      <option value="received">Com valor recebido</option>
+                      <option value="missing">Com falta a receber</option>
+                      <option value="courtesy">Cortesias / abençoados</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="ks-sales-clients-list" class="mt-2 grid grid-cols-1 gap-2"></div>
+              </div>
+              <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="ks-field">
+                  <label class="text-slate-300">Rodada</label>
+                  <select class="ks-input mt-2" id="ks-sales-round"></select>
+                </div>
+                <div class="ks-field">
+                  <label class="text-slate-300">Status pagamento</label>
+                  <div id="ks-sales-payment-status" class="ks-input mt-2 flex flex-col justify-center gap-0.5 py-2 min-h-[44px] text-left leading-snug">—</div>
+                </div>
+              </div>
+              <div id="ks-sales-terms-panel" class="mt-3 rounded-xl border border-slate-600 bg-slate-950/60 p-3">
+                <div class="font-extrabold text-slate-100 text-sm">Valores combinados (esta rodada)</div>
+                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                  A <b>soma pelos pacotes</b> segue a mesma regra do pagamento no app do cliente. O <b>total acordado</b> substitui essa soma no saldo. Preencha <b>valor restante</b>, <b>parcelas</b> e <b>dias</b> para exibir o plano no status acima; o recebido em dinheiro continua em <b>Pagamento confirmado</b> e nos demais botões.
+                </p>
+                <div class="mt-2 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2">
+                  <div class="text-[10px] text-emerald-300/90 uppercase font-extrabold tracking-wide">Referência (soma pelas fotos)</div>
+                  <div id="ks-sales-terms-photo-ref" class="text-emerald-100 font-bold text-sm mt-1">—</div>
+                  <div id="ks-sales-terms-cupom-note" class="text-[10px] text-slate-500 mt-1 hidden"></div>
+                </div>
+                <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  <div class="ks-field">
+                    <label class="text-slate-400 text-xs">Total acordado (R$)</label>
+                    <input class="ks-input mt-1" id="ks-sales-terms-negotiated" type="text" inputmode="decimal" placeholder="Vazio = soma pelas fotos" />
+                  </div>
+                  <div class="ks-field">
+                    <label class="text-slate-400 text-xs">Entrada declarada (R$)</label>
+                    <input class="ks-input mt-1" id="ks-sales-terms-down" type="text" inputmode="decimal" placeholder="Opcional" />
+                  </div>
+                  <div class="ks-field">
+                    <label class="text-slate-400 text-xs">Valor restante a parcelar (R$)</label>
+                    <input class="ks-input mt-1" id="ks-sales-terms-remaining" type="text" inputmode="decimal" placeholder="Ex.: 1.000,00" />
+                  </div>
+                  <div class="ks-field">
+                    <label class="text-slate-400 text-xs">Parcelas do restante</label>
+                    <input class="ks-input mt-1" id="ks-sales-terms-installments" type="number" min="1" max="240" step="1" placeholder="Ex.: 1" />
+                  </div>
+                  <div class="ks-field">
+                    <label class="text-slate-400 text-xs">Dias para pagar (cada parcela)</label>
+                    <input class="ks-input mt-1" id="ks-sales-terms-interval-days" type="number" min="1" max="730" step="1" placeholder="Ex.: 30" />
+                  </div>
+                </div>
+                <div id="ks-sales-terms-hint" class="text-[11px] text-slate-400 mt-2"></div>
+                <div class="mt-2">
+                  <button type="button" class="ks-btn ks-btn-primary" id="ks-sales-terms-save"><i class="fas fa-save"></i> Salvar valores combinados</button>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center gap-2 flex-wrap">
+                <button class="ks-btn" id="ks-sales-payment-confirm" type="button"><i class="fas fa-check"></i> Pagamento confirmado</button>
+                <button class="ks-btn" id="ks-sales-payment-adiantamento" type="button" style="border-color:rgba(45,212,191,.7);background:rgba(13,148,136,.16);color:#ccfbf1;font-weight:800" title="Registra um pagamento parcial: soma ao recebido nesta rodada até quitar o combinado (sem substituir o acumulado)."><i class="fas fa-coins"></i> Registrar adiantamento</button>
+                <button class="ks-btn" id="ks-sales-payment-courtesy-rest" type="button" style="border-color:rgba(167,139,250,.75);background:rgba(139,92,246,.18);color:#ede9fe;font-weight:800" title="Abonar o que falta como cortesia e encerrar o pacote"><i class="fas fa-hand-holding-heart"></i> Cortesia no restante</button>
+                <button class="ks-btn" id="ks-sales-payment-fix-amount" type="button"><i class="fas fa-pen"></i> Corrigir valor pago</button>
+                <button class="ks-btn" id="ks-sales-payment-reject" type="button"><i class="fas fa-xmark"></i> Recusar comprovante</button>
+                <button class="ks-btn" id="ks-sales-payment-pending" type="button"><i class="fas fa-rotate-left"></i> Comprovante em espera</button>
+                <button class="ks-btn" id="ks-sales-payment-undo-confirm" type="button" style="border-color:rgba(251,191,36,.75);background:rgba(245,158,11,.14);color:#fef3c7;font-weight:800" title="Zera recebido/cortesia e volta a aguardar comprovante (desfaz confirmação por engano)"><i class="fas fa-undo"></i> Desfazer confirmação</button>
+                <button class="ks-btn" id="ks-sales-payment-bless" type="button" style="background:rgba(139,92,246,.22);border-color:rgba(167,139,250,.85);color:#ede9fe;font-weight:900"><i class="fas fa-gift"></i> Abençoado (sem pagamento)</button>
+                <button class="ks-btn" id="ks-sales-open-proof" type="button"><i class="fas fa-image"></i> Ver comprovante</button>
+                <button class="ks-btn" id="ks-sales-open-client-whats" type="button" style="background:rgba(16,185,129,.20);border-color:rgba(16,185,129,.68);color:#d1fae5;font-weight:900"><i class="fab fa-whatsapp"></i> WhatsApp do cliente</button>
+                <button class="ks-btn" id="ks-sales-photos-all-pending" type="button" style="border-color:rgba(245,158,11,.65);background:rgba(234,179,8,.14);color:#fde68a;font-weight:800"><i class="fas fa-hourglass-half"></i> Aguardando liberação (todas)</button>
+                <button class="ks-btn" id="ks-sales-approve-all" type="button"><i class="fas fa-check-double"></i> Aprovar todas (original)</button>
+                <p class="text-xs text-slate-400 mt-2 max-w-3xl leading-relaxed" id="ks-sales-payment-extra-hint"><b>Pagamento confirmado:</b> pergunta se soma ou substitui o acumulado. <b>Registrar adiantamento:</b> só soma ao recebido (pagamento parcial até quitar). Entrada e parcelas do restante ficam em <b>Valores combinados</b>. <b>Cortesia no restante:</b> abona o saldo. <b>Comprovante em espera / Desfazer:</b> como antes.</p>
+              </div>
+              <div id="ks-sales-proof-panel" class="mt-3 rounded-xl border border-slate-700 bg-slate-900/70 p-3 hidden">
+                <div id="ks-sales-proof-meta" class="text-xs ks-muted"></div>
+                <div id="ks-sales-proof-empty" class="text-xs ks-muted mt-2">Nenhum comprovante anexado nesta rodada.</div>
+                <div class="mt-2 rounded-lg overflow-hidden border border-slate-700 hidden" id="ks-sales-proof-img-wrap">
+                  <img id="ks-sales-proof-img" alt="Comprovante do cliente" style="width:100%;max-height:360px;object-fit:contain;background:#0b0b0b;display:block" />
+                </div>
+              </div>
+              <input type="file" id="ks-sales-edited-file" accept="image/*" class="hidden" />
+              <div id="ks-sales-approvals" class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+            </div>
+
+            <div>
+              <button class="ks-btn ks-btn-primary" id="ks-sales-save"><i class="fas fa-save"></i> Salvar configuração comercial</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cupom (vendas ou público + download) -->
+        <div class="ks-card p-5 hidden" data-pane="promo">
+          <div class="font-extrabold text-slate-900">Cupom e redes sociais</div>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Ative para o cliente seguir seus perfis, validar um código e liberar downloads (marcados). Disponível no modo <b>Fotos vendidas</b> ou em <b>Acesso público</b> quando <b>Download</b> está permitido.</p>
+          <div id="ks-promo-disabled-note" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 hidden">
+            Use em <b>Fotos vendidas</b> ou em <b>Acesso público</b> com <b>Download</b> ativo (aba Download).
+          </div>
+          <div id="ks-promo-wrap" class="mt-4 space-y-4">
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" id="ks-promo-enabled" />
+              <span class="text-sm font-semibold">Ativar cupom nesta galeria</span>
+            </label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="ks-field">
+                <label>Código do cupom</label>
+                <input type="text" class="ks-input mt-2" id="ks-promo-code" placeholder="Ex.: VERAO2026" maxlength="80" autocomplete="off" />
+              </div>
+              <div class="ks-field">
+                <label>Validade (dias a partir de agora)</label>
+                <input type="number" min="1" max="3650" class="ks-input mt-2" id="ks-promo-valid-days" placeholder="Vazio = sem prazo" />
+                <p class="text-xs ks-muted mt-1" id="ks-promo-valid-hint"></p>
+              </div>
+              <div class="ks-field">
+                <label id="ks-promo-free-label">Fotos isentas pelo cupom (no valor estimado)</label>
+                <input type="number" min="1" max="50" class="ks-input mt-2" id="ks-promo-free-photos" value="1" />
+                <p id="ks-promo-free-hint-sales" class="text-xs ks-muted mt-1 max-w-xl">Quantas fotos entram <strong>de graça</strong> no cálculo do total (pacotes/preço unitário). Ex.: 12 escolhidas com isenção 1 → o cliente vê o preço como se fossem 11 cobradas. A <strong>aprovação</strong> de cada foto (cortesia, pago, PIX) continua normal no seu painel.</p>
+                <p id="ks-promo-free-hint-public" class="text-xs ks-muted mt-1 max-w-xl hidden">Limite de <strong>fotos para baixar</strong> após validar o cupom e seguir as redes (entre 1 e todas as selecionadas, até o número que definir aqui).</p>
+              </div>
+            </div>
+            <div class="ks-field">
+              <label>Instruções (opcional)</label>
+              <textarea class="ks-input mt-2" id="ks-promo-instructions" rows="3" placeholder="Texto exibido ao cliente acima dos botões de rede social."></textarea>
+              <button type="button" class="ks-btn mt-2" id="ks-promo-gen-instructions" title="Gera um texto padrão com código, isenção e redes">
+                <i class="fas fa-wand-magic-sparkles"></i> Gerar texto sugerido
+              </button>
+            </div>
+            <div class="rounded-xl border border-white/10 bg-black/25 p-4">
+              <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-2">Perfis (arroba + link)</div>
+              <div id="ks-promo-social-rows" class="space-y-2"></div>
+              <button type="button" class="ks-btn mt-2" id="ks-promo-add-social"><i class="fas fa-plus"></i> Adicionar perfil</button>
+            </div>
+            <div>
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-promo-save"><i class="fas fa-save"></i> Salvar cupom</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Link do cliente / compartilhar -->
+        <div class="ks-card p-5 hidden" data-pane="links">
+          <div class="font-extrabold text-slate-900">Link e compartilhamento</div>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Use o link de produção para o cliente. Abra numa nova aba para testar com o e-mail e a senha. Copie só o link ou a mensagem completa — o que clicar em <b>Compartilhar</b> no topo abre esta aba.</p>
+
+          <div class="mt-5 ks-field">
+            <label>Link da galeria (cliente — URL de partilha)</label>
+            <div class="flex gap-2 mt-2 flex-wrap items-stretch">
+              <input type="text" readonly id="ks-links-prod-url" class="ks-input flex-1 min-w-[min(100%,280px)]" />
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-links-copy-prod"><i class="fas fa-copy"></i> Copiar link</button>
+              <button type="button" class="ks-btn" id="ks-links-open-prod" title="Abrir galeria do cliente"><i class="fas fa-external-link-alt"></i> Abrir</button>
+            </div>
+          </div>
+
+          <div id="ks-links-local-wrap" class="mt-4 ks-field hidden">
+            <label>URL neste ambiente (teste no Live Server / localhost)</label>
+            <p class="text-xs ks-muted mt-1 mb-0">Só aparece quando é diferente do link de produção acima.</p>
+            <div class="flex gap-2 mt-2 flex-wrap items-stretch">
+              <input type="text" readonly id="ks-links-local-url" class="ks-input flex-1 min-w-[min(100%,280px)]" />
+              <button type="button" class="ks-btn" id="ks-links-copy-local"><i class="fas fa-copy"></i> Copiar</button>
+              <button type="button" class="ks-btn" id="ks-links-open-local"><i class="fas fa-external-link-alt"></i> Abrir</button>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
+            <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">Mensagem personalizada para compartilhar (opcional)</div>
+            <textarea id="ks-links-custom-message" class="ks-input mt-2" rows="4"
+              placeholder="Ex.: Olá! Segue o link da sua galeria. Qualquer dúvida, me chame no WhatsApp."></textarea>
+            <p class="text-xs ks-muted mt-2 mb-0">Se preencher, essa mensagem aparece no final do texto quando a mensagem completa está no <b>modo automático</b> (ver abaixo). As alterações são salvas automaticamente.</p>
+            <div class="mt-3 flex flex-wrap gap-2 items-center">
+              <button type="button" class="ks-btn" id="ks-links-ai-custom" title="Usar a IA do sistema (OpenAI) para sugerir um texto curto"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
+            </div>
+          </div>
+
+          <div class="mt-5 ks-field">
+            <label>Mensagem completa (edite livremente — WhatsApp ou e-mail)</label>
+            <p class="text-xs ks-muted mt-1 mb-0">Com <b>acesso privado</b> e <b>um</b> cliente na lista, o modelo automático inclui <b>e-mail e senha</b>. Em <b>autocadastro</b> ou <b>fotos vendidas</b>, a mensagem automática leva só o link. Pode editar à vontade. <b>Restaurar modelo</b> recalcula a partir das configurações atuais.</p>
+            <textarea id="ks-links-full-msg" class="ks-input mt-2" rows="11"
+              style="font-size:13px;line-height:1.45;resize:vertical"></textarea>
+            <div class="flex gap-2 mt-3 flex-wrap items-center">
+              <button type="button" class="ks-btn" id="ks-links-ai-full" title="Usar a IA do sistema (OpenAI) para gerar a mensagem completa"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
+              <button type="button" class="ks-btn" id="ks-links-full-reset" title="Substituir pelo modelo automático (nome do projeto + link + opcional)"><i class="fas fa-rotate-left"></i> Restaurar modelo</button>
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-links-copy-full"><i class="fas fa-copy"></i> Copiar mensagem completa</button>
+              <button type="button" class="ks-btn" id="ks-links-whats"><i class="fab fa-whatsapp"></i> Abrir WhatsApp Web</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Capa do link -->
+        <div class="ks-card p-5 hidden" data-pane="link-cover">
+          <div class="font-extrabold text-slate-900">Capa do link</div>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Você pode escolher uma foto da galeria ou enviar uma imagem externa só para a capa do link.</p>
+
+          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
+            <div class="flex flex-wrap gap-2 items-center">
+              <input type="file" id="ks-link-cover-upload-file" class="hidden" accept="image/*" />
+              <button type="button" class="ks-btn" id="ks-link-cover-upload-btn"><i class="fas fa-upload"></i> Selecionar foto no dispositivo</button>
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-open-gallery-btn"><i class="fas fa-image"></i> Selecionar da galeria atual</button>
+            </div>
+
+            <div class="mt-4">
+              <div class="ks-field">
+                <label>Pré-visualização</label>
+                <div class="rounded-lg overflow-hidden border border-slate-200 bg-black/70 mt-2">
+                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:220px;object-fit:contain;background:#0b0b0b;display:block" />
+                </div>
+                <div id="ks-link-cover-current-source" class="text-xs ks-muted mt-2">Origem atual: foto da galeria</div>
+              </div>
+            </div>
+
+            <select id="ks-link-cover-photo" class="ks-input mt-2 hidden"></select>
+            <div id="ks-link-cover-picker" class="hidden mt-4 rounded-lg border border-slate-200 bg-black/35 p-3">
+              <div class="ks-link-cover-picker-card">
+                <div class="ks-link-cover-picker-head flex items-center justify-between gap-2 mb-2">
+                  <div class="text-sm font-extrabold text-slate-900">Escolher foto da galeria atual</div>
+                  <button type="button" class="ks-btn" id="ks-link-cover-picker-close"><i class="fas fa-times"></i> Fechar</button>
+                </div>
+                <div class="mb-2">
+                  <input type="text" id="ks-link-cover-search" class="ks-input" placeholder="Buscar foto pelo nome..." />
+                </div>
+                <div id="ks-link-cover-grid" class="ks-link-cover-picker-grid grid grid-cols-2 md:grid-cols-3 gap-2"></div>
+                <div class="mt-3 flex flex-wrap gap-2 items-center">
+                  <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-picker-apply"><i class="fas fa-check"></i> Usar foto selecionada</button>
+                  <span class="text-xs ks-muted">Essa capa será usada na prévia do link da galeria (WhatsApp, etc.). Se não houver capa ou o arquivo não carregar, o sistema usa uma imagem padrão para a miniatura.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 rounded-xl border border-amber-500/35 bg-amber-950/20 p-4">
+            <div class="text-xs font-extrabold text-amber-100/90 tracking-widest uppercase mb-2">Mensagens WhatsApp · Fotos e vendas</div>
+            <p class="text-sm text-amber-50/90 mt-1 max-w-3xl">Textos usados no botão <b>WhatsApp do cliente</b> (aba <b>Fotos e vendas</b>), conforme a situação. Ao abrir o WhatsApp, o sistema preenche com o modelo correspondente e os códigos abaixo.</p>
+            <p class="text-xs text-amber-100/75 mt-2 max-w-3xl"><code class="text-amber-200/95">{{nome}}</code> nome do cliente · <code class="text-amber-200/95">{{link}}</code> link público da galeria · <code class="text-amber-200/95">{{galeria}}</code> nome do evento ou projeto. No texto você pode usar <span class="whitespace-nowrap">*asteriscos*</span> para negrito no WhatsApp.</p>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">1 · Falta pagamento (PIX pendente ou saldo em aberto)</label>
+            <textarea id="ks-sales-wa-tpl-pending" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
+            <div class="mt-2 flex flex-wrap gap-2 items-center">
+              <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-pending" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
+            </div>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">2 · Comprovante recusado — pedir novo envio</label>
+            <textarea id="ks-sales-wa-tpl-rejected" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
+            <div class="mt-2 flex flex-wrap gap-2 items-center">
+              <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-rejected" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
+            </div>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">3 · Pagamento ok — aguardando <i>sua</i> aprovação das fotos</label>
+            <textarea id="ks-sales-wa-tpl-awaiting" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
+            <div class="mt-2 flex flex-wrap gap-2 items-center">
+              <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-awaiting" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
+            </div>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">4 · Tudo certo — fotos aprovadas (liberar download)</label>
+            <textarea id="ks-sales-wa-tpl-approved" class="ks-input mt-2 font-mono text-sm" rows="6" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
+            <div class="mt-2 flex flex-wrap gap-2 items-center">
+              <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-approved" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-2 items-center">
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-sales-wa-tpl-save"><i class="fas fa-save"></i> Salvar textos de vendas</button>
+              <button type="button" class="ks-btn" id="ks-sales-wa-tpl-reset" title="Apaga os textos personalizados e volta aos modelos padrão do sistema (grava no servidor)."><i class="fas fa-rotate-left"></i> Usar padrões do sistema</button>
+            </div>
+            <p class="text-xs ks-muted mt-2 max-w-3xl"><b>Por caixa:</b> apague o texto, salve e aquele campo volta ao padrão. <b>Tudo de uma vez:</b> use o botão &quot;Usar padrões do sistema&quot;.</p>
+          </div>
+        </div>
+
+        <!-- Suporte WhatsApp -->
+        <div class="ks-card p-5 hidden" data-pane="support">
+          <div class="font-extrabold text-slate-900">Suporte WhatsApp</div>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Configure aqui o botão de suporte que aparece para o cliente dentro da galeria. Assim fica fácil para ele te chamar para confirmar pagamento, pedir liberação ou tirar dúvidas.</p>
+
+          <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
+            <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">Botão flutuante no cliente</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label>WhatsApp de suporte (com DDD / país)
+                <input type="text" id="ks-support-whatsapp" class="ks-input mt-2" placeholder="Ex.: 5511999999999" />
+              </label>
+              <label>Texto do botão (opcional)
+                <input type="text" id="ks-support-label" class="ks-input mt-2" placeholder="Ex.: Suporte no WhatsApp" />
+              </label>
+            </div>
+            <div class="mt-3">
+              <div class="flex flex-wrap items-end justify-between gap-2">
+                <label class="block flex-1 min-w-0">Mensagem padrão (opcional)</label>
+                <button type="button" class="ks-btn shrink-0" id="ks-support-ai" title="Gera um texto cordial com IA (OpenAI). Configure OPENAI_API_KEY no servidor.">
+                  <i class="fas fa-wand-magic-sparkles"></i> Gerar com a IA
+                </button>
+              </div>
+              <textarea id="ks-support-message" class="ks-input mt-2 w-full" rows="3"
+                placeholder="Ex.: Olá! Preciso de ajuda com minha seleção de fotos."></textarea>
+              <p class="text-xs ks-muted mt-1 max-w-3xl">A mensagem pré-preenche o WhatsApp quando o cliente toca em suporte. A IA usa o mesmo serviço OpenAI do resto do King Selection (chave no servidor).</p>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2 items-center">
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-support-save"><i class="fas fa-save"></i> Salvar suporte WhatsApp</button>
+              <span class="text-xs ks-muted">Esse número será usado no botão de suporte exibido ao cliente.</span>
+            </div>
+          </div>
+
+          <p class="text-sm ks-muted mt-4 max-w-3xl">As mensagens do botão <b>WhatsApp do cliente</b> na aba <b>Fotos e vendas</b> são editáveis na aba <b>Capa do link</b>, junto com a capa da prévia do link.</p>
+        </div>
+
+        <!-- Clients -->
+        <div class="ks-card p-5 hidden" data-pane="clients">
+          <div class="font-extrabold text-slate-900">Clientes</div>
+
+          <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-2 space-y-4">
+              <!-- Autocadastro -->
+              <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="font-extrabold text-slate-900">Autocadastro de clientes</div>
+                <div class="text-sm ks-muted mt-1">Visitantes podem se cadastrar como clientes na tela de login da
+                  galeria.</div>
+
+                <div class="mt-4 flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <div class="font-extrabold">Permitir que visitantes se cadastrem como clientes</div>
+                    <div class="text-sm ks-muted">Nome, e-mail e telefone podem ser solicitados no cadastro.</div>
+                  </div>
+                  <label class="inline-flex items-center gap-3 select-none">
+                    <input id="ks-self-signup" type="checkbox" class="w-5 h-5" />
+                  </label>
+                </div>
+
+                <div class="mt-4">
+                  <button class="ks-btn ks-btn-primary" id="btn-save-selfsignup"><i class="fas fa-save"></i>
+                    Salvar</button>
+                </div>
+              </div>
+
+              <!-- Lista de clientes (modelo atual: 1 cliente por galeria) -->
+              <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-extrabold text-slate-900">Clientes</div>
+                    <div class="text-sm ks-muted">Adicione e cadastre seus clientes.</div>
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">
+                    Adicionar cliente</div>
+                  <div class="mt-2 flex items-center gap-2">
+                    <div class="flex-1 relative">
+                      <i class="fas fa-search" aria-hidden="true"
+                        style="position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.75;color:var(--ks-accent)"></i>
+                      <input id="ks-client-search" class="ks-input" placeholder="Digite o nome ou e-mail do cliente"
+                        style="padding-left:44px" />
+                    </div>
+                    <button class="ks-btn ks-btn-primary" id="ks-client-add" title="Adicionar cliente"><i
+                        class="fas fa-plus"></i></button>
+                  </div>
+                </div>
+
+                <div class="mt-6">
+                  <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">
+                    Clientes cadastrados (<span id="ks-client-count">0</span>)
+                  </div>
+
+                  <div id="ks-client-empty"
+                    class="mt-3 rounded-2xl border border-dashed border-white/10 bg-black/30 p-5 text-sm text-white/60 hidden">
+                    Nenhum cliente cadastrado (acesso desativado).
+                  </div>
+
+                  <div id="ks-client-list" class="mt-3 grid grid-cols-1 gap-3"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dicas / ações rápidas -->
+            <div class="lg:col-span-1">
+              <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="font-extrabold text-slate-900">Dicas</div>
+                <div class="text-sm ks-muted mt-2">
+                  - Use <b>Compartilhar</b> para copiar a mensagem pronta do WhatsApp.<br />
+                  - Clique no <b>olhinho</b> para revelar a senha (se disponível).<br />
+                  - Para gerar uma nova senha, use <b>Editar</b>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download -->
+        <div class="ks-card p-5 hidden" data-pane="download">
+          <div class="font-extrabold text-slate-900">Download</div>
+          <div class="mt-4 space-y-4">
+            <label class="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+              <input type="checkbox" id="d-allow" />
+              <div>
+                <div class="font-extrabold">Permitir o download das fotos</div>
+                <div class="text-sm ks-muted">Libera botão de download (previews com marca d’água).</div>
+              </div>
+            </label>
+            <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+              <div class="font-extrabold text-sm">Organização para o cliente</div>
+              <label class="flex items-start gap-3">
+                <input type="radio" name="ks_client_folder_layout" id="ks-dl-layout-folders" value="folders" class="mt-1" />
+                <div>
+                  <div class="font-semibold text-sm">Pastas</div>
+                  <div class="text-xs ks-muted">Cliente navega pelas pastas antes de ver as fotos.</div>
+                </div>
+              </label>
+              <label class="flex items-start gap-3">
+                <input type="radio" name="ks_client_folder_layout" id="ks-dl-layout-flat" value="flat" class="mt-1" />
+                <div>
+                  <div class="font-semibold text-sm">Fotos soltas</div>
+                  <div class="text-xs ks-muted">Sem lista de pastas — só a grelha (útil quando subiu só fotos).</div>
+                </div>
+              </label>
+            </div>
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+              <input type="checkbox" id="ks-client-entry-splash" class="mt-1" />
+              <div>
+                <div class="font-extrabold">Capa ao abrir (modo público)</div>
+                <div class="text-sm ks-muted">Mostra a imagem da <strong>capa do link</strong> em ecrã cheio antes da galeria (estilo app). Configure a capa na aba <strong>Capa do link</strong>.</div>
+              </div>
+            </label>
+            <div class="mt-4">
+              <button class="ks-btn ks-btn-primary" id="btn-save-download"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watermark -->
+        <div class="ks-card p-5 hidden" data-pane="watermark">
+          <div class="font-extrabold text-slate-900">Marca d'água</div>
+          <div class="mt-4 space-y-3">
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+              <input type="radio" name="wm_mode" value="none" class="mt-1" />
+              <div>
+                <div class="font-extrabold">Sem marca d’água</div>
+                <div class="text-sm ks-muted">Desativa a marca d’água (não recomendado).</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white" id="wm-mode-ck-wrap">
+              <input type="radio" name="wm_mode" value="tile_dense" class="mt-1" id="wm-mode-ck" />
+              <div>
+                <div class="font-extrabold">Marca d’água da Conecta King</div>
+                <div class="text-sm ks-muted">Quando o cliente não envia marca própria, usa automaticamente a logomarca
+                  oficial da Conecta King.</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white"
+              id="wm-mode-logo-wrap">
+              <input type="radio" name="wm_mode" value="logo" class="mt-1" id="wm-mode-logo" />
+              <div>
+                <div class="font-extrabold">Sua marca d’água personalizada</div>
+                <div class="text-sm ks-muted">Usa a marca d’água que você enviou (a miniatura aparece lá embaixo).</div>
+              </div>
+            </label>
+
+            <div class="rounded-xl border border-zinc-600 bg-black p-4 text-zinc-100">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="font-extrabold text-white">Pré-visualização (tempo real)</div>
+                  <div class="text-sm text-zinc-400">Mostra como o cliente verá a marca d’água.</div>
+                </div>
+                <div class="text-xs text-zinc-400 font-extrabold" id="wm-current"></div>
+              </div>
+
+              <div class="mt-3 text-xs text-zinc-400"><strong class="text-zinc-200">Preencher</strong>: escala forte + <strong class="text-zinc-200">esticar</strong> largura/altura (cobre a foto, tipo papel de parede “preencher”). <strong class="text-zinc-200">Ajustar</strong>: escala contida + <strong class="text-zinc-200">100% esticar</strong> + posição ao centro (tipo “ajustar” sem cortar o desenho da marca). Tamanho retrato/paisagem continua separado nos sliders.</div>
+
+              <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="rounded-xl border border-zinc-700 bg-black p-3">
+                  <div class="text-sm font-extrabold text-white">Foto vertical (retrato)</div>
+                  <div class="text-xs text-zinc-400 mt-1">Prévia em 3:4 — como em fotos em pé.</div>
+                  <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--portrait mt-2">
+                    <div class="ks-wm-ph" id="wm-ph-p">Adicione fotos para ver o preview</div>
+                    <img id="wm-preview-portrait" class="hidden" alt="preview marca d’água retrato" />
+                  </div>
+                  <div class="mt-2 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-zinc-200">Tamanho no retrato</div>
+                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-scale-p-val">120%</div>
+                  </div>
+                  <input id="wm-scale-p" class="ks-range mt-2 ks-range-on-dark" type="range" min="10" max="500" step="1" value="120" />
+                  <div class="mt-2 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-zinc-200">Rotação (retrato)</div>
+                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-rotate-p-val">0°</div>
+                  </div>
+                  <input type="hidden" id="wm-rotate-p" value="0" />
+                  <div class="mt-1 grid grid-cols-4 gap-1.5">
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="0" title="Normal">0°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="90" title="90°">90°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="180" title="180°">180°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="270" title="270°">270°</button>
+                  </div>
+                  <div class="mt-2 grid grid-cols-2 gap-1.5">
+                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-p" title="Preencher — escala forte (cobre a área)">Preencher</button>
+                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-p" title="Ajustar — escala mais contida">Ajustar</button>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
+                    <div class="text-xs font-extrabold text-zinc-200">Mosaico — só em fotos verticais</div>
+                    <div class="text-[11px] text-zinc-500">Posição vertical do padrão (cima / centro / baixo)</div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-top-p" title="Cima">Cima</button>
+                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-v-p" title="Centro vertical">Centro</button>
+                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-bottom-p" title="Baixo">Baixo</button>
+                    </div>
+                    <div>
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
+                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-p">X 0% · Y 0%</div>
+                      </div>
+                      <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-p" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-p" title="Direita"><i class="fas fa-arrow-right"></i></button>
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-p" title="Cima"><i class="fas fa-arrow-up"></i></button>
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-p" title="Baixo"><i class="fas fa-arrow-down"></i></button>
+                      </div>
+                    </div>
+                    <div class="pt-2 border-t border-zinc-700">
+                      <div class="text-xs font-extrabold text-white">Esticar o ladrilho (retrato)</div>
+                      <div class="mt-2 flex items-center justify-between gap-2">
+                        <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
+                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-p">100%</div>
+                      </div>
+                      <input id="wm-stretch-w-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                      <div class="mt-2 flex items-center justify-between gap-2">
+                        <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
+                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-p">100%</div>
+                      </div>
+                      <input id="wm-stretch-h-p" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                    </div>
+                  </div>
+                </div>
+                <div class="rounded-xl border border-zinc-700 bg-black p-3">
+                  <div class="text-sm font-extrabold text-white">Foto horizontal (paisagem)</div>
+                  <div class="text-xs text-zinc-400 mt-1">Prévia em 16:9 — como em fotos deitadas.</div>
+                  <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--landscape mt-2">
+                    <div class="ks-wm-ph" id="wm-ph-l">Adicione fotos para ver o preview</div>
+                    <img id="wm-preview-landscape" class="hidden" alt="preview marca d’água paisagem" />
+                  </div>
+                  <div class="mt-2 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-zinc-200">Tamanho na paisagem</div>
+                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-scale-l-val">120%</div>
+                  </div>
+                  <input id="wm-scale-l" class="ks-range mt-2 ks-range-on-dark" type="range" min="10" max="500" step="1" value="120" />
+                  <div class="mt-2 flex items-center justify-between gap-2">
+                    <div class="text-xs font-extrabold text-zinc-200">Rotação (paisagem)</div>
+                    <div class="text-xs text-zinc-400 font-extrabold" id="wm-rotate-l-val">0°</div>
+                  </div>
+                  <input type="hidden" id="wm-rotate-l" value="0" />
+                  <div class="mt-1 grid grid-cols-4 gap-1.5">
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="0" title="Normal">0°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="90" title="90°">90°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="180" title="180°">180°</button>
+                    <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-l="270" title="270°">270°</button>
+                  </div>
+                  <div class="mt-2 grid grid-cols-2 gap-1.5">
+                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-l" title="Preencher">Preencher</button>
+                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-l" title="Ajustar">Ajustar</button>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
+                    <div class="text-xs font-extrabold text-zinc-200">Mosaico — só em fotos horizontais</div>
+                    <div class="text-[11px] text-zinc-500">Posição horizontal do padrão (esquerda / centro / direita)</div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-left-l" title="Esquerda">Esquerda</button>
+                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-h-l" title="Centro">Centro</button>
+                      <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-right-l" title="Direita">Direita</button>
+                    </div>
+                    <div>
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
+                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-l">X 0% · Y 0%</div>
+                      </div>
+                      <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-l" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-right-l" title="Direita"><i class="fas fa-arrow-right"></i></button>
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-up-l" title="Cima"><i class="fas fa-arrow-up"></i></button>
+                        <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-down-l" title="Baixo"><i class="fas fa-arrow-down"></i></button>
+                      </div>
+                    </div>
+                    <div class="pt-2 border-t border-zinc-700">
+                      <div class="text-xs font-extrabold text-white">Esticar o ladrilho (paisagem)</div>
+                      <div class="mt-2 flex items-center justify-between gap-2">
+                        <div class="text-[11px] font-extrabold text-zinc-200">Largura</div>
+                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-w-val-l">100%</div>
+                      </div>
+                      <input id="wm-stretch-w-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                      <div class="mt-2 flex items-center justify-between gap-2">
+                        <div class="text-[11px] font-extrabold text-zinc-200">Altura</div>
+                        <div class="text-[10px] text-zinc-400 font-extrabold" id="wm-stretch-h-val-l">100%</div>
+                      </div>
+                      <input id="wm-stretch-h-l" class="ks-range mt-1 ks-range-on-dark" type="range" min="50" max="400" step="1" value="100" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="text-sm font-extrabold text-white">Transparência (opacidade)</div>
+                  <div class="text-xs text-zinc-400 font-extrabold" id="wm-opacity-val">12%</div>
+                </div>
+                <input id="wm-opacity" class="ks-range mt-2 ks-range-on-dark" type="range" min="0" max="100" step="1" value="12" />
+                <div class="text-xs text-zinc-400 mt-2">0% = quase não aparece. 100% = bem forte.</div>
+              </div>
+
+            </div>
+
+            <div class="rounded-xl border border-zinc-700 bg-black p-4 text-zinc-100">
+              <div class="font-extrabold text-white">Marca d’água atual</div>
+              <div class="text-sm text-zinc-400 mt-1">Mostra a marca d’água que está valendo (padrão Conecta King ou personalizada).</div>
+              <div id="wm-file-defaults" class="mt-3 flex flex-wrap gap-4 items-start">
+                <div class="text-xs text-zinc-400 max-w-[220px]">
+                  <div class="font-extrabold text-white mb-2" id="wm-file-ph">Marca Conecta King (fixa — retrato e paisagem)</div>
+                  <div class="flex flex-wrap gap-3 items-end">
+                    <div class="text-center">
+                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Retrato</div>
+                      <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:112px;aspect-ratio:3/4;max-height:180px">
+                        <img id="wm-file-default-portrait" class="w-full h-full object-contain" alt="Marca Conecta King — retrato" src="./marca%20dagua%20KingSelection%20vertical.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_vertical.png'" />
+                      </div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Paisagem</div>
+                      <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:168px;aspect-ratio:16/9;max-height:110px">
+                        <img id="wm-file-default-landscape" class="w-full h-full object-contain" alt="Marca Conecta King — paisagem" src="./marca%20dagua%20KingSelection%20horizontal.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_horizontal.png'" />
+                      </div>
+                    </div>
+                  </div>
+                  <p class="mt-2 text-zinc-500">São os mesmos ficheiros usados na pré-visualização e nas exportações quando não envia marca própria.</p>
+                </div>
+              </div>
+              <div id="wm-file-custom-wrap" class="mt-3 hidden">
+                <div class="text-xs text-zinc-400">
+                  <div class="font-extrabold text-white mb-2" id="wm-file-custom-label">Marca personalizada (enviada)</div>
+                  <div class="flex flex-wrap gap-4 items-start">
+                    <div>
+                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Retrato (vertical)</div>
+                      <div class="ks-wm-frame" id="wm-file-frame-p" style="width:120px;aspect-ratio:3/4;max-height:160px">
+                        <img id="wm-file-preview-p" class="hidden w-full h-full object-contain" alt="marca retrato" />
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Paisagem (horizontal)</div>
+                      <div class="ks-wm-frame" id="wm-file-frame-l" style="width:168px;aspect-ratio:16/9;max-height:100px">
+                        <img id="wm-file-preview-l" class="hidden w-full h-full object-contain" alt="marca paisagem" />
+                      </div>
+                    </div>
+                  </div>
+                  <p class="mt-2">Dica: PNG com fundo transparente fica mais bonito.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <input type="file" id="wm-file-p" accept="image/png,image/jpeg,image/webp" class="hidden" />
+              <input type="file" id="wm-file-l" accept="image/png,image/jpeg,image/webp" class="hidden" />
+              <button type="button" class="ks-btn" id="btn-upload-wm-p"><i class="fas fa-upload"></i> Enviar retrato</button>
+              <button type="button" class="ks-btn" id="btn-upload-wm-l"><i class="fas fa-upload"></i> Enviar paisagem</button>
+              <button class="ks-btn" id="btn-remove-wm-logo"><i class="fas fa-trash"></i> Remover marca d’água</button>
+              <button class="ks-btn ks-btn-primary" id="btn-save-wm"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+            <div class="text-xs ks-muted">Dica: envie um PNG com fundo transparente.</div>
+            <div class="mt-4 pt-4 border-t border-slate-200">
+              <div class="text-sm font-extrabold text-slate-900">Limpar R2</div>
+              <div class="text-xs ks-muted mt-1">Remove imagens e vídeos que não estão mais referenciados em nenhum
+                projeto.</div>
+              <div class="mt-2 flex items-center gap-2 flex-wrap">
+                <button class="ks-btn" id="btn-cleanup-r2-dry"><i class="fas fa-search"></i> Verificar órfãos</button>
+                <button class="ks-btn" id="btn-cleanup-r2" style="color:#dc2626;border-color:rgba(220,38,38,.45)"><i
+                    class="fas fa-broom"></i> Limpar R2</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Facial Recognition -->
+        <div class="ks-card p-5 hidden" data-pane="facial">
+          <div class="font-extrabold text-slate-900">Reconhecimento Facial</div>
+          <div class="mt-4 space-y-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+              <div class="font-extrabold text-slate-900">Configurações de IA</div>
+              <div class="text-sm ks-muted mt-1">Controle como a inteligência artificial trabalha nesta galeria.</div>
+
+              <div class="mt-4 flex items-center justify-between gap-4">
+                <div>
+                  <div class="font-extrabold">Habilitar reconhecimento facial</div>
+                  <div class="text-sm ks-muted">Permite que clientes busquem suas fotos usando o rosto.</div>
+                </div>
+                <label class="inline-flex items-center gap-3 select-none">
+                  <input type="checkbox" id="f-face-enabled" class="hidden peer" />
+                  <div
+                    class="w-12 h-6 bg-slate-200 rounded-full peer-checked:bg-amber-400 relative transition-all cursor-pointer after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-all peer-checked:after:translate-x-6">
+                  </div>
+                </label>
+              </div>
+
+              <div class="mt-6 flex flex-wrap gap-2">
+                <button class="ks-btn ks-btn-primary" id="btn-save-facial-config"><i class="fas fa-save"></i> Salvar
+                  Configuração</button>
+                <button class="ks-btn" id="btn-process-facial-all"><i class="fas fa-wand-magic-sparkles"></i> Processar
+                  Todas as Fotos</button>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+              <div class="font-extrabold text-slate-900">Status do Processamento</div>
+              <div class="mt-3 text-sm flex items-center justify-between">
+                <div>Status: <span id="facial-status-label" class="font-bold">Aguardando...</span></div>
+                <div id="facial-spinner" class="hidden"><i class="fas fa-spinner fa-spin text-amber-500"></i></div>
+              </div>
+              <div class="mt-4 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div id="facial-progress-bar" class="bg-amber-400 h-full w-0 transition-all duration-300"></div>
+              </div>
+              <div class="mt-2 text-xs ks-muted text-right" id="facial-progress-text">0/0 fotos processadas</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resolução (preview/download cliente) -->
+        <div class="ks-card p-5 hidden" data-pane="image-quality">
+          <div class="font-extrabold text-slate-900">Resolução da foto (cliente)</div>
+          <div class="mt-2 text-sm ks-muted max-w-3xl">
+            Define o tamanho máximo do lado longo das imagens com marca d’água que o visitante vê e baixa na galeria.
+            Padrão recomendado para economia de banda: <strong>fraca</strong>. Altere antes de divulgar o link.
+          </div>
+          <div class="mt-5 space-y-3 max-w-xl">
+            <label class="flex items-start gap-3 cursor-pointer rounded-xl border border-slate-200 bg-white p-4 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/40">
+              <input type="radio" name="ks-client-img-q" id="ks-imgq-low" value="low" class="mt-1" checked />
+              <div>
+                <div class="font-extrabold text-slate-900">Fraca (~1200 px)</div>
+                <div class="text-sm ks-muted">Carrega rápido; qualidade JPEG moderada.</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer rounded-xl border border-slate-200 bg-white p-4 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/40">
+              <input type="radio" name="ks-client-img-q" id="ks-imgq-hd" value="hd" class="mt-1" />
+              <div>
+                <div class="font-extrabold text-slate-900">HD (~2400 px)</div>
+                <div class="text-sm ks-muted">Boa para telas grandes e impressão leve.</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer rounded-xl border border-slate-200 bg-white p-4 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/40">
+              <input type="radio" name="ks-client-img-q" id="ks-imgq-max" value="max" class="mt-1" />
+              <div>
+                <div class="font-extrabold text-slate-900">Máxima (~5000 px)</div>
+                <div class="text-sm ks-muted">Arquivos maiores; mais banda e processamento no servidor.</div>
+              </div>
+            </label>
+          </div>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <button type="button" class="ks-btn ks-btn-primary" id="btn-save-image-quality"><i class="fas fa-save"></i> Salvar resolução</button>
+          </div>
+        </div>
+
+        <!-- Photos -->
+        <div class="ks-card p-5 hidden" data-pane="photos">
+          <!-- Overlay de upload (cobre toda a área de Fotos) -->
+          <div class="ks-upload-ov hidden" id="ks-upload-ov" aria-hidden="true">
+            <div class="ks-upload-card" role="status" aria-live="polite">
+              <div class="ks-ring" aria-hidden="true">
+                <svg viewBox="0 0 100 100">
+                  <circle class="trk" cx="50" cy="50" r="44"></circle>
+                  <circle class="bar glow" id="ks-upload-bar" cx="50" cy="50" r="44"></circle>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="ttl" id="ks-upload-title">Enviando…</div>
+                <div class="sub" id="ks-upload-file">Arquivo: -</div>
+                <div class="meta" id="ks-upload-meta">0%</div>
+                <div class="ks-upload-actions">
+                  <button class="ks-btn" type="button" id="ks-upload-cancel">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ks-photos-upload-sticky">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <div class="font-extrabold text-slate-900">Fotos</div>
+                <div class="text-sm ks-muted">Adicionar e gerenciar fotos.</div>
+              </div>
+              <input type="file" id="p-file" accept="image/*" multiple class="hidden" />
+              <input type="file" id="p-folder-file" multiple class="hidden" />
+            </div>
+
+            <!-- Upload (bolinha) — mantido no topo ao rolar a grelha -->
+            <div class="mt-3">
+              <div class="ks-drop" id="ks-drop">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="font-extrabold text-slate-900">Arraste e solte suas fotos aqui</div>
+                  <div class="text-sm ks-muted mt-1">Você pode selecionar dezenas de fotos. Durante o envio aparece uma
+                    bolinha com o progresso.</div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap justify-end">
+                  <button class="ks-btn" type="button" id="ks-pick-folder" title="Importa uma pasta do computador com todas as subpastas (cria pastas automaticamente pelo caminho)"><i class="fas fa-folder-tree"></i> Pasta e subpastas</button>
+                  <button class="ks-btn ks-btn-primary" type="button" id="ks-pick"><i class="fas fa-plus"></i> Adicionar
+                    fotos</button>
+                </div>
+              </div>
+              <div class="mt-3 text-xs ks-muted">Dica: se der erro, normalmente é permissão no Cloudflare ou limite
+                temporário (aguarde alguns segundos).</div>
+
+              <!-- Bolinha de progresso -->
+              <div class="ks-bubble hidden" id="ks-bubble">
+                <div class="ks-bubble-card" id="ks-bubble-card">
+                  <div class="ks-ring" aria-hidden="true">
+                    <svg viewBox="0 0 100 100">
+                      <circle class="trk" cx="50" cy="50" r="44"></circle>
+                      <circle class="bar glow" id="ks-bubble-bar" cx="50" cy="50" r="44"></circle>
+                    </svg>
+                  </div>
+                  <div class="ks-bubble-txt">
+                    <div class="ks-bubble-title" id="ks-bubble-title">Enviando…</div>
+                    <div class="ks-bubble-file" id="ks-bubble-file">Arquivo: -</div>
+                    <div class="ks-bubble-meta" id="ks-bubble-meta">0/0 • 0%</div>
+                    <div class="ks-bubble-actions">
+                      <button class="ks-btn" type="button" id="ks-bubble-cancel">Cancelar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+
+          <!-- barra de seleção (igual Alboom) -->
+          <div class="mt-4 ks-selected-bar" id="p-selected-bar">
+            <button class="ks-btn" id="p-select-all"><i class="fas fa-check-double"></i> Selecionar tudo</button>
+            <button class="ks-btn" id="p-clear-sel"><i class="fas fa-xmark"></i> Limpar seleção</button>
+            <div class="ks-mini"><b id="p-selected-count">0</b> foto(s) selecionada(s)</div>
+            <div class="flex items-center gap-2">
+              <button class="ks-btn" id="p-download-sel"><i class="fas fa-download"></i> Baixar selecionadas</button>
+              <button class="ks-btn" id="p-delete-sel"><i class="fas fa-trash"></i> Excluir selecionadas</button>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div class="lg:col-span-2 min-w-0">
+              <div class="ks-card p-3">
+                <div class="flex flex-col gap-2">
+                  <button class="ks-btn" id="p-filter-all"><i class="far fa-folder-open"></i> Todas as fotos <span
+                      class="ks-badge" id="p-count-all">0</span></button>
+                  <button class="ks-btn" id="p-filter-fav"><i class="fas fa-star ks-star"></i> Minhas favoritas <span
+                      class="ks-badge" id="p-count-fav">0</span></button>
+                  <div class="mt-2">
+                    <div class="ks-mini font-extrabold">Buscar por nome</div>
+                    <input class="ks-input mt-2" id="p-search" placeholder="Buscar por nome do arquivo" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="lg:col-span-10 min-w-0">
+              <div class="mt-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 w-full min-w-0" id="p-grid"></div>
+              <div class="mt-4 flex items-center justify-between gap-3 flex-wrap" id="p-pager">
+                <div class="text-xs ks-muted" id="p-page-label">Página 1/1</div>
+                <div class="flex items-center gap-2">
+                  <button class="ks-btn" type="button" id="p-page-prev"><i class="fas fa-chevron-left"></i>
+                    Anterior</button>
+                  <div class="flex items-center gap-1 flex-wrap" id="p-page-numbers"></div>
+                  <button class="ks-btn" type="button" id="p-page-next">Próxima <i
+                      class="fas fa-chevron-right"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Viewer (ampliar foto) -->
+  <div id="p-viewer" class="fixed inset-0 hidden items-center justify-center p-4"
+    style="background:rgba(0,0,0,.70);z-index:9999;touch-action:none">
+    <div class="bg-white w-full max-w-5xl rounded-2xl overflow-hidden border border-slate-200 shadow-2xl">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          <div class="font-extrabold truncate" id="p-viewer-title">Foto</div>
+          <div class="text-xs ks-muted" id="p-viewer-meta">1/1</div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button class="ks-btn ks-selbtn" id="p-viewer-select" title="Selecionar foto" aria-label="Selecionar"><i
+              class="fas fa-check" id="p-viewer-select-icon"></i></button>
+          <button class="ks-btn" id="p-viewer-download"><i class="fas fa-download"></i> Baixar foto</button>
+          <button class="ks-btn" id="p-viewer-close"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div class="relative bg-black flex items-center justify-center min-h-[200px]" id="p-viewer-area"
+        style="touch-action:pan-y pinch-zoom">
+        <button class="absolute left-3 top-1/2 -translate-y-1/2 ks-ico z-10" id="p-viewer-prev" title="Anterior"><i
+            class="fas fa-chevron-left"></i></button>
+        <button class="absolute right-3 top-1/2 -translate-y-1/2 ks-ico z-10" id="p-viewer-next" title="Próxima"><i
+            class="fas fa-chevron-right"></i></button>
+        <img id="p-viewer-img" src="" alt="foto"
+          style="max-width:100%;max-height:72vh;width:auto;height:auto;object-fit:contain;display:block;touch-action:none"
+          draggable="false" />
+      </div>
+      <div class="px-4 py-3 flex justify-center gap-2 flex-wrap hidden" id="p-viewer-dots" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Dashboard vendas — detalhe recebido / falta / cortesia -->
+  <div id="ks-sales-dash-detail-modal" class="fixed inset-0 hidden items-center justify-center p-4"
+    style="background:rgba(0,0,0,.55);z-index:125;" aria-hidden="true">
+    <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div class="font-extrabold text-slate-900" id="ks-sales-dash-detail-title">Detalhe</div>
+        <button type="button" id="ks-sales-dash-detail-close" class="text-slate-500 hover:text-slate-900" aria-label="Fechar"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 overflow-y-auto flex-1 text-slate-800" id="ks-sales-dash-detail-body"></div>
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50 shrink-0">
+        <div class="text-sm font-extrabold text-slate-800" id="ks-sales-dash-detail-total"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cliente (Adicionar/Editar) -->
+  <div id="ks-client-modal" class="fixed inset-0 hidden items-center justify-center p-4"
+    style="background:rgba(0,0,0,.55);z-index:120;" aria-hidden="true">
+    <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+        <div class="font-extrabold" id="ks-client-modal-title">Adicionar cliente</div>
+        <button id="ks-client-modal-close" class="text-slate-500 hover:text-slate-900"><i
+            class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5">
+        <div class="grid grid-cols-1 gap-4">
+          <div class="ks-field">
+            <label>Nome</label>
+            <input id="ks-client-form-name" class="ks-input mt-2" placeholder="Nome do cliente" />
+          </div>
+          <div class="ks-field">
+            <label>E-mail</label>
+            <input id="ks-client-form-email" type="email" class="ks-input mt-2" placeholder="E-mail do cliente" />
+          </div>
+          <div class="ks-field">
+            <label>Telefone (opcional)</label>
+            <input id="ks-client-form-phone" class="ks-input mt-2" placeholder="+55 (11) 99999-9999" />
+          </div>
+          <div class="ks-field">
+            <label>Senha (opcional)</label>
+            <div class="flex gap-2 mt-2">
+              <input id="ks-client-form-pass" class="ks-input" placeholder="Deixe vazio para manter a senha atual" />
+              <button class="ks-btn" id="ks-client-generate-pass" title="Gerar senha"><i
+                  class="fas fa-wand-magic-sparkles"></i></button>
+            </div>
+            <div class="text-xs ks-muted mt-2">Dica: gere uma nova senha para reenviar o acesso.</div>
+          </div>
+          <div class="ks-field">
+            <label>Nota (opcional)</label>
+            <textarea id="ks-client-form-note" class="ks-input mt-2" style="min-height:110px;font-size:13px"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="px-5 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button class="ks-btn" id="ks-client-cancel">Cancelar</button>
+        <button class="ks-btn ks-btn-primary" id="ks-client-save"><i class="fas fa-save"></i> Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Compartilhar acesso do cliente -->
+  <div id="ks-client-share-modal" class="fixed inset-0 hidden items-center justify-center p-4"
+    style="background:rgba(0,0,0,.55);z-index:120;" aria-hidden="true">
+    <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+        <div class="font-extrabold">Compartilhar acesso</div>
+        <button id="ks-client-share-close" class="text-slate-500 hover:text-slate-900"><i
+            class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5">
+        <div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">Dados de
+            acesso do cliente</div>
+          <div class="mt-3 text-sm">
+            <div><span class="text-white/60">Link:</span> <span class="ks-link" id="ks-client-share-link">-</span></div>
+            <div class="mt-1"><span class="text-white/60">E-mail:</span> <span id="ks-client-share-email">-</span></div>
+            <div class="mt-1"><span class="text-white/60">Senha:</span> <span class="font-mono"
+                id="ks-client-share-pass">••••••</span></div>
+          </div>
+          <button class="ks-btn ks-btn-primary mt-4 w-full" id="ks-client-share-copy"><i class="fas fa-copy"></i>
+            Copiar</button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button class="ks-btn" id="ks-client-share-whats"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button>
+          <button class="ks-btn"
+            onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('ks-client-share-link')?.textContent||'')"><i
+              class="fas fa-link"></i> Copiar só o link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: dados do cliente (atividades) — copiar nome, e-mail, telefone -->
+  <div id="ks-act-contact-modal" class="fixed inset-0 hidden items-center justify-center p-4"
+    style="background:rgba(0,0,0,.55);z-index:125;" aria-hidden="true">
+    <div class="bg-white ks-modal-light w-full max-w-md rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+        <div class="font-extrabold text-slate-900">Dados do cliente</div>
+        <button type="button" id="ks-act-contact-close" class="text-slate-500 hover:text-slate-900" aria-label="Fechar"><i
+            class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 space-y-3 text-sm text-slate-800">
+        <div>
+          <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Nome</div>
+          <div class="flex gap-2 items-center">
+            <span id="ks-act-contact-nome" class="flex-1 min-w-0 break-words font-medium">—</span>
+            <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="nome"><i class="fas fa-copy"></i></button>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">E-mail</div>
+          <div class="flex gap-2 items-center">
+            <span id="ks-act-contact-email" class="flex-1 min-w-0 break-all font-mono text-xs">—</span>
+            <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="email"><i class="fas fa-copy"></i></button>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Telefone</div>
+          <div class="flex gap-2 items-center">
+            <span id="ks-act-contact-phone" class="flex-1 min-w-0 break-all font-mono text-xs">—</span>
+            <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="phone"><i class="fas fa-copy"></i></button>
+          </div>
+        </div>
+        <button type="button" class="ks-btn w-full mt-2" id="ks-act-contact-copy-all"><i class="fas fa-copy"></i> Copiar tudo (texto)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export modal simples -->
+  <div id="ks-export-modal" class="fixed inset-0 hidden items-center justify-center p-4"
+    style="background:rgba(0,0,0,.55);z-index:120;">
+    <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div class="font-extrabold">Exportar fotos</div>
+        <button id="ks-export-close" class="text-slate-500 hover:text-slate-900"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5">
+        <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2">Seleção (lote)</div>
+        <select id="ks-export-batch" class="ks-input mb-4" title="Exportar só fotos escolhidas nesta seleção (lote)">
+          <option value="all">Todas as seleções</option>
+        </select>
+        <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2">O que incluir na lista</div>
+        <div class="flex flex-col gap-2 text-sm text-slate-700">
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="radio" name="ks-export-scope" id="ks-export-scope-all" value="all" checked class="mt-1" />
+            <span>Todas as fotos selecionadas pelo cliente</span>
+          </label>
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="radio" name="ks-export-scope" id="ks-export-scope-filter" value="filter" class="mt-1" />
+            <span>Só as que eu indicar abaixo (números ou código tipo <code class="text-xs bg-slate-100 px-1 rounded">ADR0003</code>)</span>
+          </label>
+        </div>
+        <p id="ks-export-all-hint" class="text-xs text-slate-500 mt-2 leading-relaxed min-h-[1.25rem]"></p>
+        <div id="ks-export-filter-block" class="hidden mt-3">
+          <textarea id="ks-export-filter-input" class="ks-input" rows="3"
+            placeholder="IDs do sistema (ex.: 1642) ou código no ficheiro (3, ADR0003) — vírgula ou linha"
+            style="font-size:13px"></textarea>
+          <div class="mt-2 flex flex-wrap gap-2 items-center">
+            <button type="button" id="ks-export-filter-apply" class="ks-btn flex items-center gap-2">
+              <i class="fas fa-search" aria-hidden="true"></i> Aplicar filtro
+            </button>
+            <span class="text-xs text-slate-500">Atualiza a lista para copiar (também atualiza ao digitar).</span>
+          </div>
+          <p id="ks-export-filter-hint" class="text-xs text-slate-500 mt-2 leading-relaxed"></p>
+        </div>
+        <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mt-4 mb-2">Formato da cópia</div>
+        <div class="flex gap-2 flex-wrap">
+          <button type="button" class="ks-btn" data-exp="lightroom">Lightroom</button>
+          <button type="button" class="ks-btn" data-exp="finder">Finder (Mac)</button>
+          <button type="button" class="ks-btn" data-exp="windows">Windows</button>
+        </div>
+        <textarea id="ks-export-ta" class="ks-input ks-export-ta mt-4"
+          style="min-height:160px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:12px"></textarea>
+        <button class="ks-btn ks-btn-primary mt-4 w-full" id="ks-export-copy"><i class="fas fa-copy"></i>
+          Copiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: fotos repetidas -->
+  <div class="ks-dupe-ov hidden" id="ks-dupe-ov" aria-hidden="true">
+    <div class="ks-dupe-card" role="dialog" aria-modal="true" aria-labelledby="ks-dupe-title">
+      <div class="ks-dupe-head">
+        <div class="ks-dupe-title" id="ks-dupe-title">Fotos repetidas detectadas</div>
+        <button type="button" class="ks-btn" id="ks-dupe-close" title="Fechar"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="ks-dupe-body">
+        <div class="hint" id="ks-dupe-hint">Encontramos fotos com o mesmo código/nome já existente nesta galeria.</div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-2xl border border-white/10 bg-black/35 overflow-hidden">
+            <div
+              class="px-4 py-3 border-b border-white/10 text-xs font-extrabold tracking-[0.18em] uppercase text-white/70">
+              Atual na galeria</div>
+            <div class="p-3">
+              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40" style="aspect-ratio: 4 / 3;">
+                <img id="ks-dupe-img-old" alt="foto atual" decoding="async" fetchpriority="low"
+                  style="width:100%;height:100%;object-fit:contain;display:block;background:#000" />
+              </div>
+              <div class="mt-2 text-xs text-white/70 font-mono truncate" id="ks-dupe-old-name">-</div>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-black/35 overflow-hidden">
+            <div
+              class="px-4 py-3 border-b border-white/10 text-xs font-extrabold tracking-[0.18em] uppercase text-white/70">
+              Nova (que você selecionou)</div>
+            <div class="p-3">
+              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40" style="aspect-ratio: 4 / 3;">
+                <img id="ks-dupe-img-new" alt="nova foto" decoding="async" fetchpriority="low"
+                  style="width:100%;height:100%;object-fit:contain;display:block;background:#000" />
+              </div>
+              <div class="mt-2 text-xs text-white/70 font-mono truncate" id="ks-dupe-new-name">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="text-xs font-extrabold tracking-[0.18em] uppercase text-white/50">Lista de repetidas</div>
+          <div class="ks-dupe-list" id="ks-dupe-list"></div>
+        </div>
+      </div>
+      <div class="ks-dupe-actions">
+        <button type="button" class="ks-btn" id="ks-dupe-skip">Ignorar repetidas</button>
+        <button type="button" class="ks-btn ks-btn-primary" id="ks-dupe-replace">Substituir existentes</button>
+        <button type="button" class="ks-btn" id="ks-dupe-keep">Enviar mesmo assim</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast host -->
+  <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/config.js?v=2026-03-23-anticache-a1"></script>
+  <script src="/kingSelectionProject.js?v=2026-04-18-cupom-msg-sem-url"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+
+</html>
