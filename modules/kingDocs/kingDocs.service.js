@@ -361,7 +361,12 @@ async function importFromProfile(userId) {
   const fd = vault && vault.field_data ? JSON.parse(JSON.stringify(vault.field_data)) : {};
   if (!fd.pessoal) fd.pessoal = {};
   if (!fd.contato) fd.contato = {};
-  if (details.display_name) fd.pessoal['Nome Completo'] = String(details.display_name);
+  if (details.display_name) {
+    const dn = String(details.display_name);
+    fd.pessoal['Nome Completo'] = dn;
+    if (!fd._meta || typeof fd._meta !== 'object') fd._meta = {};
+    fd._meta.displayName = dn;
+  }
   const wa = details.whatsapp || details.whatsapp_number;
   if (wa) fd.contato['WhatsApp'] = String(wa);
   if (details.email) fd.contato['E-mail'] = String(details.email);
@@ -402,6 +407,7 @@ async function exportVaultPdf(userId) {
   y -= 22;
 
   for (const [gkey, obj] of Object.entries(fieldData)) {
+    if (gkey === '_meta') continue;
     if (!obj || typeof obj !== 'object') continue;
     newPageIfNeeded(48);
     page.drawText(String(groupLabels[gkey] || gkey), { x: 48, y, size: 11, font: fontBold });

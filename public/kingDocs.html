@@ -366,6 +366,18 @@
     .kd-filter-links { margin-bottom: .65rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
     .kd-filter-links input { max-width: 220px; }
     .kd-dados-saved-hint { font-size: .74rem; color: var(--muted); margin: -.5rem 0 .75rem; }
+    .kd-hero-name-hint { text-align: center; font-size: .72rem; color: var(--muted); margin: -.35rem 0 .5rem; }
+    .kd-dados-field { margin-bottom: .65rem; }
+    .kd-dados-field .row { margin-bottom: .35rem; }
+    .kd-dados-doc-row { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin: 0 0 0 140px; font-size: .78rem; }
+    @media (max-width: 520px) {
+      .kd-dados-doc-row { margin-left: 0; }
+    }
+    .kd-dados-doc-status { color: var(--muted); flex: 1; min-width: 120px; }
+    .kd-dados-doc-status.has-file { color: var(--accent); font-weight: 600; }
+    .kd-field-mode-picker { margin-top: 0 !important; padding: .35rem .25rem 0; justify-content: center; }
+    .kd-field-mode-picker .kd-mini { font-size: .78rem; font-weight: 600; color: var(--ink); }
+    .kd-share-field-card-head .kd-share-field-name { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
     .kd-dirty-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem; padding: .65rem .85rem; margin-bottom: 1rem; border-radius: 10px; border: 1px solid rgba(234, 179, 8, 0.55); background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #78350f; font-size: .84rem; font-weight: 600; }
     body.kd-theme-dark .kd-dirty-banner { background: linear-gradient(135deg, #2a2418 0%, #3d3420 100%); color: #fde68a; border-color: rgba(250, 204, 21, 0.35); }
     .kd-share-quick-actions { padding: .55rem .75rem; border-top: 1px solid var(--border); background: var(--trust-bg); display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
@@ -523,6 +535,7 @@
         <div class="kd-hero-badge">Painel pessoal</div>
         <label class="visually-hidden" for="sh-name">Nome a mostrar no link</label>
         <input type="text" id="sh-name" class="kd-hero-name" placeholder="Seu nome" autocomplete="name"/>
+        <p class="kd-hero-name-hint">Este nome grava no servidor ao clicar <strong>Guardar dados</strong> (aba Dados).</p>
         <p class="kd-hero-sub">Selecione o que quiser compartilhar e copie com um clique</p>
       </div>
     </section>
@@ -566,51 +579,22 @@
 
     <div class="tabs" id="kd-tabs" role="tablist" aria-label="Secções King Docs">
       <button type="button" class="tab active" role="tab" aria-selected="true" aria-controls="p-dados" id="tab-p-dados" data-panel="p-dados">Dados</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-upload" id="tab-p-upload" data-panel="p-upload">Upload</button>
       <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-docs" id="tab-p-docs" data-panel="p-docs">Documentos</button>
       <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-partilha" id="tab-p-partilha" data-panel="p-partilha">Partilhar</button>
     </div>
 
     <div id="p-dados" class="panel active" role="tabpanel" aria-labelledby="tab-p-dados"></div>
-
-    <div id="p-upload" class="panel" role="tabpanel" aria-labelledby="tab-p-upload">
-      <p class="sub">Envia PDF ou imagem <strong>para o cofre</strong>. Cada cartão abre o explorador para esse tipo. Em <strong>Tipos extra</strong> crias novos tipos (nome + ícone) — aparecem como cartões em cima. Depois usa <strong>Documentos</strong> para pré-visualizar e partilhar.</p>
-      <div class="doc-panel-card">
-        <div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Enviar ao cofre</div>
-        <div id="doc-upload-root" class="doc-grid"></div>
-        <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
-        <div class="kd-custom-doctypes" id="kd-custom-doctypes-wrap">
-          <p class="group" style="margin:0 0 .5rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Tipos extra (nome + ícone)</p>
-          <p class="sub" style="margin-top:0">Cria quantos quiseres. O nome vira a chave do tipo (maiúsculas). Não podes duplicar um tipo que já existe nos cartões padrão.</p>
-          <div class="kd-custom-doctype-form" style="position:relative">
-            <input type="text" id="kd-cdt-label" placeholder="Nome (ex.: Passaporte)" maxlength="60" aria-label="Nome do novo tipo"/>
-            <span class="kd-cdt-emoji-wrap">
-              <input type="text" id="kd-cdt-icon" placeholder="Ícone" maxlength="8" value="📎" aria-label="Ícone emoji" title="Um emoji ou símbolo" style="max-width:3.2rem"/>
-              <button type="button" class="btn secondary" id="kd-cdt-emoji-btn" title="Grelha de emojis" aria-label="Abrir grelha de emojis" style="padding:.35rem .5rem;font-size:1rem;line-height:1">😀</button>
-              <div id="kd-cdt-emoji-pop" class="kd-cdt-emoji-pop" hidden role="listbox" aria-label="Escolher emoji"></div>
-            </span>
-            <button type="button" class="btn secondary" id="kd-cdt-add">Adicionar tipo</button>
-          </div>
-          <ul id="kd-cdt-list" class="kd-cdt-list" aria-label="Tipos extra guardados neste dispositivo"></ul>
-        </div>
-      </div>
-      <p class="doc-fallback-title">Outro documento</p>
-      <p class="sub" style="margin-top:0">Tipo livre (ex.: CPF, comprovante).</p>
-      <input type="file" id="up-file"/>
-      <input type="text" id="up-type" placeholder="Tipo (ex.: CPF scan)" style="max-width:220px; margin-left:.5rem"/>
-      <button type="button" class="btn" id="up-btn">Enviar</button>
-      <div id="file-list" style="margin-top:1rem"></div>
-    </div>
+    <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Escolhe os <strong>tipos de documento</strong> nos cartões (vários). À <strong>direita</strong> vês <strong>ficheiros</strong> e, logo abaixo no mesmo painel, o <strong>resumo do link</strong> (texto + anexos). Os ficheiros vêm dos cartões e do Upload. <strong>Prazo e senha</strong> na aba <strong>Partilhar</strong>.</p>
+      <p class="sub">Escolhe os <strong>tipos de documento</strong> nos cartões (vários). À <strong>direita</strong> vês <strong>ficheiros</strong> e o <strong>resumo do link</strong>. Envia ficheiros na aba <strong>Dados</strong>. <strong>Prazo e senha</strong> em <strong>Partilhar</strong>.</p>
       <div class="share-layout kd-docs-unified-layout doc-browse-layout">
         <div class="kd-docs-left-col">
           <div class="doc-panel-card">
             <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipos de documento</div>
             <div class="kd-doc-vault-row">
               <div class="kd-doc-vault-grid-col">
-                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Precisas de mais um tipo? Usa <strong>➕ Novo tipo</strong> no fim da grelha (abre Upload para criares nome + ícone).</p>
+                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Precisas de mais um tipo? Usa <strong>➕ Novo tipo</strong> no fim da grelha (abre <strong>Dados</strong> para criares nome + ícone).</p>
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
               <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
@@ -651,7 +635,7 @@
 
           <div class="doc-panel-card kd-docs-link-wrap">
             <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — textos do perfil</div>
-            <p class="sub" style="margin-top:.5rem">Cada <strong>cartão</strong> é um campo de texto do teu perfil. Para levar também a <strong>imagem/PDF</strong> desse tipo (ex.: RG), marca o mesmo tipo nos <strong>cartões de cima</strong> — no painel à direita, texto e ficheiro aparecem <strong>juntos</strong>. Secção <strong>Documentos extra</strong> abaixo para anexos sem campo de texto.</p>
+            <p class="sub" style="margin-top:.5rem">Em cada cartão escolhe <strong>Texto</strong>, <strong>Foto/PDF</strong> ou os dois (ex.: RG). Para foto, envia o ficheiro em <strong>Dados</strong> e, se quiseres, marca também o tipo nos <strong>cartões de cima</strong>. <strong>Documentos extra</strong> abaixo = só ficheiro, sem campo de texto.</p>
             <div class="kd-share-hint-row">
               <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo no painel acima antes de gerares o link na aba Partilhar.</p>
               <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar toda a seleção</button>
@@ -890,6 +874,17 @@
     var w = document.getElementById('share-table-wrap');
     return shareFieldBlockIn(w, fk);
   }
+  function fieldBlockIncluded(block) {
+    if (!block) return false;
+    var st = block.querySelector('.st');
+    var sf = block.querySelector('.sf');
+    return !!(st && st.checked) || !!(sf && sf.checked);
+  }
+  function fieldBlockFid(block) {
+    if (!block) return '';
+    var el = block.querySelector('.st') || block.querySelector('.sf');
+    return el ? el.getAttribute('data-fid') : '';
+  }
   function collectShareState() {
     return collectShareStateFrom(document.getElementById('share-table-wrap'), document.getElementById('extra-docs-wrap'));
   }
@@ -898,13 +893,15 @@
     if (fieldRoot) {
       fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (tr) {
         var fk = tr.getAttribute('data-fk');
-        var incl = tr.querySelector('.incl');
-        if (!incl) return;
-        var fid = incl.getAttribute('data-fid');
+        var fid = fieldBlockFid(tr);
+        if (!fid) return;
+        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
         rows.push({
           fk: fk,
-          incl: !!incl.checked,
-          st: !!(tr.querySelector('.st[data-fid="' + fid + '"]') && tr.querySelector('.st[data-fid="' + fid + '"]').checked)
+          st: !!(st && st.checked),
+          sf: !!(sf && sf.checked),
+          incl: fieldBlockIncluded(tr)
         });
       });
     }
@@ -928,16 +925,20 @@
       fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (tr) {
         var fk = tr.getAttribute('data-fk');
         var saved = state.rows.find(function (r) { return r.fk === fk; });
-        var incl = tr.querySelector('.incl');
-        if (!incl) return;
-        var fid = incl.getAttribute('data-fid');
+        var fid = fieldBlockFid(tr);
+        if (!fid) return;
+        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
         if (!saved) {
-          incl.checked = false;
+          if (st) st.checked = false;
+          if (sf) sf.checked = false;
           return;
         }
-        incl.checked = !!saved.incl;
-        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
-        if (st) st.checked = !!saved.st;
+        if (st) st.checked = saved.st != null ? !!saved.st : !!saved.incl;
+        if (sf) sf.checked = !!saved.sf;
+        if (saved.incl && saved.st == null && saved.sf == null) {
+          if (st) st.checked = true;
+        }
       });
     }
     if (extraRoot) {
@@ -1066,19 +1067,21 @@
       g.keys.forEach(function (k) {
         const tr = shareFieldBlock(g.id + '|' + k);
         if (!tr) return;
-        const incl = tr.querySelector('.incl');
-        if (!incl || !incl.checked) return;
-        const fid = incl.getAttribute('data-fid');
+        if (!fieldBlockIncluded(tr)) return;
+        const fid = fieldBlockFid(tr);
         const st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        const sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
+        const wantText = !!(st && st.checked);
+        const wantFile = !!(sf && sf.checked);
         const dt = fieldKeyToDocTypeHint(k, g.id);
         const canon = dt ? vaultDocTypeKeyForHint(dt) : null;
-        const vaultFile = canon && docTypeSelectedInVault(canon) ? (getLatestFileForDocType(canon) || findFileForFieldHint(g.id, k)) : null;
+        const vaultFile = wantFile && canon ? (getLatestFileForDocType(canon) || findFileForFieldHint(g.id, k)) : null;
         rows.push({
           group: g.id,
           key: k,
           label: k,
-          showText: !!(st && st.checked),
-          showFile: !!vaultFile,
+          showText: wantText,
+          showFile: !!(wantFile && vaultFile),
           fileId: vaultFile ? vaultFile.id : null
         });
       });
@@ -1453,7 +1456,7 @@
   function toggleDocBrowse(docType) {
     var dt = String(docType).trim();
     if (!fileExistsForDocType(dt)) {
-      showToast('Este documento ainda não está no cofre. Usa a aba Upload.', 'neutral');
+      showToast('Este documento ainda não está no cofre. Envia na aba Dados.', 'neutral');
       return;
     }
     var ix = docPreviewSelectedTypes.indexOf(dt);
@@ -1563,8 +1566,8 @@
     var fr = document.getElementById('kd-sc-share-grid');
     var er = document.getElementById('kd-sc-extra-docs');
     if (fr) {
-      fr.querySelectorAll('.incl').forEach(function (c) { c.checked = false; });
-      fr.querySelectorAll('.st').forEach(function (c) { c.checked = true; });
+      fr.querySelectorAll('.st').forEach(function (c) { c.checked = false; });
+      fr.querySelectorAll('.sf').forEach(function (c) { c.checked = false; });
     }
     if (er) er.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
   }
@@ -1709,10 +1712,9 @@
   }
   function applyFieldModeToBlock(block, mode) {
     var m = normalizePresetMode(mode);
-    var incl = block.querySelector('.incl');
-    if (incl) incl.checked = true;
-    var fid = incl && incl.getAttribute('data-fid');
+    var fid = fieldBlockFid(block);
     var st = block.querySelector('.st[data-fid="' + fid + '"]');
+    var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
     var fk = block.getAttribute('data-fk') || '';
     var parts = fk.split('|');
     var g = parts[0];
@@ -1720,6 +1722,7 @@
     var wantT = (m === 't' || m === 'b');
     var wantF = (m === 'f' || m === 'b');
     if (st) st.checked = wantT;
+    if (sf) sf.checked = wantF;
     if (wantF) ensureVaultDocTypeSelectedForField(g, k);
   }
   function applyExtraDocPresetEntry(docType, extraRootEl) {
@@ -1773,7 +1776,7 @@
       if (block) {
         applyFieldModeToBlock(block, 'f');
         if (!findFileForFieldHint(pair[0], pair[1])) {
-          showToast('Envia o ficheiro «' + dt + '» em Upload e marca o cartão desse tipo em Documentos.', 'neutral');
+          showToast('Envia o ficheiro «' + dt + '» em Dados e marca Foto/PDF em Documentos.', 'neutral');
         } else {
           showToast('Tipo marcado nos cartões — no preview, texto e ficheiro ficam juntos.', 'ok');
         }
@@ -1784,7 +1787,7 @@
     }
     var hadFile = !!(getLatestFileForDocType(dt) || filesList.find(function (x) { return normalizeDocTypeKey(x.doc_type) === normalizeDocTypeKey(dt); }));
     if (!hadFile) {
-      showToast('Ainda não tens este tipo no cofre. Envia em Upload (aba Upload).', 'neutral');
+      showToast('Ainda não tens este tipo no cofre. Envia na aba Dados.', 'neutral');
       return;
     }
     applyExtraDocPresetEntry(dt);
@@ -1796,6 +1799,62 @@
   let fieldData = {};
   let filesList = [];
   var vaultDirty = false;
+  var VAULT_META_KEY = '_meta';
+
+  function getVaultMeta() {
+    ensureFieldData();
+    if (!fieldData[VAULT_META_KEY] || typeof fieldData[VAULT_META_KEY] !== 'object') fieldData[VAULT_META_KEY] = {};
+    return fieldData[VAULT_META_KEY];
+  }
+  function getDisplayName() {
+    return String((getVaultMeta().displayName != null ? getVaultMeta().displayName : '') || '').trim();
+  }
+  function setDisplayName(name) {
+    getVaultMeta().displayName = String(name || '').trim();
+  }
+  function applyDisplayNameToHero() {
+    var el = document.getElementById('sh-name');
+    if (!el) return;
+    var dn = getDisplayName();
+    if (dn) el.value = dn;
+    else if (fieldData.pessoal && fieldData.pessoal['Nome Completo']) el.value = String(fieldData.pessoal['Nome Completo']);
+  }
+  function syncDisplayNameFromHero() {
+    var el = document.getElementById('sh-name');
+    if (el) setDisplayName(el.value);
+  }
+  function dadosDocStatusHtml(docType) {
+    var dt = vaultDocTypeKeyForHint(docType);
+    if (!dt) return '';
+    var has = fileExistsForDocType(dt);
+    var last = latestForDocType(dt);
+    var cls = 'kd-dados-doc-status' + (has ? ' has-file' : '');
+    var txt = has
+      ? ('✓ ' + escapeHtml(docTypeLabel(dt)) + ' no cofre' + (last ? ' · ' + escapeHtml(formatShortDate(last)) : ''))
+      : ('Sem ficheiro — envia foto ou PDF');
+    return '<span class="' + cls + '" data-doc-type="' + escapeAttr(dt) + '">' + txt + '</span>';
+  }
+  function bindDadosUploadButtons(root) {
+    if (!root) return;
+    root.querySelectorAll('.kd-dados-upload-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        pendingDocType = this.getAttribute('data-doc-type') || '';
+        var hid = document.getElementById('doc-file-hidden');
+        if (hid) { hid.value = ''; hid.click(); }
+      };
+    });
+  }
+  function refreshDadosFieldDocStatuses() {
+    document.querySelectorAll('.kd-dados-doc-status[data-doc-type]').forEach(function (span) {
+      var dt = span.getAttribute('data-doc-type');
+      var has = fileExistsForDocType(dt);
+      var last = latestForDocType(dt);
+      span.className = 'kd-dados-doc-status' + (has ? ' has-file' : '');
+      span.textContent = has
+        ? ('✓ ' + docTypeLabel(dt) + ' no cofre' + (last ? ' · ' + formatShortDate(last) : ''))
+        : 'Sem ficheiro — envia foto ou PDF';
+    });
+  }
 
   function setVaultDirty(on) {
     vaultDirty = !!on;
@@ -1815,7 +1874,7 @@
     const el = document.getElementById('p-dados');
     var vaultHint = formatVaultSavedHint();
     let html = '<div id="kd-dados-dirty-banner" class="kd-dirty-banner" ' + (vaultDirty ? '' : 'hidden') + '><span>Tens alterações por guardar no servidor.</span><button type="button" class="btn" id="kd-dados-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar agora</button></div>';
-    html += '<p class="sub">Preenche os campos que quiseres. <strong>Guardar dados</strong> grava no cofre (servidor). <strong>Exportar PDF</strong> faz um backup teu no dispositivo.</p>';
+    html += '<p class="sub">Preenche texto e envia documentos no mesmo sítio. <strong>Guardar dados</strong> grava tudo no cofre (inclui o nome do painel pessoal). Depois escolhe o que partilhar em <strong>Documentos</strong>.</p>';
     if (vaultHint) html += '<p class="kd-dados-saved-hint">' + escapeHtml(vaultHint) + '</p>';
     html += '<div class="btn-row">';
     html += '<button type="button" class="btn" id="btn-save-vault">Guardar dados</button>';
@@ -1826,16 +1885,48 @@
       html += '<details class="kd-collapsible" open><summary>' + escapeHtml(g.title) + '</summary><div class="kd-collapsible-body">';
       g.keys.forEach(k => {
         const v = (fieldData[g.id] && fieldData[g.id][k]) || '';
-        html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '" data-k="' + escapeHtml(k) + '" value="' + escapeAttr(v) + '"/></div>';
+        const docHint = fieldKeyToDocTypeHint(k, g.id);
+        const canonDt = docHint ? vaultDocTypeKeyForHint(docHint) : null;
+        if (canonDt) {
+          html += '<div class="kd-dados-field">';
+          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '" data-k="' + escapeHtml(k) + '" value="' + escapeAttr(v) + '"/></div>';
+          html += '<div class="kd-dados-doc-row">' + dadosDocStatusHtml(docHint);
+          html += '<button type="button" class="btn secondary kd-dados-upload-btn" data-doc-type="' + escapeAttr(canonDt) + '" style="font-size:.76rem;padding:.35rem .65rem">Enviar foto/PDF</button></div>';
+          html += '</div>';
+        } else {
+          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '" data-k="' + escapeHtml(k) + '" value="' + escapeAttr(v) + '"/></div>';
+        }
       });
       html += '</div></details>';
     });
+    html += '<details class="kd-collapsible" open><summary>Documentos no cofre (enviar ficheiros)</summary><div class="kd-collapsible-body">';
+    html += '<p class="sub" style="margin-top:0">Cada cartão abre o explorador para esse tipo. Depois marca o que queres partilhar em <strong>Documentos</strong>.</p>';
+    html += '<div class="doc-panel-card"><div class="doc-badge" role="status"><span aria-hidden="true">📎</span> Enviar ao cofre</div>';
+    html += '<div id="doc-upload-root" class="doc-grid"></div>';
+    html += '<div class="kd-custom-doctypes" id="kd-custom-doctypes-wrap">';
+    html += '<p class="group" style="margin:0 0 .5rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Tipos extra (nome + ícone)</p>';
+    html += '<div class="kd-custom-doctype-form" style="position:relative">';
+    html += '<input type="text" id="kd-cdt-label" placeholder="Nome (ex.: Passaporte)" maxlength="60"/>';
+    html += '<span class="kd-cdt-emoji-wrap"><input type="text" id="kd-cdt-icon" maxlength="8" value="📎" style="max-width:3.2rem"/>';
+    html += '<button type="button" class="btn secondary" id="kd-cdt-emoji-btn" style="padding:.35rem .5rem;font-size:1rem">😀</button>';
+    html += '<div id="kd-cdt-emoji-pop" class="kd-cdt-emoji-pop" hidden></div></span>';
+    html += '<button type="button" class="btn secondary" id="kd-cdt-add">Adicionar tipo</button></div>';
+    html += '<ul id="kd-cdt-list" class="kd-cdt-list"></ul></div></div>';
+    html += '<p class="doc-fallback-title">Outro documento</p>';
+    html += '<input type="file" id="up-file"/><input type="text" id="up-type" placeholder="Tipo" style="max-width:220px;margin-left:.5rem"/>';
+    html += '<button type="button" class="btn" id="up-btn">Enviar</button>';
+    html += '<div id="file-list" style="margin-top:1rem"></div></div></details>';
     el.innerHTML = html;
     document.getElementById('btn-save-vault').onclick = saveVault;
     var qSave = document.getElementById('kd-dados-save-quick');
     if (qSave) qSave.onclick = function () { saveVault(); };
     document.getElementById('btn-import-profile').onclick = importFromProfile;
     document.getElementById('btn-export-pdf').onclick = exportVaultPdf;
+    bindDadosUploadButtons(el);
+    initKdCdtEmojiPicker();
+    renderCustomDocTypesList();
+    bindCustomDocTypeAdd();
+    renderDocUploadCards();
     el.querySelectorAll('input[data-g]').forEach(inp => {
       function syncField() {
         const g = inp.getAttribute('data-g');
@@ -1847,6 +1938,16 @@
       inp.addEventListener('input', syncField);
       inp.addEventListener('change', syncField);
     });
+    var upBtn = document.getElementById('up-btn');
+    if (upBtn) upBtn.onclick = async function () {
+      const inp = document.getElementById('up-file');
+      if (!inp || !inp.files || !inp.files[0]) { showToast('Escolhe um ficheiro primeiro.', 'neutral'); return; }
+      var ok = await uploadKingDocFile(inp.files[0], document.getElementById('up-type').value || 'documento');
+      if (!ok) { showToast('Erro no upload.', 'err'); return; }
+      inp.value = '';
+      showToast('Ficheiro enviado.', 'ok');
+      loadFiles();
+    };
   }
 
   function escapeHtml(s) {
@@ -1987,6 +2088,7 @@
       if (d && typeof d === 'object') fieldData = d;
       ensureFieldData();
       setVaultDirty(false);
+      applyDisplayNameToHero();
       renderDados();
       renderShareTable();
       await loadFiles();
@@ -1997,6 +2099,7 @@
   }
 
   async function saveVault() {
+    syncDisplayNameFromHero();
     const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
     if (!r.ok) { showToast('Não foi possível guardar. Tenta outra vez.', 'err'); return; }
     try { localStorage.setItem(VAULT_SAVED_AT_KEY, String(Date.now())); } catch (e) {}
@@ -2013,6 +2116,7 @@
     if (d && typeof d === 'object') fieldData = d;
     ensureFieldData();
     setVaultDirty(false);
+    applyDisplayNameToHero();
     renderDados();
     renderShareTable();
     showToast(j.message || 'Dados do perfil importados.', 'ok');
@@ -2198,7 +2302,7 @@
     if (btnNew) {
       btnNew.onclick = function (e) {
         e.preventDefault();
-        var tab = document.getElementById('tab-p-upload');
+        var tab = document.getElementById('tab-p-dados');
         if (tab) tab.click();
         var el = document.getElementById('kd-custom-doctypes-wrap');
         if (el) {
@@ -2242,7 +2346,7 @@
     filesList = (j.data && j.data.files) || [];
     renderDocCards();
     const el = document.getElementById('file-list');
-    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa a aba <strong>Upload</strong> ou «Outro documento» abaixo para enviar o primeiro.</p>'; renderShareTable(); renderExtraDocs(); return; }
+    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa a aba <strong>Dados</strong> (secção Documentos) para enviar o primeiro.</p>'; renderShareTable(); renderExtraDocs(); refreshDadosFieldDocStatuses(); return; }
     el.innerHTML = filesList.map(f => {
       var dt = f.created_at ? formatShortDate(new Date(f.created_at)) : '';
       return '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
@@ -2261,6 +2365,7 @@
     renderShareTable();
     renderExtraDocs();
     refreshProfilePhotoPreview();
+    refreshDadosFieldDocStatuses();
   }
 
   function clearAtalhoActive() {
@@ -2272,18 +2377,16 @@
     var pairs = [];
     if (fieldRoot) {
       fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (block) {
-        var incl = block.querySelector('.incl');
-        if (!incl || !incl.checked) return;
+        if (!fieldBlockIncluded(block)) return;
         var fk = block.getAttribute('data-fk') || '';
         var parts = fk.split('|');
         var gid = parts[0];
         var k = parts.slice(1).join('|');
-        var fid = incl.getAttribute('data-fid');
+        var fid = fieldBlockFid(block);
         var st = block.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
         var wantT = st && st.checked;
-        var dt = fieldKeyToDocTypeHint(k, gid);
-        var canon = dt ? vaultDocTypeKeyForHint(dt) : null;
-        var wantF = !!(canon && docTypeSelectedInVault(canon) && getLatestFileForDocType(canon));
+        var wantF = sf && sf.checked;
         var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
         pairs.push([gid, k, mode]);
       });
@@ -2335,8 +2438,8 @@
     var it = arr.find(function (x) { return x.id === id; });
     if (!it) return;
     ensureFieldData();
-    document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
@@ -2352,8 +2455,8 @@
     const list = PRESETS[presetId];
     if (!list) return;
     ensureFieldData();
-    document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     list.forEach(function (entry) { applyOnePresetEntry(entry); });
@@ -2370,15 +2473,16 @@
     var consumedVault = {};
 
     document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
-      var incl = tr.querySelector('.incl');
-      if (!incl || !incl.checked) return;
+      if (!fieldBlockIncluded(tr)) return;
       var fk = tr.getAttribute('data-fk') || '';
       var parts = fk.split('|');
       var g = parts[0];
       var k = parts.slice(1).join('|');
-      var fid = incl.getAttribute('data-fid');
+      var fid = fieldBlockFid(tr);
       var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+      var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
       var hasText = st && st.checked;
+      var wantFile = sf && sf.checked;
       var val = (fieldData[g] && fieldData[g][k] != null) ? String(fieldData[g][k]) : '';
       var valDisp = val.trim() ? val : '(vazio)';
       var gInfo = GROUPS.find(function (x) { return x.id === g; });
@@ -2388,7 +2492,7 @@
       var dtHint = fieldKeyToDocTypeHint(k, g);
       var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
       var fn = null;
-      if (canon && docTypeSelectedInVault(canon)) {
+      if (wantFile && canon) {
         fn = getLatestFileForDocType(canon) || findFileForFieldHint(g, k);
       }
       var fileLabel = fn ? ('#' + fn.id + ' ' + (fn.doc_type || '')) : '';
@@ -2568,11 +2672,11 @@
         html += '<div class="kd-field-block kd-share-field-card" data-fk="' + escapeAttr(fk) + '">';
         html += '<div class="kd-share-field-card-head">';
         html += '<span class="kd-share-field-card-ico" aria-hidden="true">' + (g.icon || '📋') + '</span>';
-        html += '<label class="kd-field-main kd-share-field-main"><input type="checkbox" class="incl" data-fid="' + fid + '"/> <span class="kd-share-field-name">' + escapeHtml(k) + '</span></label>';
+        html += '<span class="kd-share-field-name">' + escapeHtml(k) + '</span>';
         html += '</div>';
-        html += '<div class="kd-field-adv">';
+        html += '<div class="kd-field-adv kd-field-mode-picker">';
         html += '<label class="kd-mini"><input type="checkbox" class="st" data-fid="' + fid + '"/> Texto</label>';
-        html += '<p class="kd-share-vault-hint">Para anexar o ficheiro deste tipo, marca o mesmo tipo nos <strong>cartões de documento</strong> acima (após envio em Upload).</p>';
+        html += '<label class="kd-mini"><input type="checkbox" class="sf" data-fid="' + fid + '"/> Foto / PDF</label>';
         html += '</div></div>';
       });
       html += '</div></div>';
@@ -2583,7 +2687,8 @@
         var gid = this.getAttribute('data-select-all-gid');
         var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
         if (!cat) return;
-        cat.querySelectorAll('.kd-field-block .incl').forEach(function (c) { c.checked = true; });
+        cat.querySelectorAll('.kd-field-block .st').forEach(function (c) { c.checked = true; });
+        cat.querySelectorAll('.kd-field-block .sf').forEach(function (c) { c.checked = true; });
         clearAtalhoActive();
         if (idPrefix === 'f') updateSharePreview();
       };
@@ -2593,11 +2698,26 @@
         var gid = this.getAttribute('data-clear-all-gid');
         var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
         if (!cat) return;
-        cat.querySelectorAll('.kd-field-block .incl').forEach(function (c) { c.checked = false; });
         cat.querySelectorAll('.kd-field-block .st').forEach(function (c) { c.checked = false; });
+        cat.querySelectorAll('.kd-field-block .sf').forEach(function (c) { c.checked = false; });
         clearAtalhoActive();
         if (idPrefix === 'f') updateSharePreview();
       };
+    });
+    wrap.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.classList) return;
+      if (!t.classList.contains('st') && !t.classList.contains('sf')) return;
+      if (t.classList.contains('sf') && t.checked) {
+        var block = t.closest('.kd-field-block');
+        if (block) {
+          var fk = block.getAttribute('data-fk') || '';
+          var parts = fk.split('|');
+          ensureVaultDocTypeSelectedForField(parts[0], parts.slice(1).join('|'));
+        }
+      }
+      clearAtalhoActive();
+      if (idPrefix === 'f') updateSharePreview();
     });
     if (idPrefix === 'f') updateSharePreview();
   }
@@ -2628,16 +2748,6 @@
     showToast('Documento guardado no cofre.', 'ok');
     loadFiles();
   });
-
-  document.getElementById('up-btn').onclick = async function() {
-    const inp = document.getElementById('up-file');
-    if (!inp.files || !inp.files[0]) { showToast('Escolhe um ficheiro primeiro.', 'neutral'); return; }
-    var ok = await uploadKingDocFile(inp.files[0], document.getElementById('up-type').value || 'documento');
-    if (!ok) { showToast('Erro no upload.', 'err'); return; }
-    inp.value = '';
-    showToast('Ficheiro enviado.', 'ok');
-    loadFiles();
-  };
 
   document.getElementById('btn-create-link').onclick = async function() {
     var selection = buildUnifiedShareSelection();
@@ -2776,8 +2886,8 @@
 
   function clearShareFieldSelection() {
     clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap .incl').forEach(function (c) { c.checked = false; });
     document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
     var exw = document.getElementById('extra-docs-wrap');
     if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
     updateSharePreview();
@@ -2801,7 +2911,10 @@
     clearAtalhoActive();
     updateSharePreview();
   });
-  document.getElementById('sh-name').addEventListener('input', updateSharePreview);
+  document.getElementById('sh-name').addEventListener('input', function () {
+    setVaultDirty(true);
+    updateSharePreview();
+  });
   function refreshProfilePhotoPreview() {
     var wrap = document.getElementById('sh-profile-preview-wrap');
     var clearBtn = document.getElementById('sh-profile-clear');
@@ -2879,7 +2992,10 @@
     renderDocBrowseCards();
     refreshDocVaultPreview();
   };
-  document.getElementById('kd-cdt-add').onclick = function () {
+  function bindCustomDocTypeAdd() {
+    var addBtn = document.getElementById('kd-cdt-add');
+    if (!addBtn) return;
+    addBtn.onclick = function () {
     var labelEl = document.getElementById('kd-cdt-label');
     var iconEl = document.getElementById('kd-cdt-icon');
     var label = labelEl && labelEl.value.trim();
@@ -2902,7 +3018,8 @@
     renderCustomDocTypesList();
     renderDocCards();
     showToast('Tipo criado. Clica no cartão «Enviar ao cofre» para enviar.', 'ok');
-  };
+    };
+  }
   document.getElementById('btn-doc-copy-link').onclick = async function () {
     var url = await quickShareVaultMulti();
     if (!url) {
@@ -3223,7 +3340,9 @@
       const r = await fetch(api('/api/account/status'), { headers: authHeaders() });
       if (!r.ok) return;
       const u = await r.json();
-      if (u.name && !document.getElementById('sh-name').value) document.getElementById('sh-name').value = u.name;
+      if (!getDisplayName() && !document.getElementById('sh-name').value.trim() && u.name) {
+        document.getElementById('sh-name').value = u.name;
+      }
     } catch (e) {}
   }
 
