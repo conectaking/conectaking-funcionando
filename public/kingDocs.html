@@ -367,6 +367,7 @@
     .kd-filter-links input { max-width: 220px; }
     .kd-dados-saved-hint { font-size: .74rem; color: var(--muted); margin: -.5rem 0 .75rem; }
     .kd-hero-name-hint { text-align: center; font-size: .72rem; color: var(--muted); margin: -.35rem 0 .5rem; }
+    .kd-hero-dirty-banner { max-width: 560px; margin: 0 auto .65rem; }
     .kd-dados-field { margin-bottom: .65rem; }
     .kd-dados-field .row { margin-bottom: .35rem; }
     .kd-dados-doc-row { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin: 0 0 0 140px; font-size: .78rem; }
@@ -535,7 +536,11 @@
         <div class="kd-hero-badge">Painel pessoal</div>
         <label class="visually-hidden" for="sh-name">Nome a mostrar no link</label>
         <input type="text" id="sh-name" class="kd-hero-name" placeholder="Seu nome" autocomplete="name"/>
-        <p class="kd-hero-name-hint">Este nome grava no servidor ao clicar <strong>Guardar dados</strong> (aba Dados).</p>
+        <div id="kd-hero-dirty-banner" class="kd-dirty-banner kd-hero-dirty-banner" hidden>
+          <span>Tens alterações por guardar no servidor.</span>
+          <button type="button" class="btn" id="kd-hero-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar no servidor</button>
+        </div>
+        <p class="kd-hero-name-hint">O nome do topo e «Nome Completo» ficam iguais. Clica <strong>Guardar no servidor</strong> para gravar.</p>
         <p class="kd-hero-sub">Selecione o que quiser compartilhar e copie com um clique</p>
       </div>
     </section>
@@ -1816,12 +1821,49 @@
     var el = document.getElementById('sh-name');
     if (!el) return;
     var dn = getDisplayName();
-    if (dn) el.value = dn;
-    else if (fieldData.pessoal && fieldData.pessoal['Nome Completo']) el.value = String(fieldData.pessoal['Nome Completo']);
+    var nc = fieldData.pessoal && String(fieldData.pessoal['Nome Completo'] || '').trim();
+    var finalName = dn || nc;
+    if (!finalName) return;
+    el.value = finalName;
+    setDisplayName(finalName);
+    if (!fieldData.pessoal) fieldData.pessoal = {};
+    fieldData.pessoal['Nome Completo'] = finalName;
   }
-  function syncDisplayNameFromHero() {
-    var el = document.getElementById('sh-name');
-    if (el) setDisplayName(el.value);
+  function syncHeroNameToForm(name) {
+    var v = String(name || '').trim();
+    setDisplayName(v);
+    if (!fieldData.pessoal) fieldData.pessoal = {};
+    fieldData.pessoal['Nome Completo'] = v;
+    var ncInp = document.querySelector('#p-dados input[data-g="pessoal"][data-k="Nome Completo"]');
+    if (ncInp && ncInp.value !== v) ncInp.value = v;
+  }
+  function collectFieldDataFromDom() {
+    ensureFieldData();
+    var panel = document.getElementById('p-dados');
+    if (!panel) return;
+    panel.querySelectorAll('input[data-g][data-k]').forEach(function (inp) {
+      var g = inp.getAttribute('data-g');
+      var k = inp.getAttribute('data-k');
+      if (!fieldData[g]) fieldData[g] = {};
+      fieldData[g][k] = inp.value;
+    });
+  }
+  function syncNamesBeforeSave() {
+    collectFieldDataFromDom();
+    var hero = document.getElementById('sh-name');
+    var heroVal = hero ? String(hero.value || '').trim() : '';
+    var ncVal = fieldData.pessoal && String(fieldData.pessoal['Nome Completo'] || '').trim();
+    var finalName = heroVal || ncVal;
+    if (finalName) {
+      setDisplayName(finalName);
+      if (!fieldData.pessoal) fieldData.pessoal = {};
+      fieldData.pessoal['Nome Completo'] = finalName;
+      if (hero && hero.value !== finalName) hero.value = finalName;
+    }
+  }
+  function vaultHasSavedName() {
+    if (getDisplayName()) return true;
+    return !!(fieldData.pessoal && String(fieldData.pessoal['Nome Completo'] || '').trim());
   }
   function dadosDocStatusHtml(docType) {
     var dt = vaultDocTypeKeyForHint(docType);
@@ -1858,8 +1900,10 @@
 
   function setVaultDirty(on) {
     vaultDirty = !!on;
-    var b = document.getElementById('kd-dados-dirty-banner');
-    if (b) b.hidden = !vaultDirty;
+    var heroBar = document.getElementById('kd-hero-dirty-banner');
+    if (heroBar) heroBar.hidden = !vaultDirty;
+    var dadosBar = document.getElementById('kd-dados-dirty-banner');
+    if (dadosBar) dadosBar.hidden = !vaultDirty;
   }
 
   function ensureFieldData() {
@@ -1873,11 +1917,11 @@
     ensureFieldData();
     const el = document.getElementById('p-dados');
     var vaultHint = formatVaultSavedHint();
-    let html = '<div id="kd-dados-dirty-banner" class="kd-dirty-banner" ' + (vaultDirty ? '' : 'hidden') + '><span>Tens alterações por guardar no servidor.</span><button type="button" class="btn" id="kd-dados-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar agora</button></div>';
-    html += '<p class="sub">Preenche texto e envia documentos no mesmo sítio. <strong>Guardar dados</strong> grava tudo no cofre (inclui o nome do painel pessoal). Depois escolhe o que partilhar em <strong>Documentos</strong>.</p>';
+    let html = '<div id="kd-dados-dirty-banner" class="kd-dirty-banner" ' + (vaultDirty ? '' : 'hidden') + '><span>Tens alterações por guardar no servidor.</span><button type="button" class="btn" id="kd-dados-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar no servidor</button></div>';
+    html += '<p class="sub">Preenche texto e envia documentos no mesmo sítio. <strong>Guardar no servidor</strong> grava tudo (nome, campos e documentos). Depois escolhe o que partilhar em <strong>Documentos</strong>.</p>';
     if (vaultHint) html += '<p class="kd-dados-saved-hint">' + escapeHtml(vaultHint) + '</p>';
     html += '<div class="btn-row">';
-    html += '<button type="button" class="btn" id="btn-save-vault">Guardar dados</button>';
+    html += '<button type="button" class="btn" id="btn-save-vault">Guardar no servidor</button>';
     html += '<button type="button" class="btn secondary" id="btn-import-profile">Importar do perfil (cartão)</button>';
     html += '<button type="button" class="btn secondary" id="btn-export-pdf">Exportar PDF</button>';
     html += '</div>';
@@ -1933,6 +1977,7 @@
         const k = inp.getAttribute('data-k');
         if (!fieldData[g]) fieldData[g] = {};
         fieldData[g][k] = inp.value;
+        if (g === 'pessoal' && k === 'Nome Completo') syncHeroNameToForm(inp.value);
         setVaultDirty(true);
       }
       inp.addEventListener('input', syncField);
@@ -2099,13 +2144,37 @@
   }
 
   async function saveVault() {
-    syncDisplayNameFromHero();
-    const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
-    if (!r.ok) { showToast('Não foi possível guardar. Tenta outra vez.', 'err'); return; }
-    try { localStorage.setItem(VAULT_SAVED_AT_KEY, String(Date.now())); } catch (e) {}
-    setVaultDirty(false);
-    showToast('Dados guardados no servidor.', 'ok');
-    renderDados();
+    syncNamesBeforeSave();
+    var btns = [
+      document.getElementById('btn-save-vault'),
+      document.getElementById('kd-dados-save-quick'),
+      document.getElementById('kd-hero-save-quick')
+    ];
+    btns.forEach(function (b) { if (b) { b.disabled = true; b.textContent = 'A guardar…'; } });
+    try {
+      const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
+      const j = await r.json().catch(function () { return {}; });
+      if (!r.ok || j.success === false) {
+        showToast((j && j.message) || 'Não foi possível guardar no servidor. Tenta outra vez.', 'err');
+        return;
+      }
+      if (j.data && j.data.fieldData && typeof j.data.fieldData === 'object') fieldData = j.data.fieldData;
+      ensureFieldData();
+      try { localStorage.setItem(VAULT_SAVED_AT_KEY, String(Date.now())); } catch (e) {}
+      setVaultDirty(false);
+      applyDisplayNameToHero();
+      showToast('Guardado no servidor.', 'ok');
+      renderDados();
+    } catch (e) {
+      showToast('Erro de rede ao guardar. Verifica a ligação.', 'err');
+    } finally {
+      btns.forEach(function (b) {
+        if (!b) return;
+        b.disabled = false;
+        if (b.id === 'btn-save-vault') b.textContent = 'Guardar no servidor';
+        else b.textContent = 'Guardar no servidor';
+      });
+    }
   }
 
   async function importFromProfile() {
@@ -2912,9 +2981,12 @@
     updateSharePreview();
   });
   document.getElementById('sh-name').addEventListener('input', function () {
+    syncHeroNameToForm(this.value);
     setVaultDirty(true);
     updateSharePreview();
   });
+  var heroSaveBtn = document.getElementById('kd-hero-save-quick');
+  if (heroSaveBtn) heroSaveBtn.onclick = function () { saveVault(); };
   function refreshProfilePhotoPreview() {
     var wrap = document.getElementById('sh-profile-preview-wrap');
     var clearBtn = document.getElementById('sh-profile-clear');
@@ -3336,12 +3408,16 @@
   async function loadProfileHints() {
     const tok = getToken();
     if (!tok) return;
+    if (vaultHasSavedName()) return;
     try {
       const r = await fetch(api('/api/account/status'), { headers: authHeaders() });
       if (!r.ok) return;
       const u = await r.json();
-      if (!getDisplayName() && !document.getElementById('sh-name').value.trim() && u.name) {
-        document.getElementById('sh-name').value = u.name;
+      var hero = document.getElementById('sh-name');
+      if (!hero || hero.value.trim()) return;
+      if (u.name) {
+        hero.value = u.name;
+        syncHeroNameToForm(u.name);
       }
     } catch (e) {}
   }
