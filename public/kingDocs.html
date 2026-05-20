@@ -426,6 +426,13 @@
     .doc-card .dc-status { font-size: .7rem; color: #2d5a3d; font-weight: 600; }
     .doc-card:not(.selected) .dc-status { color: var(--muted); font-weight: 500; }
     .doc-card .dc-date { font-size: .62rem; color: var(--muted); margin-top: .25rem; }
+    .doc-card--share { cursor: default; display: flex; flex-direction: column; align-items: center; min-height: 118px; }
+    .doc-card--share.doc-card--on { background: #d4edda; border-color: #2d5a3d; box-shadow: 0 0 0 2px rgba(45,90,61,.25); }
+    .doc-card--share .dc-modes { display: flex; flex-wrap: wrap; gap: .35rem .5rem; justify-content: center; margin: .35rem 0 .25rem; width: 100%; }
+    .doc-card--share .kd-sc-mode { display: inline-flex; align-items: center; gap: .2rem; font-size: .66rem; font-weight: 600; color: var(--ink); cursor: pointer; margin: 0; }
+    .doc-card--share .kd-sc-mode input { margin: 0; width: .95rem; height: .95rem; accent-color: var(--accent); }
+    .kd-docs-share-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; margin: 0 0 .75rem; }
+    .kd-docs-share-toolbar .kd-share-summary { margin: 0; flex: 1; min-width: 180px; }
     body.kd-theme-dark .doc-card .dc-status { color: var(--accent); }
     body.kd-theme-dark .doc-badge { background: #243028; color: var(--muted); border-color: var(--border); }
     .doc-fallback-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 1rem 0 .5rem; }
@@ -592,14 +599,18 @@
     <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Escolhe os <strong>tipos de documento</strong> nos cartões (vários). À <strong>direita</strong> vês <strong>ficheiros</strong> e o <strong>resumo do link</strong>. Envia ficheiros na aba <strong>Dados</strong>. <strong>Prazo e senha</strong> em <strong>Partilhar</strong>.</p>
+      <p class="sub">Em cada cartão marca <strong>Texto</strong> e/ou <strong>Foto/PDF</strong> para o link. <strong>Foto pessoal</strong> aparece primeiro. Envia ficheiros na aba <strong>Dados</strong>. À direita vês a pré-visualização e o resumo.</p>
       <div class="share-layout kd-docs-unified-layout doc-browse-layout">
         <div class="kd-docs-left-col">
           <div class="doc-panel-card">
-            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> Tipos de documento</div>
+            <div class="doc-badge" role="status"><span aria-hidden="true">📋</span> O que incluir no link</div>
+            <div class="kd-docs-share-toolbar">
+              <p class="kd-share-summary" id="share-confirm-hint">Marca Texto e/ou Foto/PDF nos cartões; o resumo aparece à direita.</p>
+              <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar seleção</button>
+            </div>
             <div class="kd-doc-vault-row">
               <div class="kd-doc-vault-grid-col">
-                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Precisas de mais um tipo? Usa <strong>➕ Novo tipo</strong> no fim da grelha (abre <strong>Dados</strong> para criares nome + ícone).</p>
+                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Mais tipos? <strong>➕ Novo tipo</strong> (abre <strong>Dados</strong>). Sem ficheiro no cofre? Envia em <strong>Dados</strong> antes de marcar Foto/PDF.</p>
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
               <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
@@ -609,7 +620,7 @@
                 </div>
                 <div class="kd-preview-resumo-block">
                   <div class="preview-header preview-header--resumo">Resumo do link <span id="preview-count" class="badge">0 itens</span></div>
-                  <div id="share-preview-body" class="kd-preview-resumo-body"><p class="preview-empty">Marca campos em «Incluir no link» abaixo.</p></div>
+                  <div id="share-preview-body" class="kd-preview-resumo-body"><p class="preview-empty">Marca Texto e/ou Foto/PDF nos cartões à esquerda.</p></div>
                 </div>
                 <p class="preview-footer-msg kd-preview-partilhar-hint"><span>✓</span> Isto é só visualização. O URL gera-se na aba <strong>Partilhar</strong> (ou com os botões de link abaixo).</p>
                 <div class="doc-preview-actions" id="doc-preview-actions">
@@ -637,23 +648,11 @@
               </div>
             </div>
           </div>
-
-          <div class="doc-panel-card kd-docs-link-wrap">
-            <div class="doc-badge" role="status"><span aria-hidden="true">📤</span> Incluir no link — textos do perfil</div>
-            <p class="sub" style="margin-top:.5rem">Em cada cartão escolhe <strong>Texto</strong>, <strong>Foto/PDF</strong> ou os dois (ex.: RG). Para foto, envia o ficheiro em <strong>Dados</strong> e, se quiseres, marca também o tipo nos <strong>cartões de cima</strong>. <strong>Documentos extra</strong> abaixo = só ficheiro, sem campo de texto.</p>
-            <div class="kd-share-hint-row">
-              <p class="kd-share-summary" id="share-confirm-hint">Marca os campos nos cartões e confirma o resumo no painel acima antes de gerares o link na aba Partilhar.</p>
-              <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar toda a seleção</button>
-            </div>
-            <div class="share-main" style="max-width:100%">
-              <div class="share-grid" id="share-table-wrap"></div>
-              <h3 class="group" style="margin-top:1rem;">Documentos extra (só ficheiro, sem campo de texto)</h3>
-              <div id="extra-docs-wrap"></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
+    <div id="share-table-wrap" hidden aria-hidden="true" style="display:none"></div>
+    <div id="extra-docs-wrap" hidden aria-hidden="true" style="display:none"></div>
 
     <div id="p-partilha" class="panel" role="tabpanel" aria-labelledby="tab-p-partilha">
       <div class="kd-share-head">
@@ -891,7 +890,10 @@
     return el ? el.getAttribute('data-fid') : '';
   }
   function collectShareState() {
-    return collectShareStateFrom(document.getElementById('share-table-wrap'), document.getElementById('extra-docs-wrap'));
+    return {
+      pairs: collectCurrentPresetPairs(),
+      hours: document.getElementById('sh-hours') ? document.getElementById('sh-hours').value : ''
+    };
   }
   function collectShareStateFrom(fieldRoot, extraRoot) {
     var rows = [];
@@ -921,7 +923,17 @@
     return { rows: rows, extraFileIds: extraFileIds, hours: document.getElementById('sh-hours') ? document.getElementById('sh-hours').value : '' };
   }
   function applyShareState(state) {
-    applyShareStateToRoots(document.getElementById('share-table-wrap'), document.getElementById('extra-docs-wrap'), state, true);
+    if (!state) return;
+    clearAtalhoActive();
+    clearAllShareCards();
+    if (state.pairs && state.pairs.length) {
+      state.pairs.forEach(function (entry) { applyPresetToShareCard(entry); });
+    } else if (state.rows) {
+      applyShareStateToRoots(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), state, false);
+    }
+    if (state.hours != null && document.getElementById('sh-hours')) document.getElementById('sh-hours').value = state.hours;
+    syncDocPreviewFromShareCards();
+    updateSharePreview();
   }
   function applyShareStateToRoots(fieldRoot, extraRoot, state, runPreview) {
     if (!state || !state.rows) return;
@@ -1064,43 +1076,48 @@
     var d = j.data || {};
     return window.location.origin + (d.shareUrl || '');
   }
-  /** Secções + documentos extra (checkboxes) — mesmo critério que «Gerar link seguro» */
+  /** Secções a partir dos cartões unificados (#doc-browse-root) */
   function buildShareSectionsAndExtraFromTable() {
     const sections = [];
-    GROUPS.forEach(function (g) {
-      const rows = [];
-      g.keys.forEach(function (k) {
-        const tr = shareFieldBlock(g.id + '|' + k);
-        if (!tr) return;
-        if (!fieldBlockIncluded(tr)) return;
-        const fid = fieldBlockFid(tr);
-        const st = tr.querySelector('.st[data-fid="' + fid + '"]');
-        const sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
-        const wantText = !!(st && st.checked);
-        const wantFile = !!(sf && sf.checked);
-        const dt = fieldKeyToDocTypeHint(k, g.id);
-        const canon = dt ? vaultDocTypeKeyForHint(dt) : null;
-        const vaultFile = wantFile && canon ? (getLatestFileForDocType(canon) || findFileForFieldHint(g.id, k)) : null;
-        rows.push({
-          group: g.id,
-          key: k,
-          label: k,
+    const sectionMap = {};
+    const extraDocs = [];
+    const usedFileIds = new Set();
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var st = card.querySelector('.kd-sc-st');
+      var sf = card.querySelector('.kd-sc-sf');
+      var wantText = !!(st && st.checked);
+      var wantFile = !!(sf && sf.checked);
+      if (!wantText && !wantFile) return;
+      var gid = card.getAttribute('data-gid') || '';
+      var key = card.getAttribute('data-key') || '';
+      var docType = card.getAttribute('data-doc-type') || '';
+      if (gid && key) {
+        var gInfo = GROUPS.find(function (x) { return x.id === gid; });
+        var title = gInfo ? gInfo.title : 'Outros';
+        if (!sectionMap[title]) sectionMap[title] = [];
+        var dtHint = fieldKeyToDocTypeHint(key, gid);
+        var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
+        var vaultFile = wantFile && canon ? (getLatestFileForDocType(canon) || findFileForFieldHint(gid, key)) : null;
+        if (vaultFile) usedFileIds.add(vaultFile.id);
+        sectionMap[title].push({
+          group: gid,
+          key: key,
+          label: key,
           showText: wantText,
           showFile: !!(wantFile && vaultFile),
           fileId: vaultFile ? vaultFile.id : null
         });
-      });
-      if (rows.length) sections.push({ title: g.title, rows });
+      } else if (docType && wantFile) {
+        var f = getLatestFileForDocType(docType);
+        if (f && !usedFileIds.has(f.id)) {
+          usedFileIds.add(f.id);
+          extraDocs.push({ fileId: f.id, label: docTypeLabel(docType) });
+        }
+      }
     });
-    const extraDocs = [];
-    var exW = document.getElementById('extra-docs-wrap');
-    if (exW) {
-      exW.querySelectorAll('.xd-check:checked').forEach(function (ch) {
-        const id = parseInt(ch.getAttribute('data-fid'), 10);
-        const lab = exW.querySelector('.xd-label[data-fid="' + id + '"]');
-        extraDocs.push({ fileId: id, label: (lab && lab.value) ? lab.value : 'Documento' });
-      });
-    }
+    Object.keys(sectionMap).forEach(function (title) {
+      if (sectionMap[title].length) sections.push({ title: title, rows: sectionMap[title] });
+    });
     return { sections: sections, extraDocs: extraDocs };
   }
   function fileIdsUsedInSections(sections) {
@@ -1119,12 +1136,6 @@
     var extraDocs = built.extraDocs.slice();
     var used = fileIdsUsedInSections(sections);
     extraDocs.forEach(function (ed) { used.add(parseInt(ed.fileId, 10)); });
-    getSelectedExtraDocs().forEach(function (ed) {
-      var fid = parseInt(ed.fileId, 10);
-      if (used.has(fid)) return;
-      used.add(fid);
-      extraDocs.push({ fileId: fid, label: ed.label || 'Documento' });
-    });
     var profileFileEl = document.getElementById('sh-profile-file-id');
     var profileImageFileId = profileFileEl && profileFileEl.value ? parseInt(profileFileEl.value, 10) : null;
     if (profileImageFileId != null && !Number.isFinite(profileImageFileId)) profileImageFileId = null;
@@ -1166,13 +1177,99 @@
     return postKingDocsShare(body);
   }
   function getSelectedExtraDocs() {
-    var out = [];
-    docPreviewSelectedTypes.forEach(function (dt) {
-      if (!fileExistsForDocType(dt)) return;
-      var f = getLatestFileForDocType(dt);
-      if (f) out.push({ fileId: f.id, label: docTypeLabel(dt), docType: dt });
+    return buildShareSectionsAndExtraFromTable().extraDocs || [];
+  }
+  function syncDocPreviewFromShareCards() {
+    var types = [];
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var sf = card.querySelector('.kd-sc-sf');
+      if (!sf || !sf.checked) return;
+      var dt = card.getAttribute('data-doc-type');
+      if (dt && fileExistsForDocType(dt)) types.push(dt);
     });
-    return out;
+    docPreviewSelectedTypes = types;
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var dt = card.getAttribute('data-doc-type');
+      var on = !!(dt && docPreviewSelectedTypes.indexOf(dt) >= 0);
+      card.classList.toggle('doc-card--on', on);
+    });
+    refreshDocVaultPreview();
+  }
+  function buildShareItemsList() {
+    var items = [];
+    var coveredFields = {};
+    var presets = getDocCardPresetsMerged().slice();
+    presets.sort(function (a, b) {
+      var af = normalizeDocTypeKey(a.docType) === normalizeDocTypeKey('FOTO PESSOAL');
+      var bf = normalizeDocTypeKey(b.docType) === normalizeDocTypeKey('FOTO PESSOAL');
+      if (af && !bf) return -1;
+      if (bf && !af) return 1;
+      return 0;
+    });
+    presets.forEach(function (p) {
+      var pair = fieldPairForDocType(p.docType);
+      if (pair) coveredFields[pair[0] + '|' + pair[1]] = true;
+      items.push({ docType: p.docType, label: p.label, icon: p.icon, group: pair ? pair[0] : null, key: pair ? pair[1] : null });
+    });
+    GROUPS.forEach(function (g) {
+      g.keys.forEach(function (k) {
+        var fk = g.id + '|' + k;
+        if (coveredFields[fk]) return;
+        items.push({ docType: null, label: k, icon: g.icon || '📋', group: g.id, key: k });
+      });
+    });
+    return items;
+  }
+  function findShareCard(gid, key, docType) {
+    var root = document.getElementById('doc-browse-root');
+    if (!root) return null;
+    if (docType) {
+      var canon = vaultDocTypeKeyForHint(docType);
+      var cards = root.querySelectorAll('.doc-card--share[data-doc-type]');
+      for (var i = 0; i < cards.length; i++) {
+        if (normalizeDocTypeKey(cards[i].getAttribute('data-doc-type')) === normalizeDocTypeKey(canon || docType)) return cards[i];
+      }
+    }
+    if (gid && key) {
+      return root.querySelector('.doc-card--share[data-gid="' + gid + '"][data-key="' + key + '"]');
+    }
+    return null;
+  }
+  function setShareCardModes(gid, key, docType, wantText, wantFile) {
+    var card = findShareCard(gid, key, docType);
+    if (!card) return;
+    var st = card.querySelector('.kd-sc-st');
+    var sf = card.querySelector('.kd-sc-sf');
+    if (st) st.checked = !!wantText;
+    if (sf) sf.checked = !!wantFile;
+    card.classList.toggle('doc-card--on', !!(wantText || wantFile));
+  }
+  function clearAllShareCards() {
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var st = card.querySelector('.kd-sc-st');
+      var sf = card.querySelector('.kd-sc-sf');
+      if (st) st.checked = false;
+      if (sf) sf.checked = false;
+      card.classList.remove('doc-card--on');
+    });
+    docPreviewSelectedTypes = [];
+    revokeDocPreviewBlobAll();
+  }
+  function applyPresetToShareCard(entry) {
+    if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.extraDoc) {
+      setShareCardModes(null, null, String(entry.extraDoc), false, true);
+      return;
+    }
+    if (!Array.isArray(entry) || entry.length < 2) return;
+    var g = entry[0];
+    var k = entry[1];
+    var mode = entry.length >= 3 ? entry[2] : 't';
+    var m = normalizePresetMode(mode);
+    var dt = fieldKeyToDocTypeHint(k, g);
+    var wantT = (m === 't' || m === 'b');
+    var wantF = (m === 'f' || m === 'b');
+    setShareCardModes(g, k, dt, wantT, wantF);
+    if (wantF && dt) ensureVaultDocTypeSelectedForField(g, k);
   }
   function getProfileImageFileIdForUi() {
     var el = document.getElementById('sh-profile-file-id');
@@ -1185,7 +1282,7 @@
     var preview = collectSharePreviewData();
     var hasPreviewContent = !!(preview && preview.count > 0);
     var hasProfImg = !!getProfileImageFileIdForUi();
-    var hasDocSel = docPreviewSelectedTypes.some(function (dt) { return fileExistsForDocType(dt); });
+    var hasDocSel = document.querySelectorAll('#doc-browse-root .doc-card--share.doc-card--on').length > 0;
     var extraSep = getSelectedExtraDocs();
     ['btn-doc-copy-plain', 'btn-doc-copy-textonly', 'btn-doc-wa-text', 'btn-doc-wa-text-img'].forEach(function (id) {
       var el = document.getElementById(id);
@@ -1777,28 +1874,23 @@
     if (!dt) return;
     var pair = fieldPairForDocType(dt);
     if (pair) {
-      var block = shareFieldBlock(pair[0] + '|' + pair[1]);
-      if (block) {
-        applyFieldModeToBlock(block, 'f');
-        if (!findFileForFieldHint(pair[0], pair[1])) {
-          showToast('Envia o ficheiro «' + dt + '» em Dados e marca Foto/PDF em Documentos.', 'neutral');
-        } else {
-          showToast('Tipo marcado nos cartões — no preview, texto e ficheiro ficam juntos.', 'ok');
-        }
-        clearAtalhoActive();
-        updateSharePreview();
+      setShareCardModes(pair[0], pair[1], dt, false, true);
+      if (!findFileForFieldHint(pair[0], pair[1])) {
+        showToast('Envia o ficheiro «' + dt + '» na aba Dados antes de partilhar.', 'neutral');
+      } else {
+        showToast('Marcado: Foto/PDF no cartão «' + docTypeLabel(dt) + '».', 'ok');
+      }
+    } else {
+      setShareCardModes(null, null, dt, false, true);
+      if (!fileExistsForDocType(dt)) {
+        showToast('Ainda não tens este tipo no cofre. Envia na aba Dados.', 'neutral');
         return;
       }
+      showToast('Marcado: Foto/PDF no cartão.', 'ok');
     }
-    var hadFile = !!(getLatestFileForDocType(dt) || filesList.find(function (x) { return normalizeDocTypeKey(x.doc_type) === normalizeDocTypeKey(dt); }));
-    if (!hadFile) {
-      showToast('Ainda não tens este tipo no cofre. Envia na aba Dados.', 'neutral');
-      return;
-    }
-    applyExtraDocPresetEntry(dt);
     clearAtalhoActive();
+    syncDocPreviewFromShareCards();
     updateSharePreview();
-    showToast('Documento extra incluído (ficheiro). Ajusta em Documentos se precisares.', 'ok');
   }
 
   let fieldData = {};
@@ -2135,7 +2227,7 @@
       setVaultDirty(false);
       applyDisplayNameToHero();
       renderDados();
-      renderShareTable();
+      renderUnifiedShareCards();
       await loadFiles();
       await loadLinks();
     } finally {
@@ -2187,7 +2279,7 @@
     setVaultDirty(false);
     applyDisplayNameToHero();
     renderDados();
-    renderShareTable();
+    renderUnifiedShareCards();
     showToast(j.message || 'Dados do perfil importados.', 'ok');
   }
 
@@ -2271,22 +2363,16 @@
   }
   function docTypeSelectedInVault(dt) {
     if (!dt) return false;
-    var canon = vaultDocTypeKeyForHint(dt);
-    if (!canon) return false;
-    var n = normalizeDocTypeKey(canon);
-    return docPreviewSelectedTypes.some(function (d) {
-      return normalizeDocTypeKey(d) === n || d === canon;
-    });
+    var card = findShareCard(null, null, dt);
+    if (!card) return false;
+    var sf = card.querySelector('.kd-sc-sf');
+    return !!(sf && sf.checked);
   }
   function ensureVaultDocTypeSelectedForField(g, k) {
     var raw = fieldKeyToDocTypeHint(k, g);
     if (!raw) return;
-    var dt = vaultDocTypeKeyForHint(raw);
-    if (!fileExistsForDocType(dt)) return;
-    if (docPreviewSelectedTypes.indexOf(dt) >= 0) return;
-    docPreviewSelectedTypes.push(dt);
-    renderDocBrowseCards();
-    refreshDocVaultPreview();
+    setShareCardModes(g, k, raw, false, true);
+    syncDocPreviewFromShareCards();
   }
   function formatVaultSavedHint() {
     try {
@@ -2346,25 +2432,29 @@
       };
     });
   }
-  function renderDocBrowseCards() {
+  function renderUnifiedShareCards() {
     var root = document.getElementById('doc-browse-root');
     if (!root) return;
     var addCard = '<button type="button" class="doc-card doc-card--browse doc-card--add-type" id="btn-kd-browse-new-type" title="Criar outro tipo de documento (nome + ícone)">' +
       '<div class="dc-icon" aria-hidden="true">➕</div>' +
       '<div class="dc-title">Novo tipo</div>' +
       '<div class="dc-status">Criar + ícone</div></button>';
-    var html = addCard + getDocCardPresetsMerged().map(function (p) {
-      var sel = fileExistsForDocType(p.docType);
-      var active = docPreviewSelectedTypes.indexOf(p.docType) >= 0;
-      var cls = 'doc-card doc-card--browse' + (sel ? ' selected' : '') + (active ? ' doc-card--active' : '');
-      var lastD = latestForDocType(p.docType);
-      var dateLine = lastD ? '<div class="dc-date">Último: ' + escapeHtml(formatShortDate(lastD)) + '</div>' : '';
-      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '" title="Clica para marcar / desmarcar — ' + escapeAttr(p.label) + '">' +
-        '<div class="dc-icon" aria-hidden="true">' + p.icon + '</div>' +
-        '<div class="dc-title">' + escapeHtml(p.label) + '</div>' +
-        '<div class="dc-status">' + (sel ? (active ? '✓ Na pré-visualização' : '✓ Ver pré-visualização') : 'Não enviado') + '</div>' +
-        dateLine +
-        '</button>';
+    var html = addCard + buildShareItemsList().map(function (it) {
+      var hasFile = it.docType && fileExistsForDocType(it.docType);
+      var canFile = !!it.docType;
+      var showText = !!(it.group && it.key);
+      var dtAttr = it.docType ? ' data-doc-type="' + escapeAttr(it.docType) + '"' : '';
+      var gAttr = it.group ? ' data-gid="' + escapeAttr(it.group) + '"' : '';
+      var kAttr = it.key ? ' data-key="' + escapeAttr(it.key) + '"' : '';
+      var modes = '';
+      if (showText) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-st"/> Texto</label>';
+      if (canFile) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-sf"/> Foto/PDF</label>';
+      var status = hasFile ? '✓ Ficheiro no cofre' : (it.docType ? 'Envia em Dados' : 'Só texto');
+      return '<div class="doc-card doc-card--share doc-card--browse"' + dtAttr + gAttr + kAttr + '>' +
+        '<div class="dc-icon" aria-hidden="true">' + it.icon + '</div>' +
+        '<div class="dc-title">' + escapeHtml(it.label) + '</div>' +
+        '<div class="dc-modes">' + modes + '</div>' +
+        '<div class="dc-status">' + escapeHtml(status) + '</div></div>';
     }).join('');
     root.innerHTML = html;
     var btnNew = document.getElementById('btn-kd-browse-new-type');
@@ -2374,22 +2464,31 @@
         var tab = document.getElementById('tab-p-dados');
         if (tab) tab.click();
         var el = document.getElementById('kd-custom-doctypes-wrap');
-        if (el) {
-          try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e2) {}
-        }
+        if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e2) {} }
         var inp = document.getElementById('kd-cdt-label');
         if (inp) inp.focus();
       };
     }
-    root.querySelectorAll('.doc-card--browse[data-doc-type]').forEach(function (btn) {
-      btn.onclick = function () {
-        toggleDocBrowse(this.getAttribute('data-doc-type') || '');
-      };
+    root.querySelectorAll('.doc-card--share').forEach(function (card) {
+      card.querySelectorAll('.kd-sc-st, .kd-sc-sf').forEach(function (inp) {
+        inp.addEventListener('change', function () {
+          var st = card.querySelector('.kd-sc-st');
+          var sf = card.querySelector('.kd-sc-sf');
+          card.classList.toggle('doc-card--on', !!((st && st.checked) || (sf && sf.checked)));
+          clearAtalhoActive();
+          syncDocPreviewFromShareCards();
+          updateSharePreview();
+        });
+      });
     });
+    syncDocPreviewFromShareCards();
+  }
+  function renderDocBrowseCards() {
+    renderUnifiedShareCards();
   }
   function renderDocCards() {
     renderDocUploadCards();
-    renderDocBrowseCards();
+    renderUnifiedShareCards();
     if (docPreviewSelectedTypes.length) {
       var pruned = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
       if (pruned.length !== docPreviewSelectedTypes.length) {
@@ -2415,7 +2514,7 @@
     filesList = (j.data && j.data.files) || [];
     renderDocCards();
     const el = document.getElementById('file-list');
-    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa a aba <strong>Dados</strong> (secção Documentos) para enviar o primeiro.</p>'; renderShareTable(); renderExtraDocs(); refreshDadosFieldDocStatuses(); return; }
+    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa a aba <strong>Dados</strong> (secção Documentos) para enviar o primeiro.</p>'; renderUnifiedShareCards(); refreshDadosFieldDocStatuses(); return; }
     el.innerHTML = filesList.map(f => {
       var dt = f.created_at ? formatShortDate(new Date(f.created_at)) : '';
       return '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
@@ -2431,8 +2530,7 @@
         loadFiles();
       };
     });
-    renderShareTable();
-    renderExtraDocs();
+    renderUnifiedShareCards();
     refreshProfilePhotoPreview();
     refreshDadosFieldDocStatuses();
   }
@@ -2444,33 +2542,30 @@
 
   function collectCurrentPresetPairsFrom(fieldRoot, extraRoot) {
     var pairs = [];
-    if (fieldRoot) {
-      fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (block) {
-        if (!fieldBlockIncluded(block)) return;
-        var fk = block.getAttribute('data-fk') || '';
-        var parts = fk.split('|');
-        var gid = parts[0];
-        var k = parts.slice(1).join('|');
-        var fid = fieldBlockFid(block);
-        var st = block.querySelector('.st[data-fid="' + fid + '"]');
-        var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
-        var wantT = st && st.checked;
-        var wantF = sf && sf.checked;
-        var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
-        pairs.push([gid, k, mode]);
-      });
-    }
-    if (extraRoot) {
-      extraRoot.querySelectorAll('.xd-check:checked').forEach(function (ch) {
-        var id = ch.getAttribute('data-fid');
-        var f = filesList.find(function (x) { return String(x.id) === String(id); });
-        if (f && f.doc_type) pairs.push({ extraDoc: String(f.doc_type) });
+    var useRoot = fieldRoot;
+    if (!useRoot || useRoot.id === 'share-table-wrap') useRoot = document.getElementById('doc-browse-root');
+    if (useRoot) {
+      useRoot.querySelectorAll('.doc-card--share').forEach(function (card) {
+        var st = card.querySelector('.kd-sc-st');
+        var sf = card.querySelector('.kd-sc-sf');
+        var wantT = !!(st && st.checked);
+        var wantF = !!(sf && sf.checked);
+        if (!wantT && !wantF) return;
+        var gid = card.getAttribute('data-gid') || '';
+        var key = card.getAttribute('data-key') || '';
+        var docType = card.getAttribute('data-doc-type') || '';
+        if (gid && key) {
+          var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
+          pairs.push([gid, key, mode]);
+        } else if (docType && wantF) {
+          pairs.push({ extraDoc: docType });
+        }
       });
     }
     return pairs;
   }
   function collectCurrentPresetPairs() {
-    return collectCurrentPresetPairsFrom(document.getElementById('share-table-wrap'), document.getElementById('extra-docs-wrap'));
+    return collectCurrentPresetPairsFrom(document.getElementById('doc-browse-root'), null);
   }
 
   function loadCustomShortcuts() {
@@ -2507,16 +2602,14 @@
     var it = arr.find(function (x) { return x.id === id; });
     if (!it) return;
     ensureFieldData();
-    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
-    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
-    var exw = document.getElementById('extra-docs-wrap');
-    if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    clearAllShareCards();
     var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
     if (!list) return;
-    list.forEach(function (entry) { applyOnePresetEntry(entry); });
+    list.forEach(function (entry) { applyPresetToShareCard(entry); });
     clearAtalhoActive();
     var b = document.querySelector('.btn-atalho[data-custom-id="' + id + '"]');
     if (b) b.classList.add('active');
+    syncDocPreviewFromShareCards();
     updateSharePreview();
   }
 
@@ -2524,14 +2617,12 @@
     const list = PRESETS[presetId];
     if (!list) return;
     ensureFieldData();
-    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
-    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
-    var exw = document.getElementById('extra-docs-wrap');
-    if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
-    list.forEach(function (entry) { applyOnePresetEntry(entry); });
+    clearAllShareCards();
+    list.forEach(function (entry) { applyPresetToShareCard(entry); });
     clearAtalhoActive();
     var activeBtn = document.querySelector('.btn-atalho[data-preset="' + presetId + '"]');
     if (activeBtn) activeBtn.classList.add('active');
+    syncDocPreviewFromShareCards();
     updateSharePreview();
   }
 
@@ -2539,71 +2630,49 @@
     ensureFieldData();
     const sections = {};
     let count = 0;
-    var consumedVault = {};
 
-    document.querySelectorAll('#share-table-wrap .kd-field-block[data-fk]').forEach(function (tr) {
-      if (!fieldBlockIncluded(tr)) return;
-      var fk = tr.getAttribute('data-fk') || '';
-      var parts = fk.split('|');
-      var g = parts[0];
-      var k = parts.slice(1).join('|');
-      var fid = fieldBlockFid(tr);
-      var st = tr.querySelector('.st[data-fid="' + fid + '"]');
-      var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
-      var hasText = st && st.checked;
-      var wantFile = sf && sf.checked;
-      var val = (fieldData[g] && fieldData[g][k] != null) ? String(fieldData[g][k]) : '';
-      var valDisp = val.trim() ? val : '(vazio)';
-      var gInfo = GROUPS.find(function (x) { return x.id === g; });
-      var title = gInfo ? gInfo.title : g;
-      if (!sections[title]) sections[title] = [];
-
-      var dtHint = fieldKeyToDocTypeHint(k, g);
-      var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
-      var fn = null;
-      if (wantFile && canon) {
-        fn = getLatestFileForDocType(canon) || findFileForFieldHint(g, k);
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var st = card.querySelector('.kd-sc-st');
+      var sf = card.querySelector('.kd-sc-sf');
+      var wantText = !!(st && st.checked);
+      var wantFile = !!(sf && sf.checked);
+      if (!wantText && !wantFile) return;
+      var gid = card.getAttribute('data-gid') || '';
+      var key = card.getAttribute('data-key') || '';
+      var docType = card.getAttribute('data-doc-type') || '';
+      var label = card.querySelector('.dc-title') ? card.querySelector('.dc-title').textContent : '';
+      if (gid && key) {
+        var val = (fieldData[gid] && fieldData[gid][key] != null) ? String(fieldData[gid][key]) : '';
+        var valDisp = val.trim() ? val : '(vazio)';
+        var gInfo = GROUPS.find(function (x) { return x.id === gid; });
+        var title = gInfo ? gInfo.title : 'Outros';
+        if (!sections[title]) sections[title] = [];
+        var dtHint = fieldKeyToDocTypeHint(key, gid);
+        var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
+        var fn = wantFile && canon ? (getLatestFileForDocType(canon) || findFileForFieldHint(gid, key)) : null;
+        var fileLabel = fn ? ('#' + fn.id + ' ' + (fn.doc_type || '')) : '';
+        if (wantText && fn) {
+          sections[title].push({ kind: 'merged', label: key, val: valDisp, fileLabel: fileLabel });
+          count++;
+        } else if (wantText) {
+          sections[title].push({ kind: 'text', label: key, val: valDisp });
+          count++;
+        } else if (fn) {
+          sections[title].push({ kind: 'file', label: key, fileLabel: fileLabel });
+          count++;
+        }
+      } else if (docType && wantFile) {
+        var f = getLatestFileForDocType(docType);
+        if (!f) return;
+        if (!sections['Documentos']) sections['Documentos'] = [];
+        sections['Documentos'].push({
+          kind: 'vault',
+          label: label || docTypeLabel(docType),
+          fileLabel: '#' + f.id + ' ' + (f.doc_type || ''),
+          docType: docType
+        });
+        count++;
       }
-      var fileLabel = fn ? ('#' + fn.id + ' ' + (fn.doc_type || '')) : '';
-      if (fn && canon) consumedVault[normalizeDocTypeKey(canon)] = true;
-
-      if (hasText && fn) {
-        sections[title].push({ kind: 'merged', label: k, val: valDisp, fileLabel: fileLabel });
-        count++;
-      } else if (hasText && !fn) {
-        sections[title].push({ kind: 'text', label: k, val: valDisp });
-        count++;
-      } else if (!hasText && fn) {
-        sections[title].push({ kind: 'file', label: k, fileLabel: fileLabel });
-        count++;
-      }
-    });
-
-    var extraWrap = document.getElementById('extra-docs-wrap');
-    if (extraWrap) {
-      extraWrap.querySelectorAll('.xd-check:checked').forEach(function (ch) {
-        var id = ch.getAttribute('data-fid');
-        var lab = extraWrap.querySelector('.xd-label[data-fid="' + id + '"]');
-        var label = (lab && lab.value) ? lab.value : 'Documento';
-        if (!sections['Documentos extra']) sections['Documentos extra'] = [];
-        sections['Documentos extra'].push({ kind: 'extra', label: label, id: id });
-        count++;
-      });
-    }
-
-    docPreviewSelectedTypes.forEach(function (dt) {
-      var n = normalizeDocTypeKey(dt);
-      if (consumedVault[n]) return;
-      var f = getLatestFileForDocType(dt);
-      if (!f) return;
-      if (!sections['Documentos']) sections['Documentos'] = [];
-      sections['Documentos'].push({
-        kind: 'vault',
-        label: docTypeLabel(dt),
-        fileLabel: '#' + f.id + ' ' + (f.doc_type || ''),
-        docType: dt
-      });
-      count++;
     });
 
     var showName = document.getElementById('sh-name') && document.getElementById('sh-name').value.trim();
@@ -2677,7 +2746,7 @@
     var hintEl = document.getElementById('share-confirm-hint');
     if (hintEl) {
       if (count === 0) {
-        hintEl.textContent = 'Marca os campos nos cartões e confirma o resumo no painel acima; o link gera-se na aba «Partilhar».';
+        hintEl.textContent = 'Marca Texto e/ou Foto/PDF nos cartões; o link gera-se na aba «Partilhar».';
         hintEl.classList.remove('kd-share-summary--ok');
       } else {
         hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o resumo no painel acima; na aba «Partilhar» usa «Gerar link seguro» quando estiver correto.';
@@ -2685,7 +2754,7 @@
       }
     }
     if (count === 0) {
-      out.innerHTML = '<p class="preview-empty">Marca campos na secção «Incluir no link» (esta aba — Documentos).</p>';
+      out.innerHTML = '<p class="preview-empty">Marca Texto e/ou Foto/PDF nos cartões à esquerda.</p>';
       updateUnifiedActionButtons();
       return;
     }
@@ -2791,7 +2860,7 @@
     if (idPrefix === 'f') updateSharePreview();
   }
   function renderShareTable() {
-    renderShareTableInto('share-table-wrap', 'f');
+    renderUnifiedShareCards();
   }
 
   function renderExtraDocsInto(wrapId) {
@@ -2955,10 +3024,7 @@
 
   function clearShareFieldSelection() {
     clearAtalhoActive();
-    document.querySelectorAll('#share-table-wrap .st').forEach(function (c) { c.checked = false; });
-    document.querySelectorAll('#share-table-wrap .sf').forEach(function (c) { c.checked = false; });
-    var exw = document.getElementById('extra-docs-wrap');
-    if (exw) exw.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+    clearAllShareCards();
     updateSharePreview();
   }
   document.getElementById('btn-share-fields-clear').onclick = clearShareFieldSelection;
@@ -3059,10 +3125,8 @@
     });
   });
   document.getElementById('btn-doc-clear-sel').onclick = function () {
-    docPreviewSelectedTypes = [];
-    revokeDocPreviewBlobAll();
-    renderDocBrowseCards();
-    refreshDocVaultPreview();
+    clearAllShareCards();
+    updateSharePreview();
   };
   function bindCustomDocTypeAdd() {
     var addBtn = document.getElementById('kd-cdt-add');
