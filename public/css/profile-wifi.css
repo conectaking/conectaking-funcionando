@@ -218,3 +218,43 @@
     text-align: left;
     cursor: pointer;
 }
+
+.wifi-banner-social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.wifi-banner-social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #fafafa;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.wifi-banner-social-link:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.wifi-banner-social-ig i {
+    color: #e1306c;
+}
+
+.wifi-banner-social-wa i {
+    color: #25d366;
+}
+
+.preview-wifi-banner-root .wifi-banner-social {
+    margin-top: 8px;
+}

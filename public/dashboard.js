@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando... v2026-05-19-wifi-banner-upload');
+    console.log('Dashboard iniciando... v2026-05-19-wifi-social-links');
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
@@ -962,9 +962,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function readWifiSocialFromItemEl(itemEl) {
-        const modal = SELECTORS.editItemModal?.classList?.contains('active')
-            ? SELECTORS.editItemModal
-            : document.querySelector(`#edit-item-modal.active, #edit-item-modal[data-editing-id="${itemEl?.dataset?.id}"]`);
+        const itemId = itemEl?.dataset?.id;
+        let modal = null;
+        if (SELECTORS.editItemModal?.classList?.contains('active') && itemId
+            && String(SELECTORS.editItemModal.dataset.editingId) === String(itemId)) {
+            modal = SELECTORS.editItemModal;
+        } else if (itemId) {
+            modal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`);
+        }
         const igRaw = modal?.querySelector('#edit-wifi-instagram')?.value
             ?? itemEl?.querySelector('.wifi-instagram-input')?.value
             ?? '';
@@ -2568,6 +2573,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     wifiBanBtn.setAttribute('aria-label', wifiSsid ? `Wi‑Fi: rede ${wifiSsid}` : 'Abrir QR Wi‑Fi');
                     wifiBanBtn.innerHTML = `<img src="${wifiBannerUrl}" alt="${wifiSsid ? 'Rede: ' + wifiSsid : wifiSafeTitle}" style="width:100%;height:auto;display:block;border-radius:12px;" loading="lazy">`;
                     previewEl.appendChild(wifiBanBtn);
+                    const socialPrev = readWifiSocialFromItemEl(itemEl);
+                    if (socialPrev.instagram_url || socialPrev.whatsapp_url) {
+                        const socialRow = document.createElement('div');
+                        socialRow.className = 'wifi-banner-social';
+                        if (socialPrev.instagram_url) {
+                            const igA = document.createElement('a');
+                            igA.href = socialPrev.instagram_url;
+                            igA.target = '_blank';
+                            igA.rel = 'noopener noreferrer';
+                            igA.className = 'wifi-banner-social-link wifi-banner-social-ig';
+                            const igM = socialPrev.instagram_url.match(/instagram\.com\/([^/?#]+)/i);
+                            igA.innerHTML = `<i class="fab fa-instagram"></i><span>${igM ? '@' + igM[1] : 'Instagram'}</span>`;
+                            socialRow.appendChild(igA);
+                        }
+                        if (socialPrev.whatsapp_url) {
+                            const waA = document.createElement('a');
+                            waA.href = socialPrev.whatsapp_url;
+                            waA.target = '_blank';
+                            waA.rel = 'noopener noreferrer';
+                            waA.className = 'wifi-banner-social-link wifi-banner-social-wa';
+                            waA.innerHTML = '<i class="fab fa-whatsapp"></i><span>WhatsApp</span>';
+                            socialRow.appendChild(waA);
+                        }
+                        previewEl.appendChild(socialRow);
+                    }
                 } else {
                     previewEl = document.createElement('button');
                     previewEl.type = 'button';
@@ -8983,25 +9013,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wBanner = itemEl.querySelector('.wifi-banner-url-input')?.value || '';
                 const wLogo = itemEl.querySelector('.wifi-logo-url-input')?.value || '';
                 const wLogoSize = itemEl.querySelector('.wifi-logo-size-input')?.value || '48';
-                const wIg = itemEl.querySelector('.wifi-instagram-input')?.value || wifiInstagramEditorValue(
-                    (() => { try { const c = JSON.parse(itemEl.dataset.wifiCfg || '{}'); return c.instagram_url; } catch (e) { return ''; } })()
-                );
-                let wIgFromCfg = '';
-                let wWaFromCfg = '';
-                try {
-                    const curCfg = item.destination_url && String(item.destination_url).trim().startsWith('{')
-                        ? JSON.parse(itemEl.closest('.module-item') ? '' : '') : {};
-                } catch (e) { /* noop */ }
-                const wIgList = itemEl.querySelector('.wifi-instagram-input')?.value
-                    || wifiInstagramEditorValue((() => {
-                        try {
-                            const el = document.querySelector(`.module-item[data-id="${itemId}"]`);
-                            const raw = el?.querySelector('.wifi-instagram-input')?.value;
-                            if (raw) return normalizeWifiInstagramUrl(raw);
-                        } catch (err) { /* noop */ }
-                        return '';
-                    })());
-                const wWaList = itemEl.querySelector('.wifi-whatsapp-input')?.value || '';
+                let wifiCfgEdit = {};
+                const profileWifiItem = (window.currentProfileData?.items || []).find(function (it) {
+                    return String(it.id) === String(itemId);
+                });
+                if (profileWifiItem?.destination_url && String(profileWifiItem.destination_url).trim().startsWith('{')) {
+                    try { wifiCfgEdit = JSON.parse(profileWifiItem.destination_url); } catch (e) { wifiCfgEdit = {}; }
+                }
+                const wIg = (itemEl.querySelector('.wifi-instagram-input')?.value || '').trim()
+                    || wifiInstagramEditorValue(wifiCfgEdit.instagram_url);
+                const wWa = (itemEl.querySelector('.wifi-whatsapp-input')?.value || '').trim()
+                    || wifiWhatsAppEditorValue(wifiCfgEdit.whatsapp_url);
                 formHTML = `
                 <div class="input-group">
                     <label>Título no cartão</label>
@@ -9053,6 +9075,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="wifi-modal-banner-section" style="display: ${wFmt === 'banner' ? 'block' : 'none'};">
                     ${wifiBannerUploadBlockHtml(itemId, wBanner)}
+                    ${wifiBannerLinksFieldsHtml(wIg, wWa, true)}
                 </div>
             `;
                 break;
@@ -10313,6 +10336,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wb = (wifiCfgNew.banner_image_url || '').trim();
                 const wl = (wifiCfgNew.logo_url || '').trim();
                 const wls = String(wifiCfgNew.logo_size || 48);
+                const wIgNew = wifiInstagramEditorValue(wifiCfgNew.instagram_url);
+                const wWaNew = wifiWhatsAppEditorValue(wifiCfgNew.whatsapp_url);
                 formHTML = `
                     <div class="input-group">
                         <label>Título no cartão</label>
@@ -10363,6 +10388,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="wifi-modal-banner-section" style="display: ${wf === 'banner' ? 'block' : 'none'};">
                         ${wifiBannerUploadBlockHtml(tempItem.id, wb)}
+                        ${wifiBannerLinksFieldsHtml(wIgNew, wWaNew, true)}
                     </div>
                 `;
                 break;
@@ -11331,6 +11357,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         document.querySelector('.editor-area').addEventListener('input', updateLivePreviewFromForm);
 
+        document.addEventListener('click', async function (e) {
+            const actionBtn = e.target.closest('.wifi-clipboard-paste-btn, .wifi-example-fill-btn, .wifi-clear-field-btn');
+            if (!actionBtn) return;
+            const row = actionBtn.closest('.wifi-field-row');
+            if (!row) return;
+            const input = row.querySelector('input[type="text"]');
+            if (!input) return;
+            e.preventDefault();
+            if (actionBtn.classList.contains('wifi-example-fill-btn')) {
+                input.value = actionBtn.dataset.value || '';
+            } else if (actionBtn.classList.contains('wifi-clear-field-btn')) {
+                input.value = '';
+            } else {
+                try {
+                    const pasted = await navigator.clipboard.readText();
+                    if (pasted && pasted.trim()) input.value = pasted.trim();
+                } catch (err) {
+                    const manual = window.prompt('Cole o link:', input.value || '');
+                    if (manual != null) input.value = manual.trim();
+                }
+            }
+            const isIg = input.classList.contains('wifi-instagram-input') || input.id === 'edit-wifi-instagram';
+            const itemEl = row.closest('.module-item, .item');
+            const itemId = itemEl?.dataset?.id || SELECTORS.editItemModal?.dataset?.editingId;
+            const modal = itemId ? document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`) : null;
+            if (itemEl) {
+                const listIn = itemEl.querySelector(isIg ? '.wifi-instagram-input' : '.wifi-whatsapp-input');
+                if (listIn && listIn !== input) listIn.value = input.value;
+            }
+            if (modal) {
+                const modalIn = modal.querySelector(isIg ? '#edit-wifi-instagram' : '#edit-wifi-whatsapp');
+                if (modalIn && modalIn !== input) modalIn.value = input.value;
+            }
+            if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
+        });
+
         // Event listener para atualizar preview e item da lista em tempo real quando campos do modal mudarem
         SELECTORS.editModalBody.addEventListener('input', e => {
             const itemId = SELECTORS.editItemModal?.dataset.editingId;
@@ -11415,6 +11477,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (targetId === 'edit-wifi-logo-size' && modal && listLogoSize) {
                     listLogoSize.value = modal.querySelector('#edit-wifi-logo-size')?.value || '';
                     itemEl.dataset.logoSize = listLogoSize.value;
+                }
+                const listIg = itemEl.querySelector('.wifi-instagram-input');
+                const listWa = itemEl.querySelector('.wifi-whatsapp-input');
+                if (e.target.id === 'edit-wifi-instagram' && modal && listIg) {
+                    listIg.value = modal.querySelector('#edit-wifi-instagram')?.value || '';
+                } else if (e.target.classList.contains('wifi-instagram-input') && modal?.querySelector('#edit-wifi-instagram')) {
+                    modal.querySelector('#edit-wifi-instagram').value = e.target.value;
+                }
+                if (e.target.id === 'edit-wifi-whatsapp' && modal && listWa) {
+                    listWa.value = modal.querySelector('#edit-wifi-whatsapp')?.value || '';
+                } else if (e.target.classList.contains('wifi-whatsapp-input') && modal?.querySelector('#edit-wifi-whatsapp')) {
+                    modal.querySelector('#edit-wifi-whatsapp').value = e.target.value;
                 }
                 updateLivePreviewFromForm();
             }
