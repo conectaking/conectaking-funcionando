@@ -2427,7 +2427,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = itemEl.querySelector('.module-name')?.textContent?.trim() || itemEl.querySelector('.item-title-input')?.value || '';
             let previewEl;
 
-            if (['link', 'pix', 'pix_qrcode', 'pdf', 'whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'linkedin', 'portfolio', 'reddit', 'tiktok', 'twitch', 'twitter', 'youtube', 'spotify', 'convite', 'bible', 'digital_form', 'sales_page'].includes(itemType)) {
+            if (['link', 'pix', 'pix_qrcode', 'pdf', 'whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'linkedin', 'portfolio', 'reddit', 'tiktok', 'twitch', 'twitter', 'youtube', 'spotify', 'convite', 'bible', 'digital_form', 'sales_page', 'wifi', 'location'].includes(itemType)) {
                 previewEl = document.createElement(isDisabled ? 'div' : 'a');
                 previewEl.className = 'preview-link-button' + (isDisabled ? ' preview-link-disabled' : '');
 
@@ -7099,6 +7099,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const excludedFromList = ['sales_page', 'king_selection', 'bible'];
             const savedIds = new Set(saveData.items.map(i => i && i.id).filter(Boolean));
             let addedFromServer = 0;
+            window.__mergedServerItemIdsForSave = new Set();
             serverItems.forEach(serverItem => {
                 if (excludedFromList.indexOf(serverItem.item_type) !== -1) return;
                 if (savedIds.has(serverItem.id)) return;
@@ -7110,6 +7111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     is_active: serverItem.is_active !== false
                 });
                 savedIds.add(serverItem.id);
+                window.__mergedServerItemIdsForSave.add(serverItem.id);
                 addedFromServer++;
             });
             if (addedFromServer > 0) {
@@ -7637,10 +7639,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Filtrar itens deletados
                     // IMPORTANTE: Bíblia e King Selection não estão em #items-container (são especiais),
                     // então NUNCA filtrar esses tipos — eles não aparecem no DOM da lista de módulos
+                    const mergedFromServer = window.__mergedServerItemIdsForSave || new Set();
                     window.currentProfileData.items = window.currentProfileData.items.filter(item => {
                         const itemId = String(item.id);
                         if (item.item_type === 'bible' || item.item_type === 'king_selection') {
                             return true; // Sempre manter itens especiais
+                        }
+                        // Wi‑Fi / itens fundidos do servidor: estavam no cartão mas não no DOM (JS antigo ou falha de render)
+                        if (item.item_type === 'wifi' || mergedFromServer.has(item.id)) {
+                            return true;
                         }
                         // Manter apenas itens que estão no DOM ou são temporários
                         const shouldKeep = itemsInDOM.has(itemId) || itemId.startsWith('temp_');
@@ -7649,6 +7656,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         return shouldKeep;
                     });
+                    try { delete window.__mergedServerItemIdsForSave; } catch (e) {}
 
                     // IMPORTANTE: Aplicar ordem visual que estava antes de recarregar
                     // Isso garante que a ordem configurada pelo usuário seja preservada
@@ -10504,18 +10512,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // IMPORTANTE: alguns módulos são criados DIRETAMENTE no servidor (não espera "Publicar alterações")
                 // KingSelection precisa de itemId real para gerenciar galerias no painel dedicado
-                if (itemType === 'sales_page' || itemType === 'digital_form' || itemType === 'agenda' || itemType === 'king_selection' || itemType === 'convite') {
+                if (itemType === 'sales_page' || itemType === 'digital_form' || itemType === 'agenda' || itemType === 'king_selection' || itemType === 'convite' || itemType === 'wifi') {
                     console.log(`➕ Criando ${qty} × ${itemType} DIRETAMENTE no servidor...`);
                     try {
                         for (let i = 0; i < qty; i++) {
+                            const postBody = {
+                                item_type: itemType,
+                                is_active: true,
+                                display_order: 999
+                            };
+                            if (itemType === 'wifi') {
+                                postBody.title = 'Wi‑Fi (QR Code)';
+                                postBody.icon_class = 'fas fa-wifi';
+                                postBody.destination_url = JSON.stringify({
+                                    ssid: '',
+                                    password: '',
+                                    security: 'WPA',
+                                    hidden: false,
+                                    display_format: 'button',
+                                    banner_image_url: '',
+                                    logo_url: '',
+                                    logo_size: 48
+                                });
+                                postBody.logo_size = 48;
+                            }
                             const response = await fetch(`${API_URL}/api/profile/items`, {
                                 method: 'POST',
                                 headers: HEADERS,
-                                body: JSON.stringify({
-                                    item_type: itemType,
-                                    is_active: true,
-                                    display_order: 999
-                                })
+                                body: JSON.stringify(postBody)
                             });
                             if (!response.ok) {
                                 const errorData = await response.json().catch(() => ({ message: `Erro ao criar ${itemType}` }));
@@ -13879,6 +13903,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`✅ Renderização concluída: ${renderedItems.length} itens no DOM`);
                     if (renderedItems.length !== expectedInModules) {
                         console.warn(`⚠️ Discrepância: esperado ${expectedInModules} itens na aba Módulos (excl. King Selection e Bíblia), mas ${renderedItems.length} foram renderizados`);
+                        const missing = (profileData.items || []).filter(function (it) {
+                            if (it.item_type === 'king_selection' || it.item_type === 'bible') return false;
+                            return !container.querySelector('[data-id="' + it.id + '"]');
+                        });
+                        if (missing.length) {
+                            console.warn('⚠️ Módulos em falta na lista — nova renderização:', missing.map(function (m) { return m.item_type + '#' + m.id; }).join(', '));
+                            try {
+                                renderEditor(profileData);
+                            } catch (reRenderErr) {
+                                console.error('❌ Falha ao re-renderizar módulos em falta:', reRenderErr);
+                            }
+                        }
                     }
                 }
             } catch (renderError) {
