@@ -8874,7 +8874,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wBanner = itemEl.querySelector('.wifi-banner-url-input')?.value || '';
                 const wLogo = itemEl.querySelector('.wifi-logo-url-input')?.value || '';
                 const wLogoSize = itemEl.querySelector('.wifi-logo-size-input')?.value || '48';
-                const banPrevDisp = wBanner && !wBanner.includes('placeholder') ? 'block' : 'none';
                 formHTML = `
                 <div class="input-group">
                     <label>Título no cartão</label>
@@ -10186,7 +10185,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wb = (wifiCfgNew.banner_image_url || '').trim();
                 const wl = (wifiCfgNew.logo_url || '').trim();
                 const wls = String(wifiCfgNew.logo_size || 48);
-                const bpd = wb && !wb.includes('placeholder') ? 'block' : 'none';
                 formHTML = `
                     <div class="input-group">
                         <label>Título no cartão</label>
