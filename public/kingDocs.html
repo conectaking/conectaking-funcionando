@@ -70,7 +70,15 @@
     }
     .kd-page-body { padding-top: .25rem; }
     .kd-top-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
-    .kd-top-bar--minimal { justify-content: flex-end; margin-bottom: .5rem; }
+    .kd-top-bar--minimal { justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+    .kd-top-bar-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .kd-back-dashboard {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .45rem .85rem; font-size: .78rem; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--card); color: var(--ink);
+      text-decoration: none; font-weight: 600; white-space: nowrap;
+    }
+    .kd-back-dashboard:hover { border-color: var(--accent); color: var(--accent); }
     .banner { background: var(--banner-bg); border: 1px dashed var(--accent); color: var(--accent); padding: .65rem .9rem; border-radius: 8px; font-size: .82rem; margin: 0; flex: 1; min-width: min(100%, 240px); }
     .kd-help { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 .85rem; margin-bottom: 1rem; font-size: .82rem; }
     .kd-help summary { cursor: pointer; padding: .65rem 0; font-weight: 600; color: var(--accent); list-style: none; }
@@ -572,7 +580,10 @@
 <body>
   <div class="wrap">
     <div class="kd-top-bar kd-top-bar--minimal">
-      <button type="button" class="kd-theme-btn" id="kd-theme-toggle" title="Alternar tema claro/escuro">Tema escuro</button>
+      <a href="dashboard.html" class="kd-back-dashboard" id="kd-back-dashboard" title="Voltar ao painel principal">← Painel principal</a>
+      <div class="kd-top-bar-actions">
+        <button type="button" class="kd-theme-btn" id="kd-theme-toggle" title="Alternar tema claro/escuro">Tema escuro</button>
+      </div>
     </div>
 
     <section class="kd-hero-card kd-hero-card--top" aria-label="Painel pessoal">
