@@ -916,6 +916,29 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openPixQRModal = openPixQRModal;
     window.generatePixEMVCode = generatePixEMVCode;
 
+    function wifiBannerUploadBlockHtml(itemId, bannerUrl) {
+        const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        const url = (bannerUrl || '').trim();
+        const hasImg = url && !url.includes('placeholder');
+        const uploadLabel = hasImg ? 'Trocar Imagem' : 'Clique para fazer upload';
+        const imgDisp = hasImg ? 'block' : 'none';
+        const safeId = esc(itemId || 'temp');
+        return `
+                <div class="input-group">
+                    <label>Imagem do banner</label>
+                    <div class="image-upload-area wifi-banner-upload-area banner-item" data-item-type="wifi-banner" data-item-id="${safeId}">
+                        <input type="file" class="item-file-input" accept="image/*" data-item-type="wifi-banner" data-item-id="${safeId}">
+                        <div class="image-upload-text">
+                            <p><i class="fas fa-cloud-upload-alt"></i> ${uploadLabel}</p>
+                            <span>ou arraste uma imagem aqui</span>
+                        </div>
+                        <img id="edit-wifi-banner-preview" class="banner-preview wifi-banner-preview" src="${esc(url)}" alt="" style="max-width: 100%; max-height: 200px; margin-top: 10px; display: ${imgDisp}; border-radius: 8px;">
+                        <div class="upload-loader"></div>
+                    </div>
+                    <input type="hidden" id="edit-wifi-banner-url" value="${esc(url)}">
+                </div>`;
+    }
+
     // --- FUNÃ‡ÃƒO DE TESTE E DEBUG PARA PIX ---
     function testPixCode(pixKey, recipientName, amount = null, description = '') {
         console.log('ðŸ§ª Testando cÃ³digo PIX...');
@@ -3702,8 +3725,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="wifi-banner-section" style="display: ${wifiDisplay === 'banner' ? 'block' : 'none'};">
                 <label>Imagem do banner</label>
-                <div class="image-upload-area banner-item" data-item-type="banner" data-item-id="${item.id || ''}">
-                    <input type="file" class="item-file-input" accept="image/*">
+                <div class="image-upload-area wifi-banner-upload-area banner-item" data-item-type="wifi-banner" data-item-id="${item.id || ''}">
+                    <input type="file" class="item-file-input" accept="image/*" data-item-type="wifi-banner" data-item-id="${item.id || ''}">
                     <div class="image-upload-text">
                         <p><i class="fas fa-cloud-upload-alt"></i> Clique para fazer upload</p>
                         <span>ou arraste uma imagem aqui</span>
