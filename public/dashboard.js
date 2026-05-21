@@ -916,7 +916,31 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openPixQRModal = openPixQRModal;
     window.generatePixEMVCode = generatePixEMVCode;
 
-    function normalizeWifiInstagramUrl(raw) {
+    function parseBannerDestination(raw) {
+        const s = String(raw || '').trim();
+        if (!s) return { primary_url: '', instagram_url: '', whatsapp_url: '' };
+        if (s.startsWith('{')) {
+            try {
+                const o = JSON.parse(s);
+                return {
+                    primary_url: String(o.primary_url || o.link || '').trim(),
+                    instagram_url: String(o.instagram_url || '').trim(),
+                    whatsapp_url: String(o.whatsapp_url || '').trim()
+                };
+            } catch (e) { /* legado */ }
+        }
+        return { primary_url: s, instagram_url: '', whatsapp_url: '' };
+    }
+
+    function serializeBannerDestination(primaryUrl, instagramRaw, whatsappRaw) {
+        const ig = normalizeBannerInstagramUrl(instagramRaw);
+        const wa = normalizeBannerWhatsAppUrl(whatsappRaw);
+        const pr = String(primaryUrl || '').trim();
+        if (!ig && !wa) return pr;
+        return JSON.stringify({ primary_url: pr, instagram_url: ig, whatsapp_url: wa });
+    }
+
+    function normalizeBannerInstagramUrl(raw) {
         const v = String(raw || '').trim();
         if (!v) return '';
         if (/^https?:\/\//i.test(v)) {
@@ -936,7 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return handle ? `https://www.instagram.com/${encodeURIComponent(handle)}/` : '';
     }
 
-    function normalizeWifiWhatsAppUrl(raw) {
+    function normalizeBannerWhatsAppUrl(raw) {
         const v = String(raw || '').trim();
         if (!v) return '';
         if (/^https?:\/\//i.test(v)) {
@@ -947,21 +971,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return digits ? `https://wa.me/${digits}` : '';
     }
 
-    function wifiInstagramEditorValue(storedUrl) {
+    function bannerInstagramEditorValue(storedUrl) {
         const u = String(storedUrl || '').trim();
         if (!u) return '';
         const m = u.match(/instagram\.com\/([^/?#]+)/i);
         return m ? `@${m[1]}` : u;
     }
 
-    function wifiWhatsAppEditorValue(storedUrl) {
+    function bannerWhatsAppEditorValue(storedUrl) {
         const u = String(storedUrl || '').trim();
         if (!u) return '';
         const m = u.match(/wa\.me\/(\d+)/i);
         return m ? `https://wa.me/${m[1]}` : u;
     }
 
-    function readWifiSocialFromItemEl(itemEl) {
+    function readBannerSocialFromItemEl(itemEl) {
         const itemId = itemEl?.dataset?.id;
         let modal = null;
         if (SELECTORS.editItemModal?.classList?.contains('active') && itemId
@@ -970,45 +994,54 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (itemId) {
             modal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`);
         }
-        const igRaw = modal?.querySelector('#edit-wifi-instagram')?.value
-            ?? itemEl?.querySelector('.wifi-instagram-input')?.value
+        const igRaw = modal?.querySelector('#edit-banner-instagram')?.value
+            ?? itemEl?.querySelector('.banner-instagram-input')?.value
             ?? '';
-        const waRaw = modal?.querySelector('#edit-wifi-whatsapp')?.value
-            ?? itemEl?.querySelector('.wifi-whatsapp-input')?.value
+        const waRaw = modal?.querySelector('#edit-banner-whatsapp')?.value
+            ?? itemEl?.querySelector('.banner-whatsapp-input')?.value
             ?? '';
         return {
-            instagram_url: normalizeWifiInstagramUrl(igRaw),
-            whatsapp_url: normalizeWifiWhatsAppUrl(waRaw)
+            instagram_url: normalizeBannerInstagramUrl(igRaw),
+            whatsapp_url: normalizeBannerWhatsAppUrl(waRaw)
         };
     }
 
-    function wifiBannerLinksFieldsHtml(instagramVal, whatsappVal, useModalIds) {
+    function bannerSocialLinksFieldsHtml(instagramVal, whatsappVal, useModalIds) {
         const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-        const igIdAttr = useModalIds ? ' id="edit-wifi-instagram"' : '';
-        const waIdAttr = useModalIds ? ' id="edit-wifi-whatsapp"' : '';
+        const igIdAttr = useModalIds ? ' id="edit-banner-instagram"' : '';
+        const waIdAttr = useModalIds ? ' id="edit-banner-whatsapp"' : '';
         return `
-                <div class="wifi-banner-extras" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
+                <div class="banner-social-extras" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
                     <label style="font-weight: 600;">Atalhos abaixo do banner (opcional)</label>
-                    <p class="wifi-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Visitante toca e abre direto no Instagram ou WhatsApp. Cole o link ou só o @ / número.</p>
-                    <div class="wifi-field-row" style="margin-bottom: 12px;">
+                    <p class="banner-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Visitante toca e abre direto no Instagram ou WhatsApp. Cole o link ou só o @ / número.</p>
+                    <div class="banner-field-row" style="margin-bottom: 12px;">
                         <label style="display: block; margin-bottom: 6px;"><i class="fab fa-instagram" style="margin-right: 6px;"></i>Instagram</label>
-                        <input type="text" class="wifi-instagram-input"${igIdAttr} value="${esc(instagramVal)}" placeholder="@adrianokingg ou https://www.instagram.com/adrianokingg/" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
-                        <div class="wifi-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                            <button type="button" class="wifi-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
-                            <button type="button" class="wifi-example-fill-btn" data-value="https://www.instagram.com/adrianokingg/" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
-                            <button type="button" class="wifi-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
+                        <input type="text" class="banner-instagram-input"${igIdAttr} value="${esc(instagramVal)}" placeholder="@adrianokingg ou https://www.instagram.com/adrianokingg/" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
+                        <div class="banner-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                            <button type="button" class="banner-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
+                            <button type="button" class="banner-example-fill-btn" data-value="https://www.instagram.com/adrianokingg/" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
+                            <button type="button" class="banner-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
                         </div>
                     </div>
-                    <div class="wifi-field-row">
+                    <div class="banner-field-row">
                         <label style="display: block; margin-bottom: 6px;"><i class="fab fa-whatsapp" style="margin-right: 6px;"></i>WhatsApp</label>
-                        <input type="text" class="wifi-whatsapp-input"${waIdAttr} value="${esc(whatsappVal)}" placeholder="https://wa.me/5511988789417 ou 5511988789417" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
-                        <div class="wifi-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                            <button type="button" class="wifi-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
-                            <button type="button" class="wifi-example-fill-btn" data-value="https://wa.me/5511988789417" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
-                            <button type="button" class="wifi-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
+                        <input type="text" class="banner-whatsapp-input"${waIdAttr} value="${esc(whatsappVal)}" placeholder="https://wa.me/5511988789417 ou 5511988789417" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
+                        <div class="banner-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                            <button type="button" class="banner-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
+                            <button type="button" class="banner-example-fill-btn" data-value="https://wa.me/5511988789417" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
+                            <button type="button" class="banner-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
                         </div>
                     </div>
                 </div>`;
+    }
+
+    function bannerDestDisplayLabel(raw) {
+        const p = parseBannerDestination(raw);
+        const parts = [];
+        if (p.primary_url) parts.push(p.primary_url.length > 40 ? p.primary_url.slice(0, 40) + '…' : p.primary_url);
+        if (p.instagram_url) parts.push('Instagram');
+        if (p.whatsapp_url) parts.push('WhatsApp');
+        return parts.length ? parts.join(' · ') : 'Sem destino';
     }
 
     function wifiBannerUploadBlockHtml(itemId, bannerUrl) {
@@ -2573,31 +2606,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     wifiBanBtn.setAttribute('aria-label', wifiSsid ? `Wi‑Fi: rede ${wifiSsid}` : 'Abrir QR Wi‑Fi');
                     wifiBanBtn.innerHTML = `<img src="${wifiBannerUrl}" alt="${wifiSsid ? 'Rede: ' + wifiSsid : wifiSafeTitle}" style="width:100%;height:auto;display:block;border-radius:12px;" loading="lazy">`;
                     previewEl.appendChild(wifiBanBtn);
-                    const socialPrev = readWifiSocialFromItemEl(itemEl);
-                    if (socialPrev.instagram_url || socialPrev.whatsapp_url) {
-                        const socialRow = document.createElement('div');
-                        socialRow.className = 'wifi-banner-social';
-                        if (socialPrev.instagram_url) {
-                            const igA = document.createElement('a');
-                            igA.href = socialPrev.instagram_url;
-                            igA.target = '_blank';
-                            igA.rel = 'noopener noreferrer';
-                            igA.className = 'wifi-banner-social-link wifi-banner-social-ig';
-                            const igM = socialPrev.instagram_url.match(/instagram\.com\/([^/?#]+)/i);
-                            igA.innerHTML = `<i class="fab fa-instagram"></i><span>${igM ? '@' + igM[1] : 'Instagram'}</span>`;
-                            socialRow.appendChild(igA);
-                        }
-                        if (socialPrev.whatsapp_url) {
-                            const waA = document.createElement('a');
-                            waA.href = socialPrev.whatsapp_url;
-                            waA.target = '_blank';
-                            waA.rel = 'noopener noreferrer';
-                            waA.className = 'wifi-banner-social-link wifi-banner-social-wa';
-                            waA.innerHTML = '<i class="fab fa-whatsapp"></i><span>WhatsApp</span>';
-                            socialRow.appendChild(waA);
-                        }
-                        previewEl.appendChild(socialRow);
-                    }
                 } else {
                     previewEl = document.createElement('button');
                     previewEl.type = 'button';
@@ -2715,10 +2723,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
             } else if (itemType === 'banner') {
-                previewEl = document.createElement('a');
-                previewEl.className = 'preview-banner-item';
-                const destUrl = itemEl.querySelector('.item-destination-url-input')?.value || '#';
-                previewEl.href = destUrl;
+                const bannerDestParsed = parseBannerDestination(itemEl.querySelector('.item-destination-url-input')?.value || '');
+                const bannerPrimary = bannerDestParsed.primary_url || '#';
+                const bannerSocialPrev = readBannerSocialFromItemEl(itemEl);
+                previewEl = document.createElement('div');
+                previewEl.className = 'preview-banner-wrap';
                 // FunÃ§Ã£o para sanitizar URL de imagem do banner
                 function sanitizeBannerImageUrl(url) {
                     const defaultBannerPlaceholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDYwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjMwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiPkJhbm5lcjwvdGV4dD4KPC9zdmc+Cg==';
@@ -2741,7 +2750,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imageUrlInput = itemEl.querySelector('.item-image-url-input');
                 let imageUrl = imageUrlInput ? imageUrlInput.value : '';
                 imageUrl = sanitizeBannerImageUrl(imageUrl);
-                previewEl.innerHTML = `<img src="${imageUrl}" alt="Banner Preview" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDYwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjMwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiPkJhbm5lcjwvdGV4dD4KPC9zdmc+Cg=='" loading="lazy">`;
+                if (bannerPrimary && bannerPrimary !== '#') {
+                    const banLink = document.createElement('a');
+                    banLink.className = 'preview-banner-item';
+                    banLink.href = bannerPrimary;
+                    banLink.target = '_blank';
+                    banLink.rel = 'noopener noreferrer';
+                    banLink.innerHTML = `<img src="${imageUrl}" alt="Banner Preview" style="width:100%;height:auto;display:block;border-radius:12px;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDYwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjMwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiPkJhbm5lcjwvdGV4dD4KPC9zdmc+Cg=='" loading="lazy">`;
+                    previewEl.appendChild(banLink);
+                } else {
+                    const banImg = document.createElement('img');
+                    banImg.src = imageUrl;
+                    banImg.alt = 'Banner Preview';
+                    banImg.style.cssText = 'width:100%;height:auto;display:block;border-radius:12px;';
+                    previewEl.appendChild(banImg);
+                }
+                if (bannerSocialPrev.instagram_url || bannerSocialPrev.whatsapp_url) {
+                    const socialRow = document.createElement('div');
+                    socialRow.className = 'banner-social';
+                    if (bannerSocialPrev.instagram_url) {
+                        const igA = document.createElement('a');
+                        igA.href = bannerSocialPrev.instagram_url;
+                        igA.target = '_blank';
+                        igA.rel = 'noopener noreferrer';
+                        igA.className = 'banner-social-link banner-social-ig';
+                        const igM = bannerSocialPrev.instagram_url.match(/instagram\.com\/([^/?#]+)/i);
+                        igA.innerHTML = `<i class="fab fa-instagram"></i><span>${igM ? '@' + igM[1] : 'Instagram'}</span>`;
+                        socialRow.appendChild(igA);
+                    }
+                    if (bannerSocialPrev.whatsapp_url) {
+                        const waA = document.createElement('a');
+                        waA.href = bannerSocialPrev.whatsapp_url;
+                        waA.target = '_blank';
+                        waA.rel = 'noopener noreferrer';
+                        waA.className = 'banner-social-link banner-social-wa';
+                        waA.innerHTML = '<i class="fab fa-whatsapp"></i><span>WhatsApp</span>';
+                        socialRow.appendChild(waA);
+                    }
+                    previewEl.appendChild(socialRow);
+                }
             } else if (itemType === 'carousel' || itemType === 'banner_carousel') {
                 // ===== CARROSSEL / BANNER_CAROUSEL - Preview =====
                 previewEl = document.createElement('div');
@@ -2911,8 +2958,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     preservedStates[itemId].wifi_banner_url = itemEl.querySelector('.wifi-banner-url-input')?.value || '';
                     preservedStates[itemId].wifi_logo_url = itemEl.querySelector('.wifi-logo-url-input')?.value || '';
                     preservedStates[itemId].wifi_logo_size = itemEl.querySelector('.wifi-logo-size-input')?.value || '';
-                    preservedStates[itemId].wifi_instagram = itemEl.querySelector('.wifi-instagram-input')?.value || '';
-                    preservedStates[itemId].wifi_whatsapp = itemEl.querySelector('.wifi-whatsapp-input')?.value || '';
                     preservedStates[itemId].icon_class = itemEl.querySelector('.item-icon-picker')?.className.replace(' item-icon-picker', '').trim() || '';
                     break;
             }
@@ -3079,10 +3124,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         itemEl.querySelector('.wifi-logo-url-input').value = state.wifi_logo_url;
                     if (itemEl.querySelector('.wifi-logo-size-input') && state.wifi_logo_size !== undefined)
                         itemEl.querySelector('.wifi-logo-size-input').value = state.wifi_logo_size;
-                    if (itemEl.querySelector('.wifi-instagram-input') && state.wifi_instagram !== undefined)
-                        itemEl.querySelector('.wifi-instagram-input').value = state.wifi_instagram;
-                    if (itemEl.querySelector('.wifi-whatsapp-input') && state.wifi_whatsapp !== undefined)
-                        itemEl.querySelector('.wifi-whatsapp-input').value = state.wifi_whatsapp;
                     if (itemEl.querySelector('.item-icon-picker') && state.icon_class) {
                         const ic = itemEl.querySelector('.item-icon-picker');
                         ic.className = `${state.icon_class} item-icon-picker`;
@@ -3571,9 +3612,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             return defaultPlaceholder;
                         }
                         // Normalizar banners que ainda têm destino em JSON (legado de carrossel) e limpar URLs de imagem
-                        if (item.destination_url && item.destination_url.trim().startsWith('[')) {
+                        let rawBannerDest = item.destination_url || '';
+                        if (rawBannerDest.trim().startsWith('[')) {
                             try {
-                                const parsed = JSON.parse(item.destination_url);
+                                const parsed = JSON.parse(rawBannerDest);
                                 if (Array.isArray(parsed) && parsed.length > 0) {
                                     const firstImg = typeof parsed[0] === 'string' ? parsed[0] : (parsed[0]?.image_url || '');
                                     if (firstImg) {
@@ -3583,13 +3625,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             } catch (e) {
                                 console.warn('Banner: destino JSON ignorado', e);
                             }
-                            item.destination_url = '';
+                            rawBannerDest = '';
                         }
-                        item.destination_url = sanitizeBannerDestLocal(item.destination_url || '');
+                        const bannerDestParts = parseBannerDestination(rawBannerDest);
+                        const bannerPrimaryDest = rawBannerDest.trim().startsWith('{')
+                            ? bannerDestParts.primary_url
+                            : sanitizeBannerDestLocal(rawBannerDest);
+                        const bannerIgVal = bannerInstagramEditorValue(bannerDestParts.instagram_url);
+                        const bannerWaVal = bannerWhatsAppEditorValue(bannerDestParts.whatsapp_url);
 
                         let bannerImageUrl = sanitizeImageUrl(item.image_url);
                         const bannerName = (item.title && item.title.trim()) || 'Banner';
-                        const bannerDisplayDest = sanitizeBannerDestLocal(item.destination_url);
+                        const bannerDisplayDest = bannerDestDisplayLabel(rawBannerDest);
                         iconOrThumbHTML = `<img src="${bannerImageUrl}" class="banner-preview-thumb" alt="Preview" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9Ijc1IiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIj5JbWFnZW08L3RleHQ+Cjwvc3ZnPgo='" loading="lazy"/>`;
                         displayHTML = `<div class="item-display-title"><input type="text" class="item-banner-name-input" value="${bannerName}" placeholder="Nome do Banner" style="background: transparent; border: 1px solid transparent; color: inherit; font-size: inherit; font-weight: inherit; padding: 2px 4px; border-radius: 4px; width: 100%; max-width: 220px;" onfocus="this.style.borderColor='#FFC700'; this.style.background='rgba(255,199,0,0.1)';" onblur="this.style.borderColor='transparent'; this.style.background='transparent';"></div><div class="item-display-dest">${bannerDisplayDest || 'Sem destino'}</div><input type="hidden" class="item-title-input-hidden" value="${item.whatsapp_message || ''}">`;
                         editHTML = `
@@ -3602,14 +3649,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <img class="banner-preview" src="${bannerImageUrl}" style="max-width: 100%; max-height: 200px; margin-top: 10px; display: ${bannerImageUrl && !bannerImageUrl.includes('placeholder') ? 'block' : 'none'};">
                 <div class="upload-loader"></div>
             </div>
-            <label>URL de Destino (opcional)</label>
-            <input type="text" class="item-destination-url-input" value="${bannerDisplayDest}" placeholder="https://link.do.banner">
+            <label>URL de Destino ao clicar na imagem (opcional)</label>
+            <input type="text" class="item-destination-url-input" value="${bannerPrimaryDest.replace(/"/g, '&quot;')}" placeholder="https://link.do.banner">
             <input type="hidden" class="item-image-url-input" value="${bannerImageUrl}">
+            ${bannerSocialLinksFieldsHtml(bannerIgVal, bannerWaVal, false)}
         `;
                         // Atualizar originalData com destino sanitizado (usar bannerDisplayDest que já está sanitizado)
                         try {
                             const originalData = itemEl.dataset.originalData ? JSON.parse(itemEl.dataset.originalData) : {};
-                            originalData.destination_url = bannerDisplayDest; // Já sanitizado acima
+                            originalData.destination_url = serializeBannerDestination(bannerPrimaryDest, bannerIgVal, bannerWaVal);
                             originalData.image_url = bannerImageUrl;
                             originalData.aspect_ratio = item.aspect_ratio || 'tarja';
                             originalData.title = bannerName;
@@ -3768,9 +3816,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const wifiBannerUrl = (wifiCfg.banner_image_url || '').trim();
                         const wifiLogoUrl = (wifiCfg.logo_url || '').trim();
                         const wifiLogoSize = Math.min(600, Math.max(20, parseInt(wifiCfg.logo_size || item.logo_size || 48, 10) || 48));
-                        const wifiIgVal = wifiInstagramEditorValue(wifiCfg.instagram_url);
-                        const wifiWaVal = wifiWhatsAppEditorValue(wifiCfg.whatsapp_url);
-
                         if (wifiDisplay === 'banner' && wifiBannerUrl && !wifiBannerUrl.includes('placeholder')) {
                             iconOrThumbHTML = `<img src="${wifiBannerUrl}" class="banner-preview-thumb" alt="Wi‑Fi" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fas fa-wifi" style="display: none;"></i>`;
                         } else if (wifiLogoUrl && !wifiLogoUrl.includes('placeholder')) {
@@ -3856,7 +3901,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="upload-loader"></div>
                 </div>
                 <input type="hidden" class="wifi-banner-url-input" value="${wifiBannerUrl.replace(/"/g, '&quot;')}">
-                ${wifiBannerLinksFieldsHtml(wifiIgVal, wifiWaVal, false)}
             </div>
         `;
                         break;
@@ -6776,12 +6820,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             let logo_size = parseInt(itemEl.querySelector('.wifi-logo-size-input')?.value, 10);
                             if (isNaN(logo_size) || logo_size < 20) logo_size = parseInt(itemEl.dataset.logoSize, 10) || 48;
                             logo_size = Math.min(600, Math.max(20, logo_size));
-                            const social = readWifiSocialFromItemEl(itemEl);
                             destinationUrl = JSON.stringify({
                                 ssid, password, security, hidden, display_format: fmt,
-                                banner_image_url, logo_url, logo_size,
-                                instagram_url: social.instagram_url,
-                                whatsapp_url: social.whatsapp_url
+                                banner_image_url, logo_url, logo_size
                             });
                         }
 
@@ -7429,7 +7470,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                             if (isNaN(logoSizeVal) || logoSizeVal < 20) logoSizeVal = 48;
                             logoSizeVal = Math.min(600, Math.max(20, logoSizeVal));
-                            const socialSave = readWifiSocialFromItemEl(itemEl);
                             const wifiPayload = {
                                 ssid,
                                 password,
@@ -7438,9 +7478,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 display_format: fmt,
                                 banner_image_url: bannerUrl,
                                 logo_url: logoUrl,
-                                logo_size: logoSizeVal,
-                                instagram_url: socialSave.instagram_url,
-                                whatsapp_url: socialSave.whatsapp_url
+                                logo_size: logoSizeVal
                             };
                             itemData.destination_url = JSON.stringify(wifiPayload);
                             itemData.pix_key = null;
