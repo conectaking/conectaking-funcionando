@@ -33,6 +33,25 @@ function getFieldValue(fieldData, group, key) {
   return v != null ? String(v) : '';
 }
 
+function normDocTypeKey(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isFotoPessoalDocType(dt) {
+  const n = normDocTypeKey(dt);
+  return n === 'foto pessoal' || n.includes('foto pessoal');
+}
+
+function isFotoPessoalShareLabel(label) {
+  const n = normDocTypeKey(label);
+  return n === 'foto pessoal' || n.startsWith('foto pessoal');
+}
+
 /**
  * Monta snapshot congelado para o link (textos + metadados de ficheiros).
  * selection: { displayName, profileImageUrl, sections: [{ title, rows: [{ group, key, label?, showText, showFile, fileId }] }], extraDocs: [{ fileId, label }] }
@@ -116,6 +135,52 @@ async function buildSnapshot(userId, fieldData, selection) {
     });
   }
 
+  let profileId =
+    profileImageFileId && Number.isFinite(profileImageFileId) && fileIdsUsed.has(profileImageFileId)
+      ? profileImageFileId
+      : null;
+
+  if (!profileId) {
+    for (const sec of sectionsOut) {
+      for (const row of sec.rows || []) {
+        if (row.file && isFotoPessoalDocType(row.file.docType)) {
+          profileId = row.file.id;
+          break;
+        }
+        if (row.file && isFotoPessoalShareLabel(row.label) && String(row.file.mime || '').startsWith('image/')) {
+          profileId = row.file.id;
+          break;
+        }
+      }
+      if (profileId) break;
+    }
+  }
+  if (!profileId) {
+    for (const ed of extraDocs) {
+      if (isFotoPessoalShareLabel(ed.label) && String(ed.mime || '').startsWith('image/')) {
+        profileId = ed.id;
+        break;
+      }
+    }
+  }
+
+  if (profileId) {
+    for (const sec of sectionsOut) {
+      sec.rows = (sec.rows || []).filter((row) => {
+        if (row.file && row.file.id === profileId) return false;
+        if (row.file && isFotoPessoalDocType(row.file.docType)) return false;
+        if (isFotoPessoalShareLabel(row.label) && row.file) return false;
+        return true;
+      });
+    }
+    const sectionsFiltered = sectionsOut.filter((s) => (s.rows || []).length > 0);
+    sectionsOut.length = 0;
+    sectionsOut.push(...sectionsFiltered);
+    const extraFiltered = extraDocs.filter((ed) => ed.id !== profileId && !isFotoPessoalShareLabel(ed.label));
+    extraDocs.length = 0;
+    extraDocs.push(...extraFiltered);
+  }
+
   const out = {
     displayName,
     profileImageUrl,
@@ -123,8 +188,8 @@ async function buildSnapshot(userId, fieldData, selection) {
     extraDocs,
     fileIds: Array.from(fileIdsUsed)
   };
-  if (profileImageFileId && fileIdsUsed.has(profileImageFileId)) {
-    out.profileImageFileId = profileImageFileId;
+  if (profileId && fileIdsUsed.has(profileId)) {
+    out.profileImageFileId = profileId;
   }
   return out;
 }
