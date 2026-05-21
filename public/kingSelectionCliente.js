@@ -107,6 +107,35 @@
     return `ks_client_jwt_${slug}`;
   }
 
+  function jwtPayloadClientId(token) {
+    const t = token != null ? token : jwt;
+    if (!t || typeof t !== 'string') return 0;
+    try {
+      const part = t.split('.')[1];
+      if (!part) return 0;
+      const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+      const p = JSON.parse(json);
+      return parseInt(p.clientId, 10) || 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function isRegisterEmailExistsMessage(msg) {
+    const m = String(msg || '').toLowerCase();
+    return (
+      m.includes('já existe') ||
+      m.includes('ja existe') ||
+      m.includes('already exists') ||
+      m.includes('e-mail nesta galeria')
+    );
+  }
+
+  function isLoginByDetailsNotFound(msg) {
+    const m = String(msg || '').toLowerCase();
+    return m.includes('não encontramos') || m.includes('nao encontramos');
+  }
+
   function $(id) {
     return document.getElementById(id);
   }
@@ -1482,6 +1511,12 @@
   }
 
   function hasRegisteredClientFromData(data) {
+    if (normKsAccessModeFromMeta() === 'public') {
+      if (data?.clientRegistered === true) return true;
+      if (jwtPayloadClientId() > 0) return true;
+      if (data?.clientContactPrefill?.email) return true;
+      return false;
+    }
     const rid = parseInt(data?.resolvedClientId, 10) || 0;
     if (rid <= 0) return false;
     if (data?.clientAuthenticated === false) return false;
@@ -1489,7 +1524,8 @@
   }
 
   function publicJwtHasRegisteredClient() {
-    return parseInt(state.resolvedClientId, 10) > 0;
+    if (jwtPayloadClientId() > 0) return true;
+    return parseInt(state.resolvedClientId, 10) > 0 && !!(state.clientContactPrefill?.email);
   }
 
   /**
@@ -1599,12 +1635,47 @@
     }
   }
 
+  /**
+   * Modo público: entrar com nome + e-mail + WhatsApp (sem senha).
+   * Tenta login; se não existir cadastro, cria; se e-mail já existir, valida os dados.
+   */
+  async function enterPublicGalleryWithContact(nome, email, telefone, opts = {}) {
+    const errEl = opts.errEl || $('ks-register-first-err');
+    errEl?.classList.add('ks-hidden');
+    let isNew = false;
+    try {
+      jwt = await apiLoginByDetails(nome, email, telefone);
+    } catch (loginErr) {
+      const loginMsg = loginErr?.message || '';
+      if (!isLoginByDetailsNotFound(loginMsg) && !isRegisterEmailExistsMessage(loginMsg)) {
+        throw loginErr;
+      }
+      try {
+        const data = await apiRegisterPublic(nome, email, telefone);
+        jwt = data.token;
+        isNew = true;
+      } catch (regErr) {
+        const regMsg = regErr?.message || '';
+        if (isRegisterEmailExistsMessage(regMsg)) {
+          jwt = await apiLoginByDetails(nome, email, telefone);
+        } else {
+          throw regErr;
+        }
+      }
+    }
+    try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+    const gd = await loadGallery();
+    applyGalleryData(gd);
+    if (opts.bootstrapDownloads) await bootstrapPublicDownloadsAfterRegister();
+    if (opts.runPendingDownload) await maybeRunPendingPublicDownload();
+    return { isNew };
+  }
+
   async function submitRegisterFirst() {
     const nome = ($('ks-reg-nome')?.value || '').trim();
     const email = ($('ks-reg-email')?.value || '').trim();
     const telefone = ($('ks-reg-tel')?.value || '').trim();
     const err = $('ks-register-first-err');
-    err?.classList.add('ks-hidden');
     if (!nome || !email) {
       if (err) {
         err.textContent = 'Preencha nome e e-mail.';
@@ -1614,21 +1685,19 @@
     }
     try {
       $('ks-register-first-btn').disabled = true;
-      const data = await apiRegisterPublic(nome, email, telefone);
-      jwt = data.token;
-      try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
-      const pw = data.client_password ? String(data.client_password) : '';
-      const gd = await loadGallery();
-      applyGalleryData(gd);
-      await bootstrapPublicDownloadsAfterRegister();
-      if (pw) {
-        toast(`Cadastro criado. Guarde sua senha para voltar depois: ${pw}`, 'ok');
-      } else {
-        toast('Cadastro concluído. Download liberado — use a seta ou «Fotos para baixar».', 'ok');
-      }
+      const { isNew } = await enterPublicGalleryWithContact(nome, email, telefone, {
+        errEl: err,
+        bootstrapDownloads: true
+      });
+      toast(
+        isNew
+          ? 'Cadastro concluído. Download liberado — use a seta ou «Fotos para baixar».'
+          : 'Bem-vindo de volta! Você já pode ver e baixar suas fotos.',
+        'ok'
+      );
     } catch (e) {
       if (err) {
-        err.textContent = e.message || 'Erro';
+        err.textContent = e?.message || 'Erro';
         err.classList.remove('ks-hidden');
       }
     } finally {
@@ -1686,19 +1755,12 @@
     }
     try {
       $('ks-modal-pub-submit').disabled = true;
-      const data = await apiRegisterPublic(nome, email, telefone);
-      jwt = data.token;
-      try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
-      const pw = data.client_password ? String(data.client_password) : '';
-      const gd = await loadGallery();
-      applyGalleryData(gd);
+      const { isNew } = await enterPublicGalleryWithContact(nome, email, telefone, {
+        errEl: err,
+        runPendingDownload: true
+      });
       closePublicRegisterModal();
-      if (pw) {
-        toast(`Cadastro concluído. Guarde a sua senha: ${pw}`, 'ok');
-      } else {
-        toast('Cadastro concluído. Download liberado.', 'ok');
-      }
-      await maybeRunPendingPublicDownload();
+      toast(isNew ? 'Cadastro concluído. Download liberado.' : 'Acesso liberado.', 'ok');
     } catch (e) {
       if (err) {
         err.textContent = e.message || 'Erro';
@@ -1740,15 +1802,15 @@
       const lead = $('ks-register-first-lead');
       if (lead) {
         lead.innerHTML =
-          'Modo <strong>público</strong>: crie seu cadastro para ver a galeria e <strong>baixar</strong> as fotos (seta em cada foto, várias selecionadas ou todas). As imagens podem sair com marca d’água, conforme o fotógrafo.';
+          'Modo <strong>público</strong>: informe <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> (sem senha). Na primeira vez criamos seu cadastro; depois use os mesmos dados para voltar.';
       }
       $('ks-login-sub').textContent = galleryMeta.nome_projeto
-        ? `${galleryMeta.nome_projeto} — cadastro obrigatório`
-        : 'Cadastre-se para continuar';
+        ? `${galleryMeta.nome_projeto} — acesso à galeria`
+        : 'Informe seus dados para continuar';
       if (foot) {
         foot.style.display = '';
         foot.textContent =
-          'Já tem cadastro? Use «Já tenho senha — entrar» abaixo. Guarde a senha que aparecer após criar o cadastro.';
+          'Use sempre o mesmo nome, e-mail e WhatsApp. Se trocar de aparelho, basta preencher de novo — não precisa lembrar senha.';
       }
       return;
     }
@@ -3841,49 +3903,6 @@
     true
   );
 
-  $('ks-pub-show-login')?.addEventListener('click', () => {
-    const sec = $('ks-pub-login-section');
-    if (!sec) return;
-    sec.classList.toggle('ks-hidden');
-    const hidden = sec.classList.contains('ks-hidden');
-    const btn = $('ks-pub-show-login');
-    if (btn) {
-      btn.innerHTML = hidden
-        ? '<i class="fas fa-key"></i> Já tenho senha — entrar'
-        : '<i class="fas fa-chevron-up"></i> Ocultar entrada com senha';
-    }
-  });
-
-  $('ks-pub-login-btn')?.addEventListener('click', async () => {
-    const email = ($('ks-pub-login-email')?.value || '').trim();
-    const senha = ($('ks-pub-login-senha')?.value || '').trim();
-    const err = $('ks-pub-login-err');
-    const errLogin = $('ks-login-err');
-    err?.classList.add('ks-hidden');
-    errLogin?.classList.add('ks-hidden');
-    if (!email || !senha) {
-      if (err) {
-        err.textContent = 'Preencha e-mail e senha.';
-        err.classList.remove('ks-hidden');
-      }
-      return;
-    }
-    try {
-      $('ks-pub-login-btn').disabled = true;
-      jwt = await apiLoginEmailSenha(email, senha);
-      try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
-      const data = await loadGallery();
-      applyGalleryData(data);
-    } catch (e) {
-      if (err) {
-        err.textContent = e.message || 'Erro';
-        err.classList.remove('ks-hidden');
-      }
-    } finally {
-      $('ks-pub-login-btn').disabled = false;
-    }
-  });
-
   $('ks-login-pw-btn')?.addEventListener('click', async () => {
     const email = ($('ks-login-email')?.value || '').trim();
     const senha = ($('ks-login-senha')?.value || '').trim();
@@ -4975,11 +4994,21 @@
             applyGalleryData(gd);
             return;
           }
-          jwt = null;
-          try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+          if (!jwtPayloadClientId()) {
+            jwt = null;
+            try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+          }
         } catch (e) {
-          jwt = null;
-          try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+          const msg = String(e?.message || '').toLowerCase();
+          const expired =
+            msg.includes('sessão expirada') ||
+            msg.includes('sessao expirada') ||
+            msg.includes('não autorizado') ||
+            msg.includes('nao autorizado');
+          if (expired || !jwtPayloadClientId()) {
+            jwt = null;
+            try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+          }
         }
       }
       hideBootScreen();

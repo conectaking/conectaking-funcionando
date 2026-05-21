@@ -1508,9 +1508,9 @@
         </div>
         <!-- Cadastro obrigatório na entrada — apenas modo público -->
         <div id="ks-login-mode-register-first" class="ks-hidden">
-          <p class="ks-section-h">Criar seu cadastro</p>
+          <p class="ks-section-h">Acesso à galeria</p>
           <p id="ks-register-first-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left">
-            Preencha seus dados para acessar a galeria. Depois você poderá escolher fotos e baixar (uma a uma, várias selecionadas ou todas).
+            Informe nome, e-mail e WhatsApp. Não usamos senha — na primeira vez criamos seu cadastro; depois é só repetir os mesmos dados.
           </p>
           <div class="ks-field">
             <label for="ks-reg-nome">Nome</label>
@@ -1525,27 +1525,9 @@
             <input id="ks-reg-tel" class="ks-input" type="tel" autocomplete="tel" placeholder="Ex.: 5511999999999" />
           </div>
           <button type="button" class="ks-btn ks-btn-yellow" id="ks-register-first-btn" style="width:100%;justify-content:center;margin-top:4px">
-            <i class="fas fa-user-plus"></i> Criar cadastro e entrar na galeria
+            <i class="fas fa-right-to-bracket"></i> Entrar na galeria
           </button>
           <div class="ks-err ks-hidden" id="ks-register-first-err"></div>
-          <hr style="border:none;border-top:1px solid var(--border);margin:16px 0" />
-          <button type="button" class="ks-btn" id="ks-pub-show-login" style="width:100%;justify-content:center;margin-bottom:8px">
-            <i class="fas fa-key"></i> Já tenho senha — entrar
-          </button>
-          <div id="ks-pub-login-section" class="ks-hidden">
-            <div class="ks-field">
-              <label for="ks-pub-login-email">E-mail</label>
-              <input id="ks-pub-login-email" class="ks-input" type="email" autocomplete="email" />
-            </div>
-            <div class="ks-field">
-              <label for="ks-pub-login-senha">Senha</label>
-              <input id="ks-pub-login-senha" class="ks-input" type="password" autocomplete="current-password" />
-            </div>
-            <button type="button" class="ks-btn ks-btn-yellow" id="ks-pub-login-btn" style="width:100%;justify-content:center;margin-top:4px">
-              <i class="fas fa-right-to-bracket"></i> Entrar na galeria
-            </button>
-            <div class="ks-err ks-hidden" id="ks-pub-login-err"></div>
-          </div>
         </div>
         <!-- Modo público legado (visitante) — oculto quando cadastro é obrigatório -->
         <div id="ks-login-mode-public" class="ks-hidden">
@@ -1960,7 +1942,7 @@
   </button>
 
   <script src="/config.js?v=2026-03-23-anticache-a1"></script>
-  <script src="/kingSelectionCliente.js?v=2026-05-19-public-only-register"></script>
+  <script src="/kingSelectionCliente.js?v=2026-05-19-public-no-password"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>

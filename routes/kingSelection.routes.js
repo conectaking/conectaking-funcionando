@@ -8915,12 +8915,15 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
     const cols = ['id'].concat(hasAm ? ['access_mode'] : []).concat(hasSelf ? ['allow_self_signup'] : []);
     const gx = await client.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1`, [g.id]);
     const grow = gx.rows[0] || {};
-    let am = hasAm ? String(grow.access_mode || 'private').toLowerCase() : 'private';
-    if (am === 'password') am = 'signup';
+    const am = ksNormAccessMode(hasAm ? grow.access_mode : 'private');
     const allow = hasSelf ? !!grow.allow_self_signup : ksAccessModeAllowsSelfSignup(am);
-    if (!ksAccessModeAllowsSelfSignup(am) || !allow) {
+    const allowDetailsLogin =
+      am === 'public' ||
+      am === 'paid_event_photos' ||
+      (ksAccessModeAllowsSelfSignup(am) && allow);
+    if (!allowDetailsLogin) {
       return res.status(403).json({
-        message: 'Nesta galeria use e-mail e senha. O acesso só com nome e telefone é para o fluxo de cadastro ao enviar.'
+        message: 'Nesta galeria use e-mail e senha.'
       });
     }
 
@@ -8939,7 +8942,9 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
     if (!cRes.rows.length) {
       return res.status(401).json({
         message:
-          'Não encontramos cadastro com este e-mail nesta galeria. Verifique o e-mail ou envie a seleção primeiro; se já enviou, use o mesmo e-mail de antes.'
+          am === 'public'
+            ? 'Não encontramos cadastro com este e-mail. Use «Criar cadastro e entrar» se for sua primeira vez.'
+            : 'Não encontramos cadastro com este e-mail nesta galeria. Verifique o e-mail ou envie a seleção primeiro; se já enviou, use o mesmo e-mail de antes.'
       });
     }
     const row = cRes.rows[0];
@@ -8948,26 +8953,30 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
     }
 
     const st = normKsStatus(row.status);
-    if (st === 'finalizado') {
+    if (st === 'finalizado' && am !== 'public') {
       return res.status(403).json({ message: 'Esta seleção já foi finalizada. Fale com o fotógrafo.' });
     }
 
     if (ksNormClientNameMatch(row.nome) !== nomeNorm) {
       return res.status(401).json({
         message:
-          'O nome não confere com o cadastro deste e-mail. Use exatamente o mesmo nome de quando você enviou a seleção.'
+          am === 'public'
+            ? 'O nome não confere com o cadastro deste e-mail. Use o mesmo nome de quando você se cadastrou.'
+            : 'O nome não confere com o cadastro deste e-mail. Use exatamente o mesmo nome de quando você enviou a seleção.'
       });
     }
 
     const rowTelDigits = ksNormClientPhoneDigits(row.telefone || '');
     if (rowTelDigits.length >= 8) {
       if (telDigits.length < 8) {
-        return res.status(400).json({ message: 'Informe o telefone cadastrado (com DDD ou código do país).' });
+        return res.status(400).json({ message: 'Informe o WhatsApp cadastrado (com DDD ou código do país).' });
       }
       if (telDigits !== rowTelDigits) {
         return res.status(401).json({
           message:
-            'O telefone não confere com o cadastro deste e-mail. Use o mesmo número de quando você enviou ou entre com e-mail e senha.'
+            am === 'public'
+              ? 'O WhatsApp não confere com o cadastro deste e-mail. Use o mesmo número de quando você se cadastrou.'
+              : 'O telefone não confere com o cadastro deste e-mail. Use o mesmo número de quando você enviou ou entre com e-mail e senha.'
         });
       }
     } else if (String(telefone || '').trim() && telDigits.length > 0 && telDigits.length < 8) {
@@ -9044,7 +9053,9 @@ router.post('/client/register', asyncHandler(async (req, res) => {
       { expiresIn: '14d' }
     );
 
-    res.json({ success: true, token, client_password: pass });
+    const payload = { success: true, token };
+    if (accessModeReg !== 'public') payload.client_password = pass;
+    res.json(payload);
   } finally {
     client.release();
   }
@@ -9599,6 +9610,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           ? approvedPhotoIdsOut
           : undefined),
       clientAuthenticated: !!salesClientId,
+      /** Modo público: cliente com login/cadastro (clientId no JWT), para o front não pedir cadastro de novo ao atualizar. */
+      clientRegistered:
+        galleryAccessMode === 'public' ? !!(parseInt(cid, 10) || 0) : undefined,
       clientContactPrefill: clientContactPrefill || undefined
     });
   } finally {
