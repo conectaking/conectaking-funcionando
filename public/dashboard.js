@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando... v2026-05-19-wifi-qr-popup (Wi‑Fi QR no painel)');
+    console.log('Dashboard iniciando... v2026-05-19-wifi-banner-upload');
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
@@ -4563,14 +4563,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     thumbList.style.display = 'block';
                 }
                 const editId = SELECTORS.editItemModal?.dataset?.editingId;
-                if (editId && String(itemElement.dataset.id) === String(editId)) {
-                    const modalBan = document.querySelector(`#edit-item-modal[data-editing-id="${editId}"] #edit-wifi-banner-url`);
-                    const modalPrev = document.querySelector(`#edit-item-modal[data-editing-id="${editId}"] #edit-wifi-banner-preview`);
+                const itemDomId = itemElement.dataset?.id;
+                if (editId && itemDomId && String(itemDomId) === String(editId)) {
+                    const modalBan = document.getElementById('edit-wifi-banner-url');
+                    const modalPrev = document.getElementById('edit-wifi-banner-preview');
                     if (modalBan) modalBan.value = finalUrl;
                     if (modalPrev) {
                         modalPrev.src = finalUrl;
                         modalPrev.style.display = 'block';
                     }
+                    const modalUploadText = SELECTORS.editItemModal?.querySelector('.wifi-banner-upload-area .image-upload-text p');
+                    if (modalUploadText) modalUploadText.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Trocar Imagem';
                 }
                 updateLivePreviewFromForm();
             } catch (error) {
@@ -8922,11 +8925,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="color:#888;font-size:0.85rem;">Upload de logo/imagem: use a área na lista do módulo ao lado.</p>
                 </div>
                 <div class="wifi-modal-banner-section" style="display: ${wFmt === 'banner' ? 'block' : 'none'};">
-                    <div class="input-group">
-                        <label>URL da imagem do banner</label>
-                        <input type="text" id="edit-wifi-banner-url" value="${escWifiModal(wBanner)}" placeholder="https://...">
-                    </div>
-                    <img id="edit-wifi-banner-preview" alt="" src="${escWifiModal(wBanner)}" style="max-width:100%;max-height:160px;margin-top:10px;display:${banPrevDisp};border-radius:8px;">
+                    ${wifiBannerUploadBlockHtml(itemId, wBanner)}
                 </div>
             `;
                 break;
@@ -10237,11 +10236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="hidden" id="edit-wifi-logo-url" value="${escN(wl)}">
                     </div>
                     <div class="wifi-modal-banner-section" style="display: ${wf === 'banner' ? 'block' : 'none'};">
-                        <div class="input-group">
-                            <label>URL da imagem do banner</label>
-                            <input type="text" id="edit-wifi-banner-url" value="${escN(wb)}" placeholder="https://...">
-                        </div>
-                        <img id="edit-wifi-banner-preview" alt="" src="${escN(wb)}" style="max-width:100%;max-height:160px;margin-top:10px;display:${bpd};border-radius:8px;">
+                        ${wifiBannerUploadBlockHtml(tempItem.id, wb)}
                     </div>
                 `;
                 break;
@@ -10961,8 +10956,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (uploadArea) {
-                const itemEl = uploadArea.closest('.item');
-                const fileInput = itemEl.querySelector('.item-file-input');
+                const itemEl = uploadArea.closest('.item, .module-item');
+                const fileInput = uploadArea.querySelector('.item-file-input');
                 if (fileInput) {
                     fileInput.click();
                 }
@@ -11164,24 +11159,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     fonteItemType: e.target.dataset.itemType ? 'input' : (e.target.closest('.image-upload-area')?.dataset.itemType ? 'uploadArea' : (SELECTORS.editItemModal?.dataset.itemType ? 'modal' : 'lista'))
                 });
 
-                // Se for banner, processar upload
-                if (file && itemType === 'banner') {
-                    console.log(`📤 [BANNER] Arquivo selecionado no modal para item ${itemId}:`, file.name);
+                // Banner normal ou banner Wi‑Fi
+                if (file && (itemType === 'banner' || itemType === 'wifi-banner')) {
+                    const cropTrigger = itemType === 'wifi-banner' ? 'wifi-banner' : 'banner';
+                    const modalItemType = SELECTORS.editItemModal?.dataset?.itemType;
+                    console.log(`📤 [BANNER] Upload no modal (${cropTrigger}) item ${itemId}:`, file.name);
                     let itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
 
-                    // Se não encontrou, criar referência temporária
-                    if (!itemEl && itemId) {
+                    if (!itemEl && itemId && cropTrigger === 'wifi-banner') {
+                        itemEl = { dataset: { id: itemId, itemType: 'wifi' } };
+                        console.log(`⚠️ [WIFI-BANNER] Item não encontrado na lista, usando referência temporária`);
+                    } else if (!itemEl && itemId) {
                         itemEl = { dataset: { id: itemId, itemType: 'banner' } };
                         console.log(`⚠️ [BANNER] Item não encontrado na lista, usando referência temporária`);
                     }
 
                     if (itemEl) {
-                        // Usar openCropper para banner
-                        console.log(`✅ [BANNER] Abrindo cropper para banner ${itemId}`);
-                        openCropper(file, 'banner', itemEl);
+                        if (cropTrigger === 'wifi-banner' && modalItemType === 'wifi' && typeof itemEl.querySelector !== 'function') {
+                            itemEl = document.querySelector(`.module-item[data-id='${itemId}']`) || itemEl;
+                        }
+                        console.log(`✅ [BANNER] Abrindo cropper (${cropTrigger}) ${itemId}`);
+                        openCropper(file, cropTrigger, itemEl);
                     } else {
                         console.error(`❌ [BANNER] Item ${itemId} não encontrado para upload`);
-                        alert('Erro: Não foi possível encontrar o banner. Tente fechar e abrir o modal novamente.');
+                        alert('Erro: Não foi possível encontrar o módulo. Tente fechar e abrir o modal novamente.');
                     }
                 } else if (file && !itemType) {
                     console.error(`❌ [UPLOAD] itemType não encontrado em nenhuma fonte!`);
@@ -12767,12 +12768,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }, true); // Use capture para garantir que o evento seja capturado
 
         SELECTORS.itemsContainer.addEventListener('change', async e => {
-            if (e.target.classList.contains('item-file-input') && e.target.closest('.banner-item')) {
+            if (e.target.classList.contains('item-file-input') && e.target.closest('.banner-item, .wifi-banner-upload-area')) {
                 const file = e.target.files[0];
                 if (file) {
-                    const itemEl = e.target.closest('.item');
-                    const modType = itemEl?.dataset?.itemType;
-                    openCropper(file, modType === 'wifi' ? 'wifi-banner' : 'banner', itemEl);
+                    const itemEl = e.target.closest('.item, .module-item');
+                    if (!itemEl) return;
+                    const uploadType = e.target.dataset.itemType || e.target.closest('.image-upload-area')?.dataset?.itemType;
+                    const modType = itemEl.dataset?.itemType;
+                    const trigger = (uploadType === 'wifi-banner' || modType === 'wifi') ? 'wifi-banner' : 'banner';
+                    openCropper(file, trigger, itemEl);
+                    e.target.value = '';
                 }
             }
             else if (e.target.closest('.pdf-upload-area')) {
