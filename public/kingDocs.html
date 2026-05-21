@@ -426,9 +426,46 @@
     .doc-card .dc-status { font-size: .7rem; color: #2d5a3d; font-weight: 600; }
     .doc-card:not(.selected) .dc-status { color: var(--muted); font-weight: 500; }
     .doc-card .dc-date { font-size: .62rem; color: var(--muted); margin-top: .25rem; }
-    .doc-card--share { cursor: default; display: flex; flex-direction: column; align-items: center; min-height: 118px; }
+    .doc-grid--unified { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 640px) { .doc-grid--unified { grid-template-columns: repeat(2, 1fr); } }
+    .kd-grid-section-label {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: .65rem 0 .15rem;
+      padding: .35rem 0 .2rem;
+      border-bottom: 1px dashed var(--border);
+    }
+    .kd-grid-section-label:first-of-type { margin-top: 0; }
+    .kd-grid-section-label span { font-size: 1.1rem; line-height: 1; }
+    .doc-card--share {
+      cursor: default;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 132px;
+      padding: .85rem .5rem .7rem;
+    }
     .doc-card--share.doc-card--on { background: #d4edda; border-color: #2d5a3d; box-shadow: 0 0 0 2px rgba(45,90,61,.25); }
-    .doc-card--share .dc-modes { display: flex; flex-wrap: wrap; gap: .35rem .5rem; justify-content: center; margin: .35rem 0 .25rem; width: 100%; }
+    .doc-card--share.doc-card--has-file:not(.doc-card--on) { background: #eef6f0; border-color: #5a8f6a; }
+    .doc-card--share .dc-val-hint {
+      font-size: .62rem;
+      color: var(--muted);
+      margin: 0 .15rem .3rem;
+      line-height: 1.25;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .doc-card--share .dc-modes { display: flex; flex-wrap: wrap; gap: .35rem .5rem; justify-content: center; margin: .4rem 0 .2rem; width: 100%; }
     .doc-card--share .kd-sc-mode { display: inline-flex; align-items: center; gap: .2rem; font-size: .66rem; font-weight: 600; color: var(--ink); cursor: pointer; margin: 0; }
     .doc-card--share .kd-sc-mode input { margin: 0; width: .95rem; height: .95rem; accent-color: var(--accent); }
     .kd-docs-share-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; margin: 0 0 .75rem; }
@@ -599,7 +636,7 @@
     <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
-      <p class="sub">Em cada cartão marca <strong>Texto</strong> e/ou <strong>Foto/PDF</strong> para o link. <strong>Foto pessoal</strong> aparece primeiro. Envia ficheiros na aba <strong>Dados</strong>. À direita vês a pré-visualização e o resumo.</p>
+      <p class="sub">Todos os itens no <strong>mesmo estilo de cartão</strong> (ícone grande, como RG e CNH). Marca <strong>Texto</strong> e/ou <strong>Foto/PDF</strong>. Preenche os valores na aba <strong>Dados</strong>.</p>
       <div class="share-layout kd-docs-unified-layout doc-browse-layout">
         <div class="kd-docs-left-col">
           <div class="doc-panel-card">
@@ -610,7 +647,7 @@
             </div>
             <div class="kd-doc-vault-row">
               <div class="kd-doc-vault-grid-col">
-                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Mais tipos? <strong>➕ Novo tipo</strong> (abre <strong>Dados</strong>). Sem ficheiro no cofre? Envia em <strong>Dados</strong> antes de marcar Foto/PDF.</p>
+                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Secções: documentos, dados pessoais, contato, morada, etc. — cada um com o seu ícone. <strong>➕ Novo tipo</strong> em <strong>Dados</strong>.</p>
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
               <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
@@ -1188,16 +1225,50 @@
       if (dt && fileExistsForDocType(dt)) types.push(dt);
     });
     docPreviewSelectedTypes = types;
-    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
-      var dt = card.getAttribute('data-doc-type');
-      var on = !!(dt && docPreviewSelectedTypes.indexOf(dt) >= 0);
-      card.classList.toggle('doc-card--on', on);
-    });
     refreshDocVaultPreview();
   }
-  function buildShareItemsList() {
-    var items = [];
+  /** Ícone próprio por campo (cartão igual aos tipos de documento) */
+  var FIELD_ICONS = {
+    'pessoal|Nome Completo': '👤',
+    'pessoal|Data de Nasc.': '🎂',
+    'pessoal|RG': '🪪',
+    'pessoal|CPF': '🆔',
+    'contato|WhatsApp': '📱',
+    'contato|E-mail': '✉️',
+    'contato|Instagram': '📸',
+    'endereco|Rua': '🛣️',
+    'endereco|Bairro': '🏘️',
+    'endereco|Cidade': '🏙️',
+    'endereco|CEP': '📮',
+    'financeiro|PIX (CPF)': '💰',
+    'financeiro|Banco': '🏦',
+    'financeiro|Agência': '🏛️',
+    'financeiro|Conta': '💳',
+    'empresa|Razão Social': '🏢',
+    'empresa|CNPJ': '📋',
+    'empresa|IE': '🏛️',
+    'empresa|C.C.M': '📑',
+    'empresa|E-mail': '✉️',
+    'empresa|Site': '🌐',
+    'empresa|Endereço': '📍',
+    'empresa|Bairro': '🏘️',
+    'empresa|Cidade': '🏙️',
+    'empresa|CEP': '📮',
+    'financeiropj|PIX (CNPJ)': '💰',
+    'financeiropj|Favorecido': '👤',
+    'financeiropj|Banco': '🏦',
+    'financeiropj|Agência': '🏛️',
+    'financeiropj|Conta': '💳'
+  };
+  function iconForField(groupId, key, fallbackIcon) {
+    var fk = String(groupId || '') + '|' + String(key || '');
+    if (FIELD_ICONS[fk]) return FIELD_ICONS[fk];
+    return fallbackIcon || '📋';
+  }
+  function buildShareSections() {
     var coveredFields = {};
+    var sections = [];
+    var docItems = [];
     var presets = getDocCardPresetsMerged().slice();
     presets.sort(function (a, b) {
       var af = normalizeDocTypeKey(a.docType) === normalizeDocTypeKey('FOTO PESSOAL');
@@ -1209,16 +1280,80 @@
     presets.forEach(function (p) {
       var pair = fieldPairForDocType(p.docType);
       if (pair) coveredFields[pair[0] + '|' + pair[1]] = true;
-      items.push({ docType: p.docType, label: p.label, icon: p.icon, group: pair ? pair[0] : null, key: pair ? pair[1] : null });
+      docItems.push({
+        docType: p.docType,
+        label: p.label,
+        icon: p.icon,
+        group: pair ? pair[0] : null,
+        key: pair ? pair[1] : null
+      });
     });
+    if (docItems.length) {
+      sections.push({ title: 'Documentos e fotos', icon: '📎', items: docItems });
+    }
     GROUPS.forEach(function (g) {
+      var items = [];
       g.keys.forEach(function (k) {
         var fk = g.id + '|' + k;
         if (coveredFields[fk]) return;
-        items.push({ docType: null, label: k, icon: g.icon || '📋', group: g.id, key: k });
+        items.push({
+          docType: fieldKeyToDocTypeHint(k, g.id) ? vaultDocTypeKeyForHint(fieldKeyToDocTypeHint(k, g.id)) : null,
+          label: k,
+          icon: iconForField(g.id, k, g.icon),
+          group: g.id,
+          key: k
+        });
       });
+      if (items.length) sections.push({ title: g.title, icon: g.icon, items: items });
     });
-    return items;
+    return sections;
+  }
+  function buildShareItemsList() {
+    var all = [];
+    buildShareSections().forEach(function (s) {
+      (s.items || []).forEach(function (it) { all.push(it); });
+    });
+    return all;
+  }
+  function renderShareCardHtml(it) {
+    ensureFieldData();
+    var hasFile = it.docType && fileExistsForDocType(it.docType);
+    var canFile = !!it.docType;
+    var showText = !!(it.group && it.key);
+    var dtAttr = it.docType ? ' data-doc-type="' + escapeAttr(it.docType) + '"' : '';
+    var gAttr = it.group ? ' data-gid="' + escapeAttr(it.group) + '"' : '';
+    var kAttr = it.key ? ' data-key="' + escapeAttr(it.key) + '"' : '';
+    var modes = '';
+    if (canFile) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-sf"/> Foto/PDF</label>';
+    if (showText) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-st"/> Texto</label>';
+    var valHint = '';
+    if (it.group && it.key && fieldData[it.group] && String(fieldData[it.group][it.key] || '').trim()) {
+      var v = String(fieldData[it.group][it.key]).trim();
+      valHint = '<div class="dc-val-hint" title="' + escapeAttr(v) + '">' + escapeHtml(v.length > 32 ? v.slice(0, 32) + '…' : v) + '</div>';
+    }
+    var status = '';
+    var dateLine = '';
+    if (hasFile) {
+      status = '✓ Ver pré-visualização';
+      var lastD = latestForDocType(it.docType);
+      if (lastD) dateLine = '<div class="dc-date">Último: ' + escapeHtml(formatShortDate(lastD)) + '</div>';
+    } else if (canFile) {
+      status = 'Envia em Dados';
+    } else if (valHint) {
+      status = '✓ Texto preenchido';
+    } else {
+      status = 'Marca Texto';
+    }
+    var cls = 'doc-card doc-card--share doc-card--browse';
+    if (hasFile) cls += ' doc-card--has-file';
+    return '<div class="' + cls + '"' + dtAttr + gAttr + kAttr + '>' +
+      '<div class="dc-icon" aria-hidden="true">' + (it.icon || '📋') + '</div>' +
+      '<div class="dc-title">' + escapeHtml(it.label) + '</div>' +
+      valHint +
+      '<div class="dc-modes">' + modes + '</div>' +
+      '<div class="dc-status">' + escapeHtml(status) + '</div>' +
+      dateLine +
+      '</div>';
   }
   function findShareCard(gid, key, docType) {
     var root = document.getElementById('doc-browse-root');
@@ -2257,6 +2392,7 @@
       applyDisplayNameToHero();
       showToast('Guardado no servidor.', 'ok');
       renderDados();
+      renderUnifiedShareCards();
     } catch (e) {
       showToast('Erro de rede ao guardar. Verifica a ligação.', 'err');
     } finally {
@@ -2435,27 +2571,19 @@
   function renderUnifiedShareCards() {
     var root = document.getElementById('doc-browse-root');
     if (!root) return;
+    root.className = 'doc-grid doc-grid--unified';
     var addCard = '<button type="button" class="doc-card doc-card--browse doc-card--add-type" id="btn-kd-browse-new-type" title="Criar outro tipo de documento (nome + ícone)">' +
       '<div class="dc-icon" aria-hidden="true">➕</div>' +
       '<div class="dc-title">Novo tipo</div>' +
       '<div class="dc-status">Criar + ícone</div></button>';
-    var html = addCard + buildShareItemsList().map(function (it) {
-      var hasFile = it.docType && fileExistsForDocType(it.docType);
-      var canFile = !!it.docType;
-      var showText = !!(it.group && it.key);
-      var dtAttr = it.docType ? ' data-doc-type="' + escapeAttr(it.docType) + '"' : '';
-      var gAttr = it.group ? ' data-gid="' + escapeAttr(it.group) + '"' : '';
-      var kAttr = it.key ? ' data-key="' + escapeAttr(it.key) + '"' : '';
-      var modes = '';
-      if (showText) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-st"/> Texto</label>';
-      if (canFile) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-sf"/> Foto/PDF</label>';
-      var status = hasFile ? '✓ Ficheiro no cofre' : (it.docType ? 'Envia em Dados' : 'Só texto');
-      return '<div class="doc-card doc-card--share doc-card--browse"' + dtAttr + gAttr + kAttr + '>' +
-        '<div class="dc-icon" aria-hidden="true">' + it.icon + '</div>' +
-        '<div class="dc-title">' + escapeHtml(it.label) + '</div>' +
-        '<div class="dc-modes">' + modes + '</div>' +
-        '<div class="dc-status">' + escapeHtml(status) + '</div></div>';
-    }).join('');
+    var html = addCard;
+    buildShareSections().forEach(function (sec) {
+      html += '<div class="kd-grid-section-label" role="heading" aria-level="3">' +
+        '<span aria-hidden="true">' + (sec.icon || '📋') + '</span> ' + escapeHtml(sec.title) + '</div>';
+      (sec.items || []).forEach(function (it) {
+        html += renderShareCardHtml(it);
+      });
+    });
     root.innerHTML = html;
     var btnNew = document.getElementById('btn-kd-browse-new-type');
     if (btnNew) {
@@ -3121,7 +3249,10 @@
       document.getElementById(this.getAttribute('data-panel')).classList.add('active');
       var panelId = this.getAttribute('data-panel');
       if (panelId === 'p-partilha') { updateSharePreview(); loadLinks(); }
-      if (panelId === 'p-docs') { updateSharePreview(); if (docPreviewSelectedTypes.length) refreshDocVaultPreview(); }
+      if (panelId === 'p-docs') {
+        renderUnifiedShareCards();
+        updateSharePreview();
+      }
     });
   });
   document.getElementById('btn-doc-clear-sel').onclick = function () {
