@@ -171,6 +171,11 @@ async function getAvailableModules(client, userId, planCodeQuery) {
         const exclusionSet = new Set(exclusions);
         const addSet = new Set(individualAdds);
         availableModules = [...new Set([...availableModules, ...addSet].filter(m => !exclusionSet.has(m)))].sort();
+        // Wi‑Fi no cartão virtual: disponível por defeito (migration 219); respeita exclusão individual
+        if (!exclusionSet.has('wifi') && !availableModules.includes('wifi')) {
+            availableModules.push('wifi');
+            availableModules.sort();
+        }
     }
     return {
         account_type: accountType,

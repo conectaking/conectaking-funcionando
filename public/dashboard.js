@@ -16475,6 +16475,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
                 userAvailableModules = new Set(data.available_modules || []);
+                userAvailableModules.add('wifi');
             }
         } catch (error) {
             console.error('Erro ao carregar módulos disponíveis:', error);
@@ -16496,11 +16497,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /** Garante cartão Wi‑Fi no modal (deploy antigo do dashboard.html sem o bloco no HTML). */
+    function ensureWifiModuleCardInAddModal() {
+        const modal = document.getElementById('add-item-modal');
+        if (!modal || modal.querySelector('.module-choice-card[data-item-type="wifi"]')) return;
+        const galleries = modal.querySelectorAll('.module-gallery');
+        if (!galleries.length) return;
+        const contactGallery = galleries[0];
+        const card = document.createElement('div');
+        card.className = 'module-choice-card';
+        card.setAttribute('data-item-type', 'wifi');
+        card.innerHTML = '<i class="fas fa-wifi"></i><span>Wi‑Fi (QR Code)</span>';
+        const pixQr = contactGallery.querySelector('.module-choice-card[data-item-type="pix_qrcode"]');
+        if (pixQr && pixQr.parentNode) {
+            pixQr.insertAdjacentElement('afterend', card);
+        } else {
+            contactGallery.appendChild(card);
+        }
+    }
+
     // Filtrar módulos no modal baseado no plano
     async function filterModulesByPlan() {
+        ensureWifiModuleCardInAddModal();
         // Carregar módulos disponíveis se ainda não carregou
         if (userAvailableModules === null) {
             await loadUserAvailableModules();
+        }
+        if (userAvailableModules) {
+            userAvailableModules.add('wifi');
         }
 
         // Se não conseguiu carregar, mostrar todos (fallback), mas ainda ocultar Agenda/Contratos para não-admin
@@ -16513,6 +16537,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isAdminFallback) {
                 document.querySelectorAll('#add-item-modal .module-choice-card[data-item-type="agenda"], #add-item-modal .module-choice-card[data-item-type="contract"]').forEach(c => { c.style.display = 'none'; });
             }
+            const wifiCard = document.querySelector('#add-item-modal .module-choice-card[data-item-type="wifi"]');
+            if (wifiCard) wifiCard.style.display = 'block';
             return;
         }
 
@@ -16528,6 +16554,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Agenda Inteligente e Contratos: apenas ADM principal (em desenvolvimento)
             if (!isAdmin && (moduleType === 'agenda' || moduleType === 'contract')) {
                 card.style.display = 'none';
+                return;
+            }
+            // Wi‑Fi (QR): módulo do cartão virtual — sempre visível no modal «Adicionar módulo»
+            if (moduleType === 'wifi') {
+                card.style.display = 'block';
                 return;
             }
             if (moduleType && !userAvailableModules.has(moduleType)) {
