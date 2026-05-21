@@ -5980,6 +5980,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemEl.querySelector('.wifi-logo-size-input').value = logoSizeModal;
                 itemEl.dataset.logoSize = logoSizeModal;
             }
+            if (igModal !== undefined && itemEl.querySelector('.wifi-instagram-input')) {
+                itemEl.querySelector('.wifi-instagram-input').value = igModal;
+            }
+            if (waModal !== undefined && itemEl.querySelector('.wifi-whatsapp-input')) {
+                itemEl.querySelector('.wifi-whatsapp-input').value = waModal;
+            }
             itemEl.querySelectorAll('.wifi-display-format-input').forEach(r => {
                 r.checked = r.value === fmtModal;
             });
@@ -8977,6 +8983,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wBanner = itemEl.querySelector('.wifi-banner-url-input')?.value || '';
                 const wLogo = itemEl.querySelector('.wifi-logo-url-input')?.value || '';
                 const wLogoSize = itemEl.querySelector('.wifi-logo-size-input')?.value || '48';
+                const wIg = itemEl.querySelector('.wifi-instagram-input')?.value || wifiInstagramEditorValue(
+                    (() => { try { const c = JSON.parse(itemEl.dataset.wifiCfg || '{}'); return c.instagram_url; } catch (e) { return ''; } })()
+                );
+                let wIgFromCfg = '';
+                let wWaFromCfg = '';
+                try {
+                    const curCfg = item.destination_url && String(item.destination_url).trim().startsWith('{')
+                        ? JSON.parse(itemEl.closest('.module-item') ? '' : '') : {};
+                } catch (e) { /* noop */ }
+                const wIgList = itemEl.querySelector('.wifi-instagram-input')?.value
+                    || wifiInstagramEditorValue((() => {
+                        try {
+                            const el = document.querySelector(`.module-item[data-id="${itemId}"]`);
+                            const raw = el?.querySelector('.wifi-instagram-input')?.value;
+                            if (raw) return normalizeWifiInstagramUrl(raw);
+                        } catch (err) { /* noop */ }
+                        return '';
+                    })());
+                const wWaList = itemEl.querySelector('.wifi-whatsapp-input')?.value || '';
                 formHTML = `
                 <div class="input-group">
                     <label>Título no cartão</label>
