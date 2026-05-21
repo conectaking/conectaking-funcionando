@@ -15,7 +15,7 @@
         if (!pwd) return 'nopass';
         if (s === 'NOPASS' || s === 'NONE' || s === 'OPEN') return 'nopass';
         if (s === 'WEP') return 'WEP';
-        return 'WPA'; /* WPA / WPA2 / WPA3 → WPA bucket for QR */
+        return 'WPA';
     }
 
     function buildWifiQrPayload(cfg) {
@@ -45,6 +45,16 @@
         }
     }
 
+    function readCfgFromDashboardItem(itemEl) {
+        if (!itemEl) return {};
+        return {
+            ssid: (itemEl.querySelector('.wifi-ssid-input')?.value || '').trim(),
+            password: itemEl.querySelector('.wifi-password-input')?.value ?? '',
+            security: itemEl.querySelector('.wifi-security-input')?.value || 'WPA',
+            hidden: !!itemEl.querySelector('.wifi-hidden-input')?.checked
+        };
+    }
+
     function openWifiModal(cfg) {
         var modal = document.getElementById('wifi-qrcode-modal');
         var closeBtn = document.getElementById('wifi-modal-close-btn');
@@ -57,7 +67,7 @@
 
         var ssid = (cfg && cfg.ssid != null) ? String(cfg.ssid).trim() : '';
         if (!ssid) {
-            window.alert('Nome da rede (SSID) não configurado. Edite o módulo Wi‑Fi no painel e informe o nome da rede.');
+            window.alert('Nome da rede (SSID) não configurado. Informe o nome da rede no módulo Wi‑Fi.');
             return;
         }
 
@@ -66,6 +76,7 @@
         }
 
         modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
         if (loader) loader.style.display = 'block';
         qrHost.innerHTML = '';
 
@@ -112,6 +123,7 @@
 
         function close() {
             modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
             modal.removeEventListener('click', onBackdrop);
             if (closeBtn) closeBtn.removeEventListener('click', close);
             if (copyBtn) copyBtn.removeEventListener('click', copyHandler);
@@ -124,13 +136,54 @@
         if (copyBtn) copyBtn.addEventListener('click', copyHandler);
     }
 
+    window.openWifiModal = openWifiModal;
+
+    function isDashboardWifiControl(target) {
+        return target.closest(
+            '.module-action-btn, .edit-item-btn, .delete-item-btn, .duplicate-item-btn, ' +
+            '.module-toggle, .module-toggle-input, .module-move-btn, .module-drag-handle, ' +
+            '.module-drag-controls, .module-name, .item-icon-picker, .logo-upload-area, ' +
+            'input, select, textarea, label'
+        );
+    }
+
+    document.addEventListener('click', function (ev) {
+        var wifiBtn = ev.target.closest('.wifi-profile-button, .wifi-banner-btn');
+        if (wifiBtn) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            openWifiModal(parseWifiDataset(wifiBtn.getAttribute('data-wifi-config') || ''));
+            return;
+        }
+
+        if (isDashboardWifiControl(ev.target)) return;
+
+        var bannerPreview = ev.target.closest('.wifi-banner-preview, .banner-preview-thumb');
+        if (bannerPreview) {
+            var itemFromBanner = bannerPreview.closest('.module-item, .item');
+            if (itemFromBanner && itemFromBanner.dataset.itemType === 'wifi') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                openWifiModal(readCfgFromDashboardItem(itemFromBanner));
+                return;
+            }
+        }
+
+        var modIcon = ev.target.closest('.module-item[data-item-type="wifi"] .module-icon');
+        if (modIcon) {
+            var modItem = modIcon.closest('.module-item');
+            if (modItem) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                openWifiModal(readCfgFromDashboardItem(modItem));
+            }
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.wifi-profile-button, .wifi-banner-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var enc = btn.getAttribute('data-wifi-config') || '';
-                var cfg = parseWifiDataset(enc);
-                openWifiModal(cfg);
-            });
+            if (btn.dataset.wifiBound === '1') return;
+            btn.dataset.wifiBound = '1';
         });
     });
 })();

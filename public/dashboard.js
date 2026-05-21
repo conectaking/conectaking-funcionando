@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando... v2026-05-19-wifi-modules-fix-v3 (Wi‑Fi + lista de módulos)');
+    console.log('Dashboard iniciando... v2026-05-19-wifi-qr-popup (Wi‑Fi QR no painel)');
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
@@ -2427,7 +2427,73 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = itemEl.querySelector('.module-name')?.textContent?.trim() || itemEl.querySelector('.item-title-input')?.value || '';
             let previewEl;
 
-            if (['link', 'pix', 'pix_qrcode', 'pdf', 'whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'linkedin', 'portfolio', 'reddit', 'tiktok', 'twitch', 'twitter', 'youtube', 'spotify', 'convite', 'bible', 'digital_form', 'sales_page', 'wifi', 'location'].includes(itemType)) {
+            if (itemType === 'wifi') {
+                const wifiFmt = itemEl.querySelector('.wifi-display-format-input:checked')?.value || 'button';
+                const wifiSsid = (itemEl.querySelector('.wifi-ssid-input')?.value || '').trim();
+                const wifiPassword = itemEl.querySelector('.wifi-password-input')?.value ?? '';
+                const wifiSecurity = itemEl.querySelector('.wifi-security-input')?.value || 'WPA';
+                const wifiHidden = !!itemEl.querySelector('.wifi-hidden-input')?.checked;
+                const wifiBannerUrl = (itemEl.querySelector('.wifi-banner-url-input')?.value || '').trim();
+                const wifiLogoUrl = (itemEl.querySelector('.wifi-logo-url-input')?.value || '').trim();
+                const wifiLogoSize = Math.min(600, Math.max(20, parseInt(itemEl.querySelector('.wifi-logo-size-input')?.value || itemEl.dataset.logoSize || '48', 10) || 48));
+                const wifiSafeTitle = (title || 'Wi‑Fi').trim();
+                const wifiCfgEnc = encodeURIComponent(JSON.stringify({
+                    ssid: wifiSsid,
+                    password: wifiPassword,
+                    security: wifiSecurity,
+                    hidden: wifiHidden,
+                    display_format: wifiFmt
+                }));
+
+                if (wifiFmt === 'banner' && wifiBannerUrl && !wifiBannerUrl.includes('placeholder')) {
+                    previewEl = document.createElement('div');
+                    previewEl.className = 'preview-wifi-banner-root';
+                    const wifiBanBtn = document.createElement('button');
+                    wifiBanBtn.type = 'button';
+                    wifiBanBtn.className = 'wifi-banner-btn';
+                    wifiBanBtn.setAttribute('data-wifi-config', wifiCfgEnc);
+                    wifiBanBtn.setAttribute('aria-label', wifiSsid ? `Wi‑Fi: rede ${wifiSsid}` : 'Abrir QR Wi‑Fi');
+                    wifiBanBtn.innerHTML = `<img src="${wifiBannerUrl}" alt="${wifiSsid ? 'Rede: ' + wifiSsid : wifiSafeTitle}" style="width:100%;height:auto;display:block;border-radius:12px;" loading="lazy">`;
+                    previewEl.appendChild(wifiBanBtn);
+                    if (wifiSsid) {
+                        const netP = document.createElement('p');
+                        netP.className = 'wifi-public-network-name';
+                        netP.innerHTML = 'Nome da rede: <strong></strong>';
+                        netP.querySelector('strong').textContent = wifiSsid;
+                        previewEl.appendChild(netP);
+                    }
+                } else {
+                    previewEl = document.createElement('button');
+                    previewEl.type = 'button';
+                    previewEl.className = 'preview-link-button wifi-profile-button' + (isDisabled ? ' preview-link-disabled' : '');
+                    previewEl.setAttribute('data-wifi-config', wifiCfgEnc);
+                    let wifiIconClass = 'fas fa-wifi';
+                    const wifiIconEl = itemEl.querySelector('.wifi-logo-section .item-icon-picker i, .item-icon-picker i');
+                    if (wifiIconEl) wifiIconClass = wifiIconEl.className.trim();
+                    const wifiLabels = wifiSsid
+                        ? `<span class="wifi-btn-ssid">${wifiSsid}</span>${wifiSafeTitle && wifiSafeTitle !== wifiSsid ? `<span class="wifi-btn-card-title">${wifiSafeTitle}</span>` : ''}`
+                        : `<span class="wifi-btn-fallback">${wifiSafeTitle}${isDisabled ? ' (Desativado)' : ''}</span>`;
+                    if (wifiLogoUrl && !wifiLogoUrl.includes('placeholder')) {
+                        previewEl.innerHTML = `<img src="${wifiLogoUrl}" alt="" class="wifi-logo-img" style="width:${wifiLogoSize}px;height:${wifiLogoSize}px;object-fit:contain;border-radius:8px;flex-shrink:0;margin-right:8px;"><i class="${wifiIconClass}" style="display:none;"></i><span class="wifi-button-labels">${wifiLabels}</span>`;
+                    } else {
+                        previewEl.innerHTML = `<i class="${wifiIconClass}"></i><span class="wifi-button-labels">${wifiLabels}</span>`;
+                    }
+                }
+
+                previewEl.style.backgroundColor = hexToRgba(SELECTORS.buttonColorPicker.value, isDisabled ? Math.max(0.3, buttonOpacity * 0.5) : buttonOpacity);
+                previewEl.style.color = SELECTORS.buttonTextColorPicker.value;
+                previewEl.style.borderRadius = borderRadius;
+                previewEl.style.justifyContent = buttonJustifyContent;
+                previewEl.style.fontSize = fontSize;
+                if (isDisabled) {
+                    previewEl.style.opacity = '0.65';
+                    previewEl.style.cursor = 'default';
+                    previewEl.style.pointerEvents = 'none';
+                } else {
+                    previewEl.style.cursor = 'pointer';
+                    previewEl.style.pointerEvents = 'auto';
+                }
+            } else if (['link', 'pix', 'pix_qrcode', 'pdf', 'whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'linkedin', 'portfolio', 'reddit', 'tiktok', 'twitch', 'twitter', 'youtube', 'spotify', 'convite', 'bible', 'digital_form', 'sales_page', 'location'].includes(itemType)) {
                 previewEl = document.createElement(isDisabled ? 'div' : 'a');
                 previewEl.className = 'preview-link-button' + (isDisabled ? ' preview-link-disabled' : '');
 
@@ -4128,6 +4194,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formatRadios = itemEl.querySelectorAll('.wifi-display-format-input');
                     const logoSec = itemEl.querySelector('.wifi-logo-section');
                     const banSec = itemEl.querySelector('.wifi-banner-section');
+                    const modIcon = itemEl.querySelector('.module-icon');
+                    if (modIcon) modIcon.setAttribute('title', 'Clique para ver QR Code, rede e senha');
                     const syncWifiPanels = () => {
                         const sel = itemEl.querySelector('.wifi-display-format-input:checked');
                         const mode = sel ? sel.value : 'button';
@@ -4148,8 +4216,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ? `${mode === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}`
                                 : 'Informe o nome da rede (SSID)';
                         }
+                        updateLivePreviewFromForm();
                     };
                     if (ssidInput) ssidInput.addEventListener('input', syncSsidLabel);
+
+                    const wifiPassInput = itemEl.querySelector('.wifi-password-input');
+                    const wifiSecInput = itemEl.querySelector('.wifi-security-input');
+                    const wifiHiddenInput = itemEl.querySelector('.wifi-hidden-input');
+                    [wifiPassInput, wifiSecInput].forEach(inp => {
+                        if (inp) inp.addEventListener('input', updateLivePreviewFromForm);
+                    });
+                    if (wifiHiddenInput) wifiHiddenInput.addEventListener('change', updateLivePreviewFromForm);
 
                     const logoSizeInputW = itemEl.querySelector('.wifi-logo-size-input');
                     if (logoSizeInputW) {

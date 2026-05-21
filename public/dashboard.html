@@ -37,6 +37,7 @@
     <!-- Cache-buster para CSS - Atualizado para forçar reload -->
     <link rel="stylesheet" href="style.css?v=2025-01-31-01">
     <link rel="stylesheet" href="dashboard.css?v=2025-01-31-01">
+    <link rel="stylesheet" href="css/profile-wifi.css?v=2026-05-19-wifi-qr-popup">
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
     <script>
     (function (w) {
@@ -1510,7 +1511,28 @@
     <script src="js/planRenderer.js?v=2025-01-31-01" defer></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="js/dashboard-cropper-enhance.js?v=2026-04-23-bg-mobile" defer></script>
-    <script src="dashboard.js?v=2026-05-19-wifi-modules-fix-v3" defer></script>
+    <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
+        <div class="wifi-modal-content">
+            <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
+            <h4 id="wifi-modal-title">Conectar ao Wi‑Fi</h4>
+            <div class="wifi-ssid-block">
+                <span class="wifi-ssid-label">Nome da rede</span>
+                <strong id="wifi-ssid-visible" class="wifi-ssid-value"></strong>
+            </div>
+            <p class="wifi-modal-hint">Escaneie o QR Code no celular ou copie a senha abaixo.</p>
+            <div id="wifi-qrcode-container">
+                <div id="wifi-qrcode-image"></div>
+                <div id="wifi-qrcode-loader"></div>
+            </div>
+            <div class="wifi-password-row">Senha da rede: <strong id="wifi-password-visible"></strong></div>
+            <div class="wifi-copy-row">
+                <button type="button" id="wifi-copy-password-btn">Copiar senha</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
+    <script src="dashboard.js?v=2026-05-19-wifi-qr-popup" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
     <script>

@@ -181,3 +181,40 @@
     font-size: 0.95rem;
     opacity: 0.95;
 }
+
+/* Dashboard — ícone do módulo e pré-visualização */
+.module-item[data-item-type="wifi"] .module-icon {
+    cursor: pointer;
+}
+
+.module-item[data-item-type="wifi"] .module-icon:hover {
+    opacity: 0.88;
+}
+
+.wifi-banner-preview,
+.module-item[data-item-type="wifi"] .banner-preview-thumb {
+    cursor: pointer;
+}
+
+.preview-wifi-banner-root .wifi-banner-btn {
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: block;
+}
+
+.preview-wifi-banner-root .wifi-banner-btn img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+}
+
+.preview-items .wifi-profile-button {
+    width: 100%;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+}
