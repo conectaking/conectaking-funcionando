@@ -7202,7 +7202,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const showCred = am === 'private';
     if (!clients.length) {
       wrap.innerHTML =
-        '<div class="text-slate-600">Nenhum cliente cadastrado. Use a aba <b>Clientes</b> para adicionar e-mail e senha de acesso à galeria.</div>';
+        '<div class="text-slate-600">Nenhum cliente cadastrado ainda. Clique em <b>Adicionar novo cliente</b> acima para cadastrar e-mail e senha (ou abra a aba <b>Clientes</b>).</div>';
       return;
     }
     const parts = [];
@@ -7345,8 +7345,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   clientSearch?.addEventListener('input', () => renderClients());
 
-  clientAddBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
+  function openAddClientModal() {
     _activeClientId = null;
     _activeClientEmail = null;
     if (cfName) cfName.value = '';
@@ -7355,6 +7354,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cfNote) cfNote.value = '';
     if (cfPass) cfPass.value = randomPass6();
     openClientModal({ title: 'Adicionar cliente' });
+  }
+
+  clientAddBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openAddClientModal();
+  });
+
+  document.getElementById('ks-details-client-add')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openAddClientModal();
+  });
+
+  document.getElementById('ks-details-goto-clients-tab')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    setActiveTab('clients');
   });
 
   // Menus: fechar ao clicar fora
@@ -7723,9 +7737,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro');
       if (dryRun) {
-        toast(`Encontrados ${data.orphans || 0} arquivo(s) órfão(s) no R2. Use "Limpar R2" para remover.`, { kind: 'ok', title: 'Verificação' });
+        toast(
+          `Órfãos no R2: ${data.orphans || 0} de ${data.total || 0} arquivo(s) (referenciados nos projetos ativos: ${data.referenced || 0}). Use «Limpar R2» para apagar só os órfãos.`,
+          { kind: 'ok', title: 'Verificação R2' }
+        );
       } else {
-        toast(`${data.deleted || 0} arquivo(s) removido(s) do R2.`, { kind: 'ok', title: 'Limpeza' });
+        toast(`${data.deleted || 0} arquivo(s) órfão(s) removido(s) do R2.`, { kind: 'ok', title: 'Limpeza R2' });
       }
     } catch (e) {
       showError(e?.message || 'Erro');
@@ -7737,7 +7754,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   btnCleanupDry?.addEventListener('click', () => doCleanupR2(true));
   btnCleanupR2?.addEventListener('click', async () => {
-    if (!confirm('Remover do R2 todos os arquivos que não estão referenciados em nenhum projeto? Esta ação não pode ser desfeita.')) return;
+    if (
+      !confirm(
+        'Remover do R2 APENAS os arquivos órfãos (de projetos já excluídos ou fotos que não existem mais no banco)?\n\nAs fotos dos seus projetos atuais NÃO serão apagadas.\n\nEsta ação não pode ser desfeita.'
+      )
+    ) {
+      return;
+    }
     await doCleanupR2(false);
   });
 

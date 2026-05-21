@@ -12447,7 +12447,10 @@ router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
       referenced: refSet.size,
       orphans: orphans.length,
       deleted: dryRun ? 0 : deleted,
-      dryRun
+      dryRun,
+      message: dryRun
+        ? `${orphans.length} arquivo(s) órfão(s) no R2 (não referenciados em galerias ativas).`
+        : `${deleted} arquivo(s) órfão(s) removido(s) do R2.`
     });
   } finally {
     try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) { }
