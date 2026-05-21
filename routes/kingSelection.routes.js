@@ -1598,6 +1598,22 @@ async function ksResolveClientSelectionLocked(pgClient, req, galleryId, galleryR
   return locked;
 }
 
+/** Público sem cupom: só download; marcação na galeria não bloqueia nem esconde fotos. */
+function ksGalleryIsPublicFreeDownload(accessMode, galleryRow, hasPromoEnabledCol) {
+  const am = ksNormAccessMode(accessMode || galleryRow?.access_mode || 'private');
+  if (am !== 'public') return false;
+  if (hasPromoEnabledCol && galleryRow && galleryRow.promo_enabled) return false;
+  return true;
+}
+
+async function ksResolveClientSelectionLockedForApi(pgClient, req, galleryId, galleryRow) {
+  const hasPromo = await hasColumn(pgClient, 'king_galleries', 'promo_enabled');
+  const hasAm = await hasColumn(pgClient, 'king_galleries', 'access_mode');
+  const am = hasAm ? ksNormAccessMode(galleryRow?.access_mode || 'private') : 'private';
+  if (ksGalleryIsPublicFreeDownload(am, galleryRow, hasPromo)) return false;
+  return ksResolveClientSelectionLocked(pgClient, req, galleryId, galleryRow);
+}
+
 /** Rodada comercial (pagamento/aprovação): prioriza a última rodada com fotos selecionadas. */
 async function ksGetSalesSelectionRound(pgClient, galleryId, cid) {
   const clientId = parseInt(cid, 10) || 0;
@@ -9246,7 +9262,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       }
     }
 
-    const locked = await ksResolveClientSelectionLocked(client, req, gallery.id, gallery);
+    let locked = await ksResolveClientSelectionLockedForApi(client, req, gallery.id, gallery);
+    const publicFreeDl = ksGalleryIsPublicFreeDownload(galleryAccessMode, gallery, hasPromoEnabled);
+    if (publicFreeDl) locked = false;
 
     /**
      * Visitante público: o JWT pode passar a incluir `clientId` da linha técnica de sessão (cupom/reconhecimento)
@@ -9452,7 +9470,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 
     // Mensagem para exibir quando a seleção já foi enviada (página com cadeado)
     let lockedMessage = null;
-    if (locked) {
+    if (locked && !publicFreeDl) {
       if (selectedCount > 0) {
         lockedMessage = `Obrigado! Você selecionou ${selectedCount} foto(s). Sua seleção está bloqueada. Se quiser selecionar mais, peça ao fotógrafo para liberar novamente (reativar ou abrir nova seleção).`;
       } else {
@@ -11137,13 +11155,17 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
   try {
     const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
-    const gCols = ['id', 'status'].concat(hasAm ? ['access_mode'] : []).concat(hasSelf ? ['allow_self_signup'] : []);
+    const hasPromoSel = await hasColumn(client, 'king_galleries', 'promo_enabled');
+    const gCols = ['id', 'status']
+      .concat(hasAm ? ['access_mode'] : [])
+      .concat(hasSelf ? ['allow_self_signup'] : [])
+      .concat(hasPromoSel ? ['promo_enabled'] : []);
     const gRes = await client.query(`SELECT ${gCols.join(', ')} FROM king_galleries WHERE id=$1`, [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     const { cid, sk } = req.ksCtx;
-    const locked = await ksResolveClientSelectionLocked(client, req, galleryId, gRes.rows[0]);
+    const locked = await ksResolveClientSelectionLockedForApi(client, req, galleryId, gRes.rows[0]);
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
     }
@@ -11302,13 +11324,17 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
   try {
     const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
-    const gCols = ['id', 'status'].concat(hasAm ? ['access_mode'] : []).concat(hasSelf ? ['allow_self_signup'] : []);
+    const hasPromoBulk = await hasColumn(client, 'king_galleries', 'promo_enabled');
+    const gCols = ['id', 'status']
+      .concat(hasAm ? ['access_mode'] : [])
+      .concat(hasSelf ? ['allow_self_signup'] : [])
+      .concat(hasPromoBulk ? ['promo_enabled'] : []);
     const gRes = await client.query(`SELECT ${gCols.join(', ')} FROM king_galleries WHERE id=$1`, [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     const { cid, sk } = req.ksCtx;
-    const locked = await ksResolveClientSelectionLocked(client, req, galleryId, gRes.rows[0]);
+    const locked = await ksResolveClientSelectionLockedForApi(client, req, galleryId, gRes.rows[0]);
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
     }

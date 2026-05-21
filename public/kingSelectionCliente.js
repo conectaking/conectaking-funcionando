@@ -1573,6 +1573,12 @@
     );
   }
 
+  /** No modo público gratuito, «bloqueado/revisão» não trava a galeria (só marcação opcional para lote). */
+  function selectionLockedForUi() {
+    if (isPublicFreeDownloadGallery()) return false;
+    return !!state.locked;
+  }
+
   /** Público gratuito (sem cupom/vendas): uma só galeria — tudo liberado para baixar, sem painel «Fotos para baixar». */
   function isPublicFreeDownloadGallery() {
     if (normKsAccessModeFromMeta() !== 'public') return false;
@@ -2141,7 +2147,7 @@
     const fp = $('ks-face-panel');
     if (!fp) return;
     const totalPhotos = Array.isArray(state.gallery?.photos) ? state.gallery.photos.length : 0;
-    const canSelectMore = !state.locked && totalPhotos > state.selected.size;
+    const canSelectMore = !selectionLockedForUi() && totalPhotos > state.selected.size;
     const show = !!state.faceRecognitionUsable && canSelectMore;
     fp.classList.toggle('ks-hidden', !show);
   }
@@ -2185,6 +2191,7 @@
     }
     state.deferredSignupActive = !!data.deferredSignupActive;
     state.locked = !!g.locked;
+    if (isPublicFreeDownloadGallery()) state.locked = false;
     state.selected = new Set(
       (data.selectedPhotoIds || [])
         .map((x) => normalizePhotoId(typeof x === 'object' && x && x.photo_id != null ? x.photo_id : x))
@@ -2252,7 +2259,7 @@
       notice.style.borderColor = '';
       notice.style.background = '';
       notice.style.color = '';
-      if (state.locked) {
+      if (selectionLockedForUi()) {
         notice.textContent = state.salesModeActive
           ? 'Sua seleção já foi enviada. Se quiser selecionar mais fotos, use o Suporte no WhatsApp e peça ao retratista para liberar nova seleção.'
           : (data.lockedMessage || 'Sua seleção já foi enviada e está bloqueada. Peça ao fotógrafo para reativar ou abrir uma nova seleção.');
@@ -2265,7 +2272,7 @@
       }
     }
 
-    $('ks-clear').disabled = !!state.locked;
+    $('ks-clear').disabled = selectionLockedForUi();
     renderFolders();
     renderSalesUi();
     renderPublicDownloadsPanel();
@@ -2375,12 +2382,12 @@
           adv.innerHTML = '<i class="fas fa-arrow-right"></i> Avançar';
           adv.title = 'Ir para comparar e ajustar';
         }
-        adv.disabled = state.locked || !canCompareRound;
+        adv.disabled = selectionLockedForUi() || !canCompareRound;
       }
     }
     if (cmp) {
       cmp.classList.toggle('ks-hidden', directReviewFlow || publicFree);
-      cmp.disabled = directReviewFlow ? true : (state.locked || !canCompareRound);
+      cmp.disabled = directReviewFlow ? true : (selectionLockedForUi() || !canCompareRound);
       if (directReviewFlow) {
         cmp.setAttribute('aria-hidden', 'true');
         cmp.tabIndex = -1;
@@ -2390,7 +2397,7 @@
       }
     }
     if (foot) {
-      if (state.locked) {
+      if (selectionLockedForUi()) {
         foot.innerHTML = '';
         foot.classList.add('ks-hidden');
       } else {
@@ -2406,7 +2413,7 @@
               : 'Revise as fotos acima. Use <strong>Avançar</strong> ou <strong>Comparar e ajustar</strong> para comparar; depois <strong>Revisar e enviar</strong> e <strong>Confirmar e enviar seleção</strong>.';
       }
     }
-    if (clr) clr.disabled = !!state.locked;
+    if (clr) clr.disabled = selectionLockedForUi();
   }
 
   function updateCompareAdvanceButton() {
@@ -2525,7 +2532,7 @@
   }
 
   async function selectAllInCurrentFolderScope() {
-    if (state.locked) return;
+    if (selectionLockedForUi()) return;
     const ids = getSelectableIdsForFolderBulk();
     if (!ids.length) {
       toast('Não há mais fotos para selecionar neste álbum (ou já atingiu o limite).', '');
@@ -3200,7 +3207,7 @@
   }
 
   async function onTogglePhoto(photoId) {
-    if (state.locked) return;
+    if (selectionLockedForUi()) return;
     if (state.selected.has(photoId) && isFrozenPhoto(photoId)) {
       toast('Esta foto já foi confirmada numa seleção anterior e não pode ser desmarcada.', 'err');
       return;
@@ -3258,8 +3265,11 @@
   }
 
   async function clearCurrentRound() {
-    if (state.locked) return;
-    if (!confirm('Limpar todas as fotos desta seleção atual? (Seleções anteriores permanecem.)')) return;
+    if (selectionLockedForUi()) return;
+    const msg = isPublicFreeDownloadGallery()
+      ? 'Limpar a marcação das fotos? A galeria continua igual — você pode baixar qualquer foto depois.'
+      : 'Limpar todas as fotos desta seleção atual? (Seleções anteriores permanecem.)';
+    if (!confirm(msg)) return;
     try {
       const res = await fetch(`${API}/api/king-selection/client/select-bulk`, {
         method: 'POST',
