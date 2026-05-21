@@ -3486,7 +3486,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-wifi'} item-icon-picker" title="Alterar Ícone"></i>`;
                         }
 
-                        const moduleTitle = (item.title && String(item.title).trim()) ? String(item.title).trim() : 'Wi‑Fi';
+                        const rawWifiTitle = (item.title && String(item.title).trim()) ? String(item.title).trim() : '';
+                        const moduleTitle = (rawWifiTitle && rawWifiTitle !== 'Item') ? rawWifiTitle : 'Wi‑Fi (QR Code)';
                         const destLabel = wifiSsid
                             ? `${wifiDisplay === 'banner' ? 'Banner' : 'Botão'} · Rede: ${wifiSsid}`
                             : 'Informe o nome da rede (SSID)';
@@ -3927,7 +3928,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="fas fa-trash"></i>
                         </button>`;
                 itemEl.innerHTML = `
-                <div class="module-name module-name-row">${item.title || getItemTypeName(item.item_type) || 'Novo Módulo'}</div>
+                <div class="module-name module-name-row">${moduleListDisplayTitle(item)}</div>
                 <div class="module-content-wrapper">
                     <div class="module-drag-controls">
                         <button class="module-move-btn move-up" title="Mover para cima" data-item-id="${item.id}" data-direction="up">
@@ -9916,6 +9917,14 @@ document.addEventListener('DOMContentLoaded', () => {
             'wifi': 'Wi‑Fi (QR Code)'
         };
         return names[itemType] || 'Item';
+    }
+
+    function moduleListDisplayTitle(item) {
+        const t = (item && item.title) ? String(item.title).trim() : '';
+        if (item && item.item_type === 'wifi' && (!t || t === 'Item')) {
+            return getItemTypeName('wifi');
+        }
+        return t || getItemTypeName(item && item.item_type) || 'Novo Módulo';
     }
 
     // FunÃ§Ã£o para abrir modal de ediÃ§Ã£o para novo item
