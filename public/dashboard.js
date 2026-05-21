@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando... v2025-01-30 - BOTÃO SALVAR MOBILE FIXO EM TODAS AS ABAS');
+    console.log('Dashboard iniciando... v2026-05-19-wifi-modules-fix-v3 (Wi‑Fi + lista de módulos)');
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
@@ -2890,25 +2890,75 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function normalizeProfileItemType(item) {
+        if (!item) return item;
+        let t = String(item.item_type || 'link').trim().toLowerCase();
+        if (t === 'wi-fi' || t === 'wi_fi' || t === 'wifi_qrcode') t = 'wifi';
+        item.item_type = t;
+        return item;
+    }
+
+    function appendMinimalModuleListItem(item) {
+        const container = SELECTORS.itemsContainer || document.getElementById('items-container');
+        if (!container || !item || item.id == null) return false;
+        const idStr = String(item.id);
+        if (container.querySelector('[data-id="' + idStr + '"]')) return false;
+        const itemEl = document.createElement('div');
+        itemEl.className = 'module-item module-item-fallback';
+        itemEl.dataset.id = idStr;
+        itemEl.dataset.itemType = item.item_type || 'link';
+        const isActive = item.is_active !== false;
+        const title = moduleListDisplayTitle(item);
+        itemEl.innerHTML = `
+                <div class="module-name module-name-row">${title}</div>
+                <div class="module-content-wrapper">
+                    <div class="module-drag-controls">
+                        <button class="module-move-btn move-up" title="Mover para cima" data-item-id="${idStr}" data-direction="up"><i class="fas fa-chevron-up"></i></button>
+                        <div class="module-drag-handle" title="Arrastar"><i class="fas fa-grip-vertical"></i></div>
+                        <button class="module-move-btn move-down" title="Mover para baixo" data-item-id="${idStr}" data-direction="down"><i class="fas fa-chevron-down"></i></button>
+                    </div>
+                    <div class="module-icon"><i class="${getDefaultIcon(item.item_type)}"></i></div>
+                    <div class="module-actions-inline">
+                        <label class="module-toggle" title="Desativar">
+                            <input type="checkbox" class="module-toggle-input" ${isActive ? 'checked' : ''} data-item-id="${idStr}">
+                            <span class="module-toggle-slider"></span>
+                        </label>
+                        <button class="module-action-btn edit edit-item-btn" title="Editar Módulo" data-item-id="${idStr}"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="module-action-btn duplicate duplicate-item-btn" title="Duplicar" data-item-id="${idStr}"><i class="fas fa-copy"></i></button>
+                        <button class="module-action-btn delete delete-item-btn" title="Excluir" data-item-id="${idStr}"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="item-content" style="display: none;"><p style="padding:0.75rem;color:#f39c12;font-size:0.85rem;">Carregado em modo simplificado. Use o lápis para editar.</p></div>`;
+        container.appendChild(itemEl);
+        console.log(`✅ Módulo ${idStr} (${item.item_type}) adicionado em modo simplificado`);
+        return true;
+    }
+
     function reconcileModulesListWithProfileData(profileData) {
         const container = SELECTORS.itemsContainer || document.getElementById('items-container');
         if (!container || !profileData?.items) return false;
-        const expected = getModuleListItemsFromProfile(profileData);
-        const rendered = container.querySelectorAll('.item, .module-item');
-        const allPresent = expected.length === rendered.length && expected.every(function (it) {
-            return container.querySelector('[data-id="' + it.id + '"]');
+        const expected = getModuleListItemsFromProfile(profileData).map(function (it) {
+            return normalizeProfileItemType(Object.assign({}, it));
         });
-        if (allPresent) return false;
         const missing = expected.filter(function (it) {
             return !container.querySelector('[data-id="' + it.id + '"]');
         });
-        if (missing.length) {
-            console.warn('⚠️ Módulos em falta na lista — re-render:', missing.map(function (m) {
+        if (!missing.length) return false;
+        console.warn('⚠️ Módulos em falta na lista:', missing.map(function (m) {
+            return (m.item_type || '?') + '#' + m.id;
+        }).join(', '));
+        missing.forEach(function (it) { appendMinimalModuleListItem(it); });
+        const stillMissing = expected.filter(function (it) {
+            return !container.querySelector('[data-id="' + it.id + '"]');
+        });
+        if (stillMissing.length) {
+            console.warn('⚠️ Re-render completo — ainda faltam:', stillMissing.map(function (m) {
                 return (m.item_type || '?') + '#' + m.id;
             }).join(', '));
             renderEditor(profileData);
         }
-        return missing.length > 0;
+        if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
+        return true;
     }
     window.reconcileModulesListWithProfileData = reconcileModulesListWithProfileData;
 
@@ -3057,7 +3107,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Verificar duplicações antes de renderizar
             // King Selection e Bíblia não aparecem como módulos (só no menu lateral); não listar na aba Módulos
             const seenIds = new Set();
-            const uniqueItems = (items || []).filter(item => {
+            const uniqueItems = (items || []).map(function (item) {
+                return normalizeProfileItemType(Object.assign({}, item));
+            }).filter(item => {
                 if (item.item_type === 'king_selection') return false;
                 if (item.item_type === 'bible') return false;
                 if (seenIds.has(item.id)) {
@@ -3132,6 +3184,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`🎨 Renderizando ${uniqueItems.length} itens...`);
             uniqueItems.forEach((item, itemIndex) => {
+                try {
                 // Se houver um item temporário com este ID, removê-lo primeiro
                 const tempItem = itemsContainer.querySelector(`[data-id="${item.id}"][data-is-temporary="true"]`);
                 if (tempItem) {
@@ -3358,6 +3411,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // ignore
                         }
                         break;
+                    case 'banner_carousel':
                     case 'carousel':
                         // ===== NOVO CARROSSEL - IMPLEMENTAÇÃO LIMPA =====
                         itemEl.classList.add('carousel-item');
@@ -3392,7 +3446,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         iconOrThumbHTML = `<i class="fas fa-images" style="font-size: 1.5rem; color: var(--dourado-principal, #FFC700);"></i>`;
-                        displayHTML = `<div class="item-display-title">${item.title || 'Carrossel'}</div><div class="item-display-dest">${carouselImages.length} imagem${carouselImages.length !== 1 ? 'ns' : ''}</div>`;
+                        const carouselListTitle = item.title || (item.item_type === 'banner_carousel' ? 'Carrossel de Banners' : 'Carrossel');
+                        displayHTML = `<div class="item-display-title">${carouselListTitle}</div><div class="item-display-dest">${carouselImages.length} imagem${carouselImages.length !== 1 ? 'ns' : ''}</div>`;
 
                         // HTML do editor - SIMPLES E LIMPO
                         editHTML = `
@@ -3684,6 +3739,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-briefcase'} item-icon-picker" title="Alterar Ãcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Meu Portfólio'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Portfólio</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do seu site ou portfÃ³lio">`;
+                        break;
+                    case 'product_catalog':
+                        itemEl.classList.add('link-item');
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-store'} item-icon-picker" title="Catálogo"></i>`;
+                        displayHTML = `<div class="item-display-title">${item.title || 'Catálogo de Produtos'}</div><div class="item-display-dest">Produtos no cartão</div>`;
+                        editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || 'Catálogo de Produtos'}" placeholder="Título do catálogo">`;
                         break;
                     case 'king_selection':
                         itemEl.classList.add('link-item');
@@ -4114,12 +4175,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error(`❌ Erro ao adicionar item ${item.id} ao container:`, appendError);
                     console.error('Stack trace:', appendError.stack);
                 }
+                } catch (itemRenderError) {
+                    console.error(`❌ Falha ao renderizar módulo ${item.id} (${item.item_type}):`, itemRenderError);
+                    appendMinimalModuleListItem(item);
+                }
             });
 
             // Verificar quantos itens foram realmente adicionados
             const finalContainer = SELECTORS.itemsContainer || document.getElementById('items-container');
             const itemsAdded = finalContainer?.querySelectorAll('.item, .module-item').length || 0;
             console.log(`✅ Renderização concluída: ${itemsAdded} de ${uniqueItems.length} itens adicionados ao container`);
+            if (itemsAdded < uniqueItems.length) {
+                const containerCheck = SELECTORS.itemsContainer || document.getElementById('items-container');
+                const notInDom = uniqueItems.filter(function (it) {
+                    return containerCheck && !containerCheck.querySelector('[data-id="' + it.id + '"]');
+                });
+                if (notInDom.length) {
+                    console.warn(`⚠️ Discrepância: esperado ${uniqueItems.length} na aba Módulos, ${itemsAdded} no DOM. Em falta:`, notInDom.map(function (m) {
+                        return (m.item_type || '?') + '#' + m.id;
+                    }).join(', '));
+                    notInDom.forEach(function (it) { appendMinimalModuleListItem(it); });
+                }
+            }
 
             if (itemsAdded === 0 && uniqueItems.length > 0) {
                 console.error('❌ ERRO CRÍTICO: Itens não foram adicionados ao container!');
@@ -10517,6 +10594,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     else if (itemType === 'digital_form') moduleName = 'formulário digital';
                                     else if (itemType === 'agenda') moduleName = 'agenda inteligente';
                                     else if (itemType === 'convite') moduleName = 'convite digital';
+                                    else if (itemType === 'wifi') moduleName = 'Wi‑Fi (QR Code)';
 
                                     let errorMsg = `Limite atingido: ${errorData.message || `Você atingiu o limite de links do tipo ${moduleName}`}\n\n`;
                                     errorMsg += `Links atuais: ${errorData.current || 0} de ${errorData.limit || 0}\n\n`;
@@ -10556,6 +10634,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         else if (itemType === 'digital_form') moduleName = 'formulário digital';
                         else if (itemType === 'agenda') moduleName = 'agenda inteligente';
                         else if (itemType === 'convite') moduleName = 'convite digital';
+                        else if (itemType === 'wifi') moduleName = 'Wi‑Fi (QR Code)';
 
                         // Não mostrar erro se já foi tratado acima (limite excedido)
                         if (error.message && !error.message.includes('Limite atingido')) {

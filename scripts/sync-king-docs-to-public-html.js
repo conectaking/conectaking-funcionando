@@ -39,6 +39,13 @@ if (fs.existsSync(dashboardFrom)) {
   console.log('[sync-king-docs] OK dashboard.html → public_html/');
 }
 
+const dashboardJsFrom = path.join(srcDir, 'dashboard.js');
+const dashboardJsTo = path.join(destDir, 'dashboard.js');
+if (fs.existsSync(dashboardJsFrom)) {
+  fs.copyFileSync(dashboardJsFrom, dashboardJsTo);
+  console.log('[sync-king-docs] OK dashboard.js → public_html/');
+}
+
 const landingExitFrom = path.join(srcDir, 'js', 'landing-exit.js');
 const destJsDir = path.join(destDir, 'js');
 if (fs.existsSync(landingExitFrom)) {
