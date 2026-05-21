@@ -946,9 +946,14 @@
     renderPromoClientBanner();
   }
 
-  /** Modo público + download com marca d'água: mesmo painel que vendas (selecionar / todas / ZIP), sem aprovações. */
+  /** Modo público + cupom: painel separado. Público gratuito usa só a galeria (syncPublicDownloadToolbar). */
   function renderPublicDownloadsPanel() {
     if (state.salesModeActive || normKsAccessModeFromMeta() !== 'public') return;
+    if (isPublicFreeDownloadGallery()) {
+      $('ks-downloads-panel')?.classList.add('ks-hidden');
+      $('ks-open-downloads')?.classList.add('ks-hidden');
+      return;
+    }
 
     const downloadsPanel = $('ks-downloads-panel');
     const downloadsMsg = $('ks-downloads-msg');
@@ -1095,11 +1100,19 @@
       el.innerHTML = '';
       return;
     }
+    if (isPublicFreeDownloadGallery()) {
+      el.classList.remove('ks-hidden');
+      el.innerHTML = `
+      <div style="border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.1);color:#dcfce7;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:10px">
+        <strong>Todas as fotos liberadas</strong> (com marca d’água). Use a <strong>seta</strong> em cada foto ou os botões <strong>Baixar selecionadas</strong> / <strong>Baixar todas</strong> / <strong>ZIP</strong> no topo.
+      </div>`;
+      return;
+    }
     if (mustRegisterBeforeGallery() && publicJwtHasRegisteredClient() && state.allowDownload) {
       el.classList.remove('ks-hidden');
       el.innerHTML = `
       <div style="border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.1);color:#dcfce7;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:10px">
-        <strong>Download liberado.</strong> Marque as fotos, use a <strong>seta de download</strong> em cada uma, ou abra <strong>Fotos para baixar</strong> para selecionar várias / todas / ZIP.
+        <strong>Download liberado.</strong> Marque as fotos e use a <strong>seta de download</strong> em cada uma.
       </div>`;
       return;
     }
@@ -1185,6 +1198,10 @@
   }
 
   function getApprovedDownloadsForClient() {
+    if (isPublicFreeDownloadGallery()) {
+      const list = getPublicGalleryPhotoList();
+      if (list.length) return list;
+    }
     const modeKs = normKsAccessModeFromMeta();
     if (
       modeKs === 'public' &&
@@ -1218,6 +1235,7 @@
 
   /** Seleção já enviada + modo público + há fotos no painel «Fotos para baixar»: esconder grelha duplicada. */
   function publicLockedDownloadPhaseActive() {
+    if (isPublicFreeDownloadGallery()) return false;
     if (state.salesModeActive) return false;
     if (normKsAccessModeFromMeta() !== 'public') return false;
     if (!state.locked) return false;
@@ -1553,6 +1571,40 @@
       !state.allowDownload &&
       !publicJwtHasRegisteredClient()
     );
+  }
+
+  /** Público gratuito (sem cupom/vendas): uma só galeria — tudo liberado para baixar, sem painel «Fotos para baixar». */
+  function isPublicFreeDownloadGallery() {
+    if (normKsAccessModeFromMeta() !== 'public') return false;
+    if (state.salesModeActive) return false;
+    if (!state.photographerAllowsDownload || !state.allowDownload) return false;
+    if (!publicJwtHasRegisteredClient()) return false;
+    if (state.promo?.active) return false;
+    return true;
+  }
+
+  function getPublicGalleryPhotoList() {
+    const byId = new Map((state.gallery?.photos || []).map((p) => [parseInt(p.id, 10), p]));
+    let ids = (state.approvedPhotoIds || [])
+      .map((raw) => parseInt(raw, 10))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (!ids.length) {
+      ids = [...byId.keys()];
+    }
+    return ids
+      .filter((n) => byId.has(n))
+      .map((pid) => {
+        const p = byId.get(pid);
+        return {
+          id: pid,
+          name: String(p?.original_name || `foto-${pid}`).trim() || `foto-${pid}`
+        };
+      });
+  }
+
+  function getPublicMarkedPhotoIdsForDownload() {
+    const allowed = new Set(getPublicGalleryPhotoList().map((p) => p.id));
+    return [...state.selected].filter((id) => allowed.has(id));
   }
 
   function openPublicRegisterModal() {
@@ -2053,9 +2105,14 @@
       topExtra += ` · <span class="ks-summary-muted">seleção atual: nível ${nivel}</span>`;
     }
 
-    const pill = `<span class="ks-header-sel-pill" title="Fotos selecionadas nesta rodada"><span class="ks-header-sel-pill__label">Selecionadas</span><span class="ks-header-sel-pill__num">${estaRodada}</span></span>`;
+    const pill = isPublicFreeDownloadGallery()
+      ? `<span class="ks-header-sel-pill" title="Fotos marcadas para baixar em lote (opcional)"><span class="ks-header-sel-pill__label">Marcadas</span><span class="ks-header-sel-pill__num">${estaRodada}</span></span>`
+      : `<span class="ks-header-sel-pill" title="Fotos selecionadas nesta rodada"><span class="ks-header-sel-pill__label">Selecionadas</span><span class="ks-header-sel-pill__num">${estaRodada}</span></span>`;
 
     let statsRight = '';
+    if (isPublicFreeDownloadGallery()) {
+      statsRight += `<span class="ks-summary-livre" style="color:#86efac">download liberado</span>`;
+    }
     if (state.salesModeActive) {
       const packs = Array.isArray(state.salesPackages) ? state.salesPackages : [];
       const mode = String(state.salesConfig?.sales_price_mode || 'best_price_auto').toLowerCase();
@@ -2271,6 +2328,26 @@
     };
   }
 
+  function syncPublicDownloadToolbar() {
+    const pub = isPublicFreeDownloadGallery();
+    $('ks-open-downloads')?.classList.toggle('ks-hidden', pub || !state.allowDownload);
+    $('ks-advance')?.classList.toggle('ks-hidden', pub);
+    $('ks-compare')?.classList.toggle('ks-hidden', pub || normKsAccessModeFromMeta() === 'public');
+    $('ks-pub-dl-selected')?.classList.toggle('ks-hidden', !pub);
+    $('ks-pub-dl-all')?.classList.toggle('ks-hidden', !pub);
+    $('ks-pub-dl-zip')?.classList.toggle('ks-hidden', !pub);
+    if (pub) {
+      $('ks-downloads-panel')?.classList.add('ks-hidden');
+      state.publicDownloadsPanelOpen = false;
+    }
+    const selBtn = $('ks-pub-dl-selected');
+    if (selBtn) {
+      const n = getPublicMarkedPhotoIdsForDownload().length;
+      selBtn.disabled = n === 0;
+      selBtn.title = n ? `Baixar ${n} foto(s) marcada(s)` : 'Marque fotos na galeria (opcional) ou use Baixar todas';
+    }
+  }
+
   function updateGalleryToolbarButtons() {
     const adv = $('ks-advance');
     const cmp = $('ks-compare');
@@ -2280,22 +2357,29 @@
     const nc = countSelectedThisRound();
     const canCompareRound = n > 0 && nc > 0;
     const simpleSalesFlow = !!state.salesModeActive;
+    const publicFree = isPublicFreeDownloadGallery();
     const publicNoCompare = normKsAccessModeFromMeta() === 'public';
-    const directReviewFlow = simpleSalesFlow || publicNoCompare;
+    const directReviewFlow = simpleSalesFlow || (publicNoCompare && !publicFree);
+    syncPublicDownloadToolbar();
     if (adv) {
-      if (directReviewFlow) {
-        adv.innerHTML = simpleSalesFlow
-          ? '<i class="fas fa-paper-plane"></i> Confirmar'
-          : '<i class="fas fa-paper-plane"></i> Confirmar seleção';
-        adv.title = simpleSalesFlow ? 'Ir direto para confirmação e envio' : 'Rever a seleção e seguir para baixar (se liberado)';
+      if (publicFree) {
+        adv.classList.add('ks-hidden');
       } else {
-        adv.innerHTML = '<i class="fas fa-arrow-right"></i> Avançar';
-        adv.title = 'Ir para comparar e ajustar';
+        adv.classList.remove('ks-hidden');
+        if (directReviewFlow) {
+          adv.innerHTML = simpleSalesFlow
+            ? '<i class="fas fa-paper-plane"></i> Confirmar'
+            : '<i class="fas fa-paper-plane"></i> Confirmar seleção';
+          adv.title = simpleSalesFlow ? 'Ir direto para confirmação e envio' : 'Rever a seleção e seguir para baixar (se liberado)';
+        } else {
+          adv.innerHTML = '<i class="fas fa-arrow-right"></i> Avançar';
+          adv.title = 'Ir para comparar e ajustar';
+        }
+        adv.disabled = state.locked || !canCompareRound;
       }
-      adv.disabled = state.locked || !canCompareRound;
     }
     if (cmp) {
-      cmp.classList.toggle('ks-hidden', directReviewFlow);
+      cmp.classList.toggle('ks-hidden', directReviewFlow || publicFree);
       cmp.disabled = directReviewFlow ? true : (state.locked || !canCompareRound);
       if (directReviewFlow) {
         cmp.setAttribute('aria-hidden', 'true');
@@ -2311,13 +2395,15 @@
         foot.classList.add('ks-hidden');
       } else {
         foot.classList.remove('ks-hidden');
-        foot.innerHTML = simpleSalesFlow
-          ? 'Revise as fotos acima e clique em <strong>Confirmar</strong> para seguir direto ao cadastro e envio da seleção.'
-          : publicNoCompare
-            ? (state.allowDownload
-              ? 'Marque as fotos. Baixe com a <strong>seta</strong> em cada foto, ou use <strong>Selecionar todas</strong> + <strong>Fotos para baixar</strong>. <strong>Confirmar seleção</strong> é opcional (avisa o fotógrafo).'
-              : 'Revise as fotos acima. Se o download estiver liberado, use <strong>Fotos para baixar</strong> após marcar as fotos desejadas.')
-            : 'Revise as fotos acima. Use <strong>Avançar</strong> ou <strong>Comparar e ajustar</strong> para comparar; depois <strong>Revisar e enviar</strong> e <strong>Confirmar e enviar seleção</strong>.';
+        foot.innerHTML = publicFree
+          ? 'Todas as fotos estão liberadas. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>. Marcar fotos é opcional (só para <strong>Baixar selecionadas</strong>).'
+          : simpleSalesFlow
+            ? 'Revise as fotos acima e clique em <strong>Confirmar</strong> para seguir direto ao cadastro e envio da seleção.'
+            : publicNoCompare
+              ? (state.allowDownload
+                ? 'Marque as fotos e baixe com a <strong>seta</strong> em cada foto.'
+                : 'Revise as fotos acima.')
+              : 'Revise as fotos acima. Use <strong>Avançar</strong> ou <strong>Comparar e ajustar</strong> para comparar; depois <strong>Revisar e enviar</strong> e <strong>Confirmar e enviar seleção</strong>.';
       }
     }
     if (clr) clr.disabled = !!state.locked;
@@ -2411,6 +2497,7 @@
       renderGrid();
       renderSalesUi();
       updateHeaderCounts();
+      syncPublicDownloadToolbar();
       refreshSecondarySteps();
     }
   }
@@ -2555,6 +2642,7 @@
     empty.classList.add('ks-hidden');
 
     const anyFrozenInGallery = [...state.selected].some((id) => isFrozenPhoto(id));
+    const publicFree = isPublicFreeDownloadGallery();
     grid.innerHTML = list.map(p => {
       const sel = state.selected.has(p.id);
       const fr = sel && isFrozenPhoto(p.id);
@@ -2565,12 +2653,16 @@
       if (fr) bubbleClass.push('ks-check-btn--frozen');
       const bubbleLabel = fr
         ? 'Bloqueada (seleção anterior)'
-        : sel ? 'Desmarcar' : 'Selecionar';
+        : sel
+          ? (publicFree ? 'Desmarcar' : 'Desmarcar')
+          : publicFree
+            ? 'Marcar (opcional)'
+            : 'Selecionar';
       const barAction = fr
         ? '<span class="ks-ph-act ks-ph-act--lock"><i class="fas fa-lock"></i> Bloqueada</span>'
         : sel
-          ? `<button type="button" class="ks-ph-act ks-ph-act--remove" data-strip="${p.id}"><i class="fas fa-times"></i> Remover</button>`
-          : `<button type="button" class="ks-ph-act ks-ph-act--add" data-strip="${p.id}"><i class="fas fa-check"></i> Selecionar</button>`;
+          ? `<button type="button" class="ks-ph-act ks-ph-act--remove" data-strip="${p.id}"><i class="fas fa-times"></i> ${publicFree ? 'Desmarcar' : 'Remover'}</button>`
+          : `<button type="button" class="ks-ph-act ks-ph-act--add" data-strip="${p.id}"><i class="fas fa-check"></i> ${publicFree ? 'Marcar' : 'Selecionar'}</button>`;
       const dl =
         state.photographerAllowsDownload && jwt
           ? state.allowDownload
@@ -3126,6 +3218,7 @@
     renderGrid();
     renderSalesUi();
     updateHeaderCounts();
+    syncPublicDownloadToolbar();
     refreshSecondarySteps();
     syncSingleViewerSelectUI();
 
@@ -4552,6 +4645,7 @@
   });
 
   $('ks-open-downloads')?.addEventListener('click', () => {
+    if (isPublicFreeDownloadGallery()) return;
     if (publicMustRegisterToDownload()) {
       pendingPublicDownloadAction = { type: 'openPanel' };
       openPublicRegisterModal();
@@ -4569,6 +4663,48 @@
         $('ks-downloads-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (_) {}
     });
+  });
+
+  $('ks-pub-dl-selected')?.addEventListener('click', async () => {
+    try {
+      const picks = getPublicMarkedPhotoIdsForDownload();
+      if (!picks.length) throw new Error('Marque pelo menos 1 foto ou use «Baixar todas».');
+      await downloadPhotosSequentially(picks, {
+        onProgress: (n, total) => setDownloadsProgress(n, total, true, 'selected')
+      });
+      toast(`Download iniciado (${picks.length} foto(s)).`, 'ok');
+    } catch (e) {
+      toast(e?.message || 'Erro ao baixar', 'err');
+    } finally {
+      setDownloadsProgress(0, 1, false);
+    }
+  });
+  $('ks-pub-dl-all')?.addEventListener('click', async () => {
+    try {
+      const all = getPublicGalleryPhotoList().map((p) => p.id);
+      if (!all.length) throw new Error('Não há fotos na galeria.');
+      await downloadPhotosSequentially(all, {
+        onProgress: (n, total) => setDownloadsProgress(n, total, true, 'all')
+      });
+      toast(`Download de todas iniciado (${all.length} foto(s)).`, 'ok');
+    } catch (e) {
+      toast(e?.message || 'Erro ao baixar todas', 'err');
+    } finally {
+      setDownloadsProgress(0, 1, false);
+    }
+  });
+  $('ks-pub-dl-zip')?.addEventListener('click', async () => {
+    try {
+      const all = getPublicGalleryPhotoList().map((p) => p.id);
+      if (!all.length) throw new Error('Não há fotos na galeria.');
+      setDownloadsProgress(0, 1, true, 'zip');
+      await downloadApprovedZip(all);
+      toast(`ZIP gerado com ${all.length} foto(s).`, 'ok');
+    } catch (e) {
+      toast(e?.message || 'Erro ao gerar ZIP', 'err');
+    } finally {
+      setDownloadsProgress(0, 1, false);
+    }
   });
   $('ks-downloads-select-all')?.addEventListener('change', () => {
     const approved = getApprovedDownloadsForClient();

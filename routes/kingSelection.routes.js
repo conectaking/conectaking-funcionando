@@ -895,7 +895,14 @@ async function ksResolvePublicVisitorDownloadRights(pgClient, galleryId, payload
      */
     allowedList = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
   } else if (cidJwt) {
-    allowedList = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
+    /** Público gratuito (sem cupom): todas as fotos da galeria liberadas para download com marca d'água. */
+    const pAll = await pgClient.query(
+      'SELECT id FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC NULLS LAST, id ASC',
+      [galleryId]
+    );
+    allowedList = (pAll.rows || [])
+      .map((r) => parseInt(r.id, 10))
+      .filter((n) => Number.isFinite(n) && n > 0);
   }
 
   out.allowedPhotoIdSet = new Set(allowedList);
@@ -9491,7 +9498,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           approvedPhotoIdsOut = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
         }
       } else if (cid) {
-        approvedPhotoIdsOut = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, []);
+        /** Público gratuito: todas as fotos liberadas (marca d'água); seleção na galeria é opcional. */
+        approvedPhotoIdsOut = orderedGalleryPhotoIds.slice();
       } else {
         approvedPhotoIdsOut = [];
       }
