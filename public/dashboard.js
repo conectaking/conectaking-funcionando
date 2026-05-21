@@ -916,6 +916,96 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openPixQRModal = openPixQRModal;
     window.generatePixEMVCode = generatePixEMVCode;
 
+    function normalizeWifiInstagramUrl(raw) {
+        const v = String(raw || '').trim();
+        if (!v) return '';
+        if (/^https?:\/\//i.test(v)) {
+            try {
+                const u = new URL(v);
+                if (!/instagram\.com$/i.test(u.hostname.replace(/^www\./, '')) && !u.hostname.includes('instagram.com')) {
+                    return v;
+                }
+                const parts = u.pathname.split('/').filter(Boolean);
+                const handle = parts[0] || '';
+                return handle ? `https://www.instagram.com/${encodeURIComponent(handle)}/` : '';
+            } catch (e) {
+                return v;
+            }
+        }
+        const handle = v.replace(/^@/, '').replace(/^instagram\.com\//i, '').split(/[/?#]/)[0].trim();
+        return handle ? `https://www.instagram.com/${encodeURIComponent(handle)}/` : '';
+    }
+
+    function normalizeWifiWhatsAppUrl(raw) {
+        const v = String(raw || '').trim();
+        if (!v) return '';
+        if (/^https?:\/\//i.test(v)) {
+            if (v.includes('wa.me') || v.includes('api.whatsapp.com')) return v;
+            return v;
+        }
+        const digits = v.replace(/\D/g, '');
+        return digits ? `https://wa.me/${digits}` : '';
+    }
+
+    function wifiInstagramEditorValue(storedUrl) {
+        const u = String(storedUrl || '').trim();
+        if (!u) return '';
+        const m = u.match(/instagram\.com\/([^/?#]+)/i);
+        return m ? `@${m[1]}` : u;
+    }
+
+    function wifiWhatsAppEditorValue(storedUrl) {
+        const u = String(storedUrl || '').trim();
+        if (!u) return '';
+        const m = u.match(/wa\.me\/(\d+)/i);
+        return m ? `https://wa.me/${m[1]}` : u;
+    }
+
+    function readWifiSocialFromItemEl(itemEl) {
+        const modal = SELECTORS.editItemModal?.classList?.contains('active')
+            ? SELECTORS.editItemModal
+            : document.querySelector(`#edit-item-modal.active, #edit-item-modal[data-editing-id="${itemEl?.dataset?.id}"]`);
+        const igRaw = modal?.querySelector('#edit-wifi-instagram')?.value
+            ?? itemEl?.querySelector('.wifi-instagram-input')?.value
+            ?? '';
+        const waRaw = modal?.querySelector('#edit-wifi-whatsapp')?.value
+            ?? itemEl?.querySelector('.wifi-whatsapp-input')?.value
+            ?? '';
+        return {
+            instagram_url: normalizeWifiInstagramUrl(igRaw),
+            whatsapp_url: normalizeWifiWhatsAppUrl(waRaw)
+        };
+    }
+
+    function wifiBannerLinksFieldsHtml(instagramVal, whatsappVal, useModalIds) {
+        const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        const igIdAttr = useModalIds ? ' id="edit-wifi-instagram"' : '';
+        const waIdAttr = useModalIds ? ' id="edit-wifi-whatsapp"' : '';
+        return `
+                <div class="wifi-banner-extras" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
+                    <label style="font-weight: 600;">Atalhos abaixo do banner (opcional)</label>
+                    <p class="wifi-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Visitante toca e abre direto no Instagram ou WhatsApp. Cole o link ou só o @ / número.</p>
+                    <div class="wifi-field-row" style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 6px;"><i class="fab fa-instagram" style="margin-right: 6px;"></i>Instagram</label>
+                        <input type="text" class="wifi-instagram-input"${igIdAttr} value="${esc(instagramVal)}" placeholder="@adrianokingg ou https://www.instagram.com/adrianokingg/" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
+                        <div class="wifi-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                            <button type="button" class="wifi-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
+                            <button type="button" class="wifi-example-fill-btn" data-value="https://www.instagram.com/adrianokingg/" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
+                            <button type="button" class="wifi-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
+                        </div>
+                    </div>
+                    <div class="wifi-field-row">
+                        <label style="display: block; margin-bottom: 6px;"><i class="fab fa-whatsapp" style="margin-right: 6px;"></i>WhatsApp</label>
+                        <input type="text" class="wifi-whatsapp-input"${waIdAttr} value="${esc(whatsappVal)}" placeholder="https://wa.me/5511988789417 ou 5511988789417" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
+                        <div class="wifi-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                            <button type="button" class="wifi-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
+                            <button type="button" class="wifi-example-fill-btn" data-value="https://wa.me/5511988789417" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
+                            <button type="button" class="wifi-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
+                        </div>
+                    </div>
+                </div>`;
+    }
+
     function wifiBannerUploadBlockHtml(itemId, bannerUrl) {
         const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
         const url = (bannerUrl || '').trim();
@@ -2791,6 +2881,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     preservedStates[itemId].wifi_banner_url = itemEl.querySelector('.wifi-banner-url-input')?.value || '';
                     preservedStates[itemId].wifi_logo_url = itemEl.querySelector('.wifi-logo-url-input')?.value || '';
                     preservedStates[itemId].wifi_logo_size = itemEl.querySelector('.wifi-logo-size-input')?.value || '';
+                    preservedStates[itemId].wifi_instagram = itemEl.querySelector('.wifi-instagram-input')?.value || '';
+                    preservedStates[itemId].wifi_whatsapp = itemEl.querySelector('.wifi-whatsapp-input')?.value || '';
                     preservedStates[itemId].icon_class = itemEl.querySelector('.item-icon-picker')?.className.replace(' item-icon-picker', '').trim() || '';
                     break;
             }
@@ -2957,6 +3049,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         itemEl.querySelector('.wifi-logo-url-input').value = state.wifi_logo_url;
                     if (itemEl.querySelector('.wifi-logo-size-input') && state.wifi_logo_size !== undefined)
                         itemEl.querySelector('.wifi-logo-size-input').value = state.wifi_logo_size;
+                    if (itemEl.querySelector('.wifi-instagram-input') && state.wifi_instagram !== undefined)
+                        itemEl.querySelector('.wifi-instagram-input').value = state.wifi_instagram;
+                    if (itemEl.querySelector('.wifi-whatsapp-input') && state.wifi_whatsapp !== undefined)
+                        itemEl.querySelector('.wifi-whatsapp-input').value = state.wifi_whatsapp;
                     if (itemEl.querySelector('.item-icon-picker') && state.icon_class) {
                         const ic = itemEl.querySelector('.item-icon-picker');
                         ic.className = `${state.icon_class} item-icon-picker`;
@@ -3642,6 +3738,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const wifiBannerUrl = (wifiCfg.banner_image_url || '').trim();
                         const wifiLogoUrl = (wifiCfg.logo_url || '').trim();
                         const wifiLogoSize = Math.min(600, Math.max(20, parseInt(wifiCfg.logo_size || item.logo_size || 48, 10) || 48));
+                        const wifiIgVal = wifiInstagramEditorValue(wifiCfg.instagram_url);
+                        const wifiWaVal = wifiWhatsAppEditorValue(wifiCfg.whatsapp_url);
 
                         if (wifiDisplay === 'banner' && wifiBannerUrl && !wifiBannerUrl.includes('placeholder')) {
                             iconOrThumbHTML = `<img src="${wifiBannerUrl}" class="banner-preview-thumb" alt="Wi‑Fi" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fas fa-wifi" style="display: none;"></i>`;
@@ -3728,6 +3826,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="upload-loader"></div>
                 </div>
                 <input type="hidden" class="wifi-banner-url-input" value="${wifiBannerUrl.replace(/"/g, '&quot;')}">
+                ${wifiBannerLinksFieldsHtml(wifiIgVal, wifiWaVal, false)}
             </div>
         `;
                         break;
@@ -5834,6 +5933,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const logoModal = modal.querySelector('#edit-wifi-logo-url')?.value;
             const logoSizeModal = modal.querySelector('#edit-wifi-logo-size')?.value;
             const fmtModal = modal.querySelector('.wifi-display-format-input:checked')?.value || 'button';
+            const igModal = modal.querySelector('#edit-wifi-instagram')?.value;
+            const waModal = modal.querySelector('#edit-wifi-whatsapp')?.value;
 
             const titleInput = itemEl.querySelector('.item-title-input');
             const displayTitle = itemEl.querySelector('.item-display-title');
@@ -6639,7 +6740,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             let logo_size = parseInt(itemEl.querySelector('.wifi-logo-size-input')?.value, 10);
                             if (isNaN(logo_size) || logo_size < 20) logo_size = parseInt(itemEl.dataset.logoSize, 10) || 48;
                             logo_size = Math.min(600, Math.max(20, logo_size));
-                            destinationUrl = JSON.stringify({ ssid, password, security, hidden, display_format: fmt, banner_image_url, logo_url, logo_size });
+                            const social = readWifiSocialFromItemEl(itemEl);
+                            destinationUrl = JSON.stringify({
+                                ssid, password, security, hidden, display_format: fmt,
+                                banner_image_url, logo_url, logo_size,
+                                instagram_url: social.instagram_url,
+                                whatsapp_url: social.whatsapp_url
+                            });
                         }
 
                         const tempItemData = {
@@ -7286,6 +7393,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                             if (isNaN(logoSizeVal) || logoSizeVal < 20) logoSizeVal = 48;
                             logoSizeVal = Math.min(600, Math.max(20, logoSizeVal));
+                            const socialSave = readWifiSocialFromItemEl(itemEl);
                             const wifiPayload = {
                                 ssid,
                                 password,
@@ -7294,7 +7402,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 display_format: fmt,
                                 banner_image_url: bannerUrl,
                                 logo_url: logoUrl,
-                                logo_size: logoSizeVal
+                                logo_size: logoSizeVal,
+                                instagram_url: socialSave.instagram_url,
+                                whatsapp_url: socialSave.whatsapp_url
                             };
                             itemData.destination_url = JSON.stringify(wifiPayload);
                             itemData.pix_key = null;
