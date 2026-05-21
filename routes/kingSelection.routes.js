@@ -7993,6 +7993,9 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         total_photos: totalPhotos,
         cover_photo_id: coverPhotoId,
         deferred_signup_flow: deferredSignupFlow,
+        /** Cliente: exige cadastro na entrada (não visitante anónimo antes de baixar). */
+        register_before_gallery:
+          accessMode === 'public' || deferredSignupFlow || (accessMode === 'signup' && allowSelfSignup),
         client_folder_layout: clientFolderLayoutNorm,
         client_entry_splash_enabled: hasEntrySplash ? !!g.client_entry_splash_enabled : false,
         entry_splash_url: entrySplashUrl || null,
@@ -8100,6 +8103,9 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     // Modo público: download (com marca d'água) não depende mais do toggle allow_download
     const allowDownload = true;
     const isDownload = String(req.query.download || '') === '1';
+    if (isDownload) {
+      return res.status(403).send('Cadastre-se na galeria para baixar fotos. Use o link com login do cliente.');
+    }
 
     const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
@@ -8127,10 +8133,6 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
-    if (isDownload && allowDownload) {
-      const fn = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
-      res.set('Content-Disposition', `attachment; filename="${fn.endsWith('.jpg') || fn.endsWith('.jpeg') ? fn : fn + '.jpg'}"`);
-    }
     res.send(out);
   } finally {
     client.release();

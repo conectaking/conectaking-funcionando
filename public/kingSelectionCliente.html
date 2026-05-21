@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>King Selection — Galeria</title>
+  <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png" />
+  <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    :root {
+      --bg: #000000;
+      --card: #1a1a1a;
+      --border: #333;
+      --text: #f5f5f5;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --accent-dim: rgba(34, 197, 94, 0.25);
+      --danger: #dc2626;
+      --warn: #eab308;
+      --gold: #ca8a04;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    /* Espaço por baixo para o FAB WhatsApp não tapar o «Resumo da seleção» / último bloco */
+    #ks-app:not(.ks-hidden) {
+      padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 80px));
+    }
+    @media (max-width: 560px) {
+      #ks-app:not(.ks-hidden) {
+        padding-bottom: max(132px, calc(env(safe-area-inset-bottom, 0px) + 108px));
+      }
+    }
+    body.ks-modal-ab-open { overflow: hidden; }
+    /* Lightbox da foto: sem scroll da página; esconde FAB WhatsApp para não sobrepor «Selecionar» */
+    body.ks-viewer-open {
+      overflow: hidden !important;
+      touch-action: none;
+      /* iOS/Android: impede scroll da página por baixo (X e botões “saem” do sítio) */
+      position: fixed;
+      width: 100%;
+      left: 0;
+      right: 0;
+    }
+    body.ks-viewer-open .ks-support-whats {
+      visibility: hidden !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
+    }
+    .ks-wrap { max-width: 1400px; margin: 0 auto; padding: 16px; }
+    /* Só o resumo (fotos / selecionadas / total / limite) fica fixo ao rolar — o resto rola com a página */
+    .ks-summary-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: linear-gradient(180deg, rgba(0,0,0,.98) 0%, rgba(0,0,0,.94) 100%);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      /* safe-area no topo: evita “sumir” atrás do entalhe / barra ao rolar */
+      padding: max(8px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+      margin: 0 -16px 0;
+    }
+    .ks-summary-sticky-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .ks-meta.ks-meta--summary {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      column-gap: 8px;
+      row-gap: 6px;
+    }
+    /* Mobile: linha 1 = fotos na galeria; linha 2 = Selecionadas (esq.) + Total / (livre) (dir.) */
+    .ks-summary-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+    }
+    .ks-summary-line--top {
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .ks-summary-muted { opacity: 0.88; }
+    .ks-summary-line--bottom {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+    }
+    .ks-summary-stats-right {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .ks-summary-livre {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    @media (max-width: 560px) {
+      /* Evita “vazar” largura por causa de margin negativa + cortar o <select> */
+      .ks-summary-sticky,
+      .ks-gallery-scroll {
+        margin-left: 0;
+        margin-right: 0;
+      }
+      /* Mais recuo nas laterais: texto e badges não “encostam” nem cortam nas bordas */
+      .ks-summary-sticky {
+        padding-left: max(24px, calc(env(safe-area-inset-left, 0px) + 14px));
+        padding-right: max(24px, calc(env(safe-area-inset-right, 0px) + 14px));
+      }
+      .ks-gallery-scroll {
+        padding-left: max(24px, calc(env(safe-area-inset-left, 0px) + 14px));
+        padding-right: max(24px, calc(env(safe-area-inset-right, 0px) + 14px));
+        overflow-x: hidden;
+      }
+      /* Resumo: tudo mais agrupado ao centro */
+      .ks-summary-sticky-inner {
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .ks-summary-stack {
+        align-items: center;
+      }
+      .ks-summary-line--top {
+        text-align: center;
+        width: 100%;
+      }
+      .ks-summary-line--bottom {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .ks-summary-stats-right {
+        justify-content: center;
+        flex: 0 0 auto !important;
+      }
+      .ks-summary-line--bottom .ks-header-sel-pill {
+        flex: 0 0 auto;
+      }
+      /* Marca + ordenar: centralizados; select ocupa 100% sem cortar */
+      .ks-gallery-scroll .ks-top-inner {
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .ks-gallery-scroll .ks-top-row-primary {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .ks-gallery-scroll .ks-brand {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100%;
+        text-align: center;
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .ks-gallery-scroll .ks-top-sort-meta {
+        width: 100%;
+        max-width: 100%;
+        flex: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .ks-gallery-scroll .ks-top-sort-meta label {
+        text-align: center;
+        width: 100%;
+      }
+      .ks-gallery-scroll .ks-top-sort-meta .ks-select {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        text-align: center;
+        text-align-last: center;
+      }
+      /* Botões da galeria: grelha 2×n centrada (par em par: Limpar/Confirmar, Fotos baixar/Sair, etc.) */
+      .ks-gallery-scroll .ks-top-row-actions {
+        justify-content: center;
+        width: 100%;
+      }
+      .ks-gallery-scroll .ks-toolbar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        width: 100%;
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
+        justify-content: center;
+        justify-items: stretch;
+      }
+      .ks-gallery-scroll .ks-toolbar .ks-btn {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+      /* Busca: campo e botão não cortam à direita */
+      .ks-gallery-scroll .ks-top-inner.ks-search-block {
+        max-width: min(28rem, 100%);
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .ks-gallery-scroll .ks-search-block .ks-search-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .ks-gallery-scroll .ks-search-block .ks-search-wrap {
+        max-width: 100%;
+        width: 100%;
+        flex: none;
+      }
+      .ks-gallery-scroll #ks-search-clear {
+        align-self: center;
+        width: auto;
+        max-width: 100%;
+      }
+      /* Título e dica da busca centrados (evita “cortar” à esquerda) */
+      .ks-gallery-scroll #ks-search-block > div {
+        flex: none !important;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .ks-gallery-scroll .ks-search-block label {
+        text-align: center;
+        width: 100%;
+        padding-left: 4px;
+        padding-right: 4px;
+        box-sizing: border-box;
+      }
+      .ks-gallery-scroll #ks-search-block .ks-muted {
+        text-align: center;
+        width: 100%;
+        padding-left: 8px;
+        padding-right: 8px;
+        box-sizing: border-box;
+      }
+    }
+    @media (max-width: 520px) {
+      .ks-summary-line--bottom .ks-header-sel-pill {
+        padding: 5px 10px 5px 6px;
+        gap: 6px;
+      }
+      .ks-summary-line--bottom .ks-header-sel-pill__num { font-size: 1.22rem; }
+      .ks-summary-line--bottom .ks-header-sel-total { margin-left: 0; }
+    }
+    @media (min-width: 640px) {
+      .ks-summary-stack {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+      }
+      .ks-summary-line--top {
+        flex: 1 1 180px;
+        min-width: 0;
+      }
+      .ks-summary-line--bottom {
+        flex: 0 1 auto;
+        width: auto;
+        max-width: 100%;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .ks-summary-stats-right {
+        flex: 0 1 auto;
+      }
+    }
+    .ks-gallery-scroll {
+      padding: 12px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left));
+      margin: 0 -16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, .42);
+    }
+    .ks-gallery-scroll .ks-top-inner {
+      margin-bottom: 0;
+    }
+    .ks-top {
+      position: sticky; top: 0; z-index: 40;
+      background: linear-gradient(180deg, rgba(0,0,0,.97) 0%, rgba(0,0,0,.92) 100%);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+      margin: 0 -16px 16px;
+    }
+    .ks-top-inner { max-width: 1400px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .ks-top-row-primary { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .ks-top-sort-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .ks-top-row-actions {
+      width: 100%; display: flex; justify-content: flex-end; align-items: center;
+      margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .ks-top-row-actions .ks-toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; width: 100%;
+    }
+    @media (min-width: 900px) {
+      .ks-top-row-actions .ks-toolbar { flex-wrap: nowrap; }
+    }
+    .ks-brand {
+      font-weight: 900;
+      font-size: clamp(0.74rem, 3.2vw, 1.05rem);
+      letter-spacing: .035em;
+      flex: 1 1 min(46%, 168px);
+      min-width: 0;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      padding-left: max(0px, env(safe-area-inset-left, 0px));
+      padding-right: max(4px, env(safe-area-inset-right, 0px));
+      box-sizing: border-box;
+    }
+    .ks-brand small {
+      display: block;
+      font-weight: 700;
+      font-size: clamp(0.68rem, 2.8vw, 0.88rem);
+      letter-spacing: .02em;
+      opacity: .9;
+      margin-top: 2px;
+      line-height: 1.25;
+    }
+    @media (max-width: 420px) {
+      .ks-brand { letter-spacing: .02em; }
+    }
+    .ks-meta { font-size: 0.85rem; color: var(--muted); flex: 1 1 180px; min-width: 0; align-items: center; display: flex; flex-wrap: wrap; gap: 8px 10px; }
+    .ks-meta strong { color: var(--accent); }
+    /* Destaque “Selecionadas” no topo — número maior dentro de caixa verde */
+    .ks-header-sel-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(34, 197, 94, 0.55);
+      background: rgba(22, 163, 74, 0.18);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.12), 0 4px 14px rgba(0, 0, 0, 0.35);
+      vertical-align: middle;
+    }
+    .ks-header-sel-pill__label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #86efac;
+      line-height: 1.1;
+    }
+    .ks-header-sel-pill__num {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #4ade80;
+      line-height: 1;
+      min-width: 1.25em;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 520px) {
+      .ks-header-sel-pill__num { font-size: 1.5rem; }
+    }
+    /* Total estimado (modo vendas) ao lado de «Selecionadas» */
+    .ks-header-sel-total {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 10px;
+      border: 1px solid rgba(250, 204, 21, 0.42);
+      background: rgba(15, 23, 42, 0.92);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+      vertical-align: middle;
+      margin-left: 2px;
+      max-width: 100%;
+    }
+    .ks-header-sel-total__label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+    .ks-header-sel-total__val {
+      font-size: clamp(0.85rem, 3vw, 1.05rem);
+      font-weight: 900;
+      color: #fbbf24;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    @media (max-width: 380px) {
+      .ks-header-sel-total {
+        padding: 4px 8px;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .ks-header-sel-total__val { font-size: 0.82rem; }
+    }
+    .ks-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+    .ks-search-block {
+      width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;
+      margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+    }
+    .ks-search-block label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+    .ks-search-block .ks-search-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch;
+      width: 100%; max-width: 100%; min-width: 0;
+    }
+    /* min-width:0 + max-width:100% evita o input “sair” da tela no flex (mobile) */
+    .ks-search-block .ks-search-wrap { flex: 1 1 auto; min-width: 0; max-width: 100%; }
+    .ks-input, .ks-select {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 10px; padding: 8px 12px; font-size: 14px; min-width: 0;
+    }
+    .ks-input::placeholder { color: #6b7280; }
+    .ks-search-wrap {
+      position: relative; flex: 1 1 220px; max-width: 360px;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .ks-search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 14px; }
+    .ks-search-wrap .ks-input {
+      width: 100%; max-width: 100%; padding-left: 36px;
+      box-sizing: border-box;
+    }
+    .ks-btn {
+      border: 1px solid var(--border); background: #1a1a1a; color: var(--text);
+      border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: .03em;
+    }
+    .ks-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .ks-btn-outline { background: transparent; border: 2px solid rgba(255,255,255,.85); color: #fff; }
+    .ks-btn-outline:hover:not(:disabled) { background: rgba(255,255,255,.08); }
+    .ks-btn-yellow { background: var(--warn); color: #111; border-color: #ca8a04; font-weight: 800; }
+    .ks-btn-yellow:hover:not(:disabled) { filter: brightness(1.05); }
+    .ks-dl-counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, .45);
+      background: rgba(71, 85, 105, .20);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 800;
+      transition: background-color .22s ease, border-color .22s ease, color .22s ease, transform .22s ease, box-shadow .22s ease;
+    }
+    .ks-dl-counter i { font-size: 12px; }
+    .ks-dl-counter--pulse {
+      animation: ksDlCounterPulse .32s ease;
+    }
+    @keyframes ksDlCounterPulse {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.045); }
+      100% { transform: scale(1); }
+    }
+    .ks-dl-counter--partial {
+      border-color: rgba(250, 204, 21, .70);
+      background: rgba(234, 179, 8, .22);
+      color: #fef3c7;
+      box-shadow: 0 0 0 1px rgba(250, 204, 21, .18), 0 0 14px rgba(234, 179, 8, .18);
+    }
+    .ks-dl-counter--all {
+      border-color: rgba(34, 197, 94, .70);
+      background: rgba(22, 163, 74, .22);
+      color: #dcfce7;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, .18), 0 0 14px rgba(34, 197, 94, .18);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ks-dl-counter, .ks-dl-counter--pulse { transition: none; animation: none; }
+    }
+    .ks-dl-btn-selected { background: #d97706; color: #111; border-color: #f59e0b; font-weight: 900; }
+    .ks-dl-btn-selected:hover:not(:disabled) { filter: brightness(1.08); }
+    .ks-dl-btn-all { background: #1d4ed8; color: #dbeafe; border-color: #3b82f6; font-weight: 900; }
+    .ks-dl-btn-all:hover:not(:disabled) { filter: brightness(1.08); }
+    .ks-dl-btn-zip { background: #5b21b6; color: #ede9fe; border-color: #8b5cf6; font-weight: 900; }
+    .ks-dl-btn-zip:hover:not(:disabled) { filter: brightness(1.08); }
+    .ks-btn-danger { border-color: #991b1b; color: #fecaca; background: #450a0a; }
+    .ks-btn-danger:hover:not(:disabled) { filter: brightness(1.08); }
+    .ks-support-whats {
+      position: fixed;
+      right: max(12px, env(safe-area-inset-right, 0px));
+      bottom: max(14px, env(safe-area-inset-bottom, 0px));
+      z-index: 230;
+      max-width: min(420px, calc(100vw - 24px));
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,197,94,.55);
+      background: #14532d;
+      color: #dcfce7;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .02em;
+      box-shadow: 0 8px 22px rgba(0,0,0,.35);
+      cursor: pointer;
+    }
+    .ks-support-whats:hover { filter: brightness(1.08); }
+    .ks-support-whats.ks-hidden { display: none; }
+    .ks-banner {
+      background: var(--accent-dim); border: 1px solid rgba(34,197,94,.4); color: #bbf7d0;
+      border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; line-height: 1.45;
+    }
+    /* Cupom / avisos no topo: respeita entalhe (evita botão cortado) */
+    #ks-app > .ks-wrap.ks-app-top {
+      padding-top: max(12px, env(safe-area-inset-top, 0px)) !important;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+    }
+    @media (max-width: 560px) {
+      #ks-app > .ks-wrap.ks-app-top {
+        padding-left: max(20px, env(safe-area-inset-left, 0px));
+        padding-right: max(20px, env(safe-area-inset-right, 0px));
+      }
+    }
+    /* Métricas do resumo (vendas): uma coluna no telemóvel para não apertar */
+    .ks-sales-resumo-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 560px) {
+      .ks-sales-resumo-metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+    .ks-banner.warn { background: rgba(234,179,8,.12); border-color: rgba(234,179,8,.35); color: #fef08a; }
+    .ks-face-panel {
+      background: rgba(202,138,4,.12); border: 1px solid rgba(202,138,4,.35); color: #fde68a;
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.45;
+      position: relative; z-index: 8;
+    }
+    .ks-face-panel-title { font-weight: 800; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+    .ks-face-panel-lead { margin: 0 0 12px; font-size: 13px; opacity: .95; color: #e5e7eb; }
+    .ks-face-actions { position: relative; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .ks-face-msg { margin-top: 10px; font-size: 12px; color: #fcd34d; min-height: 1.2em; }
+    .ks-hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .ks-face-modal {
+      position: fixed; inset: 0; z-index: 9999; display: none;
+      align-items: center; justify-content: center; padding: 18px;
+      background: rgba(0, 0, 0, .72);
+    }
+    .ks-face-modal.ks-open { display: flex; }
+    .ks-face-modal-card {
+      width: min(420px, 94vw);
+      background: #0f0f0f;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    .ks-face-modal-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px;
+    }
+    .ks-face-modal-title { margin: 0; font-size: 14px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #fde68a; }
+    .ks-face-modal-lead { margin: 0 0 12px; font-size: 13px; color: #d1d5db; line-height: 1.45; }
+    .ks-face-modal-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .ks-folder-wrap {
+      background: rgba(17,24,39,.45);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .ks-folder-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .ks-folder-title { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; color: #e5e7eb; }
+    .ks-folder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .ks-folder-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #111827;
+      overflow: hidden;
+      cursor: pointer;
+      padding: 0;
+      color: var(--text);
+      text-align: left;
+    }
+    .ks-folder-cover {
+      width: 100%;
+      height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0b0f19;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .ks-folder-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #0b0f19;
+    }
+    .ks-folder-card.ks-folder-card--landscape .ks-folder-cover { height: 145px; }
+    .ks-folder-card.ks-folder-card--portrait .ks-folder-cover { height: 220px; }
+    .ks-folder-card.ks-folder-card--square .ks-folder-cover { height: 175px; }
+    .ks-folder-ph {
+      min-height: 145px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      font-size: 12px;
+      background: #0b0f19;
+    }
+    .ks-folder-meta { padding: 8px 10px; }
+    .ks-folder-name { font-size: 13px; font-weight: 800; margin: 0 0 4px; color: #f9fafb; }
+    .ks-folder-count { font-size: 11px; color: #9ca3af; }
+    .ks-folder-card--all {
+      border-color: rgba(251,191,36,.62);
+      background: linear-gradient(180deg, rgba(251,191,36,.14), #111827);
+      box-shadow: 0 0 0 1px rgba(251,191,36,.28) inset;
+    }
+    .ks-folder-card--all .ks-folder-ph { color: #fde68a; }
+    .ks-folder-card--active { border-color: #fbbf24; box-shadow: 0 0 0 1px rgba(251,191,36,.55); }
+    .ks-login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .ks-login-card {
+      max-width: 420px; width: 100%; padding: 32px 28px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 16px; text-align: center;
+    }
+    .ks-login-logo { margin: 0 auto 20px; display: flex; justify-content: center; align-items: center; }
+    .ks-login-logo-img { max-height: 72px; width: auto; max-width: 220px; object-fit: contain; }
+    .ks-password-wrap { position: relative; }
+    .ks-password-wrap .ks-input { padding-right: 44px; }
+    .ks-pass-toggle {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer;
+      background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center;
+    }
+    .ks-pass-toggle:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .ks-login-card h1 { margin: 0 0 10px; font-size: 1.5rem; font-weight: 800; letter-spacing: .02em; }
+    .ks-login-card .ks-login-lead { margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .ks-login-card .ks-section-h { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 10px; color: var(--muted); text-align: left; }
+    .ks-field { margin-bottom: 14px; text-align: left; }
+    .ks-field label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .ks-field .ks-input { width: 100%; }
+    .ks-login-foot { margin: 16px 0 0; font-size: 12px; color: #6b7280; line-height: 1.45; }
+    .ks-err { color: #fca5a5; font-size: 13px; margin-top: 10px; text-align: left; }
+    .ks-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;
+    }
+    @media (min-width: 768px) {
+      .ks-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+    }
+    @media (max-width: 700px) {
+      .ks-folder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .ks-folder-cover { height: 150px; }
+      .ks-folder-card.ks-folder-card--landscape .ks-folder-cover { height: 128px; }
+      .ks-folder-card.ks-folder-card--portrait .ks-folder-cover { height: 190px; }
+      .ks-folder-card.ks-folder-card--square .ks-folder-cover { height: 150px; }
+    }
+    :root {
+      --ks-photo-frame-h: 280px;
+    }
+    .ks-ph {
+      position: relative; border-radius: 12px; overflow: hidden; background: var(--card);
+      border: 2px solid var(--border); text-align: left; padding: 0;
+      color: inherit; font: inherit;
+      display: flex;
+      flex-direction: column;
+    }
+    .ks-ph.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(34,197,94,.2); }
+    .ks-ph-imgwrap {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #000;
+      height: var(--ks-photo-frame-h);
+      min-height: var(--ks-photo-frame-h);
+      max-height: var(--ks-photo-frame-h);
+      overflow: hidden;
+    }
+    .ks-ph-imgwrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .ks-ph img {
+      width: 100%;
+      height: auto;
+      max-height: calc(var(--ks-photo-frame-h) - 8px);
+      aspect-ratio: auto;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      user-select: none;
+      pointer-events: none;
+      background:#000;
+    }
+    .ks-check-btn {
+      position: absolute; top: 8px; right: 8px; z-index: 15;
+      width: 30px; height: 30px; border-radius: 999px; padding: 0; margin: 0;
+      border: 2px solid rgba(255,255,255,.65);
+      background: rgba(0,0,0,.5);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #fff;
+    }
+    .ks-check-btn--on { background: var(--accent); border-color: #4ade80; color: #052e12; }
+    .ks-check-btn--frozen { opacity: .95; cursor: not-allowed; border-color: rgba(234,179,8,.7); background: rgba(55,65,81,.9); }
+    .ks-ph-bar { display: flex; align-items: stretch; font-size: 11px; min-height: 36px; }
+    .ks-ph-bar-main {
+      flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; padding: 0 4px;
+    }
+    .ks-ph-act {
+      flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+      border: none; cursor: pointer; color: inherit; min-height: 36px; padding: 0 8px;
+    }
+    .ks-ph-act--add { background: #166534; color: #dcfce7; }
+    .ks-ph-act--remove { background: #991b1b; color: #fee2e2; }
+    .ks-ph-act--lock { background: #374151; color: #d1d5db; cursor: default; }
+    .ks-ph-batch { opacity: .85; font-size: 10px; font-weight: 700; color: var(--muted); }
+    .ks-ph-bar .r {
+      width: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      background: #111; color: var(--muted); border: none; border-left: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .ks-gallery-foot { font-size: 12px; color: var(--muted); line-height: 1.55; margin-top: 20px; padding: 0 4px; }
+    .ks-gallery-foot strong { color: #e5e7eb; font-weight: 700; }
+    .ks-dl-pix-lead {
+      font-size: 12px;
+      line-height: 1.55;
+      color: rgba(254, 243, 199, 0.95);
+      margin: 0 0 12px;
+      padding: 0;
+    }
+    .ks-dl-pix-lead strong { color: #fff7ed; font-weight: 700; }
+    /* Alerta: bloqueado até liberação/aprovação — vermelho lê-se melhor como “atenção” que amarelo no fundo escuro */
+    .ks-btn.ks-wait-lock {
+      border-color: rgba(220, 38, 38, 0.65) !important;
+      color: #fecaca !important;
+      background: rgba(127, 29, 29, 0.48) !important;
+      cursor: not-allowed !important;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .ks-btn.ks-wait-lock i { color: #fca5a5; }
+    /* Badge “Liberada” nas miniaturas do painel de download */
+    .ks-dl-badge-liberada {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 197, 94, 0.75);
+      background: rgba(22, 163, 74, 0.28);
+      color: #bbf7d0;
+      font-weight: 800;
+      font-size: 10px;
+      letter-spacing: 0.03em;
+      vertical-align: middle;
+    }
+    /* Painel «Fotos para baixar»: nomes longos não ficam cortados (overflow do .ks-ph) */
+    #ks-downloads-grid .ks-ph {
+      overflow: visible;
+    }
+    #ks-downloads-grid .ks-ph-meta {
+      font-size: 10px;
+      line-height: 1.35;
+      padding: 6px 8px 4px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+    .ks-tile-more {
+      border: 2px dashed rgba(34,197,94,.5); background: rgba(22,101,52,.25); color: #86efac;
+      border-radius: 12px; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; cursor: pointer; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+      grid-column: 1 / -1;
+    }
+    @media (min-width: 768px) {
+      .ks-tile-more { grid-column: auto; min-width: 160px; }
+    }
+    .ks-tile-more:hover { background: rgba(22,101,52,.4); }
+    .ks-locked {
+      max-width: 520px; margin: 48px auto; padding: 36px 32px; text-align: center;
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    }
+    .ks-locked h2 { margin: 0 0 16px; color: var(--gold); font-size: 1.75rem; font-weight: 800; }
+    .ks-locked p { color: var(--text); line-height: 1.65; font-size: 15px; }
+    .ks-locked hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .ks-locked .ks-tagline { font-size: 11px; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; }
+    .ks-locked .ks-tag strong { color: var(--gold); font-size: 1rem; }
+    .ks-locked-pix {
+      margin-top: 18px;
+      border: 1px solid rgba(34, 197, 94, .45);
+      border-radius: 12px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(22, 163, 74, .20) 0%, rgba(22, 163, 74, .10) 100%);
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25), inset 0 0 0 1px rgba(34,197,94,.12);
+    }
+    .ks-locked-pix-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: #bbf7d0;
+      margin-bottom: 8px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ks-locked-pix-line { font-size: 13px; color: #e5e7eb; margin-bottom: 6px; word-break: break-word; }
+    .ks-locked-pix-key {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,.35);
+      background: rgba(2,6,23,.65);
+      color: #f8fafc;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    .ks-locked-pix-note { font-size: 12px; color: #dcfce7; line-height: 1.45; margin-top: 6px; }
+    .ks-locked-wa-paid {
+      background: #16a34a !important;
+      border-color: #15803d !important;
+      color: #ecfdf5 !important;
+      font-weight: 800;
+    }
+    .ks-locked-wa-paid:hover { filter: brightness(1.06); }
+    .ks-locked-wa-pending {
+      background: rgba(234, 179, 8, .22) !important;
+      border-color: rgba(250, 204, 21, .75) !important;
+      color: #fef3c7 !important;
+      font-weight: 800;
+    }
+    .ks-locked-wa-pending:hover { background: rgba(234,179,8,.30) !important; }
+    .ks-hidden { display: none !important; }
+    .ks-empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+    .ks-viewer {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,.94);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 0;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      min-height: 100vh;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      max-height: 100vh;
+      max-height: 100dvh;
+      max-height: -webkit-fill-available;
+      overflow: hidden;
+      box-sizing: border-box;
+      overscroll-behavior: none;
+    }
+    .ks-viewer-inner {
+      flex: 1 1 0;
+      min-height: 0;
+      min-width: 0;
+      width: 100%;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: max(52px, calc(env(safe-area-inset-top) + 44px)) max(44px, env(safe-area-inset-right)) 4px max(44px, env(safe-area-inset-left));
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .ks-viewer-photo-wrap {
+      position: relative;
+      flex: 1 1 0;
+      width: 100%;
+      min-height: 0;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    /* Centro + limites explícitos: em alguns browsers max-height:100% na img falha sem caixa definida — aqui a caixa é 100% do wrap */
+    .ks-viewer img#ks-viewer-img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      object-position: center center;
+      border-radius: 8px;
+    }
+    @media (max-width: 640px) {
+      .ks-viewer-inner {
+        padding-top: max(48px, calc(env(safe-area-inset-top) + 40px));
+        padding-left: max(36px, env(safe-area-inset-left));
+        padding-right: max(36px, env(safe-area-inset-right));
+        padding-bottom: 0;
+      }
+      .ks-viewer-footer {
+        padding-top: 4px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+        background: linear-gradient(180deg, transparent, rgba(0,0,0,.72) 50%);
+      }
+    }
+    .ks-viewer-check {
+      position: absolute;
+      top: max(6px, env(safe-area-inset-top));
+      right: 8px;
+      z-index: 12;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+    .ks-viewer-footer {
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 6px 12px calc(10px + env(safe-area-inset-bottom));
+      z-index: 108;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,.5) 35%);
+    }
+    .ks-viewer-select-action {
+      min-height: 42px;
+      padding: 0 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .ks-viewer-select-action--add { background: #166534; color: #dcfce7; }
+    .ks-viewer-select-action--remove { background: #991b1b; color: #fee2e2; }
+    .ks-viewer-select-action--lock { background: #374151; color: #d1d5db; cursor: not-allowed; }
+    /* Fechar no canto superior ESQUERDO — não compete com o “check” nem com seta da direita */
+    .ks-viewer-close {
+      position: absolute;
+      top: max(12px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      right: auto;
+      z-index: 110;
+    }
+    .ks-viewer-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,.35);
+      background: rgba(0,0,0,.52); color: #fff; display: inline-flex; align-items: center; justify-content: center;
+      z-index: 105; cursor: pointer; transition: opacity .18s ease, background-color .18s ease;
+    }
+    .ks-viewer-nav:hover:not(:disabled) { background: rgba(255,255,255,.18); }
+    .ks-viewer-nav:disabled { opacity: .28; cursor: not-allowed; }
+    .ks-viewer-nav-prev { left: max(8px, env(safe-area-inset-left)); }
+    /* afasta da bolha “selecionar” no canto superior direito da foto */
+    .ks-viewer-nav-next { right: max(52px, calc(env(safe-area-inset-right) + 44px)); }
+    @media (min-width: 720px) {
+      .ks-viewer-nav-next { right: max(12px, env(safe-area-inset-right)); }
+    }
+    .ks-viewer-swipe-hint {
+      position: absolute;
+      left: 50%;
+      bottom: max(88px, calc(env(safe-area-inset-bottom) + 72px));
+      transform: translateX(-50%);
+      z-index: 104;
+      font-size: 12px;
+      color: #e5e7eb;
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      padding: 6px 10px;
+      pointer-events: none;
+      opacity: .95;
+      transition: opacity .18s ease;
+    }
+    .ks-viewer:not(.ks-viewer--touching) .ks-viewer-swipe-hint { opacity: .0; }
+    .ks-viewer-dl {
+      flex-shrink: 0; margin-top: 0; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .ks-ph-dl {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,.08);
+      color: var(--gold); border: 1px solid var(--border); text-decoration: none;
+    }
+    .ks-ph-dl:hover { background: rgba(255,255,255,.14); color: #fbbf24; }
+    .ks-ab-dl {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+      padding: 8px 12px; border-radius: 8px; background: rgba(202, 138, 4, 0.15);
+      color: var(--gold); border: 1px solid rgba(202, 138, 4, 0.45); text-decoration: none;
+    }
+    .ks-ab-dl:hover { background: rgba(202, 138, 4, 0.28); color: #fbbf24; }
+    /* Modal A+B (como kingSelection antigo): controles no topo, foto + setas + zoom */
+    #ks-viewer-ab {
+      position: fixed; inset: 0; z-index: 120; background: #000;
+      flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    #ks-viewer-ab:not(.ks-hidden) { display: flex !important; }
+    #ks-viewer-ab.ks-hidden { display: none !important; }
+    .ks-ab-head {
+      flex-shrink: 0; padding: 10px 12px; border-bottom: 1px solid var(--border);
+      display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center;
+    }
+    @media (max-width: 720px) {
+      .ks-ab-head { grid-template-columns: 1fr; }
+    }
+    .ks-ab-head-col {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0;
+    }
+    .ks-ab-head-col .ks-ab-slot-label { font-size: 13px; font-weight: 800; margin: 0; flex-shrink: 0; }
+    .ks-ab-head-col-a .ks-ab-slot-label { color: var(--warn); }
+    .ks-ab-head-col-b .ks-ab-slot-label { color: #4ade80; }
+    .ks-ab-zoom-btns { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .ks-ab-zoom-btn {
+      border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff;
+      border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .ks-ab-zoom-btn:hover { background: rgba(255,255,255,.14); }
+    .ks-ab-zoom-btn.ks-ab-zoom-reset { padding: 6px 12px; font-size: 11px; font-weight: 700; }
+    .ks-ab-remove-wrap { margin-left: auto; flex-shrink: 0; }
+    @media (max-width: 520px) {
+      .ks-ab-remove-wrap { margin-left: 0; width: 100%; }
+      .ks-ab-remove-wrap .ks-btn { width: 100%; justify-content: center; }
+    }
+    .ks-ab-close-top {
+      border: 1px solid var(--border); background: #111; color: var(--text);
+      border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase;
+    }
+    .ks-ab-body {
+      flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 0; overflow: hidden;
+    }
+    @media (max-width: 900px) {
+      .ks-ab-body { grid-template-columns: 1fr; }
+    }
+    .ks-ab-col {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; padding: 8px; background: #0a0a0a;
+    }
+    .ks-ab-col:first-child { border-right: 1px solid var(--border); }
+    @media (max-width: 900px) {
+      .ks-ab-col:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .ks-ab-col-inner {
+      position: relative; display: flex; align-items: center; justify-content: center; flex: 1; min-height: 0; width: 100%;
+    }
+    .ks-ab-nav-side {
+      position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(0,0,0,.75); color: #fff; border: 2px solid rgba(255,255,255,.25);
+      display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; font-size: 18px;
+    }
+    .ks-ab-nav-side:hover:not(:disabled) { background: rgba(255,255,255,.2); }
+    .ks-ab-nav-side:disabled { opacity: .35; cursor: not-allowed; }
+    .ks-ab-nav-side.nav-prev { left: 6px; }
+    .ks-ab-nav-side.nav-next { right: 6px; }
+    .ks-ab-zoom-wrap {
+      flex: 1; min-height: 0; min-width: 0; overflow: hidden; position: relative;
+      display: flex; align-items: center; justify-content: center; width: 100%; align-self: stretch;
+      cursor: zoom-in; user-select: none; -webkit-user-select: none;
+    }
+    .ks-ab-zoom-wrap.zoomed { cursor: grab; }
+    .ks-ab-zoom-wrap.zoomed.panning { cursor: grabbing; }
+    .ks-ab-zoom-wrap img {
+      width: 100%; height: 100%; max-width: 100%; max-height: 100%; display: block;
+      object-fit: contain; object-position: center; transition: transform .2s ease; transform-origin: center center;
+    }
+    .ks-ab-zoom-reset-overlay {
+      position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 15;
+      padding: 8px 18px; border-radius: 12px; background: rgba(0,0,0,.85); color: var(--warn);
+      border: 1px solid var(--warn); font-weight: 700; font-size: 12px; cursor: pointer; display: none;
+    }
+    .ks-ab-zoom-wrap.zoomed .ks-ab-zoom-reset-overlay { display: block; }
+    .ks-ab-zoom-reset-overlay:hover { filter: brightness(1.08); }
+    #ks-step-compare.ks-cmp-fullscreen {
+      position: fixed; inset: 0; z-index: 45; background: #000; overflow-y: auto; padding: 56px 16px 24px;
+    }
+    .ks-cmp-fs-topbar {
+      position: fixed; top: 12px; right: 12px; z-index: 46;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; max-width: calc(100vw - 24px);
+    }
+    .ks-cmp-fs-close {
+      border: 1px solid var(--border); background: #111; color: var(--text);
+      border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: .03em;
+    }
+    .ks-cmp-fs-close:hover { background: #1f2937; }
+    .ks-cmp-fs-advance {
+      border-radius: 10px; padding: 8px 16px; font-weight: 800; font-size: 12px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: .03em;
+      background: var(--warn); color: #111; border: 1px solid #ca8a04;
+    }
+    .ks-cmp-fs-advance:hover:not(:disabled) { filter: brightness(1.05); }
+    .ks-cmp-fs-advance:disabled { opacity: .45; cursor: not-allowed; }
+    .ks-cmp-title { text-align: center; font-size: 1.35rem; font-weight: 800; margin: 8px 0 8px; }
+    .ks-cmp-hint { text-align: center; color: var(--warn); font-size: 14px; line-height: 1.5; margin: 0 0 16px; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .ks-cmp-both-wrap { text-align: center; margin-bottom: 20px; }
+    .ks-cmp-fs-pair {
+      display: flex; flex-wrap: nowrap; gap: 12px; justify-content: center; align-items: stretch;
+      max-width: 1100px; margin: 0 auto 24px; overflow-x: auto;
+    }
+    .ks-cmp-pane {
+      flex: 1 1 340px; min-width: 280px; max-width: 520px; background: transparent; border: none; border-radius: 0; overflow: visible;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .ks-cmp-fs-toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: flex-start;
+      padding: 0 4px; min-height: 40px;
+      position: relative; z-index: 4; pointer-events: auto;
+    }
+    .ks-cmp-fs-toolbar .ks-cmp-slot-hit { margin-right: 4px; }
+    .ks-cmp-label-a { color: var(--warn); }
+    .ks-cmp-label-b { color: #4ade80; }
+    .ks-cmp-fs-toolbar .ks-btn { padding: 6px 12px; font-size: 11px; }
+    .ks-cmp-fs-toolbar .ks-btn-outline { border-width: 1px; }
+    .ks-cmp-fs-zoom { min-width: auto; padding: 6px 10px; }
+    .ks-cmp-fs-rm {
+      background: #c2410c !important; border-color: #9a3412 !important; color: #fff !important; margin-left: auto;
+    }
+    .ks-cmp-fs-rm:hover:not(:disabled) { filter: brightness(1.08); }
+    .ks-cmp-fs-rm:disabled { opacity: .4; cursor: not-allowed; }
+    .ks-cmp-fs-stage {
+      display: flex; flex-direction: row; align-items: center; gap: 8px; flex: 1; min-height: 0;
+    }
+    .ks-cmp-fs-arrow {
+      flex: 0 0 44px; width: 44px; height: 44px; border-radius: 50%; padding: 0;
+      border: 1px solid #444; background: rgba(25,25,25,.95); color: #fff; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .ks-cmp-fs-arrow:hover:not(:disabled) { background: #374151; }
+    .ks-cmp-fs-arrow:disabled { opacity: .35; cursor: not-allowed; }
+    .ks-cmp-fs-imgcol {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; background: #0a0a0a; border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+    }
+    .ks-cmp-fs-imgcol .ks-cmp-fs-select { cursor: pointer; }
+    .ks-cmp-fs-imgbox, .ks-cmp-fs-imgbox img { pointer-events: auto; }
+    .ks-cmp-fs-imgbox { position: relative; aspect-ratio: 2/3; background: #000; }
+    .ks-cmp-fs-imgbox img { width: 100%; height: 100%; object-fit: contain; display: block; background:#000; }
+    .ks-cmp-fs-imgbox img.ks-cmp-img--fit { object-fit: contain; background: #000; }
+    .ks-cmp-fs-select { width: 100%; border: none; border-top: 1px solid var(--border); border-radius: 0; font-size: 12px; }
+    .ks-cmp-strip-title { font-size: 14px; font-weight: 800; margin: 20px 0 12px; color: var(--muted); }
+    .ks-cmp-strip {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 12px; scroll-snap-type: x mandatory;
+    }
+    .ks-cmp-thumb {
+      flex: 0 0 88px; width: 88px; border: 3px solid transparent; border-radius: 10px; overflow: hidden; padding: 0; cursor: pointer;
+      background: #111; scroll-snap-align: start;
+    }
+    .ks-cmp-thumb img { width: 100%; aspect-ratio: 2/3; object-fit: contain; display: block; background:#000; }
+    .ks-cmp-thumb--a { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+    .ks-cmp-thumb--b { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .ks-cmp-thumb-add {
+      display: flex; align-items: center; justify-content: center;
+      border: 3px dashed rgba(234,179,8,.55); background: rgba(234,179,8,.08);
+      color: var(--warn);
+    }
+    .ks-cmp-thumb-add:hover { background: rgba(234,179,8,.2); border-color: var(--warn); border-style: solid; }
+    .ks-cmp-thumb-add-inner {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; aspect-ratio: 2/3; min-height: 0; font-size: 26px;
+    }
+    .ks-cmp-add-overlay {
+      position: fixed; inset: 0; z-index: 50;
+    }
+    .ks-cmp-add-overlay.ks-hidden { display: none !important; }
+    .ks-cmp-add-backdrop {
+      position: absolute; inset: 0; background: rgba(0,0,0,.75); border: none; padding: 0; margin: 0; cursor: pointer;
+    }
+    .ks-cmp-add-panel {
+      position: absolute; left: 0; right: 0; bottom: 0; max-height: 88vh;
+      background: #111; border: 1px solid var(--border); border-radius: 16px 16px 0 0;
+      display: flex; flex-direction: column; box-shadow: 0 -12px 48px rgba(0,0,0,.55);
+    }
+    .ks-cmp-add-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .ks-cmp-add-head h3 { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: .02em; }
+    .ks-cmp-add-lead { margin: 0; padding: 10px 16px 12px; font-size: 13px; color: var(--muted); line-height: 1.45; flex-shrink: 0; }
+    .ks-cmp-add-grid-wrap { overflow-y: auto; flex: 1; min-height: 0; padding: 0 16px 20px; }
+    .ks-cmp-add-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px;
+    }
+    .ks-cmp-add-tile {
+      border: 2px solid var(--border); border-radius: 10px; overflow: hidden; padding: 0; cursor: pointer;
+      background: #1a1a1a; text-align: left; color: inherit; font: inherit;
+    }
+    .ks-cmp-add-tile:hover { border-color: var(--warn); }
+    .ks-cmp-add-tile img { width: 100%; aspect-ratio: 2/3; object-fit: contain; display: block; background:#000; }
+    .ks-cmp-add-tile-cap { display: block; font-size: 10px; padding: 4px 6px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ks-cmp-add-empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .ks-confirm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .ks-confirm-head h2 { margin: 0; font-size: 1.25rem; font-weight: 800; }
+    .ks-confirm-lead { color: var(--muted); font-size: 14px; line-height: 1.5; margin-bottom: 12px; }
+    .ks-confirm-preflight {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(250, 204, 21, .35);
+      background: rgba(250, 204, 21, .10);
+      color: #fef3c7;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+    .ks-confirm-fields {
+      margin: 0 0 12px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+    }
+    .ks-confirm-fields .ks-muted { font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .ks-confirm-fields label { font-size: 11px; display: block; margin-bottom: 4px; color: var(--muted); }
+    .ks-confirm-fields .ks-input { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+    .ks-confirm-feedback-wrap { margin-bottom: 12px; }
+    .ks-confirm-actions-top {
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: stretch;
+      position: sticky;
+      top: calc(env(safe-area-inset-top) + 8px);
+      z-index: 12;
+      padding: 8px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(17,24,39,.96) 0%, rgba(17,24,39,.78) 100%);
+      border: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(4px);
+    }
+    .ks-confirm-actions-top .ks-confirm-send {
+      margin-top: 0;
+    }
+    .ks-confirm-scroll {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+      gap: 14px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      max-height: min(58vh, 620px);
+      padding: 4px 4px 16px;
+      margin-bottom: 20px;
+      align-items: start;
+    }
+    .ks-confirm-scroll .ks-ph { width: 100%; max-width: 200px; margin: 0 auto; }
+    .ks-confirm-scroll .ks-ph-imgwrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      min-height: 170px;
+    }
+    .ks-confirm-scroll .ks-ph-imgwrap img {
+      width: 100%;
+      height: auto;
+      max-height: min(42vh, 360px);
+      aspect-ratio: auto;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      background: #000;
+    }
+    @media (max-width: 1100px) {
+      :root { --ks-photo-frame-h: 250px; }
+    }
+    @media (max-width: 700px) {
+      :root { --ks-photo-frame-h: 252px; }
+    }
+    .ks-confirm-scroll .ks-tile-more.ks-confirm-more-tile {
+      grid-column: 1 / -1;
+      max-width: none;
+      min-height: 132px;
+    }
+    .ks-textarea {
+      width: 100%; min-height: 100px; resize: vertical;
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      border-radius: 10px; padding: 12px 14px; font-size: 14px; font-family: inherit;
+    }
+    .ks-confirm-send { width: 100%; justify-content: center; margin-top: 16px; padding: 14px; font-size: 14px; }
+    @media (max-width: 700px) {
+      .ks-confirm-actions-top {
+        top: calc(env(safe-area-inset-top) + 4px);
+        padding: 6px;
+      }
+      .ks-confirm-actions-top .ks-confirm-send {
+        padding: 12px;
+      }
+    }
+    #ks-boot {
+      position: fixed; inset: 0; z-index: 300; background: #000; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 15px;
+    }
+    #ks-boot.ks-hidden { display: none !important; }
+    .ks-cmp-slot-hit {
+      border: none; background: transparent; padding: 0 6px 0 0; margin: 0; cursor: pointer; font: inherit;
+      font-weight: 900; font-size: 14px; letter-spacing: .04em; border-radius: 8px; text-align: left;
+      outline-offset: 2px;
+    }
+    .ks-cmp-slot-hit:focus-visible { outline: 2px solid var(--warn); }
+    .ks-cmp-pane--active-a { box-shadow: inset 0 0 0 3px var(--warn); border-radius: 14px; }
+    .ks-cmp-pane--active-b { box-shadow: inset 0 0 0 3px #4ade80; border-radius: 14px; }
+
+    /* Mobile: evitar recorte na tela de "Comparar e ajustar" (antes do modal A/B). */
+    @media (max-width: 900px) {
+      .ks-cmp-fs-pair {
+        flex-direction: column;
+        align-items: stretch;
+        overflow-x: visible;
+        gap: 14px;
+      }
+      .ks-cmp-pane {
+        min-width: 0;
+        max-width: none;
+      }
+      .ks-cmp-fs-stage {
+        gap: 6px;
+      }
+      .ks-cmp-fs-imgbox {
+        aspect-ratio: auto;
+        height: clamp(240px, 46vh, 420px);
+        min-height: 240px;
+      }
+      .ks-cmp-fs-imgbox img {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        object-position: center;
+      }
+      .ks-cmp-fs-arrow {
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .ks-cmp-fs-imgbox {
+        height: clamp(220px, 42vh, 360px);
+        min-height: 220px;
+      }
+      .ks-cmp-fs-toolbar .ks-btn {
+        padding: 6px 10px;
+        font-size: 10px;
+      }
+    }
+
+    /* Galeria pública bloqueada + painel de download: não repetir as mesmas fotos na grelha principal */
+    #ks-step-gallery.ks-public-dl-minimal #ks-grid,
+    #ks-step-gallery.ks-public-dl-minimal #ks-search-block,
+    #ks-step-gallery.ks-public-dl-minimal #ks-folder-wrap,
+    #ks-step-gallery.ks-public-dl-minimal #ks-face-panel,
+    #ks-step-gallery.ks-public-dl-minimal .ks-top-sort-meta,
+    #ks-step-gallery.ks-public-dl-minimal #ks-gallery-foot,
+    #ks-step-gallery.ks-public-dl-minimal #ks-empty,
+    #ks-step-gallery.ks-public-dl-minimal #ks-search-hint {
+      display: none !important;
+    }
+    #ks-step-gallery.ks-public-dl-minimal #ks-advance,
+    #ks-step-gallery.ks-public-dl-minimal #ks-clear,
+    #ks-step-gallery.ks-public-dl-minimal #ks-compare,
+    #ks-step-gallery.ks-public-dl-minimal #ks-folder-select-all,
+    #ks-step-gallery.ks-public-dl-minimal #ks-folder-back-top,
+    #ks-step-gallery.ks-public-dl-minimal #ks-open-downloads {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- Capa do evento (modo público, configurável no painel) -->
+  <div id="ks-entry-splash" class="ks-hidden" style="position:fixed;inset:0;z-index:360;background:radial-gradient(120% 80% at 50% 0%,#1a1a1a 0%,#000 55%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0;overflow:auto" aria-hidden="true">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:max(24px,env(safe-area-inset-top)) 16px 20px;min-height:42vh">
+      <div style="width:min(440px,92vw);aspect-ratio:3/4;border-radius:20px;overflow:hidden;border:1px solid rgba(250,204,21,.35);box-shadow:0 24px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.06) inset;background:#111">
+        <img id="ks-entry-splash-img" src="" alt="Capa do evento" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async" />
+      </div>
+      <p id="ks-entry-splash-title" style="margin:18px 0 0;font-size:1.05rem;font-weight:800;text-align:center;max-width:28rem;line-height:1.35;color:#fafafa"></p>
+    </div>
+    <div style="width:100%;padding:max(16px,env(safe-area-inset-bottom)) 16px 24px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.85));display:flex;justify-content:center">
+      <button type="button" id="ks-entry-splash-btn" class="ks-btn ks-btn-yellow" style="min-width:240px;justify-content:center;font-weight:900;border-radius:999px;padding:14px 22px">
+        <i class="fas fa-images"></i> Ver fotos
+      </button>
+    </div>
+  </div>
+
+  <!-- Cadastro rápido só ao tentar baixar (modo público + download liberado pelo fotógrafo) -->
+  <div id="ks-modal-public-dl" class="ks-hidden" style="position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px" aria-hidden="true">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:420px;width:100%;padding:18px 18px 16px;box-shadow:0 20px 50px rgba(0,0,0,.5)">
+      <h2 style="margin:0 0 8px;font-size:1.1rem">Cadastro para liberar download</h2>
+      <p class="ks-muted" style="font-size:13px;margin:0 0 14px;line-height:1.45">
+        O fotógrafo liberou baixar com marca d’água. Preencha para continuar — a senha é gerada e mostrada ao concluir.
+      </p>
+      <div class="ks-field">
+        <label for="ks-modal-pub-nome">Nome</label>
+        <input id="ks-modal-pub-nome" class="ks-input" type="text" autocomplete="name" />
+      </div>
+      <div class="ks-field">
+        <label for="ks-modal-pub-email">E-mail</label>
+        <input id="ks-modal-pub-email" class="ks-input" type="email" autocomplete="email" />
+      </div>
+      <div class="ks-field">
+        <label for="ks-modal-pub-tel">WhatsApp <span style="opacity:.75">(opcional)</span></label>
+        <input id="ks-modal-pub-tel" class="ks-input" type="tel" autocomplete="tel" placeholder="Ex.: 5511999999999" />
+      </div>
+      <div class="ks-err ks-hidden" id="ks-modal-pub-err" style="margin-top:8px"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button type="button" class="ks-btn" id="ks-modal-pub-cancel" style="flex:1;min-width:120px;justify-content:center">Cancelar</button>
+        <button type="button" class="ks-btn ks-btn-yellow" id="ks-modal-pub-submit" style="flex:1;min-width:140px;justify-content:center">
+          <i class="fas fa-unlock"></i> Cadastrar e liberar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ks-toast" class="ks-hidden" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:220;background:#1f2937;border:1px solid #374151;padding:10px 18px;border-radius:10px;font-size:14px;max-width:90%;"></div>
+
+  <div id="ks-boot" aria-live="polite">A carregar…</div>
+
+  <div id="ks-login" class="ks-login-wrap ks-hidden">
+    <div class="ks-login-card">
+      <div class="ks-login-logo">
+        <img
+          class="ks-login-logo-img"
+          src="/img/conecta-king-logo.png"
+          alt="King Selection"
+          width="200"
+          height="80"
+          decoding="async"
+        />
+      </div>
+      <h1 id="ks-login-title">King Selection</h1>
+      <p id="ks-login-sub" class="ks-login-lead">A carregar…</p>
+      <div id="ks-login-body" class="ks-hidden">
+        <!-- Modo Fotos vendidas (paid_event_photos): nome + e-mail + WhatsApp (reentrar / conferir identidade) -->
+        <div id="ks-login-mode-details" class="ks-hidden">
+          <p class="ks-section-h">Entrar na minha seleção</p>
+          <p id="ks-login-details-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left">
+            Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleção). Informe com DDD e, se necessário, código do país (ex.: 55). Se o fotógrafo não salvou seu WhatsApp no cadastro, pode deixar em branco.
+          </p>
+          <div class="ks-field">
+            <label for="ks-reauth-nome">Nome</label>
+            <input id="ks-reauth-nome" class="ks-input" type="text" autocomplete="name" />
+          </div>
+          <div class="ks-field">
+            <label for="ks-reauth-email">E-mail</label>
+            <input id="ks-reauth-email" class="ks-input" type="email" autocomplete="email" />
+          </div>
+          <div class="ks-field">
+            <label for="ks-reauth-tel">WhatsApp</label>
+            <input id="ks-reauth-tel" class="ks-input" type="tel" autocomplete="tel" placeholder="Ex.: 5511999999999 (mesmo WhatsApp do cadastro)" />
+          </div>
+          <button type="button" class="ks-btn ks-btn-yellow" id="ks-reauth-btn" style="width:100%;justify-content:center;margin-top:4px">
+            <i class="fas fa-right-to-bracket"></i> Entrar na minha seleção
+          </button>
+          <div class="ks-err ks-hidden" id="ks-reauth-err"></div>
+        </div>
+        <!-- Cadastro obrigatório antes de ver/baixar (modo público e autocadastro) -->
+        <div id="ks-login-mode-register-first" class="ks-hidden">
+          <p class="ks-section-h">Criar seu cadastro</p>
+          <p id="ks-register-first-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left">
+            Preencha seus dados para acessar a galeria. Depois você poderá escolher fotos e baixar (uma a uma, várias selecionadas ou todas).
+          </p>
+          <div class="ks-field">
+            <label for="ks-reg-nome">Nome</label>
+            <input id="ks-reg-nome" class="ks-input" type="text" autocomplete="name" />
+          </div>
+          <div class="ks-field">
+            <label for="ks-reg-email">E-mail</label>
+            <input id="ks-reg-email" class="ks-input" type="email" autocomplete="email" />
+          </div>
+          <div class="ks-field">
+            <label for="ks-reg-tel">WhatsApp</label>
+            <input id="ks-reg-tel" class="ks-input" type="tel" autocomplete="tel" placeholder="Ex.: 5511999999999" />
+          </div>
+          <button type="button" class="ks-btn ks-btn-yellow" id="ks-register-first-btn" style="width:100%;justify-content:center;margin-top:4px">
+            <i class="fas fa-user-plus"></i> Criar cadastro e entrar na galeria
+          </button>
+          <div class="ks-err ks-hidden" id="ks-register-first-err"></div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:16px 0" />
+          <button type="button" class="ks-btn" id="ks-pub-show-login" style="width:100%;justify-content:center;margin-bottom:8px">
+            <i class="fas fa-key"></i> Já tenho senha — entrar
+          </button>
+          <div id="ks-pub-login-section" class="ks-hidden">
+            <div class="ks-field">
+              <label for="ks-pub-login-email">E-mail</label>
+              <input id="ks-pub-login-email" class="ks-input" type="email" autocomplete="email" />
+            </div>
+            <div class="ks-field">
+              <label for="ks-pub-login-senha">Senha</label>
+              <input id="ks-pub-login-senha" class="ks-input" type="password" autocomplete="current-password" />
+            </div>
+            <button type="button" class="ks-btn ks-btn-yellow" id="ks-pub-login-btn" style="width:100%;justify-content:center;margin-top:4px">
+              <i class="fas fa-right-to-bracket"></i> Entrar na galeria
+            </button>
+            <div class="ks-err ks-hidden" id="ks-pub-login-err"></div>
+          </div>
+        </div>
+        <!-- Modo público legado (visitante) — oculto quando cadastro é obrigatório -->
+        <div id="ks-login-mode-public" class="ks-hidden">
+          <p class="ks-section-h">Voltar à galeria</p>
+          <button type="button" class="ks-btn ks-btn-outline" id="ks-pub-guest-btn" style="width:100%;justify-content:center;margin-bottom:12px;border-color:rgba(250,204,21,.45);color:#fef08a">
+            <i class="fas fa-eye"></i> Entrar como visitante
+          </button>
+        </div>
+        <!-- Modo Privado ou visitante (e-mail + senha criados pelo fotógrafo ou no cadastro) -->
+        <div id="ks-login-mode-password" class="ks-hidden">
+          <p class="ks-section-h" id="ks-login-pw-section-h">Acesso à galeria</p>
+          <p id="ks-login-pw-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left"></p>
+          <div class="ks-field">
+            <label for="ks-login-email">E-mail</label>
+            <input id="ks-login-email" class="ks-input" type="email" autocomplete="email" />
+          </div>
+          <div class="ks-field">
+            <label for="ks-login-senha">Senha</label>
+            <input id="ks-login-senha" class="ks-input" type="password" autocomplete="current-password" />
+          </div>
+          <button type="button" class="ks-btn ks-btn-yellow" id="ks-login-pw-btn" style="width:100%;justify-content:center;margin-top:4px">
+            <i class="fas fa-right-to-bracket"></i> Entrar na galeria
+          </button>
+          <div class="ks-err ks-hidden" id="ks-login-pw-err"></div>
+        </div>
+      </div>
+      <p class="ks-login-foot" id="ks-login-foot">Primeiro passo: crie seu cadastro. Depois escolha as fotos e use o download (por foto, selecionadas ou todas).</p>
+      <div class="ks-err ks-hidden" id="ks-login-err"></div>
+    </div>
+  </div>
+
+  <div id="ks-app" class="ks-hidden">
+    <div class="ks-wrap ks-app-top" style="padding-top:12px;padding-bottom:0;max-width:1400px;margin:0 auto">
+      <div class="ks-banner ks-hidden" id="ks-promo-banner" style="border-color:rgba(250,204,21,.45);background:rgba(234,179,8,.12);color:#fef3c7"></div>
+      <div class="ks-hidden" id="ks-public-dl-hint" style="max-width:1400px;margin:0 auto"></div>
+    </div>
+    <div id="ks-step-gallery">
+      <div class="ks-summary-sticky" id="ks-summary-sticky" aria-label="Resumo da seleção">
+        <div class="ks-summary-sticky-inner">
+          <div class="ks-meta ks-meta--summary" id="ks-counts">—</div>
+        </div>
+      </div>
+      <div class="ks-gallery-scroll">
+        <div class="ks-top-inner">
+          <div class="ks-top-row-primary">
+            <div class="ks-brand">KINGSELECTION<small id="ks-proj">—</small></div>
+            <div class="ks-top-sort-meta">
+              <label class="ks-muted" for="ks-sort" style="font-size:12px;font-weight:700;margin:0">Ordenar:</label>
+              <select id="ks-sort" class="ks-select" title="Ordenação">
+                <option value="order">Sequência original</option>
+                <option value="name">Nome do arquivo</option>
+                <option value="id">Número da foto (ID)</option>
+              </select>
+            </div>
+          </div>
+          <div class="ks-top-row-actions">
+            <div class="ks-toolbar">
+              <button type="button" class="ks-btn ks-btn-outline" id="ks-compare" title="Comparar duas fotos lado a lado">
+                <i class="fas fa-columns"></i> Comparar e ajustar
+              </button>
+              <button type="button" class="ks-btn ks-btn-danger" id="ks-clear" title="Limpa só a seleção atual">
+                <i class="fas fa-trash-alt"></i> Limpar seleção
+              </button>
+              <button type="button" class="ks-btn ks-btn-yellow" id="ks-advance" title="Ir para comparar e ajustar">
+                <i class="fas fa-arrow-right"></i> Avançar
+              </button>
+              <button type="button" class="ks-btn ks-hidden" id="ks-folder-select-all" title="Selecionar todas as fotos deste álbum">
+                <i class="fas fa-check-double"></i> Selecionar todas
+              </button>
+              <button type="button" class="ks-btn ks-hidden" id="ks-folder-back-top" title="Voltar para pastas">
+                <i class="fas fa-arrow-left"></i> Voltar para pastas
+              </button>
+              <button type="button" class="ks-btn ks-hidden" id="ks-open-downloads" title="Ver fotos liberadas para baixar">
+                <i class="fas fa-download"></i> Fotos para baixar
+              </button>
+              <button type="button" class="ks-btn" id="ks-logout" title="Sair"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+          </div>
+        </div>
+        <div class="ks-top-inner ks-search-block" id="ks-search-block">
+          <div style="flex:1;min-width:0">
+            <label for="ks-search">Buscar fotos por número ou código</label>
+            <div class="ks-search-row">
+              <div class="ks-search-wrap">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="text" id="ks-search" class="ks-input" placeholder="Ex.: 1642 1615 ou ADR0003 — espaço ou vírgula" autocomplete="off" />
+              </div>
+              <button type="button" class="ks-btn" id="ks-search-clear" title="Mostrar todas">
+                <i class="fas fa-times"></i> Limpar busca
+              </button>
+            </div>
+            <div class="ks-muted" style="font-size:12px;margin-top:6px;line-height:1.4">Separe por espaço ou vírgula. Vazio = galeria completa.</div>
+          </div>
+        </div>
+      </div>
+      <div class="ks-wrap">
+        <div class="ks-banner ks-hidden" id="ks-notice"></div>
+        <div class="ks-banner ks-hidden" id="ks-sales-banner"></div>
+        <div class="ks-banner ks-hidden" id="ks-payment-balance-banner" style="border-color:rgba(56,189,248,.45);background:rgba(14,165,233,.10);color:#0c4a6e;font-size:13px;line-height:1.45"></div>
+        <div class="ks-card ks-hidden" id="ks-downloads-panel" style="margin-bottom:14px;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(0,0,0,.25)">
+          <div style="font-weight:800;margin-bottom:2px">Fotos para baixar</div>
+          <div id="ks-downloads-pix-wrap" class="ks-hidden" style="margin-top:12px;padding:12px;border-radius:12px;border:1px solid rgba(250,204,21,.38);background:rgba(234,179,8,.10)">
+            <div style="font-weight:900;font-size:14px;color:#fef3c7;margin-bottom:8px;letter-spacing:.02em"><i class="fas fa-qrcode"></i> Pagamento via PIX</div>
+            <p class="ks-dl-pix-lead">
+              Se você ainda não pagou o valor das suas fotos em PIX, faça agora: confira o <strong>total estimado</strong> no resumo acima, faça o PIX para o favorecido abaixo, use <strong>Copiar chave PIX</strong> e envie o <strong>comprovante</strong> (imagem) para o fotógrafo validar. Depois que o pagamento for confirmado e as fotos forem liberadas, as opções de download aparecem neste mesmo painel.
+            </p>
+            <div id="ks-dl-pix-block">
+              <div style="font-size:12px;margin-bottom:4px"><b>Favorecido:</b> <span id="ks-dl-pix-holder">—</span></div>
+              <div style="font-size:12px;margin-bottom:4px"><b>Chave PIX</b></div>
+              <div id="ks-dl-pix-key" style="font-family:ui-monospace,monospace;font-size:13px;word-break:break-all;padding:8px;background:rgba(0,0,0,.4);border-radius:8px;margin-bottom:8px;border:1px solid rgba(255,255,255,.08)">—</div>
+              <button type="button" class="ks-btn ks-btn-yellow" id="ks-dl-pix-copy" style="width:100%;justify-content:center"><i class="fas fa-copy"></i> Copiar chave PIX</button>
+            </div>
+            <div style="font-weight:800;font-size:12px;margin-top:14px;margin-bottom:6px;color:#e5e7eb">Enviar comprovante (imagem)</div>
+            <input type="file" id="ks-dl-proof-file" accept="image/*" class="ks-input" style="margin-bottom:8px;width:100%;box-sizing:border-box" />
+            <button type="button" class="ks-btn ks-btn-yellow" id="ks-dl-proof-send" style="width:100%;justify-content:center"><i class="fas fa-paper-plane"></i> Enviar comprovante</button>
+            <div id="ks-dl-proof-status" style="font-size:12px;margin-top:8px;color:#86efac;min-height:1.2em" aria-live="polite"></div>
+          </div>
+          <div class="ks-muted" id="ks-downloads-msg" style="font-size:12px;margin-top:8px">Disponível após aprovação do fotógrafo e confirmação do pagamento.</div>
+          <div id="ks-downloads-progress" class="ks-hidden" style="margin-top:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#cbd5e1;margin-bottom:4px">
+              <span id="ks-downloads-progress-text">Baixando...</span>
+              <span id="ks-downloads-progress-pct">0%</span>
+            </div>
+            <div style="height:8px;border-radius:999px;background:rgba(148,163,184,.28);overflow:hidden">
+              <div id="ks-downloads-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#22d3ee,#6366f1);transition:width .15s ease"></div>
+            </div>
+          </div>
+          <div id="ks-downloads-actions" class="ks-hidden" style="margin-top:10px;padding:10px;border:1px dashed rgba(250,204,21,.35);border-radius:10px;background:rgba(234,179,8,.08)">
+            <div class="ks-muted" style="font-size:12px;line-height:1.4;margin-bottom:8px">
+              Escolha abaixo: baixar só as marcadas, todas ou ZIP.
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px">
+                <input type="checkbox" id="ks-downloads-select-all" />
+                Selecionar todas liberadas
+              </label>
+              <span id="ks-downloads-counter" class="ks-dl-counter">
+                <i id="ks-downloads-counter-icon" class="fas fa-circle-minus" aria-hidden="true"></i>
+                <span id="ks-downloads-counter-text">0 selecionadas de 0 liberadas</span>
+              </span>
+              <button type="button" class="ks-btn" id="ks-downloads-select-none"><i class="fas fa-ban"></i> Limpar seleção</button>
+              <button type="button" class="ks-btn ks-dl-btn-selected" id="ks-downloads-download-selected"><i class="fas fa-download"></i> Baixar selecionadas</button>
+              <button type="button" class="ks-btn ks-dl-btn-all" id="ks-downloads-download-all"><i class="fas fa-download"></i> Baixar todas</button>
+              <button type="button" class="ks-btn ks-dl-btn-zip" id="ks-downloads-download-zip"><i class="fas fa-file-archive"></i> Baixar todas em ZIP</button>
+            </div>
+          </div>
+          <div id="ks-downloads-grid" class="ks-grid" style="margin-top:10px"></div>
+        </div>
+        <div class="ks-face-panel ks-hidden" id="ks-face-panel">
+          <div class="ks-face-panel-title"><i class="fas fa-face-smile"></i> Reconhecimento facial</div>
+          <p class="ks-face-panel-lead" id="ks-face-lead">Clique em <strong>Reconhecimento facial</strong>, faça uma selfie ou envie sua foto e mostramos apenas as fotos em que você aparece.</p>
+          <div class="ks-face-actions">
+            <input type="file" id="ks-face-camera-in" accept="image/*" capture="user" class="ks-hidden-input" aria-hidden="true" />
+            <input type="file" id="ks-face-gallery-in" accept="image/*" class="ks-hidden-input" aria-hidden="true" />
+            <button type="button" class="ks-btn ks-btn-yellow" id="ks-face-open-btn" onclick="(function(){var m=document.getElementById('ks-face-modal'); if(m){m.classList.add('ks-open');m.setAttribute('aria-hidden','false');}})()"><i class="fas fa-face-smile"></i> Reconhecimento facial</button>
+          </div>
+          <div class="ks-face-msg" id="ks-face-msg" aria-live="polite"></div>
+        </div>
+        <div class="ks-face-modal" id="ks-face-modal" aria-hidden="true" onclick="if(event.target&&event.target.id==='ks-face-modal'){this.classList.remove('ks-open');this.setAttribute('aria-hidden','true');}">
+          <div class="ks-face-modal-card" role="dialog" aria-modal="true" aria-labelledby="ks-face-modal-title">
+            <div class="ks-face-modal-head">
+              <h3 class="ks-face-modal-title" id="ks-face-modal-title">Reconhecimento facial</h3>
+              <button type="button" class="ks-btn" id="ks-face-modal-close" onclick="(function(){var m=document.getElementById('ks-face-modal'); if(m){m.classList.remove('ks-open');m.setAttribute('aria-hidden','true');}})()"><i class="fas fa-times"></i> Fechar</button>
+            </div>
+            <p class="ks-face-modal-lead">Escolha uma opção para reconhecer seu rosto:</p>
+            <div class="ks-face-modal-actions">
+              <button type="button" class="ks-btn ks-btn-yellow" id="ks-face-camera-btn" onclick="document.getElementById('ks-face-camera-in')?.click()"><i class="fas fa-camera"></i> Fazer selfie</button>
+              <button type="button" class="ks-btn" id="ks-face-gallery-btn" onclick="document.getElementById('ks-face-gallery-in')?.click()"><i class="fas fa-image"></i> Enviar foto sua</button>
+            </div>
+          </div>
+        </div>
+        <div class="ks-folder-wrap ks-hidden" id="ks-folder-wrap">
+          <div class="ks-folder-head">
+            <div class="ks-folder-title" id="ks-folder-title">Pastas</div>
+            <select id="ks-folder-sort" class="ks-select" title="Ordenação das pastas" style="max-width:240px">
+              <option value="manual">Pastas: ordem manual</option>
+              <option value="name">Pastas: nome (A-Z / 1-2-3)</option>
+              <option value="count">Pastas: mais fotos primeiro</option>
+            </select>
+            <button type="button" class="ks-btn ks-hidden" id="ks-folder-back"><i class="fas fa-arrow-left"></i> Voltar para pastas</button>
+          </div>
+          <div class="ks-folder-grid" id="ks-folder-grid"></div>
+        </div>
+        <div class="ks-banner warn ks-hidden" id="ks-search-hint"></div>
+        <div id="ks-grid" class="ks-grid"></div>
+        <div class="ks-empty ks-hidden" id="ks-empty">Nenhuma foto corresponde à busca.</div>
+        <p class="ks-gallery-foot" id="ks-gallery-foot">Revise as fotos acima. Use <strong>Avançar</strong> ou <strong>Comparar e ajustar</strong> para comparar; depois <strong>Revisar e enviar</strong> e <strong>Confirmar e enviar seleção</strong>.</p>
+      </div>
+    </div>
+
+    <div id="ks-step-compare" class="ks-hidden ks-cmp-fullscreen">
+      <div class="ks-cmp-fs-topbar">
+        <button type="button" class="ks-cmp-fs-close" id="ks-cmp-close"><i class="fas fa-times"></i> Fechar</button>
+        <button type="button" class="ks-cmp-fs-advance" id="ks-cmp-advance" title="Ir para revisão e envio">
+          <i class="fas fa-paper-plane"></i> Revisar e enviar
+        </button>
+      </div>
+      <div class="ks-wrap" style="max-width:1100px">
+        <h2 class="ks-cmp-title">Comparar e ajustar seleção</h2>
+        <p class="ks-cmp-hint">Por defeito, cada clique na faixa de baixo <strong>alterna entre Foto A e Foto B</strong>. Toque na <strong>área grande da foto</strong> (ou no rótulo Foto A / Foto B) para <strong>fixar</strong> só esse lado; toque <strong>de novo</strong> para voltar à alternância. <strong>Ampliar</strong> abre só essa imagem; <strong>Ampliar A e B juntas</strong> abre o visualizador das duas. Use setas e <strong>Remover</strong> como antes. No fim da faixa, o botão <strong>+</strong> permite <strong>adicionar mais fotos</strong> à seleção sem fechar esta tela.</p>
+        <div class="ks-cmp-both-wrap">
+          <button type="button" class="ks-btn ks-btn-yellow" id="ks-cmp-both"><i class="fas fa-expand"></i> Ampliar A e B juntas</button>
+        </div>
+        <div class="ks-cmp-fs-pair">
+          <div class="ks-cmp-pane" id="ks-cmp-pane-a">
+            <div class="ks-cmp-fs-toolbar">
+              <button type="button" class="ks-cmp-slot-hit ks-cmp-label-a" id="ks-cmp-hit-a" title="Fixar miniaturas só na Foto A (também pode tocar na foto em baixo). Toque de novo para alternar A/B.">Foto A</button>
+              <button type="button" class="ks-btn ks-cmp-fs-zoom" id="ks-cmp-zoom-a" title="Ampliar esta foto"><i class="fas fa-expand"></i> Ampliar</button>
+              <button type="button" class="ks-btn ks-cmp-fs-rm" id="ks-cmp-rm-a"><i class="fas fa-trash-alt"></i> Remover</button>
+            </div>
+            <div class="ks-cmp-fs-stage" id="ks-cmp-stage-a">
+              <button type="button" class="ks-cmp-fs-arrow" id="ks-cmp-prev-a" aria-label="Foto anterior A"><i class="fas fa-chevron-left"></i></button>
+              <div class="ks-cmp-fs-imgcol" id="ks-cmp-imgcol-a">
+                <div class="ks-cmp-fs-imgbox">
+                  <img id="ks-cmp-img-a" alt="" />
+                </div>
+                <select id="ks-cmp-sel-a" class="ks-input ks-cmp-fs-select" aria-label="Escolher arquivo A"></select>
+              </div>
+              <button type="button" class="ks-cmp-fs-arrow" id="ks-cmp-next-a" aria-label="Foto seguinte A"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="ks-cmp-pane" id="ks-cmp-pane-b">
+            <div class="ks-cmp-fs-toolbar">
+              <button type="button" class="ks-cmp-slot-hit ks-cmp-label-b" id="ks-cmp-hit-b" title="Fixar miniaturas só na Foto B (também pode tocar na foto em baixo). Toque de novo para alternar A/B.">Foto B</button>
+              <button type="button" class="ks-btn ks-cmp-fs-zoom" id="ks-cmp-zoom-b" title="Ampliar esta foto"><i class="fas fa-expand"></i> Ampliar</button>
+              <button type="button" class="ks-btn ks-cmp-fs-rm" id="ks-cmp-rm-b"><i class="fas fa-trash-alt"></i> Remover</button>
+            </div>
+            <div class="ks-cmp-fs-stage" id="ks-cmp-stage-b">
+              <button type="button" class="ks-cmp-fs-arrow" id="ks-cmp-prev-b" aria-label="Foto anterior B"><i class="fas fa-chevron-left"></i></button>
+              <div class="ks-cmp-fs-imgcol" id="ks-cmp-imgcol-b">
+                <div class="ks-cmp-fs-imgbox">
+                  <img id="ks-cmp-img-b" alt="" />
+                </div>
+                <select id="ks-cmp-sel-b" class="ks-input ks-cmp-fs-select" aria-label="Escolher arquivo B"></select>
+              </div>
+              <button type="button" class="ks-cmp-fs-arrow" id="ks-cmp-next-b" aria-label="Foto seguinte B"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="ks-cmp-strip-title" id="ks-cmp-strip-title">Suas fotos selecionadas — clique para definir A e B</div>
+        <div class="ks-cmp-strip" id="ks-cmp-strip"></div>
+        <div id="ks-cmp-add-overlay" class="ks-hidden ks-cmp-add-overlay" aria-hidden="true">
+          <button type="button" class="ks-cmp-add-backdrop" id="ks-cmp-add-backdrop" aria-label="Fechar painel"></button>
+          <div class="ks-cmp-add-panel" role="dialog" aria-modal="true" aria-labelledby="ks-cmp-add-title">
+            <div class="ks-cmp-add-head">
+              <h3 id="ks-cmp-add-title">Adicionar à seleção</h3>
+              <button type="button" class="ks-btn" id="ks-cmp-add-close"><i class="fas fa-times"></i> Fechar</button>
+            </div>
+            <p class="ks-cmp-add-lead">Toque numa foto para incluir na seleção desta rodada. Você continua na tela de comparar.</p>
+            <div class="ks-cmp-add-grid-wrap">
+              <div class="ks-cmp-add-empty ks-hidden" id="ks-cmp-add-empty">Todas as fotos da galeria já estão selecionadas.</div>
+              <div class="ks-cmp-add-grid" id="ks-cmp-add-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ks-step-confirm" class="ks-hidden">
+      <div class="ks-top">
+        <div class="ks-top-inner">
+          <div class="ks-brand">KINGSELECTION<small id="ks-confirm-proj">—</small></div>
+          <div class="ks-toolbar" style="flex:1;justify-content:flex-end">
+            <button type="button" class="ks-btn" id="ks-confirm-back-gallery"><i class="fas fa-arrow-left"></i> Voltar</button>
+          </div>
+        </div>
+      </div>
+      <div class="ks-wrap">
+        <div class="ks-confirm-head">
+          <h2>Confirmar seleção</h2>
+        </div>
+        <p class="ks-confirm-lead" id="ks-confirm-lead">—</p>
+        <p id="ks-confirm-preflight" class="ks-confirm-preflight ks-hidden">Preencha os dados abaixo para poder enviar suas fotos.</p>
+        <div id="ks-confirm-sales-dashboard" class="ks-hidden" style="margin-bottom:12px"></div>
+        <div id="ks-confirm-contact-fields" class="ks-hidden ks-confirm-fields">
+          <div class="ks-muted">Seus dados para o fotógrafo (obrigatório)</div>
+          <label for="ks-confirm-nome">Nome</label>
+          <input id="ks-confirm-nome" class="ks-input" autocomplete="name" />
+          <label for="ks-confirm-email">E-mail</label>
+          <input id="ks-confirm-email" type="email" class="ks-input" autocomplete="email" />
+          <label for="ks-confirm-tel">WhatsApp (com DDD / país)</label>
+          <input id="ks-confirm-tel" type="tel" class="ks-input" autocomplete="tel" placeholder="Ex.: 5511999999999" />
+        </div>
+        <div class="ks-confirm-feedback-wrap">
+          <label for="ks-confirm-feedback" class="ks-muted" style="font-size:12px;font-weight:700">Mensagem ou observação (opcional)</label>
+          <textarea id="ks-confirm-feedback" class="ks-textarea" rows="3" placeholder="Ex.: Fotos para impressão 15x21, preferência por P&B…"></textarea>
+        </div>
+        <div id="ks-confirm-payment-check" class="ks-hidden ks-confirm-fields">
+          <div class="ks-muted">Pagamento (fotos vendidas por evento)</div>
+          <label for="ks-confirm-paid">Você já pagou?</label>
+          <select id="ks-confirm-paid" class="ks-input">
+            <option value="no">Não</option>
+            <option value="yes">Sim</option>
+          </select>
+          <div id="ks-confirm-proof-wrap" class="ks-hidden" style="margin-top:10px">
+            <label for="ks-confirm-proof-file">Comprovante (opcional aqui — ou envie depois em «Fotos para baixar»)</label>
+            <input id="ks-confirm-proof-file" type="file" accept="image/*" class="ks-input" />
+          </div>
+        </div>
+        <div class="ks-confirm-actions-top">
+          <button type="button" class="ks-btn ks-btn-yellow ks-confirm-send" id="ks-confirm-send">
+            <i class="fas fa-paper-plane"></i> Confirmar e enviar seleção
+          </button>
+        </div>
+        <div class="ks-confirm-scroll" id="ks-confirm-scroll"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ks-locked" class="ks-hidden ks-wrap">
+    <div class="ks-locked">
+      <h2 id="ks-locked-title">Obrigado!</h2>
+      <p id="ks-locked-msg">—</p>
+      <div id="ks-locked-pix" class="ks-locked-pix ks-hidden">
+        <div class="ks-locked-pix-title"><i class="fas fa-qrcode"></i> Pagamento PIX</div>
+        <div class="ks-locked-pix-line"><b>Favorecido:</b> <span id="ks-locked-pix-holder">—</span></div>
+        <div class="ks-locked-pix-line"><b>Chave PIX:</b></div>
+        <div id="ks-locked-pix-key" class="ks-locked-pix-key">—</div>
+        <button type="button" class="ks-btn ks-btn-yellow" id="ks-locked-pix-copy" style="width:100%;justify-content:center">
+          <i class="fas fa-copy"></i> Clique aqui para copiar o PIX
+        </button>
+        <button type="button" class="ks-btn ks-locked-wa-paid" id="ks-locked-pix-whats" style="width:100%;justify-content:center;margin-top:8px">
+          <i class="fab fa-whatsapp"></i> Já paguei • avisar no WhatsApp
+        </button>
+        <button type="button" class="ks-btn ks-locked-wa-pending" id="ks-locked-pix-whats-pending" style="width:100%;justify-content:center;margin-top:8px">
+          <i class="fab fa-whatsapp"></i> Ainda vou pagar • avisar no WhatsApp
+        </button>
+        <div class="ks-locked-pix-note">Faz o pagamento das suas fotos para desbloquear e avise o fotógrafo.</div>
+      </div>
+      <hr />
+      <div class="ks-tagline">Com carinho,</div>
+      <div class="ks-tag" id="ks-locked-tag"></div>
+      <button type="button" class="ks-btn ks-btn-yellow" id="ks-locked-open-gallery" style="margin-top:14px">
+        <i class="fas fa-images"></i> Ver fotos para baixar
+      </button>
+      <button type="button" class="ks-btn" id="ks-locked-logout" style="margin-top:24px"><i class="fas fa-sign-out-alt"></i> Sair</button>
+    </div>
+  </div>
+
+  <div id="ks-viewer" class="ks-hidden ks-viewer" aria-hidden="true">
+    <button type="button" class="ks-btn ks-viewer-close" id="ks-viewer-close" aria-label="Fechar"><i class="fas fa-times"></i></button>
+    <button type="button" class="ks-viewer-nav ks-viewer-nav-prev" id="ks-viewer-prev" aria-label="Foto anterior"><i class="fas fa-chevron-left"></i></button>
+    <button type="button" class="ks-viewer-nav ks-viewer-nav-next" id="ks-viewer-next" aria-label="Próxima foto"><i class="fas fa-chevron-right"></i></button>
+    <div class="ks-viewer-inner">
+      <div class="ks-viewer-photo-wrap">
+        <button type="button" class="ks-check-btn ks-viewer-check ks-hidden" id="ks-viewer-check" aria-label="Selecionar" title="Selecionar"></button>
+        <img id="ks-viewer-img" alt="" />
+      </div>
+    </div>
+    <div class="ks-viewer-swipe-hint" id="ks-viewer-swipe-hint"><i class="fas fa-arrows-left-right" style="margin-right:6px"></i> Arraste para os lados</div>
+    <div class="ks-viewer-footer" id="ks-viewer-footer">
+      <button type="button" class="ks-viewer-select-action ks-hidden" id="ks-viewer-select-action">Selecionar</button>
+      <a id="ks-viewer-download" class="ks-btn ks-viewer-dl ks-hidden" href="#" download target="_blank" rel="noopener"><i class="fas fa-download"></i> Descarregar</a>
+    </div>
+  </div>
+
+  <div id="ks-viewer-ab" class="ks-hidden" aria-hidden="true">
+    <div class="ks-ab-head">
+      <div class="ks-ab-head-col ks-ab-head-col-a">
+        <span class="ks-ab-slot-label">Foto A</span>
+        <div class="ks-ab-zoom-btns" title="Zoom: roda do mouse ou botões">
+          <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-out-a" title="Reduzir zoom"><i class="fas fa-search-minus"></i></button>
+          <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-in-a" title="Aumentar zoom"><i class="fas fa-search-plus"></i></button>
+          <button type="button" class="ks-ab-zoom-btn ks-ab-zoom-reset" id="ks-viewer-ab-zoom-reset-a" title="Ajustar ao tamanho normal">Ajustar</button>
+        </div>
+        <div class="ks-ab-remove-wrap" id="ks-viewer-ab-remove-wrap-a">
+          <button type="button" class="ks-btn ks-btn-danger" id="ks-viewer-ab-remove-a" title="Remover da seleção"><i class="fas fa-trash-alt"></i> Remover</button>
+        </div>
+        <a id="ks-viewer-ab-dl-a" class="ks-ab-dl ks-hidden" href="#" download target="_blank" rel="noopener"><i class="fas fa-download"></i> Descarregar</a>
+      </div>
+      <div class="ks-ab-head-col ks-ab-head-col-b">
+        <span class="ks-ab-slot-label">Foto B</span>
+        <div class="ks-ab-zoom-btns" title="Zoom: roda do mouse ou botões">
+          <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-out-b" title="Reduzir zoom"><i class="fas fa-search-minus"></i></button>
+          <button type="button" class="ks-ab-zoom-btn" id="ks-viewer-ab-zoom-in-b" title="Aumentar zoom"><i class="fas fa-search-plus"></i></button>
+          <button type="button" class="ks-ab-zoom-btn ks-ab-zoom-reset" id="ks-viewer-ab-zoom-reset-b" title="Ajustar ao tamanho normal">Ajustar</button>
+        </div>
+        <div class="ks-ab-remove-wrap" id="ks-viewer-ab-remove-wrap-b">
+          <button type="button" class="ks-btn ks-btn-danger" id="ks-viewer-ab-remove-b" title="Remover da seleção"><i class="fas fa-trash-alt"></i> Remover</button>
+        </div>
+        <a id="ks-viewer-ab-dl-b" class="ks-ab-dl ks-hidden" href="#" download target="_blank" rel="noopener"><i class="fas fa-download"></i> Descarregar</a>
+      </div>
+      <button type="button" class="ks-ab-close-top" id="ks-viewer-ab-close" title="Fechar"><i class="fas fa-times"></i> Fechar</button>
+    </div>
+    <div class="ks-ab-body">
+      <div class="ks-ab-col">
+        <div class="ks-ab-col-inner">
+          <button type="button" class="ks-ab-nav-side nav-prev" id="ks-viewer-ab-prev-a" title="Foto anterior"><i class="fas fa-chevron-left"></i></button>
+          <div class="ks-ab-zoom-wrap" id="ks-viewer-ab-zoom-wrap-a">
+            <img id="ks-viewer-ab-a" src="" alt="Foto A" />
+            <button type="button" class="ks-ab-zoom-reset-overlay" id="ks-viewer-ab-zoom-overlay-a">Ajustar</button>
+          </div>
+          <button type="button" class="ks-ab-nav-side nav-next" id="ks-viewer-ab-next-a" title="Próxima foto"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="ks-ab-col">
+        <div class="ks-ab-col-inner">
+          <button type="button" class="ks-ab-nav-side nav-prev" id="ks-viewer-ab-prev-b" title="Foto anterior"><i class="fas fa-chevron-left"></i></button>
+          <div class="ks-ab-zoom-wrap" id="ks-viewer-ab-zoom-wrap-b">
+            <img id="ks-viewer-ab-b" src="" alt="Foto B" />
+            <button type="button" class="ks-ab-zoom-reset-overlay" id="ks-viewer-ab-zoom-overlay-b">Ajustar</button>
+          </div>
+          <button type="button" class="ks-ab-nav-side nav-next" id="ks-viewer-ab-next-b" title="Próxima foto"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="ks-support-whats ks-hidden" id="ks-support-whats" title="Falar com o fotógrafo no WhatsApp" aria-label="Suporte no WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+    <span id="ks-support-whats-text">Suporte</span>
+  </button>
+
+  <script src="/config.js?v=2026-03-23-anticache-a1"></script>
+  <script src="/kingSelectionCliente.js?v=2026-05-19-register-first-dl"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
