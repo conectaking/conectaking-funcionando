@@ -219,7 +219,8 @@
     cursor: pointer;
 }
 
-.wifi-banner-social {
+/* Banner normal — atalhos Instagram / WhatsApp abaixo da imagem */
+.banner-social {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -227,7 +228,7 @@
     margin-top: 10px;
 }
 
-.wifi-banner-social-link {
+.banner-social-link {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -242,19 +243,19 @@
     transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.wifi-banner-social-link:hover {
+.banner-social-link:hover {
     background: rgba(255, 255, 255, 0.18);
     transform: translateY(-1px);
 }
 
-.wifi-banner-social-ig i {
+.banner-social-ig i {
     color: #e1306c;
 }
 
-.wifi-banner-social-wa i {
+.banner-social-wa i {
     color: #25d366;
 }
 
-.preview-wifi-banner-root .wifi-banner-social {
+.preview-banner-wrap .banner-social {
     margin-top: 8px;
 }

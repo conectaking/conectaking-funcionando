@@ -18,11 +18,6 @@ const logoUrl = (wifi.logo_url || item.image_url || '').trim();
 const rawLogoSize = wifi.logo_size || item.logo_size || 48;
 const logoSizePx = Math.min(600, Math.max(20, parseInt(rawLogoSize, 10) || 48));
 const safeTitle = (item.title || 'Wi‑Fi').trim();
-const instagramUrl = (wifi.instagram_url || '').trim();
-const whatsappUrl = (wifi.whatsapp_url || '').trim();
-let instagramLabel = 'Instagram';
-const igMatch = instagramUrl.match(/instagram\.com\/([^/?#]+)/i);
-if (igMatch) instagramLabel = '@' + igMatch[1];
 const payloadEnc = encodeURIComponent(JSON.stringify({
     ssid,
     password,
@@ -36,20 +31,6 @@ const payloadEnc = encodeURIComponent(JSON.stringify({
     <button type="button" class="wifi-banner-btn" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="<%= ssid ? 'Wi‑Fi: rede ' + ssid + '. Abrir QR Code e senha.' : 'Abrir QR Wi‑Fi e senha' %>" style="width:100%;padding:0;border:none;background:transparent;cursor:pointer;display:block;">
         <img src="<%= bannerUrl %>" alt="<%= ssid ? ('Rede Wi‑Fi: ' + ssid) : safeTitle %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px;" loading="lazy">
     </button>
-    <% if (instagramUrl || whatsappUrl) { %>
-    <div class="wifi-banner-social">
-        <% if (instagramUrl) { %>
-        <a href="<%= instagramUrl %>" class="wifi-banner-social-link wifi-banner-social-ig" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-            <i class="fab fa-instagram" aria-hidden="true"></i><span><%= instagramLabel %></span>
-        </a>
-        <% } %>
-        <% if (whatsappUrl) { %>
-        <a href="<%= whatsappUrl %>" class="wifi-banner-social-link wifi-banner-social-wa" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-            <i class="fab fa-whatsapp" aria-hidden="true"></i><span>WhatsApp</span>
-        </a>
-        <% } %>
-    </div>
-    <% } %>
 </div>
 <% } else { %>
 <button type="button" class="profile-link wifi-profile-button" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="<%= ssid ? ('Wi‑Fi: rede ' + ssid + '. Toque para QR e senha.') : ('Wi‑Fi: ' + safeTitle) %>">

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando... v2026-05-19-wifi-social-links');
+    console.log('Dashboard iniciando... v2026-05-19-banner-social-links');
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
@@ -5884,15 +5884,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 thumbList.src = newImg;
                 thumbList.style.display = 'block';
             }
+            const listIg = itemEl.querySelector('.banner-instagram-input');
+            const listWa = itemEl.querySelector('.banner-whatsapp-input');
+            const igModal = document.getElementById('edit-banner-instagram');
+            const waModal = document.getElementById('edit-banner-whatsapp');
+            if (listIg && igModal) listIg.value = igModal.value;
+            if (listWa && waModal) listWa.value = waModal.value;
+            const serializedDest = serializeBannerDestination(newDest, listIg?.value || igModal?.value, listWa?.value || waModal?.value);
+            if (destInputList) destInputList.value = newDest;
             if (displayDest) {
-                displayDest.textContent = newDest || 'Sem destino';
+                displayDest.textContent = bannerDestDisplayLabel(serializedDest);
             }
 
             // Atualizar originalData também
             try {
                 const originalData = itemEl.dataset.originalData ? JSON.parse(itemEl.dataset.originalData) : {};
                 originalData.image_url = newImg;
-                originalData.destination_url = newDest;
+                originalData.destination_url = serializedDest;
                 originalData.title = newName;
                 originalData.whatsapp_message = newMsg;
                 itemEl.dataset.originalData = JSON.stringify(originalData);
@@ -6007,9 +6015,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const logoModal = modal.querySelector('#edit-wifi-logo-url')?.value;
             const logoSizeModal = modal.querySelector('#edit-wifi-logo-size')?.value;
             const fmtModal = modal.querySelector('.wifi-display-format-input:checked')?.value || 'button';
-            const igModal = modal.querySelector('#edit-wifi-instagram')?.value;
-            const waModal = modal.querySelector('#edit-wifi-whatsapp')?.value;
-
             const titleInput = itemEl.querySelector('.item-title-input');
             const displayTitle = itemEl.querySelector('.item-display-title');
             const moduleName = itemEl.querySelector('.module-name');
@@ -6053,12 +6058,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (logoSizeModal !== undefined && itemEl.querySelector('.wifi-logo-size-input')) {
                 itemEl.querySelector('.wifi-logo-size-input').value = logoSizeModal;
                 itemEl.dataset.logoSize = logoSizeModal;
-            }
-            if (igModal !== undefined && itemEl.querySelector('.wifi-instagram-input')) {
-                itemEl.querySelector('.wifi-instagram-input').value = igModal;
-            }
-            if (waModal !== undefined && itemEl.querySelector('.wifi-whatsapp-input')) {
-                itemEl.querySelector('.wifi-whatsapp-input').value = waModal;
             }
             itemEl.querySelectorAll('.wifi-display-format-input').forEach(r => {
                 r.checked = r.value === fmtModal;
@@ -7346,7 +7345,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 destValue = destInputItem.value.trim();
                             }
                             destValue = sanitizeBannerDest(destValue);
-                            itemData.destination_url = destValue || undefined;
+                            const bannerSocialSave = readBannerSocialFromItemEl(itemEl);
+                            itemData.destination_url = serializeBannerDestination(destValue, bannerSocialSave.instagram_url, bannerSocialSave.whatsapp_url) || undefined;
 
                             // title (nome do banner) — priorizar modal
                             let bannerNameValue = '';
@@ -8674,25 +8674,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         // Se destination_url for JSON ou contiver imagem, limpar para não poluir o input
+        let bannerModalIg = '';
+        let bannerModalWa = '';
         if (itemType === 'banner') {
-            // Limpar currentCarouselItemId para garantir que banners não sejam tratados como carrossel
             window.currentCarouselItemId = null;
-
-            const sanitizeBannerDest = (raw) => {
-                if (!raw || typeof raw !== 'string') return '';
-                if (raw.startsWith('[')) return '';
-                const parts = raw.split(',').map(p => p.trim()).filter(Boolean);
-                const filtered = parts.filter(p => !p.includes('imagedelivery.net'));
-                return (filtered[0] || parts[0] || '').trim();
-            };
-            currentDestUrl = sanitizeBannerDest(currentDestUrl);
-            // Forçar atualização do dataset originalData para não reabrir com lixo
-            try {
-                const original = itemEl.dataset.originalData ? JSON.parse(itemEl.dataset.originalData) : {};
-                original.destination_url = currentDestUrl;
-                itemEl.dataset.originalData = JSON.stringify(original);
-            } catch (e) {
-                // ignore
+            const rawOpenDest = currentDestUrl;
+            if (rawOpenDest.trim().startsWith('[')) {
+                currentDestUrl = '';
+            } else {
+                const openParts = parseBannerDestination(rawOpenDest);
+                bannerModalIg = itemEl.querySelector('.banner-instagram-input')?.value?.trim()
+                    || bannerInstagramEditorValue(openParts.instagram_url);
+                bannerModalWa = itemEl.querySelector('.banner-whatsapp-input')?.value?.trim()
+                    || bannerWhatsAppEditorValue(openParts.whatsapp_url);
+                currentDestUrl = rawOpenDest.trim().startsWith('{')
+                    ? openParts.primary_url
+                    : (() => {
+                        const parts = String(rawOpenDest).split(',').map(p => p.trim()).filter(Boolean);
+                        const filtered = parts.filter(p => !p.includes('imagedelivery.net'));
+                        return (filtered[0] || parts[0] || '').trim();
+                    })();
             }
         }
 
@@ -8872,13 +8873,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>URL de Destino (opcional)</label>
-                    <input type="text" id="edit-dest-url" value="${currentDestUrl && !currentDestUrl.startsWith('[') ? currentDestUrl : ''}" placeholder="https://link.do.banner">
+                    <label>URL ao clicar na imagem (opcional)</label>
+                    <input type="text" id="edit-dest-url" value="${(currentDestUrl && !currentDestUrl.startsWith('[') ? currentDestUrl : '').replace(/"/g, '&quot;')}" placeholder="https://link.do.banner">
                 </div>
                 <div class="input-group">
                     <label>Mensagem WhatsApp (opcional)</label>
-                    <input type="text" id="edit-banner-title" value="${currentWhatsappMsg || ''}" placeholder="Ex: Olá! Gostaria de saber mais sobre seus produtos.">
+                    <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:0 0 8px;">Usada no link do WhatsApp abaixo, se você quiser texto pré-preenchido.</small>
+                    <input type="text" id="edit-banner-title" value="${(currentWhatsappMsg || '').replace(/"/g, '&quot;')}" placeholder="Ex: Olá! Gostaria de saber mais sobre seus produtos.">
                 </div>
+                ${bannerSocialLinksFieldsHtml(bannerModalIg, bannerModalWa, true)}
                 <input type="hidden" id="edit-image-url" value="${currentImageUrl || ''}">
             `;
                 break;
@@ -9058,10 +9061,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (profileWifiItem?.destination_url && String(profileWifiItem.destination_url).trim().startsWith('{')) {
                     try { wifiCfgEdit = JSON.parse(profileWifiItem.destination_url); } catch (e) { wifiCfgEdit = {}; }
                 }
-                const wIg = (itemEl.querySelector('.wifi-instagram-input')?.value || '').trim()
-                    || wifiInstagramEditorValue(wifiCfgEdit.instagram_url);
-                const wWa = (itemEl.querySelector('.wifi-whatsapp-input')?.value || '').trim()
-                    || wifiWhatsAppEditorValue(wifiCfgEdit.whatsapp_url);
                 formHTML = `
                 <div class="input-group">
                     <label>Título no cartão</label>
@@ -9113,7 +9112,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="wifi-modal-banner-section" style="display: ${wFmt === 'banner' ? 'block' : 'none'};">
                     ${wifiBannerUploadBlockHtml(itemId, wBanner)}
-                    ${wifiBannerLinksFieldsHtml(wIg, wWa, true)}
                 </div>
             `;
                 break;
@@ -10374,8 +10372,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wb = (wifiCfgNew.banner_image_url || '').trim();
                 const wl = (wifiCfgNew.logo_url || '').trim();
                 const wls = String(wifiCfgNew.logo_size || 48);
-                const wIgNew = wifiInstagramEditorValue(wifiCfgNew.instagram_url);
-                const wWaNew = wifiWhatsAppEditorValue(wifiCfgNew.whatsapp_url);
                 formHTML = `
                     <div class="input-group">
                         <label>Título no cartão</label>
@@ -10426,7 +10422,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="wifi-modal-banner-section" style="display: ${wf === 'banner' ? 'block' : 'none'};">
                         ${wifiBannerUploadBlockHtml(tempItem.id, wb)}
-                        ${wifiBannerLinksFieldsHtml(wIgNew, wWaNew, true)}
                     </div>
                 `;
                 break;
@@ -11396,16 +11391,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.editor-area').addEventListener('input', updateLivePreviewFromForm);
 
         document.addEventListener('click', async function (e) {
-            const actionBtn = e.target.closest('.wifi-clipboard-paste-btn, .wifi-example-fill-btn, .wifi-clear-field-btn');
+            const actionBtn = e.target.closest('.banner-clipboard-paste-btn, .banner-example-fill-btn, .banner-clear-field-btn');
             if (!actionBtn) return;
-            const row = actionBtn.closest('.wifi-field-row');
+            const row = actionBtn.closest('.banner-field-row');
             if (!row) return;
             const input = row.querySelector('input[type="text"]');
             if (!input) return;
             e.preventDefault();
-            if (actionBtn.classList.contains('wifi-example-fill-btn')) {
+            if (actionBtn.classList.contains('banner-example-fill-btn')) {
                 input.value = actionBtn.dataset.value || '';
-            } else if (actionBtn.classList.contains('wifi-clear-field-btn')) {
+            } else if (actionBtn.classList.contains('banner-clear-field-btn')) {
                 input.value = '';
             } else {
                 try {
@@ -11416,16 +11411,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (manual != null) input.value = manual.trim();
                 }
             }
-            const isIg = input.classList.contains('wifi-instagram-input') || input.id === 'edit-wifi-instagram';
+            const isIg = input.classList.contains('banner-instagram-input') || input.id === 'edit-banner-instagram';
             const itemEl = row.closest('.module-item, .item');
             const itemId = itemEl?.dataset?.id || SELECTORS.editItemModal?.dataset?.editingId;
             const modal = itemId ? document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`) : null;
             if (itemEl) {
-                const listIn = itemEl.querySelector(isIg ? '.wifi-instagram-input' : '.wifi-whatsapp-input');
+                const listIn = itemEl.querySelector(isIg ? '.banner-instagram-input' : '.banner-whatsapp-input');
                 if (listIn && listIn !== input) listIn.value = input.value;
             }
             if (modal) {
-                const modalIn = modal.querySelector(isIg ? '#edit-wifi-instagram' : '#edit-wifi-whatsapp');
+                const modalIn = modal.querySelector(isIg ? '#edit-banner-instagram' : '#edit-banner-whatsapp');
                 if (modalIn && modalIn !== input) modalIn.value = input.value;
             }
             if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
@@ -11516,17 +11511,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     listLogoSize.value = modal.querySelector('#edit-wifi-logo-size')?.value || '';
                     itemEl.dataset.logoSize = listLogoSize.value;
                 }
-                const listIg = itemEl.querySelector('.wifi-instagram-input');
-                const listWa = itemEl.querySelector('.wifi-whatsapp-input');
-                if (e.target.id === 'edit-wifi-instagram' && modal && listIg) {
-                    listIg.value = modal.querySelector('#edit-wifi-instagram')?.value || '';
-                } else if (e.target.classList.contains('wifi-instagram-input') && modal?.querySelector('#edit-wifi-instagram')) {
-                    modal.querySelector('#edit-wifi-instagram').value = e.target.value;
+                const listIg = itemEl.querySelector('.banner-instagram-input');
+                const listWa = itemEl.querySelector('.banner-whatsapp-input');
+                if (e.target.id === 'edit-banner-instagram' && modal && listIg) {
+                    listIg.value = modal.querySelector('#edit-banner-instagram')?.value || '';
+                } else if (e.target.classList.contains('banner-instagram-input') && modal?.querySelector('#edit-banner-instagram')) {
+                    modal.querySelector('#edit-banner-instagram').value = e.target.value;
                 }
-                if (e.target.id === 'edit-wifi-whatsapp' && modal && listWa) {
-                    listWa.value = modal.querySelector('#edit-wifi-whatsapp')?.value || '';
-                } else if (e.target.classList.contains('wifi-whatsapp-input') && modal?.querySelector('#edit-wifi-whatsapp')) {
-                    modal.querySelector('#edit-wifi-whatsapp').value = e.target.value;
+                if (e.target.id === 'edit-banner-whatsapp' && modal && listWa) {
+                    listWa.value = modal.querySelector('#edit-banner-whatsapp')?.value || '';
+                } else if (e.target.classList.contains('banner-whatsapp-input') && modal?.querySelector('#edit-banner-whatsapp')) {
+                    modal.querySelector('#edit-banner-whatsapp').value = e.target.value;
                 }
                 updateLivePreviewFromForm();
             }
