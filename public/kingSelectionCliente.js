@@ -1475,15 +1475,10 @@
     return m;
   }
 
-  /** Cadastro antes de ver fotos / baixar (substitui visitante anónimo + cadastro só ao baixar). */
+  /** Só modo público: cadastro na entrada e download liberado após cadastro (não mistura com privado / vendidas / autocadastro). */
   function mustRegisterBeforeGallery() {
     if (!galleryMeta) return false;
-    const mode = normKsAccessModeFromMeta();
-    if (mode === 'private' || mode === 'paid_event_photos') return false;
-    if (mode === 'public') return true;
-    if (galleryMeta.deferred_signup_flow) return true;
-    if (mode === 'signup' && galleryMeta.allow_self_signup) return true;
-    return false;
+    return normKsAccessModeFromMeta() === 'public';
   }
 
   function hasRegisteredClientFromData(data) {
@@ -1625,10 +1620,11 @@
       const pw = data.client_password ? String(data.client_password) : '';
       const gd = await loadGallery();
       applyGalleryData(gd);
+      await bootstrapPublicDownloadsAfterRegister();
       if (pw) {
         toast(`Cadastro criado. Guarde sua senha para voltar depois: ${pw}`, 'ok');
       } else {
-        toast('Cadastro concluído. Você já pode selecionar e baixar fotos.', 'ok');
+        toast('Cadastro concluído. Download liberado — use a seta ou «Fotos para baixar».', 'ok');
       }
     } catch (e) {
       if (err) {
@@ -1638,6 +1634,41 @@
     } finally {
       $('ks-register-first-btn').disabled = false;
     }
+  }
+
+  /** Modo público: após cadastro, marca todas as fotos e abre o painel de download. */
+  async function bootstrapPublicDownloadsAfterRegister() {
+    if (normKsAccessModeFromMeta() !== 'public') return;
+    if (!state.allowDownload || state.locked || !publicJwtHasRegisteredClient()) return;
+    if (state.selected && state.selected.size > 0) {
+      $('ks-downloads-panel')?.classList.remove('ks-hidden');
+      renderPublicDownloadsPanel();
+      return;
+    }
+    const ids = getSelectableIdsForFolderBulk();
+    if (!ids.length) return;
+    try {
+      const res = await fetch(`${API}/api/king-selection/client/select-bulk`, {
+        method: 'POST',
+        headers: authHeaders(true),
+        body: JSON.stringify({ slug, mode: 'select', photo_ids: ids })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (handleClientUnauthorized(res, data)) return;
+      if (!res.ok) return;
+      const data2 = await loadGallery();
+      applyGalleryData(data2);
+      mergeBulkSelectIntoState(ids);
+    } catch (_) {
+      return;
+    }
+    $('ks-downloads-panel')?.classList.remove('ks-hidden');
+    renderPublicDownloadsPanel();
+    requestAnimationFrame(() => {
+      try {
+        $('ks-downloads-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
+    });
   }
 
   async function submitPublicRegisterFromModal() {
@@ -1709,9 +1740,7 @@
       const lead = $('ks-register-first-lead');
       if (lead) {
         lead.innerHTML =
-          mode === 'public'
-            ? 'Crie seu cadastro para ver e <strong>baixar</strong> as fotos (seta em cada foto, selecionar várias ou todas). As imagens podem sair com marca d’água, conforme o fotógrafo.'
-            : 'Crie seu cadastro para acessar a galeria. Depois você escolhe as fotos e pode baixar as liberadas.';
+          'Modo <strong>público</strong>: crie seu cadastro para ver a galeria e <strong>baixar</strong> as fotos (seta em cada foto, várias selecionadas ou todas). As imagens podem sair com marca d’água, conforme o fotógrafo.';
       }
       $('ks-login-sub').textContent = galleryMeta.nome_projeto
         ? `${galleryMeta.nome_projeto} — cadastro obrigatório`
@@ -4958,54 +4987,41 @@
       return;
     }
 
-    if (mode === 'public') {
+    configureLoginUI();
+
+    if (galleryMeta.deferred_signup_flow && !jwt) {
       try {
-        let entered = false;
-        if (jwt) {
-          try {
-            const gd = await loadGallery();
-            applyGalleryData(gd);
-            entered = true;
-          } catch (e) {
-            if (jwt) throw e;
-          }
+        let res;
+        try {
+          res = await fetchWithTimeout(
+            `${API}/api/king-selection/client/signup-enter`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ slug })
+            },
+            KS_FETCH_BOOT_MS
+          );
+        } catch (e) {
+          throw friendlyFetchError(e);
         }
-        if (!entered) {
-          let res;
-          try {
-            res = await fetchWithTimeout(
-              `${API}/api/king-selection/client/public-enter`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug })
-              },
-              KS_FETCH_BOOT_MS
-            );
-          } catch (e) {
-            throw friendlyFetchError(e);
-          }
-          const d = await safeResponseJson(res, KS_JSON_BOOT_MS).catch((e) => {
-            throw friendlyFetchError(e);
-          });
-          if (!res.ok) throw new Error(d.message || 'Galeria pública indisponível.');
-          jwt = d.token;
-          try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
-          const gd = await loadGallery();
-          applyGalleryData(gd);
-        }
+        const d = await safeResponseJson(res, KS_JSON_BOOT_MS).catch((e) => {
+          throw friendlyFetchError(e);
+        });
+        if (!res.ok) throw new Error(d.message || 'Não foi possível iniciar a sessão.');
+        jwt = d.token;
+        try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+        const gd = await loadGallery();
+        applyGalleryData(gd);
       } catch (e) {
         hideBootScreen();
         showLogin();
-        $('ks-login-sub').textContent = e.message || 'Erro.';
-        $('ks-login-body')?.classList.add('ks-hidden');
+        $('ks-login-sub').textContent = e.message || 'Erro ao abrir galeria.';
         $('ks-login-err').textContent = e.message || '';
         $('ks-login-err').classList.remove('ks-hidden');
       }
       return;
     }
-
-    configureLoginUI();
 
     if (jwt) {
       try {

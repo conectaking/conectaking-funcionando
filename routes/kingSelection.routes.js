@@ -7993,9 +7993,8 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         total_photos: totalPhotos,
         cover_photo_id: coverPhotoId,
         deferred_signup_flow: deferredSignupFlow,
-        /** Cliente: exige cadastro na entrada (não visitante anónimo antes de baixar). */
-        register_before_gallery:
-          accessMode === 'public' || deferredSignupFlow || (accessMode === 'signup' && allowSelfSignup),
+        /** Cliente: cadastro na entrada só no modo público (privado / vendidas / autocadastro têm fluxo próprio). */
+        register_before_gallery: accessMode === 'public',
         client_folder_layout: clientFolderLayoutNorm,
         client_entry_splash_enabled: hasEntrySplash ? !!g.client_entry_splash_enabled : false,
         entry_splash_url: entrySplashUrl || null,
