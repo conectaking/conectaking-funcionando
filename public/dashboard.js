@@ -2884,6 +2884,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function getModuleListItemsFromProfile(profileData) {
+        return (profileData?.items || []).filter(function (it) {
+            return it.item_type !== 'king_selection' && it.item_type !== 'bible';
+        });
+    }
+
+    function reconcileModulesListWithProfileData(profileData) {
+        const container = SELECTORS.itemsContainer || document.getElementById('items-container');
+        if (!container || !profileData?.items) return false;
+        const expected = getModuleListItemsFromProfile(profileData);
+        const rendered = container.querySelectorAll('.item, .module-item');
+        const allPresent = expected.length === rendered.length && expected.every(function (it) {
+            return container.querySelector('[data-id="' + it.id + '"]');
+        });
+        if (allPresent) return false;
+        const missing = expected.filter(function (it) {
+            return !container.querySelector('[data-id="' + it.id + '"]');
+        });
+        if (missing.length) {
+            console.warn('⚠️ Módulos em falta na lista — re-render:', missing.map(function (m) {
+                return (m.item_type || '?') + '#' + m.id;
+            }).join(', '));
+            renderEditor(profileData);
+        }
+        return missing.length > 0;
+    }
+    window.reconcileModulesListWithProfileData = reconcileModulesListWithProfileData;
+
     function renderEditor(profileData) {
         try {
             // Fallback: quando renderEditor() é chamado sem parâmetro
@@ -3869,8 +3897,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
                         break;
                     default:
-                        itemEl.innerHTML = `<div style="padding: 1rem; color: #E74C3C;">Erro: Tipo de item desconhecido (${item.item_type})</div>`;
-                        return;
+                        iconOrThumbHTML = `<i class="fas fa-puzzle-piece item-icon-picker" title="Módulo"></i>`;
+                        displayHTML = `<div class="item-display-title">${item.title || item.item_type || 'Módulo'}</div><div class="item-display-dest" style="color:#E74C3C;font-size:0.85rem;">Tipo ainda sem editor completo: ${item.item_type}</div>`;
+                        editHTML = `<p style="padding:1rem;color:#E74C3C;">Este tipo (${item.item_type}) aparece no cartão, mas o editor ainda não tem formulário dedicado. Atualize a página (Ctrl+F5) se acabou de adicionar um módulo novo.</p>`;
+                        break;
                 }
 
                 // Salvar logo_size no dataset para uso posterior
@@ -5070,9 +5100,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para atualizar item na lista usando dados retornados pela API após salvar
     async function updateItemFromApiResponse(itemId, apiResult, itemType) {
-        const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
-        if (!itemEl || !apiResult) {
+        if (!apiResult) {
             console.warn(`⚠️ Item ${itemId} não encontrado ou dados da API vazios`);
+            return;
+        }
+        let itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
+        if (!itemEl) {
+            console.warn(`⚠️ Item ${itemId} (${itemType}) não está na lista do editor — re-render`);
+            const pid = String(itemId);
+            if (window.currentProfileData?.items) {
+                const idx = window.currentProfileData.items.findIndex(function (i) { return String(i.id) === pid; });
+                const merged = Object.assign(
+                    {},
+                    idx >= 0 ? window.currentProfileData.items[idx] : {},
+                    apiResult,
+                    { id: apiResult.id || itemId, item_type: apiResult.item_type || itemType }
+                );
+                if (idx >= 0) window.currentProfileData.items[idx] = merged;
+                else window.currentProfileData.items.push(merged);
+            }
+            if (!window.__reconcileModulesScheduled) {
+                window.__reconcileModulesScheduled = true;
+                requestAnimationFrame(function () {
+                    window.__reconcileModulesScheduled = false;
+                    if (window.currentProfileData) {
+                        renderEditor(window.currentProfileData);
+                        reconcileModulesListWithProfileData(window.currentProfileData);
+                    }
+                });
+            }
             return;
         }
 
@@ -5105,7 +5161,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayTitle.textContent = apiResult.title || '';
                 }
             }
-            if (moduleName) moduleName.textContent = apiResult.title || '';
+            if (moduleName) {
+                moduleName.textContent = moduleListDisplayTitle({
+                    title: apiResult.title,
+                    item_type: itemType || apiResult.item_type
+                });
+            }
         }
 
         // ATUALIZAR IMAGEM - Todos os campos relacionados à imagem
@@ -7632,34 +7693,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
                 }
 
-                // IMPORTANTE: Filtrar itens que foram deletados mas ainda existem no servidor
-                // E aplicar a ordem visual que estava antes de recarregar
+                // Após recarregar do servidor: confiar na API (não remover módulos só porque faltavam no DOM)
                 if (window.currentProfileData && window.currentProfileData.items) {
-                    const itemsBeforeFilter = window.currentProfileData.items.length;
-
-                    // Filtrar itens deletados
-                    // IMPORTANTE: Bíblia e King Selection não estão em #items-container (são especiais),
-                    // então NUNCA filtrar esses tipos — eles não aparecem no DOM da lista de módulos
-                    const mergedFromServer = window.__mergedServerItemIdsForSave || new Set();
-                    window.currentProfileData.items = window.currentProfileData.items.filter(item => {
-                        const itemId = String(item.id);
-                        if (item.item_type === 'bible' || item.item_type === 'king_selection') {
-                            return true; // Sempre manter itens especiais
-                        }
-                        // Wi‑Fi / itens fundidos do servidor: estavam no cartão mas não no DOM (JS antigo ou falha de render)
-                        if (item.item_type === 'wifi' || mergedFromServer.has(item.id)) {
-                            return true;
-                        }
-                        // Manter apenas itens que estão no DOM ou são temporários
-                        const shouldKeep = itemsInDOM.has(itemId) || itemId.startsWith('temp_');
-                        if (!shouldKeep) {
-                            console.log(`🗑️ Filtrando item ${itemId} que foi deletado mas ainda existe no servidor`);
-                        }
-                        return shouldKeep;
-                    });
                     try { delete window.__mergedServerItemIdsForSave; } catch (e) {}
 
-                    // IMPORTANTE: Aplicar ordem visual que estava antes de recarregar
+                    // Aplicar ordem visual que estava antes de recarregar
                     // Isso garante que a ordem configurada pelo usuário seja preservada
                     let orderUpdated = false;
                     window.currentProfileData.items.forEach(item => {
@@ -7683,12 +7721,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         return orderA - orderB;
                     });
 
-                    const itemsAfterFilter = window.currentProfileData.items.length;
-                    const filteredCount = itemsBeforeFilter - itemsAfterFilter;
-                    if (filteredCount > 0) {
-                        console.log(`✅ ${filteredCount} item(ns) deletado(s) filtrado(s) após recarregar`);
-                    }
-
                     if (orderUpdated || visualOrderMap.size > 0) {
                         console.log('✅ Ordem visual preservada e aplicada aos dados recarregados');
                         console.log('📊 Ordem final dos itens:', window.currentProfileData.items.map(item => ({
@@ -7699,89 +7731,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         })));
                     }
 
-                    // Re-renderizar com a ordem preservada
-                    console.log('🔄 Renderizando editor com dados atualizados...');
-                    console.log('📊 window.currentProfileData existe?', !!window.currentProfileData);
-                    console.log('📊 window.currentProfileData.items existe?', !!window.currentProfileData?.items);
-                    console.log('📊 Quantidade de itens:', window.currentProfileData?.items?.length || 0);
-
-                    if (window.currentProfileData && window.currentProfileData.items) {
-                        console.log('📊 Itens para renderizar:', window.currentProfileData.items.map(item => ({
-                            id: item.id,
-                            type: item.item_type,
-                            image_url: item.image_url ? (item.image_url.substring(0, 50) + '...') : 'sem logo',
-                            logo_fit_mode: item.logo_fit_mode || 'não definido',
-                            logo_size: item.logo_size || 'não definido'
-                        })));
-
-                        // IMPORTANTE: Forçar atualização visual DIRETA dos elementos da lista
-                        // Em vez de recriar tudo, apenas atualizar os elementos existentes
-                        setTimeout(() => {
-                            console.log('🔄 Atualizando elementos da lista diretamente...');
-
-                            // Atualizar cada item na lista com os dados mais recentes
-                            if (window.currentProfileData && window.currentProfileData.items) {
-                                window.currentProfileData.items.forEach(item => {
-                                    const itemEl = document.querySelector(`[data-id="${item.id}"], [data-item-id="${item.id}"]`);
-                                    if (itemEl) {
-                                        // Atualizar logo se houver
-                                        if (item.image_url && !item.image_url.includes('placeholder')) {
-                                            const logoPreview = itemEl.querySelector('.item-logo-preview');
-                                            const iconPicker = itemEl.querySelector('.item-icon-picker');
-
-                                            if (logoPreview) {
-                                                logoPreview.src = item.image_url;
-                                                logoPreview.style.display = 'block';
-                                                // Forçar recarregamento da imagem
-                                                logoPreview.src = '';
-                                                logoPreview.src = item.image_url;
-                                            }
-                                            if (iconPicker) {
-                                                iconPicker.style.display = 'none';
-                                            }
-
-                                            // Atualizar input hidden
-                                            const imageUrlInput = itemEl.querySelector('.item-image-url-input');
-                                            if (imageUrlInput) {
-                                                imageUrlInput.value = item.image_url;
-                                            }
-
-                                            // Atualizar dataset
-                                            itemEl.dataset.imageUrl = item.image_url;
-                                        }
-
-                                        // Atualizar logo_fit_mode se houver
-                                        if (item.logo_fit_mode) {
-                                            const logoFitModeInput = itemEl.querySelector('.item-logo-fit-mode-input');
-                                            if (logoFitModeInput) {
-                                                logoFitModeInput.value = item.logo_fit_mode;
-                                            }
-                                            itemEl.dataset.logoFitMode = item.logo_fit_mode;
-                                        }
-
-                                        // Atualizar logo_size se houver
-                                        if (item.logo_size) {
-                                            const logoSizeInput = itemEl.querySelector('.item-logo-size-input');
-                                            if (logoSizeInput) {
-                                                logoSizeInput.value = item.logo_size;
-                                            }
-                                            itemEl.dataset.logoSize = item.logo_size;
-                                        }
-                                    }
-                                });
-
-                                console.log('✅ Elementos da lista atualizados diretamente');
-                            }
-
-                            // Depois atualizar o preview
-                            updateLivePreviewFromForm();
-                            console.log('✅ Preview atualizado');
-                        }, 300);
-                    } else {
-                        console.error('❌ window.currentProfileData ou items não existe!');
+                    // Re-renderizar lista de módulos (Wi‑Fi e outros que estavam no servidor mas não no DOM)
+                    console.log('🔄 Renderizando lista de módulos após publicar...');
+                    if (window.currentProfileData) {
+                        renderEditor(window.currentProfileData);
+                        reconcileModulesListWithProfileData(window.currentProfileData);
                     }
 
-                    // IMPORTANTE: Atualizar preview após renderEditor completar
+                    // Atualizar preview após renderEditor
                     // Usar múltiplos requestAnimationFrame para garantir que o DOM foi completamente atualizado
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
@@ -13904,28 +13861,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderEditor(profileData);
                 console.log('✅ renderEditor concluído com sucesso');
 
-                // Verificar quantos itens foram renderizados
-                const container = SELECTORS.itemsContainer || document.getElementById('items-container');
-                if (container) {
-                    const renderedItems = container.querySelectorAll('.item, .module-item');
-                    const expectedInModules = (profileData.items || []).filter(i => i.item_type !== 'king_selection' && i.item_type !== 'bible').length;
-                    console.log(`✅ Renderização concluída: ${renderedItems.length} itens no DOM`);
-                    if (renderedItems.length !== expectedInModules) {
-                        console.warn(`⚠️ Discrepância: esperado ${expectedInModules} itens na aba Módulos (excl. King Selection e Bíblia), mas ${renderedItems.length} foram renderizados`);
-                        const missing = (profileData.items || []).filter(function (it) {
-                            if (it.item_type === 'king_selection' || it.item_type === 'bible') return false;
-                            return !container.querySelector('[data-id="' + it.id + '"]');
-                        });
-                        if (missing.length) {
-                            console.warn('⚠️ Módulos em falta na lista — nova renderização:', missing.map(function (m) { return m.item_type + '#' + m.id; }).join(', '));
-                            try {
-                                renderEditor(profileData);
-                            } catch (reRenderErr) {
-                                console.error('❌ Falha ao re-renderizar módulos em falta:', reRenderErr);
-                            }
-                        }
-                    }
-                }
+                reconcileModulesListWithProfileData(profileData);
             } catch (renderError) {
                 console.error('❌ Erro ao renderizar editor:', renderError);
                 console.error('❌ Stack trace:', renderError.stack);
