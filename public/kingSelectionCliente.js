@@ -227,6 +227,8 @@
     clientFolderLayout: 'folders',
     downloadsSelected: new Set(),
     downloadsTouched: false,
+    /** Modo público: painel «Fotos para baixar» só visível após o cliente abrir (não ao cadastrar). */
+    publicDownloadsPanelOpen: false,
     /** Pré-preenchimento (modo público) quando já existe cadastro real — não usar ficha técnica de sessão/rosto. */
     clientContactPrefill: null
   };
@@ -1070,7 +1072,11 @@
       });
     });
 
-    downloadsPanel.classList.remove('ks-hidden');
+    if (publicLockedDownloadPhaseActive() || state.publicDownloadsPanelOpen) {
+      downloadsPanel.classList.remove('ks-hidden');
+    } else {
+      downloadsPanel.classList.add('ks-hidden');
+    }
     openDownloadsBtn.classList.remove('ks-hidden');
     setDownloadsProgress(0, 1, false);
     renderPromoClientBanner();
@@ -1593,13 +1599,14 @@
     }
 
     if (p.type === 'openPanel') {
+      state.publicDownloadsPanelOpen = true;
+      renderPublicDownloadsPanel();
       $('ks-downloads-panel')?.classList.remove('ks-hidden');
       requestAnimationFrame(() => {
         try {
           $('ks-downloads-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (_) {}
       });
-      renderPublicDownloadsPanel();
       return;
     }
 
@@ -1664,9 +1671,9 @@
       }
     }
     try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+    state.publicDownloadsPanelOpen = false;
     const gd = await loadGallery();
     applyGalleryData(gd);
-    if (opts.bootstrapDownloads) await bootstrapPublicDownloadsAfterRegister();
     if (opts.runPendingDownload) await maybeRunPendingPublicDownload();
     return { isNew };
   }
@@ -1685,14 +1692,11 @@
     }
     try {
       $('ks-register-first-btn').disabled = true;
-      const { isNew } = await enterPublicGalleryWithContact(nome, email, telefone, {
-        errEl: err,
-        bootstrapDownloads: true
-      });
+      const { isNew } = await enterPublicGalleryWithContact(nome, email, telefone, { errEl: err });
       toast(
         isNew
-          ? 'Cadastro concluído. Download liberado — use a seta ou «Fotos para baixar».'
-          : 'Bem-vindo de volta! Você já pode ver e baixar suas fotos.',
+          ? 'Cadastro concluído. Escolha as fotos e use a seta de download ou «Fotos para baixar».'
+          : 'Bem-vindo de volta! Escolha as fotos que deseja baixar.',
         'ok'
       );
     } catch (e) {
@@ -1703,41 +1707,6 @@
     } finally {
       $('ks-register-first-btn').disabled = false;
     }
-  }
-
-  /** Modo público: após cadastro, marca todas as fotos e abre o painel de download. */
-  async function bootstrapPublicDownloadsAfterRegister() {
-    if (normKsAccessModeFromMeta() !== 'public') return;
-    if (!state.allowDownload || state.locked || !publicJwtHasRegisteredClient()) return;
-    if (state.selected && state.selected.size > 0) {
-      $('ks-downloads-panel')?.classList.remove('ks-hidden');
-      renderPublicDownloadsPanel();
-      return;
-    }
-    const ids = getSelectableIdsForFolderBulk();
-    if (!ids.length) return;
-    try {
-      const res = await fetch(`${API}/api/king-selection/client/select-bulk`, {
-        method: 'POST',
-        headers: authHeaders(true),
-        body: JSON.stringify({ slug, mode: 'select', photo_ids: ids })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (handleClientUnauthorized(res, data)) return;
-      if (!res.ok) return;
-      const data2 = await loadGallery();
-      applyGalleryData(data2);
-      mergeBulkSelectIntoState(ids);
-    } catch (_) {
-      return;
-    }
-    $('ks-downloads-panel')?.classList.remove('ks-hidden');
-    renderPublicDownloadsPanel();
-    requestAnimationFrame(() => {
-      try {
-        $('ks-downloads-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (_) {}
-    });
   }
 
   async function submitPublicRegisterFromModal() {
@@ -1878,6 +1847,7 @@
 
   function showLogin() {
     hideBootScreen();
+    state.publicDownloadsPanelOpen = false;
     $('ks-login').classList.remove('ks-hidden');
     $('ks-app').classList.add('ks-hidden');
     $('ks-locked').classList.add('ks-hidden');
@@ -3935,11 +3905,13 @@
 
   $('ks-logout').addEventListener('click', () => {
     jwt = null;
+    state.publicDownloadsPanelOpen = false;
     try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
     showLogin();
   });
   $('ks-locked-logout').addEventListener('click', () => {
     jwt = null;
+    state.publicDownloadsPanelOpen = false;
     try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
     showLogin();
   });
@@ -4585,7 +4557,18 @@
       openPublicRegisterModal();
       return;
     }
+    state.publicDownloadsPanelOpen = true;
+    if (normKsAccessModeFromMeta() === 'public') {
+      renderPublicDownloadsPanel();
+    } else {
+      renderSalesUi();
+    }
     $('ks-downloads-panel')?.classList.remove('ks-hidden');
+    requestAnimationFrame(() => {
+      try {
+        $('ks-downloads-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
+    });
   });
   $('ks-downloads-select-all')?.addEventListener('change', () => {
     const approved = getApprovedDownloadsForClient();
