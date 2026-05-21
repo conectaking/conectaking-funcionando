@@ -2478,13 +2478,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     wifiBanBtn.setAttribute('aria-label', wifiSsid ? `Wi‑Fi: rede ${wifiSsid}` : 'Abrir QR Wi‑Fi');
                     wifiBanBtn.innerHTML = `<img src="${wifiBannerUrl}" alt="${wifiSsid ? 'Rede: ' + wifiSsid : wifiSafeTitle}" style="width:100%;height:auto;display:block;border-radius:12px;" loading="lazy">`;
                     previewEl.appendChild(wifiBanBtn);
-                    if (wifiSsid) {
-                        const netP = document.createElement('p');
-                        netP.className = 'wifi-public-network-name';
-                        netP.innerHTML = 'Nome da rede: <strong></strong>';
-                        netP.querySelector('strong').textContent = wifiSsid;
-                        previewEl.appendChild(netP);
-                    }
                 } else {
                     previewEl = document.createElement('button');
                     previewEl.type = 'button';

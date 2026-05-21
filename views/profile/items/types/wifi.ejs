@@ -31,9 +31,6 @@ const payloadEnc = encodeURIComponent(JSON.stringify({
     <button type="button" class="wifi-banner-btn" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="<%= ssid ? 'Wi‑Fi: rede ' + ssid + '. Abrir QR Code e senha.' : 'Abrir QR Wi‑Fi e senha' %>" style="width:100%;padding:0;border:none;background:transparent;cursor:pointer;display:block;">
         <img src="<%= bannerUrl %>" alt="<%= ssid ? ('Rede Wi‑Fi: ' + ssid) : safeTitle %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px;" loading="lazy">
     </button>
-    <% if (ssid) { %>
-    <p class="wifi-public-network-name">Nome da rede: <strong><%= ssid %></strong></p>
-    <% } %>
 </div>
 <% } else { %>
 <button type="button" class="profile-link wifi-profile-button" data-item-id="<%= item.id %>" data-wifi-config="<%= payloadEnc %>" aria-label="<%= ssid ? ('Wi‑Fi: rede ' + ssid + '. Toque para QR e senha.') : ('Wi‑Fi: ' + safeTitle) %>">
