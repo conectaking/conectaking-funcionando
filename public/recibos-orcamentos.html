@@ -41,10 +41,77 @@
         ::-webkit-scrollbar-track { background: #171717; }
         ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #EAB308; }
+        /* Mobile: conteúdo full-width, itens em cards, ações roláveis */
+        @media (max-width: 1023px) {
+            .doc-header-actions {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                flex-wrap: nowrap;
+                padding-bottom: 4px;
+                gap: 8px;
+            }
+            .doc-header-actions > * { flex-shrink: 0; }
+            .itens-table-wrap { overflow: visible; }
+            .itens-table-wrap table { width: 100%; border-collapse: separate; }
+            .itens-table-wrap thead { display: none; }
+            .itens-table-wrap .item-row {
+                display: block;
+                margin-bottom: 12px;
+                padding: 14px;
+                border-radius: 12px;
+                border: 1px solid #262626;
+                background: rgba(0, 0, 0, 0.35);
+            }
+            .itens-table-wrap .item-row td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 8px 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                width: 100%;
+            }
+            .itens-table-wrap .item-row td.item-td-desc {
+                flex-direction: column;
+                align-items: stretch;
+                padding-bottom: 12px !important;
+                border-bottom: 1px solid #262626 !important;
+                margin-bottom: 4px;
+            }
+            .itens-table-wrap .item-row td.item-td-total {
+                font-size: 1.125rem;
+                padding-top: 10px !important;
+            }
+            .itens-table-wrap .item-row td.item-td-remove {
+                justify-content: flex-end;
+                padding-top: 0 !important;
+            }
+            .itens-table-wrap .item-row td:not(.item-td-desc):not(.item-td-remove):not(.item-td-total)::before {
+                content: attr(data-label);
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #94a3b8;
+                flex-shrink: 0;
+                min-width: 4.5rem;
+            }
+            .comprovante-btns-mobile .btn-mobile-full {
+                width: 100%;
+                justify-content: center;
+            }
+            .nota-fiscal-card { flex-direction: column; }
+            .nota-fiscal-card .flex-wrap { width: 100%; }
+            .nota-fiscal-card .btn-nota-camera,
+            .nota-fiscal-card .btn-nota-arquivo { flex: 1; justify-content: center; }
+        }
+        .bottom-nav-safe { padding-bottom: env(safe-area-inset-bottom, 0); }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-<aside class="fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark flex flex-col items-center py-8 z-50">
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen pb-20 lg:pb-0">
+<aside class="sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
     <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
     <nav class="flex flex-col gap-6">
         <a href="dashboard-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Painel do módulo">
@@ -72,14 +139,37 @@
     </div>
 </aside>
 
-<main class="ml-20 p-8 lg:p-12">
-    <div class="max-w-5xl mx-auto">
-        <header class="mb-8 flex flex-wrap justify-between items-end gap-4">
+<nav class="bottom-nav-safe fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-card-dark border-t border-slate-200 dark:border-border-dark flex justify-around items-center py-2 px-1">
+    <a href="dashboard-recibos-orcamentos.html" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+        <span class="material-icons-outlined text-2xl">dashboard</span>
+        <span class="text-[9px] font-bold uppercase">Painel</span>
+    </a>
+    <a href="dashboard-recibos-orcamentos.html?abrir=recibo" class="flex flex-col items-center gap-0.5 text-primary min-w-0 px-1 py-1">
+        <span class="material-icons-outlined text-2xl">receipt_long</span>
+        <span class="text-[9px] font-bold uppercase">Recibos</span>
+    </a>
+    <a href="dashboard-recibos-orcamentos.html?abrir=orcamento" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+        <span class="material-icons-outlined text-2xl">request_quote</span>
+        <span class="text-[9px] font-bold uppercase">Orçam.</span>
+    </a>
+    <a href="clientes-recibos-orcamentos.html" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+        <span class="material-icons-outlined text-2xl">people</span>
+        <span class="text-[9px] font-bold uppercase">Clientes</span>
+    </a>
+    <a href="configuracoes-recibos-orcamentos.html" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+        <span class="material-icons-outlined text-2xl">settings</span>
+        <span class="text-[9px] font-bold uppercase">Config</span>
+    </a>
+</nav>
+
+<main class="ml-0 lg:ml-20 p-4 sm:p-6 lg:p-12 max-w-full">
+    <div class="max-w-5xl mx-auto w-full">
+        <header class="mb-6 lg:mb-8 flex flex-col gap-4">
             <div>
-                <h1 class="text-3xl font-bold dark:text-white mb-2" id="page-title">Novo Orçamento</h1>
-                <p class="text-slate-500 dark:text-slate-400" id="page-subtitle">Crie documentos profissionais em segundos</p>
+                <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-1 sm:mb-2" id="page-title">Novo Orçamento</h1>
+                <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400" id="page-subtitle">Crie documentos profissionais em segundos</p>
             </div>
-            <div class="flex flex-wrap gap-3 items-center">
+            <div class="doc-header-actions flex gap-2 items-center">
                 <a href="dashboard-recibos-orcamentos.html" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all text-inherit no-underline" title="Voltar ao painel do módulo">
                     <span class="material-icons-outlined text-sm">home</span>
                     <span class="text-sm font-medium">Voltar ao painel</span>
@@ -113,10 +203,10 @@
             </div>
         </header>
 
-        <form id="form-doc" class="space-y-8" lang="pt-BR" spellcheck="true">
+        <form id="form-doc" class="space-y-5 sm:space-y-8" lang="pt-BR" spellcheck="true">
             <input type="hidden" name="tipo" value="orcamento"/>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm premium-border">
+                <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm premium-border">
                     <div class="flex items-center gap-2 mb-6 text-primary">
                         <span class="material-icons-outlined">business</span>
                         <h2 class="uppercase tracking-widest text-xs font-bold">Emitente</h2>
@@ -126,7 +216,7 @@
                             <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Nome ou Razão Social</label>
                             <input name="emitente_nome" lang="pt-BR" spellcheck="true" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Ex: Sua Empresa LTDA" type="text"/>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">CPF/CNPJ</label>
                                 <input name="emitente_cpf" lang="pt-BR" spellcheck="true" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="00.000.000/0000-00" type="text"/>
@@ -144,7 +234,7 @@
                         <input type="hidden" name="emitente_logo_url" id="input-logo-url" value=""/>
                     </div>
                 </section>
-                <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+                <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
                     <div class="flex items-center gap-2 mb-6 text-primary">
                         <span class="material-icons-outlined">person</span>
                         <h2 class="uppercase tracking-widest text-xs font-bold">Cliente</h2>
@@ -175,7 +265,7 @@
                 </section>
             </div>
 
-            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+            <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
                 <div class="flex items-center gap-2 mb-6 text-primary">
                     <span class="material-icons-outlined">title</span>
                     <h2 class="uppercase tracking-widest text-xs font-bold">Título e Validade</h2>
@@ -198,15 +288,15 @@
                 </div>
             </section>
 
-            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+            <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-2 text-primary">
                         <span class="material-icons-outlined">list_alt</span>
                         <h2 id="itens-section-title" class="uppercase tracking-widest text-xs font-bold">Itens</h2>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full border-separate border-spacing-y-2">
+                <div class="itens-table-wrap overflow-x-auto lg:overflow-visible">
+                    <table class="w-full border-separate border-spacing-y-2 min-w-0 lg:min-w-full">
                         <thead>
                             <tr class="text-[10px] uppercase font-bold text-slate-500 text-left">
                                 <th class="px-4 py-2">Descrição</th>
@@ -219,21 +309,21 @@
                         </thead>
                         <tbody id="itens-tbody">
                             <tr class="item-row bg-slate-50 dark:bg-black/40 group">
-                                <td class="px-4 py-3 rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark">
-                                    <input name="item_descricao[]" lang="pt-BR" spellcheck="true" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="Serviço ou Produto" type="text"/>
+                                <td class="item-td-desc px-4 py-3 lg:rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark" data-label="">
+                                    <input name="item_descricao[]" lang="pt-BR" spellcheck="true" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-medium" placeholder="Serviço ou Produto" type="text"/>
                                     <input name="item_pacote[]" lang="pt-BR" spellcheck="true" class="w-full mt-1 bg-transparent border-none focus:ring-0 p-0 text-xs text-slate-400" placeholder="O que vai no pacote (opcional)" type="text"/>
                                 </td>
-                                <td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark">
-                                    <input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="DD/MM" type="text"/>
+                                <td class="item-td-data px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Data">
+                                    <input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="DD/MM" type="text"/>
                                 </td>
-                                <td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center">
+                                <td class="item-td-qtd px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center" data-label="Qtd">
                                     <input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/>
                                 </td>
-                                <td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark">
-                                    <input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="0,00" type="text"/>
+                                <td class="item-td-unit px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Unit. (R$)">
+                                    <input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="0,00" type="text"/>
                                 </td>
-                                <td class="item-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary">R$ 0,00</td>
-                                <td class="px-4 py-3 rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center">
+                                <td class="item-total item-td-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary" data-label="Total">R$ 0,00</td>
+                                <td class="item-td-remove px-4 py-3 lg:rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center" data-label="">
                                     <button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button>
                                 </td>
                             </tr>
@@ -267,18 +357,18 @@
                             </div>
                         </label>
                     </div>
-                    <div id="comprovante-upload-area" class="flex flex-wrap gap-3 items-center">
+                    <div id="comprovante-upload-area" class="comprovante-btns-mobile flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
                         <input type="file" id="file-comprovante-camera" accept="image/*" capture="environment" class="hidden"/>
                         <input type="file" id="file-comprovante-arquivo" accept="image/*" multiple class="hidden"/>
-                        <button type="button" id="btn-tirar-foto" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition-opacity">
+                        <button type="button" id="btn-tirar-foto" class="btn-mobile-full flex items-center gap-2 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition-opacity">
                             <span class="material-icons-outlined">camera_alt</span>
                             Tirar foto
                         </button>
-                        <button type="button" id="btn-enviar-arquivo" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors">
+                        <button type="button" id="btn-enviar-arquivo" class="btn-mobile-full flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors">
                             <span class="material-icons-outlined">upload_file</span>
                             Enviar foto(s) — pode escolher várias
                         </button>
-                        <button type="button" id="btn-configurar" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:border-primary/50 transition-colors">
+                        <button type="button" id="btn-configurar" class="btn-mobile-full flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:border-primary/50 transition-colors">
                             <span class="material-icons-outlined">tune</span>
                             Configurar
                         </button>
@@ -295,7 +385,7 @@
                 </div>
             </section>
 
-            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+            <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
                 <div class="flex items-center gap-2 mb-4 text-primary">
                     <span class="material-icons-outlined">payment</span>
                     <h2 class="uppercase tracking-widest text-xs font-bold">Condições de pagamento</h2>
@@ -303,7 +393,7 @@
                 <textarea name="condicoes_pagamento" lang="pt-BR" spellcheck="true" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-3 text-sm resize-none" placeholder="Ex.: 20% para marcação; 30% um dia antes do evento; 50% no encerramento." rows="3"></textarea>
             </section>
 
-            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border-2 border-primary/20 shadow-sm premium-border">
+            <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border-2 border-primary/20 shadow-sm premium-border">
                 <div class="flex items-center gap-2 mb-4 text-primary">
                     <span class="material-icons-outlined text-xl">notes</span>
                     <h2 class="uppercase tracking-widest text-xs font-bold">Observações</h2>
@@ -311,13 +401,13 @@
                 <textarea name="observacoes" lang="pt-BR" spellcheck="true" class="w-full bg-slate-50 dark:bg-black border-2 border-slate-200 dark:border-border-dark rounded-lg px-4 py-3 text-base min-h-[120px] focus:border-primary/50 transition-colors resize-y" placeholder="Notas adicionais, instruções ao cliente, informações importantes..." rows="5"></textarea>
             </section>
 
-            <div class="flex flex-col sm:flex-row items-center justify-end gap-6 py-10 border-t border-slate-200 dark:border-border-dark">
-                <div class="flex items-center gap-4 w-full sm:w-auto">
-                    <div class="hidden lg:flex flex-col items-end mr-4">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-4 sm:gap-6 py-6 sm:py-10 border-t border-slate-200 dark:border-border-dark sticky bottom-16 lg:static z-30 bg-background-light dark:bg-background-dark lg:bg-transparent pb-2 lg:pb-0">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+                    <div class="flex flex-row lg:flex-col justify-between lg:items-end lg:mr-4 items-center px-1 lg:px-0">
                         <span id="total-label" class="text-[10px] uppercase font-bold text-slate-500">Valor Total Estimado</span>
-                        <span id="total-display" class="text-2xl font-bold text-primary">R$ 0,00</span>
+                        <span id="total-display" class="text-xl sm:text-2xl font-bold text-primary">R$ 0,00</span>
                     </div>
-                    <button type="submit" id="btn-submit" class="flex-1 sm:flex-none flex items-center justify-center gap-3 bg-primary text-black px-10 py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                    <button type="submit" id="btn-submit" class="w-full sm:w-auto flex items-center justify-center gap-3 bg-primary text-black px-8 sm:px-10 py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
                         <span class="material-icons-outlined">save</span>
                         <span id="btn-submit-text">Salvar Orçamento</span>
                     </button>
@@ -393,8 +483,23 @@
     }
 
     var CONDICOES_PADRAO_KEY = 'recibosOrcamentosCondicoesPadrao';
+    function highlightBottomNav(tipo) {
+        var isRec = (tipo || '').toLowerCase() === 'recibo';
+        document.querySelectorAll('.bottom-nav-safe a').forEach(function(a) {
+            a.classList.remove('text-primary');
+            a.classList.add('text-slate-400');
+        });
+        var sel = isRec
+            ? document.querySelector('.bottom-nav-safe a[href*="abrir=recibo"]')
+            : document.querySelector('.bottom-nav-safe a[href*="abrir=orcamento"]');
+        if (sel) {
+            sel.classList.remove('text-slate-400');
+            sel.classList.add('text-primary');
+        }
+    }
     function applyTipoUI(tipo) {
         var isRecibo = (tipo || '').toLowerCase() === 'recibo';
+        highlightBottomNav(tipo);
         if (!isRecibo) {
             var condInp = document.querySelector('textarea[name="condicoes_pagamento"]');
             if (condInp && (!condInp.value || !condInp.value.trim())) {
@@ -550,12 +655,12 @@
         tr.className = 'item-row bg-slate-50 dark:bg-black/40 group';
         tr.dataset.itemUid = opts.item_uid || newItemUid();
         if (opts.nota_fiscal_url) tr.dataset.notaUrl = opts.nota_fiscal_url;
-        tr.innerHTML = '<td class="px-4 py-3 rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark"><input name="item_descricao[]" lang="pt-BR" spellcheck="true" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="Serviço ou Produto" type="text"/><input name="item_pacote[]" lang="pt-BR" spellcheck="true" class="w-full mt-1 bg-transparent border-none focus:ring-0 p-0 text-xs text-slate-400" placeholder="O que vai no pacote (opcional)" type="text"/></td>' +
-            '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark"><input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="DD/MM" type="text"/></td>' +
-            '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center"><input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/></td>' +
-            '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark"><input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="0,00" type="text"/></td>' +
-            '<td class="item-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary">R$ 0,00</td>' +
-            '<td class="px-4 py-3 rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center"><button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button></td>';
+        tr.innerHTML = '<td class="item-td-desc px-4 py-3 lg:rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark" data-label=""><input name="item_descricao[]" lang="pt-BR" spellcheck="true" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-medium" placeholder="Serviço ou Produto" type="text"/><input name="item_pacote[]" lang="pt-BR" spellcheck="true" class="w-full mt-1 bg-transparent border-none focus:ring-0 p-0 text-xs text-slate-400" placeholder="O que vai no pacote (opcional)" type="text"/></td>' +
+            '<td class="item-td-data px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Data"><input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="DD/MM" type="text"/></td>' +
+            '<td class="item-td-qtd px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center" data-label="Qtd"><input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/></td>' +
+            '<td class="item-td-unit px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Unit. (R$)"><input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="0,00" type="text"/></td>' +
+            '<td class="item-total item-td-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary" data-label="Total">R$ 0,00</td>' +
+            '<td class="item-td-remove px-4 py-3 lg:rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center" data-label=""><button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button></td>';
         tr.querySelector('.btn-remove-item').onclick = function() { tr.remove(); updateTotal(); renderNotasFiscais(); };
         tr.querySelector('.item-unit').addEventListener('input', updateTotal);
         tr.querySelector('input[name="item_qtd[]"]').addEventListener('input', updateTotal);
