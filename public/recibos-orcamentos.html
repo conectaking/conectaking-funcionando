@@ -715,10 +715,8 @@
                 : '<div class="shrink-0 w-20 h-20 rounded-lg border border-dashed border-slate-300 dark:border-border-dark flex items-center justify-center text-slate-400"><span class="material-icons-outlined">receipt</span></div>';
             card.innerHTML = thumb +
                 '<div class="flex-1 min-w-[180px]">' +
-                '<div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">' +
-                '<p class="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-0 flex-1">' + escapeHtml(desc) + '</p>' +
-                '<p class="text-sm font-bold text-primary tabular-nums shrink-0">' + escapeHtml(valorLabel) + '</p>' +
-                '</div>' +
+                '<p class="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">' +
+                escapeHtml(desc) + ' <span class="text-primary font-bold tabular-nums whitespace-nowrap">' + escapeHtml(valorLabel) + '</span></p>' +
                 '<p class="text-xs text-slate-500 mt-0.5">' + (notaUrl ? 'Nota anexada' : 'Sem foto ainda') + '</p>' +
                 '<div class="flex flex-wrap gap-2 mt-2">' +
                 '<button type="button" class="btn-nota-camera px-3 py-1.5 rounded-lg bg-primary text-black text-xs font-semibold">Tirar foto</button>' +
