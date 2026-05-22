@@ -269,14 +269,14 @@
                     </div>
                     <div id="comprovante-upload-area" class="flex flex-wrap gap-3 items-center">
                         <input type="file" id="file-comprovante-camera" accept="image/*" capture="environment" class="hidden"/>
-                        <input type="file" id="file-comprovante-arquivo" accept="image/*" class="hidden"/>
+                        <input type="file" id="file-comprovante-arquivo" accept="image/*" multiple class="hidden"/>
                         <button type="button" id="btn-tirar-foto" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition-opacity">
                             <span class="material-icons-outlined">camera_alt</span>
                             Tirar foto
                         </button>
                         <button type="button" id="btn-enviar-arquivo" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors">
                             <span class="material-icons-outlined">upload_file</span>
-                            Enviar arquivo (digitalizar valores)
+                            Enviar foto(s) — pode escolher várias
                         </button>
                         <button type="button" id="btn-configurar" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:border-primary/50 transition-colors">
                             <span class="material-icons-outlined">tune</span>
@@ -446,30 +446,52 @@
             });
     }
     function enviarComprovante(fileInput) {
-        var file = fileInput.files && fileInput.files[0];
-        if (!file) return;
+        var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
+        if (!files.length) return;
         ensureDocIdThen(function() {
-            var fd = new FormData();
-            fd.append('image', file);
             var etiqueta = document.getElementById('ocr-etiqueta-itens');
-            if (etiqueta && etiqueta.value.trim()) fd.append('etiqueta_itens', etiqueta.value.trim());
+            var etiquetaVal = etiqueta && etiqueta.value.trim() ? etiqueta.value.trim() : '';
             var btn = document.getElementById('btn-tirar-foto');
+            var btnArq = document.getElementById('btn-enviar-arquivo');
             var origHtml = btn ? btn.innerHTML : '';
-            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined">hourglass_empty</span> Digitalizando...'; }
-            fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
-                .then(function(r) { return handleResponse(r, 'Faça login para enviar comprovantes.'); })
-                .then(function(data) {
-                    if (data && data.data && data.data.documento) {
-                        setFormDoc(data.data.documento);
-                        var n = (data.data.documento.itens_json || []).length;
-                        alert(data.message || ('Digitalizado: ' + n + ' linha(s) na tabela. Ajuste se precisar.'));
-                    } else { alert(data.message || 'Falha ao digitalizar.'); }
-                })
-                .catch(function(err) { alert(err.message || 'Erro ao enviar. Faça login na aplicação.'); })
-                .finally(function() {
-                    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
-                });
-            fileInput.value = '';
+            var origArq = btnArq ? btnArq.innerHTML : '';
+            function setBusy(on, idx, total) {
+                var label = on && total > 1
+                    ? '<span class="material-icons-outlined">hourglass_empty</span> Foto ' + (idx + 1) + '/' + total + '...'
+                    : (on ? '<span class="material-icons-outlined">hourglass_empty</span> Digitalizando...' : origHtml);
+                if (btn) { btn.disabled = on; btn.innerHTML = on ? label : origHtml; }
+                if (btnArq) { btnArq.disabled = on; btnArq.innerHTML = on ? label : origArq; }
+            }
+            function enviarUm(i, docAcumulado) {
+                if (i >= files.length) {
+                    setBusy(false);
+                    fileInput.value = '';
+                    if (docAcumulado) {
+                        setFormDoc(docAcumulado);
+                        var n = (docAcumulado.itens_json || []).length;
+                        alert('Extrato digitalizado: ' + n + ' item(ns) na tabela (' + files.length + ' foto(s) processada(s)).');
+                    }
+                    return;
+                }
+                setBusy(true, i, files.length);
+                var fd = new FormData();
+                fd.append('image', files[i]);
+                if (etiquetaVal) fd.append('etiqueta_itens', etiquetaVal);
+                if (i > 0) fd.append('acumular', '1');
+                fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
+                    .then(function(r) { return handleResponse(r, 'Faça login para enviar comprovantes.'); })
+                    .then(function(data) {
+                        var doc = data && data.data && data.data.documento;
+                        if (!doc) throw new Error(data.message || 'Falha ao digitalizar.');
+                        enviarUm(i + 1, doc);
+                    })
+                    .catch(function(err) {
+                        setBusy(false);
+                        fileInput.value = '';
+                        alert(err.message || 'Erro ao enviar. Faça login na aplicação.');
+                    });
+            }
+            enviarUm(0, null);
         });
     }
     (function initOcrEtiquetaVoz() {

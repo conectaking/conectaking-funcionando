@@ -139,8 +139,8 @@ function looksLikeTransactionList(lines) {
         if (lineHasMoney(l)) moneyLines++;
     }
     return (valueOnly >= 2 && dateOnly >= 2)
-        || (moneyLines >= 3 && dateOnly >= 2)
-        || moneyLines >= 4;
+        || (moneyLines >= 2 && dateOnly >= 2)
+        || moneyLines >= 3;
 }
 
 /** Linha contém só data DD/MM ou DD/MM/YY (ex.: 22/02 ou 21/02/26). */
@@ -161,7 +161,8 @@ function isValueOnlyLine(line) {
     if (!line || typeof line !== 'string') return false;
     const t = line.trim();
     return /^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i.test(t)
-        || /^R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(t);
+        || /^R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(t)
+        || /^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})$/i.test(t);
 }
 
 /** Linha contém valor monetário (inline ou só valor). */
@@ -213,11 +214,29 @@ function corrigirValorExtrato(val, rawLine, nome) {
     return val;
 }
 
+/** Linha é principalmente o valor da transação (ex.: "11,20 R$" ou "144,44 R$" no fim). */
+function isTransactionValueLine(line) {
+    if (!line || typeof line !== 'string') return false;
+    if (isValueOnlyLine(line)) return true;
+    const t = line.trim();
+    return /(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i.test(t)
+        || /R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(t);
+}
+
+/** Valor monetário no fim da linha (nome + valor na mesma linha). */
+function extractTrailingValue(line) {
+    if (!line) return null;
+    const m = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i)
+        || line.match(/R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i);
+    if (!m) return null;
+    return normalizeBRL(m[0]);
+}
+
 /** Há linha só com o mesmo valor logo abaixo (layout nome / data / valor). */
 function hasDedicatedValueLineBelow(lines, index, amount) {
     for (let k = index + 1; k <= Math.min(lines.length - 1, index + 3); k++) {
-        if (!isValueOnlyLine(lines[k])) continue;
-        const v = normalizeBRL(lines[k]);
+        if (!isTransactionValueLine(lines[k])) continue;
+        const v = normalizeBRL(lines[k]) ?? extractTrailingValue(lines[k]);
         if (v != null && Math.abs(v - amount) < 0.009) return true;
     }
     return false;
@@ -255,18 +274,28 @@ function dedupeExtratoTransactions(transactions) {
 function collectNameAndDateAbove(lines, valueIndex) {
     let date = null;
     const names = [];
-    for (let j = valueIndex - 1; j >= 0 && valueIndex - j <= 5; j--) {
+    for (let j = valueIndex - 1; j >= 0 && valueIndex - j <= 14; j--) {
         const l = lines[j];
         if (isExtratoHeaderNoise(l)) continue;
         if (isOnlyDateLine(l)) {
             if (!date) date = l.trim();
             continue;
         }
-        if (lineHasMoney(l) && j !== valueIndex) break;
+        if (isTransactionValueLine(l)) break;
         if (/^\d+$/.test(l.trim())) continue;
-        names.unshift(l.trim());
+        const t = l.trim();
+        if (t.length < 2) continue;
+        names.unshift(t);
     }
     return { name: names.join(' ').replace(/\s+/g, ' ').trim(), date };
+}
+
+function collectDateBelow(lines, valueIndex) {
+    for (let k = valueIndex + 1; k <= Math.min(lines.length - 1, valueIndex + 2); k++) {
+        if (isOnlyDateLine(lines[k])) return lines[k].trim();
+        if (isTransactionValueLine(lines[k]) || isExtratoHeaderNoise(lines[k])) break;
+    }
+    return null;
 }
 
 /**
@@ -292,49 +321,47 @@ function parseTransactionList(rawText) {
         if (!declined) total += val;
     }
 
+    const valueIndexes = [];
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (isOnlyDateLine(line) || isExtratoHeaderNoise(line)) continue;
-        const up = line.toUpperCase();
-        const moneyMatch = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R\$/i)
-            || line.match(/R\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/i)
-            || line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/);
-        if (!moneyMatch) continue;
-        const rawVal = moneyMatch[0].replace(/\s+/g, ' ').trim();
-        let val = normalizeBRL(rawVal);
-        if (val == null || val < 0 || val >= 1000000) continue;
+        if (isTransactionValueLine(line)) valueIndexes.push(i);
+    }
+
+    for (const i of valueIndexes) {
         if (usedValueIndexes.has(i)) continue;
+        const line = lines[i];
+        const up = line.toUpperCase();
+        let val = normalizeBRL(line) ?? extractTrailingValue(line);
+        if (val == null || val < 0 || val >= 1000000) continue;
 
         if (!isValueOnlyLine(line) && hasDedicatedValueLineBelow(lines, i, val)) continue;
 
         const declined = up.includes('RECUSADA') || up.includes('RECUSADO') || up.includes('NEGADO') || up.includes('CANCELADO');
-        let rest = line.replace(moneyMatch[0], '').replace(/R\$/gi, '').replace(/\s*Recusada\s*/gi, '').trim();
-        rest = rest.replace(/\s+/g, ' ').trim();
         let name = '';
         let date = null;
-        const dateMatch = rest.match(/\s*(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*$/);
-        if (dateMatch) {
-            date = dateMatch[1];
-            name = rest.slice(0, -dateMatch[0].length).trim();
-        } else {
-            name = rest;
-            if (i + 1 < lines.length && isOnlyDateLine(lines[i + 1]) && !lineHasMoney(lines[i + 1])) {
-                date = lines[i + 1].trim();
-                i++;
+        const trailing = extractTrailingValue(line);
+        if (trailing != null && !isValueOnlyLine(line)) {
+            const rest = line.replace(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i, '').replace(/R\s*\$/gi, '').trim();
+            name = rest.replace(/\s*Recusada\s*/gi, '').trim();
+            const dm = name.match(/\s*(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*$/);
+            if (dm) {
+                date = dm[1];
+                name = name.slice(0, -dm[0].length).trim();
             }
         }
 
-        const mostlyValue = isValueOnlyLine(line) || !name || name.length < 2;
-        if (mostlyValue) {
-            const above = collectNameAndDateAbove(lines, i);
-            if (above.name) name = above.name;
-            if (above.date) date = above.date;
-        }
-        if (!name) name = 'Transação';
+        const above = collectNameAndDateAbove(lines, i);
+        if (above.name) name = above.name;
+        if (above.date) date = above.date;
+        if (!date) date = collectDateBelow(lines, i);
+
+        if (!name || name.length < 2) name = 'Transação';
         name = limparNomeEstabelecimento(name);
         val = corrigirValorExtrato(val, line, name);
         usedValueIndexes.add(i);
-        pushTx(name, date, val, declined, rawVal);
+        const rawVal = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/);
+        pushTx(name, date, val, declined, rawVal ? rawVal[0] : String(val));
     }
 
     const deduped = dedupeExtratoTransactions(transactions);

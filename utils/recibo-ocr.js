@@ -454,12 +454,14 @@ async function redimensionarParaOcr(imageBuffer) {
         const sharp = require('sharp');
         const meta = await sharp(imageBuffer).metadata();
         const w = meta.width || 0;
-        if (w <= OCR_MAX_WIDTH) return imageBuffer;
-        const resized = await sharp(imageBuffer)
-            .resize(OCR_MAX_WIDTH, null, { withoutEnlargement: true })
-            .jpeg({ quality: 85 })
-            .toBuffer();
-        return resized;
+        const targetW = w < 900 ? Math.min(1600, Math.max(w * 2, 900)) : Math.min(1600, Math.max(OCR_MAX_WIDTH, w));
+        let pipe = sharp(imageBuffer)
+            .rotate()
+            .normalize()
+            .sharpen({ sigma: 1.2 })
+            .resize(targetW, null, { withoutEnlargement: false, fit: 'inside' });
+        pipe = pipe.jpeg({ quality: 92 });
+        return await pipe.toBuffer();
     } catch (e) {
         logger.warn('recibo-ocr redimensionar:', e.message);
         return imageBuffer;

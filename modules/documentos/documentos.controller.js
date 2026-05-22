@@ -382,7 +382,8 @@ async function processarComprovante(req, res) {
             // Não retornar erro: utilizador fica com o valor extraído pelo OCR; imagem não é guardada
         }
 
-        const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos });
+        const acumular = req.body && (req.body.acumular === '1' || req.body.acumular === 'true' || req.body.acumular === true);
+        const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos, acumular });
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const responseData = { url, documento: doc, itensAdicionados: itensSugeridos };
         if (parseResult) responseData.parse_result = parseResult;

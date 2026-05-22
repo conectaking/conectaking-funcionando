@@ -123,19 +123,20 @@ function itemExtratoKey(descricao, data, valor) {
     return d + '|' + dt + '|' + v;
 }
 
-async function processarComprovante(id, userId, { url, itensSugeridos }) {
+async function processarComprovante(id, userId, { url, itensSugeridos, acumular }) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
     const sugeridos = Array.isArray(itensSugeridos) ? itensSugeridos : [];
     const isExtratoLista = sugeridos.length >= 3;
-    let itens = isExtratoLista ? [] : (Array.isArray(doc.itens_json) ? [...doc.itens_json] : []);
+    const acumularExtrato = !!acumular;
+    let itens = (isExtratoLista && !acumularExtrato)
+        ? []
+        : (Array.isArray(doc.itens_json) ? [...doc.itens_json] : []);
     const anexos = Array.isArray(doc.anexos_json) ? [...doc.anexos_json] : [];
     const primeiraCategoria = sugeridos.length > 0 ? sugeridos[0].categoria : 'Comprovante';
     const seen = new Set();
-    if (!isExtratoLista) {
-        for (const row of itens) {
-            seen.add(itemExtratoKey(row.descricao, row.data, row.valor_unitario ?? row.valor));
-        }
+    for (const row of itens) {
+        seen.add(itemExtratoKey(row.descricao, row.data, row.valor_unitario ?? row.valor));
     }
     let totalValor = 0;
     for (const s of sugeridos) {
