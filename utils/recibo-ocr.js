@@ -383,10 +383,15 @@ function processarFaturaCartao(ocrText) {
  * Converte transactions[] do receipt-parser (print de lista) em itens para a tabela.
  * Usa name como nome/descrição, date como data, amount como valor; Recusada fica no textoTrecho.
  */
+function limparNomeOcr(nome) {
+    if (!nome || typeof nome !== 'string') return '';
+    return nome.replace(/[|[\]:;]+$/g, '').replace(/^[|[\]:;]+/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function itensFromTransactionList(transactions) {
     if (!Array.isArray(transactions) || transactions.length === 0) return [];
     return transactions.map(tx => {
-        const nome = tx.name || tx.title || 'Transação';
+        const nome = limparNomeOcr(tx.name || tx.title || 'Transação');
         const descricao = tx.status === 'DECLINED' ? nome + ' (Recusada)' : nome;
         const item = {
             valor: tx.amount || 0,
@@ -410,14 +415,6 @@ function processarTextoOcr(ocrText) {
     if (listParsed.transactions && listParsed.transactions.length > 0) {
         const itens = itensFromTransactionList(listParsed.transactions);
         if (itens.length > 0) return itens;
-    }
-
-    if (pareceExtratoCartaoApp(ocrText) && typeof receiptParser.parseTransactionList === 'function') {
-        const forced = receiptParser.parseTransactionList(ocrText);
-        if (forced.transactions && forced.transactions.length > 0) {
-            const itensExtrato = itensFromTransactionList(forced.transactions);
-            if (itensExtrato.length > 0) return itensExtrato;
-        }
     }
 
     if (pareceFaturaCartao(ocrText)) {

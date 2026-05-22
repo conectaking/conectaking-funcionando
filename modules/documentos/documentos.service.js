@@ -79,24 +79,43 @@ async function addAnexo(id, userId, anexo) {
  * itensSugeridos: [{ valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento? }]
  * url: URL pública da imagem após upload; se null (ex.: falha Cloudflare), só atualiza itens (imagem não é guardada).
  */
+function itemExtratoKey(descricao, data, valor) {
+    const d = (descricao || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]/g, '').slice(0, 48);
+    const dt = (data || '').trim();
+    const v = Math.round((Number(valor) || 0) * 100);
+    return d + '|' + dt + '|' + v;
+}
+
 async function processarComprovante(id, userId, { url, itensSugeridos }) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
-    const itens = Array.isArray(doc.itens_json) ? [...doc.itens_json] : [];
+    const sugeridos = Array.isArray(itensSugeridos) ? itensSugeridos : [];
+    const isExtratoLista = sugeridos.length >= 3;
+    let itens = isExtratoLista ? [] : (Array.isArray(doc.itens_json) ? [...doc.itens_json] : []);
     const anexos = Array.isArray(doc.anexos_json) ? [...doc.anexos_json] : [];
-    const primeiraCategoria = itensSugeridos && itensSugeridos.length > 0 ? itensSugeridos[0].categoria : 'Comprovante';
+    const primeiraCategoria = sugeridos.length > 0 ? sugeridos[0].categoria : 'Comprovante';
+    const seen = new Set();
+    if (!isExtratoLista) {
+        for (const row of itens) {
+            seen.add(itemExtratoKey(row.descricao, row.data, row.valor_unitario ?? row.valor));
+        }
+    }
     let totalValor = 0;
-    for (const s of itensSugeridos || []) {
+    for (const s of sugeridos) {
         const nome = (s.nome_estabelecimento || '').toString().trim();
         const descricao = (nome || s.textoTrecho || s.categoria).toString().slice(0, 120);
         const valor = Number(s.valor) || 0;
+        const data = s.data ? String(s.data).slice(0, 20) : '';
+        const key = itemExtratoKey(descricao, data, valor);
+        if (seen.has(key)) continue;
+        seen.add(key);
         const item = {
             descricao,
             quantidade: 1,
             valor_unitario: valor,
             valor
         };
-        if (s.data) item.data = String(s.data).slice(0, 20);
+        if (data) item.data = data;
         const etiqueta = (s.etiqueta_ocr || s.observacao_item || '').toString().trim();
         if (etiqueta) item.conteudo_pacote = etiqueta.slice(0, 120);
         itens.push(item);
