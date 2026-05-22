@@ -83,11 +83,13 @@ if (fs.existsSync(imageCropModalFrom)) {
   console.log('[sync-king-docs] OK js/image-crop-modal.js → public_html/js/');
 }
 
-const ksProjectHtmlSrc = path.join(root, 'tmp_kingSelectionProject.html');
+const ksProjectHtmlSrc = path.join(srcDir, 'kingSelectionProject.html');
 const ksProjectHtmlDest = path.join(destDir, 'kingSelectionProject.html');
 if (fs.existsSync(ksProjectHtmlSrc)) {
   fs.copyFileSync(ksProjectHtmlSrc, ksProjectHtmlDest);
   console.log('[sync-king-docs] OK kingSelectionProject.html → public_html/');
+} else {
+  console.warn('[sync-king-docs] kingSelectionProject.html em falta em public/');
 }
 
 const ksProjectJsFrom = path.join(srcDir, 'kingSelectionProject.js');

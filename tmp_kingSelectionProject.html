@@ -2120,18 +2120,6 @@
             </div>
           </div>
 
-          <div class="ks-card p-5 mt-4 rounded-2xl border border-amber-300/70 bg-amber-50/90">
-            <div class="font-extrabold text-slate-900"><i class="fas fa-cloud"></i> Limpar fotos órfãs no R2</div>
-            <p class="text-sm text-slate-700 mt-2 leading-relaxed max-w-3xl">
-              Remove <b>somente</b> arquivos no armazenamento (R2) que <b>não estão mais</b> em nenhum projeto ativo — por exemplo, galerias que você já excluiu ou fotos antigas substituídas.
-              <b>Não apaga</b> as fotos que ainda aparecem nos seus projetos King Selection.
-            </p>
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              <button type="button" class="ks-btn" id="btn-cleanup-r2-dry"><i class="fas fa-search"></i> Verificar órfãos</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
-            </div>
-            <p class="text-xs text-amber-900/80 mt-2">Use <b>Verificar</b> antes para ver quantos arquivos seriam removidos. A limpeza não pode ser desfeita.</p>
-          </div>
         </div>
 
         <!-- Details -->
@@ -3191,10 +3179,19 @@
             <button class="ks-btn" id="p-select-all"><i class="fas fa-check-double"></i> Selecionar tudo</button>
             <button class="ks-btn" id="p-clear-sel"><i class="fas fa-xmark"></i> Limpar seleção</button>
             <div class="ks-mini"><b id="p-selected-count">0</b> foto(s) selecionada(s)</div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <button class="ks-btn" id="p-download-sel"><i class="fas fa-download"></i> Baixar selecionadas</button>
               <button class="ks-btn" id="p-delete-sel"><i class="fas fa-trash"></i> Excluir selecionadas</button>
+              <button type="button" class="ks-btn" id="btn-cleanup-r2-dry" title="Lista arquivos no Cloudflare R2 que não existem mais em nenhum projeto King Selection"><i class="fas fa-search"></i> Verificar órfãos R2</button>
+              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)" title="Remove do R2 só arquivos órfãos (projetos/fotos já excluídos no King Selection)"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
             </div>
+          </div>
+          <div class="mt-3 ks-card p-4 rounded-2xl border border-amber-300/70 bg-amber-50/90" id="ks-r2-cleanup-card">
+            <div class="font-extrabold text-slate-900 text-sm"><i class="fas fa-cloud"></i> Armazenamento Cloudflare (R2)</div>
+            <p class="text-xs text-slate-700 mt-1 leading-relaxed max-w-3xl">
+              Quando você exclui um projeto ou fotos no King Selection, o arquivo pode continuar no R2.
+              <b>Verificar</b> mostra quantos órfãos existem; <b>Limpar R2</b> apaga <b>somente</b> o que não está mais em nenhum projeto ativo — as fotos desta galeria <b>não</b> são removidas.
+            </p>
           </div>
 
           <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -3494,7 +3491,7 @@
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
 
   <script src="/config.js?v=2026-03-23-anticache-a1"></script>
-  <script src="/kingSelectionProject.js?v=2026-05-19-ks-r2-clients"></script>
+  <script src="/kingSelectionProject.js?v=2026-05-19-ks-r2-photos"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
