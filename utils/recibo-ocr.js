@@ -303,6 +303,18 @@ function pareceFaturaCartao(ocrText) {
     return comDataValor >= 2;
 }
 
+/** Layout app de cartão: várias datas DD/MM e valores em linhas separadas do nome. */
+function pareceExtratoCartaoApp(ocrText) {
+    const linhas = ocrText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let dates = 0;
+    let values = 0;
+    for (const l of linhas) {
+        if (isOnlyDateLine(l)) dates++;
+        if (/^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i.test(l) || /^R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(l)) values++;
+    }
+    return (dates >= 2 && values >= 2) || values >= 3;
+}
+
 const PEDAGIO_NAMES = ['P1', 'P4', 'CCR AUTOBAN', 'CONCESSIONARIA ROTA', 'ENTREVIAS', 'ROTA SO', 'AUTOBAN', 'VIAPAULISTA'];
 
 function categoriaFatura(nome) {
@@ -398,6 +410,14 @@ function processarTextoOcr(ocrText) {
     if (listParsed.transactions && listParsed.transactions.length > 0) {
         const itens = itensFromTransactionList(listParsed.transactions);
         if (itens.length > 0) return itens;
+    }
+
+    if (pareceExtratoCartaoApp(ocrText) && typeof receiptParser.parseTransactionList === 'function') {
+        const forced = receiptParser.parseTransactionList(ocrText);
+        if (forced.transactions && forced.transactions.length > 0) {
+            const itensExtrato = itensFromTransactionList(forced.transactions);
+            if (itensExtrato.length > 0) return itensExtrato;
+        }
     }
 
     if (pareceFaturaCartao(ocrText)) {

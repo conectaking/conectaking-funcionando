@@ -127,10 +127,20 @@ function splitLines(rawText) {
  * Heurística: muitas linhas com valor + pouco texto de comprovante (sem NFC-e, VIA CLIENTE, etc.).
  */
 function looksLikeTransactionList(lines) {
-    if (!lines || lines.length < 4) return false;
-    const moneyLines = lines.filter(l => /,\d{2}\s*R\$/i.test(l) || /R\$\s*\d+,\d{2}/i.test(l) || /\d+,\d{2}\s*(?:R\$)?/i.test(l));
-    const hasReceiptWords = lines.some(l => /DANFE|NFC|VALOR PAGO|CHAVE DE ACESSO|VIA CLIENTE|AUTORIZA|imagedelivery/i.test(l));
-    return moneyLines.length >= 4 && !hasReceiptWords;
+    if (!lines || lines.length < 3) return false;
+    const hasReceiptWords = lines.some(l => /DANFE|NFC|VALOR PAGO|CHAVE DE ACESSO|VIA CLIENTE|AUTORIZA|imagedelivery|DOCUMENTO AUXILIAR/i.test(l));
+    if (hasReceiptWords) return false;
+    let moneyLines = 0;
+    let dateOnly = 0;
+    let valueOnly = 0;
+    for (const l of lines) {
+        if (isOnlyDateLine(l)) dateOnly++;
+        if (isValueOnlyLine(l)) valueOnly++;
+        if (lineHasMoney(l)) moneyLines++;
+    }
+    return (valueOnly >= 2 && dateOnly >= 2)
+        || (moneyLines >= 3 && dateOnly >= 2)
+        || moneyLines >= 4;
 }
 
 /** Linha contém só data DD/MM ou DD/MM/YY (ex.: 22/02 ou 21/02/26). */
@@ -138,41 +148,62 @@ function isOnlyDateLine(line) {
     return line && /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(line.trim());
 }
 
+/** Texto de cabeçalho/rodapé do app de cartão — não é nome de estabelecimento. */
+function isExtratoHeaderNoise(line) {
+    if (!line || typeof line !== 'string') return true;
+    const t = line.trim();
+    if (t.length < 2) return true;
+    return /consulte o extrato|informações finais|informacoes finais|transações recentes|transacoes recentes|fatura do cartão|fatura do cartao|^\s*<\s*$|voltar\s*$/i.test(t);
+}
+
+/** Linha é praticamente só valor (ex.: "105,00 R$" ou "R$ 93,80"). */
+function isValueOnlyLine(line) {
+    if (!line || typeof line !== 'string') return false;
+    const t = line.trim();
+    return /^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i.test(t)
+        || /^R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(t);
+}
+
+/** Linha contém valor monetário (inline ou só valor). */
+function lineHasMoney(line) {
+    if (!line) return false;
+    return /(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R\$/i.test(line)
+        || /R\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/i.test(line)
+        || isValueOnlyLine(line)
+        || /\d+,\d{2}/.test(line);
+}
+
+/**
+ * Nome + data nas linhas acima de uma linha de valor (layout app: nome, DD/MM, valor).
+ */
+function collectNameAndDateAbove(lines, valueIndex) {
+    let date = null;
+    const names = [];
+    for (let j = valueIndex - 1; j >= 0 && valueIndex - j <= 5; j--) {
+        const l = lines[j];
+        if (isExtratoHeaderNoise(l)) continue;
+        if (isOnlyDateLine(l)) {
+            if (!date) date = l.trim();
+            continue;
+        }
+        if (lineHasMoney(l) && j !== valueIndex) break;
+        if (/^\d+$/.test(l.trim())) continue;
+        names.unshift(l.trim());
+    }
+    return { name: names.join(' ').replace(/\s+/g, ' ').trim(), date };
+}
+
 /**
  * Parse de PRINT DE LISTA (ex.: app com Nome, Data DD/MM, Valor R$).
- * Extrai por linha: nome, data (DD/MM), valor; data pode estar na mesma linha ou na linha seguinte (abaixo do nome).
- * Marca DECLINED se "Recusada"; não conta Recusada no total.
- * Retorna transactions[] (com title, name, date, amount, status) e total_paid (soma só dos PAID).
+ * Suporta: nome+data+valor na mesma linha; data abaixo do nome; valor em linha separada (nome e data acima).
  */
 function parseTransactionList(rawText) {
     const lines = splitLines(rawText);
     const transactions = [];
+    const usedValueIndexes = new Set();
     let total = 0;
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (isOnlyDateLine(line)) continue;
-        const up = line.toUpperCase();
-        const moneyMatch = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R\$/i) || line.match(/R\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/i) || line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/);
-        if (!moneyMatch) continue;
-        const rawVal = moneyMatch[0].replace(/\s+/g, ' ').trim();
-        const val = normalizeBRL(rawVal);
-        if (val == null || val < 0 || val >= 1000000) continue;
-        const declined = up.includes('RECUSADA') || up.includes('RECUSADO') || up.includes('NEGADO') || up.includes('CANCELADO');
-        let rest = line.replace(moneyMatch[0], '').replace(/R\$/gi, '').replace(/\s*Recusada\s*/gi, '').trim();
-        rest = rest.replace(/\s+/g, ' ').trim();
-        let name = '';
-        let date = null;
-        const dateMatch = rest.match(/\s*(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*$/);
-        if (dateMatch) {
-            date = dateMatch[1];
-            name = rest.slice(0, -dateMatch[0].length).trim();
-        } else {
-            name = rest || 'Transação';
-            if (i + 1 < lines.length && isOnlyDateLine(lines[i + 1])) {
-                date = lines[i + 1].trim();
-                i++;
-            }
-        }
+
+    function pushTx(name, date, val, declined, rawVal) {
         if (!name) name = 'Transação';
         transactions.push({
             title: (name + (date ? ' ' + date : '')).slice(0, 120),
@@ -184,6 +215,48 @@ function parseTransactionList(rawText) {
         });
         if (!declined) total += val;
     }
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (isOnlyDateLine(line) || isExtratoHeaderNoise(line)) continue;
+        const up = line.toUpperCase();
+        const moneyMatch = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R\$/i)
+            || line.match(/R\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/i)
+            || line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/);
+        if (!moneyMatch) continue;
+        const rawVal = moneyMatch[0].replace(/\s+/g, ' ').trim();
+        const val = normalizeBRL(rawVal);
+        if (val == null || val < 0 || val >= 1000000) continue;
+        if (usedValueIndexes.has(i)) continue;
+        usedValueIndexes.add(i);
+
+        const declined = up.includes('RECUSADA') || up.includes('RECUSADO') || up.includes('NEGADO') || up.includes('CANCELADO');
+        let rest = line.replace(moneyMatch[0], '').replace(/R\$/gi, '').replace(/\s*Recusada\s*/gi, '').trim();
+        rest = rest.replace(/\s+/g, ' ').trim();
+        let name = '';
+        let date = null;
+        const dateMatch = rest.match(/\s*(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*$/);
+        if (dateMatch) {
+            date = dateMatch[1];
+            name = rest.slice(0, -dateMatch[0].length).trim();
+        } else {
+            name = rest;
+            if (i + 1 < lines.length && isOnlyDateLine(lines[i + 1]) && !lineHasMoney(lines[i + 1])) {
+                date = lines[i + 1].trim();
+                i++;
+            }
+        }
+
+        const mostlyValue = isValueOnlyLine(line) || !name || name.length < 2;
+        if (mostlyValue) {
+            const above = collectNameAndDateAbove(lines, i);
+            if (above.name) name = above.name;
+            if (above.date) date = above.date;
+        }
+        if (!name) name = 'Transação';
+        pushTx(name, date, val, declined, rawVal);
+    }
+
     total = Math.round(total * 100) / 100;
     return {
         status: 'PAID',
@@ -502,6 +575,7 @@ function runTests() {
 
 module.exports = {
     parseReceipt,
+    parseTransactionList,
     isDeclinedReceipt,
     extractPaidAt,
     extractPaymentMethod,

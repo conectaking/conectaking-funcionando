@@ -87,7 +87,8 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
     const primeiraCategoria = itensSugeridos && itensSugeridos.length > 0 ? itensSugeridos[0].categoria : 'Comprovante';
     let totalValor = 0;
     for (const s of itensSugeridos || []) {
-        const descricao = (s.nome_estabelecimento || s.textoTrecho || s.categoria).toString().slice(0, 120);
+        const nome = (s.nome_estabelecimento || '').toString().trim();
+        const descricao = (nome || s.textoTrecho || s.categoria).toString().slice(0, 120);
         const valor = Number(s.valor) || 0;
         const item = {
             descricao,
@@ -96,6 +97,8 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
             valor
         };
         if (s.data) item.data = String(s.data).slice(0, 20);
+        const etiqueta = (s.etiqueta_ocr || s.observacao_item || '').toString().trim();
+        if (etiqueta) item.conteudo_pacote = etiqueta.slice(0, 120);
         itens.push(item);
         totalValor += valor;
     }

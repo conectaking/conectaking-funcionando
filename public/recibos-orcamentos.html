@@ -255,6 +255,17 @@
                     <div id="comprovante-sem-id" class="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs" style="display: none;">
                         Se o recibo ainda não foi salvo, ele será criado ao enviar a primeira foto/arquivo.
                     </div>
+                    <div class="mb-4 flex flex-wrap gap-2 items-end">
+                        <label class="flex-1 min-w-[200px]">
+                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">Etiqueta opcional nos itens (ex.: almoço, janta, viagem)</span>
+                            <div class="flex gap-2">
+                                <input type="text" id="ocr-etiqueta-itens" lang="pt-BR" spellcheck="true" class="flex-1 bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-3 py-2 text-sm" placeholder="Deixe vazio para usar só o nome do estabelecimento"/>
+                                <button type="button" id="btn-ocr-etiqueta-voz" class="shrink-0 px-3 py-2 rounded-lg border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 hover:border-primary" title="Falar etiqueta">
+                                    <span class="material-icons-outlined text-lg">mic</span>
+                                </button>
+                            </div>
+                        </label>
+                    </div>
                     <div id="comprovante-upload-area" class="flex flex-wrap gap-3 items-center">
                         <input type="file" id="file-comprovante-camera" accept="image/*" capture="environment" class="hidden"/>
                         <input type="file" id="file-comprovante-arquivo" accept="image/*" class="hidden"/>
@@ -428,6 +439,8 @@
         ensureDocIdThen(function() {
             var fd = new FormData();
             fd.append('image', file);
+            var etiqueta = document.getElementById('ocr-etiqueta-itens');
+            if (etiqueta && etiqueta.value.trim()) fd.append('etiqueta_itens', etiqueta.value.trim());
             var btn = document.getElementById('btn-tirar-foto');
             var origHtml = btn ? btn.innerHTML : '';
             if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined">hourglass_empty</span> Digitalizando...'; }
@@ -436,7 +449,8 @@
                 .then(function(data) {
                     if (data && data.data && data.data.documento) {
                         setFormDoc(data.data.documento);
-                        alert(data.message || 'Valores digitalizados. Ajuste na tabela se precisar.');
+                        var n = (data.data.documento.itens_json || []).length;
+                        alert(data.message || ('Digitalizado: ' + n + ' linha(s) na tabela. Ajuste se precisar.'));
                     } else { alert(data.message || 'Falha ao digitalizar.'); }
                 })
                 .catch(function(err) { alert(err.message || 'Erro ao enviar. Faça login na aplicação.'); })
@@ -446,6 +460,30 @@
             fileInput.value = '';
         });
     }
+    (function initOcrEtiquetaVoz() {
+        var btn = document.getElementById('btn-ocr-etiqueta-voz');
+        var inp = document.getElementById('ocr-etiqueta-itens');
+        if (!btn || !inp) return;
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+            btn.style.display = 'none';
+            return;
+        }
+        var rec = new SR();
+        rec.lang = 'pt-BR';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        btn.onclick = function() {
+            try {
+                rec.onresult = function(ev) {
+                    var t = ev.results && ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript;
+                    if (t) inp.value = (inp.value ? inp.value + ' ' : '') + t.trim();
+                };
+                rec.onerror = function() { alert('Não foi possível usar o microfone. Digite a etiqueta.'); };
+                rec.start();
+            } catch (e) { alert('Microfone indisponível neste navegador.'); }
+        };
+    })();
     document.getElementById('btn-tirar-foto').onclick = function() { document.getElementById('file-comprovante-camera').click(); };
     document.getElementById('btn-enviar-arquivo').onclick = function() { document.getElementById('file-comprovante-arquivo').click(); };
     document.getElementById('file-comprovante-camera').onchange = function() { enviarComprovante(this); };

@@ -325,6 +325,13 @@ async function processarComprovante(req, res) {
             logger.error('documentos processarComprovante OCR:', ocrErr);
         }
 
+        const etiquetaItens = (req.body && req.body.etiqueta_itens != null)
+            ? String(req.body.etiqueta_itens).trim().slice(0, 120)
+            : '';
+        if (etiquetaItens && itensSugeridos.length > 0) {
+            itensSugeridos = itensSugeridos.map(s => ({ ...s, etiqueta_ocr: etiquetaItens }));
+        }
+
         // 2) Tentar upload para Cloudflare; se falhar, continuamos e devolvemos só o valor (imagem descartada)
         let url = null;
         try {
@@ -342,9 +349,12 @@ async function processarComprovante(req, res) {
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const responseData = { url, documento: doc, itensAdicionados: itensSugeridos };
         if (parseResult) responseData.parse_result = parseResult;
-        const msg = itensSugeridos.length > 0
-            ? (url ? 'Comprovante processado e itens adicionados.' : 'Valor extraído da imagem e itens adicionados. (A imagem não foi guardada por falha no envio.)')
-            : (url ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.' : 'Imagem recebida mas o envio falhou e o OCR não identificou valor. Tente novamente ou preencha manualmente.');
+        const n = itensSugeridos.length;
+        const msg = n > 0
+            ? (n === 1
+                ? (url ? 'Comprovante processado: 1 item adicionado.' : '1 item extraído da imagem. (A imagem não foi guardada por falha no envio.)')
+                : (url ? `Extrato digitalizado: ${n} itens adicionados à tabela.` : `${n} itens extraídos da imagem. (A imagem não foi guardada por falha no envio.)`))
+            : (url ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.' : 'Imagem recebida mas o OCR não identificou valores. Tente outra foto ou preencha manualmente.');
         return responseFormatter.success(res, responseData, msg, 201);
     } catch (e) {
         logger.error('documentos processarComprovante:', e);
