@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Configurações — Recibos e Orçamentos | ConectaKing</title>
+    <script src="https://conectaking-api.onrender.com/api-config.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#EAB308", "background-dark": "#0A0A0A", "card-dark": "#171717", "border-dark": "#262626" }, fontFamily: { display: ["Inter", "sans-serif"] } } } };
+    </script>
+    <link rel="stylesheet" href="css/recibos-modulo-mobile.css"/>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
+    <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
+    <nav class="flex flex-col gap-6">
+        <a href="dashboard-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+            <span class="material-icons-outlined">dashboard</span>
+            <span class="text-[10px] font-semibold uppercase">Painel</span>
+        </a>
+        <a href="dashboard-recibos-orcamentos.html?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+            <span class="material-icons-outlined">receipt_long</span>
+            <span class="text-[10px] font-semibold uppercase">Recibos</span>
+        </a>
+        <a href="dashboard-recibos-orcamentos.html?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+            <span class="material-icons-outlined">request_quote</span>
+            <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
+        </a>
+    </nav>
+    <div class="flex flex-col gap-6 mt-6">
+        <a href="clientes-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+            <span class="material-icons-outlined">people</span>
+            <span class="text-[10px] font-semibold uppercase">Clientes</span>
+        </a>
+        <a href="configuracoes-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-primary">
+            <span class="material-icons-outlined">settings</span>
+            <span class="text-[10px] font-semibold uppercase">Config.</span>
+        </a>
+    </div>
+</aside>
+<main class="recibos-main-content ml-0 lg:ml-20 p-4 sm:p-6 lg:p-12 max-w-full">
+    <div class="max-w-4xl mx-auto w-full">
+        <header class="mb-6 lg:mb-8">
+            <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-2">Configurações</h1>
+            <p class="text-slate-500 dark:text-slate-400">Configurações do módulo Recibos e Orçamentos.</p>
+        </header>
+        <div class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark space-y-6">
+            <section>
+                <h2 class="text-lg font-bold dark:text-white mb-2 flex items-center gap-2">
+                    <span class="material-icons-outlined text-primary">image</span>
+                    Logomarca fixa
+                </h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Configure a logo que será usada em todos os recibos e orçamentos.</p>
+                <div id="logo-fixa-upload-area" class="rounded-xl border-2 border-dashed border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-black/40 p-6 text-center cursor-pointer hover:border-primary/50 max-w-xs mb-4">
+                    <input type="file" id="file-logo-fixa" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden"/>
+                    <img id="logo-fixa-preview" src="" alt="Logo" class="max-h-20 w-auto mx-auto rounded-lg" style="display: none;"/>
+                    <div id="logo-fixa-text">
+                        <span class="material-icons-outlined text-3xl text-primary block mb-2">cloud_upload</span>
+                        <p class="text-sm text-slate-600 dark:text-slate-300 m-0">Clique para definir logo padrão</p>
+                    </div>
+                </div>
+                <p class="text-slate-500 dark:text-slate-400 text-xs mb-2">Selecione a imagem para ver como ficará antes de confirmar.</p>
+                <button type="button" id="btn-remover-logo-fixa" class="text-sm text-red-500 hover:underline" style="display: none;">Remover logo fixa</button>
+            </section>
+            <!-- Modal: visualizar logo antes de importar -->
+            <div id="logo-preview-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style="display: none;">
+                <div class="bg-white dark:bg-card-dark rounded-2xl shadow-xl border border-slate-200 dark:border-border-dark max-w-md w-full overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 dark:border-border-dark">
+                        <h3 class="text-lg font-bold dark:text-white">Visualizar logo</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Confira se está como deseja antes de usar nos documentos.</p>
+                    </div>
+                    <div class="p-6 flex flex-col items-center justify-center bg-slate-50 dark:bg-black/40 min-h-[200px]">
+                        <img id="logo-preview-modal-img" src="" alt="Preview" class="max-h-40 w-auto object-contain rounded-lg border border-slate-200 dark:border-border-dark"/>
+                    </div>
+                    <div class="p-4 flex gap-3 justify-end border-t border-slate-200 dark:border-border-dark">
+                        <button type="button" id="logo-modal-cancel" class="px-4 py-2 rounded-lg border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-black/40 transition-colors">Escolher outra</button>
+                        <button type="button" id="logo-modal-confirm" class="px-4 py-2 rounded-lg bg-primary text-black font-medium hover:opacity-90 transition-opacity">Usar esta logo</button>
+                    </div>
+                </div>
+            </div>
+            <section>
+                <h2 class="text-lg font-bold dark:text-white mb-2 flex items-center gap-2">
+                    <span class="material-icons-outlined text-primary">palette</span>
+                    Cores do preview e PDF
+                </h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Personalize as cores dos documentos. As alterações aparecem na visualização e ao exportar o PDF.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-slate-300 mb-2">Cabeçalho (azul)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="cor-cabecalho" value="#1e3a5f" class="w-12 h-10 rounded border border-slate-200 dark:border-border-dark cursor-pointer"/>
+                            <input type="text" id="cor-cabecalho-hex" value="#1e3a5f" class="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark text-sm font-mono" maxlength="7"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-slate-300 mb-2">Destaque / Laranja</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="cor-destaque" value="#e67e22" class="w-12 h-10 rounded border border-slate-200 dark:border-border-dark cursor-pointer"/>
+                            <input type="text" id="cor-destaque-hex" value="#e67e22" class="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark text-sm font-mono" maxlength="7"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-slate-300 mb-2">Fundo do documento</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="cor-fundo" value="#ffffff" class="w-12 h-10 rounded border border-slate-200 dark:border-border-dark cursor-pointer"/>
+                            <input type="text" id="cor-fundo-hex" value="#ffffff" class="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark text-sm font-mono" maxlength="7"/>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="btn-salvar-cores" class="mt-4 px-4 py-2 rounded-lg bg-primary text-black font-medium hover:opacity-90 transition-opacity">
+                    Salvar cores
+                </button>
+            </section>
+            <section>
+                <h2 class="text-lg font-bold dark:text-white mb-2 flex items-center gap-2">
+                    <span class="material-icons-outlined text-primary">assignment</span>
+                    Texto padrão para condições de pagamento
+                </h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Esse texto será pré-preenchido ao criar um novo orçamento. Ex.: "20% para marcação; 30% um dia antes do evento; 50% no encerramento."</p>
+                <textarea id="condicoes-padrao" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-3 text-sm resize-y min-h-[80px]" placeholder="Ex.: 20% para marcação; 30% um dia antes; 50% no dia"></textarea>
+                <button type="button" id="btn-salvar-condicoes-padrao" class="mt-2 px-4 py-2 rounded-lg bg-primary text-black font-medium hover:opacity-90 transition-opacity">Salvar texto padrão</button>
+            </section>
+            <section>
+                <h2 class="text-lg font-bold dark:text-white mb-2 flex items-center gap-2">
+                    <span class="material-icons-outlined text-primary">list_alt</span>
+                    Catálogo de serviços
+                </h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Serviços ou produtos que você usa com frequência. Ao criar um orçamento/recibo, use "Inserir do catálogo" para adicionar rapidamente.</p>
+                <div class="space-y-2 mb-4 max-w-lg">
+                    <div class="flex gap-2">
+                        <input type="text" id="cat-desc" class="flex-1 bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2 text-sm" placeholder="Descrição (ex: Ensaio fotográfico)"/>
+                        <input type="text" id="cat-valor" class="w-28 bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2 text-sm" placeholder="Valor R$"/>
+                        <button type="button" id="btn-add-catalogo" class="px-3 py-2 rounded-lg bg-primary text-black text-sm font-medium">Adicionar</button>
+                    </div>
+                </div>
+                <ul id="lista-catalogo" class="space-y-1 max-h-40 overflow-y-auto"></ul>
+            </section>
+            <section>
+                <h2 class="text-lg font-bold dark:text-white mb-2 flex items-center gap-2">
+                    <span class="material-icons-outlined text-primary">qr_code_2</span>
+                    PIX (pagamento)
+                </h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Configure sua chave PIX para aparecer nos documentos. O cliente poderá pagar via QR Code ou copiando a chave. Apenas PIX — sem cartão ou boleto.</p>
+                <div class="space-y-4 max-w-md">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-slate-300 mb-1">Chave PIX</label>
+                        <input type="text" id="pix-chave" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="E-mail, telefone, CPF ou chave aleatória"/>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-slate-300 mb-1">Nome do titular</label>
+                        <input type="text" id="pix-nome" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Nome como cadastrado no PIX"/>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-slate-300 mb-1">Cidade</label>
+                        <input type="text" id="pix-cidade" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Cidade (ex: SAO PAULO)"/>
+                    </div>
+                </div>
+            </section>
+            <section>
+                <h2 class="text-lg font-bold dark:text-white mb-2 flex items-center gap-2">
+                    <span class="material-icons-outlined text-primary">dark_mode</span>
+                    Aparência
+                </h2>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="escurecer-documentos" class="rounded border-slate-300 text-primary focus:ring-primary"/>
+                    <span class="text-sm text-slate-600 dark:text-slate-300">Escurecer documentos (recibos e orçamentos) — fundo escuro no preview e PDF</span>
+                </label>
+            </section>
+            <p class="text-slate-500 text-sm">As opções de perfil e módulos do ConectaKing ficam no painel principal. Para alterar dados da empresa (emitente), use o painel principal.</p>
+        </div>
+    </div>
+</main>
+<script>
+(function() {
+    var STORAGE_KEY = 'recibosOrcamentosCores';
+    var ESCURIR_KEY = 'recibosOrcamentosEscurecer';
+    var host = window.location.hostname || '';
+    var port = String(window.location.port || '');
+    var isLocal = /^127\.0\.0\.1|localhost$/i.test(host);
+    var portasEstaticas = ['5500', '3000', '8080', '5173', '4173'];
+    var apiOrigin = (typeof window !== 'undefined' && (window.API_BASE || window.CONECTAKING_API_BASE)) ? (window.API_BASE || window.CONECTAKING_API_BASE).replace(/\/$/, '') : (isLocal && portasEstaticas.indexOf(port) >= 0 ? (window.location.protocol + '//' + host + ':5000') : '');
+    var API_SETTINGS = apiOrigin ? (apiOrigin + '/api/documentos/settings') : '/api/documentos/settings';
+    function getAuthHeaders(extra) {
+        var h = extra ? Object.assign({}, extra) : {};
+        try {
+            var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
+            if (token) h['Authorization'] = 'Bearer ' + token;
+        } catch (e) {}
+        return h;
+    }
+    function applyCoresToUI(cabecalho, destaque, fundo, escurecer) {
+        if (cabecalho) { document.getElementById('cor-cabecalho').value = cabecalho; document.getElementById('cor-cabecalho-hex').value = cabecalho; }
+        if (destaque) { document.getElementById('cor-destaque').value = destaque; document.getElementById('cor-destaque-hex').value = destaque; }
+        if (fundo) { document.getElementById('cor-fundo').value = fundo; document.getElementById('cor-fundo-hex').value = fundo; }
+        var chk = document.getElementById('escurecer-documentos');
+        if (chk) chk.checked = escurecer === true || escurecer === '1' || escurecer === 'true';
+    }
+    function loadCores() {
+        if (API_SETTINGS) {
+            fetch(API_SETTINGS, { credentials: 'include', headers: getAuthHeaders() })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(data) {
+                    var d = (data && data.data) ? data.data : null;
+                    if (d && (d.headerColor || d.accentColor || d.bgColor)) {
+                        var cab = d.headerColor ? ('#' + String(d.headerColor).replace(/^#/, '')) : '#1e3a5f';
+                        var des = d.accentColor ? ('#' + String(d.accentColor).replace(/^#/, '')) : '#e67e22';
+                        var bg = d.bgColor ? ('#' + String(d.bgColor).replace(/^#/, '')) : '#ffffff';
+                        var esc = (bg.toLowerCase() === '#1e1e1e' || bg.toLowerCase() === '#1a1a1a');
+                        applyCoresToUI(cab, des, bg, esc);
+                        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cabecalho: cab, destaque: des, fundo: bg })); localStorage.setItem(ESCURIR_KEY, esc ? '1' : '0'); } catch (e) {}
+                        return;
+                    }
+                    loadCoresLocal();
+                })
+                .catch(function() { loadCoresLocal(); });
+        } else { loadCoresLocal(); }
+    }
+    function loadCoresLocal() {
+        try {
+            var s = localStorage.getItem(STORAGE_KEY);
+            if (s) {
+                var c = JSON.parse(s);
+                applyCoresToUI(c.cabecalho, c.destaque, c.fundo, false);
+            }
+            var esc = localStorage.getItem(ESCURIR_KEY);
+            var chk = document.getElementById('escurecer-documentos');
+            if (chk) chk.checked = esc === '1' || esc === 'true';
+        } catch (e) {}
+    }
+    var CONDICOES_PADRAO_KEY = 'recibosOrcamentosCondicoesPadrao';
+    var PIX_KEY = 'recibosOrcamentosPix';
+    var CATALOGO_KEY = 'recibosOrcamentosCatalogo';
+    function loadCondicoesPadraoLocal() {
+        try {
+            var s = localStorage.getItem(CONDICOES_PADRAO_KEY);
+            if (s) document.getElementById('condicoes-padrao').value = s;
+        } catch (e) {}
+    }
+    function loadPixLocal() {
+        try {
+            var s = localStorage.getItem(PIX_KEY);
+            if (s) {
+                var p = JSON.parse(s);
+                document.getElementById('pix-chave').value = p.chave || '';
+                document.getElementById('pix-nome').value = p.nome || '';
+                document.getElementById('pix-cidade').value = p.cidade || '';
+            }
+        } catch (e) {}
+    }
+    function loadLogoFixaLocal() {
+        try {
+            var url = localStorage.getItem(LOGO_FIXA_KEY);
+            if (url && url.length > 10) applyLogoToUI(url);
+        } catch (e) {}
+    }
+    function saveCores() {
+        var escurecer = document.getElementById('escurecer-documentos') && document.getElementById('escurecer-documentos').checked;
+        var fundo = escurecer ? '#1e1e1e' : document.getElementById('cor-fundo').value;
+        var c = {
+            cabecalho: document.getElementById('cor-cabecalho').value,
+            destaque: document.getElementById('cor-destaque').value,
+            fundo: fundo
+        };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cabecalho: c.cabecalho, destaque: c.destaque, fundo: c.fundo })); localStorage.setItem(ESCURIR_KEY, escurecer ? '1' : '0'); } catch (e) {}
+        if (API_SETTINGS) {
+            var payload = {
+                headerColor: (c.cabecalho || '').replace(/^#/, ''),
+                accentColor: (c.destaque || '').replace(/^#/, ''),
+                bgColor: (c.fundo || '').replace(/^#/, '')
+            };
+            var btn = document.getElementById('btn-salvar-cores');
+            var origText = btn.textContent;
+            btn.textContent = 'Salvando...';
+            btn.disabled = true;
+            fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload), credentials: 'include' })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('Erro ao salvar.');
+                    btn.textContent = 'Salvo!';
+                    setTimeout(function() { btn.textContent = origText; btn.disabled = false; }, 1500);
+                })
+                .catch(function() { btn.textContent = origText; btn.disabled = false; alert('Erro ao salvar. Verifique se está autenticado.'); });
+        } else {
+            var btn = document.getElementById('btn-salvar-cores');
+            btn.textContent = 'Salvo!';
+            setTimeout(function() { btn.textContent = 'Salvar cores'; }, 1500);
+        }
+    }
+    function syncColor(id) {
+        var picker = document.getElementById('cor-' + id);
+        var hex = document.getElementById('cor-' + id + '-hex');
+        picker.addEventListener('input', function() { hex.value = picker.value; });
+        hex.addEventListener('input', function() {
+            if (/^#[0-9A-Fa-f]{6}$/.test(hex.value)) picker.value = hex.value;
+        });
+    }
+    function loadAllSettings() {
+        if (!API_SETTINGS) {
+            loadCoresLocal();
+            loadLogoFixa();
+            loadCondicoesPadraoLocal();
+            loadPixLocal();
+            loadCatalogoLocal();
+            return;
+        }
+        fetch(API_SETTINGS, { credentials: 'include', headers: getAuthHeaders() })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+                var d = (data && data.data) ? data.data : null;
+                if (d) {
+                    if (d.headerColor || d.accentColor || d.bgColor) {
+                        var cab = d.headerColor ? ('#' + String(d.headerColor).replace(/^#/, '')) : '#1e3a5f';
+                        var des = d.accentColor ? ('#' + String(d.accentColor).replace(/^#/, '')) : '#e67e22';
+                        var bg = d.bgColor ? ('#' + String(d.bgColor).replace(/^#/, '')) : '#ffffff';
+                        var esc = (bg.toLowerCase() === '#1e1e1e' || bg.toLowerCase() === '#1a1a1a');
+                        applyCoresToUI(cab, des, bg, esc);
+                        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cabecalho: cab, destaque: des, fundo: bg })); localStorage.setItem(ESCURIR_KEY, esc ? '1' : '0'); } catch (e) {}
+                    }
+                    /* Só a logo fixa do módulo (default_logo_url). Não usar companyLogoUrl do perfil — era isso que “trazia a logo de volta” após remover. */
+                    if (d.defaultLogoUrl && String(d.defaultLogoUrl).trim()) {
+                        applyLogoToUI(String(d.defaultLogoUrl).trim());
+                    } else {
+                        applyLogoToUI('');
+                    }
+                    var cp = document.getElementById('condicoes-padrao');
+                    if (cp && d.condicoesPagamentoPadrao != null) { cp.value = d.condicoesPagamentoPadrao; try { localStorage.setItem(CONDICOES_PADRAO_KEY, d.condicoesPagamentoPadrao); } catch (e) {} }
+                    if (d.pixChave != null) document.getElementById('pix-chave').value = d.pixChave;
+                    if (d.pixNome != null) document.getElementById('pix-nome').value = d.pixNome;
+                    if (d.pixCidade != null) document.getElementById('pix-cidade').value = d.pixCidade;
+                    try { localStorage.setItem(PIX_KEY, JSON.stringify({ chave: d.pixChave || '', nome: d.pixNome || '', cidade: d.pixCidade || '' })); } catch (e) {}
+                    if (Array.isArray(d.catalogoServicos) && d.catalogoServicos.length) {
+                        try { localStorage.setItem(CATALOGO_KEY, JSON.stringify(d.catalogoServicos)); } catch (e) {}
+                        loadCatalogoFromList(d.catalogoServicos);
+                    }
+                }
+                if (!d || !d.headerColor && !d.accentColor && !d.bgColor) loadCoresLocal();
+                if (!d) loadLogoFixaLocal();
+                if (!d || d.condicoesPagamentoPadrao == null) loadCondicoesPadraoLocal();
+                if (!d || d.pixChave == null && d.pixNome == null) loadPixLocal();
+                if (!d || !Array.isArray(d.catalogoServicos) || !d.catalogoServicos.length) loadCatalogoLocal();
+            })
+            .catch(function() {
+                loadCoresLocal();
+                loadLogoFixaLocal();
+                loadCondicoesPadraoLocal();
+                loadPixLocal();
+                loadCatalogoLocal();
+            });
+    }
+    function loadCatalogoFromList(list) {
+        var ul = document.getElementById('lista-catalogo');
+        if (!ul) return;
+        ul.innerHTML = list.map(function(item, i) {
+            return '<li class="flex justify-between items-center py-2 px-3 rounded bg-slate-50 dark:bg-black/40"><span class="text-sm">' + escapeHtml(item.descricao) + ' — R$ ' + (item.valor != null ? Number(item.valor).toFixed(2).replace('.', ',') : '0,00') + '</span><button type="button" class="catalogo-rm text-red-500 hover:underline text-xs" data-i="' + i + '">Remover</button></li>';
+        }).join('');
+        ul.querySelectorAll('.catalogo-rm').forEach(function(btn) {
+            btn.onclick = function() {
+                list.splice(parseInt(this.dataset.i, 10), 1);
+                localStorage.setItem(CATALOGO_KEY, JSON.stringify(list));
+                saveCatalogoToApi(list);
+                loadCatalogoFromList(list);
+            };
+        });
+    }
+    loadAllSettings();
+    syncColor('cabecalho');
+    syncColor('destaque');
+    syncColor('fundo');
+    document.getElementById('btn-salvar-cores').onclick = saveCores;
+
+    var LOGO_FIXA_KEY = 'recibosOrcamentosLogoFixa';
+    var API_UPLOAD_LOGO = apiOrigin ? (apiOrigin + '/api/documentos/upload-logo') : '/api/documentos/upload-logo';
+    var logoArea = document.getElementById('logo-fixa-upload-area');
+    var fileLogoFixa = document.getElementById('file-logo-fixa');
+    var logoPreview = document.getElementById('logo-fixa-preview');
+    var logoText = document.getElementById('logo-fixa-text');
+    var btnRemoverLogoFixa = document.getElementById('btn-remover-logo-fixa');
+
+    function applyLogoToUI(url) {
+        if (url && url.length > 10) {
+            logoPreview.src = url;
+            logoPreview.style.display = 'block';
+            logoText.style.display = 'none';
+            btnRemoverLogoFixa.style.display = 'inline-block';
+            try { localStorage.setItem(LOGO_FIXA_KEY, url); } catch (e) {}
+        } else {
+            logoPreview.src = '';
+            logoPreview.style.display = 'none';
+            logoText.style.display = 'block';
+            btnRemoverLogoFixa.style.display = 'none';
+            try { localStorage.removeItem(LOGO_FIXA_KEY); } catch (e) {}
+        }
+    }
+    function loadLogoFixa() {
+        if (API_SETTINGS) {
+            fetch(API_SETTINGS, { credentials: 'include', headers: getAuthHeaders() })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(data) {
+                    var d = (data && data.data) ? data.data : null;
+                    var url = (d && d.defaultLogoUrl && d.defaultLogoUrl.trim()) ? d.defaultLogoUrl.trim() : null;
+                    if (url) {
+                        applyLogoToUI(url);
+                        return;
+                    }
+                    try {
+                        var local = localStorage.getItem(LOGO_FIXA_KEY);
+                        if (local && local.length > 10) applyLogoToUI(local);
+                    } catch (e) {}
+                })
+                .catch(function() {
+                    try {
+                        var local = localStorage.getItem(LOGO_FIXA_KEY);
+                        if (local && local.length > 10) applyLogoToUI(local);
+                    } catch (e) {}
+                });
+        } else {
+            try {
+                var local = localStorage.getItem(LOGO_FIXA_KEY);
+                if (local && local.length > 10) applyLogoToUI(local);
+            } catch (e) {}
+        }
+    }
+
+    var logoPreviewModal = document.getElementById('logo-preview-modal');
+    var logoPreviewModalImg = document.getElementById('logo-preview-modal-img');
+    var logoModalConfirm = document.getElementById('logo-modal-confirm');
+    var logoModalCancel = document.getElementById('logo-modal-cancel');
+    var logoPendingDataUrl = null;
+    var logoPendingFile = null;
+
+    function openLogoPreview(dataUrl, file) {
+        logoPendingDataUrl = dataUrl;
+        logoPendingFile = file || null;
+        if (logoPreviewModalImg) logoPreviewModalImg.src = dataUrl || '';
+        if (logoPreviewModal) { logoPreviewModal.style.display = 'flex'; }
+    }
+    function closeLogoPreview(save) {
+        if (save && (logoPendingDataUrl || logoPendingFile)) {
+            if (logoPendingFile && API_UPLOAD_LOGO) {
+                var fd = new FormData();
+                fd.append('image', logoPendingFile);
+                var btn = logoModalConfirm;
+                if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+                fetch(API_UPLOAD_LOGO, { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
+                    .then(function(r) {
+                        if (!r.ok) throw new Error('Falha no envio.');
+                        return r.json();
+                    })
+                    .then(function(res) {
+                        var url = (res && res.data && res.data.url) ? res.data.url : null;
+                        if (url && API_SETTINGS) {
+                            return fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ defaultLogoUrl: url }), credentials: 'include' })
+                                .then(function(r2) { if (!r2.ok) throw new Error('Falha ao salvar.'); return url; });
+                        }
+                        return url;
+                    })
+                    .then(function(url) {
+                        if (url) applyLogoToUI(url);
+                    })
+                    .catch(function(err) { alert(err.message || 'Erro ao salvar a logo. Verifique se está autenticado.'); })
+                    .finally(function() { if (btn) { btn.disabled = false; btn.textContent = 'Usar esta logo'; } });
+            } else if (logoPendingDataUrl && logoPendingDataUrl.length > 100 && API_SETTINGS) {
+                fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ defaultLogoUrl: logoPendingDataUrl }), credentials: 'include' })
+                    .then(function(r) {
+                        if (!r.ok) throw new Error('Falha ao salvar.');
+                        applyLogoToUI(logoPendingDataUrl);
+                    })
+                    .catch(function(err) { alert(err.message || 'Erro ao salvar a logo.'); });
+            } else if (logoPendingDataUrl && logoPendingDataUrl.length > 100) {
+                applyLogoToUI(logoPendingDataUrl);
+            }
+        }
+        logoPendingDataUrl = null;
+        logoPendingFile = null;
+        if (logoPreviewModal) { logoPreviewModal.style.display = 'none'; }
+        if (fileLogoFixa) fileLogoFixa.value = '';
+    }
+
+    logoArea.onclick = function() { fileLogoFixa.click(); };
+    fileLogoFixa.onchange = function() {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function() {
+            var dataUrl = reader.result;
+            if (dataUrl && dataUrl.length > 100) {
+                openLogoPreview(dataUrl, file);
+            } else { fileLogoFixa.value = ''; }
+        };
+        reader.readAsDataURL(file);
+    };
+    if (logoModalConfirm) logoModalConfirm.onclick = function() { closeLogoPreview(true); };
+    if (logoModalCancel) logoModalCancel.onclick = function() { closeLogoPreview(false); };
+    if (logoPreviewModal) {
+        logoPreviewModal.onclick = function(e) {
+            if (e.target === logoPreviewModal) closeLogoPreview(false);
+        };
+    }
+    btnRemoverLogoFixa.onclick = function() {
+        if (API_SETTINGS) {
+            fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ defaultLogoUrl: null }), credentials: 'include' })
+                .then(function(r) { if (!r.ok) throw new Error('Falha ao remover.'); return r.json(); })
+                .then(function() { applyLogoToUI(''); })
+                .catch(function() { alert('Não foi possível remover a logo fixa. Verifique se está autenticado.'); });
+        } else {
+            applyLogoToUI('');
+        }
+    };
+
+    function saveCondicoesPadrao() {
+        var val = document.getElementById('condicoes-padrao').value.trim();
+        try { localStorage.setItem(CONDICOES_PADRAO_KEY, val); } catch (e) {}
+        if (API_SETTINGS) {
+            var btn = document.getElementById('btn-salvar-condicoes-padrao');
+            var orig = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Salvando...';
+            fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ condicoesPagamentoPadrao: val }), credentials: 'include' })
+                .then(function(r) { if (!r.ok) throw new Error('Erro ao salvar.'); btn.textContent = 'Salvo!'; setTimeout(function() { btn.textContent = orig; btn.disabled = false; }, 1500); })
+                .catch(function() { btn.textContent = orig; btn.disabled = false; alert('Erro ao salvar. Verifique se está autenticado.'); });
+        } else {
+            var btn = document.getElementById('btn-salvar-condicoes-padrao');
+            btn.textContent = 'Salvo!';
+            setTimeout(function() { btn.textContent = 'Salvar texto padrão'; }, 1500);
+        }
+    }
+    document.getElementById('btn-salvar-condicoes-padrao').onclick = saveCondicoesPadrao;
+
+    document.getElementById('escurecer-documentos').addEventListener('change', function() {
+        try {
+            localStorage.setItem(ESCURIR_KEY, this.checked ? '1' : '0');
+        } catch (e) {}
+    });
+
+    function savePixToApi() {
+        var p = {
+            chave: document.getElementById('pix-chave').value.trim(),
+            nome: document.getElementById('pix-nome').value.trim(),
+            cidade: document.getElementById('pix-cidade').value.trim()
+        };
+        try { localStorage.setItem(PIX_KEY, JSON.stringify(p)); } catch (e) {}
+        if (API_SETTINGS) {
+            fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ pixChave: p.chave, pixNome: p.nome, pixCidade: p.cidade }), credentials: 'include' }).catch(function() {});
+        }
+    }
+    document.getElementById('pix-chave').addEventListener('blur', savePixToApi);
+    document.getElementById('pix-nome').addEventListener('blur', savePixToApi);
+    document.getElementById('pix-cidade').addEventListener('blur', savePixToApi);
+
+    function loadCatalogoLocal() {
+        try {
+            var s = localStorage.getItem(CATALOGO_KEY);
+            var list = s ? JSON.parse(s) : [];
+            loadCatalogoFromList(list);
+        } catch (e) {}
+    }
+    function saveCatalogoToApi(list) {
+        try { localStorage.setItem(CATALOGO_KEY, JSON.stringify(list)); } catch (e) {}
+        if (API_SETTINGS) {
+            fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ catalogoServicos: list }), credentials: 'include' }).catch(function() {});
+        }
+    }
+    function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+    document.getElementById('btn-add-catalogo').onclick = function() {
+        var desc = document.getElementById('cat-desc').value.trim();
+        var val = document.getElementById('cat-valor').value.trim().replace(',', '.');
+        if (!desc) return;
+        var list = [];
+        try { var s = localStorage.getItem(CATALOGO_KEY); if (s) list = JSON.parse(s); } catch (e) {}
+        list.push({ descricao: desc, valor: parseFloat(val) || 0 });
+        saveCatalogoToApi(list);
+        document.getElementById('cat-desc').value = ''; document.getElementById('cat-valor').value = '';
+        loadCatalogoFromList(list);
+    };
+})();
+</script>
+<script src="js/recibos-modulo-nav.js" data-active="config"></script>
+</body>
+</html>

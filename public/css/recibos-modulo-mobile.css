@@ -1,0 +1,30 @@
+/* Navegação mobile unificada — Recibos e Orçamentos */
+.bottom-nav-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@media (max-width: 1023px) {
+    .recibos-modulo-page {
+        padding-bottom: 5rem;
+    }
+    .recibos-sidebar-desktop {
+        display: none !important;
+    }
+    .recibos-main-content {
+        margin-left: 0 !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-top: 1rem;
+        padding-bottom: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .recibos-modulo-page {
+        padding-bottom: 0;
+    }
+    .recibos-main-content {
+        margin-left: 5rem;
+        padding: 2rem 3rem;
+    }
+}

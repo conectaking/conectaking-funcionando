@@ -24,6 +24,7 @@
             },
         };
     </script>
+    <link rel="stylesheet" href="css/recibos-modulo-mobile.css"/>
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         ::-webkit-scrollbar { width: 8px; }
@@ -31,8 +32,8 @@
         ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-<aside class="fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark flex flex-col items-center py-8 z-50">
+<body class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
     <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
     <nav class="flex flex-col gap-6">
         <a href="dashboard-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-primary">
@@ -60,11 +61,11 @@
     </div>
 </aside>
 
-<main class="ml-20 p-8 lg:p-12">
-    <div class="max-w-4xl mx-auto">
-        <header class="mb-8 flex flex-wrap justify-between items-start gap-4">
+<main class="recibos-main-content ml-0 lg:ml-20 p-4 sm:p-6 lg:p-12 max-w-full">
+    <div class="max-w-4xl mx-auto w-full">
+        <header class="mb-6 lg:mb-8 flex flex-col sm:flex-row flex-wrap justify-between items-start gap-4">
             <div>
-                <h1 class="text-3xl font-bold dark:text-white mb-2">Painel — Recibos e Orçamentos</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-2">Painel — Recibos e Orçamentos</h1>
                 <p class="text-slate-500 dark:text-slate-400">Gerencie seus documentos e acesse as outras áreas do módulo.</p>
             </div>
             <a href="dashboard.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 hover:bg-slate-200 dark:hover:bg-black/40 transition-all text-inherit no-underline">
@@ -365,5 +366,6 @@
     }
 })();
 </script>
+<script src="js/recibos-modulo-nav.js" data-active="painel"></script>
 </body>
 </html>
