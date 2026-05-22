@@ -703,6 +703,9 @@
         rows.forEach(function(tr, idx) {
             if (!tr.dataset.itemUid) tr.dataset.itemUid = newItemUid();
             var desc = (tr.querySelector('input[name="item_descricao[]"]').value || '').trim() || ('Item ' + (idx + 1));
+            var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
+            var unit = parseBr(tr.querySelector('.item-unit').value);
+            var valorLabel = 'R$ ' + fmtMoney(qtd * unit);
             var uid = tr.dataset.itemUid;
             var notaUrl = tr.dataset.notaUrl || '';
             var card = document.createElement('div');
@@ -711,7 +714,11 @@
                 ? '<a href="' + escapeHtmlAttr(notaUrl) + '" target="_blank" rel="noopener" class="shrink-0 block w-20 h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-border-dark"><img src="' + escapeHtmlAttr(notaUrl) + '" alt="" class="w-full h-full object-cover"/></a>'
                 : '<div class="shrink-0 w-20 h-20 rounded-lg border border-dashed border-slate-300 dark:border-border-dark flex items-center justify-center text-slate-400"><span class="material-icons-outlined">receipt</span></div>';
             card.innerHTML = thumb +
-                '<div class="flex-1 min-w-[180px]"><p class="text-sm font-semibold text-slate-800 dark:text-slate-100">' + escapeHtml(desc) + '</p>' +
+                '<div class="flex-1 min-w-[180px]">' +
+                '<div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">' +
+                '<p class="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-0 flex-1">' + escapeHtml(desc) + '</p>' +
+                '<p class="text-sm font-bold text-primary tabular-nums shrink-0">' + escapeHtml(valorLabel) + '</p>' +
+                '</div>' +
                 '<p class="text-xs text-slate-500 mt-0.5">' + (notaUrl ? 'Nota anexada' : 'Sem foto ainda') + '</p>' +
                 '<div class="flex flex-wrap gap-2 mt-2">' +
                 '<button type="button" class="btn-nota-camera px-3 py-1.5 rounded-lg bg-primary text-black text-xs font-semibold">Tirar foto</button>' +
@@ -791,6 +798,7 @@
             tr.querySelector('.item-total').textContent = 'R$ ' + fmtMoney(val);
         });
         document.getElementById('total-display').textContent = 'R$ ' + fmtMoney(total);
+        renderNotasFiscais();
     }
 
     document.getElementById('btn-add-item').onclick = function() {
