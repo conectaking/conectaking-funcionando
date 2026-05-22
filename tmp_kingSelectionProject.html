@@ -209,6 +209,38 @@
       overflow: visible;
     }
 
+    .ks-r2-table {
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    .ks-r2-table th,
+    .ks-r2-table td {
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      vertical-align: top;
+    }
+
+    .ks-r2-table th {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(148, 163, 184, 0.95);
+      background: rgba(15, 23, 42, 0.35);
+    }
+
+    .ks-r2-table tbody tr:hover td {
+      background: rgba(250, 204, 21, 0.04);
+    }
+
+    .ks-r2-subfolders {
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: rgba(203, 213, 225, 0.9);
+      max-width: 220px;
+    }
+
     /* Menu de abas do projeto (Atividades… Marca d’água): no mobile a página rola por fora — sem coluna presa */
     .ks-card.ks-card--side-nav {
       overflow: visible;
@@ -1922,6 +1954,7 @@
       <div class="ks-card ks-card--side-nav p-3 lg:col-span-3">
         <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible overflow-x-auto overscroll-x-contain pr-1 md:overflow-x-visible md:pr-0">
           <a href="#" data-tab="activity" class="active"><i class="fas fa-wave-square"></i> Atividades do cliente</a>
+          <a href="#" data-tab="r2"><i class="fas fa-cloud"></i> Cloudflare R2</a>
           <a href="#" data-tab="photos"><i class="fas fa-images"></i> Fotos</a>
           <a href="#" data-tab="facial"><i class="fas fa-face-smile"></i> Reconhecimento Facial</a>
           <a href="#" data-tab="details"><i class="fas fa-pen"></i> Dados da galeria de fotos</a>
@@ -2120,6 +2153,100 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- Cloudflare R2 (inventário e limpeza) -->
+        <div class="ks-card p-5 hidden" data-pane="r2">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="font-extrabold text-slate-900 text-lg"><i class="fas fa-cloud"></i> Cloudflare R2</div>
+              <p class="text-sm ks-muted mt-1 max-w-2xl">Compare seus projetos no King Selection com as pastas e arquivos no armazenamento. Identifique projetos excluídos ou fotos órfãs antes de limpar.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" class="ks-btn" id="ks-r2-refresh"><i class="fas fa-rotate"></i> Atualizar inventário</button>
+              <button type="button" class="ks-btn" id="btn-cleanup-r2-dry"><i class="fas fa-search"></i> Verificar órfãos</button>
+              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="ks-r2-summary">
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Arquivos no R2</div><div class="font-extrabold text-lg" id="ks-r2-stat-total">—</div></div>
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Tamanho total</div><div class="font-extrabold text-lg" id="ks-r2-stat-size">—</div></div>
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Referenciados no BD</div><div class="font-extrabold text-lg" id="ks-r2-stat-ref">—</div></div>
+            <div class="ks-card p-3 border border-amber-300/70 bg-amber-50/90"><div class="text-xs text-amber-900/80">Órfãos no R2</div><div class="font-extrabold text-lg text-amber-900" id="ks-r2-stat-orphans">—</div></div>
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Seus projetos</div><div class="font-extrabold text-lg" id="ks-r2-stat-projects">—</div></div>
+            <div class="ks-card p-3 border border-red-200/80 bg-red-50/80"><div class="text-xs text-red-800/80">Pastas de projetos excluídos</div><div class="font-extrabold text-lg text-red-800" id="ks-r2-stat-deleted">—</div></div>
+          </div>
+
+          <p class="text-xs ks-muted mt-3" id="ks-r2-generated">Clique em «Atualizar inventário» para carregar pastas, datas e comparação com o banco.</p>
+          <div class="hidden mt-2 text-sm text-amber-800" id="ks-r2-loading"><i class="fas fa-spinner fa-spin"></i> Lendo arquivos no Cloudflare R2… pode levar alguns minutos em galerias grandes.</div>
+
+          <div class="mt-6">
+            <div class="font-extrabold text-slate-900">Seus projetos (King Selection × R2)</div>
+            <p class="text-xs ks-muted mt-1">Cada linha é um projeto ativo no banco. Pastas internas mostram subpastas dentro de <code class="text-xs">galleries/ID/</code>.</p>
+            <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80">
+              <table class="ks-r2-table w-full text-sm">
+                <thead>
+                  <tr>
+                    <th>Projeto</th>
+                    <th>ID</th>
+                    <th>Fotos no BD</th>
+                    <th>Arquivos R2</th>
+                    <th>Órfãos</th>
+                    <th>Tamanho R2</th>
+                    <th>Último upload</th>
+                    <th>Pastas</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="ks-r2-projects-tbody">
+                  <tr><td colspan="9" class="ks-muted p-4 text-center">Nenhum dado carregado.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <div class="font-extrabold text-slate-900">Pastas órfãs (projeto já excluído no King Selection)</div>
+            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto não está mais no banco — candidatas à limpeza.</p>
+            <div class="mt-3 overflow-x-auto rounded-xl border border-red-200/60">
+              <table class="ks-r2-table w-full text-sm">
+                <thead>
+                  <tr>
+                    <th>Pasta R2</th>
+                    <th>Arquivos</th>
+                    <th>Tamanho</th>
+                    <th>Último upload</th>
+                    <th>Subpastas</th>
+                  </tr>
+                </thead>
+                <tbody id="ks-r2-orphan-folders-tbody">
+                  <tr><td colspan="5" class="ks-muted p-4 text-center">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <div class="font-extrabold text-slate-900">Arquivos órfãos (amostra)</div>
+            <p class="text-xs ks-muted mt-1">Arquivos no R2 sem referência no banco (até 250 na lista). Use «Limpar R2» para remover todos os órfãos de uma vez.</p>
+            <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80 max-h-96 overflow-y-auto">
+              <table class="ks-r2-table w-full text-sm">
+                <thead>
+                  <tr>
+                    <th>Arquivo</th>
+                    <th>Pasta / projeto</th>
+                    <th>Subpasta</th>
+                    <th>Tamanho</th>
+                    <th>Data no R2</th>
+                  </tr>
+                </thead>
+                <tbody id="ks-r2-orphan-files-tbody">
+                  <tr><td colspan="5" class="ks-muted p-4 text-center">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- Details -->
@@ -3179,19 +3306,10 @@
             <button class="ks-btn" id="p-select-all"><i class="fas fa-check-double"></i> Selecionar tudo</button>
             <button class="ks-btn" id="p-clear-sel"><i class="fas fa-xmark"></i> Limpar seleção</button>
             <div class="ks-mini"><b id="p-selected-count">0</b> foto(s) selecionada(s)</div>
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
               <button class="ks-btn" id="p-download-sel"><i class="fas fa-download"></i> Baixar selecionadas</button>
               <button class="ks-btn" id="p-delete-sel"><i class="fas fa-trash"></i> Excluir selecionadas</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2-dry" title="Lista arquivos no Cloudflare R2 que não existem mais em nenhum projeto King Selection"><i class="fas fa-search"></i> Verificar órfãos R2</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)" title="Remove do R2 só arquivos órfãos (projetos/fotos já excluídos no King Selection)"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
             </div>
-          </div>
-          <div class="mt-3 ks-card p-4 rounded-2xl border border-amber-300/70 bg-amber-50/90" id="ks-r2-cleanup-card">
-            <div class="font-extrabold text-slate-900 text-sm"><i class="fas fa-cloud"></i> Armazenamento Cloudflare (R2)</div>
-            <p class="text-xs text-slate-700 mt-1 leading-relaxed max-w-3xl">
-              Quando você exclui um projeto ou fotos no King Selection, o arquivo pode continuar no R2.
-              <b>Verificar</b> mostra quantos órfãos existem; <b>Limpar R2</b> apaga <b>somente</b> o que não está mais em nenhum projeto ativo — as fotos desta galeria <b>não</b> são removidas.
-            </p>
           </div>
 
           <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -3491,7 +3609,7 @@
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
 
   <script src="/config.js?v=2026-03-23-anticache-a1"></script>
-  <script src="/kingSelectionProject.js?v=2026-05-19-ks-r2-photos"></script>
+  <script src="/kingSelectionProject.js?v=2026-05-19-ks-r2-tab"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>

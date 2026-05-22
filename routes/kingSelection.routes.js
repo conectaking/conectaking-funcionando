@@ -3510,11 +3510,11 @@ function getKsCleanupToken() {
   });
 }
 
-/** Lista todas as keys no R2 sob prefixo (via Worker) */
-async function listR2KeysViaWorker(prefix = 'galleries/') {
+/** Lista objetos no R2 (key, size, uploaded) via Worker */
+async function listR2ObjectsViaWorker(prefix = 'galleries/') {
   if (!KS_WORKER_SECRET) throw new Error('Worker não configurado');
   const workerUrl = (process.env.KINGSELECTION_WORKER_URL || process.env.R2_PUBLIC_BASE_URL || 'https://r2.conectaking.com.br').toString().trim().replace(/\/$/, '');
-  const keys = [];
+  const objects = [];
   let cursor = null;
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -3526,11 +3526,63 @@ async function listR2KeysViaWorker(prefix = 'galleries/') {
     const res = await fetch(url.toString(), { method: 'GET', headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || `Worker ${res.status}`);
-    if (Array.isArray(data.keys)) keys.push(...data.keys);
+    if (Array.isArray(data.objects) && data.objects.length) {
+      for (const o of data.objects) {
+        const key = String(o?.key || '').trim();
+        if (!key) continue;
+        objects.push({
+          key,
+          size: Number(o.size) || 0,
+          uploaded: o.uploaded || null
+        });
+      }
+    } else if (Array.isArray(data.keys)) {
+      for (const key of data.keys) {
+        objects.push({ key: String(key), size: 0, uploaded: null });
+      }
+    }
     if (!data.truncated || !data.cursor) break;
     cursor = data.cursor;
   }
-  return keys;
+  return objects;
+}
+
+/** Lista todas as keys no R2 sob prefixo (via Worker) */
+async function listR2KeysViaWorker(prefix = 'galleries/') {
+  const objects = await listR2ObjectsViaWorker(prefix);
+  return objects.map((o) => o.key);
+}
+
+function parseGalleryIdFromR2Key(key) {
+  const m = String(key || '').match(/^galleries\/(\d+)(?:\/|$)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function parseR2Subfolder(key, galleryId) {
+  const prefix = `galleries/${galleryId}/`;
+  const k = String(key || '');
+  if (!k.startsWith(prefix)) return '(raiz)';
+  const rest = k.slice(prefix.length);
+  const parts = rest.split('/').filter(Boolean);
+  if (parts.length <= 1) return '(raiz)';
+  return parts.slice(0, -1).join('/');
+}
+
+async function collectReferencedR2KeysGlobal(client) {
+  const refSet = new Set();
+  const tables = [
+    { table: 'king_photos', col: 'file_path' },
+    { table: 'king_galleries', col: 'watermark_path' }
+  ];
+  for (const t of tables) {
+    if (!(await hasColumn(client, t.table, t.col))) continue;
+    const r = await client.query(`SELECT ${t.col} AS v FROM ${t.table} WHERE ${t.col} IS NOT NULL AND ${t.col} != ''`);
+    for (const row of r.rows) {
+      const k = extractR2Key(row.v);
+      if (k) refSet.add(k);
+    }
+  }
+  return refSet;
 }
 
 /** Deleta múltiplos objetos no R2 via Worker (batch de até 1000) */
@@ -12392,6 +12444,173 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
   }
 }));
 
+// Inventário R2 (pastas, datas, comparação com projetos King Selection)
+router.get('/r2-inventory', protectUser, asyncHandler(async (req, res) => {
+  if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET)' });
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const gRes = await client.query(
+      `SELECT g.id, g.nome_projeto, g.slug, g.created_at, g.updated_at
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE pi.user_id = $1
+       ORDER BY COALESCE(g.nome_projeto, '') ASC, g.id DESC`,
+      [userId]
+    );
+    const userProjects = gRes.rows;
+    const userGalleryIds = new Set(userProjects.map((g) => g.id));
+    const allGRes = await client.query('SELECT id FROM king_galleries');
+    const allDbGalleryIds = new Set(allGRes.rows.map((r) => r.id));
+
+    const photoCounts = {};
+    if (userGalleryIds.size) {
+      const pRes = await client.query(
+        'SELECT gallery_id, COUNT(*)::int AS c FROM king_photos WHERE gallery_id = ANY($1::int[]) GROUP BY gallery_id',
+        [Array.from(userGalleryIds)]
+      );
+      pRes.rows.forEach((r) => { photoCounts[r.gallery_id] = r.c; });
+    }
+
+    const refSet = await collectReferencedR2KeysGlobal(client);
+    const objects = await listR2ObjectsViaWorker('galleries/');
+
+    const folderMap = new Map();
+    const ensureFolder = (gid) => {
+      if (!folderMap.has(gid)) {
+        folderMap.set(gid, {
+          galleryId: gid,
+          r2Files: 0,
+          r2Bytes: 0,
+          orphanFiles: 0,
+          orphanBytes: 0,
+          lastUploaded: null,
+          subfolders: new Map()
+        });
+      }
+      return folderMap.get(gid);
+    };
+
+    let totalBytes = 0;
+    let orphanObjects = 0;
+    let orphanBytes = 0;
+    const orphanSamples = [];
+
+    for (const obj of objects) {
+      const norm = normalizeR2Key(obj.key);
+      if (!norm) continue;
+      totalBytes += obj.size || 0;
+      const gid = parseGalleryIdFromR2Key(norm);
+      if (!gid) continue;
+      const isOrphan = !refSet.has(norm);
+      if (isOrphan) {
+        orphanObjects += 1;
+        orphanBytes += obj.size || 0;
+        if (orphanSamples.length < 250) {
+          orphanSamples.push({
+            key: norm,
+            size: obj.size || 0,
+            uploaded: obj.uploaded,
+            galleryId: gid,
+            subfolder: parseR2Subfolder(norm, gid),
+            fileName: norm.split('/').pop() || norm
+          });
+        }
+      }
+      const inUserScope = userGalleryIds.has(gid) || !allDbGalleryIds.has(gid);
+      if (!inUserScope) continue;
+      const folder = ensureFolder(gid);
+      folder.r2Files += 1;
+      folder.r2Bytes += obj.size || 0;
+      if (isOrphan) {
+        folder.orphanFiles += 1;
+        folder.orphanBytes += obj.size || 0;
+      }
+      if (obj.uploaded) {
+        const t = new Date(obj.uploaded).getTime();
+        if (!folder.lastUploaded || t > new Date(folder.lastUploaded).getTime()) {
+          folder.lastUploaded = obj.uploaded;
+        }
+      }
+      const subName = parseR2Subfolder(norm, gid);
+      if (!folder.subfolders.has(subName)) {
+        folder.subfolders.set(subName, { name: subName, files: 0, bytes: 0, orphanFiles: 0, lastUploaded: null });
+      }
+      const sub = folder.subfolders.get(subName);
+      sub.files += 1;
+      sub.bytes += obj.size || 0;
+      if (isOrphan) sub.orphanFiles += 1;
+      if (obj.uploaded) {
+        const st = new Date(obj.uploaded).getTime();
+        if (!sub.lastUploaded || st > new Date(sub.lastUploaded).getTime()) sub.lastUploaded = obj.uploaded;
+      }
+    }
+
+    const projects = userProjects.map((g) => {
+      const folder = folderMap.get(g.id);
+      const subfolders = folder
+        ? Array.from(folder.subfolders.values()).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+        : [];
+      return {
+        galleryId: g.id,
+        nome: g.nome_projeto || `Projeto #${g.id}`,
+        slug: g.slug || '',
+        inDatabase: true,
+        inR2: !!(folder && folder.r2Files > 0),
+        dbPhotos: photoCounts[g.id] || 0,
+        r2Files: folder?.r2Files || 0,
+        r2Bytes: folder?.r2Bytes || 0,
+        orphanFiles: folder?.orphanFiles || 0,
+        lastUploaded: folder?.lastUploaded || null,
+        createdAt: g.created_at,
+        updatedAt: g.updated_at,
+        subfolders,
+        status: !folder || folder.r2Files === 0
+          ? 'sem_arquivos_r2'
+          : (folder.orphanFiles > 0 ? 'com_orfaos' : 'ok')
+      };
+    });
+
+    const orphanFolders = [];
+    for (const [gid, folder] of folderMap.entries()) {
+      if (userGalleryIds.has(gid)) continue;
+      if (allDbGalleryIds.has(gid)) continue;
+      orphanFolders.push({
+        galleryId: gid,
+        inDatabase: false,
+        r2Files: folder.r2Files,
+        r2Bytes: folder.r2Bytes,
+        orphanFiles: folder.orphanFiles,
+        lastUploaded: folder.lastUploaded,
+        subfolders: Array.from(folder.subfolders.values()).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+        status: 'projeto_excluido'
+      });
+    }
+    orphanFolders.sort((a, b) => (b.r2Bytes || 0) - (a.r2Bytes || 0));
+
+    res.json({
+      success: true,
+      generatedAt: new Date().toISOString(),
+      summary: {
+        r2TotalFiles: objects.length,
+        r2TotalBytes: totalBytes,
+        referencedInDb: refSet.size,
+        orphanFiles: orphanObjects,
+        orphanBytes,
+        userProjects: projects.length,
+        userProjectsWithR2: projects.filter((p) => p.inR2).length,
+        orphanProjectFolders: orphanFolders.length
+      },
+      projects,
+      orphanFolders,
+      orphanSamples,
+      orphanSamplesTruncated: orphanObjects > orphanSamples.length
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 // Limpeza de órfãos no R2 (imagens/vídeos não referenciados no banco)
 router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
   if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET)' });
@@ -12413,19 +12632,7 @@ router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
     if (!(lr?.rows?.[0]?.locked)) {
       return res.status(409).json({ message: 'Limpeza R2 já está em execução.', dryRun });
     }
-    const refSet = new Set();
-    const tables = [
-      { table: 'king_photos', col: 'file_path' },
-      { table: 'king_galleries', col: 'watermark_path' }
-    ];
-    for (const t of tables) {
-      if (!(await hasColumn(client, t.table, t.col))) continue;
-      const r = await client.query(`SELECT ${t.col} AS v FROM ${t.table} WHERE ${t.col} IS NOT NULL AND ${t.col} != ''`);
-      for (const row of r.rows) {
-        const k = extractR2Key(row.v);
-        if (k) refSet.add(k);
-      }
-    }
+    const refSet = await collectReferencedR2KeysGlobal(client);
     const allKeys = await listR2KeysViaWorker('galleries/');
     const orphans = allKeys.filter(k => {
       const n = normalizeR2Key(k);

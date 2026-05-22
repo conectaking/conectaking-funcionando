@@ -222,8 +222,18 @@ export default {
 
       try {
         const listed = await bucket.list({ prefix, limit, cursor });
-        const keys = (listed.objects || []).map(o => o.key);
-        return new Response(JSON.stringify({ keys, truncated: !!listed.truncated, cursor: listed.cursor || null }), { status: 200, headers: cors });
+        const objects = (listed.objects || []).map((o) => ({
+          key: o.key,
+          size: Number(o.size) || 0,
+          uploaded: o.uploaded ? new Date(o.uploaded).toISOString() : null
+        }));
+        const keys = objects.map((o) => o.key);
+        return new Response(JSON.stringify({
+          keys,
+          objects,
+          truncated: !!listed.truncated,
+          cursor: listed.cursor || null
+        }), { status: 200, headers: cors });
       } catch (e) {
         const msg = (e && e.message) ? String(e.message).slice(0, 200) : 'Falha ao listar';
         return new Response(JSON.stringify({ success: false, message: msg }), { status: 502, headers: cors });
