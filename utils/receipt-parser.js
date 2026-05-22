@@ -143,9 +143,35 @@ function looksLikeTransactionList(lines) {
         || moneyLines >= 3;
 }
 
+/**
+ * Extrai data DD/MM (ou DD/MM/YY) de uma linha — tolera OCR (espaços, . -, lixo no fim).
+ * @returns {string|null} ex.: "20/05" ou "20/05/26"
+ */
+function parseDateFromLine(line) {
+    if (!line || typeof line !== 'string') return null;
+    const t = line.trim().replace(/[—–\-•|]+$/g, '').trim();
+    if (!t || t.length > 14) return null;
+    let m = t.match(/^(\d{1,2})\s*[\/\.\-]\s*(\d{1,2})(?:\s*[\/\.\-]\s*(\d{2,4}))?\s*$/);
+    if (m) {
+        const d = String(parseInt(m[1], 10)).padStart(2, '0');
+        const mo = String(parseInt(m[2], 10)).padStart(2, '0');
+        if (parseInt(mo, 10) < 1 || parseInt(mo, 10) > 12 || parseInt(d, 10) < 1 || parseInt(d, 10) > 31) return null;
+        return m[3] ? `${d}/${mo}/${m[3]}` : `${d}/${mo}`;
+    }
+    m = t.match(/^(\d{1,2})\s+(\d{1,2})(?:\s+(\d{2,4}))?\s*$/);
+    if (m) {
+        const d = String(parseInt(m[1], 10)).padStart(2, '0');
+        const mo = String(parseInt(m[2], 10)).padStart(2, '0');
+        if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) {
+            return m[3] ? `${d}/${mo}/${m[3]}` : `${d}/${mo}`;
+        }
+    }
+    return null;
+}
+
 /** Linha contém só data DD/MM ou DD/MM/YY (ex.: 22/02 ou 21/02/26). */
 function isOnlyDateLine(line) {
-    return line && /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(line.trim());
+    return !!parseDateFromLine(line);
 }
 
 /** Texto de cabeçalho/rodapé do app de cartão — não é nome de estabelecimento. */
@@ -277,8 +303,9 @@ function collectNameAndDateAbove(lines, valueIndex) {
     for (let j = valueIndex - 1; j >= 0 && valueIndex - j <= 14; j--) {
         const l = lines[j];
         if (isExtratoHeaderNoise(l)) continue;
-        if (isOnlyDateLine(l)) {
-            if (!date) date = l.trim();
+        const parsedDate = parseDateFromLine(l);
+        if (parsedDate) {
+            if (!date) date = parsedDate;
             continue;
         }
         if (isTransactionValueLine(l)) break;
@@ -291,11 +318,50 @@ function collectNameAndDateAbove(lines, valueIndex) {
 }
 
 function collectDateBelow(lines, valueIndex) {
-    for (let k = valueIndex + 1; k <= Math.min(lines.length - 1, valueIndex + 2); k++) {
-        if (isOnlyDateLine(lines[k])) return lines[k].trim();
+    for (let k = valueIndex + 1; k <= Math.min(lines.length - 1, valueIndex + 6); k++) {
+        const d = parseDateFromLine(lines[k]);
+        if (d) return d;
         if (isTransactionValueLine(lines[k]) || isExtratoHeaderNoise(lines[k])) break;
     }
     return null;
+}
+
+/** Busca a data mais próxima da linha de valor (acima primeiro, depois abaixo). */
+function findDateNearValue(lines, valueIndex) {
+    for (let j = valueIndex - 1; j >= 0 && valueIndex - j <= 10; j--) {
+        if (isExtratoHeaderNoise(lines[j])) continue;
+        const d = parseDateFromLine(lines[j]);
+        if (d) return d;
+    }
+    return collectDateBelow(lines, valueIndex);
+}
+
+/**
+ * Vários itens do mesmo print costumam ter a mesma data (ex.: tudo 20/05).
+ * Preenche itens sem data quando a maioria compartilha uma única data.
+ */
+function fillMissingDatesFromDominant(transactions) {
+    if (!transactions || transactions.length < 2) return transactions;
+    const counts = {};
+    let withDate = 0;
+    for (const tx of transactions) {
+        const d = (tx.date || '').trim();
+        if (!d) continue;
+        withDate++;
+        counts[d] = (counts[d] || 0) + 1;
+    }
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const needFill = transactions.filter((t) => !(t.date || '').trim()).length;
+    if (!entries.length || needFill === 0) return transactions;
+    const [dominant, n] = entries[0];
+    const total = transactions.length;
+    const applyToAll = withDate === 1 && total >= 2;
+    const majority = n >= Math.ceil(total * 0.4) || n >= 2;
+    if (!applyToAll && !majority) return transactions;
+    return transactions.map((tx) => {
+        if ((tx.date || '').trim()) return tx;
+        return { ...tx, date: dominant };
+    });
 }
 
 /**
@@ -354,7 +420,11 @@ function parseTransactionList(rawText) {
         const above = collectNameAndDateAbove(lines, i);
         if (above.name) name = above.name;
         if (above.date) date = above.date;
-        if (!date) date = collectDateBelow(lines, i);
+        if (!date) date = findDateNearValue(lines, i);
+        if (!date) {
+            const dmInline = line.match(/(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/);
+            if (dmInline) date = dmInline[1];
+        }
 
         if (!name || name.length < 2) name = 'Transação';
         name = limparNomeEstabelecimento(name);
@@ -364,7 +434,8 @@ function parseTransactionList(rawText) {
         pushTx(name, date, val, declined, rawVal ? rawVal[0] : String(val));
     }
 
-    const deduped = dedupeExtratoTransactions(transactions);
+    let deduped = dedupeExtratoTransactions(transactions);
+    deduped = fillMissingDatesFromDominant(deduped);
     total = 0;
     for (const tx of deduped) {
         if (tx.status !== 'DECLINED') total += tx.amount || 0;
