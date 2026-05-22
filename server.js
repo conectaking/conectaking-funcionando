@@ -81,6 +81,7 @@ const linkLimitsRoutes = require('./modules/linkLimits/linkLimits.routes');
 const checkoutRoutes = require('./modules/checkout/checkout.routes');
 const checkoutWebhookRoutes = require('./modules/checkout/webhook.routes');
 const kingSelectionRoutes = require('./routes/kingSelection.routes');
+const kingSelectionR2Routes = require('./routes/kingSelectionR2.routes');
 const kingbriefRoutes = require('./routes/kingbrief.routes');
 const kingDocsRoutes = require('./modules/kingDocs/kingDocs.routes');
 const requestLogger = require('./middleware/requestLogger');
@@ -1126,6 +1127,8 @@ app.use('/api/upload', (req, res, next) => {
     return uploadLimiter(req, res, next);
 }, uploadRoutes);
 
+// KingSelection: R2 inventário/limpeza (router dedicado — deploy independente)
+app.use('/api/king-selection', kingSelectionLimiter, kingSelectionR2Routes);
 // KingSelection: rate limit mais alto para upload em massa
 app.use('/api/king-selection', kingSelectionLimiter, kingSelectionRoutes);
 app.use('/api/kingbrief', kingbriefLimiter, kingbriefRoutes);

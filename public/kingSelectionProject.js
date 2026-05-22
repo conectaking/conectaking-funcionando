@@ -7845,6 +7845,11 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch(`${API_URL}/api/king-selection/r2-inventory`, { headers: HEADERS });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 404) {
+        throw new Error(
+          'A API no Render ainda não tem a rota r2-inventory. Faça deploy do backend (server.js + routes/kingSelectionR2.routes.js) e confira GET /api/king-selection/r2-ping'
+        );
+      }
       if (!res.ok) throw new Error(data.message || 'Erro ao carregar inventário R2');
       renderR2Inventory(data);
       r2InventoryLoaded = true;
