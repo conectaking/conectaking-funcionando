@@ -498,35 +498,56 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     page.drawText('Obrigado pela preferência.', { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cBlue() });
     y -= 28;
 
-    // Recibo: imagens dos comprovantes
+    const notasFiscais = itens.filter((item) => item && item.nota_fiscal_url);
+
+    async function drawNotaImage(url, caption) {
+        if (!url) return;
+        try {
+            const { type, bytes } = await fetchImage(url);
+            const img = type === 'png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+            const maxW = PAGE_WIDTH - 2 * MARGIN;
+            const maxH = 280;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxW || h > maxH) {
+                const r = Math.min(maxW / w, maxH / h);
+                w *= r;
+                h *= r;
+            }
+            if (y - h - LINE_HEIGHT * 2 < MARGIN) {
+                page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
+                y = PAGE_HEIGHT - MARGIN;
+            }
+            page.drawText(caption.slice(0, 80), { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cText() });
+            y -= LINE_HEIGHT + 4;
+            page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
+            y -= h + 18;
+        } catch (e) {
+            logger.warn('documentos-pdf: nota fiscal não carregada', { url, message: e.message });
+        }
+    }
+
+    // Recibo: notas fiscais por item (ordem da tabela) — título + foto
+    if (tipo === 'recibo' && notasFiscais.length > 0) {
+        if (y < MARGIN + 50) {
+            page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+            if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
+            y = PAGE_HEIGHT - MARGIN;
+        }
+        page.drawText('Notas fiscais', { x: MARGIN, y: y - FONT_SIZE_TITLE, size: FONT_SIZE_TITLE, font: boldFont, color: cBlue() });
+        y -= FONT_SIZE_TITLE + 12;
+        for (const item of notasFiscais) {
+            const caption = (item.nota_fiscal_titulo || item.descricao || 'Nota fiscal').trim();
+            await drawNotaImage(item.nota_fiscal_url, caption);
+        }
+    }
+
+    // Comprovantes avulsos (legado — não inclui extrato só para OCR)
     if (tipo === 'recibo' && anexos.length > 0) {
         for (const anexo of anexos) {
-            if (!anexo.url) continue;
-            try {
-                const { type, bytes } = await fetchImage(anexo.url);
-                const img = type === 'png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
-                const maxW = PAGE_WIDTH - 2 * MARGIN;
-                const maxH = 280;
-                let w = img.width;
-                let h = img.height;
-                if (w > maxW || h > maxH) {
-                    const r = Math.min(maxW / w, maxH / h);
-                    w *= r;
-                    h *= r;
-                }
-                if (y - h - LINE_HEIGHT < MARGIN) {
-                    page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-                    if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
-                    y = PAGE_HEIGHT - MARGIN;
-                }
-                const caption = (anexo.descricao || `Comprovante - ${anexo.tipo_categoria || ''}`).slice(0, 70);
-                page.drawText(caption, { x: MARGIN, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cMuted() });
-                y -= LINE_HEIGHT;
-                page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
-                y -= h + 14;
-            } catch (e) {
-                logger.warn('documentos-pdf: anexo não carregado', { url: anexo.url, message: e.message });
-            }
+            if (!anexo.url || anexo.tipo_anexo === 'extrato_ocr') continue;
+            await drawNotaImage(anexo.url, anexo.descricao || `Comprovante - ${anexo.tipo_categoria || ''}`);
         }
     }
 

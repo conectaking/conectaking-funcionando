@@ -251,7 +251,8 @@
                     </div>
                 </div>
                 <div id="recibo-tirar-configurar" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark" style="display: none;">
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Envie uma foto ou imagem do comprovante. A câmera ou o arquivo será lido e os valores digitalizados automaticamente.</p>
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Extrato do cartão — ler valores</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Foto do print do cartão com várias compras. O sistema preenche a tabela acima; <strong>não entra no PDF</strong> como nota fiscal.</p>
                     <div id="comprovante-sem-id" class="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs" style="display: none;">
                         Se o recibo ainda não foi salvo, ele será criado ao enviar a primeira foto/arquivo.
                     </div>
@@ -283,6 +284,14 @@
                         </button>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">Os valores extraídos aparecem na tabela acima; use Configurar para ajustar.</p>
+                </div>
+                <div id="recibo-notas-fiscais" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark" style="display: none;">
+                    <div class="flex items-center gap-2 mb-2 text-primary">
+                        <span class="material-icons-outlined">receipt_long</span>
+                        <h3 class="uppercase tracking-widest text-xs font-bold">Notas fiscais (uma foto por item)</h3>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Na mesma ordem da tabela: tire ou envie a foto da nota de cada lugar (ex.: BBQ Brunão, Ponto das variedades). <strong>Não altera valores</strong> — só aparece no PDF para o cliente.</p>
+                    <div id="notas-fiscais-list" class="space-y-3"></div>
                 </div>
             </section>
 
@@ -404,8 +413,11 @@
         document.getElementById('btn-submit-text').textContent = isRecibo ? 'Salvar Recibo' : 'Salvar Orçamento';
         document.getElementById('btn-add-item-label').textContent = isRecibo ? 'Adicionar Linha' : 'Adicionar Nova Linha';
         var reciboBlock = document.getElementById('recibo-tirar-configurar');
+        var notasBlock = document.getElementById('recibo-notas-fiscais');
         reciboBlock.style.display = isRecibo ? 'block' : 'none';
+        if (notasBlock) notasBlock.style.display = isRecibo ? 'block' : 'none';
         if (isRecibo) {
+            renderNotasFiscais();
             document.getElementById('comprovante-upload-area').style.display = 'flex';
             document.getElementById('comprovante-sem-id').style.display = docId ? 'none' : 'block';
         }
@@ -506,19 +518,140 @@
         return parseFloat(String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.')) || 0;
     }
 
-    function buildItemRow() {
+    function newItemUid() {
+        return 'it-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function buildItemRow(opts) {
+        opts = opts || {};
         var tr = document.createElement('tr');
         tr.className = 'item-row bg-slate-50 dark:bg-black/40 group';
+        tr.dataset.itemUid = opts.item_uid || newItemUid();
+        if (opts.nota_fiscal_url) tr.dataset.notaUrl = opts.nota_fiscal_url;
         tr.innerHTML = '<td class="px-4 py-3 rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark"><input name="item_descricao[]" lang="pt-BR" spellcheck="true" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="Serviço ou Produto" type="text"/><input name="item_pacote[]" lang="pt-BR" spellcheck="true" class="w-full mt-1 bg-transparent border-none focus:ring-0 p-0 text-xs text-slate-400" placeholder="O que vai no pacote (opcional)" type="text"/></td>' +
             '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark"><input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="DD/MM" type="text"/></td>' +
             '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center"><input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/></td>' +
             '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark"><input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="0,00" type="text"/></td>' +
             '<td class="item-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary">R$ 0,00</td>' +
             '<td class="px-4 py-3 rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center"><button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button></td>';
-        tr.querySelector('.btn-remove-item').onclick = function() { tr.remove(); updateTotal(); };
+        tr.querySelector('.btn-remove-item').onclick = function() { tr.remove(); updateTotal(); renderNotasFiscais(); };
         tr.querySelector('.item-unit').addEventListener('input', updateTotal);
         tr.querySelector('input[name="item_qtd[]"]').addEventListener('input', updateTotal);
+        var descInp = tr.querySelector('input[name="item_descricao[]"]');
+        if (descInp) descInp.addEventListener('input', function() { renderNotasFiscais(); });
         return tr;
+    }
+
+    function applyDocItensToForm(itens) {
+        var tbody = document.getElementById('itens-tbody');
+        tbody.innerHTML = '';
+        (itens || []).forEach(function(item) {
+            var tr = buildItemRow({
+                item_uid: item.item_uid,
+                nota_fiscal_url: item.nota_fiscal_url
+            });
+            tr.querySelector('input[name="item_descricao[]"]').value = item.descricao || '';
+            var pacoteInp = tr.querySelector('input[name="item_pacote[]"]');
+            if (pacoteInp) pacoteInp.value = item.conteudo_pacote || item.detalhes || '';
+            tr.querySelector('input[name="item_data[]"]').value = item.data || '';
+            tr.querySelector('input[name="item_qtd[]"]').value = item.quantidade != null ? item.quantidade : 1;
+            tr.querySelector('.item-unit').value = item.valor_unitario != null ? fmtMoney(item.valor_unitario) : '';
+            tbody.appendChild(tr);
+        });
+        if ((itens || []).length === 0) tbody.appendChild(buildItemRow());
+        updateTotal();
+        renderNotasFiscais();
+    }
+
+    function renderNotasFiscais() {
+        var list = document.getElementById('notas-fiscais-list');
+        if (!list) return;
+        var rows = document.querySelectorAll('#itens-tbody .item-row');
+        if (!rows.length) {
+            list.innerHTML = '<p class="text-xs text-slate-500">Adicione linhas na tabela acima (ou digitalize o extrato do cartão).</p>';
+            return;
+        }
+        list.innerHTML = '';
+        rows.forEach(function(tr, idx) {
+            if (!tr.dataset.itemUid) tr.dataset.itemUid = newItemUid();
+            var desc = (tr.querySelector('input[name="item_descricao[]"]').value || '').trim() || ('Item ' + (idx + 1));
+            var uid = tr.dataset.itemUid;
+            var notaUrl = tr.dataset.notaUrl || '';
+            var card = document.createElement('div');
+            card.className = 'nota-fiscal-card flex flex-wrap gap-3 items-start p-4 rounded-xl border border-slate-200 dark:border-border-dark bg-slate-50/80 dark:bg-black/30';
+            var thumb = notaUrl
+                ? '<a href="' + escapeHtmlAttr(notaUrl) + '" target="_blank" rel="noopener" class="shrink-0 block w-20 h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-border-dark"><img src="' + escapeHtmlAttr(notaUrl) + '" alt="" class="w-full h-full object-cover"/></a>'
+                : '<div class="shrink-0 w-20 h-20 rounded-lg border border-dashed border-slate-300 dark:border-border-dark flex items-center justify-center text-slate-400"><span class="material-icons-outlined">receipt</span></div>';
+            card.innerHTML = thumb +
+                '<div class="flex-1 min-w-[180px]"><p class="text-sm font-semibold text-slate-800 dark:text-slate-100">' + escapeHtml(desc) + '</p>' +
+                '<p class="text-xs text-slate-500 mt-0.5">' + (notaUrl ? 'Nota anexada' : 'Sem foto ainda') + '</p>' +
+                '<div class="flex flex-wrap gap-2 mt-2">' +
+                '<button type="button" class="btn-nota-camera px-3 py-1.5 rounded-lg bg-primary text-black text-xs font-semibold">Tirar foto</button>' +
+                '<button type="button" class="btn-nota-arquivo px-3 py-1.5 rounded-lg border border-slate-200 dark:border-border-dark text-xs font-medium">Enviar arquivo</button>' +
+                (notaUrl ? '<button type="button" class="btn-nota-remover px-3 py-1.5 rounded-lg text-xs text-red-500 border border-red-500/30">Remover</button>' : '') +
+                '</div></div>' +
+                '<input type="file" accept="image/*" capture="environment" class="nota-file-camera hidden"/>' +
+                '<input type="file" accept="image/*" class="nota-file-arquivo hidden"/>';
+            list.appendChild(card);
+            card.querySelector('.btn-nota-camera').onclick = function() { card.querySelector('.nota-file-camera').click(); };
+            card.querySelector('.btn-nota-arquivo').onclick = function() { card.querySelector('.nota-file-arquivo').click(); };
+            function onNotaFile(fileInput) {
+                var file = fileInput.files && fileInput.files[0];
+                if (!file) return;
+                enviarNotaFiscal(uid, desc, file, function(doc) {
+                    var item = (doc.itens_json || []).find(function(it) { return it.item_uid === uid; });
+                    if (item && item.nota_fiscal_url) {
+                        tr.dataset.notaUrl = item.nota_fiscal_url;
+                        renderNotasFiscais();
+                    }
+                });
+                fileInput.value = '';
+            }
+            card.querySelector('.nota-file-camera').onchange = function() { onNotaFile(this); };
+            card.querySelector('.nota-file-arquivo').onchange = function() { onNotaFile(this); };
+            var btnRem = card.querySelector('.btn-nota-remover');
+            if (btnRem) {
+                btnRem.onclick = function() {
+                    if (!confirm('Remover a foto desta nota?')) return;
+                    removerNotaFiscal(uid, function(doc) {
+                        tr.dataset.notaUrl = '';
+                        applyDocItensToForm(doc.itens_json || []);
+                    });
+                };
+            }
+        });
+    }
+
+    function enviarNotaFiscal(itemUid, titulo, file, onOk) {
+        ensureDocIdThen(function() {
+            var fd = new FormData();
+            fd.append('image', file);
+            fd.append('item_uid', itemUid);
+            fd.append('titulo', titulo || '');
+            fetch(API + '/' + docId + '/nota-fiscal', { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
+                .then(function(r) { return handleResponse(r, 'Faça login para anexar notas.'); })
+                .then(function(data) {
+                    if (data && data.data && data.data.documento) {
+                        if (onOk) onOk(data.data.documento);
+                    } else { alert(data.message || 'Falha ao enviar nota.'); }
+                })
+                .catch(function(err) { alert(err.message || 'Erro ao enviar nota.'); });
+        });
+    }
+
+    function removerNotaFiscal(itemUid, onOk) {
+        if (!docId) return;
+        fetch(API + '/' + docId + '/nota-fiscal', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ item_uid: itemUid })
+        })
+            .then(function(r) { return handleResponse(r); })
+            .then(function(data) {
+                if (data && data.data && data.data.documento && onOk) onOk(data.data.documento);
+            })
+            .catch(function(err) { alert(err.message || 'Erro ao remover.'); });
     }
     function updateTotal() {
         var total = 0;
@@ -534,6 +667,7 @@
 
     document.getElementById('btn-add-item').onclick = function() {
         document.getElementById('itens-tbody').appendChild(buildItemRow());
+        renderNotasFiscais();
     };
     var btnCatalogo = document.getElementById('btn-inserir-catalogo');
     var catalogoDrop = document.getElementById('catalogo-dropdown');
@@ -636,6 +770,7 @@
     document.addEventListener('click', function(e) {
         if (!autocompleteDiv.contains(e.target) && e.target !== nomeInput) autocompleteDiv.classList.add('hidden');
     });
+    function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function escapeHtmlAttr(s) { return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     document.getElementById('itens-tbody').querySelectorAll('.btn-remove-item').forEach(function(btn) {
         btn.onclick = function() { btn.closest('tr').remove(); updateTotal(); };
@@ -679,8 +814,16 @@
             var data = (tr.querySelector('input[name="item_data[]"]').value || '').trim();
             var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
             var unit = parseBr(tr.querySelector('.item-unit').value);
-            var item = { descricao: desc || '-', data: data, quantidade: qtd, valor_unitario: unit, valor: qtd * unit };
+            if (!tr.dataset.itemUid) tr.dataset.itemUid = newItemUid();
+            var item = { descricao: desc || '-', data: data, quantidade: qtd, valor_unitario: unit, valor: qtd * unit, item_uid: tr.dataset.itemUid };
             if (pacote) item.conteudo_pacote = pacote;
+            if (tr.dataset.notaUrl) {
+                item.nota_fiscal_url = tr.dataset.notaUrl;
+                item.nota_fiscal_titulo = desc;
+            } else {
+                delete item.nota_fiscal_url;
+                delete item.nota_fiscal_titulo;
+            }
             itens.push(item);
         });
         var tituloVal = (document.querySelector('input[name="titulo"]') && document.querySelector('input[name="titulo"]').value || '').trim();
@@ -730,20 +873,7 @@
         document.querySelector('input[name="data_documento"]').value = (doc.data_documento || '').slice(0, 10);
         document.querySelector('input[name="validade_ate"]').value = (doc.validade_ate || '').slice(0, 10);
         applyTipoUI(doc.tipo || 'orcamento');
-        var tbody = document.getElementById('itens-tbody');
-        tbody.innerHTML = '';
-        (doc.itens_json || []).forEach(function(item) {
-            var tr = buildItemRow();
-            tr.querySelector('input[name="item_descricao[]"]').value = item.descricao || '';
-            var pacoteInp = tr.querySelector('input[name="item_pacote[]"]');
-            if (pacoteInp) pacoteInp.value = item.conteudo_pacote || item.detalhes || '';
-            tr.querySelector('input[name="item_data[]"]').value = item.data || '';
-            tr.querySelector('input[name="item_qtd[]"]').value = item.quantidade != null ? item.quantidade : 1;
-            tr.querySelector('.item-unit').value = item.valor_unitario != null ? fmtMoney(item.valor_unitario) : '';
-            tbody.appendChild(tr);
-        });
-        if ((doc.itens_json || []).length === 0) tbody.appendChild(buildItemRow());
-        updateTotal();
+        applyDocItensToForm(doc.itens_json || []);
     }
 
     document.getElementById('btn-visualizar').onclick = function() {

@@ -304,6 +304,43 @@ async function getPdf(req, res) {
     }
 }
 
+async function uploadNotaFiscalItem(req, res) {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!id) return responseFormatter.error(res, 'ID inválido', 400);
+        if (!req.file || !req.file.buffer) return responseFormatter.error(res, 'Envie a foto da nota fiscal.', 400);
+        const itemUid = (req.body && req.body.item_uid) ? String(req.body.item_uid).trim() : '';
+        if (!itemUid) return responseFormatter.error(res, 'item_uid é obrigatório.', 400);
+        const url = await uploadImageBuffer(
+            req.file.buffer,
+            req.file.mimetype,
+            req.file.originalname || 'nota-fiscal.jpg'
+        );
+        const titulo = (req.body && req.body.titulo) ? String(req.body.titulo).trim().slice(0, 120) : null;
+        const doc = await documentosService.setItemNotaFiscal(id, req.user.userId, itemUid, { url, titulo });
+        if (!doc) return responseFormatter.error(res, 'Documento ou item não encontrado', 404);
+        return responseFormatter.success(res, { url, documento: doc, item_uid: itemUid }, 'Nota fiscal anexada ao item.', 201);
+    } catch (e) {
+        logger.error('documentos uploadNotaFiscalItem:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao enviar nota fiscal', 500);
+    }
+}
+
+async function removeNotaFiscalItem(req, res) {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!id) return responseFormatter.error(res, 'ID inválido', 400);
+        const itemUid = (req.body && req.body.item_uid) ? String(req.body.item_uid).trim() : '';
+        if (!itemUid) return responseFormatter.error(res, 'item_uid é obrigatório.', 400);
+        const doc = await documentosService.removeItemNotaFiscal(id, req.user.userId, itemUid);
+        if (!doc) return responseFormatter.error(res, 'Documento ou item não encontrado', 404);
+        return responseFormatter.success(res, { documento: doc, item_uid: itemUid }, 'Nota fiscal removida.', 200);
+    } catch (e) {
+        logger.error('documentos removeNotaFiscalItem:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao remover nota fiscal', 500);
+    }
+}
+
 async function processarComprovante(req, res) {
     try {
         const id = parseInt(req.params.id, 10);
@@ -375,6 +412,8 @@ module.exports = {
     putSettings,
     uploadLogo,
     uploadAnexo,
+    uploadNotaFiscalItem,
+    removeNotaFiscalItem,
     getPdf,
     getPdfByToken,
     processarComprovante

@@ -74,6 +74,43 @@ async function addAnexo(id, userId, anexo) {
     return documentosRepository.update(id, userId, { anexos_json: anexos });
 }
 
+function findItemIndexByUid(itens, itemUid) {
+    if (!itemUid || !Array.isArray(itens)) return -1;
+    return itens.findIndex((row) => row && String(row.item_uid) === String(itemUid));
+}
+
+/**
+ * Anexa foto da nota fiscal a um item da tabela (não altera valores — só guarda imagem para o PDF).
+ */
+async function setItemNotaFiscal(id, userId, itemUid, { url, titulo }) {
+    const doc = await documentosRepository.getById(id, userId);
+    if (!doc) return null;
+    const itens = Array.isArray(doc.itens_json) ? doc.itens_json.map((row) => ({ ...row })) : [];
+    const idx = findItemIndexByUid(itens, itemUid);
+    if (idx < 0) return null;
+    if (!url) return null;
+    const tituloNota = (titulo || itens[idx].descricao || 'Nota fiscal').toString().trim().slice(0, 120);
+    itens[idx] = {
+        ...itens[idx],
+        nota_fiscal_url: url,
+        nota_fiscal_titulo: tituloNota
+    };
+    return documentosRepository.update(id, userId, { itens_json: itens });
+}
+
+async function removeItemNotaFiscal(id, userId, itemUid) {
+    const doc = await documentosRepository.getById(id, userId);
+    if (!doc) return null;
+    const itens = Array.isArray(doc.itens_json) ? doc.itens_json.map((row) => ({ ...row })) : [];
+    const idx = findItemIndexByUid(itens, itemUid);
+    if (idx < 0) return null;
+    const next = { ...itens[idx] };
+    delete next.nota_fiscal_url;
+    delete next.nota_fiscal_titulo;
+    itens[idx] = next;
+    return documentosRepository.update(id, userId, { itens_json: itens });
+}
+
 /**
  * Processa comprovante: adiciona itens sugeridos pelo OCR (nome estabelecimento, valor, forma pagamento) + anexo (se url existir).
  * itensSugeridos: [{ valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento? }]
@@ -110,6 +147,7 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
         if (seen.has(key)) continue;
         seen.add(key);
         const item = {
+            item_uid: `it-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
             descricao,
             quantidade: 1,
             valor_unitario: valor,
@@ -121,10 +159,10 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
         itens.push(item);
         totalValor += valor;
     }
-    // Só adicionar anexo se tivermos URL (upload Cloudflare ok); se falhou, não guardamos a imagem
-    if (url) {
-        if (itensSugeridos && itensSugeridos.length > 0) {
-            const primeiroNome = itensSugeridos[0].nome_estabelecimento || primeiraCategoria;
+    // Extrato do cartão (várias linhas): só preenche valores — não guarda foto no PDF de notas
+    if (url && !isExtratoLista) {
+        if (sugeridos.length > 0) {
+            const primeiroNome = sugeridos[0].nome_estabelecimento || primeiraCategoria;
             anexos.push({
                 url,
                 tipo_categoria: primeiraCategoria,
@@ -196,6 +234,8 @@ module.exports = {
     remove,
     duplicate,
     addAnexo,
+    setItemNotaFiscal,
+    removeItemNotaFiscal,
     processarComprovante,
     gerarPdf,
     getSettings,
