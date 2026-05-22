@@ -112,7 +112,7 @@ async function removeItemNotaFiscal(id, userId, itemUid) {
 }
 
 /**
- * Processa comprovante: adiciona itens sugeridos pelo OCR (nome estabelecimento, valor, forma pagamento) + anexo (se url existir).
+ * Processa comprovante/OCR: adiciona itens sugeridos. Em recibo não guarda imagem em anexos_json (só notas fiscais por item no PDF).
  * itensSugeridos: [{ valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento? }]
  * url: URL pública da imagem após upload; se null (ex.: falha Cloudflare), só atualiza itens (imagem não é guardada).
  */
@@ -132,7 +132,9 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular 
     let itens = (isExtratoLista && !acumularExtrato)
         ? []
         : (Array.isArray(doc.itens_json) ? [...doc.itens_json] : []);
-    const anexos = Array.isArray(doc.anexos_json) ? [...doc.anexos_json] : [];
+    const isRecibo = (doc.tipo || '').toLowerCase() === 'recibo';
+    // Recibo: extrato do cartão só preenche a tabela — fotos para o PDF ficam em item.nota_fiscal_url
+    let anexos = isRecibo ? [] : (Array.isArray(doc.anexos_json) ? [...doc.anexos_json] : []);
     const primeiraCategoria = sugeridos.length > 0 ? sugeridos[0].categoria : 'Comprovante';
     const seen = new Set();
     for (const row of itens) {
@@ -160,8 +162,8 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular 
         itens.push(item);
         totalValor += valor;
     }
-    // Extrato do cartão (várias linhas): só preenche valores — não guarda foto no PDF de notas
-    if (url && !isExtratoLista) {
+    // Orçamento (legado): um comprovante avulso pode ir para anexos_json. Recibo nunca guarda foto do OCR aqui.
+    if (!isRecibo && url && !isExtratoLista) {
         if (sugeridos.length > 0) {
             const primeiroNome = sugeridos[0].nome_estabelecimento || primeiraCategoria;
             anexos.push({
@@ -196,8 +198,13 @@ async function upsertSettings(userId, data) {
 }
 
 async function gerarPdf(id, userId, colors = null) {
-    const doc = await documentosRepository.getById(id, userId);
+    let doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
+    // Limpa anexos antigos de extrato OCR (só leitura de valores) — PDF do recibo usa só nota_fiscal_url nos itens
+    if ((doc.tipo || '').toLowerCase() === 'recibo' && Array.isArray(doc.anexos_json) && doc.anexos_json.length > 0) {
+        doc = await documentosRepository.update(id, userId, { anexos_json: [] }) || doc;
+        doc.anexos_json = [];
+    }
     let defaultLogoUrl = null;
     let companyLogoUrl = null;
     try {

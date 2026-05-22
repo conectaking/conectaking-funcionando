@@ -2,7 +2,7 @@
  * Gera PDF de documento (recibo ou orçamento) com layout estilo fatura profissional:
  * header azul com logo no topo esquerdo, título/número no topo direito, faixa laranja,
  * colunas Faturado para / Emitido por, tabela de itens com cabeçalho laranja, total em destaque,
- * condições de pagamento, observações; para recibo inclui imagens dos comprovantes.
+ * condições de pagamento, observações; para recibo inclui imagens das notas fiscais (por item).
  */
 
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
@@ -543,8 +543,8 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
         }
     }
 
-    // Comprovantes avulsos (legado — não inclui extrato só para OCR)
-    if (tipo === 'recibo' && anexos.length > 0) {
+    // Recibo: não incluir anexos_json (extrato do cartão / OCR). Só fotos em item.nota_fiscal_url acima.
+    if (tipo !== 'recibo' && anexos.length > 0) {
         for (const anexo of anexos) {
             if (!anexo.url || anexo.tipo_anexo === 'extrato_ocr') continue;
             await drawNotaImage(anexo.url, anexo.descricao || `Comprovante - ${anexo.tipo_categoria || ''}`);
