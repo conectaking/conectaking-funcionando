@@ -80,6 +80,7 @@
                 border-bottom: 1px solid #262626 !important;
                 margin-bottom: 4px;
             }
+            .itens-table-wrap .item-row td.item-td-valor,
             .itens-table-wrap .item-row td.item-td-total {
                 font-size: 1.125rem;
                 padding-top: 10px !important;
@@ -88,7 +89,7 @@
                 justify-content: flex-end;
                 padding-top: 0 !important;
             }
-            .itens-table-wrap .item-row td:not(.item-td-desc):not(.item-td-remove):not(.item-td-total)::before {
+            .itens-table-wrap .item-row td:not(.item-td-desc):not(.item-td-remove):not(.item-td-valor):not(.item-td-total)::before {
                 content: attr(data-label);
                 font-size: 10px;
                 font-weight: 700;
@@ -140,7 +141,7 @@
     </div>
 </aside>
 
-<nav class="bottom-nav-safe fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-card-dark border-t border-slate-200 dark:border-border-dark flex justify-around items-center py-2 px-1">
+<nav id="recibos-bottom-nav" class="bottom-nav-safe fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-card-dark border-t border-slate-200 dark:border-border-dark flex justify-around items-center py-2 px-1">
     <a href="dashboard-recibos-orcamentos.html" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
         <span class="material-icons-outlined text-2xl">dashboard</span>
         <span class="text-[9px] font-bold uppercase">Painel</span>
@@ -302,9 +303,7 @@
                             <tr class="text-[10px] uppercase font-bold text-slate-500 text-left">
                                 <th class="px-4 py-2">Descrição</th>
                                 <th class="px-4 py-2 w-24">Data</th>
-                                <th class="px-4 py-2 w-20 text-center">Qtd</th>
-                                <th class="px-4 py-2 w-32">Unit. (R$)</th>
-                                <th class="px-4 py-2 w-32 text-right">Total</th>
+                                <th class="px-4 py-2 w-32 text-right">Valor (R$)</th>
                                 <th class="px-4 py-2 w-10"></th>
                             </tr>
                         </thead>
@@ -317,13 +316,11 @@
                                 <td class="item-td-data px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Data">
                                     <input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="DD/MM" type="text"/>
                                 </td>
-                                <td class="item-td-qtd px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center" data-label="Qtd">
-                                    <input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/>
+                                <td class="item-td-valor px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium" data-label="Valor (R$)">
+                                    <input name="item_valor[]" class="item-valor w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left text-primary font-semibold" placeholder="0,00" type="text"/>
+                                    <input type="hidden" name="item_qtd[]" value="1"/>
+                                    <input type="hidden" name="item_unit[]" class="item-unit" value=""/>
                                 </td>
-                                <td class="item-td-unit px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Unit. (R$)">
-                                    <input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="0,00" type="text"/>
-                                </td>
-                                <td class="item-total item-td-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary" data-label="Total">R$ 0,00</td>
                                 <td class="item-td-remove px-4 py-3 lg:rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center" data-label="">
                                     <button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button>
                                 </td>
@@ -632,8 +629,8 @@
         var tbody = document.getElementById('itens-tbody');
         if (tbody && tbody.firstElementChild) {
             tbody.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            var firstUnit = tbody.querySelector('.item-unit');
-            if (firstUnit) firstUnit.focus();
+            var firstVal = tbody.querySelector('.item-valor');
+            if (firstVal) firstVal.focus();
         }
     };
 
@@ -650,6 +647,28 @@
         return 'it-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
     }
 
+    function getItemRowValor(tr) {
+        var inp = tr.querySelector('.item-valor');
+        if (inp) return parseBr(inp.value);
+        var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
+        return qtd * parseBr(tr.querySelector('.item-unit').value);
+    }
+
+    function syncItemRowHidden(tr) {
+        var val = getItemRowValor(tr);
+        var unit = tr.querySelector('.item-unit');
+        var qtd = tr.querySelector('input[name="item_qtd[]"]');
+        if (unit) unit.value = fmtMoney(val);
+        if (qtd) qtd.value = '1';
+    }
+
+    function bindItemRowEvents(tr) {
+        var valInp = tr.querySelector('.item-valor');
+        if (valInp) valInp.addEventListener('input', function() { syncItemRowHidden(tr); updateTotal(); });
+        var descInp = tr.querySelector('input[name="item_descricao[]"]');
+        if (descInp) descInp.addEventListener('input', function() { renderNotasFiscais(); });
+    }
+
     function buildItemRow(opts) {
         opts = opts || {};
         var tr = document.createElement('tr');
@@ -658,15 +677,10 @@
         if (opts.nota_fiscal_url) tr.dataset.notaUrl = opts.nota_fiscal_url;
         tr.innerHTML = '<td class="item-td-desc px-4 py-3 lg:rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark" data-label=""><input name="item_descricao[]" lang="pt-BR" spellcheck="true" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-medium" placeholder="Serviço ou Produto" type="text"/><input name="item_pacote[]" lang="pt-BR" spellcheck="true" class="w-full mt-1 bg-transparent border-none focus:ring-0 p-0 text-xs text-slate-400" placeholder="O que vai no pacote (opcional)" type="text"/></td>' +
             '<td class="item-td-data px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Data"><input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="DD/MM" type="text"/></td>' +
-            '<td class="item-td-qtd px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center" data-label="Qtd"><input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/></td>' +
-            '<td class="item-td-unit px-4 py-3 border-y border-slate-200 dark:border-border-dark" data-label="Unit. (R$)"><input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left" placeholder="0,00" type="text"/></td>' +
-            '<td class="item-total item-td-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary" data-label="Total">R$ 0,00</td>' +
+            '<td class="item-td-valor px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium" data-label="Valor (R$)"><input name="item_valor[]" class="item-valor w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-right lg:text-left text-primary font-semibold" placeholder="0,00" type="text"/><input type="hidden" name="item_qtd[]" value="1"/><input type="hidden" name="item_unit[]" class="item-unit" value=""/></td>' +
             '<td class="item-td-remove px-4 py-3 lg:rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center" data-label=""><button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button></td>';
         tr.querySelector('.btn-remove-item').onclick = function() { tr.remove(); updateTotal(); renderNotasFiscais(); };
-        tr.querySelector('.item-unit').addEventListener('input', updateTotal);
-        tr.querySelector('input[name="item_qtd[]"]').addEventListener('input', updateTotal);
-        var descInp = tr.querySelector('input[name="item_descricao[]"]');
-        if (descInp) descInp.addEventListener('input', function() { renderNotasFiscais(); });
+        bindItemRowEvents(tr);
         return tr;
     }
 
@@ -682,8 +696,10 @@
             var pacoteInp = tr.querySelector('input[name="item_pacote[]"]');
             if (pacoteInp) pacoteInp.value = item.conteudo_pacote || item.detalhes || '';
             tr.querySelector('input[name="item_data[]"]').value = item.data || '';
-            tr.querySelector('input[name="item_qtd[]"]').value = item.quantidade != null ? item.quantidade : 1;
-            tr.querySelector('.item-unit').value = item.valor_unitario != null ? fmtMoney(item.valor_unitario) : '';
+            var valorLinha = item.valor != null ? item.valor : ((item.quantidade != null ? item.quantidade : 1) * (item.valor_unitario || 0));
+            var valInp = tr.querySelector('.item-valor');
+            if (valInp) valInp.value = valorLinha ? fmtMoney(valorLinha) : '';
+            syncItemRowHidden(tr);
             tbody.appendChild(tr);
         });
         if ((itens || []).length === 0) tbody.appendChild(buildItemRow());
@@ -703,9 +719,7 @@
         rows.forEach(function(tr, idx) {
             if (!tr.dataset.itemUid) tr.dataset.itemUid = newItemUid();
             var desc = (tr.querySelector('input[name="item_descricao[]"]').value || '').trim() || ('Item ' + (idx + 1));
-            var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
-            var unit = parseBr(tr.querySelector('.item-unit').value);
-            var valorLabel = 'R$ ' + fmtMoney(qtd * unit);
+            var valorLabel = 'R$ ' + fmtMoney(getItemRowValor(tr));
             var uid = tr.dataset.itemUid;
             var notaUrl = tr.dataset.notaUrl || '';
             var card = document.createElement('div');
@@ -789,11 +803,8 @@
     function updateTotal() {
         var total = 0;
         document.querySelectorAll('.item-row').forEach(function(tr) {
-            var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
-            var unit = parseBr(tr.querySelector('.item-unit').value);
-            var val = qtd * unit;
-            total += val;
-            tr.querySelector('.item-total').textContent = 'R$ ' + fmtMoney(val);
+            total += getItemRowValor(tr);
+            syncItemRowHidden(tr);
         });
         document.getElementById('total-display').textContent = 'R$ ' + fmtMoney(total);
         renderNotasFiscais();
@@ -817,9 +828,9 @@
             btn.onclick = function() {
                 var tr = buildItemRow();
                 tr.querySelector('input[name="item_descricao[]"]').value = this.dataset.desc || '';
-                tr.querySelector('.item-unit').value = (this.dataset.val || '0').replace('.', ',');
-                tr.querySelector('input[name="item_qtd[]"]').addEventListener('input', updateTotal);
-                tr.querySelector('.item-unit').addEventListener('input', updateTotal);
+                var valInp = tr.querySelector('.item-valor');
+                if (valInp) valInp.value = (this.dataset.val || '0').replace('.', ',');
+                syncItemRowHidden(tr);
                 document.getElementById('itens-tbody').appendChild(tr);
                 updateTotal();
                 catalogoDrop.classList.add('hidden');
@@ -909,11 +920,8 @@
     document.getElementById('itens-tbody').querySelectorAll('.btn-remove-item').forEach(function(btn) {
         btn.onclick = function() { btn.closest('tr').remove(); updateTotal(); };
     });
-    document.getElementById('itens-tbody').querySelectorAll('.item-unit').forEach(function(inp) {
-        inp.addEventListener('input', updateTotal);
-    });
-    document.getElementById('itens-tbody').querySelectorAll('input[name="item_qtd[]"]').forEach(function(inp) {
-        inp.addEventListener('input', updateTotal);
+    document.getElementById('itens-tbody').querySelectorAll('.item-row').forEach(function(tr) {
+        bindItemRowEvents(tr);
     });
 
     function getFormDoc() {
@@ -946,10 +954,9 @@
             var desc = (tr.querySelector('input[name="item_descricao[]"]').value || '').trim();
             var pacote = (tr.querySelector('input[name="item_pacote[]"]').value || '').trim();
             var data = (tr.querySelector('input[name="item_data[]"]').value || '').trim();
-            var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
-            var unit = parseBr(tr.querySelector('.item-unit').value);
+            var val = getItemRowValor(tr);
             if (!tr.dataset.itemUid) tr.dataset.itemUid = newItemUid();
-            var item = { descricao: desc || '-', data: data, quantidade: qtd, valor_unitario: unit, valor: qtd * unit, item_uid: tr.dataset.itemUid };
+            var item = { descricao: desc || '-', data: data, quantidade: 1, valor_unitario: val, valor: val, item_uid: tr.dataset.itemUid };
             if (pacote) item.conteudo_pacote = pacote;
             if (tr.dataset.notaUrl) {
                 item.nota_fiscal_url = tr.dataset.notaUrl;
