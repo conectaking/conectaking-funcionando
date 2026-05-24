@@ -108,6 +108,24 @@
             .nota-fiscal-card .btn-nota-camera,
             .nota-fiscal-card .btn-nota-arquivo { flex: 1; justify-content: center; }
         }
+        .btn-ordenar-item {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: 1px solid #404040;
+            color: #94a3b8;
+            background: transparent;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-ordenar-item:hover { border-color: #d4af37; color: #d4af37; }
+        .btn-ordenar-item.is-active {
+            border-color: #d4af37;
+            color: #000;
+            background: #d4af37;
+        }
         .bottom-nav-safe { padding-bottom: env(safe-area-inset-bottom, 0); }
     </style>
     <link rel="stylesheet" href="css/recibos-modulo-mobile.css"/>
@@ -291,10 +309,15 @@
             </section>
 
             <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
-                <div class="flex items-center justify-between mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <div class="flex items-center gap-2 text-primary">
                         <span class="material-icons-outlined">list_alt</span>
                         <h2 id="itens-section-title" class="uppercase tracking-widest text-xs font-bold">Itens</h2>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap" id="itens-ordenacao" title="Ordena a tabela e as notas fiscais abaixo">
+                        <span class="text-[10px] uppercase font-bold text-slate-500">Ordenar</span>
+                        <button type="button" id="btn-ordenar-data" class="btn-ordenar-item is-active">Data</button>
+                        <button type="button" id="btn-ordenar-nome" class="btn-ordenar-item">Nome</button>
                     </div>
                 </div>
                 <div class="itens-table-wrap overflow-x-auto lg:overflow-visible">
@@ -647,6 +670,64 @@
         return 'it-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
     }
 
+    var ITENS_SORT_STORAGE_KEY = 'recibosItensOrdenacao';
+    var itemSortMode = 'data';
+    try {
+        var savedSort = localStorage.getItem(ITENS_SORT_STORAGE_KEY);
+        if (savedSort === 'nome' || savedSort === 'data') itemSortMode = savedSort;
+    } catch (eSort) {}
+
+    function parseItemDateSort(s) {
+        var t = (s || '').trim();
+        var m = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (!m) return 0;
+        var day = parseInt(m[1], 10);
+        var month = parseInt(m[2], 10);
+        var year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+        if (year < 100) year += 2000;
+        var dt = new Date(year, month - 1, day);
+        return isNaN(dt.getTime()) ? 0 : dt.getTime();
+    }
+
+    function getItemRowNomeSort(tr) {
+        return (tr.querySelector('input[name="item_descricao[]"]').value || '').trim().toLowerCase();
+    }
+
+    function updateOrdenacaoButtonsUI() {
+        var btnData = document.getElementById('btn-ordenar-data');
+        var btnNome = document.getElementById('btn-ordenar-nome');
+        if (!btnData || !btnNome) return;
+        btnData.classList.toggle('is-active', itemSortMode === 'data');
+        btnNome.classList.toggle('is-active', itemSortMode === 'nome');
+    }
+
+    function sortItemRows() {
+        var tbody = document.getElementById('itens-tbody');
+        if (!tbody) return;
+        var rows = Array.prototype.slice.call(tbody.querySelectorAll('.item-row'));
+        rows.sort(function(a, b) {
+            if (itemSortMode === 'nome') {
+                var cmp = getItemRowNomeSort(a).localeCompare(getItemRowNomeSort(b), 'pt-BR', { sensitivity: 'base' });
+                if (cmp !== 0) return cmp;
+                return parseItemDateSort(b.querySelector('input[name="item_data[]"]').value)
+                    - parseItemDateSort(a.querySelector('input[name="item_data[]"]').value);
+            }
+            var da = parseItemDateSort(a.querySelector('input[name="item_data[]"]').value);
+            var db = parseItemDateSort(b.querySelector('input[name="item_data[]"]').value);
+            if (db !== da) return db - da;
+            return getItemRowNomeSort(a).localeCompare(getItemRowNomeSort(b), 'pt-BR', { sensitivity: 'base' });
+        });
+        rows.forEach(function(tr) { tbody.appendChild(tr); });
+        renderNotasFiscais();
+    }
+
+    function setItemSortMode(mode) {
+        itemSortMode = mode === 'nome' ? 'nome' : 'data';
+        try { localStorage.setItem(ITENS_SORT_STORAGE_KEY, itemSortMode); } catch (e) {}
+        updateOrdenacaoButtonsUI();
+        sortItemRows();
+    }
+
     function getItemRowValor(tr) {
         var inp = tr.querySelector('.item-valor');
         if (inp) return parseBr(inp.value);
@@ -704,7 +785,7 @@
         });
         if ((itens || []).length === 0) tbody.appendChild(buildItemRow());
         updateTotal();
-        renderNotasFiscais();
+        sortItemRows();
     }
 
     function renderNotasFiscais() {
@@ -812,8 +893,13 @@
 
     document.getElementById('btn-add-item').onclick = function() {
         document.getElementById('itens-tbody').appendChild(buildItemRow());
-        renderNotasFiscais();
+        sortItemRows();
     };
+    var btnOrdenarData = document.getElementById('btn-ordenar-data');
+    var btnOrdenarNome = document.getElementById('btn-ordenar-nome');
+    if (btnOrdenarData) btnOrdenarData.onclick = function() { setItemSortMode('data'); };
+    if (btnOrdenarNome) btnOrdenarNome.onclick = function() { setItemSortMode('nome'); };
+    updateOrdenacaoButtonsUI();
     var btnCatalogo = document.getElementById('btn-inserir-catalogo');
     var catalogoDrop = document.getElementById('catalogo-dropdown');
     btnCatalogo.onclick = function() {
