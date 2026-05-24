@@ -4,7 +4,6 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Recibos e Orçamentos — ConectaKing</title>
-    <script src="https://conectaking-api.onrender.com/api-config.js"></script>
     <script>
         (function () {
             var prod = 'https://conectaking-api.onrender.com';
@@ -867,30 +866,28 @@
     }
     (function initOcrIaStatus() {
         var el = document.getElementById('ocr-ia-status');
-        var chk = document.getElementById('ocr-usar-ia');
         if (!el) return;
+        function showPending() {
+            el.textContent = 'IA OpenAI: ao digitalizar, usa a chave do Render (requer API atualizada). Checkbox marcado = prioridade IA.';
+            el.className = 'text-xs text-slate-400 dark:text-slate-500 mb-3';
+        }
         fetch(apiOrigin + '/api/documentos/ocr-info', { credentials: 'omit' })
-            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(r) {
+                if (!r.ok) { showPending(); return null; }
+                return r.json();
+            })
             .then(function(data) {
-                var info = data && data.data;
-                if (!info) {
-                    el.textContent = 'Não foi possível verificar a IA (atualize a API no Render).';
-                    el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
-                    return;
-                }
+                if (!data || !data.data) { showPending(); return; }
+                var info = data.data;
                 if (info.openAiAvailable) {
                     el.textContent = 'IA OpenAI ativa no servidor (' + (info.model || 'gpt-4o-mini') + ').';
                     el.className = 'text-xs text-emerald-600 dark:text-emerald-400 mb-3';
                 } else {
-                    el.textContent = 'IA OpenAI indisponível — configure OPENAI_API_KEY no Render (mesma chave do KingBrief).';
+                    el.textContent = 'OPENAI_API_KEY ausente no Render — digitalização usará só OCR local.';
                     el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
-                    if (chk) { chk.checked = false; chk.disabled = true; }
                 }
             })
-            .catch(function() {
-                el.textContent = 'Não foi possível verificar a IA (confirme deploy da API no Render).';
-                el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
-            });
+            .catch(function() { showPending(); });
     })();
     (function initOcrEtiquetaVoz() {
         var btn = document.getElementById('btn-ocr-etiqueta-voz');
