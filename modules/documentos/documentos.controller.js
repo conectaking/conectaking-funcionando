@@ -369,20 +369,8 @@ async function processarComprovante(req, res) {
             itensSugeridos = itensSugeridos.map(s => ({ ...s, etiqueta_ocr: etiquetaItens }));
         }
 
-        // 2) Extrato (várias linhas): não guarda imagem — pula upload para responder mais rápido no mobile
-        const isExtratoLista = itensSugeridos.length >= 3;
+        // Extrato/OCR: não guarda imagem no Cloudflare — responde mais rápido (crítico no mobile/Render)
         let url = null;
-        if (!isExtratoLista) {
-            try {
-                url = await uploadImageBuffer(
-                    req.file.buffer,
-                    req.file.mimetype,
-                    req.file.originalname || 'comprovante.jpg'
-                );
-            } catch (uploadErr) {
-                logger.error('documentos processarComprovante upload:', uploadErr);
-            }
-        }
 
         const acumular = !(req.body && (req.body.substituir === '1' || req.body.substituir === 'true' || req.body.substituir === true))
             && (req.body == null || req.body.acumular === undefined || req.body.acumular === '1' || req.body.acumular === 'true' || req.body.acumular === true);

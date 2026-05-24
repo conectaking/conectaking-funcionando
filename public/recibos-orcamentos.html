@@ -563,7 +563,7 @@
         });
     }
 
-    /** Upload multipart — mobile: tenta fetch primeiro; XHR como fallback. */
+    /** Mobile: XHR primeiro (fetch+FormData falha em vários Android/iOS cross-origin). */
     function uploadFormData(url, formData, timeoutMs) {
         timeoutMs = timeoutMs != null ? timeoutMs : apiFetchTimeoutMs();
         function xhrUpload() {
@@ -596,10 +596,10 @@
                 xhr.send(formData);
             });
         }
+        if (isMobileDevice()) return xhrUpload();
         if (typeof fetch === 'function') {
             return apiFetch(url, { method: 'POST', body: formData, timeout: timeoutMs }).catch(function () {
-                if (isMobileDevice()) return xhrUpload();
-                throw new Error(friendlyFetchError({ message: 'Failed to fetch' }, 'Falha ao enviar a foto'));
+                return xhrUpload();
             });
         }
         return xhrUpload();
@@ -608,25 +608,28 @@
     var apiWarmPromise = null;
     function warmUpApi() {
         if (window.__recibosApiWarmed) return Promise.resolve();
+        var ping = apiFetch(apiOrigin + '/health', { timeout: 20000, credentials: 'omit' }).catch(function () {});
+        if (isMobileDevice()) {
+            apiFetch(apiOrigin + '/api/documentos/warm-ocr', { timeout: 60000, credentials: 'omit' }).catch(function () {});
+            window.__recibosApiWarmed = true;
+            return ping;
+        }
         if (apiWarmPromise) return apiWarmPromise;
-        apiWarmPromise = apiFetch(apiOrigin + '/health', { timeout: 45000, credentials: 'omit' })
-            .catch(function () { return apiFetch(apiOrigin + '/api/public-api-url', { timeout: 45000, credentials: 'omit' }); })
+        apiWarmPromise = ping
             .then(function () {
-                return apiFetch(apiOrigin + '/api/documentos/warm-ocr', { timeout: 120000, credentials: 'omit' });
+                return apiFetch(apiOrigin + '/api/documentos/warm-ocr', { timeout: 90000, credentials: 'omit' });
             })
             .then(function () { window.__recibosApiWarmed = true; })
-            .catch(function () {
-                window.__recibosApiWarmed = true;
-            });
+            .catch(function () { window.__recibosApiWarmed = true; apiWarmPromise = null; });
         return apiWarmPromise;
     }
 
+    /** Comprime foto para OCR no celular (evita timeout Render + mantém texto legível). */
     function compressImageFileForUpload(file, maxSide) {
-        maxSide = maxSide || (isMobileDevice() ? 2000 : 1600);
+        maxSide = maxSide || (isMobileDevice() ? 1400 : 1600);
+        var quality = isMobileDevice() ? 0.84 : 0.82;
         return new Promise(function (resolve) {
             if (!file || !file.type || file.type.indexOf('image/') !== 0) { resolve(file); return; }
-            // Mobile: preserva qualidade para OCR — só comprime fotos muito grandes
-            if (isMobileDevice() && file.size < 2800000) { resolve(file); return; }
             if (!isMobileDevice() && file.size < 700000) { resolve(file); return; }
             var img = new Image();
             var objUrl = URL.createObjectURL(file);
@@ -635,7 +638,7 @@
                 var w = img.width;
                 var h = img.height;
                 var scale = Math.min(1, maxSide / Math.max(w, h));
-                if (scale >= 1 && file.size < 1200000) { resolve(file); return; }
+                if (!isMobileDevice() && scale >= 1 && file.size < 1200000) { resolve(file); return; }
                 var cw = Math.max(1, Math.round(w * scale));
                 var ch = Math.max(1, Math.round(h * scale));
                 var canvas = document.createElement('canvas');
@@ -646,7 +649,7 @@
                     if (!blob) { resolve(file); return; }
                     var name = (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
                     resolve(new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() }));
-                }, 'image/jpeg', isMobileDevice() ? 0.92 : 0.82);
+                }, 'image/jpeg', quality);
             };
             img.onerror = function () { URL.revokeObjectURL(objUrl); resolve(file); };
             img.src = objUrl;
@@ -741,8 +744,20 @@
             apiFetch(API + '/' + docId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getFormDoc()) })
                 .then(function(r) { return handleResponse(r, 'Faça login para salvar o recibo.'); })
                 .then(function() { callback(); })
-                .catch(function(err) { alert(err.message || 'Erro ao guardar itens antes do scan.'); });
+                .catch(function() { callback(); });
         });
+    }
+    function uploadComprovanteComRetry(fd, jaTentou) {
+        return uploadFormData(API + '/' + docId + '/processar-comprovante', fd)
+            .then(function(r) { return handleResponse(r, 'Faça login para enviar comprovantes.'); })
+            .catch(function(err) {
+                if (isMobileDevice() && !jaTentou) {
+                    return new Promise(function(resolve) { setTimeout(resolve, 3000); })
+                        .then(function() { return warmUpApi(); })
+                        .then(function() { return uploadComprovanteComRetry(fd, true); });
+                }
+                throw err;
+            });
     }
     function enviarComprovante(fileInput) {
         var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
@@ -788,9 +803,8 @@
                         fd.append('image', filePrepared);
                         if (etiquetaVal) fd.append('etiqueta_itens', etiquetaVal);
                         fd.append('acumular', '1');
-                        return uploadFormData(API + '/' + docId + '/processar-comprovante', fd);
+                        return uploadComprovanteComRetry(fd, false);
                     })
-                    .then(function(r) { return handleResponse(r, 'Faça login para enviar comprovantes.'); })
                     .then(function(data) {
                         var doc = data && data.data && data.data.documento;
                         if (!doc) throw new Error(data.message || 'Falha ao digitalizar.');
@@ -1430,6 +1444,7 @@
         applyTipoUI(tipo || 'orcamento');
         applyDefaultLogo();
     }
+    if (isMobileDevice()) warmUpApi();
 })();
 </script>
 </body>

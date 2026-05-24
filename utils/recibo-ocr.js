@@ -12,8 +12,8 @@ const logger = require('./logger');
 const { detectIssuer } = require('./recibo-issuer-profiles');
 const receiptParser = require('./receipt-parser');
 
-/** Largura máxima para redimensionar imagem antes do OCR (acelera muito). */
-const OCR_MAX_WIDTH = 1200;
+/** Largura máxima para redimensionar imagem antes do OCR (acelera no Render/mobile). */
+const OCR_MAX_WIDTH = 1000;
 /** Worker Tesseract reutilizado (evita criar/destruir a cada comprovante). */
 let _ocrWorker = null;
 let _ocrWorkerPromise = null;
@@ -455,13 +455,12 @@ async function redimensionarParaOcr(imageBuffer) {
         const sharp = require('sharp');
         const meta = await sharp(imageBuffer).metadata();
         const w = meta.width || 0;
-        const targetW = w < 900 ? Math.min(1600, Math.max(w * 2, 900)) : Math.min(1600, Math.max(OCR_MAX_WIDTH, w));
         let pipe = sharp(imageBuffer)
             .rotate()
             .normalize()
             .sharpen({ sigma: 1.2 })
-            .resize(targetW, null, { withoutEnlargement: false, fit: 'inside' });
-        pipe = pipe.jpeg({ quality: 92 });
+            .resize(OCR_MAX_WIDTH, null, { withoutEnlargement: true, fit: 'inside' });
+        pipe = pipe.jpeg({ quality: 88, mozjpeg: true });
         return await pipe.toBuffer();
     } catch (e) {
         logger.warn('recibo-ocr redimensionar:', e.message);
