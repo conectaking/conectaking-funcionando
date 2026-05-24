@@ -763,7 +763,7 @@
         var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
         if (!files.length) return;
         syncFormBeforeOcr(function() {
-            var scanResumo = { lidosOcr: 0, inseridos: 0, duplicata: 0, porFoto: [] };
+            var scanResumo = { lidosOcr: 0, inseridos: 0, duplicata: 0, porFoto: [], ocrIa: false };
             var etiqueta = document.getElementById('ocr-etiqueta-itens');
             var etiquetaVal = etiqueta && etiqueta.value.trim() ? etiqueta.value.trim() : '';
             var btn = document.getElementById('btn-tirar-foto');
@@ -790,7 +790,7 @@
                     });
                     linhas.push('');
                 }
-                linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem.');
+                linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem' + (scanResumo.ocrIa ? ' (com IA OpenAI)' : '') + '.');
                 if (scanResumo.inseridos !== scanResumo.lidosOcr) {
                     linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela' + (scanResumo.duplicata ? ' (' + scanResumo.duplicata + ' já existiam).' : '.'));
                 } else if (scanResumo.inseridos > 0) {
@@ -835,6 +835,7 @@
                         scanResumo.lidosOcr += st.lidosOcr || 0;
                         scanResumo.inseridos += st.inseridos || 0;
                         scanResumo.duplicata += st.ignoradosDuplicata || 0;
+                        if (st.ocrEngine === 'openai') scanResumo.ocrIa = true;
                         enviarUm(i + 1, doc);
                     })
                     .catch(function(err) {

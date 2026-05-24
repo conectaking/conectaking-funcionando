@@ -11,6 +11,7 @@ const os = require('os');
 const logger = require('./logger');
 const { detectIssuer } = require('./recibo-issuer-profiles');
 const receiptParser = require('./receipt-parser');
+const openAiVision = require('./recibo-openai-vision');
 
 /** Largura máxima para redimensionar imagem antes do OCR (acelera no Render/mobile). */
 const OCR_MAX_WIDTH = 1400;
@@ -501,12 +502,10 @@ async function warmUpOcr() {
 }
 
 /**
- * Executa OCR na imagem e retorna itens sugeridos + parse_result (confidence, candidates) para a UI.
- * Otimizado: redimensiona imagem antes do OCR e reutiliza o worker Tesseract.
- * Retorno: { itensSugeridos: Array, parseResult?: { confidence, candidates, amount_paid, status } }
+ * Executa OCR Tesseract na imagem (sem OpenAI).
  */
-async function processarImagem(imageBuffer) {
-    if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) return { itensSugeridos: [] };
+async function processarImagemTesseract(imageBuffer) {
+    if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) return { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
     const ext = '.jpg';
     const tmpPath = path.join(os.tmpdir(), `recibo-ocr-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
     try {
@@ -515,25 +514,149 @@ async function processarImagem(imageBuffer) {
         const worker = await getOcrWorker();
         const { data: { text } } = await worker.recognize(tmpPath);
         try { fs.unlinkSync(tmpPath); } catch (_) {}
-        if (!text || !text.trim()) return { itensSugeridos: [] };
+        if (!text || !text.trim()) return { itensSugeridos: [], parseResult: { source: 'tesseract', confidence: 0 }, ocrText: '' };
         const itensSugeridos = processarTextoOcr(text);
         const parseResult = receiptParser.parseReceipt(text);
         const parseResultForApi = {
+            source: 'tesseract',
             confidence: parseResult.confidence,
             candidates: (parseResult.candidates || []).slice(0, 5).map(c => ({ value: c.value, score: c.score, evidence: c.evidence || '' })),
             amount_paid: parseResult.amount_paid,
             status: parseResult.status,
             warnings: parseResult.warnings || [],
             total_paid: parseResult.total_paid ?? null,
-            transactions: parseResult.transactions || null
+            transactions: parseResult.transactions || null,
+            raw_ocr_text: text.slice(0, 8000)
         };
-        return { itensSugeridos, parseResult: parseResultForApi };
+        return { itensSugeridos, parseResult: parseResultForApi, ocrText: text };
     } catch (e) {
         logger.error('recibo-ocr processarImagem:', e);
         throw e;
     } finally {
         try { fs.unlinkSync(tmpPath); } catch (_) {}
     }
+}
+
+function modoOpenAiRecibo() {
+    return (process.env.RECIBO_OCR_AI || 'auto').toLowerCase();
+}
+
+/** Conta linhas que parecem valor de extrato (ex.: "13,20 R$"). */
+function contarLinhasValorExtrato(ocrText) {
+    if (!ocrText) return 0;
+    const lines = ocrText.split(/\r?\n/);
+    let n = 0;
+    for (const l of lines) {
+        const t = l.trim();
+        if (/^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i.test(t)) n++;
+    }
+    return n;
+}
+
+/**
+ * Decide se vale chamar OpenAI Vision (auto) ou se modo always/never.
+ */
+function precisaOpenAiFallback(ocrText, itensSugeridos, parseResult) {
+    const mode = modoOpenAiRecibo();
+    if (mode === 'never') return false;
+    if (mode === 'always') return openAiVision.isAvailable();
+    if (!openAiVision.isAvailable()) return false;
+
+    const n = (itensSugeridos || []).length;
+    const valueLines = contarLinhasValorExtrato(ocrText);
+    const txParser = (parseResult && parseResult.transactions) || [];
+    const pareceLista = valueLines >= 3 || txParser.length >= 3;
+
+    if (n === 0 && valueLines >= 1) return true;
+    if (n === 0 && (ocrText || '').trim().length > 80) return true;
+    if (pareceLista && valueLines >= 2 && n < Math.ceil(valueLines * 0.55)) return true;
+    if (pareceLista && n >= 1 && n + 1 < valueLines) return true;
+    if (txParser.length >= 2 && n < txParser.length) return true;
+
+    return false;
+}
+
+function escolherMelhorLeitura(tesseractResult, openAiResult) {
+    const t = (tesseractResult && tesseractResult.itensSugeridos) || [];
+    const a = (openAiResult && openAiResult.itensSugeridos) || [];
+    if (a.length > t.length) {
+        return {
+            itensSugeridos: a,
+            parseResult: {
+                ...(openAiResult.parseResult || {}),
+                ocrEngine: 'openai',
+                tesseractItens: t.length,
+                openAiItens: a.length
+            },
+            ocrEngine: 'openai'
+        };
+    }
+    return {
+        itensSugeridos: t,
+        parseResult: {
+            ...(tesseractResult.parseResult || {}),
+            ocrEngine: 'tesseract',
+            tesseractItens: t.length,
+            openAiItens: a.length
+        },
+        ocrEngine: 'tesseract'
+    };
+}
+
+/**
+ * Híbrido: Tesseract primeiro; OpenAI Vision se leitura incompleta ou modo always.
+ */
+async function processarImagemHibrida(imageBuffer) {
+    if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) {
+        return { itensSugeridos: [], parseResult: { ocrEngine: 'none' } };
+    }
+
+    let tess = { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
+    try {
+        tess = await processarImagemTesseract(imageBuffer);
+    } catch (e) {
+        logger.error('recibo-ocr tesseract:', e.message);
+    }
+
+    const mode = modoOpenAiRecibo();
+    const chamarOpenAi = mode === 'always'
+        ? openAiVision.isAvailable()
+        : precisaOpenAiFallback(tess.ocrText, tess.itensSugeridos, tess.parseResult);
+
+    if (!chamarOpenAi) {
+        return {
+            itensSugeridos: tess.itensSugeridos || [],
+            parseResult: { ...(tess.parseResult || {}), ocrEngine: 'tesseract' },
+            ocrEngine: 'tesseract'
+        };
+    }
+
+    try {
+        const ai = await openAiVision.extrairComOpenAi(imageBuffer);
+        const escolhido = escolherMelhorLeitura(tess, ai);
+        logger.info('recibo-ocr híbrido:', {
+            engine: escolhido.ocrEngine,
+            tesseract: (tess.itensSugeridos || []).length,
+            openai: (ai.itensSugeridos || []).length
+        });
+        return escolhido;
+    } catch (e) {
+        logger.warn('recibo-ocr openai fallback:', e.message);
+        return {
+            itensSugeridos: tess.itensSugeridos || [],
+            parseResult: {
+                ...(tess.parseResult || {}),
+                ocrEngine: 'tesseract',
+                openAiError: e.message
+            },
+            ocrEngine: 'tesseract'
+        };
+    }
+}
+
+/** Alias principal — usa pipeline híbrido. */
+async function processarImagem(imageBuffer) {
+    return processarImagemHibrida(imageBuffer);
 }
 
 module.exports = {
@@ -545,5 +668,7 @@ module.exports = {
     categorizar,
     processarTextoOcr,
     processarImagem,
+    processarImagemHibrida,
+    processarImagemTesseract,
     warmUpOcr
 };

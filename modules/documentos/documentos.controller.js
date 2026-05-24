@@ -350,6 +350,7 @@ async function processarComprovante(req, res) {
         // 1) OCR primeiro: extrair valor/itens mesmo que o upload falhe depois (ex.: throttling Cloudflare)
         let itensSugeridos = [];
         let parseResult = null;
+        let ocrEngine = 'tesseract';
         try {
             const ocrResult = await processarImagem(req.file.buffer);
             if (Array.isArray(ocrResult)) {
@@ -357,6 +358,7 @@ async function processarComprovante(req, res) {
             } else if (ocrResult && ocrResult.itensSugeridos) {
                 itensSugeridos = ocrResult.itensSugeridos || [];
                 parseResult = ocrResult.parseResult || null;
+                ocrEngine = ocrResult.ocrEngine || (parseResult && parseResult.ocrEngine) || 'tesseract';
             }
         } catch (ocrErr) {
             logger.error('documentos processarComprovante OCR:', ocrErr);
@@ -378,6 +380,7 @@ async function processarComprovante(req, res) {
         const result = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos, acumular, substituir });
         const doc = result && result.doc;
         const stats = (result && result.stats) || { lidosOcr: itensSugeridos.length, inseridos: itensSugeridos.length, ignoradosRecusados: 0, ignoradosDuplicata: 0 };
+        stats.ocrEngine = ocrEngine;
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const responseData = {
             url,
