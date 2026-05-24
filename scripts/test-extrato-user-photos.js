@@ -68,3 +68,4 @@ function test(nome, ocr, esperado) {
 
 test('foto1', foto1, 6);
 test('foto2', foto2, 8);
+console.log('OK fotos usuario');

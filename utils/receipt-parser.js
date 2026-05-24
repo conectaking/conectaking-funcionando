@@ -279,28 +279,43 @@ function hasDedicatedValueLineBelow(lines, index, amount) {
     return false;
 }
 
+/** Linha é só status recusado/negado (não é nome de estabelecimento). */
+function isDeclinedStatusLine(line) {
+    const t = (line || '').trim();
+    return /^(recusad[ao]|negad[ao]|cancelad[ao])\.?$/i.test(t);
+}
+
+/** Layout app: valor na linha X e "Recusada" logo abaixo (antes do próximo item). */
+function hasRecusadaAfterValue(lines, valueIndex) {
+    for (let k = valueIndex + 1; k <= Math.min(lines.length - 1, valueIndex + 5); k++) {
+        const l = lines[k];
+        if (isValueOnlyLine(l)) return false;
+        if (isTransactionValueLine(l) && !isValueOnlyLine(l)) return false;
+        if (isDeclinedStatusLine(l)) return true;
+    }
+    return false;
+}
+
+/** Código curto de pedágio (P3, P11…) — item válido, não fragmento OCR. */
+function isPedagioShortCode(name) {
+    return /^P\d{1,2}$/i.test((name || '').trim());
+}
+
 /**
- * Remove duplicatas: mesma loja + valor (data opcional — OCR às vezes omite a data numa das leituras).
+ * Remove só leituras OCR consecutivas idênticas (mesma linha lida 2x).
+ * NÃO remove cobranças legítimas repetidas na mesma folha (ex.: 2x Entrevias 9,10).
  */
-function dedupeExtratoTransactions(transactions) {
+function dedupeConsecutiveOcrReads(transactions) {
     const out = [];
     for (const tx of transactions) {
-        const nome = limparNomeEstabelecimento(tx.name) || 'Transação';
-        const mk = normalizeMerchantKey(nome);
-        const amt = Math.round((tx.amount || 0) * 100);
-        const date = (tx.date || '').trim();
-        const row = { ...tx, name: nome };
-        const dupIdx = out.findIndex((o) => {
-            if (normalizeMerchantKey(o.name) !== mk) return false;
-            if (Math.round((o.amount || 0) * 100) !== amt) return false;
-            const od = (o.date || '').trim();
-            return !od || !date || od === date;
-        });
-        if (dupIdx < 0) {
-            out.push(row);
+        const prev = out[out.length - 1];
+        if (prev
+            && normalizeMerchantKey(prev.name) === normalizeMerchantKey(tx.name)
+            && Math.round((prev.amount || 0) * 100) === Math.round((tx.amount || 0) * 100)
+            && (prev.date || '') === (tx.date || '')) {
             continue;
         }
-        if (!out[dupIdx].date && date) out[dupIdx] = row;
+        out.push(tx);
     }
     return out;
 }
@@ -321,7 +336,7 @@ function collectNameAndDateBetweenValues(lines, valueIndex) {
     const names = [];
     for (let j = start; j < valueIndex; j++) {
         const l = lines[j];
-        if (isExtratoHeaderNoise(l)) continue;
+        if (isExtratoHeaderNoise(l) || isDeclinedStatusLine(l)) continue;
         const parsedDate = parseDateFromLine(l);
         if (parsedDate) {
             if (!date) date = parsedDate;
@@ -358,8 +373,12 @@ function removerFragmentosOrfaos(transactions) {
     for (let i = 0; i < transactions.length; i++) {
         const tx = transactions[i];
         const nome = (tx.name || '').trim();
+        if (isPedagioShortCode(nome)) {
+            out.push(tx);
+            continue;
+        }
         const amt = Math.round((tx.amount || 0) * 100);
-        const isFrag = NOME_FRAGMENTO_ORFAO.test(nome) || (nome.length <= 3 && amt > 0);
+        const isFrag = NOME_FRAGMENTO_ORFAO.test(nome) || (nome.length <= 3 && amt > 0 && !isPedagioShortCode(nome));
         if (isFrag && out.length > 0 && !NOME_FRAGMENTO_ORFAO.test(out[out.length - 1].name)) {
             const prev = out[out.length - 1];
             const nomeCompleto = (prev.name + ' ' + nome).replace(/\s+/g, ' ').trim();
@@ -465,6 +484,8 @@ function parseTransactionList(rawText) {
 
         if (!isValueOnlyLine(line) && hasDedicatedValueLineBelow(lines, i, val)) continue;
 
+        if (hasRecusadaAfterValue(lines, i)) continue;
+
         const declined = up.includes('RECUSADA') || up.includes('RECUSADO') || up.includes('NEGADO') || up.includes('CANCELADO');
         if (declined) continue;
 
@@ -492,8 +513,8 @@ function parseTransactionList(rawText) {
         }
 
         if (!name || name.length < 2) name = 'Transação';
-        name = limparNomeEstabelecimento(name);
-        if (/^recusad|^negad|^cancelad/i.test(name.trim())) continue;
+        name = limparNomeEstabelecimento(name.replace(/^(recusad[ao]\s*)+/i, '').trim());
+        if (isDeclinedStatusLine(name)) continue;
         name = corrigirNomeFragmentoConhecido(name, val);
         val = corrigirValorExtrato(val, line, name);
         usedValueIndexes.add(i);
@@ -501,7 +522,7 @@ function parseTransactionList(rawText) {
         pushTx(name, date, val, false, rawVal ? rawVal[0] : String(val));
     }
 
-    let deduped = dedupeExtratoTransactions(transactions);
+    let deduped = transactions;
     deduped = removerFragmentosOrfaos(deduped);
     deduped = fillMissingDatesFromDominant(deduped);
     total = 0;

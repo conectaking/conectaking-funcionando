@@ -13,7 +13,7 @@ const { detectIssuer } = require('./recibo-issuer-profiles');
 const receiptParser = require('./receipt-parser');
 
 /** Largura máxima para redimensionar imagem antes do OCR (acelera no Render/mobile). */
-const OCR_MAX_WIDTH = 1000;
+const OCR_MAX_WIDTH = 1200;
 /** Worker Tesseract reutilizado (evita criar/destruir a cada comprovante). */
 let _ocrWorker = null;
 let _ocrWorkerPromise = null;
@@ -315,7 +315,7 @@ function pareceExtratoCartaoApp(ocrText) {
     return (dates >= 2 && values >= 2) || values >= 3;
 }
 
-const PEDAGIO_NAMES = ['P1', 'P4', 'CCR AUTOBAN', 'CONCESSIONARIA ROTA', 'ENTREVIAS', 'ROTA SO', 'AUTOBAN', 'VIAPAULISTA'];
+const PEDAGIO_NAMES = ['P1', 'P3', 'P4', 'P11', 'CCR AUTOBAN', 'CONCESSIONARIA ROTA', 'ENTREVIAS', 'ROTA SO', 'AUTOBAN', 'VIAPAULISTA', 'VIA COLINAS', 'COLINAS TOLL'];
 
 function categoriaFatura(nome) {
     if (!nome || typeof nome !== 'string') return 'Comércio / Outros';

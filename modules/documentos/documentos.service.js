@@ -172,10 +172,22 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular,
     // Recibo: extrato do cartão só preenche a tabela — fotos para o PDF ficam em item.nota_fiscal_url
     let anexos = isRecibo ? [] : (Array.isArray(doc.anexos_json) ? [...doc.anexos_json] : []);
     const primeiraCategoria = sugeridos.length > 0 ? sugeridos[0].categoria : 'Comprovante';
-    const seen = new Set();
+
+    const existingKeyCounts = new Map();
     for (const row of itens) {
-        seen.add(itemExtratoKey(row.descricao, row.data, row.valor_unitario ?? row.valor));
+        const k = itemExtratoKey(row.descricao, row.data, row.valor_unitario ?? row.valor);
+        existingKeyCounts.set(k, (existingKeyCounts.get(k) || 0) + 1);
     }
+    const batchKeyCounts = new Map();
+    for (const s of sugeridos) {
+        const nome = (s.nome_estabelecimento || '').toString().trim();
+        const descricao = (nome || s.textoTrecho || s.categoria).toString().slice(0, 120);
+        if (isItemRecusado(descricao, s)) continue;
+        const k = itemExtratoKey(descricao, s.data ? String(s.data).slice(0, 20) : '', Number(s.valor) || 0);
+        batchKeyCounts.set(k, (batchKeyCounts.get(k) || 0) + 1);
+    }
+    const addedInBatch = new Map();
+
     let totalValor = 0;
     for (const s of sugeridos) {
         const nome = (s.nome_estabelecimento || '').toString().trim();
@@ -184,8 +196,12 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular,
         const valor = Number(s.valor) || 0;
         const data = s.data ? String(s.data).slice(0, 20) : '';
         const key = itemExtratoKey(descricao, data, valor);
-        if (seen.has(key) && !isDescricaoGenericaExtrato(descricao)) continue;
-        seen.add(key);
+        const batchTotal = batchKeyCounts.get(key) || 1;
+        const added = addedInBatch.get(key) || 0;
+        if (added >= batchTotal) continue;
+        const wasInDoc = existingKeyCounts.get(key) || 0;
+        if (wasInDoc >= batchTotal) continue;
+        addedInBatch.set(key, added + 1);
         const item = {
             item_uid: `it-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
             descricao,
