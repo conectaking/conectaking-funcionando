@@ -310,9 +310,10 @@
 
             <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <div class="flex items-center gap-2 text-primary">
+                    <div class="flex items-center gap-2 text-primary flex-wrap">
                         <span class="material-icons-outlined">list_alt</span>
                         <h2 id="itens-section-title" class="uppercase tracking-widest text-xs font-bold">Itens</h2>
+                        <span id="itens-count-badge" class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/25 tabular-nums" title="Quantidade de linhas na tabela">0 itens</span>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap" id="itens-ordenacao" title="Ordena a tabela e as notas fiscais abaixo">
                         <span class="text-[10px] uppercase font-bold text-slate-500">Ordenar</span>
@@ -536,6 +537,7 @@
         document.getElementById('page-subtitle').textContent = isRecibo ? 'Emita recibos profissionais' : 'Crie documentos profissionais em segundos';
         document.getElementById('label-validade').textContent = isRecibo ? 'Validade (Até)' : 'Validade do Orçamento (Até)';
         document.getElementById('itens-section-title').textContent = isRecibo ? 'Itens do Recibo' : 'Itens';
+        updateItensCount();
         document.getElementById('total-label').textContent = isRecibo ? 'Valor Total' : 'Valor Total Estimado';
         document.getElementById('btn-submit-text').textContent = isRecibo ? 'Salvar Recibo' : 'Salvar Orçamento';
         document.getElementById('btn-add-item-label').textContent = isRecibo ? 'Adicionar Linha' : 'Adicionar Nova Linha';
@@ -888,6 +890,13 @@
             })
             .catch(function(err) { alert(err.message || 'Erro ao remover.'); });
     }
+    function updateItensCount() {
+        var badge = document.getElementById('itens-count-badge');
+        if (!badge) return;
+        var n = document.querySelectorAll('#itens-tbody .item-row').length;
+        badge.textContent = n === 1 ? '1 item' : (n + ' itens');
+    }
+
     function updateTotal() {
         var total = 0;
         document.querySelectorAll('.item-row').forEach(function(tr) {
@@ -895,6 +904,7 @@
             syncItemRowHidden(tr);
         });
         document.getElementById('total-display').textContent = 'R$ ' + fmtMoney(total);
+        updateItensCount();
         renderNotasFiscais();
     }
 
@@ -909,6 +919,7 @@
     if (btnOrdenarDataAsc) btnOrdenarDataAsc.onclick = function() { setItemSortMode('data-asc'); };
     if (btnOrdenarNome) btnOrdenarNome.onclick = function() { setItemSortMode('nome'); };
     updateOrdenacaoButtonsUI();
+    updateItensCount();
     var btnCatalogo = document.getElementById('btn-inserir-catalogo');
     var catalogoDrop = document.getElementById('catalogo-dropdown');
     btnCatalogo.onclick = function() {
