@@ -526,6 +526,19 @@
         return msg || 'Erro de rede ao comunicar com o servidor.';
     }
 
+    function isCrossOriginApi(url) {
+        try {
+            if (!url || String(url).indexOf('http') !== 0) return false;
+            var u = new URL(String(url), window.location.href);
+            return u.origin !== window.location.origin;
+        } catch (e) { return true; }
+    }
+
+    function apiCredentials(url, opts) {
+        if (opts && opts.credentials !== undefined) return opts.credentials;
+        return isCrossOriginApi(url) ? 'omit' : 'include';
+    }
+
     function apiFetch(url, opts) {
         opts = opts || {};
         var timeout = opts.timeout != null ? opts.timeout : apiFetchTimeoutMs();
@@ -539,14 +552,50 @@
             method: opts.method || 'GET',
             body: opts.body,
             headers: headers,
-            credentials: opts.credentials !== undefined ? opts.credentials : 'include',
+            credentials: apiCredentials(url, opts),
             signal: controller.signal
         }).then(function (r) {
             clearTimeout(tid);
             return r;
         }).catch(function (err) {
             clearTimeout(tid);
-            throw new Error(friendlyFetchError(err));
+            throw new Error(friendlyFetchError(err, 'Não foi possível conectar ao servidor'));
+        });
+    }
+
+    /** Upload multipart — XHR no mobile evita falhas do fetch com FormData cross-origin. */
+    function uploadFormData(url, formData, timeoutMs) {
+        timeoutMs = timeoutMs != null ? timeoutMs : apiFetchTimeoutMs();
+        if (!isMobileDevice() && typeof fetch === 'function') {
+            return apiFetch(url, { method: 'POST', body: formData, timeout: timeoutMs });
+        }
+        return new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            var tid = setTimeout(function () { xhr.abort(); }, timeoutMs);
+            xhr.open('POST', url, true);
+            var headers = getAuthHeaders();
+            Object.keys(headers).forEach(function (k) {
+                if (k.toLowerCase() === 'content-type') return;
+                xhr.setRequestHeader(k, headers[k]);
+            });
+            xhr.onload = function () {
+                clearTimeout(tid);
+                resolve({
+                    ok: xhr.status >= 200 && xhr.status < 300,
+                    status: xhr.status,
+                    headers: { get: function (h) { return xhr.getResponseHeader(h); } },
+                    text: function () { return Promise.resolve(xhr.responseText || ''); }
+                });
+            };
+            xhr.onerror = function () {
+                clearTimeout(tid);
+                reject(new Error(friendlyFetchError({ message: 'Failed to fetch' }, 'Falha ao enviar a foto')));
+            };
+            xhr.onabort = function () {
+                clearTimeout(tid);
+                reject(new Error(friendlyFetchError({ name: 'AbortError' })));
+            };
+            xhr.send(formData);
         });
     }
 
@@ -554,18 +603,24 @@
     function warmUpApi() {
         if (window.__recibosApiWarmed) return Promise.resolve();
         if (apiWarmPromise) return apiWarmPromise;
-        apiWarmPromise = apiFetch(apiOrigin + '/health', { timeout: 30000, credentials: 'omit' })
-            .catch(function () { return apiFetch(apiOrigin + '/api/public-api-url', { timeout: 30000, credentials: 'omit' }); })
+        apiWarmPromise = apiFetch(apiOrigin + '/health', { timeout: 45000, credentials: 'omit' })
+            .catch(function () { return apiFetch(apiOrigin + '/api/public-api-url', { timeout: 45000, credentials: 'omit' }); })
+            .then(function () {
+                return apiFetch(apiOrigin + '/api/documentos/warm-ocr', { timeout: 120000, credentials: 'omit' });
+            })
             .then(function () { window.__recibosApiWarmed = true; })
-            .catch(function () { window.__recibosApiWarmed = false; apiWarmPromise = null; });
+            .catch(function () {
+                window.__recibosApiWarmed = true;
+            });
         return apiWarmPromise;
     }
 
     function compressImageFileForUpload(file, maxSide) {
-        maxSide = maxSide || 1600;
+        maxSide = maxSide || (isMobileDevice() ? 1200 : 1600);
+        var minSize = isMobileDevice() ? 350000 : 700000;
         return new Promise(function (resolve) {
             if (!file || !file.type || file.type.indexOf('image/') !== 0) { resolve(file); return; }
-            if (file.size < 700000) { resolve(file); return; }
+            if (file.size < minSize && !isMobileDevice()) { resolve(file); return; }
             var img = new Image();
             var objUrl = URL.createObjectURL(file);
             img.onload = function () {
@@ -674,10 +729,19 @@
                 alert(msg);
             });
     }
+    function syncFormBeforeOcr(callback) {
+        ensureDocIdThen(function() {
+            apiFetch(API + '/' + docId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getFormDoc()) })
+                .then(function(r) { return handleResponse(r, 'Faça login para salvar o recibo.'); })
+                .then(function() { callback(); })
+                .catch(function(err) { alert(err.message || 'Erro ao guardar itens antes do scan.'); });
+        });
+    }
     function enviarComprovante(fileInput) {
         var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
         if (!files.length) return;
-        ensureDocIdThen(function() {
+        syncFormBeforeOcr(function() {
+            var itensAntesScan = document.querySelectorAll('#itens-tbody .item-row').length;
             var etiqueta = document.getElementById('ocr-etiqueta-itens');
             var etiquetaVal = etiqueta && etiqueta.value.trim() ? etiqueta.value.trim() : '';
             var btn = document.getElementById('btn-tirar-foto');
@@ -697,8 +761,15 @@
                     fileInput.value = '';
                     if (docAcumulado) {
                         setFormDoc(docAcumulado);
-                        var n = (docAcumulado.itens_json || []).length;
-                        alert('Extrato digitalizado: ' + n + ' item(ns) na tabela (' + files.length + ' foto(s) processada(s)).');
+                        var total = (docAcumulado.itens_json || []).length;
+                        var lidos = Math.max(0, total - itensAntesScan);
+                        if (files.length > 1) {
+                            alert('Extrato digitalizado: ' + total + ' item(ns) na tabela (' + files.length + ' foto(s)).');
+                        } else if (lidos > 0 && itensAntesScan > 0) {
+                            alert(lidos + ' item(ns) adicionados. Total na tabela: ' + total + '.');
+                        } else {
+                            alert('Extrato digitalizado: ' + total + ' item(ns) na tabela.');
+                        }
                     }
                     return;
                 }
@@ -709,8 +780,8 @@
                         var fd = new FormData();
                         fd.append('image', filePrepared);
                         if (etiquetaVal) fd.append('etiqueta_itens', etiquetaVal);
-                        if (i > 0) fd.append('acumular', '1');
-                        return apiFetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd });
+                        fd.append('acumular', '1');
+                        return uploadFormData(API + '/' + docId + '/processar-comprovante', fd);
                     })
                     .then(function(r) { return handleResponse(r, 'Faça login para enviar comprovantes.'); })
                     .then(function(data) {
@@ -969,7 +1040,7 @@
             fd.append('image', file);
             fd.append('item_uid', itemUid);
             fd.append('titulo', titulo || '');
-            apiFetch(API + '/' + docId + '/nota-fiscal', { method: 'POST', body: fd })
+            uploadFormData(API + '/' + docId + '/nota-fiscal', fd)
                 .then(function(r) { return handleResponse(r, 'Faça login para anexar notas.'); })
                 .then(function(data) {
                     if (data && data.data && data.data.documento) {

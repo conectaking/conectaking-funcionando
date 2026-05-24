@@ -1425,6 +1425,14 @@ async function startServer() {
     const PORT = config.port;
     app.listen(PORT, () => {
         logger.info(`👑 Servidor Conecta King rodando na porta ${PORT} (${config.nodeEnv})`);
+        setImmediate(() => {
+            try {
+                const { warmUpOcr } = require('./utils/recibo-ocr');
+                warmUpOcr().then((ok) => {
+                    if (ok) logger.info('✅ OCR Tesseract pré-carregado.');
+                }).catch(() => {});
+            } catch (e) { /* ignore */ }
+        });
     });
 }
 

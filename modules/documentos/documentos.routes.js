@@ -23,6 +23,7 @@ router.use(protectUser);
 
 router.get('/settings', asyncHandler(controller.getSettings));
 router.put('/settings', asyncHandler(controller.putSettings));
+router.get('/warm-ocr', asyncHandler(controller.warmOcr));
 router.post('/upload-logo', uploadImage.single('image'), asyncHandler(controller.uploadLogo));
 router.post('/', asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));

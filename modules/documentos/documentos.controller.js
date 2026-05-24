@@ -1,6 +1,6 @@
 const documentosService = require('./documentos.service');
 const { uploadImageBuffer } = require('../../utils/cloudflare-image-upload');
-const { processarImagem } = require('../../utils/recibo-ocr');
+const { processarImagem, warmUpOcr } = require('../../utils/recibo-ocr');
 const responseFormatter = require('../../utils/responseFormatter');
 const logger = require('../../utils/logger');
 
@@ -369,34 +369,53 @@ async function processarComprovante(req, res) {
             itensSugeridos = itensSugeridos.map(s => ({ ...s, etiqueta_ocr: etiquetaItens }));
         }
 
-        // 2) Tentar upload para Cloudflare; se falhar, continuamos e devolvemos só o valor (imagem descartada)
+        // 2) Extrato (várias linhas): não guarda imagem — pula upload para responder mais rápido no mobile
+        const isExtratoLista = itensSugeridos.length >= 3;
         let url = null;
-        try {
-            url = await uploadImageBuffer(
-                req.file.buffer,
-                req.file.mimetype,
-                req.file.originalname || 'comprovante.jpg'
-            );
-        } catch (uploadErr) {
-            logger.error('documentos processarComprovante upload:', uploadErr);
-            // Não retornar erro: utilizador fica com o valor extraído pelo OCR; imagem não é guardada
+        if (!isExtratoLista) {
+            try {
+                url = await uploadImageBuffer(
+                    req.file.buffer,
+                    req.file.mimetype,
+                    req.file.originalname || 'comprovante.jpg'
+                );
+            } catch (uploadErr) {
+                logger.error('documentos processarComprovante upload:', uploadErr);
+            }
         }
 
-        const acumular = req.body && (req.body.acumular === '1' || req.body.acumular === 'true' || req.body.acumular === true);
-        const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos, acumular });
+        const acumular = !(req.body && (req.body.substituir === '1' || req.body.substituir === 'true' || req.body.substituir === true))
+            && (req.body == null || req.body.acumular === undefined || req.body.acumular === '1' || req.body.acumular === 'true' || req.body.acumular === true);
+        const substituir = req.body && (req.body.substituir === '1' || req.body.substituir === 'true' || req.body.substituir === true);
+        const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos, acumular, substituir });
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const responseData = { url, documento: doc, itensAdicionados: itensSugeridos };
         if (parseResult) responseData.parse_result = parseResult;
         const n = itensSugeridos.length;
+        const totalNaTabela = (doc.itens_json || []).length;
         const msg = n > 0
             ? (n === 1
-                ? (url ? 'Comprovante processado: 1 item adicionado.' : '1 item extraído da imagem. (A imagem não foi guardada por falha no envio.)')
-                : (url ? `Extrato digitalizado: ${n} itens adicionados à tabela.` : `${n} itens extraídos da imagem. (A imagem não foi guardada por falha no envio.)`))
+                ? (totalNaTabela > 1
+                    ? `1 item lido da imagem. Total na tabela: ${totalNaTabela}.`
+                    : (url ? 'Comprovante processado: 1 item adicionado.' : '1 item extraído da imagem.'))
+                : (totalNaTabela > n
+                    ? `${n} itens lidos da imagem. Total na tabela: ${totalNaTabela} (somados aos existentes).`
+                    : (url ? `Extrato digitalizado: ${n} itens na tabela.` : `${n} itens extraídos da imagem.`)))
             : (url ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.' : 'Imagem recebida mas o OCR não identificou valores. Tente outra foto ou preencha manualmente.');
         return responseFormatter.success(res, responseData, msg, 201);
     } catch (e) {
         logger.error('documentos processarComprovante:', e);
         return responseFormatter.error(res, e.message || 'Erro ao processar comprovante', 500);
+    }
+}
+
+async function warmOcr(req, res) {
+    try {
+        await warmUpOcr();
+        return responseFormatter.success(res, { ready: true }, 'OCR pronto.', 200);
+    } catch (e) {
+        logger.warn('documentos warmOcr:', e.message);
+        return responseFormatter.success(res, { ready: false }, 'OCR em aquecimento.', 200);
     }
 }
 
@@ -417,5 +436,6 @@ module.exports = {
     removeNotaFiscalItem,
     getPdf,
     getPdfByToken,
-    processarComprovante
+    processarComprovante,
+    warmOcr
 };

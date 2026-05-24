@@ -123,15 +123,34 @@ function itemExtratoKey(descricao, data, valor) {
     return d + '|' + dt + '|' + v;
 }
 
-async function processarComprovante(id, userId, { url, itensSugeridos, acumular }) {
+async function processarComprovante(id, userId, { url, itensSugeridos, acumular, substituir }) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
     const sugeridos = Array.isArray(itensSugeridos) ? itensSugeridos : [];
     const isExtratoLista = sugeridos.length >= 3;
-    const acumularExtrato = !!acumular;
-    let itens = (isExtratoLista && !acumularExtrato)
-        ? []
-        : (Array.isArray(doc.itens_json) ? [...doc.itens_json] : []);
+    const substituirExtrato = !!substituir;
+    const acumularExtrato = substituirExtrato ? false : (acumular !== false && acumular !== '0');
+
+    function isItemPlaceholder(row) {
+        if (!row) return true;
+        const d = (row.descricao || '').trim();
+        const v = Number(row.valor ?? row.valor_unitario) || 0;
+        if (!d || d === '-') return v <= 0;
+        if (/^Comprovante \(preencha/i.test(d)) return v <= 0;
+        return false;
+    }
+
+    const existingItens = Array.isArray(doc.itens_json) ? doc.itens_json : [];
+    const hasItensReais = existingItens.some((row) => !isItemPlaceholder(row));
+
+    let itens;
+    if (substituirExtrato) {
+        itens = [];
+    } else if (isExtratoLista && !acumularExtrato && !hasItensReais) {
+        itens = [];
+    } else {
+        itens = existingItens.filter((row) => !isItemPlaceholder(row));
+    }
     const isRecibo = (doc.tipo || '').toLowerCase() === 'recibo';
     // Recibo: extrato do cartão só preenche a tabela — fotos para o PDF ficam em item.nota_fiscal_url
     let anexos = isRecibo ? [] : (Array.isArray(doc.anexos_json) ? [...doc.anexos_json] : []);

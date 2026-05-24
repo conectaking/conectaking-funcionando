@@ -483,6 +483,17 @@ async function getOcrWorker() {
     return _ocrWorkerPromise;
 }
 
+/** Pré-carrega o worker Tesseract (evita timeout no 1º OCR após cold start no Render). */
+async function warmUpOcr() {
+    try {
+        await getOcrWorker();
+        return true;
+    } catch (e) {
+        logger.warn('recibo-ocr warmUpOcr:', e.message);
+        return false;
+    }
+}
+
 /**
  * Executa OCR na imagem e retorna itens sugeridos + parse_result (confidence, candidates) para a UI.
  * Otimizado: redimensiona imagem antes do OCR e reutiliza o worker Tesseract.
@@ -527,5 +538,6 @@ module.exports = {
     extrairFormaPagamento,
     categorizar,
     processarTextoOcr,
-    processarImagem
+    processarImagem,
+    warmUpOcr
 };
