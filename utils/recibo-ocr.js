@@ -365,8 +365,8 @@ function processarFaturaCartao(ocrText) {
             }
         }
         if (valor == null || valor < 0) continue;
+        if (recusada) continue;
         if (nome.length > 60) nome = nome.slice(0, 57) + '...';
-        if (recusada) nome = nome + ' (Recusada)';
         const categoria = categoriaFatura(nome);
         itens.push({
             valor: valor,
@@ -390,14 +390,15 @@ function limparNomeOcr(nome) {
 
 function itensFromTransactionList(transactions) {
     if (!Array.isArray(transactions) || transactions.length === 0) return [];
-    return transactions.map(tx => {
+    return transactions
+        .filter((tx) => tx && tx.status !== 'DECLINED')
+        .map((tx) => {
         const nome = limparNomeOcr(tx.name || tx.title || 'Transação');
-        const descricao = tx.status === 'DECLINED' ? nome + ' (Recusada)' : nome;
         const item = {
             valor: tx.amount || 0,
             categoria: 'Comércio / Outros',
-            textoTrecho: descricao.slice(0, 120),
-            nome_estabelecimento: tx.status === 'DECLINED' ? undefined : nome
+            textoTrecho: nome.slice(0, 120),
+            nome_estabelecimento: nome
         };
         if (tx.date) item.data = tx.date;
         return item;

@@ -466,6 +466,8 @@ function parseTransactionList(rawText) {
         if (!isValueOnlyLine(line) && hasDedicatedValueLineBelow(lines, i, val)) continue;
 
         const declined = up.includes('RECUSADA') || up.includes('RECUSADO') || up.includes('NEGADO') || up.includes('CANCELADO');
+        if (declined) continue;
+
         let name = '';
         let date = null;
         const trailing = extractTrailingValue(line);
@@ -491,11 +493,12 @@ function parseTransactionList(rawText) {
 
         if (!name || name.length < 2) name = 'Transação';
         name = limparNomeEstabelecimento(name);
+        if (/^recusad|^negad|^cancelad/i.test(name.trim())) continue;
         name = corrigirNomeFragmentoConhecido(name, val);
         val = corrigirValorExtrato(val, line, name);
         usedValueIndexes.add(i);
         const rawVal = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/);
-        pushTx(name, date, val, declined, rawVal ? rawVal[0] : String(val));
+        pushTx(name, date, val, false, rawVal ? rawVal[0] : String(val));
     }
 
     let deduped = dedupeExtratoTransactions(transactions);

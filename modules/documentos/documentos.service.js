@@ -123,6 +123,23 @@ function itemExtratoKey(descricao, data, valor) {
     return d + '|' + dt + '|' + v;
 }
 
+function isDescricaoGenericaExtrato(descricao) {
+    const raw = (descricao || '').trim().toLowerCase();
+    const d = raw.normalize('NFD').replace(/\p{M}/gu, '');
+    if (!d || d.length < 4) return true;
+    if (d === 'transacao' || d === 'transação') return true;
+    if (d.includes('comercio / outros') || d.includes('comércio / outros')) return true;
+    if (/^comprovante/i.test(d)) return true;
+    return false;
+}
+
+function isItemRecusado(descricao, sugerido) {
+    const s = sugerido || {};
+    if (s.status === 'DECLINED' || s.recusada || s.recusado) return true;
+    const txt = ((descricao || '') + ' ' + (s.textoTrecho || '')).toLowerCase();
+    return /recusad|negad|cancelad/.test(txt);
+}
+
 async function processarComprovante(id, userId, { url, itensSugeridos, acumular, substituir }) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
@@ -163,10 +180,11 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular,
     for (const s of sugeridos) {
         const nome = (s.nome_estabelecimento || '').toString().trim();
         const descricao = (nome || s.textoTrecho || s.categoria).toString().slice(0, 120);
+        if (isItemRecusado(descricao, s)) continue;
         const valor = Number(s.valor) || 0;
         const data = s.data ? String(s.data).slice(0, 20) : '';
         const key = itemExtratoKey(descricao, data, valor);
-        if (seen.has(key)) continue;
+        if (seen.has(key) && !isDescricaoGenericaExtrato(descricao)) continue;
         seen.add(key);
         const item = {
             item_uid: `it-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,

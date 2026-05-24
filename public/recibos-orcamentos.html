@@ -563,40 +563,46 @@
         });
     }
 
-    /** Upload multipart — XHR no mobile evita falhas do fetch com FormData cross-origin. */
+    /** Upload multipart — mobile: tenta fetch primeiro; XHR como fallback. */
     function uploadFormData(url, formData, timeoutMs) {
         timeoutMs = timeoutMs != null ? timeoutMs : apiFetchTimeoutMs();
-        if (!isMobileDevice() && typeof fetch === 'function') {
-            return apiFetch(url, { method: 'POST', body: formData, timeout: timeoutMs });
-        }
-        return new Promise(function (resolve, reject) {
-            var xhr = new XMLHttpRequest();
-            var tid = setTimeout(function () { xhr.abort(); }, timeoutMs);
-            xhr.open('POST', url, true);
-            var headers = getAuthHeaders();
-            Object.keys(headers).forEach(function (k) {
-                if (k.toLowerCase() === 'content-type') return;
-                xhr.setRequestHeader(k, headers[k]);
-            });
-            xhr.onload = function () {
-                clearTimeout(tid);
-                resolve({
-                    ok: xhr.status >= 200 && xhr.status < 300,
-                    status: xhr.status,
-                    headers: { get: function (h) { return xhr.getResponseHeader(h); } },
-                    text: function () { return Promise.resolve(xhr.responseText || ''); }
+        function xhrUpload() {
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                var tid = setTimeout(function () { xhr.abort(); }, timeoutMs);
+                xhr.open('POST', url, true);
+                var headers = getAuthHeaders();
+                Object.keys(headers).forEach(function (k) {
+                    if (k.toLowerCase() === 'content-type') return;
+                    xhr.setRequestHeader(k, headers[k]);
                 });
-            };
-            xhr.onerror = function () {
-                clearTimeout(tid);
-                reject(new Error(friendlyFetchError({ message: 'Failed to fetch' }, 'Falha ao enviar a foto')));
-            };
-            xhr.onabort = function () {
-                clearTimeout(tid);
-                reject(new Error(friendlyFetchError({ name: 'AbortError' })));
-            };
-            xhr.send(formData);
-        });
+                xhr.onload = function () {
+                    clearTimeout(tid);
+                    resolve({
+                        ok: xhr.status >= 200 && xhr.status < 300,
+                        status: xhr.status,
+                        headers: { get: function (h) { return xhr.getResponseHeader(h); } },
+                        text: function () { return Promise.resolve(xhr.responseText || ''); }
+                    });
+                };
+                xhr.onerror = function () {
+                    clearTimeout(tid);
+                    reject(new Error(friendlyFetchError({ message: 'Failed to fetch' }, 'Falha ao enviar a foto')));
+                };
+                xhr.onabort = function () {
+                    clearTimeout(tid);
+                    reject(new Error(friendlyFetchError({ name: 'AbortError' })));
+                };
+                xhr.send(formData);
+            });
+        }
+        if (typeof fetch === 'function') {
+            return apiFetch(url, { method: 'POST', body: formData, timeout: timeoutMs }).catch(function () {
+                if (isMobileDevice()) return xhrUpload();
+                throw new Error(friendlyFetchError({ message: 'Failed to fetch' }, 'Falha ao enviar a foto'));
+            });
+        }
+        return xhrUpload();
     }
 
     var apiWarmPromise = null;
@@ -616,11 +622,12 @@
     }
 
     function compressImageFileForUpload(file, maxSide) {
-        maxSide = maxSide || (isMobileDevice() ? 1200 : 1600);
-        var minSize = isMobileDevice() ? 350000 : 700000;
+        maxSide = maxSide || (isMobileDevice() ? 2000 : 1600);
         return new Promise(function (resolve) {
             if (!file || !file.type || file.type.indexOf('image/') !== 0) { resolve(file); return; }
-            if (file.size < minSize && !isMobileDevice()) { resolve(file); return; }
+            // Mobile: preserva qualidade para OCR — só comprime fotos muito grandes
+            if (isMobileDevice() && file.size < 2800000) { resolve(file); return; }
+            if (!isMobileDevice() && file.size < 700000) { resolve(file); return; }
             var img = new Image();
             var objUrl = URL.createObjectURL(file);
             img.onload = function () {
@@ -639,7 +646,7 @@
                     if (!blob) { resolve(file); return; }
                     var name = (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
                     resolve(new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() }));
-                }, 'image/jpeg', 0.82);
+                }, 'image/jpeg', isMobileDevice() ? 0.92 : 0.82);
             };
             img.onerror = function () { URL.revokeObjectURL(objUrl); resolve(file); };
             img.src = objUrl;
