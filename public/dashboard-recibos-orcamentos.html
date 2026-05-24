@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Painel — Recibos e Orçamentos | ConectaKing</title>
     <script src="https://conectaking-api.onrender.com/api-config.js"></script>
+    <script>
+        (function () {
+            var prod = 'https://conectaking-api.onrender.com';
+            window.CONECTAKING_API_BASE = window.CONECTAKING_API_BASE || prod;
+            window.API_BASE = window.API_BASE || window.CONECTAKING_API_BASE;
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
@@ -160,8 +167,9 @@
         }
     } catch (e) {}
     var apiBase = (typeof window !== 'undefined' && (window.API_BASE || window.CONECTAKING_API_BASE));
-    var apiOrigin = apiBase ? (apiBase.replace(/\/$/, '')) : (isLocal && portasEstaticas.indexOf(port) >= 0 ? (window.location.protocol + '//' + host + ':5000') : '');
-    var API = apiOrigin ? (apiOrigin + '/api/documentos') : '/api/documentos';
+    var PROD_API_BASE = 'https://conectaking-api.onrender.com';
+    var apiOrigin = apiBase ? (apiBase.replace(/\/$/, '')) : (isLocal && portasEstaticas.indexOf(port) >= 0 ? (window.location.protocol + '//' + host + ':5000') : PROD_API_BASE);
+    var API = apiOrigin + '/api/documentos';
 
     function getAuthHeaders(extra) {
         var h = extra ? Object.assign({}, extra) : {};
