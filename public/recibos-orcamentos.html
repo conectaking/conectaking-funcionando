@@ -387,6 +387,14 @@
                             </div>
                         </label>
                     </div>
+                    <label class="flex items-start gap-2 mb-3 cursor-pointer select-none">
+                        <input type="checkbox" id="ocr-usar-ia" checked class="mt-1 rounded border-slate-300 text-primary focus:ring-primary"/>
+                        <span class="text-sm text-slate-600 dark:text-slate-300">
+                            <strong>Usar IA OpenAI</strong> para ler extrato
+                            <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Recomendado — lê prints escuros e listas longas com mais precisão.</span>
+                        </span>
+                    </label>
+                    <p id="ocr-ia-status" class="text-xs text-slate-500 dark:text-slate-400 mb-3">Verificando IA no servidor…</p>
                     <div id="comprovante-upload-area" class="comprovante-btns-mobile flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
                         <input type="file" id="file-comprovante-camera" accept="image/*" capture="environment" class="hidden"/>
                         <input type="file" id="file-comprovante-arquivo" accept="image/*" multiple class="hidden"/>
@@ -763,7 +771,7 @@
         var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
         if (!files.length) return;
         syncFormBeforeOcr(function() {
-            var scanResumo = { lidosOcr: 0, inseridos: 0, duplicata: 0, porFoto: [], ocrIa: false };
+            var scanResumo = { lidosOcr: 0, inseridos: 0, duplicata: 0, porFoto: [], ocrIa: false, openAiError: null, iaIndisponivel: false };
             var etiqueta = document.getElementById('ocr-etiqueta-itens');
             var etiquetaVal = etiqueta && etiqueta.value.trim() ? etiqueta.value.trim() : '';
             var btn = document.getElementById('btn-tirar-foto');
@@ -797,6 +805,12 @@
                     linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela.');
                 } else if (scanResumo.lidosOcr > 0) {
                     linhas.push('Nenhum item novo (todos já estavam na tabela).');
+                } else if (scanResumo.openAiError) {
+                    linhas.push('Erro na IA: ' + scanResumo.openAiError);
+                } else if (scanResumo.iaIndisponivel) {
+                    linhas.push('IA OpenAI não configurada no servidor — peça para ativar OPENAI_API_KEY no Render.');
+                } else {
+                    linhas.push('Nenhum item identificado. Marque "Usar IA OpenAI" e tente outra foto.');
                 }
                 linhas.push('Total na tabela: ' + total + ' item(ns).');
                 return linhas.join('\n');
@@ -820,6 +834,8 @@
                         fd.append('image', filePrepared);
                         if (etiquetaVal) fd.append('etiqueta_itens', etiquetaVal);
                         fd.append('acumular', '1');
+                        var chkIa = document.getElementById('ocr-usar-ia');
+                        if (chkIa && chkIa.checked) fd.append('usar_ia', '1');
                         return uploadComprovanteComRetry(fd, false);
                     })
                     .then(function(data) {
@@ -836,6 +852,8 @@
                         scanResumo.inseridos += st.inseridos || 0;
                         scanResumo.duplicata += st.ignoradosDuplicata || 0;
                         if (st.ocrEngine === 'openai') scanResumo.ocrIa = true;
+                        if (st.openAiError) scanResumo.openAiError = st.openAiError;
+                        if (st.openAiAvailable === false) scanResumo.iaIndisponivel = true;
                         enviarUm(i + 1, doc);
                     })
                     .catch(function(err) {
@@ -847,6 +865,26 @@
             enviarUm(0, null);
         });
     }
+    (function initOcrIaStatus() {
+        var el = document.getElementById('ocr-ia-status');
+        var chk = document.getElementById('ocr-usar-ia');
+        if (!el) return;
+        apiFetch(API + '/ocr-info', { timeout: 15000 })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+                var info = data && data.data;
+                if (!info) { el.textContent = 'Leitura local (OCR) ativa.'; return; }
+                if (info.openAiAvailable) {
+                    el.textContent = 'IA OpenAI ativa no servidor (' + (info.model || 'gpt-4o-mini') + ').';
+                    el.className = 'text-xs text-emerald-600 dark:text-emerald-400 mb-3';
+                } else {
+                    el.textContent = 'IA OpenAI indisponível — configure OPENAI_API_KEY no Render (mesma chave do KingBrief).';
+                    el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
+                    if (chk) { chk.checked = false; chk.disabled = true; }
+                }
+            })
+            .catch(function() { el.textContent = 'Leitura local (OCR) ativa.'; });
+    })();
     (function initOcrEtiquetaVoz() {
         var btn = document.getElementById('btn-ocr-etiqueta-voz');
         var inp = document.getElementById('ocr-etiqueta-itens');
