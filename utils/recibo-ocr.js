@@ -556,19 +556,22 @@ function contarLinhasValorExtrato(ocrText) {
 /**
  * Decide se vale chamar OpenAI Vision (auto) ou se modo always/never.
  */
-function precisaOpenAiFallback(ocrText, itensSugeridos, parseResult) {
+function precisaOpenAiFallback(ocrText, itensSugeridos, parseResult, forceOpenAi) {
     const mode = modoOpenAiRecibo();
-    if (mode === 'never') return false;
+    if (mode === 'never' && !forceOpenAi) return false;
+    if (forceOpenAi) return openAiVision.isAvailable();
     if (mode === 'always') return openAiVision.isAvailable();
     if (!openAiVision.isAvailable()) return false;
 
     const n = (itensSugeridos || []).length;
+    // Tesseract não leu nada (comum em prints escuros/mobile) → sempre tenta OpenAI
+    if (n === 0) return true;
+
     const valueLines = contarLinhasValorExtrato(ocrText);
     const txParser = (parseResult && parseResult.transactions) || [];
-    const pareceLista = valueLines >= 3 || txParser.length >= 3;
+    const pareceLista = valueLines >= 3 || txParser.length >= 3 || n >= 2;
 
-    if (n === 0 && valueLines >= 1) return true;
-    if (n === 0 && (ocrText || '').trim().length > 80) return true;
+    if (valueLines >= 1 && n < valueLines) return true;
     if (pareceLista && valueLines >= 2 && n < Math.ceil(valueLines * 0.55)) return true;
     if (pareceLista && n >= 1 && n + 1 < valueLines) return true;
     if (txParser.length >= 2 && n < txParser.length) return true;
@@ -606,7 +609,9 @@ function escolherMelhorLeitura(tesseractResult, openAiResult) {
 /**
  * Híbrido: Tesseract primeiro; OpenAI Vision se leitura incompleta ou modo always.
  */
-async function processarImagemHibrida(imageBuffer) {
+async function processarImagemHibrida(imageBuffer, opts) {
+    opts = opts || {};
+    const forceOpenAi = !!opts.forceOpenAi;
     if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) {
         return { itensSugeridos: [], parseResult: { ocrEngine: 'none' } };
     }
@@ -619,14 +624,22 @@ async function processarImagemHibrida(imageBuffer) {
     }
 
     const mode = modoOpenAiRecibo();
-    const chamarOpenAi = mode === 'always'
-        ? openAiVision.isAvailable()
-        : precisaOpenAiFallback(tess.ocrText, tess.itensSugeridos, tess.parseResult);
+    const chamarOpenAi = openAiVision.isAvailable() && (
+        forceOpenAi
+        || mode === 'always'
+        || precisaOpenAiFallback(tess.ocrText, tess.itensSugeridos, tess.parseResult, forceOpenAi)
+    );
 
     if (!chamarOpenAi) {
+        const semIa = !openAiVision.isAvailable();
         return {
             itensSugeridos: tess.itensSugeridos || [],
-            parseResult: { ...(tess.parseResult || {}), ocrEngine: 'tesseract' },
+            parseResult: {
+                ...(tess.parseResult || {}),
+                ocrEngine: 'tesseract',
+                openAiAvailable: !semIa,
+                openAiSkipped: semIa ? 'OPENAI_API_KEY não configurada no servidor' : 'leitura local suficiente'
+            },
             ocrEngine: 'tesseract'
         };
     }
@@ -637,8 +650,14 @@ async function processarImagemHibrida(imageBuffer) {
         logger.info('recibo-ocr híbrido:', {
             engine: escolhido.ocrEngine,
             tesseract: (tess.itensSugeridos || []).length,
-            openai: (ai.itensSugeridos || []).length
+            openai: (ai.itensSugeridos || []).length,
+            forceOpenAi
         });
+        escolhido.parseResult = {
+            ...(escolhido.parseResult || {}),
+            openAiAvailable: true,
+            openAiTentou: true
+        };
         return escolhido;
     } catch (e) {
         logger.warn('recibo-ocr openai fallback:', e.message);
@@ -647,16 +666,18 @@ async function processarImagemHibrida(imageBuffer) {
             parseResult: {
                 ...(tess.parseResult || {}),
                 ocrEngine: 'tesseract',
-                openAiError: e.message
+                openAiTentou: true,
+                openAiError: e.message,
+                openAiAvailable: true
             },
             ocrEngine: 'tesseract'
         };
     }
 }
 
-/** Alias principal — usa pipeline híbrido. */
-async function processarImagem(imageBuffer) {
-    return processarImagemHibrida(imageBuffer);
+/** Alias principal — usa pipeline híbrido. opts: { forceOpenAi: boolean } */
+async function processarImagem(imageBuffer, opts) {
+    return processarImagemHibrida(imageBuffer, opts);
 }
 
 module.exports = {

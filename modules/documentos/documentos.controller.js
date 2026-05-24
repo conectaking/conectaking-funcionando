@@ -351,8 +351,9 @@ async function processarComprovante(req, res) {
         let itensSugeridos = [];
         let parseResult = null;
         let ocrEngine = 'tesseract';
+        const forceOpenAi = !!(req.body && (req.body.usar_ia === '1' || req.body.usar_ia === 'true' || req.body.usar_ia === true));
         try {
-            const ocrResult = await processarImagem(req.file.buffer);
+            const ocrResult = await processarImagem(req.file.buffer, { forceOpenAi });
             if (Array.isArray(ocrResult)) {
                 itensSugeridos = ocrResult;
             } else if (ocrResult && ocrResult.itensSugeridos) {
@@ -381,6 +382,11 @@ async function processarComprovante(req, res) {
         const doc = result && result.doc;
         const stats = (result && result.stats) || { lidosOcr: itensSugeridos.length, inseridos: itensSugeridos.length, ignoradosRecusados: 0, ignoradosDuplicata: 0 };
         stats.ocrEngine = ocrEngine;
+        stats.openAiTentou = !!(parseResult && parseResult.openAiTentou);
+        stats.openAiError = (parseResult && parseResult.openAiError) || null;
+        stats.openAiAvailable = parseResult && parseResult.openAiAvailable !== undefined
+            ? !!parseResult.openAiAvailable
+            : undefined;
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const responseData = {
             url,
@@ -394,9 +400,15 @@ async function processarComprovante(req, res) {
         const totalNaTabela = (doc.itens_json || []).length;
         let msg;
         if (n === 0) {
-            msg = url
-                ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.'
-                : 'Imagem recebida mas o OCR não identificou valores. Tente outra foto ou preencha manualmente.';
+            if (stats.openAiError) {
+                msg = 'Não foi possível ler a imagem (IA: ' + stats.openAiError + '). Tente outra foto ou preencha manualmente.';
+            } else if (stats.openAiAvailable === false) {
+                msg = 'Não identificou valores. Configure OPENAI_API_KEY no servidor para leitura com IA, ou preencha manualmente.';
+            } else {
+                msg = url
+                    ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.'
+                    : 'Imagem recebida mas o OCR não identificou valores. Marque "Usar IA OpenAI" e tente de novo.';
+            }
         } else if (ins === 0 && stats.ignoradosDuplicata > 0) {
             msg = `${n} item(ns) lidos na imagem, mas nenhum novo (já estavam na tabela). Total: ${totalNaTabela}.`;
         } else if (ins < n) {
@@ -427,6 +439,19 @@ async function warmOcr(req, res) {
     }
 }
 
+async function ocrInfo(req, res) {
+    try {
+        const openAiVision = require('../../utils/recibo-openai-vision');
+        return responseFormatter.success(res, {
+            openAiAvailable: openAiVision.isAvailable(),
+            mode: process.env.RECIBO_OCR_AI || 'auto',
+            model: process.env.RECIBO_OCR_AI_MODEL || 'gpt-4o-mini'
+        });
+    } catch (e) {
+        return responseFormatter.error(res, e.message || 'Erro', 500);
+    }
+}
+
 module.exports = {
     create,
     list,
@@ -445,5 +470,6 @@ module.exports = {
     getPdf,
     getPdfByToken,
     processarComprovante,
-    warmOcr
+    warmOcr,
+    ocrInfo
 };
