@@ -316,8 +316,9 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap" id="itens-ordenacao" title="Ordena a tabela e as notas fiscais abaixo">
                         <span class="text-[10px] uppercase font-bold text-slate-500">Ordenar</span>
-                        <button type="button" id="btn-ordenar-data" class="btn-ordenar-item is-active">Data</button>
-                        <button type="button" id="btn-ordenar-nome" class="btn-ordenar-item">Nome</button>
+                        <button type="button" id="btn-ordenar-data-desc" class="btn-ordenar-item is-active" title="Data decrescente — mais recente em cima">Data ↓</button>
+                        <button type="button" id="btn-ordenar-data-asc" class="btn-ordenar-item" title="Data crescente — mais antiga em cima">Data ↑</button>
+                        <button type="button" id="btn-ordenar-nome" class="btn-ordenar-item" title="Ordem alfabética pelo nome">Nome</button>
                     </div>
                 </div>
                 <div class="itens-table-wrap overflow-x-auto lg:overflow-visible">
@@ -671,10 +672,11 @@
     }
 
     var ITENS_SORT_STORAGE_KEY = 'recibosItensOrdenacao';
-    var itemSortMode = 'data';
+    var itemSortMode = 'data-desc';
     try {
         var savedSort = localStorage.getItem(ITENS_SORT_STORAGE_KEY);
-        if (savedSort === 'nome' || savedSort === 'data') itemSortMode = savedSort;
+        if (savedSort === 'nome' || savedSort === 'data-desc' || savedSort === 'data-asc') itemSortMode = savedSort;
+        if (savedSort === 'data') itemSortMode = 'data-desc';
     } catch (eSort) {}
 
     function parseItemDateSort(s) {
@@ -694,10 +696,12 @@
     }
 
     function updateOrdenacaoButtonsUI() {
-        var btnData = document.getElementById('btn-ordenar-data');
+        var btnDesc = document.getElementById('btn-ordenar-data-desc');
+        var btnAsc = document.getElementById('btn-ordenar-data-asc');
         var btnNome = document.getElementById('btn-ordenar-nome');
-        if (!btnData || !btnNome) return;
-        btnData.classList.toggle('is-active', itemSortMode === 'data');
+        if (!btnDesc || !btnAsc || !btnNome) return;
+        btnDesc.classList.toggle('is-active', itemSortMode === 'data-desc');
+        btnAsc.classList.toggle('is-active', itemSortMode === 'data-asc');
         btnNome.classList.toggle('is-active', itemSortMode === 'nome');
     }
 
@@ -714,7 +718,9 @@
             }
             var da = parseItemDateSort(a.querySelector('input[name="item_data[]"]').value);
             var db = parseItemDateSort(b.querySelector('input[name="item_data[]"]').value);
-            if (db !== da) return db - da;
+            if (da !== db) {
+                return itemSortMode === 'data-asc' ? (da - db) : (db - da);
+            }
             return getItemRowNomeSort(a).localeCompare(getItemRowNomeSort(b), 'pt-BR', { sensitivity: 'base' });
         });
         rows.forEach(function(tr) { tbody.appendChild(tr); });
@@ -722,7 +728,8 @@
     }
 
     function setItemSortMode(mode) {
-        itemSortMode = mode === 'nome' ? 'nome' : 'data';
+        if (mode === 'nome' || mode === 'data-asc' || mode === 'data-desc') itemSortMode = mode;
+        else itemSortMode = 'data-desc';
         try { localStorage.setItem(ITENS_SORT_STORAGE_KEY, itemSortMode); } catch (e) {}
         updateOrdenacaoButtonsUI();
         sortItemRows();
@@ -895,9 +902,11 @@
         document.getElementById('itens-tbody').appendChild(buildItemRow());
         sortItemRows();
     };
-    var btnOrdenarData = document.getElementById('btn-ordenar-data');
+    var btnOrdenarDataDesc = document.getElementById('btn-ordenar-data-desc');
+    var btnOrdenarDataAsc = document.getElementById('btn-ordenar-data-asc');
     var btnOrdenarNome = document.getElementById('btn-ordenar-nome');
-    if (btnOrdenarData) btnOrdenarData.onclick = function() { setItemSortMode('data'); };
+    if (btnOrdenarDataDesc) btnOrdenarDataDesc.onclick = function() { setItemSortMode('data-desc'); };
+    if (btnOrdenarDataAsc) btnOrdenarDataAsc.onclick = function() { setItemSortMode('data-asc'); };
     if (btnOrdenarNome) btnOrdenarNome.onclick = function() { setItemSortMode('nome'); };
     updateOrdenacaoButtonsUI();
     var btnCatalogo = document.getElementById('btn-inserir-catalogo');
