@@ -418,6 +418,22 @@ app.get('/api/public-api-url', (req, res) => {
     res.set('Cache-Control', 'public, max-age=300');
     res.json({ apiBaseUrl: PUBLIC_API_BASE });
 });
+app.get('/api/documentos/ocr-info', (req, res) => {
+    try {
+        const openAiVision = require('./utils/recibo-openai-vision');
+        res.set('Cache-Control', 'public, max-age=60');
+        res.json({
+            success: true,
+            data: {
+                openAiAvailable: openAiVision.isAvailable(),
+                mode: process.env.RECIBO_OCR_AI || 'auto',
+                model: process.env.RECIBO_OCR_AI_MODEL || 'gpt-4o-mini'
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message || 'Erro' });
+    }
+});
 // Script para o dashboard incluir: <script src="https://conectaking-api.onrender.com/api-config.js"></script>
 // Define API_BASE e intercepta fetch() para enviar pedidos /api/* para a API no Render (evita CORS/404 em conectaking.com.br)
 app.get('/api-config.js', (req, res) => {

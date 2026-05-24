@@ -19,12 +19,14 @@ router.get('/ver/:token/pdf', asyncHandler(controller.getPdfByToken));
 router.get('/ver/:token', asyncHandler(controller.getByToken));
 router.put('/ver/:token', asyncHandler(controller.updateByToken));
 
+// Sem login — status da IA / aquecimento OCR (evita 400 em /:id e facilita o painel)
+router.get('/ocr-info', asyncHandler(controller.ocrInfo));
+router.get('/warm-ocr', asyncHandler(controller.warmOcr));
+
 router.use(protectUser);
 
 router.get('/settings', asyncHandler(controller.getSettings));
 router.put('/settings', asyncHandler(controller.putSettings));
-router.get('/ocr-info', asyncHandler(controller.ocrInfo));
-router.get('/warm-ocr', asyncHandler(controller.warmOcr));
 router.post('/upload-logo', uploadImage.single('image'), asyncHandler(controller.uploadLogo));
 router.post('/', asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));

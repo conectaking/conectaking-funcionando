@@ -19,6 +19,7 @@ Responda APENAS com JSON válido, sem markdown, no formato:
 Regras:
 - Uma entrada por cobrança APROVADA visível na imagem.
 - Ignore linhas com "Recusada", "Recusado", "Negada" ou valor em vermelho indicando recusa.
+- Prints com fundo escuro (app de cartão): leia nome, data DD/MM e valor R$ de cada linha.
 - Se houver duas cobranças iguais (mesmo nome, data e valor) e ambas aprovadas, inclua as duas.
 - "valor" é número decimal (ex.: 13.2 para R$ 13,20).
 - "data" no formato DD/MM ou DD/MM/YY quando visível; omita se não houver.

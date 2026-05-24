@@ -835,7 +835,7 @@
                         if (etiquetaVal) fd.append('etiqueta_itens', etiquetaVal);
                         fd.append('acumular', '1');
                         var chkIa = document.getElementById('ocr-usar-ia');
-                        if (chkIa && chkIa.checked) fd.append('usar_ia', '1');
+                        fd.append('usar_ia', (chkIa && !chkIa.checked) ? '0' : '1');
                         return uploadComprovanteComRetry(fd, false);
                     })
                     .then(function(data) {
@@ -869,11 +869,15 @@
         var el = document.getElementById('ocr-ia-status');
         var chk = document.getElementById('ocr-usar-ia');
         if (!el) return;
-        apiFetch(API + '/ocr-info', { timeout: 15000 })
+        fetch(apiOrigin + '/api/documentos/ocr-info', { credentials: 'omit' })
             .then(function(r) { return r.ok ? r.json() : null; })
             .then(function(data) {
                 var info = data && data.data;
-                if (!info) { el.textContent = 'Leitura local (OCR) ativa.'; return; }
+                if (!info) {
+                    el.textContent = 'Não foi possível verificar a IA (atualize a API no Render).';
+                    el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
+                    return;
+                }
                 if (info.openAiAvailable) {
                     el.textContent = 'IA OpenAI ativa no servidor (' + (info.model || 'gpt-4o-mini') + ').';
                     el.className = 'text-xs text-emerald-600 dark:text-emerald-400 mb-3';
@@ -883,7 +887,10 @@
                     if (chk) { chk.checked = false; chk.disabled = true; }
                 }
             })
-            .catch(function() { el.textContent = 'Leitura local (OCR) ativa.'; });
+            .catch(function() {
+                el.textContent = 'Não foi possível verificar a IA (confirme deploy da API no Render).';
+                el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
+            });
     })();
     (function initOcrEtiquetaVoz() {
         var btn = document.getElementById('btn-ocr-etiqueta-voz');

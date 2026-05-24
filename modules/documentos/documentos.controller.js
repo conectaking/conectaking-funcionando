@@ -363,6 +363,9 @@ async function processarComprovante(req, res) {
             }
         } catch (ocrErr) {
             logger.error('documentos processarComprovante OCR:', ocrErr);
+            if (forceOpenAi) {
+                parseResult = { openAiError: ocrErr.message, openAiTentou: true };
+            }
         }
 
         const etiquetaItens = (req.body && req.body.etiqueta_itens != null)
@@ -382,11 +385,13 @@ async function processarComprovante(req, res) {
         const doc = result && result.doc;
         const stats = (result && result.stats) || { lidosOcr: itensSugeridos.length, inseridos: itensSugeridos.length, ignoradosRecusados: 0, ignoradosDuplicata: 0 };
         stats.ocrEngine = ocrEngine;
-        stats.openAiTentou = !!(parseResult && parseResult.openAiTentou);
+        stats.openAiTentou = !!(parseResult && parseResult.openAiTentou) || forceOpenAi;
         stats.openAiError = (parseResult && parseResult.openAiError) || null;
-        stats.openAiAvailable = parseResult && parseResult.openAiAvailable !== undefined
-            ? !!parseResult.openAiAvailable
-            : undefined;
+        if (parseResult && parseResult.openAiAvailable === false) {
+            stats.openAiAvailable = false;
+        } else if (parseResult && parseResult.openAiAvailable === true) {
+            stats.openAiAvailable = true;
+        }
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const responseData = {
             url,
@@ -397,6 +402,10 @@ async function processarComprovante(req, res) {
         if (parseResult) responseData.parse_result = parseResult;
         const n = stats.lidosOcr;
         const ins = stats.inseridos;
+        if (forceOpenAi && n === 0 && !stats.openAiError && stats.openAiAvailable !== true) {
+            stats.openAiAvailable = false;
+            stats.openAiError = 'IA não retornou itens. Confirme OPENAI_API_KEY no Render e redeploy da API.';
+        }
         const totalNaTabela = (doc.itens_json || []).length;
         let msg;
         if (n === 0) {

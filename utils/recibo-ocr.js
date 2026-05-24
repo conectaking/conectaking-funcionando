@@ -612,8 +612,45 @@ function escolherMelhorLeitura(tesseractResult, openAiResult) {
 async function processarImagemHibrida(imageBuffer, opts) {
     opts = opts || {};
     const forceOpenAi = !!opts.forceOpenAi;
+
     if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) {
         return { itensSugeridos: [], parseResult: { ocrEngine: 'none' } };
+    }
+
+    if (forceOpenAi && openAiVision.isAvailable()) {
+        try {
+            const ai = await openAiVision.extrairComOpenAi(imageBuffer);
+            if ((ai.itensSugeridos || []).length > 0) {
+                return {
+                    itensSugeridos: ai.itensSugeridos,
+                    parseResult: { ...(ai.parseResult || {}), ocrEngine: 'openai', openAiTentou: true, openAiAvailable: true },
+                    ocrEngine: 'openai'
+                };
+            }
+        } catch (e) {
+            logger.warn('recibo-ocr openai primário:', e.message);
+            if (!openAiVision.isAvailable()) {
+                return {
+                    itensSugeridos: [],
+                    parseResult: {
+                        ocrEngine: 'none',
+                        openAiAvailable: false,
+                        openAiError: 'OPENAI_API_KEY não configurada no servidor (Render).'
+                    },
+                    ocrEngine: 'none'
+                };
+            }
+        }
+    } else if (forceOpenAi && !openAiVision.isAvailable()) {
+        return {
+            itensSugeridos: [],
+            parseResult: {
+                ocrEngine: 'none',
+                openAiAvailable: false,
+                openAiError: 'OPENAI_API_KEY não configurada no servidor. Use a mesma chave do KingBrief no Render.'
+            },
+            ocrEngine: 'none'
+        };
     }
 
     let tess = { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
