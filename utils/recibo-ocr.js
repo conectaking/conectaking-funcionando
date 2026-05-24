@@ -13,7 +13,7 @@ const { detectIssuer } = require('./recibo-issuer-profiles');
 const receiptParser = require('./receipt-parser');
 
 /** Largura máxima para redimensionar imagem antes do OCR (acelera no Render/mobile). */
-const OCR_MAX_WIDTH = 1200;
+const OCR_MAX_WIDTH = 1400;
 /** Worker Tesseract reutilizado (evita criar/destruir a cada comprovante). */
 let _ocrWorker = null;
 let _ocrWorkerPromise = null;
@@ -477,6 +477,12 @@ async function getOcrWorker() {
     _ocrWorkerPromise = (async () => {
         const { createWorker } = require('tesseract.js');
         const worker = await createWorker('por', 1, { logger: () => {} });
+        try {
+            await worker.setParameters({
+                tessedit_pageseg_mode: '4',
+                preserve_interword_spaces: '1'
+            });
+        } catch (_) {}
         _ocrWorker = worker;
         return worker;
     })();

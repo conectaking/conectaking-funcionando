@@ -187,20 +187,32 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular,
         batchKeyCounts.set(k, (batchKeyCounts.get(k) || 0) + 1);
     }
     const addedInBatch = new Map();
+    let lidosOcr = 0;
+    let inseridos = 0;
+    let ignoradosRecusados = 0;
+    let ignoradosDuplicata = 0;
 
     let totalValor = 0;
     for (const s of sugeridos) {
         const nome = (s.nome_estabelecimento || '').toString().trim();
         const descricao = (nome || s.textoTrecho || s.categoria).toString().slice(0, 120);
-        if (isItemRecusado(descricao, s)) continue;
+        if (isItemRecusado(descricao, s)) {
+            ignoradosRecusados++;
+            continue;
+        }
+        lidosOcr++;
         const valor = Number(s.valor) || 0;
         const data = s.data ? String(s.data).slice(0, 20) : '';
         const key = itemExtratoKey(descricao, data, valor);
         const batchTotal = batchKeyCounts.get(key) || 1;
         const added = addedInBatch.get(key) || 0;
-        if (added >= batchTotal) continue;
         const wasInDoc = existingKeyCounts.get(key) || 0;
-        if (wasInDoc >= batchTotal) continue;
+        // Permite completar itens faltantes (ex.: 1ª leitura pegou 4 de 6); bloqueia re-envio da mesma foto
+        const slotsToFill = batchTotal - Math.min(wasInDoc, batchTotal);
+        if (added >= slotsToFill) {
+            ignoradosDuplicata++;
+            continue;
+        }
         addedInBatch.set(key, added + 1);
         const item = {
             item_uid: `it-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
@@ -214,6 +226,7 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular,
         if (etiqueta) item.conteudo_pacote = etiqueta.slice(0, 120);
         itens.push(item);
         totalValor += valor;
+        inseridos++;
     }
     // Orçamento (legado): um comprovante avulso pode ir para anexos_json. Recibo nunca guarda foto do OCR aqui.
     if (!isRecibo && url && !isExtratoLista) {
@@ -239,7 +252,11 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular,
             valor: 0
         });
     }
-    return documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
+    const doc = await documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
+    return {
+        doc,
+        stats: { lidosOcr, inseridos, ignoradosRecusados, ignoradosDuplicata }
+    };
 }
 
 async function getSettings(userId) {

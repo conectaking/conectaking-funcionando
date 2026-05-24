@@ -375,21 +375,38 @@ async function processarComprovante(req, res) {
         const acumular = !(req.body && (req.body.substituir === '1' || req.body.substituir === 'true' || req.body.substituir === true))
             && (req.body == null || req.body.acumular === undefined || req.body.acumular === '1' || req.body.acumular === 'true' || req.body.acumular === true);
         const substituir = req.body && (req.body.substituir === '1' || req.body.substituir === 'true' || req.body.substituir === true);
-        const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos, acumular, substituir });
+        const result = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos, acumular, substituir });
+        const doc = result && result.doc;
+        const stats = (result && result.stats) || { lidosOcr: itensSugeridos.length, inseridos: itensSugeridos.length, ignoradosRecusados: 0, ignoradosDuplicata: 0 };
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
-        const responseData = { url, documento: doc, itensAdicionados: itensSugeridos };
+        const responseData = {
+            url,
+            documento: doc,
+            itensAdicionados: itensSugeridos,
+            stats
+        };
         if (parseResult) responseData.parse_result = parseResult;
-        const n = itensSugeridos.length;
+        const n = stats.lidosOcr;
+        const ins = stats.inseridos;
         const totalNaTabela = (doc.itens_json || []).length;
-        const msg = n > 0
-            ? (n === 1
-                ? (totalNaTabela > 1
-                    ? `1 item lido da imagem. Total na tabela: ${totalNaTabela}.`
-                    : (url ? 'Comprovante processado: 1 item adicionado.' : '1 item extraído da imagem.'))
-                : (totalNaTabela > n
-                    ? `${n} itens lidos da imagem. Total na tabela: ${totalNaTabela} (somados aos existentes).`
-                    : (url ? `Extrato digitalizado: ${n} itens na tabela.` : `${n} itens extraídos da imagem.`)))
-            : (url ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.' : 'Imagem recebida mas o OCR não identificou valores. Tente outra foto ou preencha manualmente.');
+        let msg;
+        if (n === 0) {
+            msg = url
+                ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.'
+                : 'Imagem recebida mas o OCR não identificou valores. Tente outra foto ou preencha manualmente.';
+        } else if (ins === 0 && stats.ignoradosDuplicata > 0) {
+            msg = `${n} item(ns) lidos na imagem, mas nenhum novo (já estavam na tabela). Total: ${totalNaTabela}.`;
+        } else if (ins < n) {
+            msg = `${n} item(ns) lidos na imagem, ${ins} adicionados (${n - ins} já existiam). Total na tabela: ${totalNaTabela}.`;
+        } else if (n === 1) {
+            msg = totalNaTabela > 1
+                ? `1 item lido da imagem. Total na tabela: ${totalNaTabela}.`
+                : (url ? 'Comprovante processado: 1 item adicionado.' : '1 item extraído da imagem.');
+        } else {
+            msg = totalNaTabela > ins
+                ? `${n} itens lidos na imagem, ${ins} adicionados. Total na tabela: ${totalNaTabela}.`
+                : `${n} itens extraídos da imagem.`;
+        }
         return responseFormatter.success(res, responseData, msg, 201);
     } catch (e) {
         logger.error('documentos processarComprovante:', e);

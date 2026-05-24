@@ -626,8 +626,8 @@
 
     /** Comprime foto para OCR no celular (evita timeout Render + mantém texto legível). */
     function compressImageFileForUpload(file, maxSide) {
-        maxSide = maxSide || (isMobileDevice() ? 1400 : 1600);
-        var quality = isMobileDevice() ? 0.84 : 0.82;
+        maxSide = maxSide || 1600;
+        var quality = isMobileDevice() ? 0.86 : 0.84;
         return new Promise(function (resolve) {
             if (!file || !file.type || file.type.indexOf('image/') !== 0) { resolve(file); return; }
             if (!isMobileDevice() && file.size < 700000) { resolve(file); return; }
@@ -763,7 +763,7 @@
         var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
         if (!files.length) return;
         syncFormBeforeOcr(function() {
-            var itensAntesScan = document.querySelectorAll('#itens-tbody .item-row').length;
+            var scanResumo = { lidosOcr: 0, inseridos: 0, duplicata: 0, porFoto: [] };
             var etiqueta = document.getElementById('ocr-etiqueta-itens');
             var etiquetaVal = etiqueta && etiqueta.value.trim() ? etiqueta.value.trim() : '';
             var btn = document.getElementById('btn-tirar-foto');
@@ -777,6 +777,30 @@
                 if (btn) { btn.disabled = on; btn.innerHTML = on ? label : origHtml; }
                 if (btnArq) { btnArq.disabled = on; btnArq.innerHTML = on ? label : origArq; }
             }
+            function montarMsgScan(total) {
+                var linhas = [];
+                if (files.length > 1) {
+                    linhas.push(files.length + ' foto(s) processada(s):');
+                    scanResumo.porFoto.forEach(function(p, idx) {
+                        var det = 'Foto ' + (idx + 1) + ': ' + p.lidosOcr + ' lido(s)';
+                        if (p.inseridos !== p.lidosOcr) det += ', ' + p.inseridos + ' adicionado(s)';
+                        else if (p.inseridos > 0) det += ', ' + p.inseridos + ' adicionado(s)';
+                        if (p.duplicata > 0) det += ' (' + p.duplicata + ' já na tabela)';
+                        linhas.push(det);
+                    });
+                    linhas.push('');
+                }
+                linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem.');
+                if (scanResumo.inseridos !== scanResumo.lidosOcr) {
+                    linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela' + (scanResumo.duplicata ? ' (' + scanResumo.duplicata + ' já existiam).' : '.'));
+                } else if (scanResumo.inseridos > 0) {
+                    linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela.');
+                } else if (scanResumo.lidosOcr > 0) {
+                    linhas.push('Nenhum item novo (todos já estavam na tabela).');
+                }
+                linhas.push('Total na tabela: ' + total + ' item(ns).');
+                return linhas.join('\n');
+            }
             function enviarUm(i, docAcumulado) {
                 if (i >= files.length) {
                     setBusy(false);
@@ -784,14 +808,7 @@
                     if (docAcumulado) {
                         setFormDoc(docAcumulado);
                         var total = (docAcumulado.itens_json || []).length;
-                        var lidos = Math.max(0, total - itensAntesScan);
-                        if (files.length > 1) {
-                            alert('Extrato digitalizado: ' + total + ' item(ns) na tabela (' + files.length + ' foto(s)).');
-                        } else if (lidos > 0 && itensAntesScan > 0) {
-                            alert(lidos + ' item(ns) adicionados. Total na tabela: ' + total + '.');
-                        } else {
-                            alert('Extrato digitalizado: ' + total + ' item(ns) na tabela.');
-                        }
+                        alert(montarMsgScan(total));
                     }
                     return;
                 }
@@ -806,8 +823,18 @@
                         return uploadComprovanteComRetry(fd, false);
                     })
                     .then(function(data) {
-                        var doc = data && data.data && data.data.documento;
+                        var payload = data && data.data;
+                        var doc = payload && payload.documento;
                         if (!doc) throw new Error(data.message || 'Falha ao digitalizar.');
+                        var st = (payload && payload.stats) || {};
+                        scanResumo.porFoto.push({
+                            lidosOcr: st.lidosOcr || 0,
+                            inseridos: st.inseridos || 0,
+                            duplicata: st.ignoradosDuplicata || 0
+                        });
+                        scanResumo.lidosOcr += st.lidosOcr || 0;
+                        scanResumo.inseridos += st.inseridos || 0;
+                        scanResumo.duplicata += st.ignoradosDuplicata || 0;
                         enviarUm(i + 1, doc);
                     })
                     .catch(function(err) {
