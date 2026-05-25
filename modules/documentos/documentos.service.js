@@ -252,9 +252,9 @@ async function processarComprovante(id, userId, { url, itensSugeridos, acumular,
             valor: 0
         });
     }
-    const doc = await documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
+    const docAtualizado = await documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
     return {
-        doc,
+        doc: docAtualizado,
         stats: { lidosOcr, inseridos, ignoradosRecusados, ignoradosDuplicata }
     };
 }
