@@ -383,7 +383,15 @@ async function processarComprovante(req, res) {
         const substituir = req.body && (req.body.substituir === '1' || req.body.substituir === 'true' || req.body.substituir === true);
         const result = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos, acumular, substituir });
         const doc = result && result.doc;
-        const stats = (result && result.stats) || { lidosOcr: itensSugeridos.length, inseridos: itensSugeridos.length, ignoradosRecusados: 0, ignoradosDuplicata: 0 };
+        const stats = (result && result.stats) || { lidosOcr: 0, inseridos: 0, ignoradosRecusados: 0, ignoradosDuplicata: 0 };
+        const lidosNaImagem = itensSugeridos.filter((s) => {
+            const nome = (s.nome_estabelecimento || '').toString().trim();
+            const desc = (nome || s.textoTrecho || s.categoria || '').toString();
+            if (s.status === 'DECLINED' || s.recusada || s.recusado) return false;
+            return !/recusad|negad|cancelad/i.test(desc);
+        }).length;
+        stats.lidosOcr = Math.max(stats.lidosOcr || 0, lidosNaImagem);
+        if (stats.inseridos == null) stats.inseridos = stats.lidosOcr;
         stats.ocrEngine = ocrEngine;
         stats.openAiTentou = !!(parseResult && parseResult.openAiTentou) || forceOpenAi;
         stats.openAiError = (parseResult && parseResult.openAiError) || null;

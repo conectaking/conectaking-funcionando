@@ -797,7 +797,7 @@
                     });
                     linhas.push('');
                 }
-                linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem' + (scanResumo.ocrIa ? ' (com IA OpenAI)' : '') + '.');
+                linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem' + (scanResumo.ocrIa ? ' (Tesseract + IA OpenAI em paralelo)' : '') + '.');
                 if (scanResumo.inseridos !== scanResumo.lidosOcr) {
                     linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela' + (scanResumo.duplicata ? ' (' + scanResumo.duplicata + ' já existiam).' : '.'));
                 } else if (scanResumo.inseridos > 0) {
@@ -842,15 +842,21 @@
                         var doc = payload && payload.documento;
                         if (!doc) throw new Error(data.message || 'Falha ao digitalizar.');
                         var st = (payload && payload.stats) || {};
+                        var itensResp = (payload && payload.itensAdicionados) || [];
+                        var lidosFoto = (typeof st.lidosOcr === 'number' && st.lidosOcr > 0)
+                            ? st.lidosOcr
+                            : Math.max(itensResp.length, (payload.parse_result && payload.parse_result.tesseractItens) || 0, (payload.parse_result && payload.parse_result.openAiItens) || 0, itensResp.length);
+                        var insFoto = (typeof st.inseridos === 'number') ? st.inseridos : itensResp.length;
                         scanResumo.porFoto.push({
-                            lidosOcr: st.lidosOcr || 0,
-                            inseridos: st.inseridos || 0,
+                            lidosOcr: lidosFoto,
+                            inseridos: insFoto,
                             duplicata: st.ignoradosDuplicata || 0
                         });
-                        scanResumo.lidosOcr += st.lidosOcr || 0;
-                        scanResumo.inseridos += st.inseridos || 0;
+                        scanResumo.lidosOcr += lidosFoto;
+                        scanResumo.inseridos += insFoto;
                         scanResumo.duplicata += st.ignoradosDuplicata || 0;
-                        if (st.ocrEngine === 'openai') scanResumo.ocrIa = true;
+                        if (st.ocrEngine === 'openai' || st.ocrEngine === 'hybrid') scanResumo.ocrIa = true;
+                        if (payload.parse_result && payload.parse_result.parallel) scanResumo.ocrIa = true;
                         if (st.openAiError) scanResumo.openAiError = st.openAiError;
                         if (st.openAiAvailable === false) scanResumo.iaIndisponivel = true;
                         enviarUm(i + 1, doc);

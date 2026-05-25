@@ -579,30 +579,60 @@ function precisaOpenAiFallback(ocrText, itensSugeridos, parseResult, forceOpenAi
     return false;
 }
 
+function itemKeyOcrMerge(item) {
+    const nome = ((item.nome_estabelecimento || item.textoTrecho || '') + '').trim().toLowerCase();
+    const data = ((item.data || '') + '').trim();
+    const valor = Math.round((Number(item.valor) || 0) * 100);
+    return `${nome}|${data}|${valor}`;
+}
+
+/** Funde Tesseract + OpenAI: mantém o máximo de itens válidos (inclui duplicatas legítimas na mesma foto). */
+function mesclarLeiturasParalelas(tessList, aiList) {
+    const t = tessList || [];
+    const a = aiList || [];
+    const base = a.length >= t.length ? [...a] : [...t];
+    const other = a.length >= t.length ? t : a;
+    const counts = new Map();
+    for (const it of base) {
+        const k = itemKeyOcrMerge(it);
+        counts.set(k, (counts.get(k) || 0) + 1);
+    }
+    const otherByKey = new Map();
+    for (const it of other) {
+        const k = itemKeyOcrMerge(it);
+        if (!otherByKey.has(k)) otherByKey.set(k, []);
+        otherByKey.get(k).push(it);
+    }
+    for (const [k, pool] of otherByKey) {
+        const want = Math.max(counts.get(k) || 0, pool.length);
+        const have = counts.get(k) || 0;
+        for (let i = have; i < want; i++) {
+            base.push(pool[i - have] || pool[0]);
+            counts.set(k, (counts.get(k) || 0) + 1);
+        }
+    }
+    return base;
+}
+
 function escolherMelhorLeitura(tesseractResult, openAiResult) {
     const t = (tesseractResult && tesseractResult.itensSugeridos) || [];
     const a = (openAiResult && openAiResult.itensSugeridos) || [];
-    if (a.length > t.length) {
-        return {
-            itensSugeridos: a,
-            parseResult: {
-                ...(openAiResult.parseResult || {}),
-                ocrEngine: 'openai',
-                tesseractItens: t.length,
-                openAiItens: a.length
-            },
-            ocrEngine: 'openai'
-        };
-    }
+    const merged = mesclarLeiturasParalelas(t, a);
+    const engine = t.length > 0 && a.length > 0 && merged.length >= Math.max(t.length, a.length)
+        ? 'hybrid'
+        : (a.length >= t.length ? 'openai' : 'tesseract');
+    const parseBase = a.length >= t.length
+        ? (openAiResult && openAiResult.parseResult) || {}
+        : (tesseractResult && tesseractResult.parseResult) || {};
     return {
-        itensSugeridos: t,
+        itensSugeridos: merged.length > 0 ? merged : (a.length > t.length ? a : t),
         parseResult: {
-            ...(tesseractResult.parseResult || {}),
-            ocrEngine: 'tesseract',
+            ...parseBase,
+            ocrEngine: engine,
             tesseractItens: t.length,
             openAiItens: a.length
         },
-        ocrEngine: 'tesseract'
+        ocrEngine: engine
     };
 }
 
@@ -618,30 +648,54 @@ async function processarImagemHibrida(imageBuffer, opts) {
     }
 
     if (forceOpenAi && openAiVision.isAvailable()) {
-        try {
-            const ai = await openAiVision.extrairComOpenAi(imageBuffer);
-            if ((ai.itensSugeridos || []).length > 0) {
-                return {
-                    itensSugeridos: ai.itensSugeridos,
-                    parseResult: { ...(ai.parseResult || {}), ocrEngine: 'openai', openAiTentou: true, openAiAvailable: true },
-                    ocrEngine: 'openai'
-                };
-            }
-        } catch (e) {
-            logger.warn('recibo-ocr openai primário:', e.message);
-            if (!openAiVision.isAvailable()) {
-                return {
-                    itensSugeridos: [],
-                    parseResult: {
-                        ocrEngine: 'none',
-                        openAiAvailable: false,
-                        openAiError: 'OPENAI_API_KEY não configurada no servidor (Render).'
-                    },
-                    ocrEngine: 'none'
-                };
-            }
+        let tess = { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
+        let ai = { itensSugeridos: [], parseResult: {} };
+        let openAiError = null;
+        const [tessSettled, aiSettled] = await Promise.allSettled([
+            processarImagemTesseract(imageBuffer),
+            openAiVision.extrairComOpenAi(imageBuffer)
+        ]);
+        if (tessSettled.status === 'fulfilled') tess = tessSettled.value;
+        else logger.warn('recibo-ocr tesseract paralelo:', tessSettled.reason && tessSettled.reason.message);
+        if (aiSettled.status === 'fulfilled') ai = aiSettled.value;
+        else {
+            openAiError = (aiSettled.reason && aiSettled.reason.message) || 'Erro na IA OpenAI';
+            logger.warn('recibo-ocr openai paralelo:', openAiError);
         }
+        const escolhido = escolherMelhorLeitura(tess, ai);
+        logger.info('recibo-ocr paralelo (usar_ia):', {
+            engine: escolhido.ocrEngine,
+            tesseract: (tess.itensSugeridos || []).length,
+            openai: (ai.itensSugeridos || []).length,
+            merged: (escolhido.itensSugeridos || []).length
+        });
+        escolhido.parseResult = {
+            ...(escolhido.parseResult || {}),
+            openAiAvailable: true,
+            openAiTentou: true,
+            parallel: true,
+            openAiError: openAiError || undefined
+        };
+        if ((escolhido.itensSugeridos || []).length > 0 || openAiError) return escolhido;
     } else if (forceOpenAi && !openAiVision.isAvailable()) {
+        let tess = { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
+        try {
+            tess = await processarImagemTesseract(imageBuffer);
+        } catch (e) {
+            logger.error('recibo-ocr tesseract (sem IA):', e.message);
+        }
+        if ((tess.itensSugeridos || []).length > 0) {
+            return {
+                itensSugeridos: tess.itensSugeridos,
+                parseResult: {
+                    ...(tess.parseResult || {}),
+                    ocrEngine: 'tesseract',
+                    openAiAvailable: false,
+                    openAiError: 'OPENAI_API_KEY não configurada no servidor. Use a mesma chave do KingBrief no Render.'
+                },
+                ocrEngine: 'tesseract'
+            };
+        }
         return {
             itensSugeridos: [],
             parseResult: {
