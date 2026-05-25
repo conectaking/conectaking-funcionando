@@ -17,10 +17,11 @@ Responda SOMENTE JSON válido:
 {"items":[{"nome":"estabelecimento","data":"DD/MM","valor":13.2,"recusada":false}]}
 
 Regras obrigatórias:
-- Para CADA linha de cobrança aprovada: nome (esquerda), data DD/MM (abaixo do nome), valor com vírgula (direita, ex. 13,20 R$).
-- NÃO inclua linhas com "Recusada", "Recusado" ou valor em vermelho/rosa com recusa.
+- Para CADA linha de cobrança APROVADA: nome, data DD/MM, valor (ex. 13,20 R$).
+- PROIBIDO incluir transação recusada: se aparecer "Recusada"/"Recusado" ou valor em vermelho/rosa, NÃO coloque no JSON (recusada:true também não deve ir na lista).
+- Se o mesmo estabelecimento e valor aparecer duas vezes e uma estiver recusada, inclua SOMENTE a aprovada (uma entrada).
 - Nome em duas linhas (ex. CONCESSIONARIA + ROTA SO): junte em um nome só.
-- Duas cobranças iguais aprovadas na mesma tela: inclua as duas entradas.
+- Duas cobranças iguais e ambas APROVADAS (ex. dois pedágios Entrevias): inclua as duas.
 - valor: número decimal (13.2 = R$ 13,20). data: DD/MM quando existir.
 - Leia TODAS as linhas visíveis; não pare no meio da lista.
 - Cupom único (não lista): 1 item. Nada legível: {"items":[]}`;
@@ -67,10 +68,12 @@ function itensFromOpenAiPayload(payload) {
     const out = [];
     for (const row of raw) {
         if (!row || typeof row !== 'object') continue;
-        const recusada = !!(row.recusada || row.recusado || row.declined);
+        const recusada = !!(row.recusada || row.recusado || row.declined)
+            || (row.status && String(row.status).toUpperCase() === 'DECLINED');
         if (recusada) continue;
         const nomeRaw = (row.nome || row.name || row.estabelecimento || row.descricao || '').toString().trim();
-        if (/recusad|negad|cancelad/i.test(nomeRaw)) continue;
+        const obs = (row.observacao || row.notes || row.status_text || '').toString();
+        if (/recusad|negad|cancelad|estornad/i.test(nomeRaw + ' ' + obs)) continue;
         const valor = normalizarValor(row.valor != null ? row.valor : row.amount);
         if (valor == null || valor <= 0) continue;
         const nome = nomeRaw.slice(0, 120) || 'Transação';

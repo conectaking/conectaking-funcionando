@@ -540,7 +540,7 @@ async function processarImagemTesseract(imageBuffer) {
         const { data: { text } } = await worker.recognize(tmpPath);
         try { fs.unlinkSync(tmpPath); } catch (_) {}
         if (!text || !text.trim()) return { itensSugeridos: [], parseResult: { source: 'tesseract', confidence: 0 }, ocrText: '' };
-        const itensSugeridos = processarTextoOcr(text);
+        const itensSugeridos = filtrarItensNaoRecusados(processarTextoOcr(text));
         const parseResult = receiptParser.parseReceipt(text);
         const parseResultForApi = {
             source: 'tesseract',
@@ -611,37 +611,64 @@ function itemKeyOcrMerge(item) {
     return `${nome}|${data}|${valor}`;
 }
 
-/** Funde Tesseract + OpenAI: mantém o máximo de itens válidos (inclui duplicatas legítimas na mesma foto). */
+/** Remove itens recusados/negados (OpenAI às vezes duplica cobrança recusada). */
+function filtrarItensNaoRecusados(itens) {
+    if (!Array.isArray(itens)) return [];
+    return itens.filter((s) => {
+        if (!s) return false;
+        if (s.status === 'DECLINED' || s.recusada || s.recusado) return false;
+        const nome = (s.nome_estabelecimento || '').toString().trim();
+        const desc = (nome || s.textoTrecho || s.categoria || '').toString();
+        return !/recusad|negad|cancelad|estornad/i.test(desc);
+    });
+}
+
+function contarPorChaveItens(lista) {
+    const m = new Map();
+    for (const it of lista || []) {
+        const k = itemKeyOcrMerge(it);
+        m.set(k, (m.get(k) || 0) + 1);
+    }
+    return m;
+}
+
+/**
+ * Funde Tesseract + OpenAI sem inflar recusados: por chave usa o MENOR total quando ambos leram,
+ * e se a IA leu mais linhas que o Tesseract, não duplica chaves que o Tesseract já limitou.
+ */
 function mesclarLeiturasParalelas(tessList, aiList) {
-    const t = tessList || [];
-    const a = aiList || [];
-    const base = a.length >= t.length ? [...a] : [...t];
-    const other = a.length >= t.length ? t : a;
-    const counts = new Map();
-    for (const it of base) {
-        const k = itemKeyOcrMerge(it);
-        counts.set(k, (counts.get(k) || 0) + 1);
+    const t = filtrarItensNaoRecusados(tessList);
+    const a = filtrarItensNaoRecusados(aiList);
+    if (t.length === 0) return a;
+    if (a.length === 0) return t;
+
+    if (a.length > t.length) {
+        const keysT = new Set(t.map(itemKeyOcrMerge));
+        const extras = a.filter((it) => !keysT.has(itemKeyOcrMerge(it)));
+        return t.concat(extras);
     }
-    const otherByKey = new Map();
-    for (const it of other) {
-        const k = itemKeyOcrMerge(it);
-        if (!otherByKey.has(k)) otherByKey.set(k, []);
-        otherByKey.get(k).push(it);
-    }
-    for (const [k, pool] of otherByKey) {
-        const want = Math.max(counts.get(k) || 0, pool.length);
-        const have = counts.get(k) || 0;
-        for (let i = have; i < want; i++) {
-            base.push(pool[i - have] || pool[0]);
-            counts.set(k, (counts.get(k) || 0) + 1);
+
+    const tessByKey = contarPorChaveItens(t);
+    const aiByKey = contarPorChaveItens(a);
+    const keys = new Set([...tessByKey.keys(), ...aiByKey.keys()]);
+    const out = [];
+    for (const k of keys) {
+        const ct = tessByKey.get(k) || 0;
+        const ca = aiByKey.get(k) || 0;
+        const want = (ct > 0 && ca > 0) ? Math.min(ct, ca) : Math.max(ct, ca);
+        const poolT = t.filter((it) => itemKeyOcrMerge(it) === k);
+        const poolA = a.filter((it) => itemKeyOcrMerge(it) === k);
+        const pool = poolT.length >= poolA.length ? poolT : poolA;
+        for (let i = 0; i < want; i++) {
+            out.push(pool[i] || pool[0]);
         }
     }
-    return base;
+    return out.length > 0 ? out : t;
 }
 
 function escolherMelhorLeitura(tesseractResult, openAiResult) {
-    const t = (tesseractResult && tesseractResult.itensSugeridos) || [];
-    const a = (openAiResult && openAiResult.itensSugeridos) || [];
+    const t = filtrarItensNaoRecusados((tesseractResult && tesseractResult.itensSugeridos) || []);
+    const a = filtrarItensNaoRecusados((openAiResult && openAiResult.itensSugeridos) || []);
     const merged = mesclarLeiturasParalelas(t, a);
     const engine = t.length > 0 && a.length > 0 && merged.length >= Math.max(t.length, a.length)
         ? 'hybrid'
@@ -701,9 +728,10 @@ async function processarImagemHibrida(imageBuffer, opts) {
             openAiError: openAiError || undefined,
             raw_ocr_text: (tess.parseResult && tess.parseResult.raw_ocr_text) || (tess.ocrText || '').slice(0, 8000)
         };
-        if ((escolhido.itensSugeridos || []).length > 0) return escolhido;
+        escolhido.itensSugeridos = filtrarItensNaoRecusados(escolhido.itensSugeridos || []);
+        if (escolhido.itensSugeridos.length > 0) return escolhido;
         if ((tess.itensSugeridos || []).length > 0) {
-            escolhido.itensSugeridos = tess.itensSugeridos;
+            escolhido.itensSugeridos = filtrarItensNaoRecusados(tess.itensSugeridos);
             escolhido.ocrEngine = 'tesseract';
             return escolhido;
         }
@@ -813,5 +841,7 @@ module.exports = {
     processarImagem,
     processarImagemHibrida,
     processarImagemTesseract,
-    warmUpOcr
+    warmUpOcr,
+    filtrarItensNaoRecusados,
+    mesclarLeiturasParalelas
 };
