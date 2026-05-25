@@ -1,6 +1,6 @@
 const documentosService = require('./documentos.service');
 const { uploadImageBuffer } = require('../../utils/cloudflare-image-upload');
-const { processarImagem, warmUpOcr } = require('../../utils/recibo-ocr');
+const { processarImagem, warmUpOcr, sanitizarItensExtrato } = require('../../utils/recibo-ocr');
 const responseFormatter = require('../../utils/responseFormatter');
 const logger = require('../../utils/logger');
 
@@ -371,6 +371,9 @@ async function processarComprovante(req, res) {
         const etiquetaItens = (req.body && req.body.etiqueta_itens != null)
             ? String(req.body.etiqueta_itens).trim().slice(0, 120)
             : '';
+        const rawOcrText = (parseResult && parseResult.raw_ocr_text) || '';
+        itensSugeridos = sanitizarItensExtrato(itensSugeridos, rawOcrText);
+
         if (etiquetaItens && itensSugeridos.length > 0) {
             itensSugeridos = itensSugeridos.map(s => ({ ...s, etiqueta_ocr: etiquetaItens }));
         }

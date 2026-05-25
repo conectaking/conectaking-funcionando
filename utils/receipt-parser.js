@@ -305,13 +305,49 @@ function isDeclinedStatusLine(line) {
 
 /** Layout app: valor na linha X e "Recusada" logo abaixo (antes do próximo item). */
 function hasRecusadaAfterValue(lines, valueIndex) {
-    for (let k = valueIndex + 1; k <= Math.min(lines.length - 1, valueIndex + 5); k++) {
+    const lineVal = lines[valueIndex] || '';
+    if (/recusad[ao]/i.test(lineVal)) return true;
+    for (let k = valueIndex + 1; k <= Math.min(lines.length - 1, valueIndex + 6); k++) {
         const l = lines[k];
+        if (isOnlyDateLine(l)) continue;
         if (isValueOnlyLine(l)) return false;
-        if (isTransactionValueLine(l) && !isValueOnlyLine(l)) return false;
-        if (isDeclinedStatusLine(l)) return true;
+        if (isTransactionValueLine(l) && !isValueOnlyLine(l) && !/recusad/i.test(l)) return false;
+        if (isDeclinedStatusLine(l) || /recusad[ao]/i.test(l)) return true;
     }
     return false;
+}
+
+function extratoItemKey(name, date, amount) {
+    const n = limparNomeEstabelecimento(name || '').toLowerCase();
+    const d = (date || '').trim();
+    const v = Math.round((Number(amount) || 0) * 100);
+    return `${n}|${d}|${v}`;
+}
+
+/** Chaves nome|data|valor das cobranças com "Recusada" no print (para filtrar saída da IA). */
+function chavesRecusadasFromOcrText(rawText) {
+    const keys = new Set();
+    if (!rawText || !rawText.trim()) return keys;
+    const lines = splitLines(rawText);
+    for (let i = 0; i < lines.length; i++) {
+        if (!isTransactionValueLine(lines[i])) continue;
+        const val = normalizeBRL(lines[i]) ?? extractTrailingValue(lines[i]);
+        if (val == null || val < 0) continue;
+        if (!hasRecusadaAfterValue(lines, i) && !/recusad[ao]/i.test(lines[i])) continue;
+        const between = collectNameAndDateBetweenValues(lines, i);
+        let name = between.name || '';
+        if (!name || name.length < 2) {
+            const prev = findPreviousValueLineIndex(lines, i);
+            for (let j = prev + 1; j < i; j++) {
+                if (!isOnlyDateLine(lines[j]) && !isDeclinedStatusLine(lines[j])) {
+                    name = (name ? name + ' ' : '') + lines[j].trim();
+                }
+            }
+        }
+        const date = between.date || findDateNearValue(lines, i);
+        keys.add(extratoItemKey(name, date, val));
+    }
+    return keys;
 }
 
 /** Código curto de pedágio (P3, P11…) — item válido, não fragmento OCR. */
@@ -869,6 +905,7 @@ function runTests() {
 module.exports = {
     parseReceipt,
     parseTransactionList,
+    chavesRecusadasFromOcrText,
     isDeclinedReceipt,
     extractPaidAt,
     extractPaymentMethod,
