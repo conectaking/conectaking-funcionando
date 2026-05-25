@@ -615,10 +615,12 @@ function parseReceipt(ocrResult) {
     }
 
     const linesForList = splitLines(rawText);
-    // Print de lista (Nome, Data, Valor) — prioridade sobre "Recusada" no texto inteiro
-    if (looksLikeTransactionList(linesForList) || countExtratoValueLines(linesForList) >= 2) {
-        const lista = parseTransactionList(rawText);
-        if (lista.transactions && lista.transactions.length > 0) return lista;
+    const valueLines = countExtratoValueLines(linesForList);
+    const pareceExtrato = looksLikeTransactionList(linesForList) || valueLines >= 2;
+
+    // Print de lista — NUNCA tratar "Recusada" no meio da lista como recibo inteiro recusado
+    if (pareceExtrato) {
+        return parseTransactionList(rawText);
     }
 
     // ----- Comprovante único recusado/negado -----

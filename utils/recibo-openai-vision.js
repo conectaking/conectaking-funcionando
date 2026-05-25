@@ -5,7 +5,6 @@
 
 const fetch = require('node-fetch');
 const logger = require('./logger');
-const { preprocessarImagemExtrato } = require('./recibo-image-preprocess');
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim();
 const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
@@ -90,8 +89,13 @@ function itensFromOpenAiPayload(payload) {
 
 async function bufferToDataUrl(imageBuffer) {
     try {
-        const pre = await preprocessarImagemExtrato(imageBuffer);
-        return 'data:image/jpeg;base64,' + pre.toString('base64');
+        const sharp = require('sharp');
+        const buf = await sharp(imageBuffer)
+            .rotate()
+            .resize(1600, null, { withoutEnlargement: true, fit: 'inside' })
+            .jpeg({ quality: 88, mozjpeg: true })
+            .toBuffer();
+        return 'data:image/jpeg;base64,' + buf.toString('base64');
     } catch (e) {
         logger.warn('recibo-openai-vision resize:', e.message);
         return 'data:image/jpeg;base64,' + imageBuffer.toString('base64');

@@ -12,7 +12,6 @@ const logger = require('./logger');
 const { detectIssuer } = require('./recibo-issuer-profiles');
 const receiptParser = require('./receipt-parser');
 const openAiVision = require('./recibo-openai-vision');
-const { preprocessarImagemExtrato } = require('./recibo-image-preprocess');
 
 /** Largura máxima para redimensionar imagem antes do OCR (acelera no Render/mobile). */
 const OCR_MAX_WIDTH = 1400;
@@ -413,8 +412,27 @@ function itensFromTransactionList(transactions) {
  * Se for print de lista (receipt-parser retorna transactions[]), extrai um item por transação.
  * Retorna lista de { valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento?, data? }.
  */
+function contarLinhasValorExtratoTexto(ocrText) {
+    if (!ocrText) return 0;
+    let n = 0;
+    for (const l of ocrText.split(/\r?\n/)) {
+        const t = l.trim();
+        if (/^(\d{1,3}(?:\.\d{3})*|\d+)[,.](\d{2})\s*R?\$?\s*$/i.test(t)
+            || /^R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+)[,.](\d{2})\s*$/i.test(t)) n++;
+    }
+    return n;
+}
+
 function processarTextoOcr(ocrText) {
     if (!ocrText || !ocrText.trim()) return [];
+
+    if (typeof receiptParser.parseTransactionList === 'function'
+        && (contarLinhasValorExtratoTexto(ocrText) >= 2 || pareceExtratoCartaoApp(ocrText) || pareceFaturaCartao(ocrText))) {
+        const lista = receiptParser.parseTransactionList(ocrText);
+        if (lista.transactions && lista.transactions.length > 0) {
+            return itensFromTransactionList(lista.transactions);
+        }
+    }
 
     const listParsed = receiptParser.parseReceipt(ocrText);
     if (listParsed.transactions && listParsed.transactions.length > 0) {
@@ -423,14 +441,6 @@ function processarTextoOcr(ocrText) {
     }
 
     if (typeof receiptParser.parseTransactionList === 'function') {
-        const forced = receiptParser.parseTransactionList(ocrText);
-        if (forced.transactions && forced.transactions.length > 0) {
-            const itens = itensFromTransactionList(forced.transactions);
-            if (itens.length > 0) return itens;
-        }
-    }
-
-    if (pareceExtratoCartaoApp(ocrText) || pareceFaturaCartao(ocrText)) {
         const forced = receiptParser.parseTransactionList(ocrText);
         if (forced.transactions && forced.transactions.length > 0) {
             return itensFromTransactionList(forced.transactions);
@@ -471,12 +481,13 @@ function processarTextoOcr(ocrText) {
  */
 async function redimensionarParaOcr(imageBuffer) {
     try {
-        const pre = await preprocessarImagemExtrato(imageBuffer);
         const sharp = require('sharp');
-        return await sharp(pre)
-            .resize(OCR_MAX_WIDTH, null, { withoutEnlargement: true, fit: 'inside' })
-            .jpeg({ quality: 88, mozjpeg: true })
-            .toBuffer();
+        let pipe = sharp(imageBuffer)
+            .rotate()
+            .normalize()
+            .sharpen({ sigma: 1.2 })
+            .resize(OCR_MAX_WIDTH, null, { withoutEnlargement: true, fit: 'inside' });
+        return await pipe.jpeg({ quality: 88, mozjpeg: true }).toBuffer();
     } catch (e) {
         logger.warn('recibo-ocr redimensionar:', e.message);
         return imageBuffer;
@@ -665,19 +676,19 @@ async function processarImagemHibrida(imageBuffer, opts) {
         let tess = { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
         let ai = { itensSugeridos: [], parseResult: {} };
         let openAiError = null;
-        const [tessSettled, aiSettled] = await Promise.allSettled([
-            processarImagemTesseract(imageBuffer),
-            openAiVision.extrairComOpenAi(imageBuffer)
-        ]);
-        if (tessSettled.status === 'fulfilled') tess = tessSettled.value;
-        else logger.warn('recibo-ocr tesseract paralelo:', tessSettled.reason && tessSettled.reason.message);
-        if (aiSettled.status === 'fulfilled') ai = aiSettled.value;
-        else {
-            openAiError = (aiSettled.reason && aiSettled.reason.message) || 'Erro na IA OpenAI';
-            logger.warn('recibo-ocr openai paralelo:', openAiError);
+        try {
+            tess = await processarImagemTesseract(imageBuffer);
+        } catch (e) {
+            logger.warn('recibo-ocr tesseract (usar_ia):', e.message);
+        }
+        try {
+            ai = await openAiVision.extrairComOpenAi(imageBuffer);
+        } catch (e) {
+            openAiError = e.message || 'Erro na IA OpenAI';
+            logger.warn('recibo-ocr openai (usar_ia):', openAiError);
         }
         const escolhido = escolherMelhorLeitura(tess, ai);
-        logger.info('recibo-ocr paralelo (usar_ia):', {
+        logger.info('recibo-ocr usar_ia:', {
             engine: escolhido.ocrEngine,
             tesseract: (tess.itensSugeridos || []).length,
             openai: (ai.itensSugeridos || []).length,
@@ -687,31 +698,16 @@ async function processarImagemHibrida(imageBuffer, opts) {
             ...(escolhido.parseResult || {}),
             openAiAvailable: true,
             openAiTentou: true,
-            parallel: true,
-            openAiError: openAiError || undefined
+            openAiError: openAiError || undefined,
+            raw_ocr_text: (tess.parseResult && tess.parseResult.raw_ocr_text) || (tess.ocrText || '').slice(0, 8000)
         };
         if ((escolhido.itensSugeridos || []).length > 0) return escolhido;
-        if (openAiError && (tess.itensSugeridos || []).length > 0) {
-            escolhido.parseResult.openAiError = openAiError;
+        if ((tess.itensSugeridos || []).length > 0) {
             escolhido.itensSugeridos = tess.itensSugeridos;
             escolhido.ocrEngine = 'tesseract';
             return escolhido;
         }
-        if (openAiError) {
-            return {
-                itensSugeridos: [],
-                parseResult: {
-                    ocrEngine: 'none',
-                    openAiAvailable: true,
-                    openAiTentou: true,
-                    openAiError,
-                    parallel: true,
-                    tesseractItens: (tess.itensSugeridos || []).length,
-                    openAiItens: 0
-                },
-                ocrEngine: 'none'
-            };
-        }
+        // Tesseract e IA vazios — continua no fluxo padrão abaixo (não retorna zero cedo)
     } else if (forceOpenAi && !openAiVision.isAvailable()) {
         let tess = { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
         try {
