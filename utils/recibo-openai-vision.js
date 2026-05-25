@@ -5,6 +5,7 @@
 
 const fetch = require('node-fetch');
 const logger = require('./logger');
+const { preprocessarImagemExtrato } = require('./recibo-image-preprocess');
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim();
 const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
@@ -12,20 +13,18 @@ const MODEL = (process.env.RECIBO_OCR_AI_MODEL || 'gpt-4o-mini').trim();
 
 const PEDAGIO_HINTS = ['P1', 'P3', 'P4', 'P11', 'ENTREVIAS', 'EIXOSP', 'VIAPAULISTA', 'VIA COLINAS', 'PEDÁGIO', 'PEDAGIO', 'CONCESSIONARIA', 'ROTA SO', 'TOLL'];
 
-const SYSTEM_PROMPT = `Você extrai transações de prints de extrato de cartão ou comprovantes brasileiros (pt-BR).
-Responda APENAS com JSON válido, sem markdown, no formato:
-{"items":[{"nome":"Nome do estabelecimento","data":"DD/MM","valor":0.00,"recusada":false}]}
+const SYSTEM_PROMPT = `Extraia cada transação APROVADA de prints de extrato de cartão (fundo escuro, texto claro, pt-BR).
+Responda SOMENTE JSON válido:
+{"items":[{"nome":"estabelecimento","data":"DD/MM","valor":13.2,"recusada":false}]}
 
-Regras:
-- Uma entrada por cobrança APROVADA visível na imagem.
-- Ignore linhas com "Recusada", "Recusado", "Negada" ou valor em vermelho indicando recusa.
-- Prints com fundo escuro (app de cartão): leia nome, data DD/MM e valor R$ de cada linha.
-- Se houver duas cobranças iguais (mesmo nome, data e valor) e ambas aprovadas, inclua as duas.
-- "valor" é número decimal (ex.: 13.2 para R$ 13,20).
-- "data" no formato DD/MM ou DD/MM/YY quando visível; omita se não houver.
-- Nomes multi-linha (ex.: CONCESSIONARIA + ROTA SO) unifique em um nome.
-- Se for um único comprovante NFC-e/cupom (não lista), devolva 1 item.
-- Se não identificar nada, {"items":[]}`;
+Regras obrigatórias:
+- Para CADA linha de cobrança aprovada: nome (esquerda), data DD/MM (abaixo do nome), valor com vírgula (direita, ex. 13,20 R$).
+- NÃO inclua linhas com "Recusada", "Recusado" ou valor em vermelho/rosa com recusa.
+- Nome em duas linhas (ex. CONCESSIONARIA + ROTA SO): junte em um nome só.
+- Duas cobranças iguais aprovadas na mesma tela: inclua as duas entradas.
+- valor: número decimal (13.2 = R$ 13,20). data: DD/MM quando existir.
+- Leia TODAS as linhas visíveis; não pare no meio da lista.
+- Cupom único (não lista): 1 item. Nada legível: {"items":[]}`;
 
 function isAvailable() {
     return !!OPENAI_API_KEY;
@@ -91,13 +90,8 @@ function itensFromOpenAiPayload(payload) {
 
 async function bufferToDataUrl(imageBuffer) {
     try {
-        const sharp = require('sharp');
-        const buf = await sharp(imageBuffer)
-            .rotate()
-            .resize(1600, null, { withoutEnlargement: true, fit: 'inside' })
-            .jpeg({ quality: 85, mozjpeg: true })
-            .toBuffer();
-        return 'data:image/jpeg;base64,' + buf.toString('base64');
+        const pre = await preprocessarImagemExtrato(imageBuffer);
+        return 'data:image/jpeg;base64,' + pre.toString('base64');
     } catch (e) {
         logger.warn('recibo-openai-vision resize:', e.message);
         return 'data:image/jpeg;base64,' + imageBuffer.toString('base64');

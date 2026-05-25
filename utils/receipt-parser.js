@@ -126,8 +126,18 @@ function splitLines(rawText) {
  * Detecta se o texto parece "print de lista" (várias transações).
  * Heurística: muitas linhas com valor + pouco texto de comprovante (sem NFC-e, VIA CLIENTE, etc.).
  */
+/** Quantas linhas parecem valor de extrato (layout app cartão). */
+function countExtratoValueLines(lines) {
+    if (!lines) return 0;
+    let n = 0;
+    for (const l of lines) {
+        if (isValueOnlyLine(l) || isTransactionValueLine(l)) n++;
+    }
+    return n;
+}
+
 function looksLikeTransactionList(lines) {
-    if (!lines || lines.length < 3) return false;
+    if (!lines || lines.length < 2) return false;
     const hasReceiptWords = lines.some(l => /DANFE|NFC|VALOR PAGO|CHAVE DE ACESSO|VIA CLIENTE|AUTORIZA|imagedelivery|DOCUMENTO AUXILIAR/i.test(l));
     if (hasReceiptWords) return false;
     let moneyLines = 0;
@@ -138,9 +148,13 @@ function looksLikeTransactionList(lines) {
         if (isValueOnlyLine(l)) valueOnly++;
         if (lineHasMoney(l)) moneyLines++;
     }
+    const valueLines = countExtratoValueLines(lines);
     return (valueOnly >= 2 && dateOnly >= 2)
         || (moneyLines >= 2 && dateOnly >= 2)
-        || moneyLines >= 3;
+        || moneyLines >= 3
+        || valueLines >= 2
+        || (valueOnly >= 1 && dateOnly >= 1 && lines.length >= 4)
+        || (moneyLines >= 2 && lines.length >= 5);
 }
 
 /**
@@ -188,7 +202,9 @@ function isValueOnlyLine(line) {
     const t = line.trim();
     return /^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i.test(t)
         || /^R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(t)
-        || /^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})$/i.test(t);
+        || /^(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})$/i.test(t)
+        || /^(\d{1,3}(?:\.\d{3})*|\d+)\.(\d{2})\s*R?\$?\s*$/i.test(t)
+        || /^R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+)\.(\d{2})\s*$/i.test(t);
 }
 
 /** Linha contém valor monetário (inline ou só valor). */
@@ -257,7 +273,9 @@ function isTransactionValueLine(line) {
     if (isValueOnlyLine(line)) return true;
     const t = line.trim();
     return /(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R?\$?\s*$/i.test(t)
-        || /R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(t);
+        || /R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*$/i.test(t)
+        || /(\d{1,3}(?:\.\d{3})*|\d+)\.(\d{2})\s*R?\$?\s*$/i.test(t)
+        || /R\s*\$\s*(\d{1,3}(?:\.\d{3})*|\d+)\.(\d{2})\s*$/i.test(t);
 }
 
 /** Valor monetário no fim da linha (nome + valor na mesma linha). */
@@ -597,9 +615,10 @@ function parseReceipt(ocrResult) {
     }
 
     const linesForList = splitLines(rawText);
-    // Print de lista (Nome, Data, Valor) tem prioridade: pode ter uma linha "Recusada" sem ser recibo único recusado
-    if (looksLikeTransactionList(linesForList)) {
-        return parseTransactionList(rawText);
+    // Print de lista (Nome, Data, Valor) — prioridade sobre "Recusada" no texto inteiro
+    if (looksLikeTransactionList(linesForList) || countExtratoValueLines(linesForList) >= 2) {
+        const lista = parseTransactionList(rawText);
+        if (lista.transactions && lista.transactions.length > 0) return lista;
     }
 
     // ----- Comprovante único recusado/negado -----

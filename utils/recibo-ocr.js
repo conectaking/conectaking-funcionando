@@ -12,6 +12,7 @@ const logger = require('./logger');
 const { detectIssuer } = require('./recibo-issuer-profiles');
 const receiptParser = require('./receipt-parser');
 const openAiVision = require('./recibo-openai-vision');
+const { preprocessarImagemExtrato } = require('./recibo-image-preprocess');
 
 /** Largura máxima para redimensionar imagem antes do OCR (acelera no Render/mobile). */
 const OCR_MAX_WIDTH = 1400;
@@ -413,10 +414,27 @@ function itensFromTransactionList(transactions) {
  * Retorna lista de { valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento?, data? }.
  */
 function processarTextoOcr(ocrText) {
+    if (!ocrText || !ocrText.trim()) return [];
+
     const listParsed = receiptParser.parseReceipt(ocrText);
     if (listParsed.transactions && listParsed.transactions.length > 0) {
         const itens = itensFromTransactionList(listParsed.transactions);
         if (itens.length > 0) return itens;
+    }
+
+    if (typeof receiptParser.parseTransactionList === 'function') {
+        const forced = receiptParser.parseTransactionList(ocrText);
+        if (forced.transactions && forced.transactions.length > 0) {
+            const itens = itensFromTransactionList(forced.transactions);
+            if (itens.length > 0) return itens;
+        }
+    }
+
+    if (pareceExtratoCartaoApp(ocrText) || pareceFaturaCartao(ocrText)) {
+        const forced = receiptParser.parseTransactionList(ocrText);
+        if (forced.transactions && forced.transactions.length > 0) {
+            return itensFromTransactionList(forced.transactions);
+        }
     }
 
     if (pareceFaturaCartao(ocrText)) {
@@ -453,16 +471,12 @@ function processarTextoOcr(ocrText) {
  */
 async function redimensionarParaOcr(imageBuffer) {
     try {
+        const pre = await preprocessarImagemExtrato(imageBuffer);
         const sharp = require('sharp');
-        const meta = await sharp(imageBuffer).metadata();
-        const w = meta.width || 0;
-        let pipe = sharp(imageBuffer)
-            .rotate()
-            .normalize()
-            .sharpen({ sigma: 1.2 })
-            .resize(OCR_MAX_WIDTH, null, { withoutEnlargement: true, fit: 'inside' });
-        pipe = pipe.jpeg({ quality: 88, mozjpeg: true });
-        return await pipe.toBuffer();
+        return await sharp(pre)
+            .resize(OCR_MAX_WIDTH, null, { withoutEnlargement: true, fit: 'inside' })
+            .jpeg({ quality: 88, mozjpeg: true })
+            .toBuffer();
     } catch (e) {
         logger.warn('recibo-ocr redimensionar:', e.message);
         return imageBuffer;
@@ -676,7 +690,28 @@ async function processarImagemHibrida(imageBuffer, opts) {
             parallel: true,
             openAiError: openAiError || undefined
         };
-        if ((escolhido.itensSugeridos || []).length > 0 || openAiError) return escolhido;
+        if ((escolhido.itensSugeridos || []).length > 0) return escolhido;
+        if (openAiError && (tess.itensSugeridos || []).length > 0) {
+            escolhido.parseResult.openAiError = openAiError;
+            escolhido.itensSugeridos = tess.itensSugeridos;
+            escolhido.ocrEngine = 'tesseract';
+            return escolhido;
+        }
+        if (openAiError) {
+            return {
+                itensSugeridos: [],
+                parseResult: {
+                    ocrEngine: 'none',
+                    openAiAvailable: true,
+                    openAiTentou: true,
+                    openAiError,
+                    parallel: true,
+                    tesseractItens: (tess.itensSugeridos || []).length,
+                    openAiItens: 0
+                },
+                ocrEngine: 'none'
+            };
+        }
     } else if (forceOpenAi && !openAiVision.isAvailable()) {
         let tess = { itensSugeridos: [], parseResult: { source: 'tesseract' }, ocrText: '' };
         try {
