@@ -21,7 +21,8 @@ Regras obrigatórias:
 - PROIBIDO incluir transação recusada: se aparecer "Recusada"/"Recusado" ou valor em vermelho/rosa, NÃO coloque no JSON (recusada:true também não deve ir na lista).
 - Se o mesmo estabelecimento e valor aparecer duas vezes e uma estiver recusada, inclua SOMENTE a aprovada (uma entrada).
 - Nome em duas linhas (ex. CONCESSIONARIA + ROTA SO): junte em um nome só.
-- Duas cobranças iguais e ambas APROVADAS (ex. dois pedágios Entrevias): inclua as duas.
+- Duas cobranças iguais e ambas APROVADAS (ex. dois pedágios Entrevias 9,10 ou dois P3 18,30): inclua TODAS as passagens, não resuma.
+- Lista longa de pedágios (VIA COLINAS, EixoSp, P11, P3, Entrevias…): uma entrada por linha com valor R$, mesmo nome repetido.
 - valor: número decimal (13.2 = R$ 13,20). data: DD/MM quando existir.
 - Leia TODAS as linhas visíveis; não pare no meio da lista.
 - Cupom único (não lista): 1 item. Nada legível: {"items":[]}`;

@@ -642,28 +642,19 @@ function mesclarLeiturasParalelas(tessList, aiList) {
     if (t.length === 0) return a;
     if (a.length === 0) return t;
 
-    if (a.length > t.length) {
-        const keysA = new Set(a.map(itemKeyOcrMerge));
-        const extrasT = t.filter((it) => !keysA.has(itemKeyOcrMerge(it)));
-        return a.concat(extrasT);
+    if (t.length > a.length) {
+        if (t.length >= 4) return t;
+        const keysT = new Set(t.map(itemKeyOcrMerge));
+        return t.concat(a.filter((it) => !keysT.has(itemKeyOcrMerge(it))));
     }
 
-    const tessByKey = contarPorChaveItens(t);
-    const aiByKey = contarPorChaveItens(a);
-    const keys = new Set([...tessByKey.keys(), ...aiByKey.keys()]);
-    const out = [];
-    for (const k of keys) {
-        const ct = tessByKey.get(k) || 0;
-        const ca = aiByKey.get(k) || 0;
-        const want = (ct > 0 && ca > 0) ? Math.min(ct, ca) : Math.max(ct, ca);
-        const poolT = t.filter((it) => itemKeyOcrMerge(it) === k);
-        const poolA = a.filter((it) => itemKeyOcrMerge(it) === k);
-        const pool = poolT.length >= poolA.length ? poolT : poolA;
-        for (let i = 0; i < want; i++) {
-            out.push(pool[i] || pool[0]);
-        }
+    if (a.length > t.length) {
+        if (t.length >= 4) return capItensPorContagemParser(a, t);
+        const keysA = new Set(a.map(itemKeyOcrMerge));
+        return a.concat(t.filter((it) => !keysA.has(itemKeyOcrMerge(it))));
     }
-    return out.length > 0 ? out : t;
+
+    return capItensPorContagemParser(a.length >= t.length ? a : t, t.length >= a.length ? t : a);
 }
 
 /** Limita repetições por chave ao que o parser do Tesseract já validou (evita recusado duplicado da IA). */
