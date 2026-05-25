@@ -703,54 +703,36 @@ function parserTesseractConfiavel(autoritativa, ocrText) {
     return autoritativa.length >= 5;
 }
 
-/** 2ª ocorrência da mesma chave na mesma foto costuma ser linha recusada (exceto quando parser permite 2+). */
-function removerSegundaOcorrenciaMesmaChave(itens, maxPorChave) {
-    const allow = maxPorChave || new Map();
-    const used = new Map();
-    const out = [];
-    for (const it of itens) {
-        const k = itemKeyOcrMerge(it);
-        const max = allow.has(k) ? allow.get(k) : 1;
-        const u = used.get(k) || 0;
-        if (u >= max) continue;
-        used.set(k, u + 1);
-        out.push(it);
-    }
-    return out;
-}
-
 /**
- * Lista final: sem recusados; OpenAI manda quando leu mais que Tesseract; parser só limita duplicata.
+ * Lista final: sem recusados; usa contagem do parser (2x Entrevias, 2x P3 OK); não corta 2ª cópia legítima.
  */
 function sanitizarItensExtrato(itens, ocrText, opts) {
     opts = opts || {};
     const ocr = (ocrText || '').trim();
     let out = filtrarItensNaoRecusados(itens || []);
-
     const autoritativa = ocr ? itensAutoritativosDoTextoOcr(ocr) : null;
-    const allowMap = (autoritativa && autoritativa.length > 0) ? contarPorChaveItens(autoritativa) : null;
+    const tessOk = parserTesseractConfiavel(autoritativa, ocr);
 
-    if (autoritativa && autoritativa.length > 0 && parserTesseractConfiavel(autoritativa, ocr)) {
+    if (tessOk && autoritativa && autoritativa.length > 0) {
         if (out.length > autoritativa.length) {
-            logger.info('recibo-ocr sanitizar: parser Tesseract confiável', {
+            logger.info('recibo-ocr sanitizar: cap pelo parser Tesseract', {
                 recebidos: out.length,
                 parser: autoritativa.length
             });
-            return autoritativa;
+            return capItensPorContagemParser(out, autoritativa);
         }
         if (out.length < autoritativa.length) {
             return mesclarLeiturasParalelas(autoritativa, out);
         }
+        return capItensPorContagemParser(out, autoritativa);
     }
 
-    if (allowMap && allowMap.size > 0 && parserTesseractConfiavel(autoritativa, ocr)) {
-        out = capItensPorContagemParser(out, autoritativa);
-    } else {
-        out = removerSegundaOcorrenciaMesmaChave(out, new Map());
+    if (opts.preferOpenAi && (opts.openAiCount || 0) >= 4) {
+        return out;
     }
 
-    if (opts.preferOpenAi && (opts.openAiCount || 0) >= 4 && out.length < (opts.openAiCount || 0) - 1) {
-        logger.warn('recibo-ocr sanitizar: lista ficou curta demais após filtro — rever OpenAI');
+    if (autoritativa && autoritativa.length >= 3) {
+        return capItensPorContagemParser(out, autoritativa);
     }
 
     return out;
@@ -764,10 +746,12 @@ function escolherMelhorLeitura(tesseractResult, openAiResult) {
     const a = filtrarItensNaoRecusados((openAiResult && openAiResult.itensSugeridos) || []);
 
     const authTess = itensAutoritativosDoTextoOcr(ocrText);
-    const tessConfiavel = parserTesseractConfiavel(authTess, ocrText);
+    const tessOk = parserTesseractConfiavel(authTess, ocrText);
 
     let bruto;
-    if (a.length >= 4 && a.length > t.length && !tessConfiavel) {
+    if (tessOk && authTess && authTess.length >= 4) {
+        bruto = mesclarLeiturasParalelas(authTess, a);
+    } else if (a.length >= 4 && a.length > t.length) {
         bruto = a;
     } else if (a.length >= 4 && a.length >= t.length) {
         bruto = mesclarLeiturasParalelas(t, a);
