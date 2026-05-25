@@ -372,7 +372,11 @@ async function processarComprovante(req, res) {
             ? String(req.body.etiqueta_itens).trim().slice(0, 120)
             : '';
         const rawOcrText = (parseResult && parseResult.raw_ocr_text) || '';
-        itensSugeridos = sanitizarItensExtrato(itensSugeridos, rawOcrText);
+        itensSugeridos = sanitizarItensExtrato(itensSugeridos, rawOcrText, {
+            preferOpenAi: forceOpenAi,
+            openAiCount: (parseResult && parseResult.openAiItens) || 0,
+            tessCount: (parseResult && parseResult.tesseractItens) || 0
+        });
 
         if (etiquetaItens && itensSugeridos.length > 0) {
             itensSugeridos = itensSugeridos.map(s => ({ ...s, etiqueta_ocr: etiquetaItens }));
