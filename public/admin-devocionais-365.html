@@ -60,13 +60,30 @@
         .job-status { font-size: 0.82rem; color: #aaa; margin-top: 8px; line-height: 1.45; }
         .month-checks { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 10px 0; font-size: 0.85rem; }
         .month-checks label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #ccc; margin: 0; }
+        .grid-31 { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .act-card { padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; background: rgba(0,0,0,0.25); }
+        .act-card:hover { border-color: rgba(255,199,0,0.4); }
+        .act-card.selected { border-color: #FFC700; background: rgba(255,199,0,0.08); }
+        .badge-pros { font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 6px; }
+        .badge-pros-vazio { background: rgba(120,120,120,0.3); color: #aaa; }
+        .badge-pros-rascunho { background: rgba(59,130,246,0.2); color: #93c5fd; }
+        .badge-pros-publicado { background: rgba(34,197,94,0.2); color: #86efac; }
+        .badge-pros-incompleto { background: rgba(234,179,8,0.2); color: #fde047; }
+        .tabs-ed { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .tabs-ed button { padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #ccc; cursor: pointer; font-size: 0.85rem; }
+        .tabs-ed button.active { border-color: #FFC700; color: #FFC700; }
+        .panel-ed { display: none; }
+        .panel-ed.active { display: block; }
+        .field-pros { margin-bottom: 12px; }
+        .cheatsheet-pros { font-size: 0.85rem; color: #aaa; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 12px; }
+        .cheatsheet { font-size: 0.85rem; color: #aaa; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
     <!-- admin-dev365-ui: gerar-por-ia + checkboxes + remover-seleccionados — se não vir isto no "Ver código-fonte", o ficheiro no servidor está desactualizado -->
     <div class="wrap">
         <h1><i class="fas fa-book-bible"></i> Bíblia &amp; Devocionais (ADM)</h1>
-        <p class="sub">Geração com IA para o <strong>Devocional 365</strong> (texto que aparece no cartão público — &quot;Devocional diário&quot;). Requer token de administrador.</p>
+        <p class="sub">Admin da Bíblia no cartão: <strong>Devocional 365</strong>, <strong>Prosperidade antes de dormir</strong> (Do Fracasso ao Legado), plano de leitura e estudos por livro. Requer token de administrador.</p>
 
         <div id="flash"></div>
 
@@ -85,6 +102,7 @@
 
         <div class="tabs" role="tablist">
             <button type="button" class="active" data-tab="dev365"><i class="fas fa-calendar-alt"></i> Devocionais 365</button>
+            <button type="button" data-tab="prosperidade"><i class="fas fa-moon"></i> Prosperidade antes de dormir</button>
             <button type="button" data-tab="plano"><i class="fas fa-book-open"></i> Um capítulo por dia</button>
             <button type="button" data-tab="estudo"><i class="fas fa-book-reader"></i> Estudo por livro</button>
             <button type="button" data-tab="ajuda"><i class="fas fa-question-circle"></i> Ajuda</button>
@@ -224,6 +242,67 @@
             </div>
         </section>
 
+        <section id="panel-prosperidade" class="panel">
+            <div class="card">
+                <h2><i class="fas fa-moon"></i> Prosperidade antes de dormir — Do Fracasso ao Legado</h2>
+                <p>31 Ativações (Provérbios 1–31) para a aba pública na Bíblia. Colar texto, gerar com IA, revisar e <strong>publicar</strong> — só publicadas aparecem no cartão.</p>
+                <div class="row">
+                    <button type="button" class="btn btn-secondary" id="btn-pros-reload-grid"><i class="fas fa-sync"></i> Recarregar grid</button>
+                    <button type="button" class="btn btn-secondary" id="btn-pros-export"><i class="fas fa-download"></i> Exportar JSON</button>
+                    <label class="btn btn-secondary" style="cursor:pointer;margin:0"><i class="fas fa-upload"></i> Importar JSON<input type="file" id="pros-import-file" accept=".json" style="display:none"></label>
+                </div>
+                <div class="row" style="margin-top:12px">
+                    <div><label for="pros-batch-start">Lote IA — início</label><input type="number" id="pros-batch-start" min="1" max="31" value="1" style="width:70px"></div>
+                    <div><label for="pros-batch-end">fim</label><input type="number" id="pros-batch-end" min="1" max="31" value="7" style="width:70px"></div>
+                    <div><label for="pros-batch-delay">delay ms</label><input type="number" id="pros-batch-delay" value="800" style="width:80px"></div>
+                    <button type="button" class="btn" id="btn-pros-batch-async"><i class="fas fa-robot"></i> Gerar lote (async)</button>
+                </div>
+                <p class="job-status" id="pros-batch-status"></p>
+                <div class="progress-wrap" id="pros-batch-progress-wrap" style="display:none"><div class="progress-bar" id="pros-batch-progress-bar"></div></div>
+                <div class="grid-31" id="pros-grid-31" style="margin-top:16px"><p style="color:#888">Carregue o grid (token + URL da API acima).</p></div>
+            </div>
+            <div class="card" id="pros-editor-panel" style="display:none">
+                <h2>Ativação <span id="pros-ed-num">1</span> — <span id="pros-ed-status"></span></h2>
+                <div class="cheatsheet" id="pros-cheatsheet"></div>
+                <div class="tabs-ed" role="tablist">
+                    <button type="button" class="active" data-ed="colar">Colar por escrito</button>
+                    <button type="button" data-ed="ia">Gerar com IA</button>
+                    <button type="button" data-ed="campos">Campos</button>
+                    <button type="button" data-ed="preview">Preview</button>
+                </div>
+                <div id="pros-panel-colar" class="panel-ed active">
+                    <div class="field-pros"><label>Ativação completa (use títulos: DECRETO DE ENTRADA, FUNDAMENTO SAGRADO…)</label><textarea id="pros-paste-full" rows="10"></textarea></div>
+                    <button type="button" class="btn btn-secondary" id="btn-pros-parse"><i class="fas fa-cut"></i> Dividir seções</button>
+                </div>
+                <div id="pros-panel-ia" class="panel-ed">
+                    <button type="button" class="btn" id="btn-pros-gen-one"><i class="fas fa-magic"></i> Gerar esta Ativação</button>
+                    <p id="pros-gen-status" class="job-status" style="margin-top:10px"></p>
+                </div>
+                <div id="pros-panel-campos" class="panel-ed">
+                    <div class="field-pros"><label>Título</label><input id="pros-f-titulo"></div>
+                    <div class="field-pros"><label>Decreto de entrada</label><textarea id="pros-f-decreto"></textarea></div>
+                    <div class="field-pros"><label>Fundamento sagrado (Provérbios N — NTLH corrido)</label><textarea id="pros-f-fundamento" rows="5"></textarea></div>
+                    <div class="field-pros"><label>Diagnóstico da escassez</label><textarea id="pros-f-diagnostico"></textarea></div>
+                    <div class="field-pros"><label>Na estrada com o KING</label><textarea id="pros-f-estrada" rows="4"></textarea></div>
+                    <div class="field-pros"><label>Diretriz de ilustração</label><textarea id="pros-f-ilustracao"></textarea></div>
+                    <div class="field-pros"><label>Mentalidade travada</label><textarea id="pros-f-travada"></textarea></div>
+                    <div class="field-pros"><label>Nova mentalidade</label><textarea id="pros-f-nova"></textarea></div>
+                    <div class="field-pros"><label>Exercício de fixação</label><textarea id="pros-f-exercicio"></textarea></div>
+                    <div class="field-pros"><label>IE chave</label><textarea id="pros-f-ie"></textarea></div>
+                    <div class="field-pros"><label>Treino negócios</label><textarea id="pros-f-negocios"></textarea></div>
+                    <div class="field-pros"><label>Treino altar</label><textarea id="pros-f-altar"></textarea></div>
+                    <div class="field-pros"><label>Sentença de ativação</label><textarea id="pros-f-sentenca"></textarea></div>
+                    <div class="field-pros"><label>Próximo episódio</label><textarea id="pros-f-proximo"></textarea></div>
+                </div>
+                <div id="pros-panel-preview" class="panel-ed"><div id="pros-preview-host" style="font-size:0.9rem;color:#ccc"></div></div>
+                <div class="row" style="margin-top:16px">
+                    <button type="button" class="btn btn-secondary" id="btn-pros-save"><i class="fas fa-save"></i> Salvar rascunho</button>
+                    <button type="button" class="btn" id="btn-pros-publish"><i class="fas fa-check"></i> Publicar</button>
+                    <button type="button" class="btn btn-secondary" id="btn-pros-unpublish"><i class="fas fa-eye-slash"></i> Despublicar</button>
+                </div>
+            </div>
+        </section>
+
         <section id="panel-plano" class="panel">
             <div class="card">
                 <h2>Plano de leitura — um capítulo por dia</h2>
@@ -281,6 +360,8 @@
             <div class="card">
                 <h2>Ajuda</h2>
                 <ul>
+                    <li><strong>Devocionais 365:</strong> gera/edita o texto do “Devocional diário” na Bíblia pública.</li>
+                    <li><strong>Prosperidade antes de dormir:</strong> cadastra as 31 Ativações (Do Fracasso ao Legado) — colar, IA, publicar. Só publicadas aparecem na aba da Bíblia.</li>
                     <li><strong>Gerar este dia:</strong> cria/atualiza o devocional do dia 1–365 na base (título, versículo, reflexão, aplicação, oração).</li>
                     <li><strong>Gerar todo o mês:</strong> percorre todos os dias do mês civil no ano escolhido (ex.: todos os dias de abril de 2026).</li>
                     <li>É necessário <code>OPENAI_API_KEY</code> (ou <code>BIBLE_OPENAI_API_KEY</code>) no servidor.</li>
@@ -854,9 +935,10 @@
             var tab = btn.getAttribute('data-tab');
             document.querySelectorAll('.tabs button').forEach(function (b) { b.classList.toggle('active', b === btn); });
             document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
-            var map = { dev365: 'panel-dev365', plano: 'panel-plano', estudo: 'panel-estudo', ajuda: 'panel-ajuda' };
+            var map = { dev365: 'panel-dev365', prosperidade: 'panel-prosperidade', plano: 'panel-plano', estudo: 'panel-estudo', ajuda: 'panel-ajuda' };
             var el = document.getElementById(map[tab]);
             if (el) el.classList.add('active');
+            if (tab === 'prosperidade') loadProsperidadeGrid();
         });
     });
 
@@ -1116,9 +1198,265 @@
     }
     loadStudyBooksList();
 
+    // --- Prosperidade antes de dormir (31 Ativações) ---
+    var LS_PROS_JOB = 'prosperidade_bg_job_id';
+    var prosCurrentN = null;
+    var prosPollTimer = null;
+    var prosGridLoaded = false;
+
+    function prosBadgeClass(s) {
+        return 'badge-pros badge-pros-' + (s || 'vazio');
+    }
+
+    function prosApiJson(path, opts) {
+        return apiFetch(path, opts).then(function (r) {
+            return r.json().then(function (j) {
+                if (!r.ok || j.success === false) throw new Error((j && j.message) || r.statusText);
+                return j;
+            });
+        });
+    }
+
+    function prosFieldsFromForm() {
+        return {
+            titulo: document.getElementById('pros-f-titulo').value,
+            decreto_entrada: document.getElementById('pros-f-decreto').value,
+            fundamento_sagrado: document.getElementById('pros-f-fundamento').value,
+            diagnostico_escassez: document.getElementById('pros-f-diagnostico').value,
+            estrada_com_king: document.getElementById('pros-f-estrada').value,
+            diretriz_ilustracao: document.getElementById('pros-f-ilustracao').value,
+            mentalidade_travada: document.getElementById('pros-f-travada').value,
+            nova_mentalidade: document.getElementById('pros-f-nova').value,
+            exercicio_fixacao: document.getElementById('pros-f-exercicio').value,
+            ie_chave: document.getElementById('pros-f-ie').value,
+            treino_negocios: document.getElementById('pros-f-negocios').value,
+            treino_altar: document.getElementById('pros-f-altar').value,
+            sentenca_ativacao: document.getElementById('pros-f-sentenca').value,
+            proximo_episodio: document.getElementById('pros-f-proximo').value,
+            content_source: 'manual'
+        };
+    }
+
+    function prosFillForm(d) {
+        document.getElementById('pros-f-titulo').value = d.titulo || '';
+        document.getElementById('pros-f-decreto').value = d.decreto_entrada || '';
+        document.getElementById('pros-f-fundamento').value = d.fundamento_sagrado || '';
+        document.getElementById('pros-f-diagnostico').value = d.diagnostico_escassez || '';
+        document.getElementById('pros-f-estrada').value = d.estrada_com_king || '';
+        document.getElementById('pros-f-ilustracao').value = d.diretriz_ilustracao || '';
+        document.getElementById('pros-f-travada').value = d.mentalidade_travada || '';
+        document.getElementById('pros-f-nova').value = d.nova_mentalidade || '';
+        document.getElementById('pros-f-exercicio').value = d.exercicio_fixacao || '';
+        document.getElementById('pros-f-ie').value = d.ie_chave || '';
+        document.getElementById('pros-f-negocios').value = d.treino_negocios || '';
+        document.getElementById('pros-f-altar').value = d.treino_altar || '';
+        document.getElementById('pros-f-sentenca').value = d.sentenca_ativacao || '';
+        document.getElementById('pros-f-proximo').value = d.proximo_episodio || '';
+    }
+
+    function prosRenderPreview(d) {
+        var h = '<h3 style="color:#FFC700">' + (d.titulo || '') + '</h3>';
+        ['decreto_entrada', 'fundamento_sagrado', 'diagnostico_escassez', 'estrada_com_king', 'sentenca_ativacao', 'proximo_episodio'].forEach(function (k) {
+            if (d[k]) h += '<p><strong>' + k + '</strong><br>' + String(d[k]).replace(/\n/g, '<br>') + '</p>';
+        });
+        document.getElementById('pros-preview-host').innerHTML = h;
+    }
+
+    function loadProsperidadeGrid() {
+        var host = document.getElementById('pros-grid-31');
+        if (!host) return;
+        host.innerHTML = '<p style="color:#888">A carregar…</p>';
+        prosApiJson('/api/admin/bible/prosperidade')
+            .then(function (json) {
+                var list = (json.data && json.data.activations) || [];
+                prosGridLoaded = true;
+                host.innerHTML = list.map(function (a) {
+                    return '<div class="act-card" data-n="' + a.activation_number + '"><strong>Ativação ' + a.activation_number + '</strong><div style="font-size:0.78rem;color:#888;margin-top:4px">' + String(a.titulo || '').substring(0, 36) + '</div><span class="' + prosBadgeClass(a.status) + '">' + a.status + '</span></div>';
+                }).join('');
+                host.querySelectorAll('.act-card').forEach(function (c) {
+                    c.addEventListener('click', function () { openProsperidadeEditor(parseInt(c.getAttribute('data-n'), 10)); });
+                });
+            })
+            .catch(function (e) { host.innerHTML = '<p style="color:#f5a097">' + e.message + '</p>'; });
+    }
+
+    function openProsperidadeEditor(n) {
+        prosCurrentN = n;
+        document.getElementById('pros-editor-panel').style.display = 'block';
+        document.getElementById('pros-ed-num').textContent = n;
+        document.querySelectorAll('#pros-grid-31 .act-card').forEach(function (c) {
+            c.classList.toggle('selected', parseInt(c.getAttribute('data-n'), 10) === n);
+        });
+        prosApiJson('/api/admin/bible/prosperidade/' + n)
+            .then(function (json) {
+                var d = json.data || {};
+                document.getElementById('pros-ed-status').textContent = d.status || '';
+                var st = d.storytelling || {};
+                document.getElementById('pros-cheatsheet').innerHTML = '<strong>Fase ' + n + ':</strong> ' + (st.titulo || '') + ' — ' + (st.resumo || '');
+                prosFillForm(d);
+                prosRenderPreview(d);
+            })
+            .catch(function (e) { flash(e.message, 'err'); });
+    }
+
+    document.querySelectorAll('.tabs-ed button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var ed = btn.getAttribute('data-ed');
+            document.querySelectorAll('.tabs-ed button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+            document.querySelectorAll('.panel-ed').forEach(function (p) { p.classList.remove('active'); });
+            var panel = document.getElementById('pros-panel-' + ed);
+            if (panel) panel.classList.add('active');
+            if (ed === 'preview') prosRenderPreview(prosFieldsFromForm());
+        });
+    });
+
+    document.getElementById('btn-pros-reload-grid').addEventListener('click', loadProsperidadeGrid);
+
+    document.getElementById('btn-pros-parse').addEventListener('click', function () {
+        if (!prosCurrentN) return;
+        prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/parse-paste', {
+            method: 'POST',
+            body: JSON.stringify({ text: document.getElementById('pros-paste-full').value })
+        })
+            .then(function (json) {
+                var s = (json.data && json.data.sections) || {};
+                prosFillForm(s);
+                flash('Seções divididas — revise em Campos.', 'ok');
+                document.querySelector('.tabs-ed button[data-ed="campos"]').click();
+            })
+            .catch(function (e) { flash(e.message, 'err'); });
+    });
+
+    document.getElementById('btn-pros-gen-one').addEventListener('click', function () {
+        if (!prosCurrentN) return;
+        var st = document.getElementById('pros-gen-status');
+        st.textContent = 'Gerando…';
+        var btn = document.getElementById('btn-pros-gen-one');
+        btn.disabled = true;
+        prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/generate-ai', { method: 'POST', body: '{}' })
+            .then(function (json) {
+                prosFillForm(Object.assign({}, json.data, { content_source: 'ai' }));
+                st.textContent = 'Tokens: ' + ((json.tokens && json.tokens.total) || '—');
+                flash('IA concluída — revise e salve.', 'ok');
+                document.querySelector('.tabs-ed button[data-ed="campos"]').click();
+            })
+            .catch(function (e) { st.textContent = e.message; flash(e.message, 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('btn-pros-save').addEventListener('click', function () {
+        if (!prosCurrentN) return;
+        prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN, { method: 'PUT', body: JSON.stringify(prosFieldsFromForm()) })
+            .then(function () { flash('Rascunho salvo.', 'ok'); loadProsperidadeGrid(); })
+            .catch(function (e) { flash(e.message, 'err'); });
+    });
+
+    document.getElementById('btn-pros-publish').addEventListener('click', function () {
+        if (!prosCurrentN) return;
+        prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN, { method: 'PUT', body: JSON.stringify(prosFieldsFromForm()) })
+            .then(function () {
+                return prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/publish', {
+                    method: 'PATCH',
+                    body: JSON.stringify({ published: true })
+                });
+            })
+            .then(function () { flash('Ativação publicada!', 'ok'); loadProsperidadeGrid(); openProsperidadeEditor(prosCurrentN); })
+            .catch(function (e) { flash(e.message, 'err'); });
+    });
+
+    document.getElementById('btn-pros-unpublish').addEventListener('click', function () {
+        if (!prosCurrentN) return;
+        prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/publish', {
+            method: 'PATCH',
+            body: JSON.stringify({ published: false })
+        })
+            .then(function () { flash('Despublicada.', 'ok'); loadProsperidadeGrid(); })
+            .catch(function (e) { flash(e.message, 'err'); });
+    });
+
+    document.getElementById('btn-pros-export').addEventListener('click', function () {
+        prosApiJson('/api/admin/bible/prosperidade/export')
+            .then(function (json) {
+                var blob = new Blob([JSON.stringify(json.data, null, 2)], { type: 'application/json' });
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'prosperidade-31-backup.json';
+                a.click();
+            })
+            .catch(function (e) { flash(e.message, 'err'); });
+    });
+
+    document.getElementById('pros-import-file').addEventListener('change', function (ev) {
+        var f = ev.target.files[0];
+        if (!f) return;
+        f.text().then(function (text) {
+            var data = JSON.parse(text);
+            var items = data.activations || data;
+            return prosApiJson('/api/admin/bible/prosperidade/import', {
+                method: 'POST',
+                body: JSON.stringify({ activations: items })
+            });
+        })
+            .then(function () { flash('Importação concluída.', 'ok'); loadProsperidadeGrid(); })
+            .catch(function (e) { flash(e.message, 'err'); });
+        ev.target.value = '';
+    });
+
+    function pollProsJob(jobId) {
+        if (prosPollTimer) clearInterval(prosPollTimer);
+        document.getElementById('pros-batch-progress-wrap').style.display = 'block';
+        prosPollTimer = setInterval(function () {
+            prosApiJson('/api/admin/bible/prosperidade/generation-job/' + jobId)
+                .then(function (json) {
+                    var j = json.data || {};
+                    var pct = j.total ? Math.round((j.done / j.total) * 100) : 0;
+                    document.getElementById('pros-batch-progress-bar').style.width = pct + '%';
+                    document.getElementById('pros-batch-status').textContent = 'Job ' + j.status + ' — ' + j.done + '/' + j.total + ' (tokens: ' + (j.tokensTotal || 0) + ')';
+                    if (j.status === 'done' || j.status === 'partial' || j.status === 'failed' || j.status === 'cancelled') {
+                        clearInterval(prosPollTimer);
+                        localStorage.removeItem(LS_PROS_JOB);
+                        loadProsperidadeGrid();
+                    }
+                })
+                .catch(function () {});
+        }, 2500);
+    }
+
+    document.getElementById('btn-pros-batch-async').addEventListener('click', function () {
+        var start = parseInt(document.getElementById('pros-batch-start').value, 10);
+        var end = parseInt(document.getElementById('pros-batch-end').value, 10);
+        if (end - start + 1 > 15) { flash('Máximo 15 Ativações por lote.', 'err'); return; }
+        if (!confirm('Gerar Ativações ' + start + ' a ' + end + ' com IA? Revise antes de publicar.')) return;
+        prosApiJson('/api/admin/bible/prosperidade/generate-range-ai', {
+            method: 'POST',
+            body: JSON.stringify({
+                start: start,
+                end: end,
+                async: true,
+                delayMs: parseInt(document.getElementById('pros-batch-delay').value, 10) || 800
+            })
+        })
+            .then(function (json) {
+                var jobId = json.data && json.data.jobId;
+                if (jobId) {
+                    localStorage.setItem(LS_PROS_JOB, jobId);
+                    pollProsJob(jobId);
+                    flash('Lote iniciado.', 'ok');
+                }
+            })
+            .catch(function (e) { flash(e.message, 'err'); });
+    });
+
+    var savedProsJob = localStorage.getItem(LS_PROS_JOB);
+    if (savedProsJob) pollProsJob(savedProsJob);
+
     if (location.hash === '#study' || location.hash === '#estudo') {
         var tabEstudo = document.querySelector('.tabs button[data-tab="estudo"]');
         if (tabEstudo) tabEstudo.click();
+    }
+    if (location.hash === '#prosperidade' || location.hash === '#prosperidade-dormir') {
+        var tabPros = document.querySelector('.tabs button[data-tab="prosperidade"]');
+        if (tabPros) tabPros.click();
     }
 
 })();

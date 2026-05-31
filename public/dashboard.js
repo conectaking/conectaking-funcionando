@@ -14821,10 +14821,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dev365AdminLink) {
                 dev365AdminLink.style.display = isAdmin ? 'flex' : 'none';
             }
-            const prosperidadeAdminLink = document.getElementById('prosperidade-admin-link');
-            if (prosperidadeAdminLink) {
-                prosperidadeAdminLink.style.display = isAdmin ? 'flex' : 'none';
-            }
 
             const personalizacaoLogoLink = document.getElementById('personalizacao-logo-link');
             if (personalizacaoLogoLink) {
