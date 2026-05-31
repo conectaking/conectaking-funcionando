@@ -11,6 +11,9 @@ const { protectAdmin } = require('../middleware/protectAdmin');
 const bibleService = require('../modules/bible/bible.service');
 const bibleRepository = require('../modules/bible/bible.repository');
 const bibleAdminDev365 = require('../modules/bible/bible.adminDev365.service');
+const bibleAdminProsperidade = require('../modules/bible/bible.adminProsperidade.service');
+const prosperidadeService = require('../modules/bible/bible.prosperidade.service');
+const prosperidadeAi = require('../modules/bible/bible.prosperidadeAi.service');
 const bibleBookStudyAiJobs = require('../modules/bible/bible.adminBookStudyAiJobs.service');
 const bibleDevotionalAi = require('../modules/bible/bibleDevotionalAi.service');
 const logger = require('../utils/logger');
@@ -536,6 +539,163 @@ router.delete('/bible/devotionals-365/:day', protectAdmin, async (req, res) => {
     } catch (e) {
         logger.error('adminBibleStudy deleteDevocional365:', e);
         res.status(500).json({ success: false, message: e.message || 'Erro ao remover.' });
+    }
+});
+
+// --- Prosperidade antes de dormir (Do Fracasso ao Legado) ---
+
+router.get('/bible/prosperidade', protectAdmin, async (req, res) => {
+    try {
+        const list = await prosperidadeService.adminList();
+        res.json({ success: true, data: { activations: list } });
+    } catch (e) {
+        logger.error('admin prosperidade list:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao listar.' });
+    }
+});
+
+router.get('/bible/prosperidade/export', protectAdmin, async (req, res) => {
+    try {
+        const data = await prosperidadeService.adminExport();
+        res.json({ success: true, data: { activations: data } });
+    } catch (e) {
+        logger.error('admin prosperidade export:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao exportar.' });
+    }
+});
+
+router.post('/bible/prosperidade/import', protectAdmin, async (req, res) => {
+    try {
+        const items = req.body && (req.body.activations || req.body);
+        const result = await prosperidadeService.adminImport(items);
+        res.json({ success: true, message: 'Importação concluída.', data: result });
+    } catch (e) {
+        logger.error('admin prosperidade import:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao importar.' });
+    }
+});
+
+router.get('/bible/prosperidade/storytelling-map', protectAdmin, async (req, res) => {
+    try {
+        res.json({ success: true, data: prosperidadeAi.loadStorytellingMap() });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
+router.post('/bible/prosperidade/generate-range-ai', protectAdmin, async (req, res) => {
+    const start = parseInt(req.body && req.body.start, 10);
+    const end = parseInt(req.body && req.body.end, 10);
+    const asyncMode = req.body && (req.body.async === true || req.body.async === 'true');
+    const delayMs = req.body && req.body.delayMs;
+    if (!start || !end || start < 1 || end > 31 || start > end) {
+        return res.status(400).json({ success: false, message: 'Intervalo inválido (1–31).' });
+    }
+    if (end - start + 1 > 15 && !asyncMode) {
+        return res.status(400).json({
+            success: false,
+            message: 'Máximo 15 Ativações por lote síncrono. Use async: true ou divida o intervalo.'
+        });
+    }
+    try {
+        if (asyncMode) {
+            const job = bibleAdminProsperidade.startRangeBackgroundJob(start, end, { delayMs });
+            return res.status(202).json({ success: true, message: 'Geração iniciada.', data: job });
+        }
+        const result = await bibleAdminProsperidade.generateRangeAndSave(start, end, { delayMs });
+        res.json({ success: true, data: result });
+    } catch (e) {
+        logger.error('admin prosperidade range-ai:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro no lote.' });
+    }
+});
+
+router.get('/bible/prosperidade/generation-job/:jobId', protectAdmin, async (req, res) => {
+    const job = bibleAdminProsperidade.getGenerationJob(req.params.jobId);
+    if (!job) return res.status(404).json({ success: false, message: 'Job não encontrado.' });
+    res.json({ success: true, data: job });
+});
+
+router.post('/bible/prosperidade/generation-job/:jobId/cancel', protectAdmin, async (req, res) => {
+    const result = bibleAdminProsperidade.cancelGenerationJob(req.params.jobId);
+    res.json({ success: result.ok, message: result.message });
+});
+
+router.get('/bible/prosperidade/:n', protectAdmin, async (req, res) => {
+    const n = parseInt(req.params.n, 10);
+    if (!n || n < 1 || n > 31) {
+        return res.status(400).json({ success: false, message: 'Ativação deve ser entre 1 e 31.' });
+    }
+    try {
+        const data = await prosperidadeService.adminGet(n);
+        res.json({ success: true, data });
+    } catch (e) {
+        logger.error('admin prosperidade get:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao carregar.' });
+    }
+});
+
+router.put('/bible/prosperidade/:n', protectAdmin, async (req, res) => {
+    const n = parseInt(req.params.n, 10);
+    if (!n || n < 1 || n > 31) {
+        return res.status(400).json({ success: false, message: 'Ativação deve ser entre 1 e 31.' });
+    }
+    try {
+        const data = await prosperidadeService.adminSave(n, req.body || {}, { mergeSource: 'manual' });
+        res.json({ success: true, message: 'Ativação ' + n + ' salva.', data });
+    } catch (e) {
+        logger.error('admin prosperidade save:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao salvar.' });
+    }
+});
+
+router.patch('/bible/prosperidade/:n/publish', protectAdmin, async (req, res) => {
+    const n = parseInt(req.params.n, 10);
+    if (!n || n < 1 || n > 31) {
+        return res.status(400).json({ success: false, message: 'Ativação deve ser entre 1 e 31.' });
+    }
+    const published = req.body && (req.body.published === true || req.body.published === 'true' || req.body.published === 1);
+    try {
+        const data = await prosperidadeService.adminPublish(n, published);
+        res.json({
+            success: true,
+            message: published ? 'Ativação publicada.' : 'Ativação despublicada.',
+            data
+        });
+    } catch (e) {
+        logger.error('admin prosperidade publish:', e);
+        res.status(400).json({ success: false, message: e.message || 'Erro ao publicar.' });
+    }
+});
+
+router.post('/bible/prosperidade/:n/parse-paste', protectAdmin, async (req, res) => {
+    const n = parseInt(req.params.n, 10);
+    const text = req.body && (req.body.text || req.body.content || '');
+    if (!n || n < 1 || n > 31) {
+        return res.status(400).json({ success: false, message: 'Ativação inválida.' });
+    }
+    try {
+        const result = await prosperidadeService.adminParsePaste(n, text);
+        if (result.error) return res.status(400).json({ success: false, message: result.error });
+        res.json({ success: true, data: result });
+    } catch (e) {
+        logger.error('admin prosperidade parse:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao dividir seções.' });
+    }
+});
+
+router.post('/bible/prosperidade/:n/generate-ai', protectAdmin, async (req, res) => {
+    const n = parseInt(req.params.n, 10);
+    if (!n || n < 1 || n > 31) {
+        return res.status(400).json({ success: false, message: 'Ativação inválida.' });
+    }
+    try {
+        const result = await prosperidadeService.adminGenerateAi(n);
+        if (result.error) return res.status(400).json({ success: false, message: result.error });
+        res.json({ success: true, data: result.data, tokens: result.tokens });
+    } catch (e) {
+        logger.error('admin prosperidade generate-ai:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro na IA.' });
     }
 });
 

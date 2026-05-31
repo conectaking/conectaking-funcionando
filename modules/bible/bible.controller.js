@@ -1,4 +1,5 @@
 const bibleService = require('./bible.service');
+const prosperidadeService = require('./bible.prosperidade.service');
 const responseFormatter = require('../../utils/responseFormatter');
 const logger = require('../../utils/logger');
 
@@ -409,6 +410,109 @@ async function searchBible(req, res) {
     }
 }
 
+// --- Prosperidade antes de dormir ---
+
+async function getProsperidadeAtivacao(req, res) {
+    try {
+        const n = parseInt(req.params.n, 10);
+        const result = await prosperidadeService.getAtivacaoPublic(n);
+        if (result.code === 400) return responseFormatter.error(res, result.error, 400);
+        if (result.ok) return responseFormatter.success(res, result.data);
+        return responseFormatter.success(res, {
+            not_published: true,
+            activation_number: result.activation_number,
+            message: result.message,
+            nearest_published: result.nearest_published
+        });
+    } catch (e) {
+        logger.error('bible getProsperidadeAtivacao:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar Ativação', 500);
+    }
+}
+
+async function getProsperidadeHoje(req, res) {
+    try {
+        const day = req.query.day;
+        const result = await prosperidadeService.getHoje(day);
+        if (result.code === 400) return responseFormatter.error(res, result.error, 400);
+        if (result.ok) {
+            return responseFormatter.success(res, {
+                activation_number: result.activation_number,
+                calendar_day: result.calendar_day,
+                ativacao: result.data
+            });
+        }
+        return responseFormatter.success(res, {
+            activation_number: result.activation_number,
+            calendar_day: result.calendar_day,
+            not_published: true,
+            message: result.message,
+            nearest_published: result.nearest_published
+        });
+    } catch (e) {
+        logger.error('bible getProsperidadeHoje:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar Ativação de hoje', 500);
+    }
+}
+
+async function getProsperidadeList(req, res) {
+    try {
+        const list = await prosperidadeService.getList();
+        return responseFormatter.success(res, { activations: list });
+    } catch (e) {
+        logger.error('bible getProsperidadeList:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao listar', 500);
+    }
+}
+
+async function getProsperidadeNearestPublished(req, res) {
+    try {
+        const n = parseInt(req.params.n, 10);
+        const nearest = await prosperidadeService.getNearestPublished(n);
+        if (!nearest) return responseFormatter.error(res, 'Nenhuma Ativação publicada encontrada.', 404);
+        return responseFormatter.success(res, nearest);
+    } catch (e) {
+        logger.error('bible getProsperidadeNearestPublished:', e);
+        return responseFormatter.error(res, e.message || 'Erro', 500);
+    }
+}
+
+async function markProsperidadeRead(req, res) {
+    try {
+        const userId = req.user ? req.user.userId : null;
+        const body = req.body || {};
+        const visitorId = body.visitor_id || body.visitorId;
+        const activationNumber = body.activation_number || body.activationNumber;
+        const slug = body.slug;
+        if (!activationNumber) return responseFormatter.error(res, 'activation_number é obrigatório', 400);
+        if (!userId && !visitorId) return responseFormatter.error(res, 'Faça login ou informe visitor_id', 400);
+        const result = await prosperidadeService.markRead({
+            userId,
+            visitorId: visitorId || null,
+            activationNumber,
+            slug
+        });
+        return responseFormatter.success(res, result, 'Ativação marcada como lida.');
+    } catch (e) {
+        logger.error('bible markProsperidadeRead:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao marcar', 400);
+    }
+}
+
+async function getProsperidadeReadStatus(req, res) {
+    try {
+        const userId = req.user ? req.user.userId : null;
+        const visitorId = req.query.visitor_id;
+        const days = req.query.activations || req.query.activation_numbers;
+        if (!userId && !visitorId) return responseFormatter.success(res, { read: [] });
+        const read = await prosperidadeService.getReadStatus(userId, visitorId || null, days);
+        return responseFormatter.success(res, { read });
+    } catch (e) {
+        logger.error('bible getProsperidadeReadStatus:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar status', 500);
+    }
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
@@ -438,5 +542,11 @@ module.exports = {
     markRead,
     resetProgress,
     getConfig,
-    saveConfig
+    saveConfig,
+    getProsperidadeAtivacao,
+    getProsperidadeHoje,
+    getProsperidadeList,
+    getProsperidadeNearestPublished,
+    markProsperidadeRead,
+    getProsperidadeReadStatus
 };

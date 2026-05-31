@@ -219,6 +219,21 @@
         }
         .receba-item span { color: #fff; font-size: 0.9rem; font-weight: 500; }
         .receba-item i.fa-arrow-right { color: #FFC700; font-size: 0.85rem; }
+        .prosperidade-indice { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; position: sticky; top: 0; z-index: 5; background: rgba(13,13,16,0.92); padding: 10px 0; border-bottom: 1px solid rgba(255,199,0,0.15); }
+        .prosperidade-indice a { font-size: 0.78rem; color: #FFC700; text-decoration: none; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,199,0,0.25); background: rgba(255,199,0,0.06); }
+        .prosperidade-section { margin-bottom: 22px; padding: 18px; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); }
+        .prosperidade-section h4 { color: #FFC700; font-size: 0.95rem; margin-bottom: 10px; font-family: 'Lora', Georgia, serif; }
+        .prosperidade-decreto { font-style: italic; color: #ECECEC; border-left: 3px solid #FFC700; padding-left: 14px; }
+        .prosperidade-ilustracao { border: 1px solid rgba(255,199,0,0.45); background: rgba(255,199,0,0.06); }
+        .prosperidade-gancho { color: #FFC700; font-weight: 600; margin-top: 8px; }
+        .prosperidade-sub { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); }
+        .prosperidade-sub strong { display: block; font-size: 0.82rem; color: #A1A1A1; margin-bottom: 6px; }
+        .prosperidade-tts-btn { font-size: 0.78rem; padding: 5px 10px; margin-left: 8px; vertical-align: middle; }
+        @media (max-width: 480px) {
+            .receba-item[data-tipo="prosperidade-dormir"] span .prosperidade-label-long { display: none; }
+            .receba-item[data-tipo="prosperidade-dormir"] span .prosperidade-label-short { display: inline; }
+        }
+        .receba-item[data-tipo="prosperidade-dormir"] span .prosperidade-label-short { display: none; }
         .receba-hint { font-size: 0.82rem; color: #A1A1A1; line-height: 1.45; margin: 0 0 12px; }
         .receba-content { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
         .receba-content.show { display: block; }
@@ -295,6 +310,10 @@
                 </div>
                 <div class="receba-item" data-tipo="plano">
                     <span><i class="fas fa-list-ol" style="margin-right:8px"></i>Devocional diário</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="receba-item" data-tipo="prosperidade-dormir" title="Prosperidade antes de dormir — Do Fracasso ao Legado">
+                    <span><i class="fas fa-moon" style="margin-right:8px"></i><span class="prosperidade-label-long">Prosperidade antes de dormir</span><span class="prosperidade-label-short">Prosperidade</span></span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="estudo-livro">
@@ -384,6 +403,25 @@
                     <button type="button" class="bible-btn secondary" id="plano-btn-mark-read" title="Marcar este dia como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
                 </div>
                 <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Escolha uma data ou um número de dia e clique em Carregar, ou use Dia de hoje.</p></div>
+            </div>
+            <div id="receba-prosperidade-dormir" class="receba-content">
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:14px"><strong style="color:#FFC700">Do Fracasso ao Legado</strong> — 31 Ativações (Provérbios 1–31). Ritual de prosperidade antes de dormir.</p>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+                    <div>
+                        <label for="prosperidade-day" style="font-size:0.82rem;color:#A1A1A1;display:block;margin-bottom:6px">Ativação (1–31)</label>
+                        <input type="number" id="prosperidade-day" min="1" max="31" style="width:80px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC"/>
+                    </div>
+                    <button type="button" class="bible-btn" id="btn-prosperidade-load"><i class="fas fa-book-open"></i> Carregar</button>
+                    <button type="button" class="bible-btn secondary" id="btn-prosperidade-today"><i class="fas fa-moon"></i> Ativação de hoje</button>
+                    <button type="button" class="bible-btn secondary" id="btn-prosperidade-prev"><i class="fas fa-chevron-left"></i></button>
+                    <button type="button" class="bible-btn secondary" id="btn-prosperidade-next"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <p id="prosperidade-hint" style="font-size:0.88rem;color:#FFC700;margin:0 0 12px"></p>
+                <div class="bible-actions" id="prosperidade-actions" style="display:none;margin-bottom:16px;flex-wrap:wrap;gap:10px;align-items:center">
+                    <button type="button" class="bible-btn" id="prosperidade-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                    <button type="button" class="bible-btn secondary" id="prosperidade-btn-mark-read"><i class="far fa-check-circle"></i> Marcar como lido</button>
+                </div>
+                <div id="prosperidade-content"><p style="color:#A1A1A1;font-size:0.9rem">Escolha uma Ativação ou use <strong>Ativação de hoje</strong> (dia do mês 1–31).</p></div>
             </div>
             <div id="receba-estudo-livro" class="receba-content">
                 <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Introduções e estudos publicados no cartão. Conteúdo é definido pelo administrador; para gerar ou revisar estudos com apoio de IA, use o <strong>painel Conecta King</strong> (gestão da Bíblia).</p>
@@ -747,6 +785,7 @@
                     if (content) content.classList.add('show');
                     if (tipo === 'salmo' && !salmoLoaded) loadSalmo();
                     if (tipo === 'plano') initPlanoTabIfNeeded();
+                    if (tipo === 'prosperidade-dormir') initProsperidadeTabIfNeeded();
                     if (tipo === 'devocional-biblia-inteira') {
                         if (getDevBibliaStartDate()) { showDevBibliaSequence(); loadDevocionalBibliaInteira(true); }
                         else { showDevBibliaModeChoice(); }
@@ -1166,6 +1205,185 @@
                 }
                 shareText(parts.join('\n'));
             });
+
+            // --- Prosperidade antes de dormir ---
+            var prosperidadeTabInited = false;
+            var currentProsperidadeData = null;
+            var currentProsperidadeNum = null;
+
+            function prosperidadeCalendarDay() {
+                return Math.min(31, Math.max(1, new Date().getDate()));
+            }
+
+            function escProsperidade(s) {
+                if (s == null || s === '') return '';
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function prosperidadeSectionHtml(id, title, body, extraClass, highlight) {
+                if (!body) return '';
+                var cls = 'prosperidade-section' + (extraClass ? ' ' + extraClass : '');
+                var ttsBtn = '<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="' + id + '" title="Ouvir esta seção"><i class="fas fa-volume-up"></i></button>';
+                return '<div class="' + cls + '" id="' + id + '"><h4>' + escProsperidade(title) + ttsBtn + '</h4><div class="prosperidade-body' + (highlight ? ' prosperidade-decreto' : '') + '">' + escProsperidade(body).replace(/\n/g, '<br>') + '</div></div>';
+            }
+
+            function renderProsperidadeAtivacao(a, num) {
+                if (!a || a.not_published) {
+                    var nearest = a && a.nearest_published;
+                    var html = '<div class="bible-error" style="margin-bottom:16px">' + escProsperidade((a && a.message) || 'Ativação não publicada.') + '</div>';
+                    if (nearest && nearest.activation_number) {
+                        html += '<p style="color:#A1A1A1;margin-bottom:12px">Ativação publicada mais próxima: <strong style="color:#FFC700">' + nearest.activation_number + '</strong></p>';
+                        html += '<button type="button" class="bible-btn" id="btn-prosperidade-nearest"><i class="fas fa-book-open"></i> Abrir Ativação ' + nearest.activation_number + '</button>';
+                    }
+                    return html;
+                }
+                var indice = '<nav class="prosperidade-indice" aria-label="Índice da Ativação">' +
+                    '<a href="#pros-sec-decreto">Decreto</a><a href="#pros-sec-fundamento">Fundamento</a><a href="#pros-sec-diagnostico">Diagnóstico</a>' +
+                    '<a href="#pros-sec-estrada">Estrada KING</a><a href="#pros-sec-ilustracao">Ilustração</a><a href="#pros-sec-reprogram">Reprogramação</a>' +
+                    '<a href="#pros-sec-treino">Treino do Rei</a><a href="#pros-sec-sentenca">Sentença</a></nav>';
+                var h = '<div style="margin-bottom:16px"><span style="background:rgba(255,199,0,0.15);color:#FFC700;padding:4px 10px;border-radius:8px;font-size:0.82rem">Do Fracasso ao Legado</span></div>';
+                h += '<h3 style="color:#ECECEC;font-family:Lora,Georgia,serif;margin-bottom:6px">' + escProsperidade(a.titulo || ('Ativação ' + num)) + '</h3>';
+                h += '<p style="color:#A1A1A1;font-size:0.9rem;margin-bottom:16px">Ativação ' + num + ' de 31 — ' + escProsperidade(a.proverbs_ref || ('Provérbios ' + num)) + '</p>';
+                h += indice;
+                h += prosperidadeSectionHtml('pros-sec-decreto', 'Decreto de entrada', a.decreto_entrada, '', true);
+                h += prosperidadeSectionHtml('pros-sec-fundamento', 'Fundamento sagrado', a.fundamento_sagrado);
+                h += prosperidadeSectionHtml('pros-sec-diagnostico', 'Diagnóstico da escassez', a.diagnostico_escassez);
+                h += prosperidadeSectionHtml('pros-sec-estrada', 'Na estrada com o KING', a.estrada_com_king);
+                h += prosperidadeSectionHtml('pros-sec-ilustracao', 'Diretriz de ilustração', a.diretriz_ilustracao, 'prosperidade-ilustracao');
+                var repro = '';
+                if (a.mentalidade_travada) repro += '<div class="prosperidade-sub"><strong>Mentalidade travada</strong>' + escProsperidade(a.mentalidade_travada).replace(/\n/g, '<br>') + '</div>';
+                if (a.nova_mentalidade) repro += '<div class="prosperidade-sub"><strong>Nova mentalidade</strong>' + escProsperidade(a.nova_mentalidade).replace(/\n/g, '<br>') + '</div>';
+                if (a.exercicio_fixacao) repro += '<div class="prosperidade-sub"><strong>Exercício de fixação</strong>' + escProsperidade(a.exercicio_fixacao).replace(/\n/g, '<br>') + '</div>';
+                if (a.ie_chave) repro += '<div class="prosperidade-sub"><strong>IE chave</strong>' + escProsperidade(a.ie_chave).replace(/\n/g, '<br>') + '</div>';
+                if (repro) h += '<div class="prosperidade-section" id="pros-sec-reprogram"><h4>Reprogramação mental<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="pros-sec-reprogram"><i class="fas fa-volume-up"></i></button></h4>' + repro + '</div>';
+                var treino = '';
+                if (a.treino_negocios) treino += '<div class="prosperidade-sub"><strong>Tarefa de negócios</strong>' + escProsperidade(a.treino_negocios).replace(/\n/g, '<br>') + '</div>';
+                if (a.treino_altar) treino += '<div class="prosperidade-sub"><strong>Tarefa de altar</strong>' + escProsperidade(a.treino_altar).replace(/\n/g, '<br>') + '</div>';
+                if (treino) h += '<div class="prosperidade-section" id="pros-sec-treino"><h4>Treino do Rei<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="pros-sec-treino"><i class="fas fa-volume-up"></i></button></h4>' + treino + '</div>';
+                h += prosperidadeSectionHtml('pros-sec-sentenca', 'Sentença de ativação', a.sentenca_ativacao, '', true);
+                if (a.proximo_episodio) h += '<div class="prosperidade-section"><h4>Próximo episódio</h4><p class="prosperidade-gancho">' + escProsperidade(a.proximo_episodio).replace(/\n/g, '<br>') + '</p></div>';
+                return h;
+            }
+
+            function bindProsperidadeTts(container) {
+                if (!container) return;
+                container.querySelectorAll('.prosperidade-tts-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var tid = btn.getAttribute('data-tts-target');
+                        var sec = tid ? document.getElementById(tid) : null;
+                        var text = getTextFromElement(sec);
+                        if (text) speakText(text, 'sel-voice-public');
+                    });
+                });
+            }
+
+            async function bindProsperidadeMarkRead(n) {
+                var btn = document.getElementById('prosperidade-btn-mark-read');
+                if (!btn) return;
+                var vid = getVisitorId();
+                try {
+                    var rs = await fetch(API_URL + '/api/bible/prosperidade/read-status?visitor_id=' + encodeURIComponent(vid) + '&activations=' + n);
+                    var rj = await rs.json().catch(function() { return {}; });
+                    var read = (rj.data && rj.data.read) || [];
+                    var isRead = read.some(function(x) { return x.activation_number === n; });
+                    btn.innerHTML = isRead ? '<i class="fas fa-check-circle"></i> Lido' : '<i class="far fa-check-circle"></i> Marcar como lido';
+                } catch (e) {}
+                btn.onclick = async function() {
+                    try {
+                        await fetch(API_URL + '/api/bible/prosperidade/mark-read', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ activation_number: n, visitor_id: vid, slug: slug })
+                        });
+                        btn.innerHTML = '<i class="fas fa-check-circle"></i> Lido';
+                    } catch (e) { alert('Erro ao marcar como lido.'); }
+                };
+            }
+
+            async function loadProsperidadeAtivacao(n) {
+                var el = document.getElementById('prosperidade-content');
+                var hint = document.getElementById('prosperidade-hint');
+                var actions = document.getElementById('prosperidade-actions');
+                var num = parseInt(n, 10);
+                if (num < 1 || num > 31) { alert('Ativação entre 1 e 31.'); return; }
+                document.getElementById('prosperidade-day').value = num;
+                currentProsperidadeNum = num;
+                if (hint) hint.textContent = 'Ativação ' + num + ' — dia ' + num + ' do mês no calendário.';
+                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando Ativação...</p></div>';
+                if (actions) actions.style.display = 'none';
+                try {
+                    var res = await fetch(API_URL + '/api/bible/prosperidade/ativacao/' + num);
+                    var json = await res.json().catch(function() { return {}; });
+                    var payload = json.data || {};
+                    if (payload.not_published) {
+                        currentProsperidadeData = payload;
+                        el.innerHTML = renderProsperidadeAtivacao(payload, num);
+                        var nearBtn = document.getElementById('btn-prosperidade-nearest');
+                        if (nearBtn && payload.nearest_published) {
+                            nearBtn.addEventListener('click', function() {
+                                loadProsperidadeAtivacao(payload.nearest_published.activation_number);
+                            });
+                        }
+                        return;
+                    }
+                    if (!payload.activation_number && !payload.titulo) throw new Error(json.message || 'Ativação não encontrada.');
+                    currentProsperidadeData = payload;
+                    el.innerHTML = renderProsperidadeAtivacao(payload, num);
+                    bindProsperidadeTts(el);
+                    bindProsperidadeMarkRead(num);
+                    if (actions) actions.style.display = 'flex';
+                } catch (e) {
+                    el.innerHTML = '<div class="bible-error">' + escProsperidade(e.message || 'Erro ao carregar.') + '</div>';
+                }
+            }
+
+            function initProsperidadeTabIfNeeded() {
+                if (prosperidadeTabInited) return;
+                prosperidadeTabInited = true;
+                var day = prosperidadeCalendarDay();
+                var pd = document.getElementById('prosperidade-day');
+                if (pd && !String(pd.value || '').trim()) pd.value = day;
+            }
+
+            document.getElementById('btn-prosperidade-load').addEventListener('click', function() {
+                loadProsperidadeAtivacao(parseInt(document.getElementById('prosperidade-day').value, 10));
+            });
+            document.getElementById('btn-prosperidade-today').addEventListener('click', function() {
+                var d = prosperidadeCalendarDay();
+                document.getElementById('prosperidade-day').value = d;
+                loadProsperidadeAtivacao(d);
+            });
+            document.getElementById('btn-prosperidade-prev').addEventListener('click', function() {
+                var n = parseInt(document.getElementById('prosperidade-day').value, 10) || 1;
+                loadProsperidadeAtivacao(Math.max(1, n - 1));
+            });
+            document.getElementById('btn-prosperidade-next').addEventListener('click', function() {
+                var n = parseInt(document.getElementById('prosperidade-day').value, 10) || 1;
+                loadProsperidadeAtivacao(Math.min(31, n + 1));
+            });
+            document.getElementById('prosperidade-btn-share').addEventListener('click', function() {
+                if (!currentProsperidadeData || currentProsperidadeData.not_published) return;
+                var a = currentProsperidadeData;
+                var url = window.location.origin + '/' + slug + '/biblia?tab=prosperidade&ativacao=' + (currentProsperidadeNum || '');
+                var parts = ['Prosperidade antes de dormir — ' + (a.titulo || 'Ativação ' + currentProsperidadeNum), a.proverbs_ref || '', '', a.sentenca_ativacao || '', '', url];
+                shareText(parts.filter(Boolean).join('\n'));
+            });
+
+            (function prosperidadeDeepLink() {
+                try {
+                    var qs = new URLSearchParams(window.location.search);
+                    var tab = qs.get('tab');
+                    var act = parseInt(qs.get('ativacao'), 10);
+                    if (tab === 'prosperidade' || tab === 'prosperidade-dormir') {
+                        var item = document.querySelector('.receba-item[data-tipo="prosperidade-dormir"]');
+                        if (item) item.click();
+                        initProsperidadeTabIfNeeded();
+                        if (act >= 1 && act <= 31) loadProsperidadeAtivacao(act);
+                        else loadProsperidadeAtivacao(prosperidadeCalendarDay());
+                    }
+                } catch (e) {}
+            })();
 
             async function loadEstudoLivroList() {
                 var listEl = document.getElementById('estudo-livro-list');

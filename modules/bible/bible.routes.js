@@ -17,6 +17,12 @@ router.post('/devotional/mark-read', asyncHandler(controller.markDevotionalRead)
 router.get('/devotional/read-status', asyncHandler(controller.getDevotionalReadStatus));
 router.get('/reading-plan', asyncHandler(controller.getReadingPlan));
 router.get('/reading-plan/day/:day', asyncHandler(controller.getReadingPlanDay));
+router.get('/prosperidade/ativacao/:n', asyncHandler(controller.getProsperidadeAtivacao));
+router.get('/prosperidade/hoje', asyncHandler(controller.getProsperidadeHoje));
+router.get('/prosperidade/list', asyncHandler(controller.getProsperidadeList));
+router.get('/prosperidade/nearest-published/:n', asyncHandler(controller.getProsperidadeNearestPublished));
+router.post('/prosperidade/mark-read', asyncHandler(controller.markProsperidadeRead));
+router.get('/prosperidade/read-status', asyncHandler(controller.getProsperidadeReadStatus));
 router.get('/study/books', asyncHandler(controller.getStudyBooks));
 router.get('/study/book/:bookId', asyncHandler(controller.getBookStudy));
 router.get('/study/book/:bookId/chapter/:chapter', asyncHandler(controller.getChapterStudy));
