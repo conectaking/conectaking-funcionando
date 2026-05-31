@@ -8,9 +8,19 @@ function normalizeHeader(line) {
         .replace(/^#+\s*/, '')
         .replace(/^\*+\s*/, '')
         .replace(/\*+$/, '')
+        .replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '')
+        .replace(/[^\w\s():/\-–—]/gu, ' ')
+        .replace(/\s+/g, ' ')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .toUpperCase();
+        .toUpperCase()
+        .trim();
+}
+
+function extractActivationTitle(line) {
+    const raw = String(line || '').trim().replace(/^#+\s*/, '');
+    const m = raw.match(/^ATIVA[ÇC][AÃ]O\s+\d+\s*[:\-–—]\s*(.+)$/i);
+    return m ? m[1].trim() : '';
 }
 
 const SECTION_MAP = [
@@ -33,12 +43,18 @@ const SECTION_MAP = [
 const REPROGRAM_PARENT = ['REPROGRAMACAO MENTAL', 'REPROGRAMACAO MENTAL E IE'];
 const TREINO_PARENT = ['TREINO DO REI'];
 
-function headerToKey(norm) {
+function headerToKey(norm, rawLine) {
+    const actTitle = extractActivationTitle(rawLine || norm);
+    if (actTitle) return { key: 'titulo', inline: actTitle };
+
     for (const sec of SECTION_MAP) {
-        if (sec.headers.some((h) => norm === h || norm.startsWith(h))) return sec.key;
+        if (sec.headers.some((h) => norm === h || norm.startsWith(h + ' ') || norm.endsWith(' ' + h))) return { key: sec.key };
+        for (const h of sec.headers) {
+            if (norm.includes(h) && norm.length < h.length + 40) return { key: sec.key };
+        }
     }
-    if (REPROGRAM_PARENT.some((h) => norm === h || norm.startsWith(h))) return '__reprogram_parent__';
-    if (TREINO_PARENT.some((h) => norm === h || norm.startsWith(h))) return '__treino_parent__';
+    if (REPROGRAM_PARENT.some((h) => norm === h || norm.startsWith(h))) return { key: '__reprogram_parent__' };
+    if (TREINO_PARENT.some((h) => norm === h || norm.startsWith(h))) return { key: '__treino_parent__' };
     return null;
 }
 
@@ -60,10 +76,15 @@ function parsePastedActivation(text) {
 
     for (const line of lines) {
         const norm = normalizeHeader(line);
-        const key = headerToKey(norm);
-        if (key && (norm.length < 80 || !line.includes('.'))) {
+        const hit = headerToKey(norm, line);
+        if (hit && (norm.length < 100 || !line.includes('.'))) {
             flush();
-            currentKey = key;
+            if (hit.inline) {
+                sections.titulo = hit.inline;
+                currentKey = null;
+            } else {
+                currentKey = hit.key;
+            }
             continue;
         }
         if (currentKey) buffer.push(line);

@@ -21,12 +21,19 @@ function activationForToday(date) {
 }
 
 function validateForPublish(row) {
+    const labels = {
+        titulo: 'Título',
+        decreto_entrada: 'Decreto de entrada',
+        fundamento_sagrado: 'Fundamento sagrado',
+        sentenca_ativacao: 'Sentença de ativação'
+    };
     const missing = [];
     if (!String(row.titulo || '').trim()) missing.push('titulo');
     if (!String(row.decreto_entrada || '').trim()) missing.push('decreto_entrada');
     if (!String(row.fundamento_sagrado || '').trim()) missing.push('fundamento_sagrado');
     if (!String(row.sentenca_ativacao || '').trim()) missing.push('sentenca_ativacao');
-    return missing;
+    if (!missing.length) return [];
+    return missing.map((k) => labels[k] || k);
 }
 
 async function getAtivacaoPublic(n) {
@@ -116,7 +123,7 @@ async function adminPublish(n, published) {
         const row = await repo.getByNumber(num);
         const missing = validateForPublish(row || {});
         if (missing.length) {
-            throw new Error('Campos obrigatórios faltando: ' + missing.join(', '));
+            throw new Error('Campos obrigatórios faltando: ' + missing.join(', ') + '. Clique em "Dividir seções" ou salve com texto colado na aba Colar.');
         }
     }
     const row = await repo.setPublished(num, published);

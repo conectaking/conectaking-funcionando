@@ -257,7 +257,9 @@ const skipOptions = (req) => {
 const skipAdminGenerationJobPoll = (req) => {
     if (skipOptions(req)) return true;
     const url = req.originalUrl || req.url || '';
-    return req.method === 'GET' && url.indexOf('/devotionals-365/generation-job/') !== -1;
+    if (req.method !== 'GET') return false;
+    return url.indexOf('/devotionals-365/generation-job/') !== -1
+        || url.indexOf('/prosperidade/generation-job/') !== -1;
 };
 
 const authLimiter = rateLimit({
