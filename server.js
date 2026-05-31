@@ -859,6 +859,14 @@ app.get('/admin-devocionais-365.html', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.type('html').sendFile(adminDev365HtmlPath);
 });
+const adminProsperidadeHtmlPath = path.join(__dirname, 'public', 'admin-prosperidade-31.html');
+app.get('/admin-prosperidade-31.html', (req, res) => {
+    if (!fs.existsSync(adminProsperidadeHtmlPath)) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.type('html').sendFile(adminProsperidadeHtmlPath);
+});
 // Painel: cópia em public/ para testes pela URL da API (Render). O site em produção
 // na Hostinger usa o dashboard.html do public_html do cliente — não confundir.
 const dashboardHtmlPath = path.join(__dirname, 'public', 'dashboard.html');
