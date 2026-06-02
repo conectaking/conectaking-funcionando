@@ -1394,6 +1394,15 @@
             var panel = document.getElementById('pros-panel-' + ed);
             if (panel) panel.classList.add('active');
             if (ed === 'preview') prosRenderPreview(prosFieldsFromForm());
+            if (ed === 'campos' && prosCurrentN) {
+                var pasteEl = document.getElementById('pros-paste-full');
+                var paste = pasteEl ? pasteEl.value.trim() : '';
+                if (paste) {
+                    prosParsePasteAlways()
+                        .then(function () { flash('Campos preenchidos a partir do texto colado.', 'ok'); })
+                        .catch(function (e) { flash(e.message, 'err'); });
+                }
+            }
         });
     });
 
