@@ -295,11 +295,13 @@
                     <div class="field-pros"><label>Próximo episódio</label><textarea id="pros-f-proximo"></textarea></div>
                 </div>
                 <div id="pros-panel-preview" class="panel-ed"><div id="pros-preview-host" style="font-size:0.9rem;color:#ccc"></div></div>
-                <div class="row" style="margin-top:16px">
-                    <button type="button" class="btn btn-secondary" id="btn-pros-save"><i class="fas fa-save"></i> Salvar rascunho</button>
-                    <button type="button" class="btn" id="btn-pros-publish"><i class="fas fa-check"></i> Publicar</button>
+                <div class="row" style="margin-top:16px;flex-wrap:wrap">
+                    <button type="button" class="btn" id="btn-pros-save-activation"><i class="fas fa-save"></i> Salvar ativação</button>
+                    <button type="button" class="btn btn-secondary" id="btn-pros-save"><i class="fas fa-file-alt"></i> Salvar rascunho</button>
+                    <button type="button" class="btn" id="btn-pros-publish" style="background:#2a2a2a;border:1px solid #FFC700;color:#FFC700"><i class="fas fa-check"></i> Publicar</button>
                     <button type="button" class="btn btn-secondary" id="btn-pros-unpublish"><i class="fas fa-eye-slash"></i> Despublicar</button>
                 </div>
+                <p id="pros-save-hint" style="font-size:0.82rem;color:#888;margin-top:10px"></p>
             </div>
         </section>
 
@@ -1211,7 +1213,11 @@
     function prosApiJson(path, opts) {
         return apiFetch(path, opts).then(function (r) {
             return r.json().then(function (j) {
-                if (!r.ok || j.success === false) throw new Error((j && j.message) || r.statusText);
+                if (!r.ok || j.success === false) {
+                    var msg = (j && j.message) || r.statusText;
+                    if (j && j.missing && j.missing.length) msg += ' — Falta: ' + j.missing.join(', ');
+                    throw new Error(msg);
+                }
                 return j;
             });
         });
@@ -1270,25 +1276,76 @@
         return fields;
     }
 
-    function prosRequiredFieldsMissing() {
-        var f = prosFieldsFromForm();
-        return ['titulo', 'decreto_entrada', 'fundamento_sagrado', 'sentenca_ativacao'].filter(function (k) {
-            return !String(f[k] || '').trim();
-        });
+    function prosUpdateSaveHint(d) {
+        var el = document.getElementById('pros-save-hint');
+        if (!el) return;
+        if (!d) { el.textContent = ''; return; }
+        if (d.can_publish) {
+            el.textContent = 'Ativação pronta para publicar na Bíblia pública.';
+            el.style.color = '#86efac';
+        } else if (d.missing_for_publish && d.missing_for_publish.length) {
+            el.textContent = 'Para publicar, falta: ' + d.missing_for_publish.join(', ') + '.';
+            el.style.color = '#f5a097';
+        } else {
+            el.textContent = '';
+        }
     }
 
-    function prosParsePasteIfNeeded() {
+    function prosParsePasteAlways() {
         if (!prosCurrentN) return Promise.resolve();
         var pasteEl = document.getElementById('pros-paste-full');
         var paste = pasteEl ? pasteEl.value.trim() : '';
         if (!paste) return Promise.resolve();
-        if (!prosRequiredFieldsMissing().length) return Promise.resolve();
         return prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/parse-paste', {
             method: 'POST',
             body: JSON.stringify({ text: paste })
         }).then(function (json) {
             prosFillForm((json.data && json.data.sections) || {});
         });
+    }
+
+    function prosSaveActivation() {
+        if (!prosCurrentN) return Promise.resolve();
+        var btn = document.getElementById('btn-pros-save-activation');
+        if (btn) btn.disabled = true;
+        var payload = prosPayloadForSave();
+        return prosParsePasteAlways()
+            .then(function () {
+                return apiFetch('/api/admin/bible/prosperidade/' + prosCurrentN + '/save-activation', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                }).then(function (r) {
+                    return r.json().then(function (j) {
+                        if (r.status === 404) {
+                            return apiFetch('/api/admin/bible/prosperidade/' + prosCurrentN, {
+                                method: 'PUT',
+                                body: JSON.stringify(payload)
+                            }).then(function (r2) {
+                                return r2.json().then(function (j2) {
+                                    if (!r2.ok || !j2.success) throw new Error((j2 && j2.message) || 'Erro ao salvar.');
+                                    return j2;
+                                });
+                            });
+                        }
+                        if (!r.ok || !j.success) {
+                            var msg = (j && j.message) || 'Erro ao salvar.';
+                            if (j && j.missing && j.missing.length) msg += ' — Falta: ' + j.missing.join(', ');
+                            throw new Error(msg);
+                        }
+                        return j;
+                    });
+                });
+            })
+            .then(function (json) {
+                var d = (json && json.data) || {};
+                prosFillForm(d);
+                document.getElementById('pros-ed-status').textContent = d.status || '';
+                prosUpdateSaveHint(d);
+                flash(json.message || 'Ativação salva.', 'ok');
+                loadProsperidadeGrid();
+                return d;
+            })
+            .finally(function () { if (btn) btn.disabled = false; });
     }
 
     function loadProsperidadeGrid() {
@@ -1324,6 +1381,7 @@
                 document.getElementById('pros-cheatsheet').innerHTML = '<strong>Fase ' + n + ':</strong> ' + (st.titulo || '') + ' — ' + (st.resumo || '');
                 prosFillForm(d);
                 prosRenderPreview(d);
+                prosUpdateSaveHint(d);
             })
             .catch(function (e) { flash(e.message, 'err'); });
     }
@@ -1373,40 +1431,44 @@
             .finally(function () { btn.disabled = false; });
     });
 
+    document.getElementById('btn-pros-save-activation').addEventListener('click', function () {
+        if (!prosCurrentN) return;
+        prosSaveActivation().catch(function (e) {
+            flash(e.message, 'err');
+            document.querySelector('.tabs-ed button[data-ed="campos"]').click();
+        });
+    });
+
     document.getElementById('btn-pros-save').addEventListener('click', function () {
         if (!prosCurrentN) return;
-        prosParsePasteIfNeeded()
-            .then(function () {
-                return prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN, { method: 'PUT', body: JSON.stringify(prosPayloadForSave()) });
-            })
-            .then(function (json) {
-                prosFillForm((json && json.data) || {});
-                flash('Rascunho salvo.', 'ok');
-                loadProsperidadeGrid();
-            })
-            .catch(function (e) { flash(e.message, 'err'); });
+        prosSaveActivation().catch(function (e) { flash(e.message, 'err'); });
     });
 
     document.getElementById('btn-pros-publish').addEventListener('click', function () {
         if (!prosCurrentN) return;
         var payload = prosPayloadForSave();
-        prosParsePasteIfNeeded()
-            .then(function () {
-                return prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN, { method: 'PUT', body: JSON.stringify(prosPayloadForSave()) });
-            })
-            .then(function () {
+        prosSaveActivation()
+            .then(function (d) {
+                if (d && d.can_publish === false) {
+                    throw new Error('Para publicar, falta: ' + (d.missing_for_publish || []).join(', ') + '. Cole a Ativação completa e use Salvar ativação.');
+                }
                 return prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/publish', {
                     method: 'PATCH',
                     body: JSON.stringify({ published: true, text: payload.text || '' })
                 });
             })
             .then(function (json) {
-                prosFillForm((json && json.data) || {});
-                flash('Ativação publicada!', 'ok');
+                var d = (json && json.data) || {};
+                prosFillForm(d);
+                prosUpdateSaveHint(d);
+                flash('Ativação publicada na Bíblia!', 'ok');
                 loadProsperidadeGrid();
                 openProsperidadeEditor(prosCurrentN);
             })
-            .catch(function (e) { flash(e.message, 'err'); });
+            .catch(function (e) {
+                flash(e.message, 'err');
+                document.querySelector('.tabs-ed button[data-ed="campos"]').click();
+            });
     });
 
     document.getElementById('btn-pros-unpublish').addEventListener('click', function () {

@@ -102,13 +102,18 @@ function trimField(v) {
     return v == null ? '' : String(v).trim();
 }
 
-function mergeDtoFromBody(body, existing) {
+function mergeDtoFromBody(body, existing, options) {
+    options = options || {};
     let dto = parseSvc.bodyToDto(body || {});
     const rawText = body && (body.text || body.paste || body.full_text);
+    let parseWarning = null;
     if (rawText && trimField(rawText)) {
         const parsed = parseSvc.parsePastedActivation(rawText);
         if (parsed.ok && parsed.sections) {
             dto = { ...dto, ...parsed.sections };
+        } else if (parsed.error) {
+            parseWarning = parsed.error;
+            if (options.strictParse) throw new Error(parsed.error);
         }
     }
     const payload = {};
@@ -119,14 +124,26 @@ function mergeDtoFromBody(body, existing) {
         if (trimmed === '' && existing && trimField(existing[key])) continue;
         payload[key] = val;
     }
-    return payload;
+    return { payload, parseWarning };
+}
+
+function attachPublishHints(dto, row) {
+    const missing = validateForPublish(row || dto || {});
+    dto.missing_for_publish = missing;
+    dto.can_publish = missing.length === 0;
+    return dto;
 }
 
 async function adminSave(n, body, options) {
     const num = clampActivation(n);
     if (!num) throw new Error('Ativação deve ser entre 1 e 31.');
     const existing = await repo.getByNumber(num);
-    const payload = mergeDtoFromBody(body, existing);
+    const merged = mergeDtoFromBody(body, existing, options);
+    const payload = merged.payload;
+    if (!payload.titulo || !trimField(payload.titulo)) {
+        const phase = aiSvc.getPhaseInfo(num);
+        if (phase && phase.titulo) payload.titulo = phase.titulo;
+    }
     if (options && options.mergeSource) {
         const prev = existing && existing.content_source;
         if (prev === 'ai' && options.mergeSource === 'manual') payload.content_source = 'mixed';
@@ -136,8 +153,9 @@ async function adminSave(n, body, options) {
     if (!payload.storytelling_fase) payload.storytelling_fase = num;
     const row = await repo.updateActivation(num, payload);
     if (!row) throw new Error('Ativação não encontrada na base.');
-    const dto = repo.rowToDto(row);
+    const dto = attachPublishHints(repo.rowToDto(row), row);
     dto.status = repo.computeStatus(row);
+    if (merged.parseWarning) dto.parse_warning = merged.parseWarning;
     return dto;
 }
 
@@ -145,18 +163,20 @@ async function adminPublish(n, published, body) {
     const num = clampActivation(n);
     if (!num) throw new Error('Ativação deve ser entre 1 e 31.');
     if (published && body && trimField(body.text || body.paste || body.full_text)) {
-        await adminSave(num, body, { mergeSource: 'manual' });
+        await adminSave(num, body, { mergeSource: 'manual', strictParse: false });
     }
     if (published) {
         const row = await repo.getByNumber(num);
         const missing = validateForPublish(row || {});
         if (missing.length) {
-            throw new Error('Campos obrigatórios faltando: ' + missing.join(', ') + '. Cole o texto completo e clique em Publicar (ou use Dividir seções).');
+            const err = new Error('Para publicar, preencha: ' + missing.join(', ') + '. Cole a Ativação completa (com DECRETO DE ENTRADA e FUNDAMENTO SAGRADO) e clique em Salvar ativação.');
+            err.missing = missing;
+            throw err;
         }
     }
     const row = await repo.setPublished(num, published);
     if (!row) throw new Error('Ativação não encontrada na base.');
-    const dto = repo.rowToDto(row);
+    const dto = attachPublishHints(repo.rowToDto(row), row);
     dto.status = repo.computeStatus(row);
     return dto;
 }

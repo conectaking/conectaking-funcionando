@@ -89,6 +89,20 @@ const SECTION_MAP = [
 const REPROGRAM_PARENT = ['REPROGRAMACAO MENTAL', 'REPROGRAMACAO MENTAL E IE'];
 const TREINO_PARENT = ['TREINO DO REI'];
 
+function tryInlineSection(line, norm) {
+    if (!line || !line.includes(':')) return null;
+    const afterColon = line.split(':').slice(1).join(':').trim();
+    if (!afterColon) return null;
+    for (const sec of SECTION_MAP) {
+        for (const h of sec.headers) {
+            if (norm === h || norm.startsWith(h + ' ')) {
+                return { key: sec.key, inline: afterColon };
+            }
+        }
+    }
+    return null;
+}
+
 function headerToKey(norm, rawLine) {
     const actTitle = extractActivationTitle(rawLine || norm);
     if (actTitle) return { key: 'titulo', inline: actTitle };
@@ -180,6 +194,13 @@ function parsePastedActivation(text) {
 
     for (const line of lines) {
         const norm = normalizeHeader(line);
+        const inlineSec = tryInlineSection(line, norm);
+        if (inlineSec) {
+            flush();
+            sections[inlineSec.key] = inlineSec.inline;
+            currentKey = null;
+            continue;
+        }
         const hit = headerToKey(norm, line);
         if (hit && isLikelyHeaderLine(line, norm, hit)) {
             flush();

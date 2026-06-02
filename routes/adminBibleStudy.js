@@ -635,6 +635,23 @@ router.get('/bible/prosperidade/:n', protectAdmin, async (req, res) => {
     }
 });
 
+router.post('/bible/prosperidade/:n/save-activation', protectAdmin, async (req, res) => {
+    const n = parseInt(req.params.n, 10);
+    if (!n || n < 1 || n > 31) {
+        return res.status(400).json({ success: false, message: 'Ativação deve ser entre 1 e 31.' });
+    }
+    try {
+        const data = await prosperidadeService.adminSave(n, req.body || {}, { mergeSource: 'manual' });
+        const msg = data.can_publish
+            ? 'Ativação ' + n + ' salva. Já pode publicar.'
+            : 'Ativação ' + n + ' salva. Falta para publicar: ' + (data.missing_for_publish || []).join(', ');
+        res.json({ success: true, message: msg, data });
+    } catch (e) {
+        logger.error('admin prosperidade save-activation:', e);
+        res.status(400).json({ success: false, message: e.message || 'Erro ao salvar.' });
+    }
+});
+
 router.put('/bible/prosperidade/:n', protectAdmin, async (req, res) => {
     const n = parseInt(req.params.n, 10);
     if (!n || n < 1 || n > 31) {
@@ -664,7 +681,11 @@ router.patch('/bible/prosperidade/:n/publish', protectAdmin, async (req, res) =>
         });
     } catch (e) {
         logger.error('admin prosperidade publish:', e);
-        res.status(400).json({ success: false, message: e.message || 'Erro ao publicar.' });
+        res.status(400).json({
+            success: false,
+            message: e.message || 'Erro ao publicar.',
+            missing: e.missing || null
+        });
     }
 });
 
