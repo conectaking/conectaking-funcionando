@@ -228,6 +228,17 @@
         .prosperidade-gancho { color: #FFC700; font-weight: 600; margin-top: 8px; }
         .prosperidade-sub { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); }
         .prosperidade-sub strong { display: block; font-size: 0.82rem; color: #A1A1A1; margin-bottom: 6px; }
+        .prosperidade-frase { margin: 12px 0; padding: 14px 16px 14px 48px; position: relative; border-left: 3px solid #FFC700; background: rgba(255,199,0,0.08); border-radius: 0 10px 10px 0; }
+        .prosperidade-frase-num { position: absolute; left: 14px; top: 14px; width: 24px; height: 24px; border-radius: 50%; background: #FFC700; color: #0d0d10; font-size: 0.75rem; font-weight: 700; line-height: 24px; text-align: center; }
+        .prosperidade-frase p { margin: 0; font-style: italic; color: #ECECEC; line-height: 1.55; }
+        .prosperidade-citacao { margin: 14px 0; padding: 12px 16px; border-left: 3px solid rgba(255,199,0,0.55); background: rgba(255,199,0,0.06); font-style: italic; color: #ECECEC; line-height: 1.55; border-radius: 0 8px 8px 0; }
+        .prosperidade-codigo-virada { margin-top: 18px; padding: 16px; border: 1px solid rgba(255,199,0,0.4); border-radius: 10px; background: rgba(255,199,0,0.1); }
+        .prosperidade-codigo-virada > strong { display: block; color: #FFC700; font-size: 0.9rem; margin-bottom: 10px; }
+        .prosperidade-tarefa { margin: 12px 0; padding: 12px 14px; background: rgba(255,255,255,0.04); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .prosperidade-tarefa > strong { display: block; color: #FFC700; font-size: 0.86rem; margin-bottom: 8px; }
+        .prosperidade-protocolo-passo { margin: 10px 0; padding: 10px 12px; border-left: 2px solid rgba(255,199,0,0.35); padding-left: 14px; }
+        .prosperidade-protocolo-passo strong { display: block; color: #FFC700; font-size: 0.82rem; margin-bottom: 6px; }
+        .prosperidade-paragrafo { margin-bottom: 12px; line-height: 1.65; color: #ECECEC; }
         .prosperidade-tts-btn { font-size: 0.78rem; padding: 5px 10px; margin-left: 8px; vertical-align: middle; }
         @media (max-width: 480px) {
             .receba-item[data-tipo="prosperidade-dormir"] span .prosperidade-label-long { display: none; }
@@ -1224,7 +1235,126 @@
                 if (!body) return '';
                 var cls = 'prosperidade-section' + (extraClass ? ' ' + extraClass : '');
                 var ttsBtn = '<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="' + id + '" title="Ouvir esta seção"><i class="fas fa-volume-up"></i></button>';
-                return '<div class="' + cls + '" id="' + id + '"><h4>' + escProsperidade(title) + ttsBtn + '</h4><div class="prosperidade-body' + (highlight ? ' prosperidade-decreto' : '') + '">' + escProsperidade(body).replace(/\n/g, '<br>') + '</div></div>';
+                var inner = highlight
+                    ? '<blockquote class="prosperidade-citacao prosperidade-decreto">' + escProsperidade(String(body).trim()) + '</blockquote>'
+                    : prosperidadeBodyRichHtml(body);
+                return '<div class="' + cls + '" id="' + id + '"><h4>' + escProsperidade(title) + ttsBtn + '</h4><div class="prosperidade-body' + (highlight ? ' prosperidade-decreto' : '') + '">' + inner + '</div></div>';
+            }
+
+            function prosperidadeSplitFrases(text) {
+                var raw = String(text || '').trim();
+                if (!raw) return [];
+                var parts = raw.split(/\n\s*\n/).map(function (s) { return s.replace(/^\*\s*/, '').trim(); }).filter(Boolean);
+                if (parts.length <= 1) {
+                    parts = raw.split(/\n/).map(function (s) { return s.replace(/^\*\s*/, '').trim(); }).filter(function (s) {
+                        return s && (/^["'""«]/.test(s) || s.indexOf('"') >= 0);
+                    });
+                }
+                if (parts.length <= 1) {
+                    parts = [];
+                    var re = /["""«']([^""»'"]{12,})["""»'"]/g;
+                    var m;
+                    while ((m = re.exec(raw)) !== null) parts.push('"' + m[1].trim() + '"');
+                }
+                return parts;
+            }
+
+            function prosperidadeFrasesSectionHtml(id, title, text) {
+                var frases = prosperidadeSplitFrases(text);
+                if (!frases.length) return prosperidadeSectionHtml(id, title, text);
+                var ttsBtn = '<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="' + id + '" title="Ouvir esta seção"><i class="fas fa-volume-up"></i></button>';
+                var inner = frases.map(function (f, i) {
+                    return '<div class="prosperidade-frase" id="' + id + '-f' + (i + 1) + '"><span class="prosperidade-frase-num">' + (i + 1) + '</span><p>' + escProsperidade(f) + '</p></div>';
+                }).join('');
+                return '<div class="prosperidade-section" id="' + id + '"><h4>' + escProsperidade(title) + ttsBtn + '</h4>' + inner + '</div>';
+            }
+
+            function prosperidadeBodyRichHtml(text) {
+                if (!text) return '';
+                var paras = String(text).split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+                if (!paras.length) paras = [String(text).trim()];
+                return paras.map(function (p) {
+                    var escaped = escProsperidade(p);
+                    escaped = escaped.replace(/["""«']([^""»'"]{12,})["""»'"]\s*(?:[—\-–]\s*KING)?/g, function (_, q) {
+                        return '<blockquote class="prosperidade-citacao">&ldquo;' + q + '&rdquo;</blockquote>';
+                    });
+                    return '<div class="prosperidade-paragrafo">' + escaped.replace(/\n/g, '<br>') + '</div>';
+                }).join('');
+            }
+
+            function prosperidadeEstradaHtml(text) {
+                if (!text) return '';
+                var raw = String(text);
+                var idx = raw.search(/⚡?\s*C[OÓ]DIGO\s+DA\s+VIRADA/i);
+                if (idx < 0) return prosperidadeBodyRichHtml(raw);
+                var parte1 = raw.slice(0, idx).trim();
+                var parte2 = raw.slice(idx).replace(/^⚡?\s*C[OÓ]DIGO\s+DA\s+VIRADA\s*:?\s*/i, '').trim();
+                return prosperidadeBodyRichHtml(parte1) +
+                    '<div class="prosperidade-codigo-virada"><strong>⚡ Código da Virada</strong>' + prosperidadeBodyRichHtml(parte2) + '</div>';
+            }
+
+            function prosperidadeEstradaSectionHtml(id, title, text) {
+                if (!text) return '';
+                var ttsBtn = '<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="' + id + '" title="Ouvir esta seção"><i class="fas fa-volume-up"></i></button>';
+                return '<div class="prosperidade-section" id="' + id + '"><h4>' + escProsperidade(title) + ttsBtn + '</h4><div class="prosperidade-body">' + prosperidadeEstradaHtml(text) + '</div></div>';
+            }
+
+            function prosperidadeTreinoTarefasHtml(text) {
+                if (!text) return '';
+                var raw = String(text).trim();
+                var introEnd = raw.search(/Tarefa\s+0?1\s*[-–—]/i);
+                var intro = introEnd > 0 ? raw.slice(0, introEnd).trim() : '';
+                var rest = introEnd > 0 ? raw.slice(introEnd) : raw;
+                var chunks = rest.split(/(?=\n?\s*Tarefa\s+0?\d+\s*[-–—])/i).map(function (c) { return c.trim(); }).filter(Boolean);
+                if (chunks.length <= 1 && /Tarefa\s+0?\d+/i.test(raw)) {
+                    chunks = raw.split(/(?=Tarefa\s+0?\d+\s*[-–—])/i).map(function (c) { return c.trim(); }).filter(Boolean);
+                    intro = '';
+                }
+                if (chunks.length <= 1) return prosperidadeBodyRichHtml(raw);
+                var html = intro ? prosperidadeBodyRichHtml(intro) : '';
+                html += chunks.map(function (chunk) {
+                    var m = chunk.match(/^Tarefa\s+(0?\d+)\s*[-–—]\s*([^\n]+)/i);
+                    var tit = m ? ('Tarefa ' + m[1] + ' — ' + m[2].trim()) : chunk.split('\n')[0];
+                    var corpo = m ? chunk.replace(/^Tarefa\s+0?\d+\s*[-–—]\s*[^\n]+\n?/i, '').trim() : chunk;
+                    return '<div class="prosperidade-tarefa"><strong>' + escProsperidade(tit) + '</strong>' + prosperidadeBodyRichHtml(corpo) + '</div>';
+                }).join('');
+                return html;
+            }
+
+            function prosperidadeProtocoloHtml(text) {
+                if (!text) return '';
+                var raw = String(text).trim();
+                var chunks = raw.split(/(?=\n\s*(?:A\s+POSTURA|O\s+ISOLAMENTO|A\s+INCINERAÇÃO|ANCORAGEM|O\s+DISPARO|Postura\s+de\s+Trono|Visualização|Foco\s+do\s+Leão)[^:\n]{0,40}:)/i)
+                    .map(function (c) { return c.trim(); }).filter(Boolean);
+                if (chunks.length <= 1) return prosperidadeBodyRichHtml(raw);
+                return chunks.map(function (chunk, i) {
+                    var m = chunk.match(/^([^\n]+:)/);
+                    var tit = m ? m[1].replace(/:$/, '').trim() : ('Passo ' + (i + 1));
+                    var corpo = m ? chunk.slice(m[0].length).trim() : chunk;
+                    return '<div class="prosperidade-protocolo-passo"><strong>' + escProsperidade(tit) + '</strong>' + prosperidadeBodyRichHtml(corpo) + '</div>';
+                }).join('');
+            }
+
+            function prosperidadeTreinoAltarHtml(text) {
+                if (!text) return '';
+                var raw = String(text);
+                var compIdx = raw.search(/(?:\n---\n|\n📚\s*ATIVAÇÃO\s+COMPLEMENTAR)/i);
+                if (compIdx >= 0) {
+                    var tarefas = raw.slice(0, compIdx).trim();
+                    var comp = raw.slice(compIdx).replace(/^(\n---\n|\n📚\s*ATIVAÇÃO\s+COMPLEMENTAR\s*:?\s*)/i, '').trim();
+                    return prosperidadeTreinoTarefasHtml(tarefas) +
+                        '<div class="prosperidade-codigo-virada"><strong>📚 Ativação complementar — leitura</strong>' + prosperidadeBodyRichHtml(comp) + '</div>';
+                }
+                return prosperidadeTreinoTarefasHtml(raw);
+            }
+
+            function prosperidadeCitacaoHtml(text) {
+                if (!text) return '';
+                var t = String(text).trim();
+                if (/^["'""«]/.test(t)) {
+                    return '<blockquote class="prosperidade-citacao">' + escProsperidade(t.replace(/^["'""«']+|["'""»'"]+$/g, '')) + '</blockquote>';
+                }
+                return prosperidadeBodyRichHtml(t);
             }
 
             function renderProsperidadeAtivacao(a, num) {
@@ -1237,9 +1367,14 @@
                     }
                     return html;
                 }
+                var fraseLinks = '';
+                prosperidadeSplitFrases(a.ie_chave || '').forEach(function (_, i) {
+                    fraseLinks += '<a href="#pros-sec-frases-f' + (i + 1) + '">Frase ' + (i + 1) + '</a>';
+                });
                 var indice = '<nav class="prosperidade-indice" aria-label="Índice da Ativação">' +
                     '<a href="#pros-sec-decreto">Decreto</a><a href="#pros-sec-fundamento">Fundamento</a><a href="#pros-sec-diagnostico">Extração</a>' +
-                    '<a href="#pros-sec-frases">Frases KING</a><a href="#pros-sec-estrada">Estrada KING</a><a href="#pros-sec-ilustracao">Ilustração</a>' +
+                    (fraseLinks || '<a href="#pros-sec-frases">Frases KING</a>') +
+                    '<a href="#pros-sec-estrada">Estrada KING</a><a href="#pros-sec-ilustracao">Ilustração</a>' +
                     '<a href="#pros-sec-reprogram">Reprogramação</a><a href="#pros-sec-treino">Treino do Rei</a><a href="#pros-sec-sentenca">Sentença</a></nav>';
                 var h = '<div style="margin-bottom:16px"><span style="background:rgba(255,199,0,0.15);color:#FFC700;padding:4px 10px;border-radius:8px;font-size:0.82rem">Do Fracasso ao Legado</span></div>';
                 h += '<h3 style="color:#ECECEC;font-family:Lora,Georgia,serif;margin-bottom:6px">' + escProsperidade(a.titulo || ('Ativação ' + num)) + '</h3>';
@@ -1248,17 +1383,17 @@
                 h += prosperidadeSectionHtml('pros-sec-decreto', 'Decreto de entrada', a.decreto_entrada, '', true);
                 h += prosperidadeSectionHtml('pros-sec-fundamento', 'Fundamento sagrado', a.fundamento_sagrado);
                 h += prosperidadeSectionHtml('pros-sec-diagnostico', 'Extração de prosperidade', a.diagnostico_escassez);
-                if (a.ie_chave) h += prosperidadeSectionHtml('pros-sec-frases', 'Frases de impacto do KING', a.ie_chave);
-                h += prosperidadeSectionHtml('pros-sec-estrada', 'Na estrada com o KING', a.estrada_com_king);
+                if (a.ie_chave) h += prosperidadeFrasesSectionHtml('pros-sec-frases', 'Frases de impacto do KING', a.ie_chave);
+                h += prosperidadeEstradaSectionHtml('pros-sec-estrada', 'Na estrada com o KING', a.estrada_com_king);
                 h += prosperidadeSectionHtml('pros-sec-ilustracao', 'Diretriz de ilustração', a.diretriz_ilustracao, 'prosperidade-ilustracao');
                 var repro = '';
-                if (a.mentalidade_travada) repro += '<div class="prosperidade-sub"><strong>Drive de escassez</strong>' + escProsperidade(a.mentalidade_travada).replace(/\n/g, '<br>') + '</div>';
-                if (a.nova_mentalidade) repro += '<div class="prosperidade-sub"><strong>Drive de governo</strong>' + escProsperidade(a.nova_mentalidade).replace(/\n/g, '<br>') + '</div>';
-                if (a.exercicio_fixacao) repro += '<div class="prosperidade-sub"><strong>Protocolo neuro-celular</strong>' + escProsperidade(a.exercicio_fixacao).replace(/\n/g, '<br>') + '</div>';
+                if (a.mentalidade_travada) repro += '<div class="prosperidade-sub"><strong>Drive de escassez</strong>' + prosperidadeCitacaoHtml(a.mentalidade_travada) + '</div>';
+                if (a.nova_mentalidade) repro += '<div class="prosperidade-sub"><strong>Drive de governo</strong>' + prosperidadeCitacaoHtml(a.nova_mentalidade) + '</div>';
+                if (a.exercicio_fixacao) repro += '<div class="prosperidade-sub"><strong>Protocolo neuro-celular</strong>' + prosperidadeProtocoloHtml(a.exercicio_fixacao) + '</div>';
                 if (repro) h += '<div class="prosperidade-section" id="pros-sec-reprogram"><h4>Reprogramação mental<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="pros-sec-reprogram"><i class="fas fa-volume-up"></i></button></h4>' + repro + '</div>';
                 var treino = '';
-                if (a.treino_negocios) treino += '<div class="prosperidade-sub"><strong>Tarefa de negócios</strong>' + escProsperidade(a.treino_negocios).replace(/\n/g, '<br>') + '</div>';
-                if (a.treino_altar) treino += '<div class="prosperidade-sub"><strong>Tarefa de altar</strong>' + escProsperidade(a.treino_altar).replace(/\n/g, '<br>') + '</div>';
+                if (a.treino_negocios) treino += '<div class="prosperidade-sub"><strong>Bloco de campo — tarefas 01 a 04</strong>' + prosperidadeTreinoTarefasHtml(a.treino_negocios) + '</div>';
+                if (a.treino_altar) treino += '<div class="prosperidade-sub"><strong>Bloco de altar — tarefas 05 a 07</strong>' + prosperidadeTreinoAltarHtml(a.treino_altar) + '</div>';
                 if (treino) h += '<div class="prosperidade-section" id="pros-sec-treino"><h4>Treino do Rei<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="pros-sec-treino"><i class="fas fa-volume-up"></i></button></h4>' + treino + '</div>';
                 h += prosperidadeSectionHtml('pros-sec-sentenca', 'Sentença de ativação', a.sentenca_ativacao, '', true);
                 if (a.proximo_episodio) h += '<div class="prosperidade-section"><h4>Próximo episódio</h4><p class="prosperidade-gancho">' + escProsperidade(a.proximo_episodio).replace(/\n/g, '<br>') + '</p></div>';
