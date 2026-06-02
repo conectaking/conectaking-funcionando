@@ -110,7 +110,12 @@ function mergeDtoFromBody(body, existing, options) {
     if (rawText && trimField(rawText)) {
         const parsed = parseSvc.parsePastedActivation(rawText);
         if (parsed.ok && parsed.sections) {
-            dto = { ...dto, ...parsed.sections };
+            const manual = parseSvc.bodyToDto(body || {});
+            dto = { ...parsed.sections };
+            for (const key of Object.keys(manual)) {
+                const v = manual[key];
+                if (v != null && trimField(v)) dto[key] = v;
+            }
         } else if (parsed.error) {
             parseWarning = parsed.error;
             if (options.strictParse) throw new Error(parsed.error);
@@ -121,7 +126,10 @@ function mergeDtoFromBody(body, existing, options) {
         const val = dto[key];
         if (val === undefined || val === null) continue;
         const trimmed = typeof val === 'string' ? val.trim() : val;
-        if (trimmed === '' && existing && trimField(existing[key])) continue;
+        if (trimmed === '') {
+            if (existing && trimField(existing[key])) payload[key] = existing[key];
+            continue;
+        }
         payload[key] = val;
     }
     return { payload, parseWarning };
@@ -144,6 +152,11 @@ async function adminSave(n, body, options) {
         const phase = aiSvc.getPhaseInfo(num);
         if (phase && phase.titulo) payload.titulo = phase.titulo;
     }
+    if (!payload.decreto_entrada || !trimField(payload.decreto_entrada)) {
+        if (payload.sentenca_ativacao && trimField(payload.sentenca_ativacao)) {
+            payload.decreto_entrada = String(payload.sentenca_ativacao).split('\n')[0].trim();
+        }
+    }
     if (options && options.mergeSource) {
         const prev = existing && existing.content_source;
         if (prev === 'ai' && options.mergeSource === 'manual') payload.content_source = 'mixed';
@@ -162,14 +175,33 @@ async function adminSave(n, body, options) {
 async function adminPublish(n, published, body) {
     const num = clampActivation(n);
     if (!num) throw new Error('Ativação deve ser entre 1 e 31.');
-    if (published && body && trimField(body.text || body.paste || body.full_text)) {
+    const rawText = body && trimField(body.text || body.paste || body.full_text);
+    if (published && rawText) {
         await adminSave(num, body, { mergeSource: 'manual', strictParse: false });
     }
     if (published) {
-        const row = await repo.getByNumber(num);
-        const missing = validateForPublish(row || {});
+        let row = await repo.getByNumber(num);
+        let missing = validateForPublish(row || {});
+        if (missing.length && rawText) {
+            const parsed = parseSvc.parsePastedActivation(rawText);
+            if (parsed.ok && parsed.sections) {
+                const patch = {};
+                for (const [k, v] of Object.entries(parsed.sections)) {
+                    if (v != null && trimField(v)) patch[k] = v;
+                }
+                if (!patch.titulo) {
+                    const phase = aiSvc.getPhaseInfo(num);
+                    if (phase && phase.titulo) patch.titulo = phase.titulo;
+                }
+                if (!patch.decreto_entrada && patch.sentenca_ativacao) {
+                    patch.decreto_entrada = String(patch.sentenca_ativacao).split('\n')[0].trim();
+                }
+                row = await repo.updateActivation(num, patch);
+                missing = validateForPublish(row || {});
+            }
+        }
         if (missing.length) {
-            const err = new Error('Para publicar, preencha: ' + missing.join(', ') + '. Cole a Ativação completa (com DECRETO DE ENTRADA e FUNDAMENTO SAGRADO) e clique em Salvar ativação.');
+            const err = new Error('Para publicar, falta: ' + missing.join(', ') + '. Clique em Salvar ativação com o texto colado na aba «Colar por escrito».');
             err.missing = missing;
             throw err;
         }

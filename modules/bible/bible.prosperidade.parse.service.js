@@ -26,22 +26,27 @@ function normForMatch(norm) {
     return String(norm || '').replace(/^(?:O|A|OS|AS)\s+/, '').trim();
 }
 
-function extractFaseTitle(line) {
+function isIntroLine(line) {
+    const c = cleanLine(line);
+    return /(?:FASE|ATIVA[CÇ][AÃ]O)\s*\d+/i.test(c);
+}
+
+function extractIntroTitle(line) {
     const raw = cleanLine(line);
-    const m = raw.match(/FASE\s*\d+\s*[:\-–—]\s*(.+)$/i);
+    const m = raw.match(/(?:FASE|ATIVA[CÇ][AÃ]O)\s*\d+\s*[:\-–—]\s*(.+)$/i);
     return m ? m[1].replace(/\*+/g, '').trim() : '';
 }
 
 function extractDecretoQuote(lines) {
     for (let i = 0; i < lines.length; i++) {
-        if (!/FASE\s*\d+/i.test(cleanLine(lines[i]))) continue;
+        if (!isIntroLine(lines[i])) continue;
         for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
             const l = lines[j].trim();
             if (!l) continue;
             if (/^["'“"«]/.test(l) || /KING\s*$/i.test(l)) {
                 return l
-                    .replace(/^["'“"«]+|["'“"»]+$/g, '')
-                    .replace(/["'“"»]+$/g, '')
+                    .replace(/^["""«']+/, '')
+                    .replace(/["""»']+\s*$/, '')
                     .replace(/\s*[—\-–]\s*KING\s*$/i, '')
                     .trim() || l;
             }
@@ -134,9 +139,9 @@ function parseByMarkers(raw) {
     const cleanText = lines.map(cleanLine).join('\n');
     const sections = {};
 
-    const faseLine = lines.find((l) => /FASE\s*\d+/i.test(cleanLine(l)));
-    if (faseLine) {
-        sections.titulo = extractFaseTitle(faseLine);
+    const introLine = lines.find((l) => isIntroLine(l));
+    if (introLine) {
+        sections.titulo = extractIntroTitle(introLine);
     }
 
     const decreto = extractDecretoQuote(lines);
@@ -187,13 +192,18 @@ function parsePastedActivation(text) {
 
     const sections = parseByMarkers(raw);
 
+    const rawLines = raw.split(/\r?\n/);
     if (!sections.titulo) {
-        const first = cleanLine(raw.split(/\r?\n/)[0] || '');
-        if (/FASE\s*\d+/i.test(first)) sections.titulo = extractFaseTitle(first);
+        const intro = rawLines.find((l) => isIntroLine(l));
+        if (intro) sections.titulo = extractIntroTitle(intro);
     }
 
     if (!sections.decreto_entrada) {
-        sections.decreto_entrada = extractDecretoQuote(raw.split(/\r?\n/));
+        sections.decreto_entrada = extractDecretoQuote(rawLines);
+    }
+
+    if (!sections.decreto_entrada && sections.sentenca_ativacao) {
+        sections.decreto_entrada = String(sections.sentenca_ativacao).split('\n')[0].trim();
     }
 
     if (!hasMinimumSections(sections)) {
