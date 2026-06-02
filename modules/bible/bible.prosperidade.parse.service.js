@@ -8,6 +8,7 @@ function normalizeHeader(line) {
         .replace(/^#+\s*/, '')
         .replace(/^\*+\s*/, '')
         .replace(/\*+$/, '')
+        .replace(/^\d+[\.\)\-–—]\s*/, '')
         .replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '')
         .replace(/[^\w\s():/\-–—]/gu, ' ')
         .replace(/\s+/g, ' ')
@@ -17,10 +18,55 @@ function normalizeHeader(line) {
         .trim();
 }
 
+function headerRegexPart(headerText) {
+    return String(headerText || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/\s+/g, '\\s+');
+}
+
+function accentInsensitivePattern(headerText) {
+    return String(headerText || '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => {
+            const base = word.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            return base.split('').map((ch) => {
+                const lower = ch.toLowerCase();
+                const upper = ch.toUpperCase();
+                if (lower === 'a') return '[aáàãâAÁÀÃÂ]';
+                if (lower === 'e') return '[eéèêEÉÈÊ]';
+                if (lower === 'i') return '[iíìîIÍÌÎ]';
+                if (lower === 'o') return '[oóòõôOÓÒÕÔ]';
+                if (lower === 'u') return '[uúùûUÚÙÛ]';
+                if (lower === 'c') return '[cçCÇ]';
+                if (lower === upper) return ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return '[' + lower + upper + ']';
+            }).join('');
+        })
+        .join('\\s+');
+}
+
+function isLikelyHeaderLine(line, norm, hit) {
+    if (!hit) return false;
+    if (hit.inline) return true;
+    if (norm.length >= 120) return false;
+    if (/^\s*\d+[\.\)\-–—]\s*\S/.test(line)) return true;
+    if (/^\s*#+\s/.test(line)) return true;
+    if (norm.length < 80 && !/[.!?]\s+[a-záéíóúãõ]/i.test(line.slice(0, 70))) return true;
+    return norm.length < 55;
+}
+
 function extractActivationTitle(line) {
-    const raw = String(line || '').trim().replace(/^#+\s*/, '');
+    const raw = String(line || '')
+        .trim()
+        .replace(/^#+\s*/, '')
+        .replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '')
+        .replace(/\uFE0F/g, '')
+        .replace(/^[^A-Za-zÁÀÃÂÉÈÊÍÌÎÓÒÕÔÚÙÛÇáàãâéèêíìîóòõôúùûç]+/, '');
     const m = raw.match(/^ATIVA[ÇC][AÃ]O\s+\d+\s*[:\-–—]\s*(.+)$/i);
-    return m ? m[1].trim() : '';
+    return m ? m[1].replace(/\*+/g, '').trim() : '';
 }
 
 const SECTION_MAP = [
@@ -58,6 +104,64 @@ function headerToKey(norm, rawLine) {
     return null;
 }
 
+function parseBySectionRegex(raw) {
+    const sections = {};
+    const hits = [];
+
+    const titleRe = /(?:^|[\n\r])\s*(?:#+\s*)?(?:[\u{1F300}-\u{1FAFF}\u2600-\u27BF]\s*)*(?:\*{0,2})?ATIVA(?:Ç|C)(?:Ã|A)O\s+\d+\s*[:\-–—]\s*(.+?)(?:\*{0,2})?\s*(?:\n|$)/giu;
+    let tm;
+    while ((tm = titleRe.exec(raw)) !== null) {
+        const t = String(tm[1] || '').replace(/\*+/g, '').trim();
+        if (t) hits.push({ key: 'titulo', index: tm.index, end: tm.index + tm[0].length, inline: t });
+    }
+
+    for (const sec of SECTION_MAP) {
+        if (sec.key === 'titulo') continue;
+        for (const h of sec.headers) {
+            const re = new RegExp(
+                '(?:^|[\\n\\r])\\s*(?:\\d+[\\.\\)\\-–—]\\s*)?(?:#+\\s*)?(?:[\\u{1F300}-\\u{1FAFF}\\u2600-\\u27BF]\\s*)*(?:\\*{0,2})?'
+                + accentInsensitivePattern(h)
+                + '(?:\\*{0,2})?\\s*:?',
+                'giu'
+            );
+            let m;
+            while ((m = re.exec(raw)) !== null) {
+                hits.push({ key: sec.key, index: m.index, end: m.index + m[0].length });
+            }
+        }
+    }
+
+    hits.sort((a, b) => a.index - b.index || b.end - a.end);
+    const seenAt = new Set();
+    const deduped = [];
+    for (const hit of hits) {
+        const k = hit.index + ':' + hit.key;
+        if (seenAt.has(k)) continue;
+        seenAt.add(k);
+        deduped.push(hit);
+    }
+
+    for (let i = 0; i < deduped.length; i++) {
+        const hit = deduped[i];
+        if (hit.inline) {
+            sections.titulo = hit.inline;
+            continue;
+        }
+        const start = hit.end;
+        const end = i + 1 < deduped.length ? deduped[i + 1].index : raw.length;
+        const val = raw.slice(start, end).trim();
+        if (val) sections[hit.key] = val;
+    }
+
+    return sections;
+}
+
+function hasMinimumSections(sections) {
+    const req = ['decreto_entrada', 'fundamento_sagrado', 'sentenca_ativacao'];
+    const found = req.filter((k) => String(sections[k] || '').trim()).length;
+    return found >= 2 || Object.keys(sections).length >= 4;
+}
+
 function parsePastedActivation(text) {
     const raw = String(text || '').trim();
     if (!raw) return { error: 'Texto vazio.' };
@@ -77,7 +181,7 @@ function parsePastedActivation(text) {
     for (const line of lines) {
         const norm = normalizeHeader(line);
         const hit = headerToKey(norm, line);
-        if (hit && (norm.length < 100 || !line.includes('.'))) {
+        if (hit && isLikelyHeaderLine(line, norm, hit)) {
             flush();
             if (hit.inline) {
                 sections.titulo = hit.inline;
@@ -91,12 +195,25 @@ function parsePastedActivation(text) {
     }
     flush();
 
-    if (!sections.titulo && lines[0] && !headerToKey(normalizeHeader(lines[0]))) {
-        sections.titulo = lines[0].trim();
+    const regexSections = parseBySectionRegex(raw);
+    for (const [k, v] of Object.entries(regexSections)) {
+        if (v) sections[k] = v;
     }
 
-    if (!sections.decreto_entrada && !sections.fundamento_sagrado && Object.keys(sections).length < 2) {
-        return { error: 'Não foi possível dividir. Use os títulos do template (DECRETO DE ENTRADA, FUNDAMENTO SAGRADO, etc.).' };
+    if (sections.titulo) {
+        const t = extractActivationTitle(sections.titulo);
+        if (t) sections.titulo = t;
+    }
+
+    if (!sections.titulo && lines[0] && !headerToKey(normalizeHeader(lines[0]), lines[0])) {
+        const first = lines[0].trim();
+        if (!/^ATIVA(?:Ç|C)(?:Ã|A)O\s+COMPLETA/i.test(first)) {
+            sections.titulo = first;
+        }
+    }
+
+    if (!hasMinimumSections(sections)) {
+        return { error: 'Não foi possível dividir. Inclua títulos como DECRETO DE ENTRADA, FUNDAMENTO SAGRADO e SENTENÇA DE ATIVAÇÃO (com ou sem número/emojis).' };
     }
 
     return { ok: true, sections };

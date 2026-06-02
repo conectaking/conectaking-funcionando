@@ -98,12 +98,36 @@ async function adminGet(n) {
     return dto;
 }
 
+function trimField(v) {
+    return v == null ? '' : String(v).trim();
+}
+
+function mergeDtoFromBody(body, existing) {
+    let dto = parseSvc.bodyToDto(body || {});
+    const rawText = body && (body.text || body.paste || body.full_text);
+    if (rawText && trimField(rawText)) {
+        const parsed = parseSvc.parsePastedActivation(rawText);
+        if (parsed.ok && parsed.sections) {
+            dto = { ...dto, ...parsed.sections };
+        }
+    }
+    const payload = {};
+    for (const key of Object.keys(dto)) {
+        const val = dto[key];
+        if (val === undefined || val === null) continue;
+        const trimmed = typeof val === 'string' ? val.trim() : val;
+        if (trimmed === '' && existing && trimField(existing[key])) continue;
+        payload[key] = val;
+    }
+    return payload;
+}
+
 async function adminSave(n, body, options) {
     const num = clampActivation(n);
     if (!num) throw new Error('Ativação deve ser entre 1 e 31.');
-    const payload = parseSvc.bodyToDto(body || {});
+    const existing = await repo.getByNumber(num);
+    const payload = mergeDtoFromBody(body, existing);
     if (options && options.mergeSource) {
-        const existing = await repo.getByNumber(num);
         const prev = existing && existing.content_source;
         if (prev === 'ai' && options.mergeSource === 'manual') payload.content_source = 'mixed';
         else if (!payload.content_source) payload.content_source = options.mergeSource || 'manual';
@@ -111,22 +135,27 @@ async function adminSave(n, body, options) {
     if (!payload.proverbs_ref) payload.proverbs_ref = 'Provérbios ' + num;
     if (!payload.storytelling_fase) payload.storytelling_fase = num;
     const row = await repo.updateActivation(num, payload);
+    if (!row) throw new Error('Ativação não encontrada na base.');
     const dto = repo.rowToDto(row);
     dto.status = repo.computeStatus(row);
     return dto;
 }
 
-async function adminPublish(n, published) {
+async function adminPublish(n, published, body) {
     const num = clampActivation(n);
     if (!num) throw new Error('Ativação deve ser entre 1 e 31.');
+    if (published && body && trimField(body.text || body.paste || body.full_text)) {
+        await adminSave(num, body, { mergeSource: 'manual' });
+    }
     if (published) {
         const row = await repo.getByNumber(num);
         const missing = validateForPublish(row || {});
         if (missing.length) {
-            throw new Error('Campos obrigatórios faltando: ' + missing.join(', ') + '. Clique em "Dividir seções" ou salve com texto colado na aba Colar.');
+            throw new Error('Campos obrigatórios faltando: ' + missing.join(', ') + '. Cole o texto completo e clique em Publicar (ou use Dividir seções).');
         }
     }
     const row = await repo.setPublished(num, published);
+    if (!row) throw new Error('Ativação não encontrada na base.');
     const dto = repo.rowToDto(row);
     dto.status = repo.computeStatus(row);
     return dto;

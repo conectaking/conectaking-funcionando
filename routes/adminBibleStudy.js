@@ -656,7 +656,7 @@ router.patch('/bible/prosperidade/:n/publish', protectAdmin, async (req, res) =>
     }
     const published = req.body && (req.body.published === true || req.body.published === 'true' || req.body.published === 1);
     try {
-        const data = await prosperidadeService.adminPublish(n, published);
+        const data = await prosperidadeService.adminPublish(n, published, req.body || {});
         res.json({
             success: true,
             message: published ? 'Ativação publicada.' : 'Ativação despublicada.',
