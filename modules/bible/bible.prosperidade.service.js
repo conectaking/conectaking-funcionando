@@ -164,6 +164,7 @@ async function adminSave(n, body, options) {
     }
     if (!payload.proverbs_ref) payload.proverbs_ref = 'Provérbios ' + num;
     if (!payload.storytelling_fase) payload.storytelling_fase = num;
+    if (payload.titulo != null) payload.titulo = parseSvc.sanitizeTitulo(payload.titulo);
     const row = await repo.updateActivation(num, payload);
     if (!row) throw new Error('Ativação não encontrada na base.');
     const dto = attachPublishHints(repo.rowToDto(row), row);

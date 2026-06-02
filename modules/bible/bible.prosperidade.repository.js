@@ -151,6 +151,11 @@ async function updateActivation(n, data) {
         );
         return r.rows[0] || null;
     } catch (err) {
+        if (err && err.code === '22001') {
+            const e = new Error('Um campo excede o tamanho permitido na base. Faça deploy da migration 231 e tente novamente.');
+            e.code = err.code;
+            throw e;
+        }
         logger.error('bible.prosperidade.repository updateActivation:', err);
         throw err;
     } finally {

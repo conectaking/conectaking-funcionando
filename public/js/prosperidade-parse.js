@@ -22,12 +22,57 @@ function isIntroLine(line) {
 function extractIntroTitle(line) {
     const raw = cleanLine(line);
     const m = raw.match(/(?:FASE|ATIVA[CÇ][AÃ]O)\s*\d+\s*[:\-–—]\s*(.+)$/i);
-    return m ? m[1].replace(/\*+/g, '').trim() : '';
+    if (!m) return '';
+    let title = m[1].replace(/\*+/g, '').trim();
+    const quoteIdx = title.search(/["""«']/);
+    if (quoteIdx >= 0) title = title.slice(0, quoteIdx).trim();
+    title = title.replace(/\s*[📜🔍💎🦅⚡👁🧠✍🗣📚🎬].*$/, '').trim();
+    title = title.replace(/\s+\d+\.\s*.*$/, '').trim();
+    if (title.length > 200) title = title.slice(0, 200).trim();
+    return title;
+}
+
+function sanitizeTitulo(v) {
+    let t = String(v || '').trim();
+    if (!t) return '';
+    const quoteIdx = t.search(/["""«']/);
+    if (quoteIdx > 0) t = t.slice(0, quoteIdx).trim();
+    t = t.replace(/\s*[📜🔍💎🦅⚡👁🧠✍🗣📚🎬].*$/, '').trim();
+    t = t.replace(/\s+\d+\.\s*.*$/, '').trim();
+    if (t.length > 200) t = t.slice(0, 200).trim();
+    return t;
+}
+
+function normalizePaste(raw) {
+    let t = String(raw || '').replace(/\r\n/g, '\n').trim();
+    if (!t) return t;
+    t = t.replace(
+        /((?:ATIVA[CÇ][AÃ]O|FASE)\s+\d+\s*:[^\n"""«']{2,120})(["""«'])/gi,
+        '$1\n\n$2'
+    );
+    const markerRes = [
+        /(\S)\s*(?=(?:📜\s*)?\d+\.\s*(?:O\s+)?FUNDAMENTO\s+SAGRADO\s*:)/gi,
+        /(\S)\s*(?=(?:🔍\s*)?\d+\.\s*(?:EXTRA[ÇC][AÃ]O\s+DE\s+PROSPERIDADE|DIAGN[OÓ]STICO))/gi,
+        /(\S)\s*(?=💎\s*FRASES\s+DE\s+IMPACTO)/gi,
+        /(\S)\s*(?=(?:🦅\s*)?\d+\.\s*NA\s+ESTRADA\s+COM)/gi,
+        /(\S)\s*(?=⚡\s*C[OÓ]DIGO\s+DA\s+VIRADA)/gi,
+        /(\S)\s*(?=👁[^\n]*DIRETRIZ\s+DE\s+ILUSTRA)/gi,
+        /(\S)\s*(?=(?:🧠\s*)?\d+\.\s*REPROGRAMA[ÇC][ÃA]O\s+MENTAL)/gi,
+        /(\S)\s*(?=(?:✍\s*)?\d+\.\s*(?:O\s+)?TREINO\s+DO\s+REI)/gi,
+        /(\S)\s*(?=(?:🗣\s*)?\d+\.\s*SENTEN[ÇC]A\s+DE\s+ATIVA)/gi,
+        /(\S)\s*(?=(?:📚\s*)?\d+\.\s*ATIVA[ÇC][AÃ]O\s+COMPLEMENTAR)/gi,
+        /(\S)\s*(?=🎬\s*PR[OÓ]XIMO\s+EPIS)/gi
+    ];
+    for (const re of markerRes) t = t.replace(re, '$1\n\n');
+    t = t.replace(/(["""»'"]\s*[—\-–]\s*KING)\s*(?=\S)/gi, '$1\n\n');
+    return t.trim();
 }
 
 function extractDecretoQuote(lines) {
     for (let i = 0; i < lines.length; i++) {
         if (!isIntroLine(lines[i])) continue;
+        const sameLine = lines[i].match(/["""«']([^""»'"]{10,})["""»'"]\s*[—\-–]?\s*KING/i);
+        if (sameLine) return sameLine[1].trim();
         for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
             const l = lines[j].trim();
             if (!l) continue;
@@ -260,7 +305,7 @@ function hasMinimumSections(sections) {
 }
 
 function parsePastedActivation(text) {
-    const raw = String(text || '').trim();
+    const raw = normalizePaste(String(text || '').trim());
     if (!raw) return { error: 'Texto vazio.' };
     const sections = parseByMarkers(raw);
     const rawLines = raw.split(/\r?\n/);
@@ -268,6 +313,7 @@ function parsePastedActivation(text) {
         const intro = rawLines.find((l) => isIntroLine(l));
         if (intro) sections.titulo = extractIntroTitle(intro);
     }
+    sections.titulo = sanitizeTitulo(sections.titulo);
     if (!sections.decreto_entrada) sections.decreto_entrada = extractDecretoQuote(rawLines);
     if (!sections.decreto_entrada && sections.sentenca_ativacao) {
         sections.decreto_entrada = String(sections.sentenca_ativacao).split('\n')[0].trim();
@@ -291,7 +337,9 @@ function parsePastedActivation(text) {
 
 return {
     parsePastedActivation,
-    parseFrasesImpacto
+    parseFrasesImpacto,
+    sanitizeTitulo,
+    normalizePaste
 };
 
 }));

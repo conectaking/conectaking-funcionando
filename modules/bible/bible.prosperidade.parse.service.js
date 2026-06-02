@@ -1,5 +1,9 @@
 const core = require('../../shared/prosperidade-parse');
 
+function sanitizeTitulo(v) {
+    return core.sanitizeTitulo ? core.sanitizeTitulo(v) : String(v || '').trim().slice(0, 200);
+}
+
 function bodyToDto(data) {
     return {
         titulo: data.titulo,
@@ -25,5 +29,6 @@ function bodyToDto(data) {
 module.exports = {
     parsePastedActivation: core.parsePastedActivation,
     parseFrasesImpacto: core.parseFrasesImpacto,
+    sanitizeTitulo,
     bodyToDto
 };
