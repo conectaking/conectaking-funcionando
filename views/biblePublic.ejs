@@ -1238,23 +1238,23 @@
                     return html;
                 }
                 var indice = '<nav class="prosperidade-indice" aria-label="Índice da Ativação">' +
-                    '<a href="#pros-sec-decreto">Decreto</a><a href="#pros-sec-fundamento">Fundamento</a><a href="#pros-sec-diagnostico">Diagnóstico</a>' +
-                    '<a href="#pros-sec-estrada">Estrada KING</a><a href="#pros-sec-ilustracao">Ilustração</a><a href="#pros-sec-reprogram">Reprogramação</a>' +
-                    '<a href="#pros-sec-treino">Treino do Rei</a><a href="#pros-sec-sentenca">Sentença</a></nav>';
+                    '<a href="#pros-sec-decreto">Decreto</a><a href="#pros-sec-fundamento">Fundamento</a><a href="#pros-sec-diagnostico">Extração</a>' +
+                    '<a href="#pros-sec-frases">Frases KING</a><a href="#pros-sec-estrada">Estrada KING</a><a href="#pros-sec-ilustracao">Ilustração</a>' +
+                    '<a href="#pros-sec-reprogram">Reprogramação</a><a href="#pros-sec-treino">Treino do Rei</a><a href="#pros-sec-sentenca">Sentença</a></nav>';
                 var h = '<div style="margin-bottom:16px"><span style="background:rgba(255,199,0,0.15);color:#FFC700;padding:4px 10px;border-radius:8px;font-size:0.82rem">Do Fracasso ao Legado</span></div>';
                 h += '<h3 style="color:#ECECEC;font-family:Lora,Georgia,serif;margin-bottom:6px">' + escProsperidade(a.titulo || ('Ativação ' + num)) + '</h3>';
                 h += '<p style="color:#A1A1A1;font-size:0.9rem;margin-bottom:16px">Ativação ' + num + ' de 31 — ' + escProsperidade(a.proverbs_ref || ('Provérbios ' + num)) + '</p>';
                 h += indice;
                 h += prosperidadeSectionHtml('pros-sec-decreto', 'Decreto de entrada', a.decreto_entrada, '', true);
                 h += prosperidadeSectionHtml('pros-sec-fundamento', 'Fundamento sagrado', a.fundamento_sagrado);
-                h += prosperidadeSectionHtml('pros-sec-diagnostico', 'Diagnóstico da escassez', a.diagnostico_escassez);
+                h += prosperidadeSectionHtml('pros-sec-diagnostico', 'Extração de prosperidade', a.diagnostico_escassez);
+                if (a.ie_chave) h += prosperidadeSectionHtml('pros-sec-frases', 'Frases de impacto do KING', a.ie_chave);
                 h += prosperidadeSectionHtml('pros-sec-estrada', 'Na estrada com o KING', a.estrada_com_king);
                 h += prosperidadeSectionHtml('pros-sec-ilustracao', 'Diretriz de ilustração', a.diretriz_ilustracao, 'prosperidade-ilustracao');
                 var repro = '';
-                if (a.mentalidade_travada) repro += '<div class="prosperidade-sub"><strong>Mentalidade travada</strong>' + escProsperidade(a.mentalidade_travada).replace(/\n/g, '<br>') + '</div>';
-                if (a.nova_mentalidade) repro += '<div class="prosperidade-sub"><strong>Nova mentalidade</strong>' + escProsperidade(a.nova_mentalidade).replace(/\n/g, '<br>') + '</div>';
-                if (a.exercicio_fixacao) repro += '<div class="prosperidade-sub"><strong>Exercício de fixação</strong>' + escProsperidade(a.exercicio_fixacao).replace(/\n/g, '<br>') + '</div>';
-                if (a.ie_chave) repro += '<div class="prosperidade-sub"><strong>IE chave</strong>' + escProsperidade(a.ie_chave).replace(/\n/g, '<br>') + '</div>';
+                if (a.mentalidade_travada) repro += '<div class="prosperidade-sub"><strong>Drive de escassez</strong>' + escProsperidade(a.mentalidade_travada).replace(/\n/g, '<br>') + '</div>';
+                if (a.nova_mentalidade) repro += '<div class="prosperidade-sub"><strong>Drive de governo</strong>' + escProsperidade(a.nova_mentalidade).replace(/\n/g, '<br>') + '</div>';
+                if (a.exercicio_fixacao) repro += '<div class="prosperidade-sub"><strong>Protocolo neuro-celular</strong>' + escProsperidade(a.exercicio_fixacao).replace(/\n/g, '<br>') + '</div>';
                 if (repro) h += '<div class="prosperidade-section" id="pros-sec-reprogram"><h4>Reprogramação mental<button type="button" class="bible-btn secondary prosperidade-tts-btn" data-tts-target="pros-sec-reprogram"><i class="fas fa-volume-up"></i></button></h4>' + repro + '</div>';
                 var treino = '';
                 if (a.treino_negocios) treino += '<div class="prosperidade-sub"><strong>Tarefa de negócios</strong>' + escProsperidade(a.treino_negocios).replace(/\n/g, '<br>') + '</div>';

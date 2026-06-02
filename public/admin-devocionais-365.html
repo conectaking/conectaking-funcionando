@@ -280,18 +280,23 @@
                 </div>
                 <div id="pros-panel-campos" class="panel-ed">
                     <div class="field-pros"><label>Título</label><input id="pros-f-titulo"></div>
-                    <div class="field-pros"><label>Decreto de entrada</label><textarea id="pros-f-decreto"></textarea></div>
-                    <div class="field-pros"><label>Fundamento sagrado (Provérbios N — NTLH corrido)</label><textarea id="pros-f-fundamento" rows="5"></textarea></div>
-                    <div class="field-pros"><label>Extração de prosperidade (ou Diagnóstico)</label><textarea id="pros-f-diagnostico"></textarea></div>
-                    <div class="field-pros"><label>Na estrada com o KING</label><textarea id="pros-f-estrada" rows="4"></textarea></div>
+                    <div class="field-pros"><label>Decreto de entrada</label><textarea id="pros-f-decreto" rows="2"></textarea></div>
+                    <div class="field-pros"><label>1. Fundamento sagrado</label><textarea id="pros-f-fundamento" rows="5"></textarea></div>
+                    <div class="field-pros"><label>2. Extração de prosperidade</label><textarea id="pros-f-diagnostico"></textarea></div>
+                    <p style="font-size:0.82rem;color:#FFC700;margin:12px 0 6px"><strong>Frases de impacto do KING (4)</strong></p>
+                    <div class="field-pros"><label>Frase 1</label><textarea id="pros-f-frase-1" rows="2"></textarea></div>
+                    <div class="field-pros"><label>Frase 2</label><textarea id="pros-f-frase-2" rows="2"></textarea></div>
+                    <div class="field-pros"><label>Frase 3</label><textarea id="pros-f-frase-3" rows="2"></textarea></div>
+                    <div class="field-pros"><label>Frase 4</label><textarea id="pros-f-frase-4" rows="2"></textarea></div>
+                    <textarea id="pros-f-ie" style="display:none" aria-hidden="true"></textarea>
+                    <div class="field-pros"><label>3. Na estrada + Código da Virada</label><textarea id="pros-f-estrada" rows="5"></textarea></div>
                     <div class="field-pros"><label>Diretriz de ilustração</label><textarea id="pros-f-ilustracao"></textarea></div>
-                    <div class="field-pros"><label>Mentalidade travada</label><textarea id="pros-f-travada"></textarea></div>
-                    <div class="field-pros"><label>Nova mentalidade</label><textarea id="pros-f-nova"></textarea></div>
-                    <div class="field-pros"><label>Exercício de fixação</label><textarea id="pros-f-exercicio"></textarea></div>
-                    <div class="field-pros"><label>IE chave</label><textarea id="pros-f-ie"></textarea></div>
-                    <div class="field-pros"><label>Treino negócios</label><textarea id="pros-f-negocios"></textarea></div>
-                    <div class="field-pros"><label>Treino altar</label><textarea id="pros-f-altar"></textarea></div>
-                    <div class="field-pros"><label>Sentença de ativação</label><textarea id="pros-f-sentenca"></textarea></div>
+                    <div class="field-pros"><label>Drive escassez</label><textarea id="pros-f-travada" rows="2"></textarea></div>
+                    <div class="field-pros"><label>Drive governo</label><textarea id="pros-f-nova" rows="2"></textarea></div>
+                    <div class="field-pros"><label>Protocolo neuro-celular</label><textarea id="pros-f-exercicio" rows="6"></textarea></div>
+                    <div class="field-pros"><label>Treino campo (01–04)</label><textarea id="pros-f-negocios"></textarea></div>
+                    <div class="field-pros"><label>Treino altar (05–07 + leitura)</label><textarea id="pros-f-altar"></textarea></div>
+                    <div class="field-pros"><label>Sentença diária</label><textarea id="pros-f-sentenca"></textarea></div>
                     <div class="field-pros"><label>Próximo episódio</label><textarea id="pros-f-proximo"></textarea></div>
                 </div>
                 <div id="pros-panel-preview" class="panel-ed"><div id="pros-preview-host" style="font-size:0.9rem;color:#ccc"></div></div>
@@ -1223,7 +1228,36 @@
         });
     }
 
+    function prosIeFromFraseFields() {
+        var parts = [];
+        for (var i = 1; i <= 4; i++) {
+            var el = document.getElementById('pros-f-frase-' + i);
+            var v = el ? String(el.value || '').trim() : '';
+            if (v) parts.push(v);
+        }
+        return parts.join('\n\n');
+    }
+
+    function prosFillFraseFields(ieText) {
+        var raw = String(ieText || '').trim();
+        var phrases = raw ? raw.split(/\n\s*\n/).map(function (s) { return s.trim(); }).filter(Boolean) : [];
+        if (phrases.length <= 1 && raw) {
+            phrases = raw.split(/\n/).map(function (s) { return s.replace(/^\*\s*/, '').trim(); }).filter(function (s) {
+                return s && /^["'""]/.test(s);
+            });
+        }
+        for (var i = 1; i <= 4; i++) {
+            var el = document.getElementById('pros-f-frase-' + i);
+            if (el) el.value = phrases[i - 1] || '';
+        }
+        var ieEl = document.getElementById('pros-f-ie');
+        if (ieEl) ieEl.value = phrases.join('\n\n');
+    }
+
     function prosFieldsFromForm() {
+        var ie = prosIeFromFraseFields();
+        var ieEl = document.getElementById('pros-f-ie');
+        if (ieEl) ieEl.value = ie;
         return {
             titulo: document.getElementById('pros-f-titulo').value,
             decreto_entrada: document.getElementById('pros-f-decreto').value,
@@ -1234,7 +1268,7 @@
             mentalidade_travada: document.getElementById('pros-f-travada').value,
             nova_mentalidade: document.getElementById('pros-f-nova').value,
             exercicio_fixacao: document.getElementById('pros-f-exercicio').value,
-            ie_chave: document.getElementById('pros-f-ie').value,
+            ie_chave: ie,
             treino_negocios: document.getElementById('pros-f-negocios').value,
             treino_altar: document.getElementById('pros-f-altar').value,
             sentenca_ativacao: document.getElementById('pros-f-sentenca').value,
@@ -1253,7 +1287,7 @@
         document.getElementById('pros-f-travada').value = d.mentalidade_travada || '';
         document.getElementById('pros-f-nova').value = d.nova_mentalidade || '';
         document.getElementById('pros-f-exercicio').value = d.exercicio_fixacao || '';
-        document.getElementById('pros-f-ie').value = d.ie_chave || '';
+        prosFillFraseFields(d.ie_chave || '');
         document.getElementById('pros-f-negocios').value = d.treino_negocios || '';
         document.getElementById('pros-f-altar').value = d.treino_altar || '';
         document.getElementById('pros-f-sentenca').value = d.sentenca_ativacao || '';
