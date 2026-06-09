@@ -497,7 +497,21 @@ app.use(requestLogger);
 const publicHtmlDir = path.join(__dirname, 'public_html');
 const kingSelectionClienteHtml = path.join(publicHtmlDir, 'kingSelectionCliente.html');
 const kingSelectionEditHtml = path.join(publicHtmlDir, 'kingSelectionEdit.html');
-const kingSelectionProjectHtml = path.join(publicHtmlDir, 'kingSelectionProject.html');
+function resolveKingSelectionProjectHtmlPath() {
+    const candidates = [
+        path.join(__dirname, 'public', 'kingSelectionProject.html'),
+        path.join(publicHtmlDir, 'kingSelectionProject.html')
+    ];
+    for (const filePath of candidates) {
+        try {
+            if (fs.existsSync(filePath)) return filePath;
+        } catch (_) { /* ignore */ }
+    }
+    return null;
+}
+
+const kingSelectionProjectHtml = resolveKingSelectionProjectHtmlPath()
+    || path.join(publicHtmlDir, 'kingSelectionProject.html');
 const KING_SELECTION_CLIENTE_RESERVED_SLUGS = new Set([
     'admin',
     'api',
@@ -527,20 +541,52 @@ function loadKingSelectionClienteHtmlTemplate() {
     return _ksClienteHtmlCache.html;
 }
 
-/** Versão do JS do cliente = mtime do ficheiro (força browser a buscar build novo após deploy). */
-function resolveKingSelectionClienteJsVersion() {
-    const candidates = [
-        path.join(__dirname, 'public', 'kingSelectionCliente.js'),
-        path.join(publicHtmlDir, 'kingSelectionCliente.js')
-    ];
-    for (const filePath of candidates) {
+/** Versão do JS = mtime do ficheiro (força browser a buscar build novo após deploy). */
+function resolveKingSelectionJsVersion(baseName) {
+    const filePath = resolveKingSelectionClienteJsPath(baseName);
+    if (filePath) {
         try {
-            if (fs.existsSync(filePath)) {
-                return Math.floor(fs.statSync(filePath).mtimeMs);
-            }
+            return Math.floor(fs.statSync(filePath).mtimeMs);
         } catch (_) { /* ignore */ }
     }
     return Date.now();
+}
+
+function resolveKingSelectionClienteJsVersion() {
+    return resolveKingSelectionJsVersion('kingSelectionCliente.js');
+}
+
+const KS_PROJECT_LOOSE_PATCH = 'kingSelectionProject-loose-photos.js';
+
+function patchKingSelectionProjectHtml(html) {
+    if (!html || typeof html !== 'string') return html;
+    const jsVer = resolveKingSelectionJsVersion('kingSelectionProject.js');
+    const patchVer = resolveKingSelectionJsVersion(KS_PROJECT_LOOSE_PATCH);
+    let out = html.replace(
+        /\/kingSelectionProject\.js\?v=[^"']+/g,
+        `/kingSelectionProject.js?v=${jsVer}`
+    );
+    if (!out.includes('id="p-delete-loose"') && out.includes('id="p-delete-sel"')) {
+        out = out.replace(
+            /(<button class="ks-btn" id="p-delete-sel"[^>]*>[\s\S]*?<\/button>)/,
+            `$1
+              <button class="ks-btn" id="p-delete-loose" type="button" style="color:#fca5a5;border-color:rgba(248,113,113,.55)" title="Apaga fotos sem pasta">
+                <i class="fas fa-unlink"></i> <span id="p-delete-loose-label">Excluir fotos soltas</span>
+              </button>`
+        );
+    }
+    if (!out.includes(KS_PROJECT_LOOSE_PATCH)) {
+        out = out.replace(
+            '</body>',
+            `  <script src="/${KS_PROJECT_LOOSE_PATCH}?v=${patchVer}"></script>\n</body>`
+        );
+    } else {
+        out = out.replace(
+            new RegExp(`/${KS_PROJECT_LOOSE_PATCH}\\?v=[^"']+`, 'g'),
+            `/${KS_PROJECT_LOOSE_PATCH}?v=${patchVer}`
+        );
+    }
+    return out;
 }
 
 const KS_PROJECT_SCROLL_MARKER = 'king-selection-project-scroll.js';
@@ -548,11 +594,8 @@ let _ksPhotographerHtmlCache = { filePath: '', mtimeMs: 0, html: null };
 
 /** Injeta CSS/JS anti-scroll preso no mobile; cache invalida quando o .html muda. */
 function getInjectedKingSelectionPhotographerHtml() {
-    const filePath = fs.existsSync(kingSelectionProjectHtml)
-        ? kingSelectionProjectHtml
-        : fs.existsSync(kingSelectionEditHtml)
-            ? kingSelectionEditHtml
-            : null;
+    const filePath = resolveKingSelectionProjectHtmlPath()
+        || (fs.existsSync(kingSelectionEditHtml) ? kingSelectionEditHtml : null);
     if (!filePath) return null;
     let st;
     try {
@@ -574,8 +617,20 @@ function getInjectedKingSelectionPhotographerHtml() {
             '  <link rel="stylesheet" href="/king-selection-project-mobile.css?v=4" />\n  <script src="/king-selection-project-scroll.js?v=4" defer></script>\n</head>'
         );
     }
+    html = patchKingSelectionProjectHtml(html);
     _ksPhotographerHtmlCache = { filePath, mtimeMs: st.mtimeMs, html };
     return html;
+}
+
+function serveKingSelectionProjectHtmlPage(req, res) {
+    const filePath = resolveKingSelectionProjectHtmlPath();
+    if (!filePath) return res.status(404).type('text/plain').send('Not found');
+    let html = fs.readFileSync(filePath, 'utf8');
+    html = patchKingSelectionProjectHtml(html);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    return res.type('html').send(html);
 }
 
 function serveKingSelectionPhotographerPage(req, res, next) {
@@ -948,6 +1003,10 @@ app.get(['/kingSelectionCliente-no-sem-pasta.js', '/mr/kingSelectionCliente-no-s
 app.get(['/kingSelectionProject.js', '/mr/kingSelectionProject.js'], (req, res) => {
     sendKingSelectionClienteJsFile(res, 'kingSelectionProject.js');
 });
+app.get([`/${KS_PROJECT_LOOSE_PATCH}`, `/mr/${KS_PROJECT_LOOSE_PATCH}`], (req, res) => {
+    sendKingSelectionClienteJsFile(res, KS_PROJECT_LOOSE_PATCH);
+});
+app.get(['/kingSelectionProject.html', '/mr/kingSelectionProject.html'], serveKingSelectionProjectHtmlPage);
 
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {
