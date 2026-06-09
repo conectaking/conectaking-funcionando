@@ -1382,14 +1382,52 @@ document.addEventListener('DOMContentLoaded', () => {
       gallery_link_cover_photo_id: pid,
       gallery_link_cover_file_path: null
     });
+    if (gallery && typeof gallery === 'object') {
+      gallery.gallery_link_cover_photo_id = pid;
+      gallery.gallery_link_cover_file_path = null;
+    }
   }
 
   function getPendingLinkCoverPhotoId() {
     const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
     const sel = parseInt(linkCoverPhotoSel?.value || '0', 10) || 0;
+    const saved = getCurrentCoverPhotoId();
     const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
     if (pickerOpen && draft > 0) return draft;
+    if (draft > 0 && draft !== saved) return draft;
     return sel > 0 ? sel : draft;
+  }
+
+  function resolveLinkCoverPreviewPhotoId(preferredId) {
+    if (hasExternalLinkCover()) return 0;
+    const pref = parseInt(preferredId || 0, 10) || 0;
+    const saved = getCurrentCoverPhotoId();
+    const sorted = getSortedPhotosForLinkCover();
+    const pick = (id) => (id > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === id) ? id : 0);
+    return pick(pref) || pick(saved) || pick(parseInt(sorted[0]?.id, 10) || 0) || 0;
+  }
+
+  function refreshLinkCoverPreviewImage(preferredId) {
+    if (!linkCoverPreview) return;
+    if (hasExternalLinkCover()) {
+      linkCoverPreview.setAttribute('data-photo-id', '0');
+      setImgPreview(
+        linkCoverPreview,
+        { url: `${API_URL}/api/king-selection/galleries/${galleryId}/link-cover-preview?t=${Date.now()}`, photoId: 0 }
+      ).catch(() => { });
+      return;
+    }
+    const pid = resolveLinkCoverPreviewPhotoId(preferredId);
+    if (!pid) {
+      linkCoverPreview.removeAttribute('src');
+      linkCoverPreview.removeAttribute('data-photo-id');
+      return;
+    }
+    linkCoverPreview.setAttribute('data-photo-id', String(pid));
+    setImgPreview(
+      linkCoverPreview,
+      { url: `${API_URL}/api/king-selection/photos/${pid}/preview?wm_mode=none`, photoId: pid }
+    ).catch(() => { });
   }
 
   async function commitLinkCoverDraftIfNeeded(opts) {
@@ -1399,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
     let pid = 0;
     if (silent) {
-      if (pickerOpen && draft > 0 && (hasExternalLinkCover() || draft !== saved)) pid = draft;
+      if (draft > 0 && (hasExternalLinkCover() || draft !== saved)) pid = draft;
       else return false;
     } else {
       pid = getPendingLinkCoverPhotoId();
@@ -1504,22 +1542,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!linkCoverPhotoSel) return;
     const sorted = getSortedPhotosForLinkCover();
     closeLinkCoverPicker();
-    linkCoverDraftPhotoId = 0;
 
     if (!sorted.length) {
       linkCoverPhotoSel.innerHTML = '<option value="">Sem fotos na galeria</option>';
       if (linkCoverOpenGalleryBtn) linkCoverOpenGalleryBtn.disabled = true;
-      if (linkCoverPreview) {
-        if (hasExternalLinkCover()) {
-          linkCoverPreview.setAttribute('data-photo-id', '0');
-          setImgPreview(
-            linkCoverPreview,
-            { url: `${API_URL}/api/king-selection/galleries/${galleryId}/link-cover-preview?t=${Date.now()}`, photoId: 0 }
-          ).catch(() => { });
-        } else {
-          linkCoverPreview.removeAttribute('src');
-        }
-      }
+      refreshLinkCoverPreviewImage(0);
       if (linkCoverCurrentSource) {
         linkCoverCurrentSource.textContent = hasExternalLinkCover()
           ? 'Origem atual: imagem externa'
@@ -1528,6 +1555,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const savedCoverId = getCurrentCoverPhotoId();
+    const draftId = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
+    const fallbackId = parseInt(sorted[0]?.id, 10) || 0;
+    const preferredId =
+      (draftId > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === draftId) ? draftId : 0)
+      || (savedCoverId > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === savedCoverId) ? savedCoverId : 0)
+      || fallbackId;
+
     linkCoverPhotoSel.innerHTML = sorted.map((p) => {
       const pid = parseInt(p.id, 10) || 0;
       const nm = String(p.original_name || `Foto #${pid}`).trim();
@@ -1535,25 +1570,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const label = ord > 0 ? `${ord} — ${nm}` : nm;
       return `<option value="${pid}">${escapeHtml(label)}</option>`;
     }).join('');
-    const coverId = parseInt(getCurrentCoverPhotoId() || '0', 10) || (parseInt(sorted[0]?.id, 10) || 0);
-    const currentPick = parseInt(linkCoverPhotoSel.value || '0', 10) || 0;
-    const selectedId = sorted.some((p) => (parseInt(p.id, 10) || 0) === currentPick) ? currentPick : coverId;
-    if (selectedId) linkCoverPhotoSel.value = String(selectedId);
+    if (preferredId) linkCoverPhotoSel.value = String(preferredId);
     if (linkCoverOpenGalleryBtn) linkCoverOpenGalleryBtn.disabled = false;
 
-    if (linkCoverPreview) {
-      const pid = parseInt(linkCoverPhotoSel.value || '0', 10) || 0;
-      if (hasExternalLinkCover()) {
-        linkCoverPreview.setAttribute('data-photo-id', '0');
-        setImgPreview(
-          linkCoverPreview,
-          { url: `${API_URL}/api/king-selection/galleries/${galleryId}/link-cover-preview?t=${Date.now()}`, photoId: 0 }
-        ).catch(() => { });
-      } else if (pid) {
-        linkCoverPreview.setAttribute('data-photo-id', String(pid));
-        setImgPreview(linkCoverPreview, { url: `${API_URL}/api/king-selection/photos/${pid}/preview?wm_mode=none`, photoId: pid }).catch(() => { });
-      }
-    }
+    refreshLinkCoverPreviewImage(preferredId);
     if (linkCoverCurrentSource) {
       linkCoverCurrentSource.textContent = hasExternalLinkCover()
         ? 'Origem atual: imagem externa'
@@ -9822,7 +9842,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const pid = parseInt(btn.getAttribute('data-link-cover-card') || '0', 10) || 0;
     if (!pid) return;
     linkCoverDraftPhotoId = pid;
+    if (linkCoverPhotoSel) linkCoverPhotoSel.value = String(pid);
     renderLinkCoverPickerGrid();
+    refreshLinkCoverPreviewImage(pid);
   });
   linkCoverPickerApplyBtn?.addEventListener('click', async () => {
     try {
@@ -9852,7 +9874,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (linkCoverUploadBtn) linkCoverUploadBtn.disabled = true;
       if (linkCoverPickerApplyBtn) linkCoverPickerApplyBtn.disabled = true;
-      await uploadExternalLinkCover(file);
+      const data = await uploadExternalLinkCover(file);
+      if (gallery && typeof gallery === 'object') {
+        gallery.gallery_link_cover_photo_id = null;
+        gallery.gallery_link_cover_file_path = data?.gallery_link_cover_file_path || gallery.gallery_link_cover_file_path;
+      }
+      linkCoverDraftPhotoId = 0;
       await loadGallery();
       closeLinkCoverPicker();
       toast('Capa externa enviada e ativada.', { kind: 'ok', title: 'Capa do link' });
