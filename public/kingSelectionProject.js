@@ -1579,15 +1579,15 @@ document.addEventListener('DOMContentLoaded', () => {
     try { linkCoverPicker.scrollTop = 0; } catch (_) { }
   }
 
-  function refreshLinkCoverPane() {
+  function refreshLinkCoverPane(opts) {
     if (!linkCoverPhotoSel) return;
     const sorted = getSortedPhotosForLinkCover();
-    closeLinkCoverPicker();
+    if (!opts?.keepPickerOpen) closeLinkCoverPicker();
 
     if (!sorted.length) {
       linkCoverPhotoSel.innerHTML = '<option value="">Sem fotos na galeria</option>';
       if (linkCoverOpenGalleryBtn) linkCoverOpenGalleryBtn.disabled = true;
-      refreshLinkCoverPreviewImage(0);
+      refreshLinkCoverPreviewImage(0, { strict: true });
       if (linkCoverCurrentSource) {
         linkCoverCurrentSource.textContent = hasExternalLinkCover()
           ? 'Origem atual: imagem externa'
@@ -1598,11 +1598,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const savedCoverId = getCurrentCoverPhotoId();
     const draftId = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
-    const fallbackId = parseInt(sorted[0]?.id, 10) || 0;
+    const pinId = parseInt(opts?.pinPhotoId || linkCoverRefreshPinId || 0, 10) || 0;
+    const inList = (id) => id > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === id);
     const preferredId =
-      (draftId > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === draftId) ? draftId : 0)
-      || (savedCoverId > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === savedCoverId) ? savedCoverId : 0)
-      || fallbackId;
+      (inList(draftId) ? draftId : 0)
+      || (inList(pinId) ? pinId : 0)
+      || (inList(savedCoverId) ? savedCoverId : 0);
 
     linkCoverPhotoSel.innerHTML = sorted.map((p) => {
       const pid = parseInt(p.id, 10) || 0;
@@ -1612,13 +1613,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return `<option value="${pid}">${escapeHtml(label)}</option>`;
     }).join('');
     if (preferredId) linkCoverPhotoSel.value = String(preferredId);
+    else linkCoverPhotoSel.value = '';
     if (linkCoverOpenGalleryBtn) linkCoverOpenGalleryBtn.disabled = false;
 
-    refreshLinkCoverPreviewImage(preferredId);
+    refreshLinkCoverPreviewImage(preferredId, { strict: true });
     if (linkCoverCurrentSource) {
-      linkCoverCurrentSource.textContent = hasExternalLinkCover()
-        ? 'Origem atual: imagem externa'
-        : 'Origem atual: foto da galeria atual';
+      if (hasExternalLinkCover()) {
+        linkCoverCurrentSource.textContent = 'Origem atual: imagem externa';
+      } else if (savedCoverId > 0) {
+        linkCoverCurrentSource.textContent = 'Origem atual: foto da galeria atual';
+      } else if (preferredId > 0) {
+        linkCoverCurrentSource.textContent = 'Pré-visualização — clique em «Salvar capa do link» para confirmar';
+      } else {
+        linkCoverCurrentSource.textContent = 'Nenhuma capa salva — escolha uma foto e salve';
+      }
     }
   }
 
@@ -3933,7 +3941,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // loadGallery() chama revokeAllPreviewUrls(): se o utilizador está em "Capa do link",
       // o painel "links" está oculto e refreshLinksPane() não corre — a prévia ficava inválida.
       const lcp = document.querySelector('[data-pane="link-cover"]');
-      if (lcp && !lcp.classList.contains('hidden')) refreshLinkCoverPane();
+      if (lcp && !lcp.classList.contains('hidden')) {
+        const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
+        refreshLinkCoverPane({ keepPickerOpen: pickerOpen });
+      }
     } catch (_) {}
   }
 
@@ -9887,40 +9898,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btn) btn.disabled = false;
     }
   });
-  linkCoverPhotoSel?.addEventListener('change', async () => {
+  linkCoverPhotoSel?.addEventListener('change', () => {
     const pid = parseInt(linkCoverPhotoSel.value || '0', 10) || 0;
     if (!pid) {
-      refreshLinkCoverPane();
+      linkCoverDraftPhotoId = 0;
+      refreshLinkCoverPreviewImage(0, { strict: true });
       return;
     }
-    const prevPhotoId = parseInt(gallery?.gallery_link_cover_photo_id || 0, 10) || 0;
-    const extPath = String(gallery?.gallery_link_cover_file_path || '').trim();
-    if (!extPath && pid === prevPhotoId) {
-      refreshLinkCoverPane();
-      return;
-    }
-    try {
-      if (linkCoverPhotoSel) linkCoverPhotoSel.disabled = true;
-      await setGalleryCover(pid);
-      await loadGallery();
-      toast('Capa do link atualizada.', { kind: 'ok', title: 'Capa do link' });
-    } catch (e) {
-      showError(e?.message || 'Erro ao salvar capa do link');
-      try {
-        await loadGallery();
-      } catch (_) { /* ignore */ }
-      refreshLinkCoverPane();
-    } finally {
-      if (linkCoverPhotoSel) linkCoverPhotoSel.disabled = false;
-    }
+    linkCoverDraftPhotoId = pid;
+    refreshLinkCoverPreviewImage(pid, { strict: true });
   });
   linkCoverSaveBtn?.addEventListener('click', async () => {
     try {
       if (linkCoverSaveBtn) linkCoverSaveBtn.disabled = true;
-      const saved = await commitLinkCoverDraftIfNeeded({ silent: false });
-      if (!saved && !hasExternalLinkCover()) {
-        toast('Nenhuma alteração de capa para salvar.', { kind: 'warn', title: 'Capa do link' });
-      }
+      await saveLinkCoverNow({ silent: false });
     } catch (e) {
       showError(e?.message || 'Erro ao salvar capa do link');
     } finally {
@@ -9953,18 +9944,12 @@ document.addEventListener('DOMContentLoaded', () => {
     linkCoverDraftPhotoId = pid;
     if (linkCoverPhotoSel) linkCoverPhotoSel.value = String(pid);
     renderLinkCoverPickerGrid();
-    refreshLinkCoverPreviewImage(pid);
+    refreshLinkCoverPreviewImage(pid, { strict: true });
   });
   linkCoverPickerApplyBtn?.addEventListener('click', async () => {
     try {
-      const pid = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
-      if (!pid) throw new Error('Selecione uma foto para capa do link.');
       if (linkCoverPickerApplyBtn) linkCoverPickerApplyBtn.disabled = true;
-      await setGalleryCover(pid);
-      if (linkCoverPhotoSel) linkCoverPhotoSel.value = String(pid);
-      await loadGallery();
-      closeLinkCoverPicker();
-      toast('Capa do link atualizada.', { kind: 'ok', title: 'Capa do link' });
+      await saveLinkCoverNow({ silent: false });
     } catch (e) {
       showError(e?.message || 'Erro ao salvar capa do link');
     } finally {
