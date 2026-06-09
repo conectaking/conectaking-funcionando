@@ -698,6 +698,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let linkCoverDraftPhotoId = 0;
   let linkCoverSearchTerm = '';
   let linkCoverRefreshPinId = 0;
+  let linkCoverPendingExternalFile = null;
+  let linkCoverPendingExternalPreviewUrl = '';
 
   function computeSalesMiniStatsForClient(clientId) {
     const cid = parseInt(clientId, 10) || 0;
@@ -1389,6 +1391,27 @@ document.addEventListener('DOMContentLoaded', () => {
     return !!String(gallery?.gallery_link_cover_file_path || '').trim();
   }
 
+  function clearLinkCoverPendingExternalPreview() {
+    if (linkCoverPendingExternalPreviewUrl) {
+      try { URL.revokeObjectURL(linkCoverPendingExternalPreviewUrl); } catch (_) { /* ignore */ }
+    }
+    linkCoverPendingExternalPreviewUrl = '';
+    linkCoverPendingExternalFile = null;
+  }
+
+  function showLinkCoverPendingExternalPreview(file) {
+    if (!linkCoverPreview || !file) return;
+    clearLinkCoverPendingExternalPreview();
+    linkCoverPendingExternalFile = file;
+    linkCoverPendingExternalPreviewUrl = URL.createObjectURL(file);
+    linkCoverPreview.setAttribute('data-photo-id', '0');
+    linkCoverPreview.setAttribute('data-external-pending', '1');
+    linkCoverPreview.src = linkCoverPendingExternalPreviewUrl;
+    if (linkCoverCurrentSource) {
+      linkCoverCurrentSource.textContent = 'Pré-visualização do arquivo — clique em «Salvar capa do link» para confirmar';
+    }
+  }
+
   async function setGalleryCover(photoId) {
     const pid = parseInt(photoId, 10) || 0;
     if (!pid) throw new Error('Selecione uma foto para capa do link.');
@@ -1431,6 +1454,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function refreshLinkCoverPreviewImage(preferredId, opts) {
     if (!linkCoverPreview) return;
+    if (linkCoverPendingExternalFile && linkCoverPendingExternalPreviewUrl) {
+      linkCoverPreview.setAttribute('data-photo-id', '0');
+      linkCoverPreview.setAttribute('data-external-pending', '1');
+      linkCoverPreview.src = linkCoverPendingExternalPreviewUrl;
+      return;
+    }
+    if (linkCoverPreview) linkCoverPreview.removeAttribute('data-external-pending');
     if (hasExternalLinkCover()) {
       linkCoverPreview.setAttribute('data-photo-id', '0');
       setImgPreview(
@@ -1454,10 +1484,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function saveLinkCoverNow(opts) {
     const silent = !!(opts && opts.silent);
+
+    if (linkCoverPendingExternalFile) {
+      closeLinkCoverPicker();
+      const data = await uploadExternalLinkCover(linkCoverPendingExternalFile);
+      clearLinkCoverPendingExternalPreview();
+      if (linkCoverUploadFile) linkCoverUploadFile.value = '';
+      if (gallery && typeof gallery === 'object') {
+        gallery.gallery_link_cover_photo_id = null;
+        gallery.gallery_link_cover_file_path = data?.gallery_link_cover_file_path || gallery.gallery_link_cover_file_path;
+      }
+      linkCoverDraftPhotoId = 0;
+      await loadGallery();
+      refreshLinkCoverPane();
+      if (!silent) {
+        toast('Capa externa salva.', { kind: 'ok', title: 'Capa do link' });
+      }
+      return true;
+    }
+
     const pid = getLinkCoverPendingPhotoIdForSave();
     if (!pid) {
+      if (hasExternalLinkCover()) {
+        if (!silent) {
+          toast('Capa externa já está salva.', { kind: 'ok', title: 'Capa do link' });
+        }
+        return true;
+      }
       if (!silent) {
-        toast('Selecione uma foto da galeria antes de salvar.', { kind: 'warn', title: 'Capa do link' });
+        toast('Selecione uma foto (galeria ou arquivo do PC) antes de salvar.', { kind: 'warn', title: 'Capa do link' });
       }
       return false;
     }
@@ -1469,6 +1524,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return false;
     }
     closeLinkCoverPicker();
+    clearLinkCoverPendingExternalPreview();
     await setGalleryCover(pid);
     if (linkCoverPhotoSel) linkCoverPhotoSel.value = String(pid);
     linkCoverDraftPhotoId = 0;
@@ -1484,6 +1540,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function commitLinkCoverDraftIfNeeded(opts) {
     const silent = !!(opts && opts.silent);
+    if (linkCoverPendingExternalFile) {
+      return saveLinkCoverNow({ silent });
+    }
     if (silent) {
       const saved = getCurrentCoverPhotoId();
       const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
@@ -9959,30 +10018,20 @@ document.addEventListener('DOMContentLoaded', () => {
   linkCoverUploadBtn?.addEventListener('click', () => {
     linkCoverUploadFile?.click();
   });
-  linkCoverUploadFile?.addEventListener('change', async () => {
+  linkCoverUploadFile?.addEventListener('change', () => {
     try {
       const file = linkCoverUploadFile.files && linkCoverUploadFile.files[0];
       if (!file) return;
       if (!String(file.type || '').toLowerCase().startsWith('image/')) {
+        if (linkCoverUploadFile) linkCoverUploadFile.value = '';
         throw new Error('Envie apenas imagem (JPG, PNG, WEBP...).');
       }
-      if (linkCoverUploadBtn) linkCoverUploadBtn.disabled = true;
-      if (linkCoverPickerApplyBtn) linkCoverPickerApplyBtn.disabled = true;
-      const data = await uploadExternalLinkCover(file);
-      if (gallery && typeof gallery === 'object') {
-        gallery.gallery_link_cover_photo_id = null;
-        gallery.gallery_link_cover_file_path = data?.gallery_link_cover_file_path || gallery.gallery_link_cover_file_path;
-      }
       linkCoverDraftPhotoId = 0;
-      await loadGallery();
       closeLinkCoverPicker();
-      toast('Capa externa enviada e ativada.', { kind: 'ok', title: 'Capa do link' });
+      showLinkCoverPendingExternalPreview(file);
+      toast('Arquivo selecionado. Clique em «Salvar capa do link» para confirmar.', { kind: 'warn', title: 'Capa do link' });
     } catch (e) {
-      showError(e?.message || 'Erro ao enviar capa externa');
-    } finally {
-      if (linkCoverUploadBtn) linkCoverUploadBtn.disabled = false;
-      if (linkCoverPickerApplyBtn) linkCoverPickerApplyBtn.disabled = false;
-      if (linkCoverUploadFile) linkCoverUploadFile.value = '';
+      showError(e?.message || 'Erro ao selecionar capa externa');
     }
   });
   linksSupportSave?.addEventListener('click', async () => {
