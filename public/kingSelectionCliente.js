@@ -929,7 +929,7 @@
               <input type="checkbox" data-dl-pick="${pid}" ${isChecked ? 'checked' : ''} />
               Selecionar
             </label>
-            <img src="${previewUrl(pid, false)}" alt="${escapeHtml(a.original_name || fallbackName || '')}" loading="lazy" />
+            <img src="${previewUrl(pid, true)}" alt="${escapeHtml(a.original_name || fallbackName || '')}" loading="lazy" />
             <div class="ks-ph-meta">${escapeHtml(a.original_name || fallbackName || `Foto #${pid}`)} <span class="ks-dl-badge-liberada">Liberada</span></div>
             <a class="ks-btn" href="${previewDownloadUrl(pid)}" download>
               <i class="fas fa-download"></i> Baixar
@@ -941,7 +941,7 @@
         .filter((p) => !approvedIds.has(parseInt(p.id, 10)))
         .map((p) => `
           <div class="ks-ph">
-            <img src="${previewUrl(p.id, false)}" alt="${escapeHtml(p.original_name || '')}" loading="lazy" />
+            <img src="${previewUrl(p.id, true)}" alt="${escapeHtml(p.original_name || '')}" loading="lazy" />
             <div class="ks-ph-meta">${escapeHtml(p.original_name || `Foto #${p.id}`)}</div>
             <button type="button" class="ks-btn ks-wait-lock" disabled title="Aguardando aprovação">
               <i class="fas fa-hourglass-half"></i> Aguardando aprovação
@@ -987,7 +987,7 @@
       }
       downloadsGrid.innerHTML = selectedForClient.map((p) => `
         <div class="ks-ph">
-          <img src="${previewUrl(p.id, false)}" alt="${escapeHtml(p.original_name || '')}" loading="lazy" />
+          <img src="${previewUrl(p.id, true)}" alt="${escapeHtml(p.original_name || '')}" loading="lazy" />
           <div class="ks-ph-meta">${escapeHtml(p.original_name || `Foto #${p.id}`)}</div>
           <button type="button" class="ks-btn ks-wait-lock" disabled title="Aguardando liberação">
             <i class="fas fa-lock"></i> Aguardando liberação
@@ -2770,7 +2770,7 @@
             ${sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : ''}
           </button>
           <div class="ks-ph-imgwrap" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
-            <img src="${previewUrl(p.id, false)}" alt="" loading="lazy" width="200" height="300" referrerpolicy="no-referrer" decoding="async" />
+            <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" width="200" height="300" referrerpolicy="no-referrer" decoding="async" />
           </div>
           <div class="ks-ph-bar">
             <div class="ks-ph-bar-main">${barAction}${showSelTag ? ` <span class="ks-ph-batch">S${batch}</span>` : ''}</div>
@@ -2929,7 +2929,7 @@
     }
     grid.innerHTML = avail.map((p) =>
       `<button type="button" class="ks-cmp-add-tile" data-cmp-add-pid="${p.id}" title="Adicionar à seleção">
-        <img src="${previewUrl(p.id, false)}" alt="" loading="lazy" />
+        <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" />
         <span class="ks-cmp-add-tile-cap">${escapeHtml(normalizeExportName(p.original_name) || 'foto')}</span>
       </button>`
     ).join('');
@@ -2978,7 +2978,7 @@
       else if (compareState.thumbTargetMode === 'pinB') tip = 'Colocar em Foto B';
       else tip = compareState.nextThumbSlot === 'A' ? 'Colocar em Foto A (depois na B)' : 'Colocar em Foto B (depois na A)';
       return `<button type="button" class="${cl}" data-cmp-pick="${p.id}" title="${tip}">
-        <img src="${previewUrl(p.id, false)}" alt="" loading="lazy" />
+        <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" />
       </button>`;
     }).join('');
     if (compareCanAddMorePhotos()) {
@@ -3123,7 +3123,7 @@
         <div class="ks-ph selected" data-pid="${p.id}">
           <button type="button" class="ks-check-btn ks-check-btn--on" disabled aria-hidden="true"><i class="fas fa-check"></i></button>
           <div class="ks-ph-imgwrap" data-confirm-expand="${p.id}" role="button" tabindex="0" title="Ampliar foto" style="cursor:pointer">
-            <img src="${previewUrl(p.id, false)}" alt="" loading="lazy" />
+            <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" />
           </div>
           <div class="ks-ph-bar">
             <div class="ks-ph-bar-main">${bar}</div>

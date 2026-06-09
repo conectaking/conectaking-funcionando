@@ -7799,6 +7799,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       }
     }
 
+    ksInvalidateWatermarkGalleryCache(galleryId);
     res.json({ success: true, cloudflare_watermark: cloudflare, r2_watermark: r2Wm });
   } finally {
     client.release();
@@ -7994,16 +7995,16 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const photo = pRes.rows[0];
     let buf;
     try {
-      buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+      buf = await fetchPhotoBufferForRow(photo);
     } catch (fetchErr) {
-      console.error('[king-selection] preview fetchPhotoFileBufferFromFilePath:', fetchErr?.message || fetchErr);
+      console.error('[king-selection] preview fetchPhotoBufferForRow:', fetchErr?.message || fetchErr);
       return res.status(502).json({
         message: 'Não foi possível obter o ficheiro da imagem (armazenamento). Tente novamente em instantes.'
       });
     }
     if (!buf) {
       return res.status(502).json({
-        message: 'Não foi possível carregar a imagem (Cloudflare/R2 não configurado ou ficheiro em falta).'
+        message: 'Não foi possível carregar a imagem (armazenamento indisponível ou ficheiro em falta no R2).'
       });
     }
 
@@ -8036,9 +8037,17 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
 
-    const wm = await loadWatermarkForGallery(client, photo.gallery_id);
     // Overrides (preview em tempo real no admin)
     const qMode = (req.query.wm_mode || '').toString();
+    const skipWm = qMode === 'none';
+    if (skipWm) {
+      const out = await ksResizeJpegNoWatermark(workBuf, outW, outH, 84);
+      res.set('Content-Type', 'image/jpeg');
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.set('Cache-Control', 'private, max-age=600');
+      return res.send(out);
+    }
+    const wm = await loadWatermarkForGalleryCached(client, photo.gallery_id);
     if (['x', 'logo', 'full', 'tile', 'tile_dense', 'none'].includes(qMode)) wm.mode = qMode;
     const qOp = parseFloat(req.query.wm_opacity);
     if (Number.isFinite(qOp)) wm.opacity = qOp;
@@ -8331,11 +8340,8 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
     const useThumb = !isDownload && ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
-    const [buf, wm] = await Promise.all([
-      fetchPhotoFileBufferFromFilePath(photo.file_path),
-      loadWatermarkForGallery(client, galleryId)
-    ]);
-    if (!buf) return res.status(500).send('Não foi possível carregar a imagem.');
+    const buf = await fetchPhotoBufferForRow(photo);
+    if (!buf) return res.status(502).send('Não foi possível carregar a imagem (ficheiro em falta no armazenamento).');
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
     const { width, height } = getDisplayDimensions(meta, 1200, 1200);
@@ -8343,7 +8349,8 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
-    const out = await buildWatermarkedJpeg({
+    const wm = await loadWatermarkForGalleryCached(client, galleryId);
+    const out = await ksBuildPreviewJpegSafe({
       imgBuffer: buf,
       outW,
       outH,
@@ -8366,6 +8373,59 @@ function ksPickPhotoStoragePath(photoRow) {
   const raw = String(photoRow.file_path || '').trim();
   if (edited) return edited;
   return raw || null;
+}
+
+async function fetchPhotoBufferForRow(photoRow) {
+  const primary = ksPickPhotoStoragePath(photoRow);
+  if (primary) {
+    const buf = await fetchPhotoFileBufferFromFilePath(primary);
+    if (buf) return buf;
+  }
+  const raw = String(photoRow?.file_path || '').trim();
+  if (raw && raw !== primary) {
+    return fetchPhotoFileBufferFromFilePath(raw);
+  }
+  return null;
+}
+
+const _ksWmGalleryCache = new Map();
+
+async function loadWatermarkForGalleryCached(pgClient, galleryId) {
+  const gid = parseInt(galleryId, 10) || 0;
+  if (!gid) return loadWatermarkForGallery(pgClient, galleryId);
+  if (_ksWmGalleryCache.has(gid)) return _ksWmGalleryCache.get(gid);
+  const wm = await loadWatermarkForGallery(pgClient, galleryId);
+  _ksWmGalleryCache.set(gid, wm);
+  return wm;
+}
+
+function ksInvalidateWatermarkGalleryCache(galleryId) {
+  const gid = parseInt(galleryId, 10) || 0;
+  if (gid) _ksWmGalleryCache.delete(gid);
+}
+
+async function ksBuildPreviewJpegSafe({ imgBuffer, outW, outH, watermark, jpegOpts }) {
+  try {
+    return await buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts });
+  } catch (e) {
+    logger.warn('[king-selection] preview wm fallback', { message: e && e.message });
+    return buildWatermarkedJpeg({
+      imgBuffer,
+      outW,
+      outH,
+      watermark: { mode: 'none' },
+      jpegOpts
+    });
+  }
+}
+
+async function ksResizeJpegNoWatermark(buf, outW, outH, jpegQuality) {
+  const jq = jpegQuality ?? 82;
+  return sharp(buf)
+    .rotate()
+    .resize(outW, outH, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: jq, progressive: true })
+    .toBuffer();
 }
 
 /**
@@ -12592,8 +12652,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       } catch (_) { }
 
       // Download pago/aprovado deve sair SEM redimensionar e SEM recompressão (qualidade original).
-      const originalBuf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
-      if (!originalBuf) return res.status(500).send('Não foi possível carregar a imagem original.');
+      const originalBuf = await fetchPhotoBufferForRow(photo);
+      if (!originalBuf) return res.status(502).send('Não foi possível carregar a imagem original.');
       const { contentType, ext } = await ksDetectBufferImageType(originalBuf);
       const finalName = ksClientDownloadAttachmentFilename(photo, photoId, ext);
       res.set('Content-Type', contentType);
@@ -12604,8 +12664,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       return res.send(originalBuf);
     }
 
-    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
-    if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
+    const buf = await fetchPhotoBufferForRow(photo);
+    if (!buf) return res.status(502).send('Não foi possível carregar a imagem (ficheiro em falta no armazenamento).');
 
     /* Download não-evento-pago (ex.: galeria pública após seleção): entregar original sem marca d’água */
     if (isDownload && !isPaidEventMode) {
@@ -12625,7 +12685,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       galleryQuality = normalizeClientImageQuality(gq.rows[0]?.client_image_quality);
     }
     const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
-    const wm = await loadWatermarkForGallery(client, payload.galleryId);
+    const wm = await loadWatermarkForGalleryCached(client, payload.galleryId);
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
@@ -12635,7 +12695,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
 
-    const out = await buildWatermarkedJpeg({
+    const out = await ksBuildPreviewJpegSafe({
       imgBuffer: buf,
       outW,
       outH,
@@ -12647,6 +12707,11 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
     res.send(out);
+  } catch (previewErr) {
+    logger.error('[king-selection] client preview', { photoId, message: previewErr && previewErr.message });
+    if (!res.headersSent) {
+      return res.status(502).send('Não foi possível gerar a pré-visualização desta foto.');
+    }
   } finally {
     client.release();
   }

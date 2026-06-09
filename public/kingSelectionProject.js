@@ -3010,8 +3010,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hidratar previews: Intersection Observer para carregar só quando visível (mais rápido)
     if (uploadState && uploadState.running) return;
-    const m = (getRadio('wm_mode') || wmMode || 'tile_dense');
-    const wm = encodeURIComponent(m);
     const imgs = Array.from(pGrid.querySelectorAll('img[data-photo-id]'))
       .map(img => ({ img, id: parseInt(img.getAttribute('data-photo-id') || '0', 10) }))
       .filter(x => x.id);
@@ -3019,7 +3017,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadOne = (img, id) => {
       if (img.getAttribute('data-preview-loading') === '1' || img.getAttribute('data-preview-loaded') === '1') return;
       img.setAttribute('data-preview-loading', '1');
-      setImgPreview(img, { url: `${API_URL}/api/king-selection/photos/${id}/preview?wm_mode=${wm}`, photoId: id })
+      setImgPreview(img, { url: `${API_URL}/api/king-selection/photos/${id}/preview?wm_mode=none&max=720`, photoId: id })
         .then(() => { img.setAttribute('data-preview-loaded', '1'); })
         .catch(() => { })
         .finally(() => { img.removeAttribute('data-preview-loading'); });
