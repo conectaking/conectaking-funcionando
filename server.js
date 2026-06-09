@@ -527,6 +527,22 @@ function loadKingSelectionClienteHtmlTemplate() {
     return _ksClienteHtmlCache.html;
 }
 
+/** Versão do JS do cliente = mtime do ficheiro (força browser a buscar build novo após deploy). */
+function resolveKingSelectionClienteJsVersion() {
+    const candidates = [
+        path.join(publicHtmlDir, 'kingSelectionCliente.js'),
+        path.join(__dirname, 'public', 'kingSelectionCliente.js')
+    ];
+    for (const filePath of candidates) {
+        try {
+            if (fs.existsSync(filePath)) {
+                return Math.floor(fs.statSync(filePath).mtimeMs);
+            }
+        } catch (_) { /* ignore */ }
+    }
+    return Date.now();
+}
+
 const KS_PROJECT_SCROLL_MARKER = 'king-selection-project-scroll.js';
 let _ksPhotographerHtmlCache = { filePath: '', mtimeMs: 0, html: null };
 
@@ -640,6 +656,11 @@ async function serveKingSelectionClienteGallery(req, res, next) {
 
     let html = tpl.replace('</head>', `  ${metaBlock}\n  ${bootScript}\n</head>`);
     html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escHtmlAttr(pageTitle)}</title>`);
+    const ksClienteJsVer = resolveKingSelectionClienteJsVersion();
+    html = html.replace(
+        /\/kingSelectionCliente\.js\?v=[^"']+/g,
+        `/kingSelectionCliente.js?v=${ksClienteJsVer}`
+    );
 
     // HTML muda com deploy; evita 5 min de cache agressivo em CDN/browser.
     res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');

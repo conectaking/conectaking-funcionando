@@ -447,8 +447,12 @@
         f.photo_count = list.length;
         return f;
       })
-      // Evita mostrar pastas vazias para o cliente final.
-      .filter((f) => f.id > 0 && f.photo_count > 0)
+      // Evita mostrar pastas vazias ou virtuais ("Sem pasta") para o cliente final.
+      .filter((f) => {
+        if (f.id <= 0 || f.photo_count <= 0) return false;
+        const name = String(f.name || '').trim().toLowerCase();
+        return name !== 'sem pasta' && name !== 'sem-pasta' && name !== 'unassigned';
+      })
       .sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id));
   }
 

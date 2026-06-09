@@ -583,6 +583,54 @@ async function ksHealOrphanPhotoFolderIds(pgClient, galleryId) {
   return r.rowCount || 0;
 }
 
+function ksIsVirtualClientFolderRow(folderRow) {
+  const id = parseInt(folderRow?.id, 10) || 0;
+  if (id <= 0) return true;
+  const name = String(folderRow?.name || '').trim().toLowerCase();
+  return name === 'sem pasta' || name === 'sem-pasta' || name === 'unassigned';
+}
+
+/** Pastas reais com fotos — cliente nunca vê pasta virtual "Sem pasta". */
+function ksPrepareClientGalleryFoldersForClient(folders, photos) {
+  const arr = Array.isArray(folders) ? folders : [];
+  const photosArr = Array.isArray(photos) ? photos : [];
+  const validIds = new Set(
+    arr
+      .filter((f) => !ksIsVirtualClientFolderRow(f))
+      .map((f) => parseInt(f.id, 10) || 0)
+      .filter((id) => id > 0)
+  );
+  const countByFolder = new Map();
+  for (const p of photosArr) {
+    const fid = parseInt(p?.folder_id, 10) || 0;
+    if (!fid || !validIds.has(fid)) continue;
+    countByFolder.set(fid, (countByFolder.get(fid) || 0) + 1);
+  }
+  return arr
+    .filter((f) => !ksIsVirtualClientFolderRow(f))
+    .map((f) => {
+      const id = parseInt(f.id, 10) || 0;
+      return {
+        ...f,
+        photo_count: countByFolder.get(id) || 0
+      };
+    })
+    .filter((f) => (parseInt(f.id, 10) || 0) > 0 && (parseInt(f.photo_count, 10) || 0) > 0);
+}
+
+function ksSanitizeClientGalleryPhotosFolderIds(photos, folders) {
+  const validIds = new Set(
+    (Array.isArray(folders) ? folders : [])
+      .map((f) => parseInt(f?.id, 10) || 0)
+      .filter((id) => id > 0)
+  );
+  return (Array.isArray(photos) ? photos : []).map((p) => {
+    const fid = parseInt(p?.folder_id, 10) || 0;
+    if (!fid || !validIds.has(fid)) return { ...p, folder_id: null };
+    return p;
+  });
+}
+
 async function runAutoSeparateByFaceInternal(pgClient, galleryId, minSimilarity) {
   const needed = ['king_photo_folders', 'rekognition_photo_faces', 'rekognition_face_matches', 'king_gallery_clients'];
   for (const t of needed) {
@@ -8490,14 +8538,18 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
       return out;
     });
     let folders = await listFoldersForGallery(client, gallery.id);
+    let photosOut = photos;
     // Layout "solto": não expor pastas no cliente
     if (clientFolderLayoutNorm === 'flat') {
       folders = [];
-      for (const p of photos) p.folder_id = null;
+      photosOut = photos.map((p) => ({ ...p, folder_id: null }));
+    } else {
+      folders = ksPrepareClientGalleryFoldersForClient(folders, photosOut);
+      photosOut = ksSanitizeClientGalleryPhotosFolderIds(photosOut, folders);
     }
     res.json({
       success: true,
-      gallery: { ...gallery, photos, folders, locked: true, allow_download: !!gallery.allow_download, face_recognition_enabled: !!gallery.face_recognition_enabled },
+      gallery: { ...gallery, photos: photosOut, folders, locked: true, allow_download: !!gallery.allow_download, face_recognition_enabled: !!gallery.face_recognition_enabled },
       selectedPhotoIds: []
     });
   } finally {
@@ -9859,7 +9911,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         ? 'Parte da sua seleção já foi enviada em uma rodada anterior: essas fotos continuam escolhidas e não podem ser desmarcadas. Você pode apenas acrescentar novas fotos (e desmarcar só o que escolher nesta rodada).'
         : null;
 
-    const photos = (pRes.rows || []).map(p => {
+    let photos = (pRes.rows || []).map(p => {
       const out = { id: p.id, original_name: p.original_name, order: p.order };
       if (hasFolderId) out.folder_id = p.folder_id ? parseInt(p.folder_id, 10) : null;
       return out;
@@ -9983,7 +10035,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     let foldersOut = folders;
     if (clientFolderLayoutNorm === 'flat') {
       foldersOut = [];
-      for (const p of photos) p.folder_id = null;
+      photos = photos.map((p) => ({ ...p, folder_id: null }));
+    } else {
+      foldersOut = ksPrepareClientGalleryFoldersForClient(foldersOut, photos);
+      photos = ksSanitizeClientGalleryPhotosFolderIds(photos, foldersOut);
     }
 
     res.json({
