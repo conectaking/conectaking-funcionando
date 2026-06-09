@@ -2756,21 +2756,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!confirm(`Excluir ${selectedPhotoIds.size} foto(s) selecionada(s)? Esta ação não pode ser desfeita.`)) return;
     const ids = Array.from(selectedPhotoIds);
+    const chunkSize = 35;
     try {
       if (uploadCancel) uploadCancel.classList.add('hidden');
       closeViewer();
-      setUploadUi({ active: true, line: `Excluindo ${ids.length} foto(s)…`, file: undefined, pct: 0, meta: '0%' });
-      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/photos/delete-batch`, {
-        method: 'POST',
-        headers: HEADERS,
-        body: JSON.stringify({ photo_ids: ids })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Erro ao excluir fotos');
+      let deletedTotal = 0;
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const pct = Math.round(((i + chunk.length) / ids.length) * 92);
+        setUploadUi({
+          active: true,
+          line: `Excluindo ${Math.min(i + chunk.length, ids.length)}/${ids.length} foto(s)…`,
+          file: undefined,
+          pct,
+          meta: `${pct}%`
+        });
+        const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/photos/delete-batch`, {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({ photo_ids: chunk })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Erro ao excluir fotos');
+        deletedTotal += parseInt(data.deleted, 10) || chunk.length;
+      }
       selectedPhotoIds = new Set();
       setUploadUi({ active: true, line: 'Atualizando…', file: undefined, pct: 98, meta: '98%' });
       await loadGallery();
-      toast('Fotos excluídas.', { kind: 'ok', title: 'Exclusão' });
+      toast(`${deletedTotal} foto(s) excluída(s).`, { kind: 'ok', title: 'Exclusão' });
     } catch (e) {
       showError(e?.message || 'Erro ao excluir fotos');
       toast(e?.message || 'Erro ao excluir fotos', { kind: 'err', title: 'Erro' });

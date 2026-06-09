@@ -2004,6 +2004,62 @@ function extractR2KeyFromPublicHttpsUrl(filePath) {
   }
 }
 
+/** Ignora tabela/coluna ausente (migrations antigas). */
+async function ksSafeQuery(client, sql, params) {
+  try {
+    return await client.query(sql, params);
+  } catch (e) {
+    if (e && (e.code === '42P01' || e.code === '42703')) return null;
+    throw e;
+  }
+}
+
+/** Remove vínculos antes de apagar linhas em king_photos (evita FK 500 em produção). */
+async function ksPurgePhotoDependencies(client, galleryId, photoIds) {
+  const ids = Array.isArray(photoIds)
+    ? [...new Set(photoIds.map((x) => parseInt(x, 10)).filter(Boolean))]
+    : [];
+  if (!ids.length) return;
+
+  await ksSafeQuery(
+    client,
+    'UPDATE king_photo_folders SET cover_photo_id=NULL WHERE gallery_id=$1 AND cover_photo_id = ANY($2::int[])',
+    [galleryId, ids]
+  );
+  await ksSafeQuery(
+    client,
+    'UPDATE king_galleries SET gallery_link_cover_photo_id=NULL WHERE id=$1 AND gallery_link_cover_photo_id = ANY($2::int[])',
+    [galleryId, ids]
+  );
+  await ksSafeQuery(
+    client,
+    'UPDATE king_photos SET is_cover=FALSE WHERE gallery_id=$1 AND id = ANY($2::int[])',
+    [galleryId, ids]
+  );
+  await ksSafeQuery(
+    client,
+    `DELETE FROM rekognition_face_matches
+     WHERE photo_face_id IN (SELECT id FROM rekognition_photo_faces WHERE photo_id = ANY($1::int[]))`,
+    [ids]
+  );
+  await ksSafeQuery(client, 'DELETE FROM rekognition_photo_faces WHERE photo_id = ANY($1::int[])', [ids]);
+  await ksSafeQuery(client, 'DELETE FROM rekognition_photo_jobs WHERE photo_id = ANY($1::int[])', [ids]);
+  await ksSafeQuery(client, 'DELETE FROM king_selection_photo_approvals WHERE photo_id = ANY($1::int[])', [ids]);
+  await ksSafeQuery(client, 'DELETE FROM king_download_audit WHERE photo_id = ANY($1::int[])', [ids]);
+  await ksSafeQuery(client, 'DELETE FROM king_selections WHERE photo_id = ANY($1::int[])', [ids]);
+}
+
+function collectR2KeysFromPhotoRows(rows) {
+  const keys = [];
+  for (const r of rows || []) {
+    const k1 = extractR2Key(r.file_path);
+    const k2 = extractR2Key(r.edited_file_path);
+    if (k1) keys.push(k1);
+    if (k2) keys.push(k2);
+  }
+  return keys;
+}
+
 /** Fetch seguro para URLs https usadas em file_path (R2 público, Cloudflare Images). */
 async function fetchPhotoBufferFromHttpsUrl(fp) {
   const raw = String(fp || '').trim();
@@ -8670,56 +8726,43 @@ router.post('/galleries/:galleryId/photos/delete-batch', protectUser, asyncHandl
     );
     if (!gRes.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
+    const hasEdited = await hasColumn(client, 'king_photos', 'edited_file_path');
     const own = await client.query(
-      `SELECT p.id, p.file_path FROM king_photos p
+      `SELECT p.id, p.file_path${hasEdited ? ', p.edited_file_path' : ''} FROM king_photos p
        WHERE p.gallery_id=$1 AND p.id = ANY($2::int[])`,
       [galleryId, ids]
     );
     const toDelete = own.rows.map(r => r.id);
     if (!toDelete.length) return res.json({ success: true, deleted: 0 });
 
-    const r2Keys = [];
-    for (const r of own.rows) {
-      const k = extractR2Key(r.file_path);
-      if (k) r2Keys.push(k);
-    }
+    const r2Keys = collectR2KeysFromPhotoRows(own.rows);
+    let totalDeleted = 0;
+    const chunkSize = 40;
 
+    await client.query('BEGIN');
     try {
-      await client.query('BEGIN');
-      await client.query(
-        'UPDATE king_photo_folders SET cover_photo_id=NULL WHERE gallery_id=$1 AND cover_photo_id = ANY($2::int[])',
-        [galleryId, toDelete]
-      );
-      try {
-        await client.query(
-          'UPDATE king_galleries SET gallery_link_cover_photo_id=NULL WHERE id=$1 AND gallery_link_cover_photo_id = ANY($2::int[])',
-          [galleryId, toDelete]
+      for (let i = 0; i < toDelete.length; i += chunkSize) {
+        const chunk = toDelete.slice(i, i + chunkSize);
+        await ksPurgePhotoDependencies(client, galleryId, chunk);
+        const delRes = await client.query(
+          'DELETE FROM king_photos WHERE gallery_id=$1 AND id = ANY($2::int[])',
+          [galleryId, chunk]
         );
-      } catch (coverColErr) {
-        if (coverColErr.code !== '42703') throw coverColErr;
+        totalDeleted += delRes.rowCount || 0;
       }
-      try {
-        await client.query('DELETE FROM king_selection_photo_approvals WHERE photo_id = ANY($1::int[])', [toDelete]);
-      } catch (apErr) {
-        if (apErr.code !== '42P01') throw apErr;
-      }
-      try {
-        await client.query('DELETE FROM rekognition_photo_faces WHERE photo_id = ANY($1::int[])', [toDelete]);
-      } catch (rekErr) {
-        if (rekErr.code !== '42P01') throw rekErr;
-      }
-      try {
-        await client.query('DELETE FROM rekognition_gallery_photos WHERE photo_id = ANY($1::int[])', [toDelete]);
-      } catch (rek2Err) {
-        if (rek2Err.code !== '42P01') throw rek2Err;
-      }
-      await client.query('DELETE FROM king_selections WHERE photo_id = ANY($1::int[])', [toDelete]);
-      await client.query('DELETE FROM king_photos WHERE gallery_id=$1 AND id = ANY($2::int[])', [galleryId, toDelete]);
       await client.query('COMMIT');
     } catch (delErr) {
       try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
-      logger.error('[king-selection] delete-batch', { galleryId, count: toDelete.length, message: delErr && delErr.message });
-      return res.status(500).json({ message: delErr?.message || 'Erro ao excluir fotos' });
+      logger.error('[king-selection] delete-batch', {
+        galleryId,
+        count: toDelete.length,
+        code: delErr && delErr.code,
+        message: delErr && delErr.message
+      });
+      const msg = delErr?.code === '23503'
+        ? 'Não foi possível excluir: ainda há vínculos no banco. Tente em lotes menores ou contate o suporte.'
+        : (delErr?.message || 'Erro ao excluir fotos');
+      return res.status(delErr?.code === '23503' ? 400 : 500).json({ message: msg });
     }
 
     if (r2Keys.length) {
@@ -8736,10 +8779,10 @@ router.post('/galleries/:galleryId/photos/delete-batch', protectUser, asyncHandl
           for (let i = 0; i < safeKeys.length; i += 100) chunks.push(safeKeys.slice(i, i + 100));
           for (const chunk of chunks) await deleteR2BatchViaWorker(chunk);
         }
-      } catch (_) { }
+      } catch (_) { /* R2 best-effort */ }
     }
 
-    return res.json({ success: true, deleted: toDelete.length });
+    return res.json({ success: true, deleted: totalDeleted });
   } finally {
     client.release();
   }
@@ -8752,7 +8795,7 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
   try {
     const userId = req.user.userId;
     const own = await client.query(
-      `SELECT p.id, p.file_path
+      `SELECT p.id, p.gallery_id, p.file_path
        FROM king_photos p
        JOIN king_galleries g ON g.id = p.gallery_id
        JOIN profile_items pi ON pi.id = g.profile_item_id
@@ -8760,15 +8803,20 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
       [photoId, userId]
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const galleryId = parseInt(own.rows[0].gallery_id, 10) || 0;
     const filePath = String(own.rows[0].file_path || '');
     const imageId = filePath.startsWith('cfimage:') ? filePath.replace('cfimage:', '') : null;
     const r2Key = extractR2Key(filePath);
 
-    // Apagar do banco primeiro
     await client.query('BEGIN');
-    await client.query('DELETE FROM king_selections WHERE photo_id=$1', [photoId]);
-    await client.query('DELETE FROM king_photos WHERE id=$1', [photoId]);
-    await client.query('COMMIT');
+    try {
+      await ksPurgePhotoDependencies(client, galleryId, [photoId]);
+      await client.query('DELETE FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, galleryId]);
+      await client.query('COMMIT');
+    } catch (delErr) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
+      throw delErr;
+    }
 
     let cfAttempted = false;
     let cfDeleted = false;
