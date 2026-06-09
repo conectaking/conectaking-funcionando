@@ -12248,6 +12248,7 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       return res.json({
         success: true,
         token,
+        clientAccessUrl: ksBuildClientGalleryAccessUrl(req.ksClient.slug, token),
         selectionCount,
         photographerDisplayName,
         clientDisplayName,
@@ -12385,11 +12386,13 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       paymentPix: paymentPixForThankYou || undefined
     };
     if (cid) {
-      out.token = jwt.sign(
+      const accessToken = jwt.sign(
         { type: 'kingselection_client', galleryId, slug: req.ksClient.slug, clientId: cid, tyh: true },
         config.jwt.secret,
         { expiresIn: '14d' }
       );
+      out.token = accessToken;
+      out.clientAccessUrl = ksBuildClientGalleryAccessUrl(req.ksClient.slug, accessToken);
     }
     res.json(out);
   } catch (e) {

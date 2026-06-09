@@ -414,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const salesPaymentBlessBtn = document.getElementById('ks-sales-payment-bless');
   const salesOpenProofBtn = document.getElementById('ks-sales-open-proof');
   const salesOpenClientWhatsBtn = document.getElementById('ks-sales-open-client-whats');
+  const salesCopyClientLinkBtn = document.getElementById('ks-sales-copy-client-link');
   const salesPhotosAllPendingBtn = document.getElementById('ks-sales-photos-all-pending');
   const salesApproveAllBtn = document.getElementById('ks-sales-approve-all');
   const salesProofPanel = document.getElementById('ks-sales-proof-panel');
@@ -1103,6 +1104,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const _clientAccessLinkCache = new Map();
+
+  async function copyClientPersonalLink(clientId, toastTitle) {
+    const cid = parseInt(clientId, 10) || 0;
+    if (!cid) throw new Error('Cliente inválido.');
+    const link = await buildClientAccessLink(cid);
+    await copyToClipboard(link);
+    toast('Link pessoal copiado. O cliente entra direto sem pedir login.', {
+      kind: 'ok',
+      title: toastTitle || 'Link pessoal'
+    });
+    return link;
+  }
 
   /** Link pessoal com login automático (JWT na URL) — um por cliente cadastrado. */
   async function buildClientAccessLink(clientId) {
@@ -4429,17 +4442,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return bits.join(' • ');
       })();
       return `
-        <button type="button" class="w-full text-left rounded-xl border ${activeCls} p-3 transition" data-sales-client-card="${cid}">
+        <div class="w-full text-left rounded-xl border ${activeCls} p-3 transition cursor-pointer" data-sales-client-card="${cid}" role="button" tabindex="0">
           <div class="flex items-center justify-between gap-2">
             <div class="font-semibold text-slate-100">${escapeHtml(c.nome || c.email || `Cliente #${cid}`)}</div>
-            <div class="flex items-center gap-1.5">${focusBadge}${priorityBadge}</div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" class="ks-btn" data-sales-copy-link="${cid}" title="Copiar link pessoal (login automático)" style="padding:4px 9px;font-size:11px;line-height:1"><i class="fas fa-link"></i></button>
+              ${focusBadge}${priorityBadge}
+            </div>
           </div>
           <div class="text-xs text-slate-300 mt-1">
             ${selectedCount} foto(s) • ${approvedCount} aprovada(s) • ${rounds.length} sessão(ões) • ${financeBits}
             ${maxInstallmentCount != null ? ` • até ${maxInstallmentCount}x no restante` : ''}
             ${blessedRounds > 0 ? ` • ${blessedRounds} abençoada(s)` : ''}
           </div>
-        </button>
+        </div>
       `;
     }).join('');
   }
@@ -4569,6 +4585,7 @@ document.addEventListener('DOMContentLoaded', () => {
         salesOpenClientWhatsBtn.disabled = true;
         salesOpenClientWhatsBtn.removeAttribute('data-whats-link');
       }
+      if (salesCopyClientLinkBtn) salesCopyClientLinkBtn.disabled = true;
       return;
     }
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/sales/clients/${cid}/round/${round}`, { headers: HEADERS });
@@ -4697,6 +4714,12 @@ document.addEventListener('DOMContentLoaded', () => {
         salesOpenClientWhatsBtn.removeAttribute('data-whats-link');
         salesOpenClientWhatsBtn.title = 'Cliente sem WhatsApp válido (com DDD)';
       }
+    }
+    if (salesCopyClientLinkBtn) {
+      salesCopyClientLinkBtn.disabled = !cid;
+      salesCopyClientLinkBtn.title = cid
+        ? 'Copiar link pessoal deste cliente (abre já logado)'
+        : 'Selecione um cliente na lista';
     }
     renderSalesDashboard();
   }
@@ -6581,6 +6604,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   salesClientsList?.addEventListener('click', async (e) => {
+    const copyLinkBtn = e.target.closest('[data-sales-copy-link]');
+    if (copyLinkBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const cidCopy = parseInt(copyLinkBtn.getAttribute('data-sales-copy-link') || '0', 10) || 0;
+      if (!cidCopy) return;
+      try {
+        await copyClientPersonalLink(cidCopy, 'Link');
+      } catch (err) {
+        showError(err?.message || 'Erro ao copiar link');
+      }
+      return;
+    }
     const btn = e.target.closest('[data-sales-client-card]');
     if (!btn) return;
     const cid = parseInt(btn.getAttribute('data-sales-client-card') || '0', 10) || 0;
@@ -6613,7 +6649,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const nome = String(cli?.nome || cli?.email || 'cliente');
-      const msg = `Olá, ${nome}! Tudo bem? Aqui é o fotógrafo da galeria "${gallery?.nome_projeto || ''}". Vi uma pendência e estou te chamando para alinharmos.`;
+      let link = buildClientShareLink();
+      try {
+        link = await buildClientAccessLink(cid);
+      } catch (_) { /* link genérico */ }
+      const msg = `Olá, ${nome}! Tudo bem? Aqui é o fotógrafo da galeria "${gallery?.nome_projeto || ''}".\n\nSeu link pessoal (entra direto):\n${link}`;
       window.open(`https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     }
   });
@@ -7013,6 +7053,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     window.open(url, '_blank', 'noopener');
+  });
+
+  salesCopyClientLinkBtn?.addEventListener('click', async () => {
+    const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
+    if (!cid) {
+      showError('Selecione um cliente na lista.');
+      return;
+    }
+    try {
+      salesCopyClientLinkBtn.disabled = true;
+      await copyClientPersonalLink(cid, 'Vendas');
+    } catch (e) {
+      showError(e?.message || 'Erro ao copiar link');
+    } finally {
+      salesCopyClientLinkBtn.disabled = !cid;
+    }
   });
 
   salesApproveAllBtn?.addEventListener('click', async () => {
