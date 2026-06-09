@@ -635,7 +635,7 @@
 
     /* Barra de ações ao selecionar fotos (tema escuro, alto contraste) */
     .ks-selected-bar {
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
@@ -646,10 +646,17 @@
       color: #fff;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+      flex-wrap: wrap;
     }
 
-    .ks-selected-bar.active {
-      display: flex
+    .ks-selected-bar:not(.active) {
+      opacity: .82;
+    }
+
+    .ks-selected-bar:not(.active) #p-delete-sel,
+    .ks-selected-bar:not(.active) #p-download-sel {
+      opacity: .45;
+      pointer-events: none;
     }
 
     .ks-selected-bar b {
@@ -2697,7 +2704,9 @@
               <input type="file" id="ks-link-cover-upload-file" class="hidden" accept="image/*" />
               <button type="button" class="ks-btn" id="ks-link-cover-upload-btn"><i class="fas fa-upload"></i> Selecionar foto no dispositivo</button>
               <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-open-gallery-btn"><i class="fas fa-image"></i> Selecionar da galeria atual</button>
+              <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-save-btn" style="border-color:rgba(34,197,94,.65);background:rgba(22,163,74,.22);color:#dcfce7;font-weight:800"><i class="fas fa-save"></i> Salvar capa do link</button>
             </div>
+            <p class="text-xs ks-muted mt-2 max-w-3xl">A capa é usada na miniatura do WhatsApp ao enviar o link da galeria. Salve aqui ou ao sair da aba; os textos de vendas abaixo são salvos separadamente.</p>
 
             <div class="mt-4">
               <div class="ks-field">
@@ -3610,7 +3619,7 @@
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
 
   <script src="/config.js?v=2026-03-23-anticache-a1"></script>
-  <script src="/kingSelectionProject.js?v=2026-05-19-sales-client-link"></script>
+  <script src="/kingSelectionProject.js?v=2026-05-19-photos-cover-og"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>

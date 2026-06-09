@@ -308,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const linkCoverCurrentSource = document.getElementById('ks-link-cover-current-source');
   const linkCoverUploadFile = document.getElementById('ks-link-cover-upload-file');
   const linkCoverUploadBtn = document.getElementById('ks-link-cover-upload-btn');
+  const linkCoverSaveBtn = document.getElementById('ks-link-cover-save-btn');
   const supportWhats = document.getElementById('ks-support-whatsapp');
   const supportLabel = document.getElementById('ks-support-label');
   const supportMsg = document.getElementById('ks-support-message');
@@ -679,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let photoSearch = '';
   let photoPageSize = 20;
   let photoPageIndex = 0;
-  let photoFolderFilterId = null; // null=todas
+  let photoFolderFilterId = null; // null=todas, -1=sem pasta, >0=id da pasta
   let photoSortMode = 'order'; // order|name|id
   let folderSortMode = 'name'; // manual|name|count
   let uploadFolderMode = 'all'; // all|folder
@@ -757,7 +758,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
     const q = (photoSearch || '').toLowerCase().trim();
     const filtered = photosAll.filter(p => {
-      if (photoFolderFilterId && (parseInt(p.folder_id, 10) || 0) !== photoFolderFilterId) return false;
+      const fid = parseInt(p.folder_id, 10) || 0;
+      if (photoFolderFilterId === -1) {
+        if (fid > 0) return false;
+      } else if (photoFolderFilterId && fid !== photoFolderFilterId) return false;
       if (photoFilter === 'fav' && !p.is_favorite) return false;
       if (!q) return true;
       return String(p.original_name || '').toLowerCase().includes(q);
@@ -956,7 +960,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (_) { }
   });
 
+  let _ksActiveTab = 'activity';
+
   function setActiveTab(tab) {
+    const prevTab = _ksActiveTab;
     // A navegação do topo (Meus projetos / Clientes / Configurações) usa `setActiveTab('clients')`,
     // mas a aba "clients" não existe na lista lateral (sideLinks). Como a validação era só pelos links,
     // o código caía no fallback "activity" e parecia que a aba Clientes não funcionava.
@@ -965,6 +972,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const sideTabs = sideLinks.map((a) => String(a.getAttribute('data-tab') || '').trim()).filter(Boolean);
     const validTabs = new Set([...paneTabs, ...sideTabs]);
     const nextTab = validTabs.has(String(tab || '')) ? String(tab) : 'activity';
+    if (prevTab === 'link-cover' && nextTab !== 'link-cover') {
+      commitLinkCoverDraftIfNeeded({ silent: true }).catch(() => { });
+    }
+    _ksActiveTab = nextTab;
     sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('data-tab') === nextTab));
     panes.forEach(p => p.classList.toggle('hidden', p.getAttribute('data-pane') !== nextTab));
     try { localStorage.setItem(TAB_PREF_KEY, nextTab); } catch (_) { }
@@ -1304,6 +1315,39 @@ document.addEventListener('DOMContentLoaded', () => {
       gallery_link_cover_photo_id: pid,
       gallery_link_cover_file_path: null
     });
+  }
+
+  function getPendingLinkCoverPhotoId() {
+    const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
+    const sel = parseInt(linkCoverPhotoSel?.value || '0', 10) || 0;
+    const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
+    if (pickerOpen && draft > 0) return draft;
+    return sel > 0 ? sel : draft;
+  }
+
+  async function commitLinkCoverDraftIfNeeded(opts) {
+    const silent = !!(opts && opts.silent);
+    const saved = getCurrentCoverPhotoId();
+    const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
+    const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
+    let pid = 0;
+    if (silent) {
+      if (pickerOpen && draft > 0 && (hasExternalLinkCover() || draft !== saved)) pid = draft;
+      else return false;
+    } else {
+      pid = getPendingLinkCoverPhotoId();
+    }
+    if (!pid) return false;
+    if (!hasExternalLinkCover() && pid === saved) return false;
+    await setGalleryCover(pid);
+    if (linkCoverPhotoSel) linkCoverPhotoSel.value = String(pid);
+    linkCoverDraftPhotoId = 0;
+    await loadGallery();
+    if (!silent) {
+      toast('Capa do link salva.', { kind: 'ok', title: 'Capa do link' });
+    }
+    refreshLinkCoverPane();
+    return true;
   }
 
   async function uploadExternalLinkCover(file) {
@@ -2019,9 +2063,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="ks-btn" id="ks-folder-auto-face-btn"><i class="fas fa-user-group"></i> Separar por pasta (rosto)</button>
           <button type="button" class="ks-btn" id="ks-folder-auto-reprocess-btn"><i class="fas fa-rotate-right"></i> Reprocessar e separar</button>
           <button type="button" class="ks-btn" id="ks-folder-select-all-btn"><i class="far fa-check-square"></i> Selecionar todas as pastas</button>
-          <button type="button" class="ks-btn" id="ks-folder-select-none-btn"><i class="far fa-square"></i> Limpar seleção</button>
+          <button type="button" class="ks-btn" id="ks-folder-select-none-btn"><i class="far fa-square"></i> Limpar pastas</button>
           <button type="button" class="ks-btn" id="ks-folder-delete-selected-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.45)">
-            <i class="fas fa-trash"></i> Excluir selecionadas
+            <i class="fas fa-trash"></i> Excluir pastas selecionadas
+          </button>
+          <span style="width:1px;height:22px;background:rgba(255,255,255,.15);margin:0 2px"></span>
+          <button type="button" class="ks-btn" id="ks-photo-select-all-btn"><i class="fas fa-check-double"></i> Selecionar todas as fotos</button>
+          <button type="button" class="ks-btn" id="ks-photo-clear-sel-btn"><i class="fas fa-xmark"></i> Limpar fotos</button>
+          <button type="button" class="ks-btn" id="ks-photo-delete-selected-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.45)">
+            <i class="fas fa-trash"></i> Excluir fotos selecionadas
           </button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -2042,6 +2092,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="ks-folder-auto-status" class="ks-muted" style="font-size:12px;margin-top:8px;line-height:1.4;"></div>
       <div id="ks-folder-auto-history" class="ks-muted" style="font-size:11px;margin-top:8px;line-height:1.35;"></div>
       <div id="ks-folder-selection-count" class="ks-muted" style="font-size:12px;margin-top:8px;line-height:1.35;"></div>
+      <div id="ks-photo-selection-count" class="ks-muted" style="font-size:12px;margin-top:4px;line-height:1.35;"></div>
       <div class="ks-muted" style="font-size:11px;margin-top:8px;line-height:1.35;">
         Importação com subpastas: use o botão <b>Pasta e subpastas</b> na área <b>Arraste e solte</b> acima (um único fluxo).
       </div>
@@ -2199,11 +2250,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const photoSelectAllBtn = ev.target.closest('#ks-photo-select-all-btn');
+      if (photoSelectAllBtn) {
+        const visible = getVisiblePhotos();
+        if (!visible.length) {
+          toast('Não há fotos visíveis para selecionar.', { kind: 'warn', title: 'Fotos' });
+          return;
+        }
+        selectedPhotoIds = new Set(visible.map((p) => p.id).filter(Boolean));
+        renderFoldersAdminUi();
+        renderPhotos();
+        toast(`${selectedPhotoIds.size} foto(s) selecionada(s). Use «Excluir fotos selecionadas».`, { kind: 'ok', title: 'Fotos' });
+        return;
+      }
+
+      const photoClearSelBtn = ev.target.closest('#ks-photo-clear-sel-btn');
+      if (photoClearSelBtn) {
+        selectedPhotoIds = new Set();
+        renderFoldersAdminUi();
+        renderPhotos();
+        return;
+      }
+
+      const photoDeleteSelectedBtn = ev.target.closest('#ks-photo-delete-selected-btn');
+      if (photoDeleteSelectedBtn) {
+        deleteSelectedPhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos'));
+        return;
+      }
+
       const deleteSelectedFoldersBtn = ev.target.closest('#ks-folder-delete-selected-btn');
       if (deleteSelectedFoldersBtn) {
         const ids = Array.from(selectedFolderIds).map((v) => parseInt(v, 10)).filter(Boolean);
         if (!ids.length) {
-          toast('Selecione ao menos uma pasta.', { kind: 'warn', title: 'Pastas' });
+          toast('Marque as pastas com o ícone de seleção (quadrado) e use «Excluir pastas selecionadas». Para apagar fotos, use «Excluir fotos selecionadas».', { kind: 'warn', title: 'Pastas' });
           return;
         }
         const ok = window.confirm(`Excluir ${ids.length} pasta(s)? As fotos continuarão na galeria, sem pasta.`);
@@ -2323,7 +2402,8 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.addEventListener('change', (ev) => {
       const t = ev.target;
       if (t && t.id === 'ks-folder-filter') {
-        photoFolderFilterId = toPosInt(t.value) || null;
+        const raw = String(t.value || '').trim();
+        photoFolderFilterId = raw === '-1' ? -1 : (toPosInt(raw) || null);
         photoPageIndex = 0;
         renderFoldersAdminUi();
         renderPhotos();
@@ -2573,8 +2653,12 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     if (filterSel) {
-      filterSel.innerHTML = `<option value="">Filtro: todas as fotos</option>${folders.map((f) => `<option value="${f.id}">Filtro: ${escapeHtml(f.name)}</option>`).join('')}`;
-      filterSel.value = photoFolderFilterId ? String(photoFolderFilterId) : '';
+      const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
+      const orphanCount = photosAll.filter((p) => !(parseInt(p.folder_id, 10) || 0)).length;
+      filterSel.innerHTML = `<option value="">Filtro: todas as fotos</option>`
+        + `<option value="-1">Filtro: sem pasta (${orphanCount})</option>`
+        + folders.map((f) => `<option value="${f.id}">Filtro: ${escapeHtml(f.name)}</option>`).join('');
+      filterSel.value = photoFolderFilterId === -1 ? '-1' : (photoFolderFilterId ? String(photoFolderFilterId) : '');
     }
     if (folderSortSel) folderSortSel.value = folderSortMode;
     if (photoSortSel) photoSortSel.value = photoSortMode;
@@ -2588,8 +2672,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (folderSelectionCount) {
       const n = selectedFolderIds.size;
       folderSelectionCount.innerHTML = n > 0
-        ? `<i class="fas fa-check-square"></i> ${n} pasta(s) selecionada(s) para exclusão em lote.`
-        : '<i class="far fa-square"></i> Nenhuma pasta selecionada.';
+        ? `<i class="fas fa-check-square"></i> ${n} pasta(s) marcada(s) — use «Excluir pastas selecionadas».`
+        : '<i class="far fa-square"></i> Pastas: marque o quadrado no card para excluir a pasta (as fotos ficam sem pasta).';
+    }
+    const photoSelectionCount = wrap.querySelector('#ks-photo-selection-count');
+    if (photoSelectionCount) {
+      const n = selectedPhotoIds.size;
+      photoSelectionCount.innerHTML = n > 0
+        ? `<i class="fas fa-images"></i> <b>${n}</b> foto(s) selecionada(s) — use «Excluir fotos selecionadas» ou a barra abaixo da grelha.`
+        : '<i class="far fa-image"></i> Fotos: clique no círculo no canto de cada miniatura ou «Selecionar todas as fotos».';
     }
     if (!cards) return;
     const html = [];
@@ -2642,6 +2733,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (folderSortMode === 'manual') bindFolderDragAndDrop(cards);
     refreshAutoFolderStatusOnce().catch(() => { });
+  }
+
+  async function deleteSelectedPhotosBatch() {
+    if (!selectedPhotoIds.size) {
+      toast('Selecione fotos (círculo no canto da miniatura) ou use «Selecionar todas as fotos».', { kind: 'warn', title: 'Fotos' });
+      return;
+    }
+    if (!confirm(`Excluir ${selectedPhotoIds.size} foto(s) selecionada(s)? Esta ação não pode ser desfeita.`)) return;
+    const ids = Array.from(selectedPhotoIds);
+    try {
+      if (uploadCancel) uploadCancel.classList.add('hidden');
+      closeViewer();
+      setUploadUi({ active: true, line: `Excluindo ${ids.length} foto(s)…`, file: undefined, pct: 0, meta: '0%' });
+      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/photos/delete-batch`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({ photo_ids: ids })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Erro ao excluir fotos');
+      selectedPhotoIds = new Set();
+      setUploadUi({ active: true, line: 'Atualizando…', file: undefined, pct: 98, meta: '98%' });
+      await loadGallery();
+      toast('Fotos excluídas.', { kind: 'ok', title: 'Exclusão' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao excluir fotos');
+      toast(e?.message || 'Erro ao excluir fotos', { kind: 'err', title: 'Erro' });
+    } finally {
+      if (uploadCancel) uploadCancel.classList.remove('hidden');
+      setUploadUi({ active: false });
+    }
   }
 
   function renderPhotos() {
@@ -9097,33 +9219,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPhotos();
   });
   pClearSel?.addEventListener('click', () => { selectedPhotoIds = new Set(); renderPhotos(); });
-  pDeleteSel?.addEventListener('click', async () => {
-    if (!selectedPhotoIds.size) return;
-    if (!confirm(`Excluir ${selectedPhotoIds.size} foto(s) selecionada(s)?`)) return;
-    const ids = Array.from(selectedPhotoIds);
-    try {
-      // overlay de progresso (não “pisca” a tela durante reloads)
-      if (uploadCancel) uploadCancel.classList.add('hidden');
-      closeViewer();
-      setUploadUi({ active: true, line: `Excluindo ${ids.length} foto(s)…`, file: undefined, pct: 0, meta: '0%' });
-      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/photos/delete-batch`, {
-        method: 'POST',
-        headers: HEADERS,
-        body: JSON.stringify({ photo_ids: ids })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Erro ao excluir fotos');
-      selectedPhotoIds = new Set();
-      setUploadUi({ active: true, line: 'Atualizando…', file: undefined, pct: 98, meta: '98%' });
-      await loadGallery();
-      toast('Fotos excluídas.', { kind: 'ok', title: 'Exclusão' });
-    } catch (e) {
-      showError(e?.message || 'Erro ao excluir fotos');
-      toast(e?.message || 'Erro ao excluir fotos', { kind: 'err', title: 'Erro' });
-    } finally {
-      if (uploadCancel) uploadCancel.classList.remove('hidden');
-      setUploadUi({ active: false });
-    }
+  pDeleteSel?.addEventListener('click', () => {
+    deleteSelectedPhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos'));
   });
   pDownloadSel?.addEventListener('click', async () => {
     if (!selectedPhotoIds.size) return;
@@ -9467,6 +9564,19 @@ document.addEventListener('DOMContentLoaded', () => {
       if (linkCoverPhotoSel) linkCoverPhotoSel.disabled = false;
     }
   });
+  linkCoverSaveBtn?.addEventListener('click', async () => {
+    try {
+      if (linkCoverSaveBtn) linkCoverSaveBtn.disabled = true;
+      const saved = await commitLinkCoverDraftIfNeeded({ silent: false });
+      if (!saved && !hasExternalLinkCover()) {
+        toast('Nenhuma alteração de capa para salvar.', { kind: 'warn', title: 'Capa do link' });
+      }
+    } catch (e) {
+      showError(e?.message || 'Erro ao salvar capa do link');
+    } finally {
+      if (linkCoverSaveBtn) linkCoverSaveBtn.disabled = false;
+    }
+  });
   linkCoverOpenGalleryBtn?.addEventListener('click', () => {
     openLinkCoverPicker();
   });
@@ -9594,9 +9704,10 @@ document.addEventListener('DOMContentLoaded', () => {
   salesWaTplSave?.addEventListener('click', async () => {
     try {
       salesWaTplSave.disabled = true;
+      await commitLinkCoverDraftIfNeeded({ silent: false }).catch(() => { });
       await savePatch(buildSalesWaTemplatesPayload());
       await loadGallery();
-      toast('Textos de vendas salvos.', { kind: 'ok', title: 'Fotos e vendas' });
+      toast('Capa (se alterada) e textos de vendas salvos.', { kind: 'ok', title: 'Capa do link' });
     } catch (e) {
       showError(e?.message || 'Erro ao salvar textos de vendas');
     } finally {

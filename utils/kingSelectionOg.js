@@ -184,7 +184,7 @@ function buildKingSelectionOgDescription(title, accessMode, allowSelfSignup) {
   const t = String(title || 'Galeria').trim() || 'Galeria';
   const m = String(accessMode || 'private').toLowerCase().trim();
   if (m === 'paid_event_photos') {
-    return `Galeria ${t}. Aceda pelo link com o mesmo nome, e-mail e WhatsApp do cadastro e baixe as suas fotos.`;
+    return `Galeria ${t}. Aceda pelo link pessoal enviado pelo fotógrafo (entra direto) e baixe as suas fotos.`;
   }
   if (m === 'public') {
     return `Galeria ${t}. Aceda pelo link partilhado pelo fotógrafo para ver e selecionar as suas fotografias.`;
