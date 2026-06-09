@@ -697,6 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let shareLinkSaveTimer = null;
   let linkCoverDraftPhotoId = 0;
   let linkCoverSearchTerm = '';
+  let linkCoverRefreshPinId = 0;
 
   function computeSalesMiniStatsForClient(clientId) {
     const cid = parseInt(clientId, 10) || 0;
@@ -1401,26 +1402,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function getPendingLinkCoverPhotoId() {
-    const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
-    const sel = parseInt(linkCoverPhotoSel?.value || '0', 10) || 0;
-    const saved = getCurrentCoverPhotoId();
-    const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
-    if (pickerOpen && draft > 0) return draft;
-    if (draft > 0 && draft !== saved) return draft;
-    return sel > 0 ? sel : draft;
+  function linkCoverPhotoExists(photoId) {
+    const pid = parseInt(photoId, 10) || 0;
+    if (!pid) return false;
+    return getSortedPhotosForLinkCover().some((p) => (parseInt(p.id, 10) || 0) === pid);
   }
 
-  function resolveLinkCoverPreviewPhotoId(preferredId) {
+  function getLinkCoverPendingPhotoIdForSave() {
+    const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
+    if (draft > 0 && linkCoverPhotoExists(draft)) return draft;
+    const previewPid = parseInt(linkCoverPreview?.getAttribute('data-photo-id') || '0', 10) || 0;
+    if (previewPid > 0 && linkCoverPhotoExists(previewPid)) return previewPid;
+    const sel = parseInt(linkCoverPhotoSel?.value || '0', 10) || 0;
+    if (sel > 0 && linkCoverPhotoExists(sel)) return sel;
+    return 0;
+  }
+
+  function resolveLinkCoverPreviewPhotoId(preferredId, opts) {
     if (hasExternalLinkCover()) return 0;
+    const strict = !!(opts && opts.strict);
     const pref = parseInt(preferredId || 0, 10) || 0;
-    const saved = getCurrentCoverPhotoId();
     const sorted = getSortedPhotosForLinkCover();
     const pick = (id) => (id > 0 && sorted.some((p) => (parseInt(p.id, 10) || 0) === id) ? id : 0);
-    return pick(pref) || pick(saved) || pick(parseInt(sorted[0]?.id, 10) || 0) || 0;
+    if (pref > 0) return pick(pref);
+    if (strict) return 0;
+    return pick(getCurrentCoverPhotoId()) || 0;
   }
 
-  function refreshLinkCoverPreviewImage(preferredId) {
+  function refreshLinkCoverPreviewImage(preferredId, opts) {
     if (!linkCoverPreview) return;
     if (hasExternalLinkCover()) {
       linkCoverPreview.setAttribute('data-photo-id', '0');
@@ -1430,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ).catch(() => { });
       return;
     }
-    const pid = resolveLinkCoverPreviewPhotoId(preferredId);
+    const pid = resolveLinkCoverPreviewPhotoId(preferredId, opts);
     if (!pid) {
       linkCoverPreview.removeAttribute('src');
       linkCoverPreview.removeAttribute('data-photo-id');
@@ -1443,29 +1452,44 @@ document.addEventListener('DOMContentLoaded', () => {
     ).catch(() => { });
   }
 
-  async function commitLinkCoverDraftIfNeeded(opts) {
+  async function saveLinkCoverNow(opts) {
     const silent = !!(opts && opts.silent);
-    const saved = getCurrentCoverPhotoId();
-    const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
-    const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
-    let pid = 0;
-    if (silent) {
-      if (draft > 0 && (hasExternalLinkCover() || draft !== saved)) pid = draft;
-      else return false;
-    } else {
-      pid = getPendingLinkCoverPhotoId();
+    const pid = getLinkCoverPendingPhotoIdForSave();
+    if (!pid) {
+      if (!silent) {
+        toast('Selecione uma foto da galeria antes de salvar.', { kind: 'warn', title: 'Capa do link' });
+      }
+      return false;
     }
-    if (!pid) return false;
-    if (!hasExternalLinkCover() && pid === saved) return false;
+    const saved = getCurrentCoverPhotoId();
+    if (!hasExternalLinkCover() && pid === saved) {
+      if (!silent) {
+        toast('Capa já está salva com esta foto.', { kind: 'warn', title: 'Capa do link' });
+      }
+      return false;
+    }
+    closeLinkCoverPicker();
     await setGalleryCover(pid);
     if (linkCoverPhotoSel) linkCoverPhotoSel.value = String(pid);
     linkCoverDraftPhotoId = 0;
+    linkCoverRefreshPinId = pid;
     await loadGallery();
+    refreshLinkCoverPane({ pinPhotoId: pid });
+    linkCoverRefreshPinId = 0;
     if (!silent) {
       toast('Capa do link salva.', { kind: 'ok', title: 'Capa do link' });
     }
-    refreshLinkCoverPane();
     return true;
+  }
+
+  async function commitLinkCoverDraftIfNeeded(opts) {
+    const silent = !!(opts && opts.silent);
+    if (silent) {
+      const saved = getCurrentCoverPhotoId();
+      const draft = parseInt(linkCoverDraftPhotoId || 0, 10) || 0;
+      if (!draft || (!hasExternalLinkCover() && draft === saved)) return false;
+    }
+    return saveLinkCoverNow({ silent });
   }
 
   async function uploadExternalLinkCover(file) {
@@ -1541,8 +1565,12 @@ document.addEventListener('DOMContentLoaded', () => {
       toast('Esta galeria ainda não tem fotos para usar como capa.', { kind: 'warn', title: 'Sem fotos' });
       return;
     }
-    const cur = parseInt(linkCoverPhotoSel.value || '0', 10) || (parseInt(sorted[0]?.id, 10) || 0);
-    linkCoverDraftPhotoId = cur;
+    const cur =
+      parseInt(linkCoverPhotoSel.value || '0', 10)
+      || getCurrentCoverPhotoId()
+      || parseInt(linkCoverPreview?.getAttribute('data-photo-id') || '0', 10)
+      || 0;
+    linkCoverDraftPhotoId = cur > 0 && linkCoverPhotoExists(cur) ? cur : 0;
     linkCoverSearchTerm = '';
     if (linkCoverSearchInput) linkCoverSearchInput.value = '';
     renderLinkCoverPickerGrid();
