@@ -2749,6 +2749,11 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshAutoFolderStatusOnce().catch(() => { });
   }
 
+  function syncSelectedPhotoIdsWithGallery() {
+    const live = new Set((Array.isArray(gallery?.photos) ? gallery.photos : []).map((p) => parseInt(p.id, 10)).filter(Boolean));
+    selectedPhotoIds = new Set(Array.from(selectedPhotoIds).filter((id) => live.has(id)));
+  }
+
   async function deleteSelectedPhotosBatch() {
     if (!selectedPhotoIds.size) {
       toast('Selecione fotos (círculo no canto da miniatura) ou use «Selecionar todas as fotos».', { kind: 'warn', title: 'Fotos' });
@@ -2757,10 +2762,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm(`Excluir ${selectedPhotoIds.size} foto(s) selecionada(s)? Esta ação não pode ser desfeita.`)) return;
     const ids = Array.from(selectedPhotoIds);
     const chunkSize = 35;
+    let deletedTotal = 0;
+    let lastError = null;
     try {
       if (uploadCancel) uploadCancel.classList.add('hidden');
       closeViewer();
-      let deletedTotal = 0;
       for (let i = 0; i < ids.length; i += chunkSize) {
         const chunk = ids.slice(i, i + chunkSize);
         const pct = Math.round(((i + chunk.length) / ids.length) * 92);
@@ -2777,14 +2783,39 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({ photo_ids: chunk })
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || 'Erro ao excluir fotos');
+        if (!res.ok) {
+          lastError = new Error(data.message || 'Erro ao excluir fotos');
+          break;
+        }
         deletedTotal += parseInt(data.deleted, 10) || chunk.length;
       }
       selectedPhotoIds = new Set();
+      photoPageIndex = 0;
+      photoFolderFilterId = null;
       setUploadUi({ active: true, line: 'Atualizando…', file: undefined, pct: 98, meta: '98%' });
       await loadGallery();
-      toast(`${deletedTotal} foto(s) excluída(s).`, { kind: 'ok', title: 'Exclusão' });
+      syncSelectedPhotoIdsWithGallery();
+      renderPhotos();
+      if (deletedTotal > 0) {
+        setBubbleDone();
+        const left = (Array.isArray(gallery?.photos) ? gallery.photos : []).length;
+        toast(
+          left > 0
+            ? `${deletedTotal} foto(s) excluída(s). Restam ${left} na galeria.`
+            : `${deletedTotal} foto(s) excluída(s). Galeria vazia — pode adicionar novas fotos.`,
+          { kind: 'ok', title: 'Exclusão' }
+        );
+      }
+      if (lastError) {
+        showError(lastError.message || 'Erro ao excluir fotos');
+        toast('Algumas fotos podem não ter sido excluídas. Atualize a página e tente de novo.', { kind: 'warn', title: 'Exclusão' });
+      }
     } catch (e) {
+      selectedPhotoIds = new Set();
+      photoPageIndex = 0;
+      try { await loadGallery(); } catch (_) { /* ignore */ }
+      syncSelectedPhotoIdsWithGallery();
+      renderPhotos();
       showError(e?.message || 'Erro ao excluir fotos');
       toast(e?.message || 'Erro ao excluir fotos', { kind: 'err', title: 'Erro' });
     } finally {
@@ -2847,6 +2878,16 @@ document.addEventListener('DOMContentLoaded', () => {
         .map((f) => parseInt(f?.cover_photo_id, 10) || 0)
         .filter(Boolean)
     );
+
+    if (!paged.length) {
+      const emptyMsg = photosAll.length === 0
+        ? 'Nenhuma foto nesta galeria. Use <b>+ Adicionar fotos</b> ou arraste imagens na área acima.'
+        : (photoFilter === 'fav'
+          ? 'Nenhuma foto favorita.'
+          : (photoSearch ? 'Nenhuma foto encontrada com esse nome.' : 'Nenhuma foto neste filtro.'));
+      pGrid.innerHTML = `<div class="col-span-full rounded-xl border border-white/10 bg-black/30 p-8 text-center text-sm ks-muted" style="grid-column:1/-1">${emptyMsg}</div>`;
+      return;
+    }
 
     pGrid.innerHTML = paged.map(p => {
       const isSel = selectedPhotoIds.has(p.id);
@@ -3648,9 +3689,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
     }
     gallery.folders = normalizeFolders(gallery?.folders);
-    if (photoFolderFilterId && !gallery.folders.some((f) => f.id === photoFolderFilterId)) {
+    if (photoFolderFilterId && photoFolderFilterId !== -1 && !gallery.folders.some((f) => f.id === photoFolderFilterId)) {
       photoFolderFilterId = null;
     }
+    syncSelectedPhotoIdsWithGallery();
     if (uploadFolderId && !gallery.folders.some((f) => f.id === uploadFolderId)) {
       uploadFolderId = null;
     }
