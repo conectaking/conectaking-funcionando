@@ -1417,6 +1417,46 @@
     #ks-step-gallery.ks-public-dl-minimal #ks-open-downloads {
       display: none !important;
     }
+
+    /* Modo vendas após envio: só painel de download (marca d'água), sem grelha de seleção */
+    #ks-step-gallery.ks-sales-post-submit #ks-grid,
+    #ks-step-gallery.ks-sales-post-submit #ks-search-block,
+    #ks-step-gallery.ks-sales-post-submit #ks-folder-wrap,
+    #ks-step-gallery.ks-sales-post-submit #ks-face-panel,
+    #ks-step-gallery.ks-sales-post-submit .ks-top-sort-meta,
+    #ks-step-gallery.ks-sales-post-submit #ks-gallery-foot,
+    #ks-step-gallery.ks-sales-post-submit #ks-empty,
+    #ks-step-gallery.ks-sales-post-submit #ks-search-hint {
+      display: none !important;
+    }
+    #ks-step-gallery.ks-sales-post-submit #ks-advance,
+    #ks-step-gallery.ks-sales-post-submit #ks-clear,
+    #ks-step-gallery.ks-sales-post-submit #ks-compare,
+    #ks-step-gallery.ks-sales-post-submit #ks-folder-select-all,
+    #ks-step-gallery.ks-sales-post-submit #ks-folder-back-top,
+    #ks-step-gallery.ks-sales-post-submit #ks-open-downloads {
+      display: none !important;
+    }
+    body.ks-sales-post-submit { padding-bottom: 0; }
+    #ks-sales-confirm-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 180;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(15,23,42,.98));
+      border-top: 1px solid rgba(250,204,21,.45);
+      box-shadow: 0 -8px 32px rgba(0,0,0,.45);
+    }
+    #ks-sales-confirm-bar.ks-hidden { display: none !important; }
+    #ks-sales-confirm-count { font-size: 14px; font-weight: 800; color: #fef3c7; }
+    #ks-refresh-downloads { margin-top: 8px; width: 100%; justify-content: center; }
   </style>
 </head>
 <body>
@@ -1655,6 +1695,9 @@
             <div id="ks-dl-proof-status" style="font-size:12px;margin-top:8px;color:#86efac;min-height:1.2em" aria-live="polite"></div>
           </div>
           <div class="ks-muted" id="ks-downloads-msg" style="font-size:12px;margin-top:8px">Disponível após aprovação do fotógrafo e confirmação do pagamento.</div>
+          <button type="button" class="ks-btn ks-btn-yellow ks-hidden" id="ks-refresh-downloads" title="Buscar fotos liberadas pelo fotógrafo">
+            <i class="fas fa-sync-alt"></i> Atualizar liberações
+          </button>
           <div id="ks-downloads-progress" class="ks-hidden" style="margin-top:8px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#cbd5e1;margin-bottom:4px">
               <span id="ks-downloads-progress-text">Baixando...</span>
@@ -1951,7 +1994,13 @@
   </button>
 
   <script src="/config.js?v=2026-03-23-anticache-a1"></script>
-  <script src="/kingSelectionCliente.js?v=2026-05-19-sales-approval-fix"></script>
+  <div id="ks-sales-confirm-bar" class="ks-hidden" aria-live="polite">
+    <span id="ks-sales-confirm-count">0 foto(s) selecionada(s)</span>
+    <button type="button" class="ks-btn ks-btn-yellow" id="ks-sales-confirm-go">
+      <i class="fas fa-paper-plane"></i> Confirmar seleção
+    </button>
+  </div>
+  <script src="/kingSelectionCliente.js?v=2026-05-19-sales-flow-v2"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>

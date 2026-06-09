@@ -337,23 +337,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEFAULT_SALES_WA_TPL = {
     approved:
       'Olá, {{nome}}!\n\n' +
-      'As *fotos do {{galeria}}* já foram *aprovadas e confirmadas*.\n\n' +
-      'Abra o link abaixo, entre na galeria com o mesmo *nome*, *e-mail* e *WhatsApp* do cadastro e *baixe* suas imagens por lá:\n\n' +
+      'Suas fotos do *{{galeria}}* já foram *liberadas* para download.\n\n' +
+      'Seu link pessoal (entra direto, sem pedir login de novo):\n\n' +
       '{{link}}\n\n' +
-      'Qualquer dúvida, é só chamar.',
+      'Na galeria, use «Atualizar liberações» se as fotos ainda não aparecerem liberadas.',
     pending:
       'Olá, {{nome}}!\n\n' +
       'Sobre as *fotos do {{galeria}}*: sua seleção foi recebida, mas o *pagamento (PIX) ainda está pendente*.\n\n' +
-      'Assim que for confirmado, libero os downloads. Você pode acompanhar e reenviar comprovante neste link:\n\n' +
+      'Acompanhe e envie comprovante pelo seu link pessoal (entra direto):\n\n' +
       '{{link}}',
     rejected:
       'Olá, {{nome}}!\n\n' +
-      'O comprovante das *fotos do {{galeria}}* foi recusado; ainda falta confirmar o pagamento para liberar os downloads.\n\n' +
-      'Reenvie o comprovante pela galeria:\n\n' +
+      'O comprovante das *fotos do {{galeria}}* foi recusado; ainda falta confirmar o pagamento.\n\n' +
+      'Reenvie pelo seu link pessoal:\n\n' +
       '{{link}}',
     awaiting:
       'Olá, {{nome}}!\n\n' +
-      'Sobre as *fotos do {{galeria}}*: sua seleção e o pagamento estão ok. Estou *revisando as fotos*; em breve libero o download neste link:\n\n' +
+      'Sobre as *fotos do {{galeria}}*: recebi sua seleção e estou *revisando as fotos*. Em breve libero o download.\n\n' +
+      'Acompanhe pelo seu link pessoal:\n\n' +
       '{{link}}\n\n' +
       'Obrigado pela paciência!'
   };
@@ -1099,6 +1100,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const u = new URL(`${base}/kingSelection/${encodeURIComponent(gallery.slug)}`);
     u.searchParams.set('v', v);
     return u.toString();
+  }
+
+  const _clientAccessLinkCache = new Map();
+
+  /** Link pessoal com login automático (JWT na URL) — um por cliente cadastrado. */
+  async function buildClientAccessLink(clientId) {
+    const cid = parseInt(clientId, 10) || 0;
+    if (!cid || !galleryId) return buildClientShareLink();
+    if (_clientAccessLinkCache.has(cid)) return _clientAccessLinkCache.get(cid);
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/access-link`, {
+      method: 'POST',
+      headers: HEADERS
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro ao gerar link pessoal do cliente');
+    const url = String(data.url || '').trim();
+    if (url) _clientAccessLinkCache.set(cid, url);
+    return url || buildClientShareLink();
   }
 
   function getClientPassPlain() {
@@ -3094,17 +3113,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const wd = resolveWhatsappDigits(rawPhone);
       const canOpen = wd.length >= 10;
       const clientLabel = clientName || 'cliente';
-      const msg = `Olá, ${clientLabel}! Aqui é o fotógrafo da galeria "${gallery?.nome_projeto || ''}".`;
-      if (canOpen) {
-        actOpenWhatsappBtn.style.display = '';
-        actOpenWhatsappBtn.disabled = false;
-        actOpenWhatsappBtn.setAttribute('data-whats-link', `https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(msg)}`);
-        actOpenWhatsappBtn.title = 'Abrir conversa no WhatsApp deste cliente';
+      const cidWa = contactRow ? parseInt(contactRow.id, 10) || 0 : 0;
+      const setWaLink = (linkWa) => {
+        const msg = `Olá, ${clientLabel}! Aqui é o fotógrafo da galeria "${gallery?.nome_projeto || ''}".\n\nSeu link pessoal (entra direto):\n${linkWa}`;
+        if (canOpen) {
+          actOpenWhatsappBtn.style.display = '';
+          actOpenWhatsappBtn.disabled = false;
+          actOpenWhatsappBtn.setAttribute('data-whats-link', `https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(msg)}`);
+          actOpenWhatsappBtn.title = 'Abrir conversa no WhatsApp deste cliente';
+        } else {
+          actOpenWhatsappBtn.style.display = '';
+          actOpenWhatsappBtn.disabled = true;
+          actOpenWhatsappBtn.removeAttribute('data-whats-link');
+          actOpenWhatsappBtn.title = 'Cliente sem WhatsApp válido (com DDD)';
+        }
+      };
+      if (cidWa) {
+        buildClientAccessLink(cidWa).then(setWaLink).catch(() => setWaLink(buildClientShareLink()));
       } else {
-        actOpenWhatsappBtn.style.display = '';
-        actOpenWhatsappBtn.disabled = true;
-        actOpenWhatsappBtn.removeAttribute('data-whats-link');
-        actOpenWhatsappBtn.title = 'Cliente sem WhatsApp válido (com DDD)';
+        setWaLink(buildClientShareLink());
       }
     }
     if (actPassRow && actPassSpan && actRevealPassBtn) {
@@ -4643,7 +4670,10 @@ document.addEventListener('DOMContentLoaded', () => {
       salesOpenClientWhatsBtn.innerHTML = `<i class="fab fa-whatsapp"></i> WhatsApp de ${escapeHtml(shortName)}`;
       salesOpenClientWhatsBtn.disabled = !canOpenWa;
       if (canOpenWa) {
-        const link = buildClientShareLink();
+        let link = buildClientShareLink();
+        try {
+          link = await buildClientAccessLink(cid);
+        } catch (_) { /* fallback link genérico */ }
         const nomeGaleria = String(gallery?.nome_projeto || gallery?.slug || 'sua galeria').trim() || 'sua galeria';
         const msg = buildSalesClientWhatsMessage({
           approvedCount,
@@ -7257,9 +7287,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function buildWhatsMessageForClient({ email, password }) {
-    const link = buildClientShareLink();
+  function buildWhatsMessageForClient({ email, password, link }) {
+    const url = link || buildClientShareLink();
     const nome = gallery?.nome_projeto || 'sua galeria';
+    const am = String(gallery?.access_mode || 'private').toLowerCase();
+    if (am === 'paid_event_photos' || am === 'signup') {
+      return [
+        `Olá!`,
+        ``,
+        `Suas fotos de ${nome} estão neste link pessoal (entra direto, sem pedir login):`,
+        ``,
+        url,
+        ``,
+        `Qualquer dúvida, é só chamar.`
+      ].join('\n');
+    }
     return [
       `Olá!`,
       ``,
@@ -7268,7 +7310,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `Para realizar a seleção, utilize os seguintes dados:`,
       ``,
       `Link:`,
-      link,
+      url,
       ``,
       `E-mail: ${email || '-'}`,
       `Senha: ${password || '-'}`
@@ -7453,13 +7495,24 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       _openClientMenuFor = null;
       try {
-        const link = buildClientLink();
+        let link = buildClientLink();
+        const amShare = String(gallery?.access_mode || 'private').toLowerCase();
+        if (amShare === 'paid_event_photos' || amShare === 'signup') {
+          try {
+            link = await buildClientAccessLink(clientId);
+          } catch (_) { /* link genérico */ }
+        }
         if (shareLink) shareLink.textContent = link;
         if (shareEmail) shareEmail.textContent = c.email || '-';
         if (sharePass) sharePass.textContent = '••••••';
         openShareModal();
-        const pw = await fetchClientPassword(clientId);
-        if (sharePass) sharePass.textContent = pw;
+        const amPriv = amShare === 'private';
+        if (amPriv) {
+          const pw = await fetchClientPassword(clientId);
+          if (sharePass) sharePass.textContent = pw;
+        } else if (sharePass) {
+          sharePass.textContent = '(login automático pelo link)';
+        }
         _activeClientId = clientId;
         _activeClientEmail = String(c.email || '').toLowerCase().trim();
       } catch (err) {
@@ -7472,9 +7525,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (action === 'copy') {
       e.preventDefault();
       try {
-        const pw = await fetchClientPassword(clientId);
-        const msg = buildWhatsMessageForClient({ email: c.email, password: pw });
-        await copyToClipboard(msg);
+        let link = buildClientShareLink();
+        const amCopy = String(gallery?.access_mode || 'private').toLowerCase();
+        if (amCopy === 'paid_event_photos' || amCopy === 'signup') {
+          try {
+            link = await buildClientAccessLink(clientId);
+          } catch (_) { /* link genérico */ }
+          const msg = buildWhatsMessageForClient({ email: c.email, link });
+          await copyToClipboard(msg);
+        } else {
+          const pw = await fetchClientPassword(clientId);
+          const msg = buildWhatsMessageForClient({ email: c.email, password: pw, link });
+          await copyToClipboard(msg);
+        }
         toast('Acesso copiado. Cole no WhatsApp.', { kind: 'ok', title: 'Copiado' });
       } catch (err) {
         showError(err.message || 'Erro');

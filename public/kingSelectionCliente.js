@@ -173,9 +173,31 @@
   }
 
   let jwt = null;
-  try {
-    jwt = localStorage.getItem(tokenKey(slug)) || null;
-  } catch (_) {}
+
+  /** Link pessoal (?access=JWT): substitui sessão antiga e evita cair no cadastro de outro cliente. */
+  function consumeAccessTokenFromUrl() {
+    if (!slug) return false;
+    try {
+      const q = new URLSearchParams(window.location.search || '');
+      const access = String(q.get('access') || q.get('token') || '').trim();
+      if (!access) return false;
+      jwt = access;
+      localStorage.setItem(tokenKey(slug), jwt);
+      q.delete('access');
+      q.delete('token');
+      const qs = q.toString();
+      history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  if (!consumeAccessTokenFromUrl()) {
+    try {
+      jwt = localStorage.getItem(tokenKey(slug)) || null;
+    } catch (_) {}
+  }
 
   let galleryMeta = null;
   /** thumbTargetMode: 'auto' alterna A/B a cada clique na faixa; 'pinA'|'pinB' só mexe nesse lado até tocar de novo na mesma foto/rótulo. */
@@ -953,7 +975,9 @@
       } else if (!state.clientAuthenticated) {
         setDlMsg(`Você já marcou ${selectedForClient.length} foto(s). Clique em Avançar, envie sua seleção e depois aguarde aprovação para baixar.`);
       } else if (state.locked && state.salesModeActive) {
-        setDlMsg('');
+        setDlMsg(
+          'Suas fotos enviadas aparecem abaixo com marca d\'água. Quando o fotógrafo liberar, toque em «Atualizar liberações» ou atualize a página (F5) para baixar em alta qualidade.'
+        );
       } else {
         setDlMsg(
           state.locked
@@ -972,8 +996,13 @@
       `).join('');
     }
     openDownloadsBtn.classList.toggle('ks-hidden', false);
+    const refreshDl = $('ks-refresh-downloads');
+    if (refreshDl) {
+      refreshDl.classList.toggle('ks-hidden', !(state.salesModeActive && state.locked));
+    }
     renderDownloadsPixBanner();
     renderPromoClientBanner();
+    syncSalesConfirmBar();
   }
 
   /** Modo público + cupom: painel separado. Público gratuito usa só a galeria (syncPublicDownloadToolbar). */
@@ -1272,6 +1301,35 @@
 
   function syncPublicLockedDownloadMinimalClass() {
     $('ks-step-gallery')?.classList.toggle('ks-public-dl-minimal', publicLockedDownloadPhaseActive());
+  }
+
+  /** Modo vendas após envio: só painel de download (marca d'água) — sem grelha de seleção. */
+  function salesPostSubmitPhaseActive() {
+    return !!(state.salesModeActive && state.locked);
+  }
+
+  function syncSalesPostSubmitLayout() {
+    const on = salesPostSubmitPhaseActive();
+    $('ks-step-gallery')?.classList.toggle('ks-sales-post-submit', on);
+    document.body.classList.toggle('ks-sales-post-submit', on);
+    const bar = $('ks-sales-confirm-bar');
+    if (bar) bar.classList.add('ks-hidden');
+    if (on) {
+      $('ks-downloads-panel')?.classList.remove('ks-hidden');
+      $('ks-step-confirm')?.classList.add('ks-hidden');
+      $('ks-step-compare')?.classList.add('ks-hidden');
+      $('ks-step-gallery')?.classList.remove('ks-hidden');
+    }
+  }
+
+  function syncSalesConfirmBar() {
+    const bar = $('ks-sales-confirm-bar');
+    if (!bar) return;
+    const n = state.selected?.size || 0;
+    const show = !!(state.salesModeActive && !state.locked && n > 0 && !confirmStepOpen() && !compareStepOpen());
+    bar.classList.toggle('ks-hidden', !show);
+    const cnt = $('ks-sales-confirm-count');
+    if (cnt) cnt.textContent = `${n} foto(s) selecionada(s)`;
   }
 
   async function downloadPhotosSequentially(photoIds, opts) {
@@ -2287,7 +2345,7 @@
       notice.style.color = '';
       if (selectionLockedForUi()) {
         notice.textContent = state.salesModeActive
-          ? 'Sua seleção já foi enviada. Se quiser selecionar mais fotos, use o Suporte no WhatsApp e peça ao retratista para liberar nova seleção.'
+          ? 'Seleção enviada! Suas fotos estão no painel «Fotos para baixar» (marca d\'água). Quando o fotógrafo liberar, use «Atualizar liberações» ou F5.'
           : (data.lockedMessage || 'Sua seleção já foi enviada e está bloqueada. Peça ao fotógrafo para reativar ou abrir uma nova seleção.');
         notice.classList.remove('ks-hidden');
       } else if (data.immutableSelectionNotice) {
@@ -2312,6 +2370,8 @@
     }
     scheduleEntrySplash();
     scheduleSalesStatusRefresh();
+    syncSalesPostSubmitLayout();
+    syncSalesConfirmBar();
   }
 
   /** Fallback da API de produção se `config.js` não expuser API_URL (evita <img src="/api/..."> no domínio do site → 404). */
@@ -2395,6 +2455,7 @@
     const publicNoCompare = normKsAccessModeFromMeta() === 'public';
     const directReviewFlow = simpleSalesFlow || (publicNoCompare && !publicFree);
     syncPublicDownloadToolbar();
+    syncSalesConfirmBar();
     if (adv) {
       if (publicFree) {
         adv.classList.add('ks-hidden');
@@ -3400,6 +3461,7 @@
         } catch (bootErr) {
           toast(bootErr?.message || 'Seleção enviada, mas houve erro ao atualizar a página.', 'err');
         }
+        syncSalesPostSubmitLayout();
         $('ks-downloads-panel')?.classList.remove('ks-hidden');
         requestAnimationFrame(() => {
           try {
@@ -3410,8 +3472,8 @@
         });
         toast(
           proofOkWithSelection
-            ? 'Enviado. Use o bloco Pagamento via PIX abaixo se precisar.'
-            : 'Seleção enviada. PIX e comprovante no painel abaixo.',
+            ? 'Seleção enviada! Abaixo estão suas fotos (marca d\'água). Atualize a página quando o fotógrafo liberar.'
+            : 'Seleção enviada! Veja suas fotos abaixo. Quando o fotógrafo liberar, use «Atualizar liberações».',
           'ok'
         );
       } else {
@@ -4204,6 +4266,28 @@
 
   $('ks-confirm-back-gallery')?.addEventListener('click', () => closeConfirmStep());
   $('ks-confirm-send')?.addEventListener('click', () => finalizeSubmit());
+
+  $('ks-sales-confirm-go')?.addEventListener('click', () => openConfirmStep());
+
+  $('ks-refresh-downloads')?.addEventListener('click', async () => {
+    const btn = $('ks-refresh-downloads');
+    if (btn) btn.disabled = true;
+    try {
+      const gd = await loadGallery();
+      applyGalleryData(gd);
+      const n = getSalesApprovedEntries().length;
+      toast(
+        n > 0
+          ? `${n} foto(s) liberada(s)! Você já pode baixar em alta qualidade.`
+          : 'Ainda aguardando liberação do fotógrafo. Tente de novo em instantes.',
+        n > 0 ? 'ok' : ''
+      );
+    } catch (e) {
+      toast(e?.message || 'Erro ao atualizar', 'err');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
 
   $('ks-cmp-sel-a')?.addEventListener('change', () => {
     compareState.idA = parseInt($('ks-cmp-sel-a').value, 10) || null;

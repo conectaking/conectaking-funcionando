@@ -4514,16 +4514,9 @@ async function ksMergePaidReleaseIntoApprovalsState(
   }
   for (const batch of batchSet) {
     const pay = await ksGetPaymentByClientRound(pgClient, galleryId, salesClientId, batch);
-    let bal = pay?.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : null;
-    if (pay && bal > 0) continue;
-    if (!pay) {
-      const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, salesClientId, batch);
-      const expected = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
-      const selCount = parseInt(pricing.selected_count, 10) || 0;
-      /** Cupom / pacote zerado: sem linha de pagamento, mas a rodada está «quitada» para liberar download. */
-      if (expected > 0 || selCount === 0) continue;
-      bal = 0;
-    }
+    /** Só libera sinteticamente quando o fotógrafo registrou pagamento/cortesia (saldo zero). Sem linha de pagamento = aguardar aprovação manual. */
+    if (!pay) continue;
+    const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
     if (bal > 0) continue;
     for (const pidRaw of selectedPhotoIds) {
       const pid = parseInt(pidRaw, 10);
@@ -4591,18 +4584,19 @@ async function ksClientDownloadApprovedOrPaid(pgClient, galleryId, clientId, pho
   if (!sel.rows.length) return { ok: false, selection_batch: 1, delivery_mode: 'original' };
   const batch = hasSelBatch ? Math.max(1, parseInt(sel.rows[0].selection_batch, 10) || 1) : 1;
   const pay = await ksGetPaymentByClientRound(pgClient, galleryId, clientId, batch);
-  if (pay) {
-    const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
-    if (bal > 0) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
-    return { ok: true, selection_batch: batch, delivery_mode: 'original' };
-  }
-  const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId, batch);
-  const expected = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
-  const selCount = parseInt(pricing.selected_count, 10) || 0;
-  if (expected === 0 && selCount > 0) {
-    return { ok: true, selection_batch: batch, delivery_mode: 'original' };
-  }
-  return { ok: false, selection_batch: batch, delivery_mode: 'original' };
+  if (!pay) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
+  const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
+  if (bal > 0) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
+  return { ok: true, selection_batch: batch, delivery_mode: 'original' };
+}
+
+function ksBuildClientGalleryAccessUrl(slug, token) {
+  const base = (config.urls && config.urls.shareBase)
+    ? String(config.urls.shareBase).trim().replace(/\/$/, '')
+    : '';
+  const path = `/kingSelection/${encodeURIComponent(String(slug || '').trim())}`;
+  const q = `access=${encodeURIComponent(String(token || ''))}`;
+  return base ? `${base}${path}?${q}` : `${path}?${q}`;
 }
 
 router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
@@ -6878,6 +6872,48 @@ router.get('/galleries/:id/enrolled-faces', protectUser, asyncHandler(async (req
       [galleryId]
     );
     res.json({ success: true, clientIds: efRes.rows.map(r => r.client_id) });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Link pessoal do cliente (JWT na URL) — abre a galeria já logado, sem pedir dados de novo. */
+router.post('/galleries/:id/clients/:clientId/access-link', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id, g.slug
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes indisponível.' });
+    }
+    const cRes = await client.query(
+      `SELECT id, email, enabled FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2 LIMIT 1`,
+      [galleryId, clientId]
+    );
+    if (!cRes.rows.length) return res.status(404).json({ message: 'Cliente não encontrado.' });
+    const row = cRes.rows[0];
+    if (row.enabled === false) return res.status(409).json({ message: 'Cliente desativado.' });
+    if (isTechnicalFaceGalleryClientEmail(row.email)) {
+      return res.status(409).json({ message: 'Este cadastro é técnico (sessão). Use o cliente real da lista.' });
+    }
+    const slug = String(own.rows[0].slug || '').trim();
+    if (!slug) return res.status(500).json({ message: 'Slug da galeria indisponível.' });
+    const token = jwt.sign(
+      { type: 'kingselection_client', galleryId, slug, clientId, tyh: false },
+      config.jwt.secret,
+      { expiresIn: '90d' }
+    );
+    res.json({ success: true, token, url: ksBuildClientGalleryAccessUrl(slug, token) });
   } finally {
     client.release();
   }
