@@ -10061,7 +10061,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           ? !!(gallery.client_entry_splash_enabled || (salesModeActive && splashClient))
           : !!(salesModeActive && splashClient),
         entry_splash_url: entrySplashUrl || null,
-        tutorial_video_url: hasTutorialVideo ? (gallery.tutorial_video_url ? String(g.gallery.tutorial_video_url).trim() : null) : undefined,
+        tutorial_video_url: hasTutorialVideo ? (gallery.tutorial_video_url ? String(gallery.tutorial_video_url).trim() : null) : undefined,
         watermark_download_notice:
           galleryAccessMode === 'public' && photographerAllowsDownload
             ? "Download com marca d'água. Selecione as fotos; se houver cupom, conclua a validação (redes e código). Depois clique em «Confirmar para baixar» e informe nome, e-mail e WhatsApp. Só após esse envio as opções «Baixar» e «Fotos para baixar» ficam disponíveis para as fotos que você escolheu."
