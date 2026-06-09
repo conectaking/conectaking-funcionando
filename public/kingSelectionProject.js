@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let photoSearch = '';
   let photoPageSize = 20;
   let photoPageIndex = 0;
-  let photoFolderFilterId = null; // null=todas, -1=sem pasta, >0=id da pasta
+  let photoFolderFilterId = null; // null=todas, -1=fotos soltas, >0=id da pasta
   let photoSortMode = 'order'; // order|name|id
   let folderSortMode = 'name'; // manual|name|count
   let uploadFolderMode = 'all'; // all|folder
@@ -2514,7 +2514,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return;
       }
-      photoFolderFilterId = folderId || null;
+      if (fidRaw === '-1') photoFolderFilterId = -1;
+      else if (fidRaw === '' || fidRaw == null) photoFolderFilterId = null;
+      else photoFolderFilterId = folderId || null;
       photoPageIndex = 0;
       renderFoldersAdminUi();
       renderPhotos();
