@@ -3331,9 +3331,12 @@
             <button class="ks-btn" id="p-select-all"><i class="fas fa-check-double"></i> Selecionar tudo</button>
             <button class="ks-btn" id="p-clear-sel"><i class="fas fa-xmark"></i> Limpar seleção</button>
             <div class="ks-mini"><b id="p-selected-count">0</b> foto(s) selecionada(s)</div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <button class="ks-btn" id="p-download-sel"><i class="fas fa-download"></i> Baixar selecionadas</button>
               <button class="ks-btn" id="p-delete-sel"><i class="fas fa-trash"></i> Excluir selecionadas</button>
+              <button class="ks-btn" id="p-delete-loose" type="button" style="color:#fca5a5;border-color:rgba(248,113,113,.55)" title="Apaga fotos sem pasta (ficaram soltas ao excluir uma pasta)">
+                <i class="fas fa-unlink"></i> <span id="p-delete-loose-label">Excluir fotos soltas</span>
+              </button>
             </div>
           </div>
 
@@ -3634,7 +3637,7 @@
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
 
   <script src="/config.js?v=2026-06-09-api-fix"></script>
-  <script src="/kingSelectionProject.js?v=2026-06-09-photo-menu"></script>
+  <script src="/kingSelectionProject.js?v=2026-06-09-loose-photos"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>

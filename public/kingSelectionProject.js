@@ -617,6 +617,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const pClearSel = document.getElementById('p-clear-sel');
   const pDownloadSel = document.getElementById('p-download-sel');
   const pDeleteSel = document.getElementById('p-delete-sel');
+  const pDeleteLoose = document.getElementById('p-delete-loose');
+  const pDeleteLooseLabel = document.getElementById('p-delete-loose-label');
   const pFilterAll = document.getElementById('p-filter-all');
   const pFilterFav = document.getElementById('p-filter-fav');
   const pCountAll = document.getElementById('p-count-all');
@@ -2146,7 +2148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!pGrid) return null;
     let wrap = document.getElementById('ks-folders-admin');
     // Atualiza toolbar antiga (sem botões novos) sem precisar limpar cache manual
-    if (wrap && (!wrap.querySelector('#ks-photo-delete-selected-btn') || !wrap.querySelector('#ks-photo-delete-loose-btn'))) {
+    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '2') {
       try { wrap.remove(); } catch (_) { /* ignore */ }
       wrap = null;
     }
@@ -2154,6 +2156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const host = pGrid.parentElement || pGrid;
     wrap = document.createElement('div');
     wrap.id = 'ks-folders-admin';
+    wrap.setAttribute('data-ks-toolbar-v', '2');
     wrap.style.marginBottom = '12px';
     wrap.style.border = '1px solid rgba(255,255,255,.12)';
     wrap.style.borderRadius = '12px';
@@ -2971,8 +2974,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function syncLoosePhotosToolbar() {
+    const loose = getLoosePhotos();
+    const n = loose.length;
+    if (pDeleteLooseLabel) {
+      pDeleteLooseLabel.textContent = n > 0 ? `Excluir fotos soltas (${n})` : 'Excluir fotos soltas';
+    }
+    if (pDeleteLoose) {
+      pDeleteLoose.disabled = n === 0;
+      pDeleteLoose.title = n > 0
+        ? `Apagar ${n} foto(s) sem pasta da galeria`
+        : 'Não há fotos soltas nesta galeria';
+    }
+  }
+
   function renderPhotos() {
     renderFoldersAdminUi();
+    syncLoosePhotosToolbar();
     const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
     const favCount = photosAll.filter(p => !!p.is_favorite).length;
     if (pCountAll) pCountAll.textContent = String(photosAll.length);
@@ -9522,6 +9540,9 @@ document.addEventListener('DOMContentLoaded', () => {
   pClearSel?.addEventListener('click', () => { selectedPhotoIds = new Set(); renderPhotos(); });
   pDeleteSel?.addEventListener('click', () => {
     deleteSelectedPhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos'));
+  });
+  pDeleteLoose?.addEventListener('click', () => {
+    deleteLoosePhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos soltas'));
   });
   pDownloadSel?.addEventListener('click', async () => {
     if (!selectedPhotoIds.size) return;

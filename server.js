@@ -945,6 +945,9 @@ app.get(['/kingSelectionCliente.js', '/mr/kingSelectionCliente.js'], (req, res) 
 app.get(['/kingSelectionCliente-no-sem-pasta.js', '/mr/kingSelectionCliente-no-sem-pasta.js'], (req, res) => {
     sendKingSelectionClienteJsFile(res, 'kingSelectionCliente-no-sem-pasta.js');
 });
+app.get(['/kingSelectionProject.js', '/mr/kingSelectionProject.js'], (req, res) => {
+    sendKingSelectionClienteJsFile(res, 'kingSelectionProject.js');
+});
 
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {
