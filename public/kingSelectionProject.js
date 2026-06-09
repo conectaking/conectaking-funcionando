@@ -698,12 +698,16 @@ document.addEventListener('DOMContentLoaded', () => {
   /** Preferência do filtro "Ver seleção" por galeria (`all` ou número da rodada) */
   const activityBatchPrefByGallery = {};
   let exportPayload = { lightroom: '', finder: '', windows: '' };
+  /** Padrão oficial Conecta King (tile_dense) — igual para todos os projetos novos. */
+  const KS_WM_OFFICIAL_PORTRAIT_PCT = 150;
+  const KS_WM_OFFICIAL_LANDSCAPE_PCT = 98;
+  const KS_WM_OFFICIAL_ROTATE_LANDSCAPE = 90;
   let wmMode = 'x';
-  let wmOpacityPct = 12;
-  let wmScalePortraitPct = 120;
-  let wmScaleLandscapePct = 120;
+  let wmOpacityPct = 22;
+  let wmScalePortraitPct = KS_WM_OFFICIAL_PORTRAIT_PCT;
+  let wmScaleLandscapePct = KS_WM_OFFICIAL_LANDSCAPE_PCT;
   let wmRotatePortraitDeg = 0;
-  let wmRotateLandscapeDeg = 0;
+  let wmRotateLandscapeDeg = KS_WM_OFFICIAL_ROTATE_LANDSCAPE;
   /** Offset mosaico / marca — retrato (foto vertical) */
   let wmLogoOffsetXPctPortrait = 0;
   let wmLogoOffsetYPctPortrait = 0;
@@ -3617,22 +3621,22 @@ document.addEventListener('DOMContentLoaded', () => {
       wmModeCkWrap.title = hasCustom ? 'Remova a marca personalizada para usar a Conecta King.' : '';
     }
     // sliders (defaults)
-    wmOpacityPct = clamp(Math.round((parseFloat(gallery?.watermark_opacity ?? 0.12) || 0.12) * 100), 0, 100);
-    const baseSc = clamp(Math.round((parseFloat(gallery?.watermark_scale ?? 1.20) || 1.20) * 100), 10, 500);
+    wmOpacityPct = clamp(Math.round((parseFloat(gallery?.watermark_opacity ?? 0.22) || 0.22) * 100), 0, 100);
+    const baseSc = clamp(Math.round((parseFloat(gallery?.watermark_scale ?? 1.5) || 1.5) * 100), 10, 500);
     const spDb = gallery?.watermark_scale_portrait;
     const slDb = gallery?.watermark_scale_landscape;
     wmScalePortraitPct =
       spDb != null && Number.isFinite(parseFloat(spDb))
         ? clamp(Math.round(parseFloat(spDb) * 100), 10, 500)
-        : baseSc;
+        : baseSc || KS_WM_OFFICIAL_PORTRAIT_PCT;
     wmScaleLandscapePct =
       slDb != null && Number.isFinite(parseFloat(slDb))
         ? clamp(Math.round(parseFloat(slDb) * 100), 10, 500)
-        : baseSc;
+        : KS_WM_OFFICIAL_LANDSCAPE_PCT;
     const wrp = parseInt(gallery?.watermark_rotate_portrait ?? gallery?.watermark_rotate ?? 0, 10) || 0;
-    const wrl = parseInt(gallery?.watermark_rotate_landscape ?? gallery?.watermark_rotate ?? 0, 10) || 0;
+    const wrl = parseInt(gallery?.watermark_rotate_landscape ?? gallery?.watermark_rotate ?? KS_WM_OFFICIAL_ROTATE_LANDSCAPE, 10) || 0;
     wmRotatePortraitDeg = [0, 90, 180, 270].includes(wrp) ? wrp : 0;
-    wmRotateLandscapeDeg = [0, 90, 180, 270].includes(wrl) ? wrl : 0;
+    wmRotateLandscapeDeg = [0, 90, 180, 270].includes(wrl) ? wrl : KS_WM_OFFICIAL_ROTATE_LANDSCAPE;
     const oxRaw = gallery?.watermark_logo_offset_x;
     const oyRaw = gallery?.watermark_logo_offset_y;
     const parseOffDb = (raw, fallback) => {
@@ -8057,7 +8061,28 @@ document.addEventListener('DOMContentLoaded', () => {
         watermark_path: null,
         watermark_path_portrait: null,
         watermark_path_landscape: null,
-        watermark_mode: 'tile_dense'
+        watermark_mode: 'tile_dense',
+        watermark_scale: KS_WM_OFFICIAL_PORTRAIT_PCT / 100,
+        watermark_scale_portrait: KS_WM_OFFICIAL_PORTRAIT_PCT / 100,
+        watermark_scale_landscape: KS_WM_OFFICIAL_LANDSCAPE_PCT / 100,
+        watermark_rotate: 0,
+        watermark_rotate_portrait: 0,
+        watermark_rotate_landscape: KS_WM_OFFICIAL_ROTATE_LANDSCAPE,
+        watermark_logo_fine_rotate: 0,
+        watermark_tile_angle_landscape: 0,
+        watermark_tile_angle_portrait: 0,
+        watermark_logo_offset_x: 0,
+        watermark_logo_offset_y: 0,
+        watermark_stretch_w_pct: 100,
+        watermark_stretch_h_pct: 100,
+        watermark_logo_offset_x_portrait: 0,
+        watermark_logo_offset_y_portrait: 0,
+        watermark_logo_offset_x_landscape: 0,
+        watermark_logo_offset_y_landscape: 0,
+        watermark_stretch_w_pct_portrait: 100,
+        watermark_stretch_h_pct_portrait: 100,
+        watermark_stretch_w_pct_landscape: 100,
+        watermark_stretch_h_pct_landscape: 100
       });
       await loadGallery();
       normalizeGalleryWatermarkPaths(gallery);

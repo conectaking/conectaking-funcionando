@@ -1238,13 +1238,25 @@ function ksMoneyToCents(v) {
   return Math.max(0, Math.round(n * 100));
 }
 
-/** Valores iniciais recomendados para «Marca d'água da Conecta King» (tile_dense) ao criar galeria. */
+/** Padrão oficial «Marca d'água da Conecta King» (tile_dense) — retrato 150%, paisagem 98% + rotação 90°. */
 const KS_WM_CONECTA_KING_DEFAULTS = Object.freeze({
+  mode: 'tile_dense',
   opacity: 0.22,
   scalePortrait: 1.5,
-  scaleLandscape: 0.28,
+  scaleLandscape: 0.98,
   rotatePortrait: 0,
-  rotateLandscape: 90
+  rotateLandscape: 90,
+  logoOffsetXPortrait: 0,
+  logoOffsetYPortrait: 0,
+  logoOffsetXLandscape: 0,
+  logoOffsetYLandscape: 0,
+  stretchWPctPortrait: 100,
+  stretchHPctPortrait: 100,
+  stretchWPctLandscape: 100,
+  stretchHPctLandscape: 100,
+  tileAnglePortrait: 0,
+  tileAngleLandscape: 0,
+  logoFineRotate: 0
 });
 
 /**
@@ -2374,9 +2386,9 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasStHP = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_h_pct_portrait');
   const hasStWL = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_w_pct_landscape');
   const hasStHL = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_h_pct_landscape');
-  // Padrão pré-configurado: transparência 15%, tamanho 119%
-  const DEFAULT_OPACITY = 0.15;
-  const DEFAULT_SCALE = 1.19;
+  const DEFAULT_OPACITY = KS_WM_CONECTA_KING_DEFAULTS.opacity;
+  const DEFAULT_SCALE = KS_WM_CONECTA_KING_DEFAULTS.scalePortrait;
+  const DEFAULT_SCALE_LANDSCAPE = KS_WM_CONECTA_KING_DEFAULTS.scaleLandscape;
   const clamp01 = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
   if (!hasMode && !hasPath && !hasOpacity && !hasScale && !hasRotate) {
     return {
@@ -2523,9 +2535,13 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const rawSp = row.watermark_scale_portrait;
   const rawSl = row.watermark_scale_landscape;
   const scalePortrait =
-    rawSp != null && Number.isFinite(parseFloat(rawSp)) ? clamp01(parseFloat(rawSp), 0.1, 5.0) : null;
+    rawSp != null && Number.isFinite(parseFloat(rawSp))
+      ? clamp01(parseFloat(rawSp), 0.1, 5.0)
+      : (Number.isFinite(sc) ? clamp01(sc, 0.1, 5.0) : DEFAULT_SCALE);
   const scaleLandscape =
-    rawSl != null && Number.isFinite(parseFloat(rawSl)) ? clamp01(parseFloat(rawSl), 0.1, 5.0) : null;
+    rawSl != null && Number.isFinite(parseFloat(rawSl))
+      ? clamp01(parseFloat(rawSl), 0.1, 5.0)
+      : DEFAULT_SCALE_LANDSCAPE;
   // Normalização: antigas galerias podem estar com "x"/vazio. Como o padrão do sistema
   // é a marca d'água completa, forçamos "tile_dense" nesses casos.
   let mode = row.watermark_mode || 'x';
@@ -3198,6 +3214,29 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
       }
       if (hasRotL) {
         metaSets.push(`watermark_rotate_landscape=COALESCE(watermark_rotate_landscape,${KS_WM_CONECTA_KING_DEFAULTS.rotateLandscape})`);
+      }
+      const wmDefaultCols = [
+        ['watermark_logo_offset_x', KS_WM_CONECTA_KING_DEFAULTS.logoOffsetXPortrait],
+        ['watermark_logo_offset_y', KS_WM_CONECTA_KING_DEFAULTS.logoOffsetYPortrait],
+        ['watermark_logo_offset_x_portrait', KS_WM_CONECTA_KING_DEFAULTS.logoOffsetXPortrait],
+        ['watermark_logo_offset_y_portrait', KS_WM_CONECTA_KING_DEFAULTS.logoOffsetYPortrait],
+        ['watermark_logo_offset_x_landscape', KS_WM_CONECTA_KING_DEFAULTS.logoOffsetXLandscape],
+        ['watermark_logo_offset_y_landscape', KS_WM_CONECTA_KING_DEFAULTS.logoOffsetYLandscape],
+        ['watermark_stretch_w_pct', KS_WM_CONECTA_KING_DEFAULTS.stretchWPctPortrait],
+        ['watermark_stretch_h_pct', KS_WM_CONECTA_KING_DEFAULTS.stretchHPctPortrait],
+        ['watermark_stretch_w_pct_portrait', KS_WM_CONECTA_KING_DEFAULTS.stretchWPctPortrait],
+        ['watermark_stretch_h_pct_portrait', KS_WM_CONECTA_KING_DEFAULTS.stretchHPctPortrait],
+        ['watermark_stretch_w_pct_landscape', KS_WM_CONECTA_KING_DEFAULTS.stretchWPctLandscape],
+        ['watermark_stretch_h_pct_landscape', KS_WM_CONECTA_KING_DEFAULTS.stretchHPctLandscape],
+        ['watermark_tile_angle_portrait', KS_WM_CONECTA_KING_DEFAULTS.tileAnglePortrait],
+        ['watermark_tile_angle_landscape', KS_WM_CONECTA_KING_DEFAULTS.tileAngleLandscape],
+        ['watermark_logo_fine_rotate', KS_WM_CONECTA_KING_DEFAULTS.logoFineRotate]
+      ];
+      for (const [col, val] of wmDefaultCols) {
+        // eslint-disable-next-line no-await-in-loop
+        if (await hasColumn(client, 'king_galleries', col)) {
+          metaSets.push(`${col}=COALESCE(${col},${val})`);
+        }
       }
     } else if (hasWmMode) {
       metaSets.push(`watermark_mode=$${p++}`);
