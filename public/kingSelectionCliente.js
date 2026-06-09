@@ -418,18 +418,17 @@
   function normalizeFolders(rawFolders, rawPhotos) {
     const arr = Array.isArray(rawFolders) ? rawFolders : [];
     const photos = Array.isArray(rawPhotos) ? rawPhotos : [];
+    const validFolderIds = new Set(
+      arr.map((f) => parseInt(f?.id, 10) || 0).filter((id) => id > 0)
+    );
     const byFolder = new Map();
-    let unassignedCount = 0;
     for (const p of photos) {
       const fid = parseInt(p?.folder_id, 10) || 0;
-      if (!fid) {
-        unassignedCount += 1;
-        continue;
-      }
+      if (!fid || !validFolderIds.has(fid)) continue;
       if (!byFolder.has(fid)) byFolder.set(fid, []);
       byFolder.get(fid).push(p);
     }
-    const normalized = arr
+    return arr
       .map((f) => ({
         id: parseInt(f?.id, 10) || 0,
         name: String(f?.name || '').trim() || 'Pasta',
@@ -451,18 +450,6 @@
       // Evita mostrar pastas vazias para o cliente final.
       .filter((f) => f.id > 0 && f.photo_count > 0)
       .sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id));
-
-    // Fotos sem pasta também precisam aparecer para o cliente.
-    if (unassignedCount > 0) {
-      normalized.push({
-        id: -1,
-        name: 'Sem pasta',
-        sort_order: Number.MAX_SAFE_INTEGER,
-        cover_photo_id: null,
-        photo_count: unassignedCount
-      });
-    }
-    return normalized;
   }
 
   /** ID de foto vindo da API (int/string/bigint) → número inteiro > 0 ou 0. */
@@ -2261,9 +2248,15 @@
 
   function applyGalleryData(data) {
     const g = normalizeGalleryPhotosForState(data.gallery);
+    state.folders = normalizeFolders(g?.folders, g?.photos);
+    const validFolderIds = new Set(state.folders.map((f) => f.id));
+    if (Array.isArray(g?.photos)) {
+      g.photos = g.photos.map((p) => (
+        p.folder_id && !validFolderIds.has(p.folder_id) ? { ...p, folder_id: null } : p
+      ));
+    }
     state.gallery = g;
     applyClientCardHeightFromGallery(g);
-    state.folders = normalizeFolders(g?.folders, g?.photos);
     state.faceRecognitionUsable = !!data.faceRecognitionUsable;
     state.faceFilterIds = null;
     state.allowDownload = !!(g && g.allow_download);
@@ -2316,7 +2309,10 @@
     }
     state.currentRound = parseInt(data.currentSelectionRound, 10) || 1;
     state.frozenIds = new Set((data.frozenSelectionPhotoIds || []).map(x => parseInt(x, 10)).filter(Boolean));
-    if (state.activeFolderId && state.activeFolderId !== -1 && !state.folders.some((f) => f.id === state.activeFolderId)) {
+    if (
+      state.activeFolderId === -1
+      || (state.activeFolderId && !state.folders.some((f) => f.id === state.activeFolderId))
+    ) {
       state.activeFolderId = null;
     }
 
@@ -2342,7 +2338,10 @@
           const n = parseInt(af, 10);
           state.activeFolderId = Number.isNaN(n) ? null : n;
         }
-        if (state.activeFolderId && state.activeFolderId !== -1 && !state.folders.some((f) => f.id === state.activeFolderId)) {
+        if (
+          state.activeFolderId === -1
+          || (state.activeFolderId && !state.folders.some((f) => f.id === state.activeFolderId))
+        ) {
           state.activeFolderId = null;
           state.folderView = 'folders';
         }

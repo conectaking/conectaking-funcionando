@@ -565,6 +565,24 @@ async function listFoldersForGallery(pgClient, galleryId) {
   });
 }
 
+/** Fotos com folder_id apontando para pasta já excluída → sem pasta (só aparecem em "Todas"). */
+async function ksHealOrphanPhotoFolderIds(pgClient, galleryId) {
+  if (!(await hasColumn(pgClient, 'king_photos', 'folder_id'))) return 0;
+  if (!(await hasTable(pgClient, 'king_photo_folders'))) return 0;
+  const r = await pgClient.query(
+    `UPDATE king_photos p
+     SET folder_id = NULL
+     WHERE p.gallery_id = $1
+       AND p.folder_id IS NOT NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM king_photo_folders f
+         WHERE f.id = p.folder_id AND f.gallery_id = p.gallery_id
+       )`,
+    [galleryId]
+  );
+  return r.rowCount || 0;
+}
+
 async function runAutoSeparateByFaceInternal(pgClient, galleryId, minSimilarity) {
   const needed = ['king_photo_folders', 'rekognition_photo_faces', 'rekognition_face_matches', 'king_gallery_clients'];
   for (const t of needed) {
@@ -6488,6 +6506,7 @@ router.delete('/galleries/:id/folders/:folderId', protectUser, asyncHandler(asyn
     await client.query('UPDATE king_photos SET folder_id=NULL WHERE gallery_id=$1 AND folder_id=$2', [galleryId, folderId]);
     const del = await client.query('DELETE FROM king_photo_folders WHERE id=$1 AND gallery_id=$2', [folderId, galleryId]);
     if (!del.rowCount) return res.status(404).json({ message: 'Pasta não encontrada' });
+    await ksHealOrphanPhotoFolderIds(client, galleryId);
     const folders = await listFoldersForGallery(client, galleryId);
     res.json({ success: true, folders });
   } finally {
@@ -8456,6 +8475,7 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
         : 'folders';
     gallery.client_folder_layout = clientFolderLayoutNorm;
 
+    await ksHealOrphanPhotoFolderIds(client, gallery.id);
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
     const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
     const pRes = await client.query(
@@ -9581,6 +9601,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     );
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const gallery = gRes.rows[0];
+    await ksHealOrphanPhotoFolderIds(client, gallery.id);
     const folders = await listFoldersForGallery(client, gallery.id);
 
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
