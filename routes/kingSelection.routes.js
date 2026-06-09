@@ -8684,10 +8684,43 @@ router.post('/galleries/:galleryId/photos/delete-batch', protectUser, asyncHandl
       if (k) r2Keys.push(k);
     }
 
-    await client.query('BEGIN');
-    await client.query('DELETE FROM king_selections WHERE photo_id = ANY($1::int[])', [toDelete]);
-    await client.query('DELETE FROM king_photos WHERE id = ANY($1::int[])', [toDelete]);
-    await client.query('COMMIT');
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        'UPDATE king_photo_folders SET cover_photo_id=NULL WHERE gallery_id=$1 AND cover_photo_id = ANY($2::int[])',
+        [galleryId, toDelete]
+      );
+      try {
+        await client.query(
+          'UPDATE king_galleries SET gallery_link_cover_photo_id=NULL WHERE id=$1 AND gallery_link_cover_photo_id = ANY($2::int[])',
+          [galleryId, toDelete]
+        );
+      } catch (coverColErr) {
+        if (coverColErr.code !== '42703') throw coverColErr;
+      }
+      try {
+        await client.query('DELETE FROM king_selection_photo_approvals WHERE photo_id = ANY($1::int[])', [toDelete]);
+      } catch (apErr) {
+        if (apErr.code !== '42P01') throw apErr;
+      }
+      try {
+        await client.query('DELETE FROM rekognition_photo_faces WHERE photo_id = ANY($1::int[])', [toDelete]);
+      } catch (rekErr) {
+        if (rekErr.code !== '42P01') throw rekErr;
+      }
+      try {
+        await client.query('DELETE FROM rekognition_gallery_photos WHERE photo_id = ANY($1::int[])', [toDelete]);
+      } catch (rek2Err) {
+        if (rek2Err.code !== '42P01') throw rek2Err;
+      }
+      await client.query('DELETE FROM king_selections WHERE photo_id = ANY($1::int[])', [toDelete]);
+      await client.query('DELETE FROM king_photos WHERE gallery_id=$1 AND id = ANY($2::int[])', [galleryId, toDelete]);
+      await client.query('COMMIT');
+    } catch (delErr) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
+      logger.error('[king-selection] delete-batch', { galleryId, count: toDelete.length, message: delErr && delErr.message });
+      return res.status(500).json({ message: delErr?.message || 'Erro ao excluir fotos' });
+    }
 
     if (r2Keys.length) {
       try {
