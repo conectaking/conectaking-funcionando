@@ -820,13 +820,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return id > 0 ? id : null;
   }
 
+  /** Fotos sem pasta válida (folder_id vazio ou pasta já excluída). */
+  function getLoosePhotos() {
+    const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
+    const validFolderIds = new Set(getGalleryFolders().map((f) => f.id));
+    return photosAll.filter((p) => {
+      const fid = parseInt(p.folder_id, 10) || 0;
+      return !fid || !validFolderIds.has(fid);
+    });
+  }
+
   function getVisiblePhotos() {
     const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
+    const validFolderIds = new Set(getGalleryFolders().map((f) => f.id));
     const q = (photoSearch || '').toLowerCase().trim();
     const filtered = photosAll.filter(p => {
       const fid = parseInt(p.folder_id, 10) || 0;
       if (photoFolderFilterId === -1) {
-        if (fid > 0) return false;
+        if (fid > 0 && validFolderIds.has(fid)) return false;
       } else if (photoFolderFilterId && fid !== photoFolderFilterId) return false;
       if (photoFilter === 'fav' && !p.is_favorite) return false;
       if (!q) return true;
@@ -2134,8 +2145,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function ensureFoldersAdminUi() {
     if (!pGrid) return null;
     let wrap = document.getElementById('ks-folders-admin');
-    // Atualiza toolbar antiga (sem botões de excluir fotos) sem precisar limpar cache manual
-    if (wrap && !wrap.querySelector('#ks-photo-delete-selected-btn')) {
+    // Atualiza toolbar antiga (sem botões novos) sem precisar limpar cache manual
+    if (wrap && (!wrap.querySelector('#ks-photo-delete-selected-btn') || !wrap.querySelector('#ks-photo-delete-loose-btn'))) {
       try { wrap.remove(); } catch (_) { /* ignore */ }
       wrap = null;
     }
@@ -2164,6 +2175,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="ks-btn" id="ks-photo-clear-sel-btn"><i class="fas fa-xmark"></i> Limpar fotos</button>
           <button type="button" class="ks-btn" id="ks-photo-delete-selected-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.45)">
             <i class="fas fa-trash"></i> Excluir fotos selecionadas
+          </button>
+          <button type="button" class="ks-btn" id="ks-photo-delete-loose-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.55)">
+            <i class="fas fa-unlink"></i> Excluir fotos soltas
           </button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -2367,6 +2381,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const photoDeleteSelectedBtn = ev.target.closest('#ks-photo-delete-selected-btn');
       if (photoDeleteSelectedBtn) {
         deleteSelectedPhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos'));
+        return;
+      }
+
+      const photoDeleteLooseBtn = ev.target.closest('#ks-photo-delete-loose-btn');
+      if (photoDeleteLooseBtn) {
+        deleteLoosePhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos soltas'));
         return;
       }
 
@@ -2753,13 +2773,23 @@ document.addEventListener('DOMContentLoaded', () => {
         .filter((id) => folders.some((f) => f.id === id))
     );
 
+    const loosePhotos = getLoosePhotos();
+    const looseCount = loosePhotos.length;
     if (filterSel) {
-      const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
-      const orphanCount = photosAll.filter((p) => !(parseInt(p.folder_id, 10) || 0)).length;
       filterSel.innerHTML = `<option value="">Filtro: todas as fotos</option>`
-        + `<option value="-1">Filtro: sem pasta (${orphanCount})</option>`
+        + `<option value="-1">Filtro: fotos soltas (${looseCount})</option>`
         + folders.map((f) => `<option value="${f.id}">Filtro: ${escapeHtml(f.name)}</option>`).join('');
       filterSel.value = photoFolderFilterId === -1 ? '-1' : (photoFolderFilterId ? String(photoFolderFilterId) : '');
+    }
+    const looseDeleteBtn = wrap.querySelector('#ks-photo-delete-loose-btn');
+    if (looseDeleteBtn) {
+      looseDeleteBtn.disabled = looseCount === 0;
+      looseDeleteBtn.title = looseCount > 0
+        ? `Apagar ${looseCount} foto(s) sem pasta da galeria`
+        : 'Não há fotos soltas nesta galeria';
+      looseDeleteBtn.innerHTML = looseCount > 0
+        ? `<i class="fas fa-unlink"></i> Excluir fotos soltas (${looseCount})`
+        : '<i class="fas fa-unlink"></i> Excluir fotos soltas';
     }
     if (folderSortSel) folderSortSel.value = folderSortMode;
     if (photoSortSel) photoSortSel.value = photoSortMode;
@@ -2785,6 +2815,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!cards) return;
     const html = [];
+    if (looseCount > 0) {
+      const looseActive = photoFolderFilterId === -1;
+      html.push(
+        `<button type="button" class="ks-folder-card ${looseActive ? 'ks-folder-card--active' : ''}" data-folder-card="-1"
+          style="border:${looseActive ? '1px solid rgba(248,113,113,.85)' : '1px solid rgba(248,113,113,.45)'};background:rgba(127,29,29,.22);border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;cursor:pointer;min-height:78px;text-align:left;width:100%;">
+          <div class="ks-folder-ph" style="color:#fca5a5"><i class="fas fa-unlink"></i></div>
+          <div class="ks-folder-meta">
+            <div class="ks-folder-name">Fotos soltas</div>
+            <div class="ks-folder-count">${looseCount} foto(s) — sem pasta</div>
+          </div>
+        </button>`
+      );
+    }
     folders.forEach((f) => {
       const cover = f.cover_photo_id
         ? `<img src="" alt="${escapeHtml(f.name)}" data-folder-cover-pid="${f.cover_photo_id}" data-folder-id="${f.id}" loading="lazy" />`
@@ -2841,12 +2884,27 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedPhotoIds = new Set(Array.from(selectedPhotoIds).filter((id) => live.has(id)));
   }
 
-  async function deleteSelectedPhotosBatch() {
+  async function deleteLoosePhotosBatch() {
+    const loose = getLoosePhotos();
+    if (!loose.length) {
+      toast('Não há fotos soltas nesta galeria.', { kind: 'warn', title: 'Fotos soltas' });
+      return;
+    }
+    const ok = window.confirm(
+      `Excluir ${loose.length} foto(s) solta(s) (sem pasta)?\n\n`
+      + 'São fotos que ficaram sem pasta após excluir uma pasta ou importação solta. Esta ação não pode ser desfeita.'
+    );
+    if (!ok) return;
+    selectedPhotoIds = new Set(loose.map((p) => parseInt(p.id, 10)).filter(Boolean));
+    await deleteSelectedPhotosBatch({ skipConfirm: true });
+  }
+
+  async function deleteSelectedPhotosBatch(opts = {}) {
     if (!selectedPhotoIds.size) {
       toast('Selecione fotos (círculo no canto da miniatura) ou use «Selecionar todas as fotos».', { kind: 'warn', title: 'Fotos' });
       return;
     }
-    if (!confirm(`Excluir ${selectedPhotoIds.size} foto(s) selecionada(s)? Esta ação não pode ser desfeita.`)) return;
+    if (!opts.skipConfirm && !confirm(`Excluir ${selectedPhotoIds.size} foto(s) selecionada(s)? Esta ação não pode ser desfeita.`)) return;
     const ids = Array.from(selectedPhotoIds);
     const chunkSize = 35;
     let deletedTotal = 0;
