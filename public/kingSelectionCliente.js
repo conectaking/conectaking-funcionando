@@ -2411,26 +2411,64 @@
     return u;
   }
 
-  function scheduleEntrySplash() {
+  function entrySplashUrlAvailable() {
+    return String(state.gallery?.entry_splash_url || galleryMeta?.entry_splash_url || '').trim();
+  }
+
+  function resolveKsAccessModeForSplash() {
+    let mode = String(state.gallery?.access_mode || galleryMeta?.access_mode || 'private').toLowerCase().trim();
+    if (mode === 'password') mode = 'signup';
+    return mode;
+  }
+
+  /** Público (checkbox) ou Fotos vendidas (capa do link configurada). */
+  function shouldShowEntrySplash() {
+    const raw = entrySplashUrlAvailable();
+    if (!raw) return false;
+    const mode = resolveKsAccessModeForSplash();
     const enabled = !!(state.gallery?.client_entry_splash_enabled || galleryMeta?.client_entry_splash_enabled);
-    const raw = String(state.gallery?.entry_splash_url || galleryMeta?.entry_splash_url || '').trim();
-    if (!raw) return;
-    const mode = normKsAccessModeFromMeta();
-    const salesWithFolders = !!state.salesModeActive && state.folders.length > 0;
-    const showPublic = mode === 'public' && enabled;
-    const showSales = salesWithFolders;
-    if (!showPublic && !showSales) return;
-    const k = `ks_entry_splash_${slug}`;
+    if (mode === 'public') return enabled;
+    if (mode === 'paid_event_photos' || !!state.salesModeActive) return true;
+    return enabled;
+  }
+
+  function entrySplashStorageKey() {
+    return `ks_entry_splash_${slug}`;
+  }
+
+  function entrySplashAlreadySeen() {
     try {
-      if (sessionStorage.getItem(k)) return;
-    } catch (_) {}
+      return !!sessionStorage.getItem(entrySplashStorageKey());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function markEntrySplashSeen() {
+    try {
+      sessionStorage.setItem(entrySplashStorageKey(), '1');
+    } catch (_) { /* ignore */ }
+  }
+
+  function afterEntrySplashClosed() {
+    if (state.salesModeActive && state.folders.length > 0 && state.clientFolderLayout !== 'flat') {
+      state.folderView = 'folders';
+      state.activeFolderId = null;
+      persistFolderNav();
+      renderFolders();
+    }
+  }
+
+  /** Mostra overlay de capa; devolve false se não houver URL/elementos. */
+  function presentEntrySplash(onClose) {
+    const raw = entrySplashUrlAvailable();
     const url = absolutizeAssetUrl(raw);
-    if (!url) return;
+    if (!url) return false;
     const ov = $('ks-entry-splash');
     const im = $('ks-entry-splash-img');
     const ti = $('ks-entry-splash-title');
     const btn = $('ks-entry-splash-btn');
-    if (!ov || !im || !btn) return;
+    if (!ov || !im || !btn) return false;
     if (ti) ti.textContent = state.gallery?.nome_projeto || galleryMeta?.nome_projeto || '';
     im.src = url;
     ov.classList.remove('ks-hidden');
@@ -2438,21 +2476,35 @@
     const close = () => {
       ov.classList.add('ks-hidden');
       ov.setAttribute('aria-hidden', 'true');
-      try {
-        sessionStorage.setItem(k, '1');
-      } catch (_) {}
       im.removeAttribute('src');
-      if (state.salesModeActive && state.folders.length > 0 && state.clientFolderLayout !== 'flat') {
-        state.folderView = 'folders';
-        state.activeFolderId = null;
-        persistFolderNav();
-        renderFolders();
-      }
+      btn.onclick = null;
+      ov.onclick = null;
+      if (typeof onClose === 'function') onClose();
     };
     btn.onclick = () => close();
     ov.onclick = (e) => {
       if (e.target && e.target.id === 'ks-entry-splash') close();
     };
+    return true;
+  }
+
+  /** Ao abrir o link (antes do login): capa + «Ver fotos» como no modo público. */
+  async function awaitEntrySplashIfNeeded() {
+    if (!shouldShowEntrySplash() || entrySplashAlreadySeen()) return;
+    await new Promise((resolve) => {
+      if (!presentEntrySplash(() => {
+        markEntrySplashSeen();
+        resolve();
+      })) resolve();
+    });
+  }
+
+  function scheduleEntrySplash() {
+    if (!shouldShowEntrySplash() || entrySplashAlreadySeen()) return;
+    presentEntrySplash(() => {
+      markEntrySplashSeen();
+      afterEntrySplashClosed();
+    });
   }
 
   function syncPublicDownloadToolbar() {
@@ -5253,6 +5305,9 @@
       $('ks-login-err').classList.remove('ks-hidden');
       return;
     }
+
+    hideBootScreen();
+    await awaitEntrySplashIfNeeded();
 
     let mode = String(galleryMeta.access_mode || 'private').toLowerCase();
     if (mode === 'password') mode = 'signup';
