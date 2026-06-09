@@ -1763,15 +1763,18 @@ function getDefaultWatermarkAssetAbsPath() {
 
 /** Gera PNG de marca quando os ficheiros oficiais não existem no servidor (Render/Hostinger). */
 async function ksGenerateFallbackWatermarkPng(isLandscape) {
-  const w = isLandscape ? 640 : 420;
-  const h = isLandscape ? 420 : 640;
-  const fs = Math.round(Math.min(w, h) * 0.11);
+  const w = isLandscape ? 720 : 480;
+  const h = isLandscape ? 480 : 720;
+  const fs = Math.round(Math.min(w, h) * 0.09);
+  const label = 'CONECTA KING';
   const svg = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-      <text x="${w / 2}" y="${h / 2}" text-anchor="middle" dominant-baseline="middle"
-        font-family="Arial,Helvetica,sans-serif" font-size="${fs}" font-weight="700"
-        fill="#ffffff" fill-opacity="0.55"
-        transform="rotate(${isLandscape ? -28 : -32} ${w / 2} ${h / 2})">CONECTA KING</text>
+      <defs>
+        <pattern id="wm" patternUnits="userSpaceOnUse" width="${Math.round(fs * 7)}" height="${Math.round(fs * 4)}" patternTransform="rotate(${isLandscape ? -28 : -32})">
+          <text x="0" y="${Math.round(fs * 0.85)}" font-family="Arial,Helvetica,sans-serif" font-size="${fs}" font-weight="700" fill="#ffffff" fill-opacity="0.42">${label}</text>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#wm)"/>
     </svg>`
   );
   try {
@@ -1787,7 +1790,8 @@ function ksPrepareClientWatermark(wm) {
   if (!wm || typeof wm !== 'object') return wm;
   const m = String(wm.mode || '').trim();
   if (!m || m === 'none' || m === 'x') wm.mode = KS_WM_CONECTA_KING_DEFAULTS.mode;
-  if (!Number.isFinite(parseFloat(wm.opacity))) wm.opacity = KS_WM_CONECTA_KING_DEFAULTS.opacity;
+  const op = parseFloat(wm.opacity);
+  wm.opacity = Number.isFinite(op) ? Math.max(0.18, op) : KS_WM_CONECTA_KING_DEFAULTS.opacity;
   if (!Number.isFinite(parseFloat(wm.scalePortrait))) wm.scalePortrait = KS_WM_CONECTA_KING_DEFAULTS.scalePortrait;
   if (!Number.isFinite(parseFloat(wm.scaleLandscape))) wm.scaleLandscape = KS_WM_CONECTA_KING_DEFAULTS.scaleLandscape;
   if (!Number.isFinite(parseInt(wm.rotatePortrait, 10))) wm.rotatePortrait = KS_WM_CONECTA_KING_DEFAULTS.rotatePortrait;
@@ -2246,7 +2250,18 @@ async function ksBuildPreviewJpegSafe({ imgBuffer, outW, outH, watermark, jpegOp
         ...(watermark && typeof watermark === 'object' ? watermark : {}),
         mode: 'tile_dense'
       });
-      return buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark: wmForced, jpegOpts });
+      try {
+        return await buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark: wmForced, jpegOpts });
+      } catch (e2) {
+        logger.warn('[king-selection] preview wm forced x', { message: e2 && e2.message });
+        return buildWatermarkedJpeg({
+          imgBuffer,
+          outW,
+          outH,
+          watermark: { mode: 'x', opacity: Math.max(0.22, wmForced.opacity || 0.22) },
+          jpegOpts
+        });
+      }
     }
     return buildWatermarkedJpeg({
       imgBuffer,
@@ -8151,10 +8166,6 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
     const qModeEarly = (req.query.wm_mode || '').toString();
-    if (qModeEarly === 'none' && !req.query.wm_aspect_w && !req.query.wm_aspect_h) {
-      const storagePath = ksPickPhotoStoragePath(photo) || photo.file_path;
-      if (ksTryRedirectPublicR2(res, storagePath)) return;
-    }
     let buf;
     try {
       buf = await fetchPhotoBufferForRow(photo);
@@ -8203,8 +8214,6 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const qMode = (req.query.wm_mode || '').toString();
     const skipWm = qMode === 'none';
     if (skipWm) {
-      const storagePath = ksPickPhotoStoragePath(photo) || photo.file_path;
-      if (ksTryRedirectPublicR2(res, storagePath)) return;
       const out = await ksResizeJpegNoWatermark(workBuf, outW, outH, 84);
       res.set('Content-Type', 'image/jpeg');
       res.set('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -12800,7 +12809,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Cache-Control', 'private, max-age=' + (useThumb ? '3600' : '1800'));
+    res.set('Cache-Control', 'private, no-cache, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
     res.send(out);
   } catch (previewErr) {
     logger.error('[king-selection] client preview', { photoId, message: previewErr && previewErr.message });

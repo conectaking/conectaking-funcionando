@@ -1,7 +1,29 @@
 (function () {
   'use strict';
 
-  const API = (typeof window !== 'undefined' && window.API_URL) ? String(window.API_URL).replace(/\/$/, '') : '';
+  const KS_FALLBACK_API_ORIGIN = 'https://conectaking-api.onrender.com';
+
+  /** Evita API_URL apontando para conectaking.com.br (img /api/... → 404 sem marca d'água). */
+  function resolveKsApiBase() {
+    const fallback = KS_FALLBACK_API_ORIGIN;
+    const tryList = [
+      typeof window !== 'undefined' ? window.API_URL : '',
+      typeof window !== 'undefined' ? window.API_BASE : '',
+      typeof window !== 'undefined' && window.API_CONFIG ? window.API_CONFIG.baseURL : ''
+    ];
+    for (const v of tryList) {
+      const raw = String(v || '').trim().replace(/\/$/, '');
+      if (!raw || !/^https?:\/\//i.test(raw)) continue;
+      try {
+        const h = new URL(raw).hostname.toLowerCase();
+        if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br') continue;
+        return raw;
+      } catch (_) { /* próximo */ }
+    }
+    return fallback;
+  }
+
+  const API = resolveKsApiBase();
 
   /** Pedidos ao arranque: sem timeout o Safari/rede móvel pode ficar em "A carregar…" para sempre. */
   const KS_FETCH_BOOT_MS = 35000;
@@ -1226,14 +1248,15 @@
   }
 
   function previewUrl(photoId, thumb) {
-    const q = new URLSearchParams({ slug, token: jwt || '', v: 'wm3' });
+    const q = new URLSearchParams({ slug, token: jwt || '', v: 'wm4' });
     if (thumb) q.set('thumb', '1');
-    return `${API}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
+    const base = resolveKsApiBase();
+    return `${base}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
   }
 
   function previewDownloadUrl(photoId) {
     const q = new URLSearchParams({ slug, token: jwt || '', download: '1' });
-    return `${API}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
+    return `${resolveKsApiBase()}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
   }
 
   function isMobileDownloadContext() {
@@ -2373,9 +2396,6 @@
     syncSalesPostSubmitLayout();
     syncSalesConfirmBar();
   }
-
-  /** Fallback da API de produção se `config.js` não expuser API_URL (evita <img src="/api/..."> no domínio do site → 404). */
-  const KS_FALLBACK_API_ORIGIN = 'https://conectaking-api.onrender.com';
 
   function absolutizeAssetUrl(url) {
     const u = String(url || '').trim();

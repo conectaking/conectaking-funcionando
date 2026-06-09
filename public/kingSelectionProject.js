@@ -1,5 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const API_URL = (window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
+  const KS_API_FALLBACK = 'https://conectaking-api.onrender.com';
+  function resolveKingApiBase() {
+    const tryList = [
+      window.API_URL,
+      window.API_BASE,
+      window.API_CONFIG && window.API_CONFIG.baseURL,
+      KS_API_FALLBACK
+    ];
+    for (const v of tryList) {
+      const raw = String(v || '').trim().replace(/\/$/, '');
+      if (!raw || !/^https?:\/\//i.test(raw)) continue;
+      try {
+        const h = new URL(raw).hostname.toLowerCase();
+        if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br') continue;
+        return raw;
+      } catch (_) { /* próximo */ }
+    }
+    return KS_API_FALLBACK;
+  }
+  const API_URL = resolveKingApiBase();
   const KS_WORKER_URL = (window.KS_WORKER_URL || 'https://r2.conectaking.com.br').replace(/\/$/, '');
   const qs = new URLSearchParams(window.location.search || '');
   const itemId = qs.get('itemId');
