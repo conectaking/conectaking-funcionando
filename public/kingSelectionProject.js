@@ -2047,6 +2047,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function ensureFoldersAdminUi() {
     if (!pGrid) return null;
     let wrap = document.getElementById('ks-folders-admin');
+    // Atualiza toolbar antiga (sem botões de excluir fotos) sem precisar limpar cache manual
+    if (wrap && !wrap.querySelector('#ks-photo-delete-selected-btn')) {
+      try { wrap.remove(); } catch (_) { /* ignore */ }
+      wrap = null;
+    }
     if (wrap) return wrap;
     const host = pGrid.parentElement || pGrid;
     wrap = document.createElement('div');
@@ -2281,8 +2286,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const deleteSelectedFoldersBtn = ev.target.closest('#ks-folder-delete-selected-btn');
       if (deleteSelectedFoldersBtn) {
         const ids = Array.from(selectedFolderIds).map((v) => parseInt(v, 10)).filter(Boolean);
+        if (!ids.length && selectedPhotoIds.size > 0) {
+          const ok = window.confirm(
+            `Você selecionou ${selectedPhotoIds.size} foto(s) e não marcou nenhuma pasta.\n\nDeseja EXCLUIR as fotos selecionadas agora?`
+          );
+          if (ok) {
+            deleteSelectedPhotosBatch().catch((e) => showError(e?.message || 'Erro ao excluir fotos'));
+          }
+          return;
+        }
         if (!ids.length) {
-          toast('Marque as pastas com o ícone de seleção (quadrado) e use «Excluir pastas selecionadas». Para apagar fotos, use «Excluir fotos selecionadas».', { kind: 'warn', title: 'Pastas' });
+          toast('Para apagar fotos: marque o círculo nas miniaturas → «Excluir fotos selecionadas». Para apagar pasta: marque o quadrado no card da pasta.', { kind: 'warn', title: 'Fotos' });
           return;
         }
         const ok = window.confirm(`Excluir ${ids.length} pasta(s)? As fotos continuarão na galeria, sem pasta.`);
