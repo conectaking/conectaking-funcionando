@@ -415,6 +415,20 @@
     return arr;
   }
 
+  function isVirtualClientFolderRow(f) {
+    const id = parseInt(f?.id, 10) || 0;
+    if (id <= 0) return true;
+    const name = String(f?.name || '').trim().toLowerCase();
+    return name === 'sem pasta' || name === 'sem-pasta' || name === 'unassigned';
+  }
+
+  function filterClientVisibleFolders(folders) {
+    return (Array.isArray(folders) ? folders : []).filter((f) => {
+      if (isVirtualClientFolderRow(f)) return false;
+      return (parseInt(f.id, 10) || 0) > 0 && (parseInt(f.photo_count, 10) || 0) > 0;
+    });
+  }
+
   function normalizeFolders(rawFolders, rawPhotos) {
     const arr = Array.isArray(rawFolders) ? rawFolders : [];
     const photos = Array.isArray(rawPhotos) ? rawPhotos : [];
@@ -428,7 +442,7 @@
       if (!byFolder.has(fid)) byFolder.set(fid, []);
       byFolder.get(fid).push(p);
     }
-    return arr
+    const normalized = arr
       .map((f) => ({
         id: parseInt(f?.id, 10) || 0,
         name: String(f?.name || '').trim() || 'Pasta',
@@ -447,13 +461,8 @@
         f.photo_count = list.length;
         return f;
       })
-      // Evita mostrar pastas vazias ou virtuais ("Sem pasta") para o cliente final.
-      .filter((f) => {
-        if (f.id <= 0 || f.photo_count <= 0) return false;
-        const name = String(f.name || '').trim().toLowerCase();
-        return name !== 'sem pasta' && name !== 'sem-pasta' && name !== 'unassigned';
-      })
       .sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id));
+    return filterClientVisibleFolders(normalized);
   }
 
   /** ID de foto vindo da API (int/string/bigint) → número inteiro > 0 ou 0. */
@@ -547,8 +556,9 @@
       return;
     }
 
-    const hasFolders = Array.isArray(state.folders) && state.folders.length > 0;
-    const sortedFolders = sortFoldersForClient(state.folders, state.folderSortMode);
+    const visibleFolders = filterClientVisibleFolders(state.folders);
+    const hasFolders = visibleFolders.length > 0;
+    const sortedFolders = sortFoldersForClient(visibleFolders, state.folderSortMode);
     if (folderSortSel) folderSortSel.value = state.folderSortMode;
     if (!hasFolders) {
       wrap.classList.add('ks-hidden');
@@ -2252,7 +2262,7 @@
 
   function applyGalleryData(data) {
     const g = normalizeGalleryPhotosForState(data.gallery);
-    state.folders = normalizeFolders(g?.folders, g?.photos);
+    state.folders = filterClientVisibleFolders(normalizeFolders(g?.folders, g?.photos));
     const validFolderIds = new Set(state.folders.map((f) => f.id));
     if (Array.isArray(g?.photos)) {
       g.photos = g.photos.map((p) => (

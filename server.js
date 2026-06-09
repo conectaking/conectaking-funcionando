@@ -530,8 +530,8 @@ function loadKingSelectionClienteHtmlTemplate() {
 /** Versão do JS do cliente = mtime do ficheiro (força browser a buscar build novo após deploy). */
 function resolveKingSelectionClienteJsVersion() {
     const candidates = [
-        path.join(publicHtmlDir, 'kingSelectionCliente.js'),
-        path.join(__dirname, 'public', 'kingSelectionCliente.js')
+        path.join(__dirname, 'public', 'kingSelectionCliente.js'),
+        path.join(publicHtmlDir, 'kingSelectionCliente.js')
     ];
     for (const filePath of candidates) {
         try {
@@ -661,6 +661,16 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         /\/kingSelectionCliente\.js\?v=[^"']+/g,
         `/kingSelectionCliente.js?v=${ksClienteJsVer}`
     );
+    html = html.replace(
+        /\/kingSelectionCliente-no-sem-pasta\.js\?v=[^"']+/g,
+        `/kingSelectionCliente-no-sem-pasta.js?v=${ksClienteJsVer}`
+    );
+    if (!html.includes('kingSelectionCliente-no-sem-pasta.js')) {
+        html = html.replace(
+            /(<script[^>]+src="\/kingSelectionCliente\.js\?v=[^"]+"><\/script>)/,
+            `$1\n  <script src="/kingSelectionCliente-no-sem-pasta.js?v=${ksClienteJsVer}"></script>`
+        );
+    }
 
     // HTML muda com deploy; evita 5 min de cache agressivo em CDN/browser.
     res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
@@ -902,6 +912,38 @@ app.get('/dashboard.html', (req, res) => {
     }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.type('html').sendFile(dashboardHtmlPath);
+});
+
+/** JS do cliente King Selection: prioriza `public/` (versão nova) sobre `public_html/` (cópia antiga na Hostinger). */
+function resolveKingSelectionClienteJsPath(baseName) {
+    const candidates = [
+        path.join(__dirname, 'public', baseName),
+        path.join(publicHtmlDir, baseName)
+    ];
+    for (const filePath of candidates) {
+        try {
+            if (fs.existsSync(filePath)) return filePath;
+        } catch (_) { /* ignore */ }
+    }
+    return null;
+}
+
+function sendKingSelectionClienteJsFile(res, baseName) {
+    const filePath = resolveKingSelectionClienteJsPath(baseName);
+    if (!filePath) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    return res.type('application/javascript').sendFile(filePath);
+}
+
+app.get(['/kingSelectionCliente.js', '/mr/kingSelectionCliente.js'], (req, res) => {
+    sendKingSelectionClienteJsFile(res, 'kingSelectionCliente.js');
+});
+app.get(['/kingSelectionCliente-no-sem-pasta.js', '/mr/kingSelectionCliente-no-sem-pasta.js'], (req, res) => {
+    sendKingSelectionClienteJsFile(res, 'kingSelectionCliente-no-sem-pasta.js');
 });
 
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
