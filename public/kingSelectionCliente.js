@@ -687,6 +687,38 @@
     $('ks-promo-verify-btn')?.addEventListener('click', () => onPromoVerifyClick());
   }
 
+  /** Aprovações do modo vendas (DB + fallback approvedPhotoIds da API). */
+  function getSalesApprovedEntries() {
+    const fromState = Array.isArray(state.approvalsState)
+      ? state.approvalsState.filter((a) => String(a.status || '').toLowerCase() === 'approved')
+      : [];
+    if (fromState.length) return fromState;
+    const ids = Array.isArray(state.approvedPhotoIds) ? state.approvedPhotoIds : [];
+    if (!ids.length) return [];
+    const byId = new Map((state.gallery?.photos || []).map((p) => [parseInt(p.id, 10), p]));
+    return ids
+      .map((raw) => parseInt(raw, 10))
+      .filter((n) => Number.isFinite(n) && n > 0)
+      .map((pid) => ({
+        photo_id: pid,
+        status: 'approved',
+        original_name: byId.get(pid)?.original_name || null
+      }));
+  }
+
+  function scheduleSalesStatusRefresh() {
+    clearInterval(state._salesRefreshTimer);
+    state._salesRefreshTimer = null;
+    if (!state.salesModeActive || !state.locked) return;
+    state._salesRefreshTimer = setInterval(async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      try {
+        const gd = await loadGallery();
+        applyGalleryData(gd);
+      } catch (_) {}
+    }, 45000);
+  }
+
   function renderSalesUi() {
     const banner = $('ks-sales-banner');
     const downloadsPanel = $('ks-downloads-panel');
@@ -767,9 +799,7 @@
       String(state.salesConfig?.sales_over_limit_policy || '').toLowerCase() === 'allow_and_warn' &&
       maxPkgQty > 0 &&
       selectedCount > maxPkgQty;
-    const approved = Array.isArray(state.approvalsState)
-      ? state.approvalsState.filter((a) => String(a.status || '').toLowerCase() === 'approved')
-      : [];
+    const approved = getSalesApprovedEntries();
     const packageTheme = (name, idx) => {
       const n = String(name || '').toLowerCase();
       if (n.includes('essencial')) return { border: '#67e8f9', bg: '#ffffff', title: '#111827', value: '#111827', sub: '#6b7280', qtyPillBg: '#ecfeff', qtyPillColor: '#0e7490' };
@@ -1136,9 +1166,7 @@
     const keyEl = $('ks-dl-pix-key');
     const copyBtn = $('ks-dl-pix-copy');
     if (!wrap) return;
-    const approved = Array.isArray(state.approvalsState)
-      ? state.approvalsState.filter((a) => String(a.status || '').toLowerCase() === 'approved')
-      : [];
+    const approved = getSalesApprovedEntries();
     const approvedIds = new Set(approved.map((a) => parseInt(a.photo_id, 10)).filter(Boolean));
     const selectedForClient = Array.isArray(state.gallery?.photos)
       ? state.gallery.photos.filter((p) => state.selected.has(parseInt(p?.id, 10)))
@@ -1221,9 +1249,7 @@
           };
         });
     }
-    const approved = Array.isArray(state.approvalsState)
-      ? state.approvalsState.filter((a) => String(a.status || '').toLowerCase() === 'approved')
-      : [];
+    const approved = getSalesApprovedEntries();
     return approved
       .map((a) => {
         const pid = parseInt(a.photo_id, 10) || 0;
@@ -2285,6 +2311,7 @@
       $('ks-downloads-panel')?.classList.remove('ks-hidden');
     }
     scheduleEntrySplash();
+    scheduleSalesStatusRefresh();
   }
 
   /** Fallback da API de produção se `config.js` não expuser API_URL (evita <img src="/api/..."> no domínio do site → 404). */
@@ -3102,9 +3129,7 @@
     const billableForEstimate = billablePhotoCountForSalesEstimate(selectedCount);
     const total = estimateClientTotalByPackages(billableForEstimate, packs, mode, unit);
     const thisRound = Math.max(0, countSelectedThisRound());
-    const approvedCount = Array.isArray(state.approvalsState)
-      ? state.approvalsState.filter((a) => String(a.status || '').toLowerCase() === 'approved').length
-      : 0;
+    const approvedCount = getSalesApprovedEntries().length;
     box.innerHTML = `
       <div style="border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px;box-shadow:0 10px 24px rgba(15,23,42,.10)">
         <div style="font-weight:900;color:#4f46e5;letter-spacing:.02em;margin-bottom:8px"><i class="fas fa-square-poll-vertical"></i> Resumo da seleção</div>

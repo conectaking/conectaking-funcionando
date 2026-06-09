@@ -4470,6 +4470,21 @@ async function ksMaybeAutoApproveAfterPaymentReview(pgClient, galleryId, clientI
 }
 
 /**
+ * Cliente real para vendas/aprovações/liberação (ignora ficha técnica de sessão/rosto no JWT).
+ */
+async function ksResolveSalesClientId(pgClient, galleryId, jwtCid, sk) {
+  let cid = parseInt(jwtCid, 10) || 0;
+  if (cid && (await hasTable(pgClient, 'king_gallery_clients'))) {
+    const row = (await pgClient.query(
+      'SELECT email FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2 LIMIT 1',
+      [galleryId, cid]
+    )).rows?.[0];
+    if (row?.email && isTechnicalFaceGalleryClientEmail(row.email)) cid = 0;
+  }
+  return cid > 0 ? cid : 0;
+}
+
+/**
  * Cortesia / pagamento quitado sem clicar em «Aprovar todas»: o cliente deve ver «liberado».
  * Mescla aprovações sintéticas por (photo_id, selection_batch) quando o saldo da rodada é zero.
  */
@@ -4499,8 +4514,16 @@ async function ksMergePaidReleaseIntoApprovalsState(
   }
   for (const batch of batchSet) {
     const pay = await ksGetPaymentByClientRound(pgClient, galleryId, salesClientId, batch);
-    if (!pay) continue;
-    const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
+    let bal = pay?.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : null;
+    if (pay && bal > 0) continue;
+    if (!pay) {
+      const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, salesClientId, batch);
+      const expected = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
+      const selCount = parseInt(pricing.selected_count, 10) || 0;
+      /** Cupom / pacote zerado: sem linha de pagamento, mas a rodada está «quitada» para liberar download. */
+      if (expected > 0 || selCount === 0) continue;
+      bal = 0;
+    }
     if (bal > 0) continue;
     for (const pidRaw of selectedPhotoIds) {
       const pid = parseInt(pidRaw, 10);
@@ -4568,10 +4591,18 @@ async function ksClientDownloadApprovedOrPaid(pgClient, galleryId, clientId, pho
   if (!sel.rows.length) return { ok: false, selection_batch: 1, delivery_mode: 'original' };
   const batch = hasSelBatch ? Math.max(1, parseInt(sel.rows[0].selection_batch, 10) || 1) : 1;
   const pay = await ksGetPaymentByClientRound(pgClient, galleryId, clientId, batch);
-  if (!pay) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
-  const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
-  if (bal > 0) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
-  return { ok: true, selection_batch: batch, delivery_mode: 'original' };
+  if (pay) {
+    const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
+    if (bal > 0) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
+    return { ok: true, selection_batch: batch, delivery_mode: 'original' };
+  }
+  const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId, batch);
+  const expected = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
+  const selCount = parseInt(pricing.selected_count, 10) || 0;
+  if (expected === 0 && selCount > 0) {
+    return { ok: true, selection_batch: batch, delivery_mode: 'original' };
+  }
+  return { ok: false, selection_batch: batch, delivery_mode: 'original' };
 }
 
 router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
@@ -5517,6 +5548,7 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/approv
       return res.status(503).json({ message: 'Tabela de aprovações indisponível. Execute a migration 208.' });
     }
     const hasSelBatch = await hasColumn(dbClient, 'king_selections', 'selection_batch');
+    let effBatch = selectionBatch;
     const hasSelection = await dbClient.query(
       `SELECT 1
        FROM king_selections
@@ -5524,7 +5556,24 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/approv
        LIMIT 1`,
       hasSelBatch ? [galleryId, clientId, photoId, selectionBatch] : [galleryId, clientId, photoId]
     );
-    if (!hasSelection.rows.length) return res.status(404).json({ message: 'Foto não está selecionada para este cliente/rodada.' });
+    if (!hasSelection.rows.length) {
+      if (hasSelBatch) {
+        const anyBatch = await dbClient.query(
+          `SELECT selection_batch
+           FROM king_selections
+           WHERE gallery_id=$1 AND client_id=$2 AND photo_id=$3
+           ORDER BY selection_batch DESC
+           LIMIT 1`,
+          [galleryId, clientId, photoId]
+        );
+        if (!anyBatch.rows.length) {
+          return res.status(404).json({ message: 'Foto não está selecionada para este cliente/rodada.' });
+        }
+        effBatch = Math.max(1, parseInt(anyBatch.rows[0].selection_batch, 10) || 1);
+      } else {
+        return res.status(404).json({ message: 'Foto não está selecionada para este cliente/rodada.' });
+      }
+    }
     await dbClient.query(
       `INSERT INTO king_selection_photo_approvals
          (gallery_id, client_id, selection_batch, photo_id, status, delivery_mode, decided_by_user_id, decided_at, created_at, updated_at)
@@ -5532,9 +5581,9 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/approv
        ON CONFLICT (gallery_id, client_id, selection_batch, photo_id)
        DO UPDATE SET status=EXCLUDED.status, delivery_mode=EXCLUDED.delivery_mode,
                      decided_by_user_id=EXCLUDED.decided_by_user_id, decided_at=NOW(), updated_at=NOW()`,
-      [galleryId, clientId, selectionBatch, photoId, status, deliveryMode, req.user.userId]
+      [galleryId, clientId, effBatch, photoId, status, deliveryMode, req.user.userId]
     );
-    const approvals = await ksListApprovalsByClientRound(dbClient, galleryId, clientId, selectionBatch);
+    const approvals = await ksListApprovalsByClientRound(dbClient, galleryId, clientId, effBatch);
     res.json({ success: true, approvals });
   } finally {
     dbClient.release();
@@ -9357,6 +9406,33 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       }
     }
 
+    /**
+     * Modo pago + cadastro ao enviar: o JWT pode já ter clientId (finalize/login) enquanto parte das
+     * seleções ainda está em session_key — sem isto o cliente vê «aguardando» mesmo com aprovação no painel do fotógrafo.
+     */
+    if (
+      salesModeActive &&
+      hasSelClientId &&
+      cid &&
+      sk &&
+      hasSessionKey
+    ) {
+      const sSkPaid = await client.query(
+        `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 ORDER BY id ASC`,
+        [gallery.id, sk]
+      );
+      const idsSkPaid = (sSkPaid.rows || []).map((r) => r.photo_id);
+      if (idsSkPaid.length) {
+        selectedPhotoIds = ksMergeDedupePhotoIdsKeepOrder(selectedPhotoIds, idsSkPaid);
+        if (hasSelBatch && (sSkPaid.rows || []).length) {
+          const extraPaid = Object.fromEntries(
+            (sSkPaid.rows || []).map((r) => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
+          );
+          selectionBatchByPhotoId = { ...selectionBatchByPhotoId, ...extraPaid };
+        }
+      }
+    }
+
     const currentSelectionRound = await ksGetCurrentSelectionRound(client, gallery.id, cid);
     const salesConfig = salesModeActive ? await ksLoadGallerySalesConfig(client, gallery.id) : null;
     const salePackages = salesModeActive ? (await ksListSalePackages(client, gallery.id)).filter((p) => p.active !== false) : [];
@@ -9424,9 +9500,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         } catch (_) { }
       }
     }
-    // Modo pago: nunca usar fallback de sessão para evitar cruzar dados entre clientes.
     const salesClientId = salesModeActive
-      ? (parseInt(cid, 10) || 0)
+      ? await ksResolveSalesClientId(client, gallery.id, cid, sk)
       : 0;
     const salesSelectionRound = (salesModeActive && salesClientId)
       ? await ksGetSalesSelectionRound(client, gallery.id, salesClientId)
@@ -12356,9 +12431,17 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     }
 
     if (isDownload && isPaidEventMode) {
-      let cid = parseInt(payload.clientId || 0, 10) || 0;
+      const ctx = parseKsClientContext(payload);
+      let cid = await ksResolveSalesClientId(client, payload.galleryId, ctx.cid, ctx.sk);
       if (!cid) {
         cid = await resolveFaceClientIdForSession(client, payload.galleryId, payload.clientId, payload.sk);
+        if (cid) {
+          const emRow = (await client.query(
+            'SELECT email FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2 LIMIT 1',
+            [payload.galleryId, cid]
+          )).rows?.[0];
+          if (emRow?.email && isTechnicalFaceGalleryClientEmail(emRow.email)) cid = 0;
+        }
       }
       if (!cid) return res.status(403).send('Faça login para baixar as fotos aprovadas.');
       if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip)) {
