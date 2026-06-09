@@ -1226,7 +1226,7 @@
   }
 
   function previewUrl(photoId, thumb) {
-    const q = new URLSearchParams({ slug, token: jwt || '' });
+    const q = new URLSearchParams({ slug, token: jwt || '', v: 'wm3' });
     if (thumb) q.set('thumb', '1');
     return `${API}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
   }
@@ -2770,7 +2770,7 @@
             ${sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : ''}
           </button>
           <div class="ks-ph-imgwrap" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
-            <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" width="200" height="300" referrerpolicy="no-referrer" decoding="async" />
+            <img src="${previewUrl(p.id, false)}" alt="" loading="lazy" width="200" height="300" referrerpolicy="no-referrer" decoding="async" />
           </div>
           <div class="ks-ph-bar">
             <div class="ks-ph-bar-main">${barAction}${showSelTag ? ` <span class="ks-ph-batch">S${batch}</span>` : ''}</div>

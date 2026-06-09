@@ -1761,6 +1761,40 @@ function getDefaultWatermarkAssetAbsPath() {
   return path.resolve(__dirname, '..', 'public_html', 'marca dagua KingSelection .png');
 }
 
+/** Gera PNG de marca quando os ficheiros oficiais não existem no servidor (Render/Hostinger). */
+async function ksGenerateFallbackWatermarkPng(isLandscape) {
+  const w = isLandscape ? 640 : 420;
+  const h = isLandscape ? 420 : 640;
+  const fs = Math.round(Math.min(w, h) * 0.11);
+  const svg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <text x="${w / 2}" y="${h / 2}" text-anchor="middle" dominant-baseline="middle"
+        font-family="Arial,Helvetica,sans-serif" font-size="${fs}" font-weight="700"
+        fill="#ffffff" fill-opacity="0.55"
+        transform="rotate(${isLandscape ? -28 : -32} ${w / 2} ${h / 2})">CONECTA KING</text>
+    </svg>`
+  );
+  try {
+    return await sharp(svg).png().toBuffer();
+  } catch (e) {
+    logger.warn('[king-selection] ksGenerateFallbackWatermarkPng', { message: e && e.message });
+    return null;
+  }
+}
+
+/** Garante marca d'água visível nas pré-visualizações do cliente (nunca «none»). */
+function ksPrepareClientWatermark(wm) {
+  if (!wm || typeof wm !== 'object') return wm;
+  const m = String(wm.mode || '').trim();
+  if (!m || m === 'none' || m === 'x') wm.mode = KS_WM_CONECTA_KING_DEFAULTS.mode;
+  if (!Number.isFinite(parseFloat(wm.opacity))) wm.opacity = KS_WM_CONECTA_KING_DEFAULTS.opacity;
+  if (!Number.isFinite(parseFloat(wm.scalePortrait))) wm.scalePortrait = KS_WM_CONECTA_KING_DEFAULTS.scalePortrait;
+  if (!Number.isFinite(parseFloat(wm.scaleLandscape))) wm.scaleLandscape = KS_WM_CONECTA_KING_DEFAULTS.scaleLandscape;
+  if (!Number.isFinite(parseInt(wm.rotatePortrait, 10))) wm.rotatePortrait = KS_WM_CONECTA_KING_DEFAULTS.rotatePortrait;
+  if (!Number.isFinite(parseInt(wm.rotateLandscape, 10))) wm.rotateLandscape = KS_WM_CONECTA_KING_DEFAULTS.rotateLandscape;
+  return wm;
+}
+
 /** @param {string} raw */
 async function fetchWatermarkBufferFromDescriptor(raw) {
   const r = String(raw || '').trim();
@@ -1831,7 +1865,9 @@ async function fetchDefaultWatermarkAssetBufferForOrientation(isLandscape) {
     } catch (_) { }
   }
 
-  return fetchDefaultWatermarkAssetBuffer();
+  const fb = await fetchDefaultWatermarkAssetBuffer();
+  if (fb) return fb;
+  return ksGenerateFallbackWatermarkPng(isLandscape);
 }
 
 async function fetchDefaultWatermarkAssetBuffer() {
@@ -1870,7 +1906,7 @@ async function fetchDefaultWatermarkAssetBuffer() {
       const norm = String(n).toLowerCase().replace(/\s+/g, ' ').trim();
       return norm.includes('marca') && norm.includes('dagua') && norm.includes('kingselection') && norm.endsWith('.png');
     });
-    if (!pick) return null;
+    if (!pick) return ksGenerateFallbackWatermarkPng(false);
     return await fs.promises.readFile(path.resolve(baseDir, pick));
   } catch (e) {
     // tenta também na raiz
@@ -1880,12 +1916,13 @@ async function fetchDefaultWatermarkAssetBuffer() {
         const norm = String(n).toLowerCase().replace(/\s+/g, ' ').trim();
         return norm.includes('marca') && norm.includes('dagua') && norm.includes('kingselection') && norm.endsWith('.png');
       });
-      if (!pick2) return null;
+      if (!pick2) return ksGenerateFallbackWatermarkPng(false);
       return await fs.promises.readFile(path.resolve(repoRoot, pick2));
     } catch (_) {
-      return null;
+      return ksGenerateFallbackWatermarkPng(false);
     }
   }
+  return ksGenerateFallbackWatermarkPng(false);
 }
 
 async function deleteCloudflareImage(imageId) {
@@ -2198,16 +2235,24 @@ function ksInvalidateWatermarkGalleryCache(galleryId) {
   if (gid) _ksWmGalleryCache.delete(gid);
 }
 
-async function ksBuildPreviewJpegSafe({ imgBuffer, outW, outH, watermark, jpegOpts }) {
+async function ksBuildPreviewJpegSafe({ imgBuffer, outW, outH, watermark, jpegOpts, requireWatermark }) {
   try {
     return await buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts });
   } catch (e) {
     logger.warn('[king-selection] preview wm fallback', { message: e && e.message });
+    if (requireWatermark) {
+      const wmForced = ksPrepareClientWatermark({
+        ...KS_WM_CONECTA_KING_DEFAULTS,
+        ...(watermark && typeof watermark === 'object' ? watermark : {}),
+        mode: 'tile_dense'
+      });
+      return buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark: wmForced, jpegOpts });
+    }
     return buildWatermarkedJpeg({
       imgBuffer,
       outW,
       outH,
-      watermark: { mode: 'none' },
+      watermark: { mode: 'x', opacity: watermark?.opacity ?? KS_WM_CONECTA_KING_DEFAULTS.opacity },
       jpegOpts
     });
   }
@@ -8405,10 +8450,6 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     );
     const photos = (pRes.rows || []).map(p => {
       const out = { id: p.id, original_name: p.original_name, order: p.order, folder_id: p.folder_id ? parseInt(p.folder_id, 10) : null };
-      if (hasFilePath && p.file_path && String(p.file_path).toLowerCase().startsWith('r2:')) {
-        const objectKey = String(p.file_path).slice(3).trim().replace(/^\/+/, '');
-        if (objectKey) out.url = r2PublicUrl(objectKey) || undefined;
-      }
       return out;
     });
     let folders = await listFoldersForGallery(client, gallery.id);
@@ -8467,17 +8508,18 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
-    const wm = await loadWatermarkForGalleryCached(client, galleryId);
+    const wm = ksPrepareClientWatermark(await loadWatermarkForGalleryCached(client, galleryId));
     const out = await ksBuildPreviewJpegSafe({
       imgBuffer: buf,
       outW,
       outH,
       watermark: wm,
-      jpegOpts: { quality: useThumb ? 76 : 80, progressive: true }
+      jpegOpts: { quality: useThumb ? 76 : 80, progressive: true },
+      requireWatermark: true
     });
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
+    res.set('Cache-Control', 'private, max-age=' + (useThumb ? '3600' : '1800'));
     res.send(out);
   } finally {
     client.release();
@@ -9782,10 +9824,6 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const photos = (pRes.rows || []).map(p => {
       const out = { id: p.id, original_name: p.original_name, order: p.order };
       if (hasFolderId) out.folder_id = p.folder_id ? parseInt(p.folder_id, 10) : null;
-      if (hasFilePath && p.file_path && String(p.file_path).toLowerCase().startsWith('r2:')) {
-        const objectKey = String(p.file_path).slice(3).trim().replace(/^\/+/, '');
-        if (objectKey) out.url = r2PublicUrl(objectKey) || undefined;
-      }
       return out;
     });
 
@@ -12741,7 +12779,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       galleryQuality = normalizeClientImageQuality(gq.rows[0]?.client_image_quality);
     }
     const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
-    const wm = await loadWatermarkForGalleryCached(client, payload.galleryId);
+    const wm = ksPrepareClientWatermark(await loadWatermarkForGalleryCached(client, payload.galleryId));
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
@@ -12756,12 +12794,13 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       outW,
       outH,
       watermark: wm,
-      jpegOpts: { quality: spec.jpegQuality, progressive: true }
+      jpegOpts: { quality: spec.jpegQuality, progressive: true },
+      requireWatermark: true
     });
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
+    res.set('Cache-Control', 'private, max-age=' + (useThumb ? '3600' : '1800'));
     res.send(out);
   } catch (previewErr) {
     logger.error('[king-selection] client preview', { photoId, message: previewErr && previewErr.message });
