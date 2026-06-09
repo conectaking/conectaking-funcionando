@@ -2039,7 +2039,7 @@ async function ksPurgePhotoDependencies(client, galleryId, photoIds) {
   await ksSafeQuery(
     client,
     `DELETE FROM rekognition_face_matches
-     WHERE photo_face_id IN (SELECT id FROM rekognition_photo_faces WHERE photo_id = ANY($1::int[]))`,
+     WHERE photo_face_id IN (SELECT rpf.id FROM rekognition_photo_faces rpf WHERE rpf.photo_id = ANY($1::int[]))`,
     [ids]
   );
   await ksSafeQuery(client, 'DELETE FROM rekognition_photo_faces WHERE photo_id = ANY($1::int[])', [ids]);
@@ -8719,7 +8719,7 @@ router.post('/galleries/:galleryId/photos/delete-batch', protectUser, asyncHandl
   try {
     const userId = req.user.userId;
     const gRes = await client.query(
-      `SELECT id FROM king_galleries g
+      `SELECT g.id FROM king_galleries g
        JOIN profile_items pi ON pi.id = g.profile_item_id
        WHERE g.id=$1 AND pi.user_id=$2`,
       [galleryId, userId]
