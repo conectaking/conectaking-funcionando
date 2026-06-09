@@ -3000,6 +3000,39 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
+    function closeAllPhotoTileMenus() {
+      Array.from(pGrid.querySelectorAll('.ks-menu.open')).forEach((m) => {
+        m.classList.remove('open', 'ks-menu--fixed');
+        m.style.position = '';
+        m.style.top = '';
+        m.style.left = '';
+        m.style.right = '';
+        m.style.zIndex = '';
+        m.style.maxWidth = '';
+      });
+    }
+
+    function openPhotoTileMenu(menu, anchorBtn) {
+      if (!menu || !anchorBtn) return;
+      closeAllPhotoTileMenus();
+      menu.classList.add('open', 'ks-menu--fixed');
+      const rect = anchorBtn.getBoundingClientRect();
+      const mw = Math.min(268, Math.max(200, window.innerWidth - 16));
+      let left = Math.min(rect.left, window.innerWidth - mw - 8);
+      left = Math.max(8, left);
+      let top = rect.bottom + 6;
+      const estH = menu.scrollHeight || 280;
+      if (top + estH > window.innerHeight - 8) {
+        top = Math.max(8, rect.top - estH - 6);
+      }
+      menu.style.position = 'fixed';
+      menu.style.left = `${Math.round(left)}px`;
+      menu.style.top = `${Math.round(top)}px`;
+      menu.style.right = 'auto';
+      menu.style.zIndex = '12000';
+      menu.style.maxWidth = `${mw}px`;
+    }
+
     Array.from(pGrid.querySelectorAll('[data-photo-id]')).forEach(tile => {
       const photoId = parseInt(tile.getAttribute('data-photo-id') || '0', 10);
       const menu = tile.querySelector('[data-menu]');
@@ -3007,19 +3040,19 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!photo) return;
 
       tile.addEventListener('click', async (e) => {
-        const el = e.target;
-        const action = el?.getAttribute && el.getAttribute('data-action');
+        const actionEl = e.target.closest && e.target.closest('[data-action]');
+        const action = actionEl ? actionEl.getAttribute('data-action') : null;
         if (!action) return;
         e.preventDefault();
         e.stopPropagation();
 
-        Array.from(pGrid.querySelectorAll('.ks-menu.open')).forEach(m => { if (m !== menu) m.classList.remove('open'); });
-
         if (action === 'menu') {
-          if (menu) menu.classList.toggle('open');
+          const btn = actionEl.closest('button') || actionEl;
+          if (menu && menu.classList.contains('open')) closeAllPhotoTileMenus();
+          else openPhotoTileMenu(menu, btn);
           return;
         }
-        if (menu) menu.classList.remove('open');
+        closeAllPhotoTileMenus();
 
         if (action === 'select') {
           const next = !selectedPhotoIds.has(photoId);
@@ -3084,7 +3117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadOne = (img, id) => {
       if (img.getAttribute('data-preview-loading') === '1' || img.getAttribute('data-preview-loaded') === '1') return;
       img.setAttribute('data-preview-loading', '1');
-      setImgPreview(img, { url: `${API_URL}/api/king-selection/photos/${id}/preview?wm_mode=none&max=720`, photoId: id })
+      setImgPreview(img, { url: `${API_URL}/api/king-selection/photos/${id}/preview?wm_mode=none&max=480`, photoId: id })
         .then(() => { img.setAttribute('data-preview-loaded', '1'); })
         .catch(() => { })
         .finally(() => { img.removeAttribute('data-preview-loading'); });
@@ -3099,18 +3132,18 @@ document.addEventListener('DOMContentLoaded', () => {
           io.unobserve(img);
           loadOne(img, id);
         });
-      }, { rootMargin: '80px', threshold: 0.01 });
+      }, { rootMargin: '200px', threshold: 0.01 });
       imgs.forEach(({ img }) => {
         img.removeAttribute('data-preview-loaded');
         io.observe(img);
       });
-      // Carregar as primeiras 8 imediatamente (above the fold)
-      imgs.slice(0, 8).forEach(({ img, id }) => {
+      imgs.slice(0, 18).forEach(({ img, id }) => {
         try { io.unobserve(img); } catch (_) { }
         loadOne(img, id);
       });
+      runPool(imgs.slice(18), 8, async ({ img, id }) => loadOne(img, id)).catch(() => { });
     } else {
-      runPool(imgs, 10, async ({ img, id }) => loadOne(img, id)).catch(() => { });
+      runPool(imgs, 12, async ({ img, id }) => loadOne(img, id)).catch(() => { });
     }
   }
 
@@ -7725,6 +7758,39 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     setActiveTab('clients');
   });
+
+  // Menus de foto: fechar ao clicar fora ou ao rolar
+  document.addEventListener('click', (e) => {
+    const pGridEl = document.getElementById('p-grid');
+    if (pGridEl && pGridEl.querySelector('.ks-menu.open')) {
+      const inMenu = e.target.closest && e.target.closest('#p-grid .ks-menu');
+      const onMenuBtn = e.target.closest && e.target.closest('#p-grid [data-action="menu"]');
+      if (!inMenu && !onMenuBtn) {
+        pGridEl.querySelectorAll('.ks-menu.open').forEach((m) => {
+          m.classList.remove('open', 'ks-menu--fixed');
+          m.style.position = '';
+          m.style.top = '';
+          m.style.left = '';
+          m.style.right = '';
+          m.style.zIndex = '';
+          m.style.maxWidth = '';
+        });
+      }
+    }
+  });
+  window.addEventListener('scroll', () => {
+    const pGridEl = document.getElementById('p-grid');
+    if (!pGridEl || !pGridEl.querySelector('.ks-menu.ks-menu--fixed.open')) return;
+    pGridEl.querySelectorAll('.ks-menu.open').forEach((m) => {
+      m.classList.remove('open', 'ks-menu--fixed');
+      m.style.position = '';
+      m.style.top = '';
+      m.style.left = '';
+      m.style.right = '';
+      m.style.zIndex = '';
+      m.style.maxWidth = '';
+    });
+  }, { passive: true });
 
   // Menus: fechar ao clicar fora
   document.addEventListener('click', (e) => {

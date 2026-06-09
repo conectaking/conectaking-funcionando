@@ -2411,8 +2411,12 @@
   function scheduleEntrySplash() {
     const enabled = !!(state.gallery?.client_entry_splash_enabled || galleryMeta?.client_entry_splash_enabled);
     const raw = String(state.gallery?.entry_splash_url || galleryMeta?.entry_splash_url || '').trim();
-    if (!enabled || !raw) return;
-    if (normKsAccessModeFromMeta() !== 'public') return;
+    if (!raw) return;
+    const mode = normKsAccessModeFromMeta();
+    const salesWithFolders = !!state.salesModeActive && state.folders.length > 0;
+    const showPublic = mode === 'public' && enabled;
+    const showSales = salesWithFolders;
+    if (!showPublic && !showSales) return;
     const k = `ks_entry_splash_${slug}`;
     try {
       if (sessionStorage.getItem(k)) return;
@@ -2435,6 +2439,12 @@
         sessionStorage.setItem(k, '1');
       } catch (_) {}
       im.removeAttribute('src');
+      if (state.salesModeActive && state.folders.length > 0 && state.clientFolderLayout !== 'flat') {
+        state.folderView = 'folders';
+        state.activeFolderId = null;
+        persistFolderNav();
+        renderFolders();
+      }
     };
     btn.onclick = () => close();
     ov.onclick = (e) => {
@@ -2790,7 +2800,7 @@
             ${sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : ''}
           </button>
           <div class="ks-ph-imgwrap" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
-            <img src="${previewUrl(p.id, false)}" alt="" loading="lazy" width="200" height="300" referrerpolicy="no-referrer" decoding="async" />
+            <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" width="200" height="300" referrerpolicy="no-referrer" decoding="async" />
           </div>
           <div class="ks-ph-bar">
             <div class="ks-ph-bar-main">${barAction}${showSelTag ? ` <span class="ks-ph-batch">S${batch}</span>` : ''}</div>

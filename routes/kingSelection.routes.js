@@ -8373,7 +8373,15 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
 
     const deferredSignupFlow = ksAccessModeAllowsSelfSignup(accessMode) && allowSelfSignup;
     let entrySplashUrl = null;
-    if (hasEntrySplash && g.client_entry_splash_enabled) {
+    const accessNormBoot = ksNormAccessMode(accessMode);
+    const salesBoot = ksIsPaidEventAccessMode(accessNormBoot);
+    const splashBoot =
+      (hasEntrySplash && g.client_entry_splash_enabled) ||
+      (salesBoot && (
+        (hasCoverPhoto && g.gallery_link_cover_photo_id) ||
+        (hasCoverFile && g.gallery_link_cover_file_path)
+      ));
+    if (splashBoot) {
       entrySplashUrl = await ksResolveEntrySplashPublicUrl(client, g, slug);
     }
     const clientFolderLayoutNorm =
@@ -9936,7 +9944,13 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     }
 
     let entrySplashUrl = null;
-    if (hasEntrySplash && gallery.client_entry_splash_enabled) {
+    const splashClient =
+      (hasEntrySplash && gallery.client_entry_splash_enabled) ||
+      (salesModeActive && (
+        (hasCoverPhoto && gallery.gallery_link_cover_photo_id) ||
+        (hasCoverFile && gallery.gallery_link_cover_file_path)
+      ));
+    if (splashClient) {
       entrySplashUrl = await ksResolveEntrySplashPublicUrl(client, gallery, slug);
     }
 
