@@ -2148,6 +2148,79 @@ async function fetchPhotoFileBufferFromFilePath(filePath) {
   }
 }
 
+/** Preferir versão editada da foto quando existir (mesma regra da entrega ao cliente). */
+function ksPickPhotoStoragePath(photoRow) {
+  if (!photoRow) return null;
+  const edited = String(photoRow.edited_file_path || '').trim();
+  const raw = String(photoRow.file_path || '').trim();
+  if (edited) return edited;
+  return raw || null;
+}
+
+async function fetchPhotoBufferForRow(photoRow) {
+  const primary = ksPickPhotoStoragePath(photoRow);
+  if (primary) {
+    const buf = await fetchPhotoFileBufferFromFilePath(primary);
+    if (buf) return buf;
+  }
+  const raw = String(photoRow?.file_path || '').trim();
+  if (raw && raw !== primary) {
+    return fetchPhotoFileBufferFromFilePath(raw);
+  }
+  return null;
+}
+
+const _ksWmGalleryCache = new Map();
+
+async function loadWatermarkForGalleryCached(pgClient, galleryId) {
+  const gid = parseInt(galleryId, 10) || 0;
+  if (!gid) return loadWatermarkForGallery(pgClient, galleryId);
+  if (_ksWmGalleryCache.has(gid)) return _ksWmGalleryCache.get(gid);
+  const wm = await loadWatermarkForGallery(pgClient, galleryId);
+  _ksWmGalleryCache.set(gid, wm);
+  return wm;
+}
+
+function ksInvalidateWatermarkGalleryCache(galleryId) {
+  const gid = parseInt(galleryId, 10) || 0;
+  if (gid) _ksWmGalleryCache.delete(gid);
+}
+
+async function ksBuildPreviewJpegSafe({ imgBuffer, outW, outH, watermark, jpegOpts }) {
+  try {
+    return await buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts });
+  } catch (e) {
+    logger.warn('[king-selection] preview wm fallback', { message: e && e.message });
+    return buildWatermarkedJpeg({
+      imgBuffer,
+      outW,
+      outH,
+      watermark: { mode: 'none' },
+      jpegOpts
+    });
+  }
+}
+
+async function ksResizeJpegNoWatermark(buf, outW, outH, jpegQuality) {
+  const jq = jpegQuality ?? 82;
+  return sharp(buf)
+    .rotate()
+    .resize(outW, outH, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: jq, progressive: true })
+    .toBuffer();
+}
+
+/** Redireciona para URL pública do R2 quando possível (evita proxy pesado no Render). */
+function ksTryRedirectPublicR2(res, filePath) {
+  const key = extractR2Key(String(filePath || '').trim());
+  if (!key) return false;
+  const pub = r2PublicUrl(key);
+  if (!pub) return false;
+  res.set('Cache-Control', 'private, max-age=600');
+  res.redirect(302, pub);
+  return true;
+}
+
 async function ksApproxBytesForGalleryFilePath(filePath) {
   const fp = String(filePath || '').trim();
   const k = extractR2Key(fp) || extractR2KeyFromPublicHttpsUrl(fp);
@@ -7993,6 +8066,11 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     );
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
+    const qModeEarly = (req.query.wm_mode || '').toString();
+    if (qModeEarly === 'none' && !req.query.wm_aspect_w && !req.query.wm_aspect_h) {
+      const storagePath = ksPickPhotoStoragePath(photo) || photo.file_path;
+      if (ksTryRedirectPublicR2(res, storagePath)) return;
+    }
     let buf;
     try {
       buf = await fetchPhotoBufferForRow(photo);
@@ -8041,6 +8119,8 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const qMode = (req.query.wm_mode || '').toString();
     const skipWm = qMode === 'none';
     if (skipWm) {
+      const storagePath = ksPickPhotoStoragePath(photo) || photo.file_path;
+      if (ksTryRedirectPublicR2(res, storagePath)) return;
       const out = await ksResizeJpegNoWatermark(workBuf, outW, outH, 84);
       res.set('Content-Type', 'image/jpeg');
       res.set('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -8098,26 +8178,25 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const qPathL = String(req.query.wm_path_landscape || '').trim();
     if (qPathP) wm.pathPortrait = qPathP;
     if (qPathL) wm.pathLandscape = qPathL;
-    let out = null;
-    try {
-      out = await buildWatermarkedJpeg({
-        imgBuffer: workBuf,
-        outW,
-        outH,
-        watermark: wm
-      });
-    } catch (e) {
-      const code = e?.statusCode || 500;
-      const msg = e?.message || 'Erro ao gerar preview.';
-      // Para o painel, sempre devolve JSON com message (evita "Erro interno do servidor" genérico).
-      return res.status(code).json({ message: msg });
-    }
+    const out = await ksBuildPreviewJpegSafe({
+      imgBuffer: workBuf,
+      outW,
+      outH,
+      watermark: wm,
+      jpegOpts: { quality: 84, progressive: true }
+    });
 
     res.set('Content-Type', 'image/jpeg');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     res.send(out);
+  } catch (previewErr) {
+    logger.error('[king-selection] admin preview', { photoId, message: previewErr && previewErr.message });
+    if (!res.headersSent) {
+      return res.status(502).json({ message: 'Não foi possível gerar a pré-visualização desta foto.' });
+    }
   } finally {
     client.release();
   }
@@ -8365,68 +8444,6 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     client.release();
   }
 }));
-
-/** Preferir versão editada da foto quando existir (mesma regra da entrega ao cliente). */
-function ksPickPhotoStoragePath(photoRow) {
-  if (!photoRow) return null;
-  const edited = String(photoRow.edited_file_path || '').trim();
-  const raw = String(photoRow.file_path || '').trim();
-  if (edited) return edited;
-  return raw || null;
-}
-
-async function fetchPhotoBufferForRow(photoRow) {
-  const primary = ksPickPhotoStoragePath(photoRow);
-  if (primary) {
-    const buf = await fetchPhotoFileBufferFromFilePath(primary);
-    if (buf) return buf;
-  }
-  const raw = String(photoRow?.file_path || '').trim();
-  if (raw && raw !== primary) {
-    return fetchPhotoFileBufferFromFilePath(raw);
-  }
-  return null;
-}
-
-const _ksWmGalleryCache = new Map();
-
-async function loadWatermarkForGalleryCached(pgClient, galleryId) {
-  const gid = parseInt(galleryId, 10) || 0;
-  if (!gid) return loadWatermarkForGallery(pgClient, galleryId);
-  if (_ksWmGalleryCache.has(gid)) return _ksWmGalleryCache.get(gid);
-  const wm = await loadWatermarkForGallery(pgClient, galleryId);
-  _ksWmGalleryCache.set(gid, wm);
-  return wm;
-}
-
-function ksInvalidateWatermarkGalleryCache(galleryId) {
-  const gid = parseInt(galleryId, 10) || 0;
-  if (gid) _ksWmGalleryCache.delete(gid);
-}
-
-async function ksBuildPreviewJpegSafe({ imgBuffer, outW, outH, watermark, jpegOpts }) {
-  try {
-    return await buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts });
-  } catch (e) {
-    logger.warn('[king-selection] preview wm fallback', { message: e && e.message });
-    return buildWatermarkedJpeg({
-      imgBuffer,
-      outW,
-      outH,
-      watermark: { mode: 'none' },
-      jpegOpts
-    });
-  }
-}
-
-async function ksResizeJpegNoWatermark(buf, outW, outH, jpegQuality) {
-  const jq = jpegQuality ?? 82;
-  return sharp(buf)
-    .rotate()
-    .resize(outW, outH, { fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: jq, progressive: true })
-    .toBuffer();
-}
 
 /**
  * Carrega bytes da capa do link com fallback: se o caminho externo (R2/URL) estiver órfão ou inválido,

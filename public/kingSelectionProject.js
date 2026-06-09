@@ -90,6 +90,43 @@ document.addEventListener('DOMContentLoaded', () => {
     return objUrl;
   }
 
+  function buildAdminDirectPreviewSrc(url) {
+    const raw = String(url || '');
+    if (!raw.includes('/api/king-selection/photos/') || !raw.includes('/preview')) return null;
+    if (!/[?&]wm_mode=none(?:&|$)/i.test(raw)) return null;
+    try {
+      const u = new URL(raw, API_URL || window.location.origin);
+      if (token) u.searchParams.set('token', token);
+      return u.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function loadImgDirect(imgEl, src, photoId) {
+    return new Promise((resolve, reject) => {
+      const pid = parseInt(photoId, 10) || 0;
+      const onLoad = () => { cleanup(); resolve(); };
+      const onError = () => { cleanup(); reject(new Error('Falha ao carregar imagem.')); };
+      const cleanup = () => {
+        imgEl.removeEventListener('load', onLoad);
+        imgEl.removeEventListener('error', onError);
+      };
+      imgEl.addEventListener('load', onLoad);
+      imgEl.addEventListener('error', onError);
+      const tick = () => {
+        const current = parseInt(imgEl.getAttribute('data-photo-id') || '0', 10);
+        if (pid !== 0 && current && current !== pid) {
+          cleanup();
+          resolve();
+          return;
+        }
+        imgEl.src = src;
+      };
+      tick();
+    });
+  }
+
   async function setImgPreview(imgEl, { url, photoId, fallbackUrl }) {
     if (!imgEl) return;
     imgEl.classList.add('ks-img-loading');
@@ -99,6 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextKey = String(u || '');
         if (prevKey && prevKey !== nextKey) revokePreviewUrl(prevKey);
         imgEl.setAttribute('data-cache-key', nextKey);
+        const directSrc = buildAdminDirectPreviewSrc(u);
+        if (directSrc) {
+          await loadImgDirect(imgEl, directSrc, photoId);
+          imgEl.removeAttribute('data-preview-error');
+          return;
+        }
         const objUrl = await fetchPreviewObjectUrl(u);
         const current = parseInt(imgEl.getAttribute('data-photo-id') || '0', 10);
         const pid = parseInt(photoId, 10) || 0;
@@ -789,10 +832,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const p = list[viewerIndex];
     if (!p) return;
     viewerImg.setAttribute('data-photo-id', String(p.id));
-    // Carregar via fetch com Authorization
-    // ADMIN: na aba Fotos, carregar SEM marca d'água (evita quebrar se a logo/CF estiverem com problema).
-    const m = encodeURIComponent(getRadio('wm_mode') || wmMode || 'tile_dense');
-    setImgPreview(viewerImg, { url: `${API_URL}/api/king-selection/photos/${p.id}/preview?wm_mode=${m}`, photoId: p.id });
+    // ADMIN: ampliar sem marca d'água (rápido e não quebra se a logo/CF estiverem com problema).
+    setImgPreview(viewerImg, {
+      url: `${API_URL}/api/king-selection/photos/${p.id}/preview?wm_mode=none&max=1600`,
+      photoId: p.id
+    });
     viewerTitle.textContent = p.original_name || 'Foto';
     viewerMeta.textContent = `${viewerIndex + 1}/${list.length}`;
     if (viewerPrev) viewerPrev.disabled = viewerIndex <= 0;
