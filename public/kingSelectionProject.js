@@ -3721,16 +3721,14 @@ document.addEventListener('DOMContentLoaded', () => {
         : 'Não há rodada para excluir.';
     }
     if (actDeleteRoundClientBtn) {
-      const rounds = Object.keys(gallery?.selectionRoundsSummary || {})
-        .map((k) => parseInt(k, 10))
-        .filter((n) => Number.isFinite(n) && n > 0);
-      const can = st === 'revisao' && !!rounds.length;
+      const delCid = resolveActivityClientId();
+      const tipBatch = delCid ? resolveBatchForClient(delCid) : 0;
+      const can = st === 'revisao' && !!delCid;
       actDeleteRoundClientBtn.disabled = !can;
       actDeleteRoundClientBtn.style.opacity = can ? '' : '0.5';
-      const tipBatch = rounds.length ? Math.max(...rounds) : null;
-      actDeleteRoundClientBtn.title = tipBatch
+      actDeleteRoundClientBtn.title = tipBatch > 0
         ? `Apaga a rodada atual (Seleção ${tipBatch}) e exclui o cadastro do cliente nesta galeria.`
-        : 'Não há rodada para excluir.';
+        : 'Exclui o cadastro do cliente nesta galeria (sem fotos na rodada atual).';
     }
 
     if (actRoundsDetail) {
@@ -6437,16 +6435,17 @@ document.addEventListener('DOMContentLoaded', () => {
       ev.stopPropagation();
       const id = parseInt(dropBtn.getAttribute('data-act-client-id'), 10);
       if (!id) return;
-      const base = resolveCurrentActivityClientAndBatch();
-      const batch = base.batch;
-      if (!Number.isFinite(batch) || batch < 1) {
-        toast('Selecione a rodada atual no filtro "Ver seleção".', { kind: 'warn', title: 'Excluir cadastro' });
-        return;
-      }
-      if (!confirm(`Excluir a rodada atual (Seleção ${batch}) e excluir este cadastro?`)) return;
+      const batch = resolveBatchForClient(id);
+      const confirmMsg = batch > 0
+        ? `Excluir a rodada atual (Seleção ${batch}) e excluir este cadastro?`
+        : 'Excluir o cadastro deste cliente?\n\nSeleções, liberações e comprovantes vinculados serão removidos.';
+      if (!confirm(confirmMsg)) return;
       deleteRoundAndClient(id)
         .then(async (out) => {
-          toast(`Cadastro excluído e rodada ${out.batch} removida (${out.deletedRound} foto(s)).`, { kind: 'ok', title: 'Cliente' });
+          const msg = out.batch > 0
+            ? `Cadastro excluído e rodada ${out.batch} removida (${out.deletedRound} foto(s)).`
+            : 'Cadastro do cliente excluído.';
+          toast(msg, { kind: 'ok', title: 'Cliente' });
           if (parseInt(_activityFocusClientId, 10) === id) _activityFocusClientId = null;
           await loadGallery();
         })
@@ -6500,19 +6499,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function resolveCurrentActivityClientAndBatch() {
-    const cid =
-      parseInt(_activityFocusClientId, 10) ||
-      (() => {
-        const list = Array.isArray(gallery?.clients) ? gallery.clients.filter((c) => c && c.enabled !== false) : [];
-        return list.length === 1 ? parseInt(list[0].id, 10) : 0;
-      })();
-    const rounds = Object.keys(gallery?.selectionRoundsSummary || {})
+  function resolveActivityClientId(clientIdOverride) {
+    const override = parseInt(clientIdOverride, 10);
+    if (override > 0) return override;
+    const focus = parseInt(_activityFocusClientId, 10);
+    if (focus > 0) return focus;
+    const list = Array.isArray(gallery?.clients) ? gallery.clients.filter((c) => c && c.enabled !== false) : [];
+    return list.length === 1 ? (parseInt(list[0].id, 10) || 0) : 0;
+  }
+
+  /** Rodada para ações do cliente (não exige filtro «Ver seleção» em «Todas»). */
+  function resolveBatchForClient(clientId) {
+    const cid = parseInt(clientId, 10) || 0;
+    if (!cid) return 0;
+
+    const filterVal = String(actBatchFilter?.value || '').trim();
+    const uiBatch = parseInt(filterVal, 10);
+    if (filterVal && filterVal !== 'all' && Number.isFinite(uiBatch) && uiBatch > 0) {
+      return uiBatch;
+    }
+
+    const clients = Array.isArray(gallery?.clients) ? gallery.clients : [];
+    const row = clients.find((c) => parseInt(c?.id, 10) === cid);
+    const clientRound = parseInt(row?.selection_round, 10);
+    if (Number.isFinite(clientRound) && clientRound > 0) return clientRound;
+
+    const focusCid = parseInt(_activityFocusClientId, 10);
+    if (focusCid === cid) {
+      const rd = gallery?.selectionRoundsSummary || {};
+      const rounds = Object.keys(rd).map((k) => parseInt(k, 10)).filter((n) => Number.isFinite(n) && n > 0);
+      if (rounds.length) return Math.max(...rounds);
+
+      const bm = gallery?.selectionBatchByPhotoId || {};
+      const fromPhotos = Object.values(bm).map((b) => parseInt(b, 10)).filter((n) => Number.isFinite(n) && n > 0);
+      if (fromPhotos.length) return Math.max(...fromPhotos);
+    }
+
+    return 0;
+  }
+
+  function resolveCurrentActivityClientAndBatch(clientIdOverride) {
+    const cid = resolveActivityClientId(clientIdOverride);
+    const batch = resolveBatchForClient(cid);
+    const focusCid = parseInt(_activityFocusClientId, 10);
+    const rounds = (focusCid === cid ? Object.keys(gallery?.selectionRoundsSummary || {}) : [])
       .map((k) => parseInt(k, 10))
       .filter((n) => Number.isFinite(n) && n > 0);
-    const uiBatch = parseInt(actBatchFilter?.value || '', 10);
-    const batch = (Number.isFinite(uiBatch) && uiBatch > 0) ? uiBatch : (rounds.length ? Math.max(...rounds) : 0);
-    return { cid, batch, hasRounds: rounds.length > 0 };
+    return { cid, batch, hasRounds: rounds.length > 0 || batch > 0 };
   }
 
   actDeleteBatch?.addEventListener('click', async () => {
@@ -6604,7 +6637,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (!Number.isFinite(batch) || batch < 1) {
-      toast('Não foi possível identificar a rodada atual.', { kind: 'warn', title: 'Rodada' });
+      toast('Não há rodada com fotos para excluir. Use «Excluir rodada + cadastro» para remover o cliente.', { kind: 'warn', title: 'Rodada' });
       return;
     }
     if (!confirm(`Excluir a rodada atual (Seleção ${batch}) deste cliente?`)) return;
@@ -6627,18 +6660,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   async function deleteRoundAndClient(clientIdOverride) {
-    const base = resolveCurrentActivityClientAndBatch();
-    const cid = parseInt(clientIdOverride, 10) || base.cid;
-    const batch = base.batch;
+    const cid = resolveActivityClientId(clientIdOverride);
+    const batch = resolveBatchForClient(cid);
     if (!cid) throw new Error('Selecione um cliente.');
-    if (!Number.isFinite(batch) || batch < 1) throw new Error('Rodada atual inválida.');
-    const resDelRound = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/delete-selection-batch`, {
-      method: 'POST',
-      headers: HEADERS,
-      body: JSON.stringify({ batch })
-    });
-    const dataRound = await resDelRound.json().catch(() => ({}));
-    if (!resDelRound.ok) throw new Error(dataRound.message || 'Erro ao excluir rodada');
+    let deletedRound = 0;
+    if (Number.isFinite(batch) && batch >= 1) {
+      const resDelRound = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/delete-selection-batch`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({ batch })
+      });
+      const dataRound = await resDelRound.json().catch(() => ({}));
+      if (!resDelRound.ok) throw new Error(dataRound.message || 'Erro ao excluir rodada');
+      deletedRound = dataRound.deleted || 0;
+    }
 
     const resDelClient = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}`, {
       method: 'DELETE',
@@ -6646,20 +6681,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const dataClient = await resDelClient.json().catch(() => ({}));
     if (!resDelClient.ok) throw new Error(dataClient.message || 'Erro ao excluir cadastro do cliente');
-    return { deletedRound: dataRound.deleted || 0, batch };
+    return { deletedRound, batch: batch || 0 };
   }
 
   actDeleteRoundClientBtn?.addEventListener('click', async () => {
     const { cid, batch } = resolveCurrentActivityClientAndBatch();
-    if (!cid || !batch) {
-      toast('Selecione um cliente e uma rodada.', { kind: 'warn', title: 'Excluir cadastro' });
+    if (!cid) {
+      toast('Selecione um cliente na lista.', { kind: 'warn', title: 'Excluir cadastro' });
       return;
     }
-    if (!confirm(`Excluir a rodada atual (Seleção ${batch}) e também o cadastro deste cliente?`)) return;
+    const confirmMsg = batch > 0
+      ? `Excluir a rodada atual (Seleção ${batch}) e também o cadastro deste cliente?`
+      : 'Excluir o cadastro deste cliente?\n\nSeleções e comprovantes vinculados serão removidos.';
+    if (!confirm(confirmMsg)) return;
     try {
       actDeleteRoundClientBtn.disabled = true;
       const out = await deleteRoundAndClient(cid);
-      toast(`Rodada ${out.batch} removida (${out.deletedRound} foto(s)) e cadastro excluído.`, { kind: 'ok', title: 'Cliente' });
+      const msg = out.batch > 0
+        ? `Rodada ${out.batch} removida (${out.deletedRound} foto(s)) e cadastro excluído.`
+        : 'Cadastro do cliente excluído.';
+      toast(msg, { kind: 'ok', title: 'Cliente' });
       _activityFocusClientId = null;
       await loadGallery();
     } catch (err) {
