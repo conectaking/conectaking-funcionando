@@ -1463,7 +1463,8 @@ document.addEventListener('DOMContentLoaded', () => {
         bible: 'Bíblia',
         location: 'Localização',
         recibos_orcamentos: 'Recibos e Orçamentos',
-        kingbrief: 'KingBrief'
+        kingbrief: 'KingBrief',
+        king_bolao: 'King Bolão'
     };
 
     const URL_TYPE_TAGS = {
@@ -14825,23 +14826,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 dev365AdminLink.style.display = isAdmin ? 'flex' : 'none';
             }
 
-            const kingBolaoLink = document.getElementById('king-bolao-sidebar-link');
-            if (kingBolaoLink) {
-                const at = String(accountType || '').toLowerCase();
-                const showBolao = isAdmin || at === 'adm_principal' || at === 'abm' || at === 'admin';
-                kingBolaoLink.style.display = showBolao ? 'flex' : 'none';
-                if (!showBolao) {
-                    const token = localStorage.getItem('conectaKingToken') || '';
-                    const apiBase = (typeof API_URL !== 'undefined' && API_URL) ? API_URL : window.location.origin;
-                    if (token) {
-                        fetch(`${String(apiBase).replace(/\/$/, '')}/api/king-bolao/access-check`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        }).then((r) => r.json()).then((data) => {
-                            if (data && data.allowed) kingBolaoLink.style.display = 'flex';
-                        }).catch(() => { });
-                    }
-                }
-            }
             if (typeof window.DashboardKingBolaoNav !== 'undefined' && window.DashboardKingBolaoNav.init) {
                 window.DashboardKingBolaoNav.init();
             }
@@ -15710,6 +15694,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'branding': 'Personalização da Marca',
             'recibos_orcamentos': 'Recibos e Orçamentos',
             'kingbrief': 'KingBrief',
+            'king_bolao': 'King Bolão',
             'location': 'Localização'
         };
 

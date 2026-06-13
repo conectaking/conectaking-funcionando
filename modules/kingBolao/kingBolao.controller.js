@@ -5,12 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const repo = require('./kingBolao.repository');
 const service = require('./kingBolao.service');
-const { userIsKingBolaoAdmin } = require('./kingBolao.middleware');
+const { userHasKingBolaoModule } = require('./kingBolao.middleware');
 const { storeProofImage, storeCoverImage } = require('./kingBolao.proof');
 const { renderKingBolaoOgImage } = require('./kingBolaoOg');
 
 async function accessCheck(req, res) {
-  const ok = await userIsKingBolaoAdmin(req.user?.userId);
+  const ok = await userHasKingBolaoModule(req.user?.userId);
   res.json({ success: true, allowed: ok });
 }
 

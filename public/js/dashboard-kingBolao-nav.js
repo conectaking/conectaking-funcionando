@@ -1,6 +1,6 @@
 /**
  * Insere «King Bolão» no sidebar logo abaixo de «King Selection».
- * Funciona mesmo se dashboard.html em produção ainda não tiver o link estático.
+ * Visibilidade controlada pela Separação de Pacotes (hasKingBolao / king_bolao).
  */
 (function (global) {
   'use strict';
@@ -34,7 +34,8 @@
     link = document.createElement('a');
     link.href = '/kingBolao';
     link.id = 'king-bolao-sidebar-link';
-    link.className = (ref && ref.className) ? ref.className : 'nav-link';
+    link.className = (ref && ref.className) ? ref.className : 'nav-link nav-link-by-plan';
+    link.setAttribute('data-module', 'king_bolao');
     link.title = 'King Bolão';
     link.innerHTML = '<i class="fas fa-futbol"></i> <span>King Bolão</span>';
     link.style.display = 'none';
@@ -61,12 +62,10 @@
     }
   }
 
-  function shouldShow(user) {
+  function moduleEnabled(user) {
     if (!user) return false;
-    if (user.isAdmin === true || user.is_admin === true) return true;
-    const at = String(user.accountType || user.account_type || '').toLowerCase();
-    if (at === 'adm_principal' || at === 'abm' || at === 'admin') return true;
-    return false;
+    const raw = user.hasKingBolao;
+    return raw === true || raw === 1 || raw === 'true';
   }
 
   function apiBase() {
@@ -96,12 +95,14 @@
 
   async function applyVisibility(link) {
     const user = readUser();
-    if (shouldShow(user)) {
+    if (moduleEnabled(user)) {
       link.style.display = 'flex';
       return;
     }
     if (await checkAccessApi()) {
       link.style.display = 'flex';
+    } else {
+      link.style.display = 'none';
     }
   }
 
@@ -113,6 +114,13 @@
       link = createLink(ref);
       insertAfter(ref, link);
     }
+    if (typeof global.applyModulesVisibility === 'function') {
+      const user = readUser();
+      if (user && Object.prototype.hasOwnProperty.call(user, 'hasKingBolao')) {
+        global.applyModulesVisibility(user);
+        return;
+      }
+    }
     applyVisibility(link);
   }
 
@@ -120,7 +128,6 @@
     init();
     setTimeout(init, 400);
     setTimeout(init, 1500);
-    setTimeout(init, 3500);
     try {
       const obs = new MutationObserver(() => {
         if (!document.getElementById('king-bolao-sidebar-link')) init();

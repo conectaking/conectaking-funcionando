@@ -11,7 +11,7 @@ const MODULE_TYPES_PUBLIC = [
     'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
     'finance', 'agenda', 'contract',
     'modo_empresa', 'branding', 'photographer_site', 'bible', 'location',
-    'recibos_orcamentos', 'kingbrief'
+    'recibos_orcamentos', 'kingbrief', 'king_bolao'
 ];
 
 async function getPlanAvailabilityPublic(client) {

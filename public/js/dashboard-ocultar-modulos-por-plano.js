@@ -47,6 +47,7 @@
             hasModoEmpresa: user.hasModoEmpresa,
             hasBranding: user.hasBranding,
             hasKingSelection: user.hasKingSelection,
+            hasKingBolao: user.hasKingBolao,
             hasDigitalForm: user.hasDigitalForm
         });
 
@@ -58,6 +59,7 @@
             branding: ['#branding-link'],
             kingbrief: ['#kingbrief-sidebar-link'],
             king_selection: ['#king-selection-sidebar-link'],
+            king_bolao: ['#king-bolao-sidebar-link'],
             digital_form: ['#king-forms-sidebar-link'],
             king_docs: ['#king-docs-sidebar-link'],
             photographer_site: ['#meusite-sidebar-link'],
@@ -72,6 +74,7 @@
             { key: 'hasBranding', module: 'branding' },
             { key: 'hasKingBrief', module: 'kingbrief' },
             { key: 'hasKingSelection', module: 'king_selection' },
+            { key: 'hasKingBolao', module: 'king_bolao' },
             { key: 'hasDigitalForm', module: 'digital_form' },
             { key: 'hasKingDocs', module: 'king_docs' }
         ];
