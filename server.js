@@ -84,6 +84,7 @@ const kingSelectionRoutes = require('./routes/kingSelection.routes');
 const kingSelectionR2Routes = require('./routes/kingSelectionR2.routes');
 const kingbriefRoutes = require('./routes/kingbrief.routes');
 const kingDocsRoutes = require('./modules/kingDocs/kingDocs.routes');
+const kingBolaoRoutes = require('./modules/kingBolao/kingBolao.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
 const autoMigrate = require('./utils/auto-migrate');
@@ -958,7 +959,30 @@ app.get('/admin-prosperidade-31.html', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.type('html').sendFile(adminProsperidadeHtmlPath);
 });
-// Painel: cópia em public/ para testes pela URL da API (Render). O site em produção
+
+// King Bolão — módulo isolado (public/kingBolao + /api/king-bolao)
+const kingBolaoDir = path.join(__dirname, 'public', 'kingBolao');
+const kingBolaoPublicHtml = path.join(kingBolaoDir, 'kingBolao.html');
+const kingBolaoAdminHtml = path.join(kingBolaoDir, 'kingBolaoAdmin.html');
+app.use('/kingBolao', express.static(kingBolaoDir, { maxAge: 0, etag: true }));
+app.get(['/kingBolao', '/kingBolao/'], (req, res) => {
+    if (!fs.existsSync(kingBolaoAdminHtml)) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.type('html').sendFile(kingBolaoAdminHtml);
+});
+function serveKingBolaoPublicHtml(req, res) {
+    if (!fs.existsSync(kingBolaoPublicHtml)) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.type('html').sendFile(kingBolaoPublicHtml);
+}
+app.get('/bolao/:slug/m/:token', serveKingBolaoPublicHtml);
+app.get('/bolao/:slug', serveKingBolaoPublicHtml);
+
+// Painel admin Devocionais 365: versão canónica em public/ (public_html pode ter cópia antiga sem os botões novos)
 // na Hostinger usa o dashboard.html do public_html do cliente — não confundir.
 const dashboardHtmlPath = path.join(__dirname, 'public', 'dashboard.html');
 app.get('/dashboard.html', (req, res) => {
@@ -1287,6 +1311,7 @@ app.use('/api/king-selection', kingSelectionLimiter, kingSelectionR2Routes);
 app.use('/api/king-selection', kingSelectionLimiter, kingSelectionRoutes);
 app.use('/api/kingbrief', kingbriefLimiter, kingbriefRoutes);
 app.use('/api/king-docs', apiLimiter, kingDocsRoutes);
+app.use('/api/king-bolao', apiLimiter, kingBolaoRoutes);
 app.use('/download', downloadRoutes);
 app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);

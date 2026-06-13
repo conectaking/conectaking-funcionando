@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>King Bolão — Admin</title>
+  <link rel="stylesheet" href="/kingBolao/kingBolao.css?v=1" />
+  <style>
+    .kb-admin-grid { display: grid; gap: 12px; }
+    @media (min-width: 900px) { .kb-admin-grid { grid-template-columns: 1fr 1fr; } }
+    .kb-pending { border-left: 3px solid #fbbf24; padding-left: 10px; margin-bottom: 10px; }
+    .kb-thumb { max-width: 80px; max-height: 80px; border-radius: 8px; cursor: pointer; }
+    textarea.kb-input { min-height: 80px; resize: vertical; }
+  </style>
+</head>
+<body class="kb-body">
+  <div class="kb-wrap" style="max-width:960px">
+    <div class="kb-hero" style="text-align:left">
+      <h1>King Bolão — Admin</h1>
+      <p class="kb-label">Configure bolões, aprove comprovantes e publique resultados.</p>
+    </div>
+    <div class="kb-error" id="kb-error"></div>
+    <div id="kb-admin-app">Carregando…</div>
+  </div>
+  <script src="/kingBolao/kingBolaoAdmin.js?v=1"></script>
+</body>
+</html>

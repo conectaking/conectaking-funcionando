@@ -11557,6 +11557,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, false);
                     return;
                 }
+                if (link.id === 'king-bolao-sidebar-link') {
+                    return;
+                }
                 if (link.id === 'meusite-sidebar-link') {
                     link.addEventListener('click', function (e) {
                         setTimeout(function () { window.loadMeuSitePane && window.loadMeuSitePane(); }, 100);
@@ -14820,6 +14823,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const dev365AdminLink = document.getElementById('dev365-admin-link');
             if (dev365AdminLink) {
                 dev365AdminLink.style.display = isAdmin ? 'flex' : 'none';
+            }
+
+            const kingBolaoLink = document.getElementById('king-bolao-sidebar-link');
+            if (kingBolaoLink) {
+                kingBolaoLink.style.display = isAdmin ? 'flex' : 'none';
+                if (!isAdmin) {
+                    const token = localStorage.getItem('conectaKingToken') || '';
+                    const apiBase = (typeof API_URL !== 'undefined' && API_URL) ? API_URL : window.location.origin;
+                    if (token) {
+                        fetch(`${String(apiBase).replace(/\/$/, '')}/api/king-bolao/access-check`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }).then((r) => r.json()).then((data) => {
+                            if (data && data.allowed) kingBolaoLink.style.display = 'flex';
+                        }).catch(() => { });
+                    }
+                }
             }
 
             const personalizacaoLogoLink = document.getElementById('personalizacao-logo-link');
