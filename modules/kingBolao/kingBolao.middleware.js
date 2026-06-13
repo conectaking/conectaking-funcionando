@@ -27,7 +27,7 @@ const accountTypeToPlanCode = {
 };
 
 async function userHasKingBolaoModule(userId) {
-  const uid = parseInt(userId, 10);
+  const uid = String(userId || '').trim();
   if (!uid) return false;
 
   const userRow = await db.query(
@@ -82,7 +82,7 @@ async function requireEventOrganizer(req, res, next) {
     if (!eventId) {
       return res.status(400).json({ success: false, message: 'eventId inválido.' });
     }
-    const uid = parseInt(req.user?.userId, 10);
+    const uid = String(req.user?.userId || '').trim();
     const userRow = await db.query('SELECT is_admin FROM users WHERE id = $1 LIMIT 1', [uid]);
     const isPlatformAdmin = userRow.rows[0]?.is_admin === true;
     const { rows } = await db.query(
@@ -93,7 +93,7 @@ async function requireEventOrganizer(req, res, next) {
       return res.status(404).json({ success: false, message: 'Bolão não encontrado.' });
     }
     const ev = rows[0];
-    if (!isPlatformAdmin && parseInt(ev.organizer_user_id, 10) !== uid) {
+    if (!isPlatformAdmin && String(ev.organizer_user_id || '').trim() !== uid) {
       return res.status(403).json({ success: false, message: 'Sem permissão neste bolão.' });
     }
     req.kingBolaoEvent = ev;

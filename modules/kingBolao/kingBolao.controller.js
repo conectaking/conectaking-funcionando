@@ -15,8 +15,7 @@ async function accessCheck(req, res) {
 }
 
 async function listEvents(req, res) {
-  const uid = parseInt(req.user.userId, 10);
-  const events = await repo.listEventsByOrganizer(uid);
+  const events = await repo.listEventsByOrganizer(req.user.userId);
   res.json({ success: true, events });
 }
 

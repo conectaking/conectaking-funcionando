@@ -2,7 +2,7 @@
 
 CREATE TABLE IF NOT EXISTS king_bolao_events (
     id SERIAL PRIMARY KEY,
-    organizer_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    organizer_user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     slug VARCHAR(120) UNIQUE NOT NULL,
     title VARCHAR(255) NOT NULL,
     cover_image_path TEXT,
