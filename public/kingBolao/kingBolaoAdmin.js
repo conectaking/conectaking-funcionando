@@ -9,13 +9,25 @@
   let currentId = null;
   let detail = null;
 
+  const KB_API_FALLBACK = 'https://conectaking-api.onrender.com';
+
   function resolveApi() {
-    const list = [window.API_URL, window.API_BASE, window.location.origin, 'https://conectaking-api.onrender.com'];
-    for (const v of list) {
+    const tryList = [
+      window.API_URL,
+      window.API_BASE,
+      window.API_CONFIG && window.API_CONFIG.baseURL,
+      KB_API_FALLBACK
+    ];
+    for (const v of tryList) {
       const raw = String(v || '').trim().replace(/\/$/, '');
-      if (raw && /^https?:\/\//i.test(raw)) return raw;
+      if (!raw || !/^https?:\/\//i.test(raw)) continue;
+      try {
+        const h = new URL(raw).hostname.toLowerCase();
+        if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br') continue;
+        return raw;
+      } catch (_) { /* próximo */ }
     }
-    return window.location.origin;
+    return KB_API_FALLBACK;
   }
 
   function esc(s) {
