@@ -98,3 +98,20 @@ if (fs.existsSync(ksProjectJsFrom)) {
   fs.copyFileSync(ksProjectJsFrom, ksProjectJsTo);
   console.log('[sync-king-docs] OK kingSelectionProject.js → public_html/');
 }
+
+const kbNavFrom = path.join(srcDir, 'js', 'dashboard-kingBolao-nav.js');
+if (fs.existsSync(kbNavFrom)) {
+  if (!fs.existsSync(destJsDir)) fs.mkdirSync(destJsDir, { recursive: true });
+  fs.copyFileSync(kbNavFrom, path.join(destJsDir, 'dashboard-kingBolao-nav.js'));
+  console.log('[sync-king-docs] OK js/dashboard-kingBolao-nav.js → public_html/js/');
+}
+
+const kbSrcDir = path.join(srcDir, 'kingBolao');
+const kbDestDir = path.join(destDir, 'kingBolao');
+if (fs.existsSync(kbSrcDir)) {
+  if (!fs.existsSync(kbDestDir)) fs.mkdirSync(kbDestDir, { recursive: true });
+  for (const name of fs.readdirSync(kbSrcDir)) {
+    fs.copyFileSync(path.join(kbSrcDir, name), path.join(kbDestDir, name));
+  }
+  console.log('[sync-king-docs] OK kingBolao/* → public_html/kingBolao/');
+}
