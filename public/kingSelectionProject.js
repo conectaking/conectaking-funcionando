@@ -1171,14 +1171,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function promoShareAutoMessageHint() {
     if (!shareLinkShouldIncludePromoCupomParam()) return '';
-    const code = String(gallery.promo_coupon_code || '').trim();
+    const code = String(gallery?.promo_coupon_code || '').trim();
     return code
       ? `Cupom para a pessoa digitar na galeria (não vai preenchido sozinho): «${code}». Peça para seguir as redes e validar o código manualmente.`
       : '';
   }
 
   function buildClientLink() {
-    const u = new URL(`${window.location.origin}/kingSelection/${encodeURIComponent(gallery.slug)}`);
+    const slug = String(gallery?.slug || '').trim();
+    if (!slug) return `${window.location.origin}/kingSelection/`;
+    const u = new URL(`${window.location.origin}/kingSelection/${encodeURIComponent(slug)}`);
     return u.toString();
   }
 
@@ -1190,9 +1192,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Link de compartilhamento: formato curto kingSelection/slug (ex.: conectaking.com.br/kingSelection/ricardoprotonz)
   function buildClientShareLink() {
+    const slug = String(gallery?.slug || '').trim();
+    if (!slug) return '';
     const base = (window.KING_SELECTION_SHARE_BASE_URL || window.location.origin).toString().trim().replace(/\/$/, '');
     const v = getCoverVersion();
-    const u = new URL(`${base}/kingSelection/${encodeURIComponent(gallery.slug)}`);
+    const u = new URL(`${base}/kingSelection/${encodeURIComponent(slug)}`);
     u.searchParams.set('v', v);
     return u.toString();
   }
@@ -1246,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildWhatsMessage() {
     const link = buildClientShareLink();
-    const nome = gallery.nome_projeto || 'sua galeria';
+    const nome = gallery?.nome_projeto || 'sua galeria';
     const custom = String(linksCustomMsg?.value || customShareMsgByGallery[galleryId] || '').trim();
     const cupHint = promoShareAutoMessageHint();
     const base = [
@@ -1286,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function buildAutoShareMessageText() {
     const link = buildClientShareLink();
-    const nome = gallery.nome_projeto || 'sua galeria';
+    const nome = gallery?.nome_projeto || 'sua galeria';
     const custom = String(linksCustomMsg?.value || customShareMsgByGallery[galleryId] || '').trim();
 
     function baseSimple() {
@@ -3961,14 +3965,15 @@ document.addEventListener('DOMContentLoaded', () => {
       _activityFocusClientId = parseInt(data.focus_client_id, 10) || _activityFocusClientId;
     }
     gallery = data.gallery;
-    if (gallery && typeof gallery === 'object') {
-      normalizeGalleryWatermarkPaths(gallery);
-      if (Array.isArray(gallery.clients)) {
-        gallery.clients = gallery.clients.filter((row) => !isTechnicalFaceClientRow(row));
-      }
-      if (!gallery.selectionBatchByPhotoId) gallery.selectionBatchByPhotoId = {};
-      if (!gallery.selectionRoundsSummary) gallery.selectionRoundsSummary = {};
+    if (!gallery || typeof gallery !== 'object') {
+      throw new Error('Galeria não encontrada ou dados inválidos.');
     }
+    normalizeGalleryWatermarkPaths(gallery);
+    if (Array.isArray(gallery.clients)) {
+      gallery.clients = gallery.clients.filter((row) => !isTechnicalFaceClientRow(row));
+    }
+    if (!gallery.selectionBatchByPhotoId) gallery.selectionBatchByPhotoId = {};
+    if (!gallery.selectionRoundsSummary) gallery.selectionRoundsSummary = {};
     if (Array.isArray(gallery.photos)) {
       gallery.photos = gallery.photos.map(p => ({
         ...p,
@@ -10372,9 +10377,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const savedTab = String(localStorage.getItem(TAB_PREF_KEY) || '').trim();
       const startTab = savedTab || 'activity';
-      setActiveTab(startTab);
       await loadGallery();
-      // Após carregar, reforça a mesma aba salva para evitar reset visual.
       setActiveTab(startTab);
     } catch (e) {
       showError(e.message || 'Erro ao carregar');
