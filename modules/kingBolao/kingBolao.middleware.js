@@ -18,8 +18,15 @@ async function userIsKingBolaoAdmin(userId) {
   if (!uid) return false;
   const allow = parseAllowlist();
   if (allow.has(uid)) return true;
-  const { rows } = await db.query('SELECT is_admin FROM users WHERE id = $1 LIMIT 1', [uid]);
-  return rows[0]?.is_admin === true;
+  const { rows } = await db.query(
+    'SELECT is_admin, account_type FROM users WHERE id = $1 LIMIT 1',
+    [uid]
+  );
+  const u = rows[0];
+  if (!u) return false;
+  if (u.is_admin === true) return true;
+  const at = String(u.account_type || '').toLowerCase();
+  return at === 'adm_principal' || at === 'abm';
 }
 
 function requireKingBolaoAccess(req, res, next) {

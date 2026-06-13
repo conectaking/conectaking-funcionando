@@ -14827,8 +14827,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const kingBolaoLink = document.getElementById('king-bolao-sidebar-link');
             if (kingBolaoLink) {
-                kingBolaoLink.style.display = isAdmin ? 'flex' : 'none';
-                if (!isAdmin) {
+                const at = String(accountType || '').toLowerCase();
+                const showBolao = isAdmin || at === 'adm_principal' || at === 'abm' || at === 'admin';
+                kingBolaoLink.style.display = showBolao ? 'flex' : 'none';
+                if (!showBolao) {
                     const token = localStorage.getItem('conectaKingToken') || '';
                     const apiBase = (typeof API_URL !== 'undefined' && API_URL) ? API_URL : window.location.origin;
                     if (token) {
@@ -14839,6 +14841,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         }).catch(() => { });
                     }
                 }
+            }
+            if (typeof window.DashboardKingBolaoNav !== 'undefined' && window.DashboardKingBolaoNav.init) {
+                window.DashboardKingBolaoNav.init();
             }
 
             const personalizacaoLogoLink = document.getElementById('personalizacao-logo-link');
