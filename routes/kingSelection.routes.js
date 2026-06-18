@@ -8440,8 +8440,6 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
 
     const deferredSignupFlow = ksAccessModeAllowsSelfSignup(accessMode) && allowSelfSignup;
     let entrySplashUrl = null;
-    const accessNormBoot = ksNormAccessMode(accessMode);
-    const salesBoot = ksIsPaidEventAccessMode(accessNormBoot);
     const hasLinkCoverBoot =
       (hasCoverPhoto && g.gallery_link_cover_photo_id) ||
       (hasCoverFile && g.gallery_link_cover_file_path);

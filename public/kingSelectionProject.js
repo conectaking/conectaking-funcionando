@@ -445,8 +445,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // download
   const dAllow = document.getElementById('d-allow');
   const saveDownloadBtn = document.getElementById('btn-save-download');
-  const dlLayoutFolders = document.getElementById('ks-dl-layout-folders');
-  const dlLayoutFlat = document.getElementById('ks-dl-layout-flat');
+  const savePhotosLayoutBtn = document.getElementById('btn-save-photos-layout');
+  const folderCreateTopBtn = document.getElementById('ks-folder-create-top');
+  const pickToFolderBtn = document.getElementById('ks-pick-to-folder');
   const clientEntrySplash = document.getElementById('ks-client-entry-splash');
 
   // sales / fotos vendidas por evento
@@ -3855,15 +3856,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // render
     try { renderClients(); } catch (_) { }
 
-    // Download
+    // Download + organização do cliente (abas Download e Fotos)
     dAllow.checked = !!gallery?.allow_download;
     {
       const lay = String(gallery?.client_folder_layout || '').toLowerCase().trim() === 'flat' ? 'flat' : 'folders';
-      if (dlLayoutFolders && dlLayoutFlat) {
-        dlLayoutFolders.checked = lay !== 'flat';
-        dlLayoutFlat.checked = lay === 'flat';
+      document.querySelectorAll('input[name="ks_client_folder_layout"]').forEach((r) => {
+        r.checked = String(r.value || '').toLowerCase() === lay;
+      });
+      if (clientEntrySplash) {
+        const hasCover = !!(gallery?.gallery_link_cover_photo_id || gallery?.gallery_link_cover_file_path);
+        clientEntrySplash.checked = !!(gallery?.client_entry_splash_enabled || hasCover);
       }
-      if (clientEntrySplash) clientEntrySplash.checked = !!gallery?.client_entry_splash_enabled;
     }
 
     // Watermark
@@ -8308,6 +8311,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  async function saveClientFolderLayoutFromUi(btn) {
+    const layPick = document.querySelector('input[name="ks_client_folder_layout"]:checked');
+    const lay = layPick && String(layPick.value || '').toLowerCase() === 'flat' ? 'flat' : 'folders';
+    if (btn) btn.disabled = true;
+    try {
+      await savePatch({ client_folder_layout: lay });
+      await loadGallery();
+      toast(lay === 'flat' ? 'Cliente verá fotos soltas (sem pastas).' : 'Cliente verá pastas.', { kind: 'ok', title: 'Organização' });
+    } catch (e) {
+      showError(e.message || 'Erro');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  savePhotosLayoutBtn?.addEventListener('click', () => saveClientFolderLayoutFromUi(savePhotosLayoutBtn));
+
+  async function createFolderFromPrompt() {
+    const name = (window.prompt('Nome da nova pasta:', '') || '').trim();
+    if (!name) return;
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/folders`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({ name })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro ao criar pasta');
+    if (gallery) gallery.folders = Array.isArray(data.folders) ? data.folders : [];
+    uploadFolderId = parseInt(data.folders?.[data.folders.length - 1]?.id, 10) || uploadFolderId;
+    uploadFolderMode = 'folder';
+    renderFoldersAdminUi();
+    renderPhotos();
+    toast('Pasta criada.', { kind: 'ok', title: 'Pastas' });
+  }
+
+  folderCreateTopBtn?.addEventListener('click', () => {
+    createFolderFromPrompt().catch((e) => showError(e?.message || 'Erro ao criar pasta'));
+  });
+
+  pickToFolderBtn?.addEventListener('click', () => {
+    const fid = uploadFolderId || getGalleryFolders()[0]?.id || null;
+    if (!fid) {
+      toast('Crie uma pasta primeiro (botão Nova pasta).', { kind: 'warn', title: 'Pastas' });
+      return;
+    }
+    uploadFolderMode = 'folder';
+    uploadFolderId = fid;
+    renderFoldersAdminUi();
+    pFile?.click();
+  });
+
   uploadWmBtnP?.addEventListener('click', () => wmFileP?.click());
   wmFileP?.addEventListener('change', async () => {
     const f = wmFileP.files && wmFileP.files[0];
@@ -9616,6 +9670,8 @@ document.addEventListener('DOMContentLoaded', () => {
   dupeReplace?.addEventListener('click', () => handleDupeDecision('replace'));
 
   function openImportChooser() {
+    uploadFolderMode = 'all';
+    renderFoldersAdminUi();
     pFile?.click();
   }
 

@@ -2416,12 +2416,6 @@
     return String(state.gallery?.entry_splash_url || galleryMeta?.entry_splash_url || '').trim();
   }
 
-  function resolveKsAccessModeForSplash() {
-    let mode = String(state.gallery?.access_mode || galleryMeta?.access_mode || 'private').toLowerCase().trim();
-    if (mode === 'password') mode = 'signup';
-    return mode;
-  }
-
   /** Capa de início: todos os modos quando a API envia a URL da capa do link. */
   function shouldShowEntrySplash() {
     return !!entrySplashUrlAvailable();

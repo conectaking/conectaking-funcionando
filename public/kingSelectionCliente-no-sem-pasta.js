@@ -1,28 +1,30 @@
 /**
- * Remove pasta virtual «Sem pasta» se o browser ainda tiver kingSelectionCliente.js antigo em cache.
+ * Remove pastas virtuais «Sem pasta» e «Todas» se o browser ainda tiver kingSelectionCliente.js antigo em cache.
  * Carregar depois do script principal.
  */
 (function () {
-  function isSemPastaCard(btn) {
+  function shouldRemoveCard(btn) {
     if (!btn || !btn.classList.contains('ks-folder-card')) return false;
-    if (btn.classList.contains('ks-folder-card--all')) return false;
+    if (btn.classList.contains('ks-folder-card--all')) return true;
     const rawId = btn.getAttribute('data-open-folder');
-    if (rawId === '-1' || rawId === 'all') return rawId === '-1';
+    if (rawId === '-1') return true;
     const nameEl = btn.querySelector('.ks-folder-name');
-    return !!(nameEl && /sem\s*pasta/i.test(String(nameEl.textContent || '')));
+    const name = String(nameEl?.textContent || '').trim().toLowerCase();
+    if (name === 'todas' || /sem\s*pasta/i.test(name)) return true;
+    return false;
   }
 
-  function stripSemPastaCards() {
+  function stripVirtualFolderCards() {
     document.querySelectorAll('.ks-folder-card').forEach((btn) => {
-      if (isSemPastaCard(btn)) btn.remove();
+      if (shouldRemoveCard(btn)) btn.remove();
     });
   }
 
   function start() {
-    stripSemPastaCards();
+    stripVirtualFolderCards();
     const grid = document.getElementById('ks-folder-grid');
     if (grid) {
-      new MutationObserver(stripSemPastaCards).observe(grid, { childList: true, subtree: true });
+      new MutationObserver(stripVirtualFolderCards).observe(grid, { childList: true, subtree: true });
     }
   }
 
@@ -31,5 +33,5 @@
   } else {
     start();
   }
-  window.addEventListener('load', stripSemPastaCards);
+  window.addEventListener('load', stripVirtualFolderCards);
 })();
