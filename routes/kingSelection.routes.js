@@ -562,7 +562,7 @@ async function listFoldersForGallery(pgClient, galleryId) {
     }
     if (row.cover_photo_name) out.cover_photo_name = row.cover_photo_name;
     return out;
-  });
+  }).filter((f) => !ksIsVirtualClientFolderRow(f));
 }
 
 /** Fotos com folder_id apontando para pasta já excluída → sem pasta (só aparecem em "Todas"). */
@@ -587,7 +587,8 @@ function ksIsVirtualClientFolderRow(folderRow) {
   const id = parseInt(folderRow?.id, 10) || 0;
   if (id <= 0) return true;
   const name = String(folderRow?.name || '').trim().toLowerCase();
-  return name === 'sem pasta' || name === 'sem-pasta' || name === 'unassigned';
+  return name === 'sem pasta' || name === 'sem-pasta' || name === 'unassigned'
+    || name === 'todas' || name === 'todas as fotos' || name === 'fotos soltas';
 }
 
 /** Pastas reais com fotos — cliente nunca vê pasta virtual "Sem pasta". */

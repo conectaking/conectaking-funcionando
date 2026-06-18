@@ -419,7 +419,8 @@
     const id = parseInt(f?.id, 10) || 0;
     if (id <= 0) return true;
     const name = String(f?.name || '').trim().toLowerCase();
-    return name === 'sem pasta' || name === 'sem-pasta' || name === 'unassigned';
+    return name === 'sem pasta' || name === 'sem-pasta' || name === 'unassigned'
+      || name === 'todas' || name === 'todas as fotos' || name === 'fotos soltas';
   }
 
   function filterClientVisibleFolders(folders) {
@@ -561,6 +562,8 @@
     const sortedFolders = sortFoldersForClient(visibleFolders, state.folderSortMode);
     if (folderSortSel) folderSortSel.value = state.folderSortMode;
     if (!hasFolders) {
+      state.folderView = 'photos';
+      state.activeFolderId = null;
       wrap.classList.add('ks-hidden');
       searchBlock?.classList.remove('ks-hidden');
       backBtn?.classList.add('ks-hidden');
@@ -604,7 +607,9 @@
       grid.querySelectorAll('[data-open-folder]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const raw = btn.getAttribute('data-open-folder');
-          state.activeFolderId = raw === 'all' ? null : (parseInt(raw, 10) || null);
+          const fid = parseInt(raw, 10);
+          if (!fid || fid <= 0 || raw === 'all') return;
+          state.activeFolderId = fid;
           state.folderView = 'photos';
           persistFolderNav();
           renderFolders();
@@ -616,7 +621,7 @@
     }
 
     const active = getActiveFolder();
-    if (title) title.textContent = active ? `Pasta: ${active.name}` : 'Todas as fotos';
+    if (title) title.textContent = active ? `Pasta: ${active.name}` : (state.gallery?.nome_projeto || '');
     grid.classList.add('ks-hidden');
     syncFolderSelectAllToolbar();
   }

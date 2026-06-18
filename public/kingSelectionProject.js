@@ -2248,7 +2248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!pGrid) return null;
     let wrap = document.getElementById('ks-folders-admin');
     // Atualiza toolbar antiga (sem botões novos) sem precisar limpar cache manual
-    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '3') {
+    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '4') {
       try { wrap.remove(); } catch (_) { /* ignore */ }
       wrap = null;
     }
@@ -2256,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const host = pGrid.parentElement || pGrid;
     wrap = document.createElement('div');
     wrap.id = 'ks-folders-admin';
-    wrap.setAttribute('data-ks-toolbar-v', '3');
+    wrap.setAttribute('data-ks-toolbar-v', '4');
     wrap.style.marginBottom = '12px';
     wrap.style.border = '1px solid rgba(255,255,255,.12)';
     wrap.style.borderRadius = '12px';
@@ -2943,19 +2943,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!cards) return;
     const html = [];
-    if (looseCount > 0) {
-      const looseActive = photoFolderFilterId === -1;
-      html.push(
-        `<button type="button" class="ks-folder-card ${looseActive ? 'ks-folder-card--active' : ''}" data-folder-card="-1"
-          style="border:${looseActive ? '1px solid rgba(248,113,113,.85)' : '1px solid rgba(248,113,113,.45)'};background:rgba(127,29,29,.22);border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;cursor:pointer;min-height:78px;text-align:left;width:100%;">
-          <div class="ks-folder-ph" style="color:#fca5a5"><i class="fas fa-unlink"></i></div>
-          <div class="ks-folder-meta">
-            <div class="ks-folder-name">Fotos soltas</div>
-            <div class="ks-folder-count">${looseCount} foto(s) — sem pasta</div>
-          </div>
-        </button>`
-      );
-    }
     folders.forEach((f) => {
       const cover = f.cover_photo_id
         ? `<img src="" alt="${escapeHtml(f.name)}" data-folder-cover-pid="${f.cover_photo_id}" data-folder-id="${f.id}" loading="lazy" />`
@@ -2988,13 +2975,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`
       );
     });
-    html.push(
-      `<button type="button" class="ks-folder-card ${!photoFolderFilterId ? 'ks-folder-card--active' : ''}" data-folder-card=""
-        style="border:1px solid rgba(251,191,36,.55);background:linear-gradient(180deg, rgba(251,191,36,.12), rgba(2,6,23,.45));border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;cursor:pointer;min-height:78px;">
-        <div class="ks-folder-ph" style="color:#fde68a"><i class="fas fa-layer-group"></i></div>
-        <div class="ks-folder-meta"><div class="ks-folder-name">Todas</div><div class="ks-folder-count">${(gallery.photos || []).length} foto(s)</div></div>
-      </button>`
-    );
     cards.innerHTML = html.join('');
 
     Array.from(cards.querySelectorAll('img[data-folder-cover-pid]')).forEach((img) => {
