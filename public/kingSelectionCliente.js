@@ -592,15 +592,6 @@
            </button>`
         );
       }
-      cards.push(
-        `<button type="button" class="ks-folder-card ks-folder-card--all" data-open-folder="all">
-          <div class="ks-folder-ph"><i class="fas fa-layer-group"></i>&nbsp; Todas as fotos</div>
-          <div class="ks-folder-meta">
-            <div class="ks-folder-name">Todas</div>
-            <div class="ks-folder-count">${(state.gallery?.photos || []).length} foto(s)</div>
-          </div>
-        </button>`
-      );
       grid.innerHTML = cards.join('');
       grid.classList.remove('ks-hidden');
       grid.querySelectorAll('.ks-folder-card img').forEach((img) => {
@@ -2431,15 +2422,9 @@
     return mode;
   }
 
-  /** Público (checkbox) ou Fotos vendidas (capa do link configurada). */
+  /** Capa de início: todos os modos quando a API envia a URL da capa do link. */
   function shouldShowEntrySplash() {
-    const raw = entrySplashUrlAvailable();
-    if (!raw) return false;
-    const mode = resolveKsAccessModeForSplash();
-    const enabled = !!(state.gallery?.client_entry_splash_enabled || galleryMeta?.client_entry_splash_enabled);
-    if (mode === 'public') return enabled;
-    if (mode === 'paid_event_photos' || !!state.salesModeActive) return true;
-    return enabled;
+    return !!entrySplashUrlAvailable();
   }
 
   function entrySplashStorageKey() {

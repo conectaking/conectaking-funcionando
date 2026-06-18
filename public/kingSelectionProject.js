@@ -2247,7 +2247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!pGrid) return null;
     let wrap = document.getElementById('ks-folders-admin');
     // Atualiza toolbar antiga (sem botões novos) sem precisar limpar cache manual
-    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '2') {
+    if (wrap && wrap.getAttribute('data-ks-toolbar-v') !== '3') {
       try { wrap.remove(); } catch (_) { /* ignore */ }
       wrap = null;
     }
@@ -2255,7 +2255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const host = pGrid.parentElement || pGrid;
     wrap = document.createElement('div');
     wrap.id = 'ks-folders-admin';
-    wrap.setAttribute('data-ks-toolbar-v', '2');
+    wrap.setAttribute('data-ks-toolbar-v', '3');
     wrap.style.marginBottom = '12px';
     wrap.style.border = '1px solid rgba(255,255,255,.12)';
     wrap.style.borderRadius = '12px';
@@ -2264,7 +2264,9 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.innerHTML = `
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <button type="button" class="ks-btn" id="ks-only-photos-btn"><i class="fas fa-images"></i> Adicionar só fotos</button>
+          <button type="button" class="ks-btn" id="ks-folder-create-btn"><i class="fas fa-folder-plus"></i> Nova pasta</button>
+          <button type="button" class="ks-btn" id="ks-only-photos-btn"><i class="fas fa-images"></i> Fotos soltas</button>
+          <button type="button" class="ks-btn" id="ks-upload-to-folder-btn"><i class="fas fa-folder-open"></i> Enviar para pasta</button>
           <button type="button" class="ks-btn" id="ks-folder-auto-face-btn"><i class="fas fa-user-group"></i> Separar por pasta (rosto)</button>
           <button type="button" class="ks-btn" id="ks-folder-auto-reprocess-btn"><i class="fas fa-rotate-right"></i> Reprocessar e separar</button>
           <button type="button" class="ks-btn" id="ks-folder-select-all-btn"><i class="far fa-check-square"></i> Selecionar todas as pastas</button>
@@ -2283,6 +2285,11 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <select class="ks-input" id="ks-folder-upload-mode" style="min-width:200px" title="Destino do próximo envio de fotos">
+            <option value="all">Envio: fotos soltas</option>
+            <option value="folder">Envio: pasta específica</option>
+          </select>
+          <select class="ks-input" id="ks-folder-upload-target" style="min-width:170px" title="Pasta de destino do envio"></select>
           <button type="button" class="ks-btn" id="ks-folder-apply-name-order-btn"><i class="fas fa-sort-alpha-down"></i> Aplicar ordem A-Z (salvar)</button>
           <select class="ks-input" id="ks-folder-sort" style="min-width:190px">
             <option value="manual">Pastas: ordem manual</option>
@@ -2302,7 +2309,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="ks-folder-selection-count" class="ks-muted" style="font-size:12px;margin-top:8px;line-height:1.35;"></div>
       <div id="ks-photo-selection-count" class="ks-muted" style="font-size:12px;margin-top:4px;line-height:1.35;"></div>
       <div class="ks-muted" style="font-size:11px;margin-top:8px;line-height:1.35;">
-        Importação com subpastas: use o botão <b>Pasta e subpastas</b> na área <b>Arraste e solte</b> acima (um único fluxo).
+        <b>Fotos soltas</b> = sem pasta. <b>Enviar para pasta</b> = escolha a pasta no seletor acima. <b>Pasta e subpastas</b> (área de arrastar) = importa estrutura do computador.
       </div>
       <div id="ks-folder-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px;margin-top:10px;width:100%;min-width:0;"></div>
     `;
@@ -2357,6 +2364,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const onlyPhotosBtn = ev.target.closest('#ks-only-photos-btn');
       if (onlyPhotosBtn) {
+        uploadFolderMode = 'all';
+        renderFoldersAdminUi();
+        pFile?.click();
+        return;
+      }
+
+      const uploadToFolderBtn = ev.target.closest('#ks-upload-to-folder-btn');
+      if (uploadToFolderBtn) {
+        const fid = getUploadFolderId() || uploadFolderId || (getGalleryFolders()[0]?.id || null);
+        if (!fid) {
+          toast('Crie ou selecione uma pasta de destino primeiro.', { kind: 'warn', title: 'Pastas' });
+          return;
+        }
+        uploadFolderMode = 'folder';
+        uploadFolderId = fid;
+        renderFoldersAdminUi();
         pFile?.click();
         return;
       }

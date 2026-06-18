@@ -8442,12 +8442,10 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     let entrySplashUrl = null;
     const accessNormBoot = ksNormAccessMode(accessMode);
     const salesBoot = ksIsPaidEventAccessMode(accessNormBoot);
-    const splashBoot =
-      (hasEntrySplash && g.client_entry_splash_enabled) ||
-      (salesBoot && (
-        (hasCoverPhoto && g.gallery_link_cover_photo_id) ||
-        (hasCoverFile && g.gallery_link_cover_file_path)
-      ));
+    const hasLinkCoverBoot =
+      (hasCoverPhoto && g.gallery_link_cover_photo_id) ||
+      (hasCoverFile && g.gallery_link_cover_file_path);
+    const splashBoot = hasLinkCoverBoot || (hasEntrySplash && g.client_entry_splash_enabled);
     if (splashBoot) {
       entrySplashUrl = await ksResolveEntrySplashPublicUrl(client, g, slug);
     }
@@ -8474,8 +8472,8 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         register_before_gallery: accessMode === 'public',
         client_folder_layout: clientFolderLayoutNorm,
         client_entry_splash_enabled: hasEntrySplash
-          ? !!(g.client_entry_splash_enabled || (salesBoot && splashBoot))
-          : !!(salesBoot && splashBoot),
+          ? !!(g.client_entry_splash_enabled || splashBoot)
+          : !!splashBoot,
         entry_splash_url: entrySplashUrl || null,
         tutorial_video_url: hasTutorialVideo ? (g.tutorial_video_url ? String(g.tutorial_video_url).trim() : null) : undefined
       }
@@ -10019,12 +10017,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     }
 
     let entrySplashUrl = null;
-    const splashClient =
-      (hasEntrySplash && gallery.client_entry_splash_enabled) ||
-      (salesModeActive && (
-        (hasCoverPhoto && gallery.gallery_link_cover_photo_id) ||
-        (hasCoverFile && gallery.gallery_link_cover_file_path)
-      ));
+    const hasLinkCoverClient =
+      (hasCoverPhoto && gallery.gallery_link_cover_photo_id) ||
+      (hasCoverFile && gallery.gallery_link_cover_file_path);
+    const splashClient = hasLinkCoverClient || (hasEntrySplash && gallery.client_entry_splash_enabled);
     if (splashClient) {
       entrySplashUrl = await ksResolveEntrySplashPublicUrl(client, gallery, slug);
     }
@@ -10058,8 +10054,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         access_mode: galleryAccessMode,
         client_folder_layout: clientFolderLayoutNorm,
         client_entry_splash_enabled: hasEntrySplash
-          ? !!(gallery.client_entry_splash_enabled || (salesModeActive && splashClient))
-          : !!(salesModeActive && splashClient),
+          ? !!(gallery.client_entry_splash_enabled || splashClient)
+          : !!splashClient,
         entry_splash_url: entrySplashUrl || null,
         tutorial_video_url: hasTutorialVideo ? (gallery.tutorial_video_url ? String(gallery.tutorial_video_url).trim() : null) : undefined,
         watermark_download_notice:
