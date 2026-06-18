@@ -1852,11 +1852,17 @@ async function ksGenerateFallbackWatermarkPng(isLandscape) {
   }
 }
 
-/** Garante marca d'água visível nas pré-visualizações do cliente (nunca «none»). */
+/** Marca d'água desligada no painel (modo «Sem marca d'água»). */
+function ksGalleryWatermarkDisabled(wm) {
+  return String(wm?.mode || '').trim().toLowerCase() === 'none';
+}
+
+/** Normaliza opacidade/escala; respeita `mode: none` quando o fotógrafo desativou a marca. */
 function ksPrepareClientWatermark(wm) {
   if (!wm || typeof wm !== 'object') return wm;
+  if (ksGalleryWatermarkDisabled(wm)) return { ...wm, mode: 'none' };
   const m = String(wm.mode || '').trim();
-  if (!m || m === 'none' || m === 'x') wm.mode = KS_WM_CONECTA_KING_DEFAULTS.mode;
+  if (!m || m === 'x') wm.mode = KS_WM_CONECTA_KING_DEFAULTS.mode;
   const op = parseFloat(wm.opacity);
   wm.opacity = Number.isFinite(op) ? Math.max(0.18, op) : KS_WM_CONECTA_KING_DEFAULTS.opacity;
   if (!Number.isFinite(parseFloat(wm.scalePortrait))) wm.scalePortrait = KS_WM_CONECTA_KING_DEFAULTS.scalePortrait;
@@ -2347,6 +2353,70 @@ async function ksResizeJpegNoWatermark(buf, outW, outH, jpegQuality) {
     .resize(outW, outH, { fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: jq, progressive: true })
     .toBuffer();
+}
+
+/** Pré-visualização na galeria do cliente (com ou sem marca, conforme painel). */
+async function ksBuildClientPreviewJpeg(pgClient, galleryId, buf, outW, outH, jpegQuality) {
+  const wmRaw = await loadWatermarkForGalleryCached(pgClient, galleryId);
+  if (ksGalleryWatermarkDisabled(wmRaw)) {
+    return ksResizeJpegNoWatermark(buf, outW, outH, jpegQuality);
+  }
+  const wm = ksPrepareClientWatermark(wmRaw);
+  return ksBuildPreviewJpegSafe({
+    imgBuffer: buf,
+    outW,
+    outH,
+    watermark: wm,
+    jpegOpts: { quality: jpegQuality ?? 82, progressive: true },
+    requireWatermark: false
+  });
+}
+
+/**
+ * Download do cliente (modo público / não vendido): original limpo ou JPEG com marca.
+ * @returns {{ buffer: Buffer, isOriginal: boolean, contentType?: string, ext?: string }}
+ */
+async function ksBuildClientDownloadPayload(pgClient, galleryId, buf, maxSide, jpegQuality) {
+  const wmRaw = await loadWatermarkForGalleryCached(pgClient, galleryId);
+  if (ksGalleryWatermarkDisabled(wmRaw)) {
+    const { contentType, ext } = await ksDetectBufferImageType(buf);
+    return { buffer: buf, isOriginal: true, contentType, ext };
+  }
+  const img = sharp(buf).rotate();
+  const meta = await img.metadata();
+  const side = Math.max(1200, Math.min(5000, parseInt(maxSide, 10) || 4000));
+  const { width, height } = getDisplayDimensions(meta, side, side);
+  const scale = Math.min(side / Math.max(width, height), 1);
+  const outW = Math.max(1, Math.round(width * scale));
+  const outH = Math.max(1, Math.round(height * scale));
+  const wm = ksPrepareClientWatermark(wmRaw);
+  const out = await ksBuildPreviewJpegSafe({
+    imgBuffer: buf,
+    outW,
+    outH,
+    watermark: wm,
+    jpegOpts: { quality: jpegQuality ?? 88, progressive: true },
+    requireWatermark: false
+  });
+  return { buffer: out, isOriginal: false, contentType: 'image/jpeg', ext: '.jpg' };
+}
+
+/** ZIP público: ficheiro original ou JPEG com marca (conforme painel). */
+async function ksAppendPhotoToZipArchiveForClient(pgClient, archive, photoRow, galleryId, fname) {
+  const wmRaw = await loadWatermarkForGalleryCached(pgClient, galleryId);
+  if (ksGalleryWatermarkDisabled(wmRaw)) {
+    return ksAppendPhotoPathToZipArchive(archive, photoRow.file_path, fname);
+  }
+  const buf = await fetchPhotoBufferForRow(photoRow);
+  if (!buf || !buf.length) return false;
+  const dl = await ksBuildClientDownloadPayload(pgClient, galleryId, buf, 4000, 88);
+  let outName = String(fname || 'foto.jpg');
+  if (!dl.isOriginal && !/\.jpe?g$/i.test(outName)) {
+    const dot = outName.lastIndexOf('.');
+    outName = dot > 0 ? `${outName.slice(0, dot)}.jpg` : `${outName}.jpg`;
+  }
+  archive.append(dl.buffer, { name: outName });
+  return true;
 }
 
 /** Redireciona para URL pública do R2 quando possível (evita proxy pesado no Render). */
@@ -8596,15 +8666,7 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
-    const wm = ksPrepareClientWatermark(await loadWatermarkForGalleryCached(client, galleryId));
-    const out = await ksBuildPreviewJpegSafe({
-      imgBuffer: buf,
-      outW,
-      outH,
-      watermark: wm,
-      jpegOpts: { quality: useThumb ? 76 : 80, progressive: true },
-      requireWatermark: true
-    });
+    const out = await ksBuildClientPreviewJpeg(client, galleryId, buf, outW, outH, useThumb ? 76 : 80);
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     res.set('Cache-Control', 'private, max-age=' + (useThumb ? '3600' : '1800'));
@@ -9644,8 +9706,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasEntrySplash = await hasColumn(client, 'king_galleries', 'client_entry_splash_enabled');
     const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
     const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
+    const hasWmModeG = await hasColumn(client, 'king_galleries', 'watermark_mode');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}${hasWmModeG ? ', watermark_mode' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -10057,6 +10120,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           : !!splashClient,
         entry_splash_url: entrySplashUrl || null,
         tutorial_video_url: hasTutorialVideo ? (gallery.tutorial_video_url ? String(gallery.tutorial_video_url).trim() : null) : undefined,
+        watermark_mode: hasWmModeG ? String(gallery.watermark_mode || 'tile_dense').trim() : 'tile_dense',
+        watermark_enabled: hasWmModeG
+          ? String(gallery.watermark_mode || '').trim().toLowerCase() !== 'none'
+          : true,
         watermark_download_notice:
           galleryAccessMode === 'public' && photographerAllowsDownload
             ? "Download com marca d'água. Selecione as fotos; se houver cupom, conclua a validação (redes e código). Depois clique em «Confirmar para baixar» e informe nome, e-mail e WhatsApp. Só após esse envio as opções «Baixar» e «Fotos para baixar» ficam disponíveis para as fotos que você escolheu."
@@ -10494,7 +10561,7 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
         }
         usedNamesPub.add(fname.toLowerCase());
         // eslint-disable-next-line no-await-in-loop
-        await ksAppendPhotoPathToZipArchive(archivePub, photo.file_path, fname);
+        await ksAppendPhotoToZipArchiveForClient(client, archivePub, photo, payload.galleryId, fname);
       }
 
       await archivePub.finalize();
@@ -12859,16 +12926,20 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const buf = await fetchPhotoBufferForRow(photo);
     if (!buf) return res.status(502).send('Não foi possível carregar a imagem (ficheiro em falta no armazenamento).');
 
-    /* Download não-evento-pago (ex.: galeria pública após seleção): entregar original sem marca d’água */
+    /* Download não-evento-pago (ex.: galeria pública): original limpo ou JPEG com marca (conforme painel). */
     if (isDownload && !isPaidEventMode) {
-      const { contentType: ctDl, ext: extDl } = await ksDetectBufferImageType(buf);
-      const attachName = ksClientDownloadAttachmentFilename(photo, photoId, extDl);
-      res.set('Content-Type', ctDl);
+      const dl = await ksBuildClientDownloadPayload(client, payload.galleryId, buf, 4000, 90);
+      const attachName = ksClientDownloadAttachmentFilename(
+        photo,
+        photoId,
+        dl.ext || (dl.isOriginal ? '.jpg' : '.jpg')
+      );
+      res.set('Content-Type', dl.contentType || 'image/jpeg');
       res.set('Cross-Origin-Resource-Policy', 'cross-origin');
       res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
       res.set('Pragma', 'no-cache');
       res.set('Content-Disposition', `attachment; filename="${attachName}"`);
-      return res.send(buf);
+      return res.send(dl.buffer);
     }
 
     let galleryQuality = 'low';
@@ -12877,24 +12948,13 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       galleryQuality = normalizeClientImageQuality(gq.rows[0]?.client_image_quality);
     }
     const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
-    const wm = ksPrepareClientWatermark(await loadWatermarkForGalleryCached(client, payload.galleryId));
-
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
     const { width, height } = getDisplayDimensions(meta, spec.max, spec.max);
-    const max = spec.max;
-    const scale = Math.min(max / Math.max(width, height), 1);
+    const scale = Math.min(spec.max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
-
-    const out = await ksBuildPreviewJpegSafe({
-      imgBuffer: buf,
-      outW,
-      outH,
-      watermark: wm,
-      jpegOpts: { quality: spec.jpegQuality, progressive: true },
-      requireWatermark: true
-    });
+    const out = await ksBuildClientPreviewJpeg(client, payload.galleryId, buf, outW, outH, spec.jpegQuality);
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');

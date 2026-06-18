@@ -1180,9 +1180,12 @@
     }
     if (isPublicFreeDownloadGallery()) {
       el.classList.remove('ks-hidden');
+      const wmNote = galleryWatermarkEnabled()
+        ? ' (com marca d’água na visualização e no download)'
+        : ' (sem marca d’água)';
       el.innerHTML = `
       <div style="border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.1);color:#dcfce7;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:10px">
-        <strong>Todas as fotos liberadas</strong> (com marca d’água). Use a <strong>seta</strong> em cada foto ou os botões <strong>Baixar selecionadas</strong> / <strong>Baixar todas</strong> / <strong>ZIP</strong> no topo.
+        <strong>Todas as fotos liberadas</strong>${wmNote}. Use a <strong>seta</strong> em cada foto ou os botões <strong>Baixar selecionadas</strong> / <strong>Baixar todas</strong> / <strong>ZIP</strong> no topo.
       </div>`;
       return;
     }
@@ -1245,10 +1248,18 @@
   }
 
   function previewUrl(photoId, thumb) {
-    const q = new URLSearchParams({ slug, token: jwt || '', v: 'wm4' });
+    const q = new URLSearchParams({ slug, token: jwt || '', v: 'wm6' });
     if (thumb) q.set('thumb', '1');
     const base = resolveKsApiBase();
     return `${base}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
+  }
+
+  function galleryWatermarkEnabled() {
+    if (state.gallery && typeof state.gallery.watermark_enabled === 'boolean') {
+      return state.gallery.watermark_enabled;
+    }
+    const m = String(state.gallery?.watermark_mode || '').trim().toLowerCase();
+    return m !== 'none' && m !== '';
   }
 
   function previewDownloadUrl(photoId) {
@@ -1352,6 +1363,116 @@
     if (cnt) cnt.textContent = `${n} foto(s) selecionada(s)`;
   }
 
+  const KS_DL_ZIP_AUTO_BYTES = 500 * 1024 * 1024;
+  const KS_DL_ZIP_AUTO_COUNT = 35;
+
+  async function fetchDownloadZipPlan(photoIds) {
+    const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
+    if (!ids.length) throw new Error('Nenhuma foto para planear o download.');
+    const res = await fetch(`${API}/api/king-selection/client/download-zip-plan`, {
+      method: 'POST',
+      headers: authHeaders(true),
+      body: JSON.stringify({ slug, photo_ids: ids })
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) { /* ignore */ }
+    if (!res.ok) {
+      if (handleClientUnauthorized(res, data)) return null;
+      throw new Error(data?.message || 'Não foi possível planear o download.');
+    }
+    return data;
+  }
+
+  async function downloadZipPartBlob(photoIds, partNum) {
+    const res = await fetch(`${API}/api/king-selection/client/download-zip`, {
+      method: 'POST',
+      headers: authHeaders(true),
+      body: JSON.stringify({
+        slug,
+        photo_ids: photoIds,
+        zip_part: partNum > 0 ? partNum : undefined
+      })
+    });
+    if (!res.ok) {
+      let msg = 'Erro ao gerar ZIP.';
+      let data = {};
+      try {
+        data = await res.json();
+        msg = data?.message || msg;
+      } catch (_) {
+        const t = await res.text().catch(() => '');
+        if (t) msg = t;
+      }
+      if (handleClientUnauthorized(res, data)) return null;
+      throw new Error(msg);
+    }
+    return res.blob();
+  }
+
+  function triggerBlobDownload(blob, filename) {
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  async function downloadApprovedZipParts(plan, photoIdsFallback) {
+    const parts = Array.isArray(plan?.parts) && plan.parts.length
+      ? plan.parts
+      : [{ part: 1, photo_ids: photoIdsFallback }];
+    const baseName = `${(state.gallery?.nome_projeto || slug || 'fotos').toString().replace(/[^\w\-]+/g, '_')}`;
+    const suffix = normKsAccessModeFromMeta() === 'public' ? 'galeria' : 'aprovadas';
+    for (let i = 0; i < parts.length; i += 1) {
+      const part = parts[i];
+      const pnum = parseInt(part.part, 10) || (i + 1);
+      const ids = Array.isArray(part.photo_ids) ? part.photo_ids : [];
+      if (!ids.length) continue;
+      setDownloadsProgress(i, parts.length, true, 'zip');
+      const blob = await downloadZipPartBlob(ids, pnum);
+      if (!blob) return;
+      const partLabel = parts.length > 1 ? `_parte${pnum}` : '';
+      triggerBlobDownload(blob, `${baseName}_${suffix}${partLabel}.zip`);
+      if (i < parts.length - 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+    }
+    setDownloadsProgress(parts.length, parts.length, true, 'zip');
+  }
+
+  async function downloadAllPhotosSmart(photoIds, opts) {
+    const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
+    if (!ids.length) throw new Error('Nenhuma foto para baixar.');
+    if (publicMustRegisterToDownload()) {
+      pendingPublicDownloadAction = {
+        type: 'sequential',
+        photoIds: ids.slice()
+      };
+      openPublicRegisterModal();
+      return { mode: 'pending' };
+    }
+    let plan = null;
+    try {
+      plan = await fetchDownloadZipPlan(ids);
+    } catch (_) {
+      plan = null;
+    }
+    const totalBytes = parseInt(plan?.total_approx_bytes, 10) || 0;
+    const partCount = Array.isArray(plan?.parts) ? plan.parts.length : 1;
+    const useZip = partCount > 1 || totalBytes > KS_DL_ZIP_AUTO_BYTES || ids.length > KS_DL_ZIP_AUTO_COUNT;
+    if (useZip && plan) {
+      setDownloadsProgress(0, partCount || 1, true, 'zip');
+      await downloadApprovedZipParts(plan, ids);
+      return { mode: 'zip', parts: partCount };
+    }
+    await downloadPhotosSequentially(ids, opts);
+    return { mode: 'sequential' };
+  }
+
   async function downloadPhotosSequentially(photoIds, opts) {
     if (publicMustRegisterToDownload()) {
       pendingPublicDownloadAction = {
@@ -1427,7 +1548,9 @@
     bar.style.background = bg;
     pct.textContent = `${p}%`;
     if (m === 'zip') {
-      text.textContent = p >= 100 ? 'ZIP pronto' : 'Preparando ZIP...';
+      text.textContent = t > 1
+        ? (p >= 100 ? `ZIP ${d}/${t} pronto` : `Preparando ZIP ${d + 1}/${t}...`)
+        : (p >= 100 ? 'ZIP pronto' : 'Preparando ZIP...');
     } else {
       text.textContent = `Baixando ${d}/${t}`;
     }
@@ -1441,34 +1564,9 @@
       openPublicRegisterModal();
       return;
     }
-    const res = await fetch(`${API}/api/king-selection/client/download-zip`, {
-      method: 'POST',
-      headers: authHeaders(true),
-      body: JSON.stringify({ slug, photo_ids: ids })
-    });
-    if (!res.ok) {
-      let msg = 'Erro ao gerar ZIP.';
-      let data = {};
-      try {
-        data = await res.json();
-        msg = data?.message || msg;
-      } catch (_) {
-        const t = await res.text().catch(() => '');
-        if (t) msg = t;
-      }
-      if (handleClientUnauthorized(res, data)) return;
-      throw new Error(msg);
-    }
-    const blob = await res.blob();
-    const zipSuffix = normKsAccessModeFromMeta() === 'public' ? 'galeria' : 'aprovadas';
-    const outName = `${(state.gallery?.nome_projeto || slug || 'fotos').toString().replace(/[^\w\-]+/g, '_')}_${zipSuffix}.zip`;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = outName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    const plan = await fetchDownloadZipPlan(ids);
+    if (!plan) return;
+    await downloadApprovedZipParts(plan, ids);
   }
 
   function normalizeExportName(n) {
@@ -2569,8 +2667,10 @@
         foot.classList.add('ks-hidden');
       } else {
         foot.classList.remove('ks-hidden');
-        foot.innerHTML = publicFree
-          ? 'Todas as fotos estão liberadas. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>. Marcar fotos é opcional (só para <strong>Baixar selecionadas</strong>).'
+        foot.innerHTML =         publicFree
+          ? (galleryWatermarkEnabled()
+            ? 'Todas as fotos estão liberadas. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>. Marcar fotos é opcional (só para <strong>Baixar selecionadas</strong>).'
+            : 'Todas as fotos estão liberadas <strong>sem marca d’água</strong>. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>.')
           : simpleSalesFlow
             ? 'Revise as fotos acima e clique em <strong>Confirmar</strong> para seguir direto ao cadastro e envio da seleção.'
             : publicNoCompare
@@ -4881,10 +4981,14 @@
     try {
       const all = getPublicGalleryPhotoList().map((p) => p.id);
       if (!all.length) throw new Error('Não há fotos na galeria.');
-      await downloadPhotosSequentially(all, {
+      const out = await downloadAllPhotosSmart(all, {
         onProgress: (n, total) => setDownloadsProgress(n, total, true, 'all')
       });
-      toast(`Download de todas iniciado (${all.length} foto(s)).`, 'ok');
+      if (out?.mode === 'zip') {
+        toast(`Download em ${out.parts} ZIP(s) iniciado (${all.length} foto(s)).`, 'ok');
+      } else {
+        toast(`Download de todas iniciado (${all.length} foto(s)).`, 'ok');
+      }
     } catch (e) {
       toast(e?.message || 'Erro ao baixar todas', 'err');
     } finally {
@@ -4956,21 +5060,26 @@
       const prevMsg = msgEl ? String(msgEl.textContent || '') : '';
       setDownloadsProgress(0, all.length, true, 'all');
       if (msgEl) msgEl.textContent = `Baixando 0/${all.length}...`;
-      await downloadPhotosSequentially(all, {
+      const out = await downloadAllPhotosSmart(all, {
         onProgress: (n, total) => {
           setDownloadsProgress(n, total, true, 'all');
           if (msgEl) msgEl.textContent = `Baixando ${n}/${total}...`;
         }
       });
-      setDownloadsProgress(all.length, all.length, true, 'all');
-      if (msgEl) {
-        msgEl.textContent = `Concluído: ${all.length}/${all.length} download(s) iniciados.`;
-        setTimeout(() => {
-          if (msgEl) msgEl.textContent = prevMsg || msgEl.textContent;
-          setDownloadsProgress(0, 1, false);
-        }, 2200);
+      if (out?.mode === 'zip') {
+        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) — ${all.length} foto(s).`;
+        toast(`Download em ${out.parts} ZIP(s) (${all.length} foto(s)).`, 'ok');
+      } else {
+        setDownloadsProgress(all.length, all.length, true, 'all');
+        if (msgEl) {
+          msgEl.textContent = `Concluído: ${all.length}/${all.length} download(s) iniciados.`;
+          setTimeout(() => {
+            if (msgEl) msgEl.textContent = prevMsg || msgEl.textContent;
+            setDownloadsProgress(0, 1, false);
+          }, 2200);
+        }
+        toast(`Download de todas iniciado (${all.length} foto(s)).`, 'ok');
       }
-      toast(`Download de todas iniciado (${all.length} foto(s)).`, 'ok');
     } catch (e) {
       setDownloadsProgress(0, 1, false);
       toast(e?.message || 'Erro ao baixar todas', 'err');
