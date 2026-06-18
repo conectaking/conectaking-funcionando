@@ -46,7 +46,12 @@ if (fs.existsSync(dashboardJsFrom)) {
   console.log('[sync-king-docs] OK dashboard.js → public_html/');
 }
 
-for (const ksName of ['kingSelectionCliente.html', 'kingSelectionCliente.js']) {
+for (const ksName of [
+  'kingSelectionCliente.html',
+  'kingSelectionCliente.js',
+  'kingSelectionCliente-no-sem-pasta.js',
+  'kingSelectionProject-loose-photos.js'
+]) {
   const from = path.join(srcDir, ksName);
   const to = path.join(destDir, ksName);
   if (fs.existsSync(from)) {
