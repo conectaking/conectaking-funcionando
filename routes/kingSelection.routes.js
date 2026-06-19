@@ -9836,13 +9836,15 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     /**
      * Modo pago + cadastro ao enviar: o JWT pode já ter clientId (finalize/login) enquanto parte das
      * seleções ainda está em session_key — sem isto o cliente vê «aguardando» mesmo com aprovação no painel do fotógrafo.
+     * Após envio (locked), não fundir: evita exibir seleções antigas de outra sessão.
      */
     if (
       salesModeActive &&
       hasSelClientId &&
       cid &&
       sk &&
-      hasSessionKey
+      hasSessionKey &&
+      !locked
     ) {
       const sSkPaid = await client.query(
         `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 ORDER BY id ASC`,

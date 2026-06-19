@@ -1704,6 +1704,183 @@
     return n;
   }
 
+  /** Limite de contrato: em galerias com rodadas, só conta a seleção atual. */
+  function effectiveSelectedCountForMaxLimit() {
+    return state.hasSelectionBatch ? countSelectedThisRound() : state.selected.size;
+  }
+
+  const _toggleInFlight = new Set();
+  let _gridPreviewIo = null;
+
+  function disconnectGridPreviewIo() {
+    if (_gridPreviewIo) {
+      try { _gridPreviewIo.disconnect(); } catch (_) { }
+      _gridPreviewIo = null;
+    }
+  }
+
+  function runPreviewPool(items, limit, worker) {
+    const queue = items.slice();
+    const runners = Array.from({ length: Math.max(1, limit) }).map(async () => {
+      while (queue.length) {
+        const it = queue.shift();
+        // eslint-disable-next-line no-await-in-loop
+        await worker(it);
+      }
+    });
+    return Promise.all(runners);
+  }
+
+  function loadGridPreviewImg(img) {
+    if (!img || img.getAttribute('data-preview-loaded') === '1' || img.getAttribute('data-preview-loading') === '1') {
+      return Promise.resolve();
+    }
+    const url = String(img.getAttribute('data-src') || '').trim();
+    if (!url) return Promise.resolve();
+    const pid = parseInt(img.getAttribute('data-photo-id') || '0', 10) || 0;
+    img.setAttribute('data-preview-loading', '1');
+    img.classList.add('ks-img-loading');
+    const wrap = img.closest('.ks-ph-imgwrap');
+    wrap?.classList.add('ks-ph-imgwrap--loading');
+
+    const attempt = (srcUrl) => new Promise((resolve, reject) => {
+      const curPid = parseInt(img.getAttribute('data-photo-id') || '0', 10) || 0;
+      if (pid && curPid !== pid) { resolve(); return; }
+      const onOk = () => { cleanup(); resolve(); };
+      const onErr = () => { cleanup(); reject(new Error('preview')); };
+      const cleanup = () => {
+        img.removeEventListener('load', onOk);
+        img.removeEventListener('error', onErr);
+      };
+      img.addEventListener('load', onOk, { once: true });
+      img.addEventListener('error', onErr, { once: true });
+      if (img.getAttribute('src') !== srcUrl) img.setAttribute('src', srcUrl);
+      else if (img.complete && img.naturalWidth > 0) onOk();
+    });
+
+    const finishOk = () => {
+      img.classList.remove('ks-img-loading');
+      img.classList.add('ks-img-loaded');
+      img.setAttribute('data-preview-loaded', '1');
+      img.removeAttribute('data-preview-error');
+      wrap?.classList.remove('ks-ph-imgwrap--loading', 'ks-ph-imgwrap--error');
+    };
+    const finishErr = () => {
+      img.classList.remove('ks-img-loading');
+      img.classList.add('ks-img-error');
+      img.setAttribute('data-preview-error', '1');
+      wrap?.classList.remove('ks-ph-imgwrap--loading');
+      wrap?.classList.add('ks-ph-imgwrap--error');
+    };
+
+    return attempt(url)
+      .then(finishOk)
+      .catch(() => new Promise((r) => setTimeout(r, 700))
+        .then(() => {
+          img.removeAttribute('src');
+          return attempt(url);
+        })
+        .then(finishOk)
+        .catch(finishErr))
+      .finally(() => { img.removeAttribute('data-preview-loading'); });
+  }
+
+  function hydrateGridPreviews(grid) {
+    disconnectGridPreviewIo();
+    if (!grid) return;
+    const imgs = Array.from(grid.querySelectorAll('img[data-photo-id][data-src]'))
+      .filter((img) => img.getAttribute('data-preview-loaded') !== '1');
+    if (!imgs.length) return;
+
+    const loadOne = (img) => loadGridPreviewImg(img);
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      _gridPreviewIo = new IntersectionObserver((entries) => {
+        entries.forEach((ent) => {
+          if (!ent.isIntersecting) return;
+          const img = ent.target;
+          try { _gridPreviewIo.unobserve(img); } catch (_) { }
+          loadOne(img);
+        });
+      }, { root: null, rootMargin: '320px 0px', threshold: 0.01 });
+      imgs.forEach((img) => _gridPreviewIo.observe(img));
+      imgs.slice(0, 20).forEach((img) => {
+        try { _gridPreviewIo.unobserve(img); } catch (_) { }
+        loadOne(img);
+      });
+    } else {
+      runPreviewPool(imgs, 6, loadOne).catch(() => { });
+    }
+  }
+
+  function photoCardBubbleLabel(sel, fr, publicFree) {
+    if (fr) return 'Bloqueada (seleção anterior)';
+    if (sel) return 'Desmarcar';
+    return publicFree ? 'Marcar (opcional)' : 'Selecionar';
+  }
+
+  function photoCardBarActionHtml(p, sel, fr, showSelTag, batch, publicFree) {
+    if (fr) {
+      return '<span class="ks-ph-act ks-ph-act--lock"><i class="fas fa-lock"></i> Bloqueada</span>';
+    }
+    if (sel) {
+      return `<button type="button" class="ks-ph-act ks-ph-act--remove" data-strip="${p.id}"><i class="fas fa-times"></i> ${publicFree ? 'Desmarcar' : 'Remover'}</button>`;
+    }
+    return `<button type="button" class="ks-ph-act ks-ph-act--add" data-strip="${p.id}"><i class="fas fa-check"></i> ${publicFree ? 'Marcar' : 'Selecionar'}</button>`;
+  }
+
+  function updatePhotoCardUi(photoId) {
+    const pid = normalizePhotoId(photoId);
+    if (!pid) return false;
+    const grid = $('ks-grid');
+    if (!grid) return false;
+    const el = grid.querySelector(`.ks-ph[data-pid="${pid}"]`);
+    if (!el) return false;
+    const p = (state.gallery?.photos || []).find((ph) => ph.id === pid);
+    if (!p) return false;
+
+    const sel = state.selected.has(pid);
+    const fr = sel && isFrozenPhoto(pid);
+    const anyFrozenInGallery = [...state.selected].some((id) => isFrozenPhoto(id));
+    const batch = parseInt(state.batchByPhoto[String(pid)], 10) || 1;
+    const publicFree = isPublicFreeDownloadGallery();
+    const bubbleLabel = photoCardBubbleLabel(sel, fr, publicFree);
+
+    el.classList.toggle('selected', sel);
+    el.classList.toggle('frozen', fr);
+
+    const bubble = el.querySelector('.ks-check-btn');
+    if (bubble) {
+      bubble.className = ['ks-check-btn', sel ? 'ks-check-btn--on' : '', fr ? 'ks-check-btn--frozen' : ''].filter(Boolean).join(' ');
+      bubble.disabled = fr;
+      bubble.setAttribute('data-check', String(pid));
+      bubble.setAttribute('aria-label', bubbleLabel);
+      bubble.setAttribute('title', bubbleLabel);
+      bubble.innerHTML = sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : '';
+    }
+
+    const barMain = el.querySelector('.ks-ph-bar-main');
+    if (barMain) {
+      const showSelTag = sel && anyFrozenInGallery;
+      const action = photoCardBarActionHtml(p, sel, fr, showSelTag, batch, publicFree);
+      const tag = showSelTag ? ` <span class="ks-ph-batch">S${batch}</span>` : '';
+      barMain.innerHTML = `${action}${tag}`;
+    }
+    return true;
+  }
+
+  function syncSelectionUiAfterChange(photoId) {
+    if (!updatePhotoCardUi(photoId)) renderGrid();
+    else {
+      renderSalesUi();
+      updateHeaderCounts();
+      syncPublicDownloadToolbar();
+      refreshSecondarySteps();
+      syncSingleViewerSelectUI();
+      syncFolderSelectAllToolbar();
+    }
+  }
+
   /** Lotes (selection_batch) já confirmados em rodadas anteriores. */
   function frozenBatchNumberSet() {
     const s = new Set();
@@ -2748,7 +2925,7 @@
       ids.push(pid);
     }
     if (max > 0) {
-      const remaining = max - state.selected.size;
+      const remaining = max - effectiveSelectedCountForMaxLimit();
       const cap = Math.max(0, remaining);
       return ids.slice(0, cap);
     }
@@ -2859,6 +3036,7 @@
     syncPublicLockedDownloadMinimalClass();
 
     if (state.locked && state.salesModeActive) {
+      disconnectGridPreviewIo();
       if (grid) grid.innerHTML = '';
       hint?.classList.add('ks-hidden');
       if (empty) {
@@ -2870,6 +3048,7 @@
       return;
     }
     if (publicLockedDownloadPhaseActive()) {
+      disconnectGridPreviewIo();
       if (grid) grid.innerHTML = '';
       empty?.classList.add('ks-hidden');
       hint?.classList.add('ks-hidden');
@@ -2878,6 +3057,7 @@
       return;
     }
     if (state.folderView === 'folders' && state.folders.length) {
+      disconnectGridPreviewIo();
       if (grid) grid.innerHTML = '';
       empty?.classList.add('ks-hidden');
       hint?.classList.add('ks-hidden');
@@ -2904,6 +3084,7 @@
     }
 
     if (!list.length) {
+      disconnectGridPreviewIo();
       grid.innerHTML = '';
       empty.textContent = state.activeFolderId
         ? 'Esta pasta ainda não tem fotos.'
@@ -2915,6 +3096,7 @@
     }
     empty.classList.add('ks-hidden');
 
+    disconnectGridPreviewIo();
     const anyFrozenInGallery = [...state.selected].some((id) => isFrozenPhoto(id));
     const publicFree = isPublicFreeDownloadGallery();
     grid.innerHTML = list.map(p => {
@@ -2948,8 +3130,8 @@
           <button type="button" class="${bubbleClass.join(' ')}" data-check="${p.id}" aria-label="${bubbleLabel}" title="${bubbleLabel}" ${fr ? 'disabled' : ''}>
             ${sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : ''}
           </button>
-          <div class="ks-ph-imgwrap" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
-            <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" width="200" height="300" referrerpolicy="no-referrer" decoding="async" />
+          <div class="ks-ph-imgwrap ks-ph-imgwrap--loading" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
+            <img data-photo-id="${p.id}" data-src="${previewUrl(p.id, true)}" alt="" width="200" height="300" referrerpolicy="no-referrer" decoding="async" class="ks-img-loading" />
           </div>
           <div class="ks-ph-bar">
             <div class="ks-ph-bar-main">${barAction}${showSelTag ? ` <span class="ks-ph-batch">S${batch}</span>` : ''}</div>
@@ -2960,62 +3142,63 @@
     }).join('');
 
     bindPhotoCardGrid(grid);
+    hydrateGridPreviews(grid);
     syncFolderSelectAllToolbar();
     refreshFacePanelVisibility();
   }
 
   function bindPhotoCardGrid(grid) {
-    grid.querySelectorAll('.ks-ph').forEach(el => {
-      const pid = parseInt(el.getAttribute('data-pid'), 10);
-      const zone = el.querySelector(`[data-strip-zone="${pid}"]`);
-      const onActivate = (e) => {
-        if (e.target.closest('[data-expand]')) return;
-        if (e.target.closest('.ks-ph-dl') || e.target.closest('[data-pub-dl]')) return;
-        if (e.target.closest('.ks-check-btn')) return;
-        if (e.target.closest('[data-strip]')) return;
-        onTogglePhoto(pid);
-      };
-      zone?.addEventListener('click', onActivate);
-      zone?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onActivate(e);
-        }
-      });
-    });
-    grid.querySelectorAll('.ks-check-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    if (!grid || grid._ksClickDelegated) return;
+    grid._ksClickDelegated = true;
+    grid.addEventListener('click', (e) => {
+      const expand = e.target.closest('[data-expand]');
+      if (expand) {
+        e.stopPropagation();
+        const id = parseInt(expand.getAttribute('data-expand'), 10);
+        if (id) openViewer(id);
+        return;
+      }
+      if (e.target.closest('.ks-ph-dl')) return;
+      const pubDl = e.target.closest('[data-pub-dl]');
+      if (pubDl) {
         e.stopPropagation();
         e.preventDefault();
-        if (btn.disabled || btn.classList.contains('ks-check-btn--frozen')) return;
-        const id = parseInt(btn.getAttribute('data-check'), 10);
-        onTogglePhoto(id);
-      });
-    });
-    grid.querySelectorAll('[data-strip]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const id = parseInt(btn.getAttribute('data-strip'), 10);
-        onTogglePhoto(id);
-      });
-    });
-    grid.querySelectorAll('[data-expand]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = parseInt(btn.getAttribute('data-expand'), 10);
-        openViewer(id);
-      });
-    });
-    grid.querySelectorAll('[data-pub-dl]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const id = parseInt(btn.getAttribute('data-pub-dl'), 10) || 0;
+        const id = parseInt(pubDl.getAttribute('data-pub-dl'), 10) || 0;
         if (!id || !publicMustRegisterToDownload()) return;
         pendingPublicDownloadAction = { type: 'photo', photoId: id };
         openPublicRegisterModal();
-      });
+        return;
+      }
+      const check = e.target.closest('[data-check]');
+      if (check) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (check.disabled || check.classList.contains('ks-check-btn--frozen')) return;
+        const id = parseInt(check.getAttribute('data-check'), 10);
+        if (id) onTogglePhoto(id);
+        return;
+      }
+      const strip = e.target.closest('[data-strip]');
+      if (strip) {
+        e.stopPropagation();
+        e.preventDefault();
+        const id = parseInt(strip.getAttribute('data-strip'), 10);
+        if (id) onTogglePhoto(id);
+        return;
+      }
+      const zone = e.target.closest('[data-strip-zone]');
+      if (zone) {
+        const id = parseInt(zone.getAttribute('data-strip-zone'), 10);
+        if (id) onTogglePhoto(id);
+      }
+    });
+    grid.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const zone = e.target.closest('[data-strip-zone]');
+      if (!zone) return;
+      e.preventDefault();
+      const id = parseInt(zone.getAttribute('data-strip-zone'), 10);
+      if (id) onTogglePhoto(id);
     });
   }
 
@@ -3077,7 +3260,7 @@
   function compareCanAddMorePhotos() {
     if (state.locked) return false;
     const max = state.gallery.total_fotos_contratadas != null ? parseInt(state.gallery.total_fotos_contratadas, 10) : 0;
-    if (max > 0 && state.selected.size >= max) return false;
+    if (max > 0 && effectiveSelectedCountForMaxLimit() >= max) return false;
     return true;
   }
 
@@ -3472,60 +3655,53 @@
   }
 
   async function onTogglePhoto(photoId) {
+    const pid = normalizePhotoId(photoId);
+    if (!pid) return;
+    if (_toggleInFlight.has(pid)) return;
     if (selectionLockedForUi()) return;
-    if (state.selected.has(photoId) && isFrozenPhoto(photoId)) {
+    if (state.selected.has(pid) && isFrozenPhoto(pid)) {
       toast('Esta foto já foi confirmada numa seleção anterior e não pode ser desmarcada.', 'err');
       return;
     }
     const max = state.gallery.total_fotos_contratadas != null ? parseInt(state.gallery.total_fotos_contratadas, 10) : 0;
-    if (!state.selected.has(photoId) && max > 0 && state.selected.size >= max) {
+    if (!state.selected.has(pid) && max > 0 && effectiveSelectedCountForMaxLimit() >= max) {
       toast(`Limite de ${max} foto(s) para esta galeria.`, 'err');
       return;
     }
 
-    const next = !state.selected.has(photoId);
+    const next = !state.selected.has(pid);
     const prev = new Set(state.selected);
-    if (next) state.selected.add(photoId);
-    else state.selected.delete(photoId);
-    renderGrid();
-    renderSalesUi();
-    updateHeaderCounts();
-    syncPublicDownloadToolbar();
-    refreshSecondarySteps();
-    syncSingleViewerSelectUI();
+    if (next) state.selected.add(pid);
+    else state.selected.delete(pid);
+    _toggleInFlight.add(pid);
+    syncSelectionUiAfterChange(pid);
 
     try {
       const res = await fetch(`${API}/api/king-selection/client/select`, {
         method: 'POST',
         headers: authHeaders(true),
-        body: JSON.stringify({ slug, photo_id: photoId })
+        body: JSON.stringify({ slug, photo_id: pid })
       });
       const data = await res.json().catch(() => ({}));
       if (handleClientUnauthorized(res, data)) return;
       if (!res.ok) throw new Error(data.message || 'Erro ao salvar');
       if (data.selected === false) {
-        state.selected.delete(photoId);
-        if (state.hasSelectionBatch) delete state.batchByPhoto[String(photoId)];
+        state.selected.delete(pid);
+        if (state.hasSelectionBatch) delete state.batchByPhoto[String(pid)];
       } else if (data.selected === true) {
-        state.selected.add(photoId);
+        state.selected.add(pid);
         if (state.hasSelectionBatch && data.selection_batch != null) {
           const br = parseInt(data.selection_batch, 10);
-          state.batchByPhoto[String(photoId)] = Number.isFinite(br) ? br : state.currentRound;
+          state.batchByPhoto[String(pid)] = Number.isFinite(br) ? br : state.currentRound;
         }
       }
-      renderGrid();
-      renderSalesUi();
-      updateHeaderCounts();
-      refreshSecondarySteps();
-      syncSingleViewerSelectUI();
+      syncSelectionUiAfterChange(pid);
     } catch (err) {
       state.selected = prev;
-      renderGrid();
-      renderSalesUi();
-      updateHeaderCounts();
-      refreshSecondarySteps();
-      syncSingleViewerSelectUI();
+      syncSelectionUiAfterChange(pid);
       toast(err.message || 'Erro ao salvar', 'err');
+    } finally {
+      _toggleInFlight.delete(pid);
     }
   }
 
