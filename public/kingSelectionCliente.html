@@ -464,6 +464,14 @@
     .ks-btn-outline:hover:not(:disabled) { background: rgba(255,255,255,.08); }
     .ks-btn-yellow { background: var(--warn); color: #111; border-color: #ca8a04; font-weight: 800; }
     .ks-btn-yellow:hover:not(:disabled) { filter: brightness(1.05); }
+    .ks-btn-edit-req {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      color: #f5f3ff;
+      border-color: #8b5cf6;
+      font-weight: 800;
+    }
+    .ks-btn-edit-req:hover:not(:disabled) { filter: brightness(1.08); }
+    .ks-btn-edit-req:disabled { opacity: .45; cursor: not-allowed; }
     .ks-dl-counter {
       display: inline-flex;
       align-items: center;
@@ -1684,7 +1692,7 @@
               <button type="button" class="ks-btn ks-btn-danger" id="ks-clear" title="Limpa só a seleção atual">
                 <i class="fas fa-trash-alt"></i> Limpar seleção
               </button>
-              <button type="button" class="ks-btn ks-btn-outline ks-hidden" id="ks-send-edit" title="Enviar fotos marcadas para edição">
+              <button type="button" class="ks-btn ks-btn-edit-req ks-hidden" id="ks-send-edit" title="Enviar fotos marcadas para edição">
                 <i class="fas fa-magic"></i> Enviar para edição
               </button>
               <button type="button" class="ks-btn ks-dl-btn-selected ks-hidden" id="ks-pub-dl-selected" title="Baixar fotos marcadas na galeria">

@@ -1081,6 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nextTab === 'promo') syncPromoFromGallery();
     if (nextTab === 'sales') refreshSalesUi().catch((e) => showError(e?.message || 'Erro ao abrir vendas'));
     if (nextTab === 'r2') loadR2InventoryPane(false);
+    if (nextTab === 'privacy') syncPublicEditRequestPrivacyUi();
   }
 
   function fmtDate(d) {
