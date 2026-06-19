@@ -558,6 +558,8 @@ function resolveKingSelectionClienteJsVersion() {
 }
 
 const KS_PROJECT_LOOSE_PATCH = 'kingSelectionProject-loose-photos.js';
+const KS_PROJECT_EDIT_PATCH = 'kingSelectionProject-edit-requests.js';
+const KS_CLIENTE_EDIT_PATCH = 'kingSelectionCliente-edit-requests.js';
 
 function patchKingSelectionProjectHtml(html) {
     if (!html || typeof html !== 'string') return html;
@@ -585,6 +587,18 @@ function patchKingSelectionProjectHtml(html) {
         out = out.replace(
             new RegExp(`/${KS_PROJECT_LOOSE_PATCH}\\?v=[^"']+`, 'g'),
             `/${KS_PROJECT_LOOSE_PATCH}?v=${patchVer}`
+        );
+    }
+    const editPatchVer = resolveKingSelectionJsVersion(KS_PROJECT_EDIT_PATCH);
+    if (!out.includes(KS_PROJECT_EDIT_PATCH)) {
+        out = out.replace(
+            '</body>',
+            `  <script src="/${KS_PROJECT_EDIT_PATCH}?v=${editPatchVer}"></script>\n</body>`
+        );
+    } else {
+        out = out.replace(
+            new RegExp(`/${KS_PROJECT_EDIT_PATCH}\\?v=[^"']+`, 'g'),
+            `/${KS_PROJECT_EDIT_PATCH}?v=${editPatchVer}`
         );
     }
     if (!out.includes('ks-public-edit-request-wrap')) {
@@ -751,6 +765,18 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         html = html.replace(
             /(<script[^>]+src="\/kingSelectionCliente\.js\?v=[^"]+"><\/script>)/,
             `$1\n  <script src="/kingSelectionCliente-no-sem-pasta.js?v=${ksClienteJsVer}"></script>`
+        );
+    }
+    const ksClienteEditVer = resolveKingSelectionJsVersion(KS_CLIENTE_EDIT_PATCH);
+    if (!html.includes(KS_CLIENTE_EDIT_PATCH)) {
+        html = html.replace(
+            '</body>',
+            `  <script src="/${KS_CLIENTE_EDIT_PATCH}?v=${ksClienteEditVer}"></script>\n</body>`
+        );
+    } else {
+        html = html.replace(
+            new RegExp(`/${KS_CLIENTE_EDIT_PATCH}\\?v=[^"']+`, 'g'),
+            `/${KS_CLIENTE_EDIT_PATCH}?v=${ksClienteEditVer}`
         );
     }
 
@@ -1055,6 +1081,12 @@ app.get(['/kingSelectionProject.js', '/mr/kingSelectionProject.js'], (req, res) 
 });
 app.get([`/${KS_PROJECT_LOOSE_PATCH}`, `/mr/${KS_PROJECT_LOOSE_PATCH}`], (req, res) => {
     sendKingSelectionClienteJsFile(res, KS_PROJECT_LOOSE_PATCH);
+});
+app.get([`/${KS_PROJECT_EDIT_PATCH}`, `/mr/${KS_PROJECT_EDIT_PATCH}`], (req, res) => {
+    sendKingSelectionClienteJsFile(res, KS_PROJECT_EDIT_PATCH);
+});
+app.get([`/${KS_CLIENTE_EDIT_PATCH}`, `/mr/${KS_CLIENTE_EDIT_PATCH}`], (req, res) => {
+    sendKingSelectionClienteJsFile(res, KS_CLIENTE_EDIT_PATCH);
 });
 app.get(['/kingSelectionProject.html', '/mr/kingSelectionProject.html'], serveKingSelectionProjectHtmlPage);
 

@@ -50,7 +50,9 @@ for (const ksName of [
   'kingSelectionCliente.html',
   'kingSelectionCliente.js',
   'kingSelectionCliente-no-sem-pasta.js',
-  'kingSelectionProject-loose-photos.js'
+  'kingSelectionCliente-edit-requests.js',
+  'kingSelectionProject-loose-photos.js',
+  'kingSelectionProject-edit-requests.js'
 ]) {
   const from = path.join(srcDir, ksName);
   const to = path.join(destDir, ksName);
