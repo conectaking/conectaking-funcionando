@@ -2008,15 +2008,23 @@
   }
 
   function publicEditRequestEnabled() {
-    return normKsAccessModeFromMeta() === 'public' && !!state.allowClientEditRequest;
+    if (normKsAccessModeFromMeta() !== 'public') return false;
+    return state.allowClientEditRequest === true;
   }
 
   function syncEditRequestToolbar() {
     const btn = $('ks-send-edit');
     if (!btn) return;
     const show = publicEditRequestEnabled() && !selectionLockedForUi();
+    btn.classList.add('ks-hidden');
+    btn.style.display = 'none';
+    btn.setAttribute('aria-hidden', 'true');
+    if (show) {
+      btn.classList.remove('ks-hidden');
+      btn.style.display = '';
+      btn.setAttribute('aria-hidden', 'false');
+    }
     const n = countSelectedThisRound();
-    btn.classList.toggle('ks-hidden', !show);
     btn.disabled = n === 0;
     btn.title = n > 0
       ? `Enviar ${n} foto(s) marcada(s) para edição`
@@ -2719,7 +2727,7 @@
     }
     state.gallery = g;
     applyClientCardHeightFromGallery(g);
-    state.allowClientEditRequest = !!(g && g.allow_client_edit_request);
+    state.allowClientEditRequest = !!(g && g.allow_client_edit_request === true);
     state.faceRecognitionUsable = !!data.faceRecognitionUsable;
     state.faceFilterIds = null;
     state.allowDownload = !!(g && g.allow_download);
@@ -2858,6 +2866,7 @@
     scheduleSalesStatusRefresh();
     syncSalesPostSubmitLayout();
     syncSalesConfirmBar();
+    syncEditRequestToolbar();
   }
 
   function absolutizeAssetUrl(url) {
@@ -3224,6 +3233,7 @@
         empty.classList.remove('ks-hidden');
       }
       syncFolderSelectAllToolbar();
+      syncEditRequestToolbar();
       refreshFacePanelVisibility();
       return;
     }
@@ -3234,6 +3244,7 @@
       empty?.classList.add('ks-hidden');
       hint?.classList.add('ks-hidden');
       syncFolderSelectAllToolbar();
+      syncEditRequestToolbar();
       refreshFacePanelVisibility();
       return;
     }
@@ -3244,6 +3255,7 @@
       empty?.classList.add('ks-hidden');
       hint?.classList.add('ks-hidden');
       syncFolderSelectAllToolbar();
+      syncEditRequestToolbar();
       refreshFacePanelVisibility();
       return;
     }
@@ -3273,6 +3285,7 @@
         : 'Nenhuma foto corresponde à busca.';
       empty.classList.toggle('ks-hidden', !(tokens.length || faceOn || state.activeFolderId));
       syncFolderSelectAllToolbar();
+      syncEditRequestToolbar();
       refreshFacePanelVisibility();
       return;
     }

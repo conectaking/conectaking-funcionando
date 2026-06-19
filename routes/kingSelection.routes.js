@@ -7775,6 +7775,14 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         });
       }
     }
+    if (Object.prototype.hasOwnProperty.call(body, 'allow_client_edit_request')) {
+      const ok = await hasColumn(client, 'king_galleries', 'allow_client_edit_request');
+      if (!ok) {
+        return res.status(503).json({
+          message: 'Pedidos de edição indisponíveis: execute a migration 235_kingselection_client_edit_requests.sql no banco.'
+        });
+      }
+    }
     if (
       Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_photo_id') ||
       Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_file_path')
@@ -10165,7 +10173,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           galleryAccessMode === 'public' && photographerAllowsDownload
             ? "Download com marca d'água. Selecione as fotos; se houver cupom, conclua a validação (redes e código). Depois clique em «Confirmar para baixar» e informe nome, e-mail e WhatsApp. Só após esse envio as opções «Baixar» e «Fotos para baixar» ficam disponíveis para as fotos que você escolheu."
             : undefined,
-        allow_client_edit_request: !!(hasAllowClientEditReq && galleryAccessMode === 'public' && gallery.allow_client_edit_request)
+        allow_client_edit_request: hasAllowClientEditReq
+          ? !!(galleryAccessMode === 'public' && gallery.allow_client_edit_request === true)
+          : false
       },
       resolvedClientId: resolvedClientId || undefined,
       faceRecognitionUsable: faceRecognitionUsable || undefined,

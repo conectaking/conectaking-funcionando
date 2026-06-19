@@ -3357,7 +3357,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function syncPublicEditRequestPrivacyUi() {
     const am = String(getRadio('access_mode') || gallery?.access_mode || 'private').toLowerCase();
     const isPublic = am === 'public';
-    publicEditRequestWrap?.classList.toggle('hidden', !isPublic);
+    if (publicEditRequestWrap) {
+      publicEditRequestWrap.style.display = isPublic ? 'block' : 'none';
+      publicEditRequestWrap.classList.toggle('hidden', !isPublic);
+    }
     const showPanel = isPublic && !!(gallery?.allow_client_edit_request);
     editRequestsWrap?.classList.toggle('hidden', !showPanel);
     if (showPanel) loadEditRequests().catch(() => { });
@@ -7114,9 +7117,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const accessModeVal = getRadio('access_mode') || 'private';
       const patch = { access_mode: accessModeVal };
       if (accessModeVal === 'signup' || accessModeVal === 'paid_event_photos') patch.allow_self_signup = true;
-      if (accessModeVal === 'public' && allowClientEditRequestEl) {
-        patch.allow_client_edit_request = !!allowClientEditRequestEl.checked;
-      } else if (accessModeVal !== 'public') {
+      if (accessModeVal === 'public') {
+        patch.allow_client_edit_request = !!(allowClientEditRequestEl && allowClientEditRequestEl.checked);
+      } else {
         patch.allow_client_edit_request = false;
       }
       await savePatch(patch);
