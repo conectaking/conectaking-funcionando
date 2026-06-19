@@ -2029,6 +2029,7 @@
   }
 
   function syncEditRequestToolbar() {
+    ensureClientEditRequestButton();
     const btn = $('ks-send-edit');
     if (!btn) return;
     const show = publicEditRequestEnabled() && !selectionLockedForUi();
@@ -5724,6 +5725,7 @@
   });
 
   async function boot() {
+    ensureClientEditRequestButton();
     if (!API) {
       hideBootScreen();
       showLogin();
