@@ -7665,6 +7665,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'share_link_full_message',
     'client_folder_layout',
     'client_entry_splash_enabled',
+    'allow_client_edit_request',
     'tutorial_video_url'
   ];
 
@@ -7877,7 +7878,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         const n = parseInt(val || 0, 10) || 0;
         val = Math.max(160, Math.min(420, n || 220));
       }
-      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled' || key === 'face_recognition_enabled' || key === 'pix_enabled') val = !!val;
+      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled' || key === 'face_recognition_enabled' || key === 'pix_enabled' || key === 'allow_client_edit_request' || key === 'client_entry_splash_enabled') val = !!val;
       if (key === 'client_image_quality') val = normalizeClientImageQuality(val);
       if (key === 'access_mode') val = ksNormAccessMode(val);
       if (key === 'sales_over_limit_policy') val = ksNormalizeOverLimitPolicy(val);
@@ -9740,8 +9741,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
     const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
     const hasWmModeG = await hasColumn(client, 'king_galleries', 'watermark_mode');
+    const hasAllowClientEditReq = await hasColumn(client, 'king_galleries', 'allow_client_edit_request');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}${hasWmModeG ? ', watermark_mode' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}${hasWmModeG ? ', watermark_mode' : ''}${hasAllowClientEditReq ? ', allow_client_edit_request' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -10162,7 +10164,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         watermark_download_notice:
           galleryAccessMode === 'public' && photographerAllowsDownload
             ? "Download com marca d'água. Selecione as fotos; se houver cupom, conclua a validação (redes e código). Depois clique em «Confirmar para baixar» e informe nome, e-mail e WhatsApp. Só após esse envio as opções «Baixar» e «Fotos para baixar» ficam disponíveis para as fotos que você escolheu."
-            : undefined
+            : undefined,
+        allow_client_edit_request: !!(hasAllowClientEditReq && galleryAccessMode === 'public' && gallery.allow_client_edit_request)
       },
       resolvedClientId: resolvedClientId || undefined,
       faceRecognitionUsable: faceRecognitionUsable || undefined,
@@ -12145,6 +12148,200 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
       }
       throw e;
     }
+  } finally {
+    client.release();
+  }
+}));
+
+/** Cliente (modo público): envia fotos marcadas como pedido de edição ao fotógrafo. */
+router.post('/client/edit-request', requireClient, asyncHandler(async (req, res) => {
+  const { slug, photo_ids, note } = req.body || {};
+  if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
+  if (String(slug) !== req.ksClient.slug) return res.status(403).json({ message: 'Sem permissão.' });
+
+  const ids = Array.isArray(photo_ids)
+    ? [...new Set(photo_ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0))]
+    : [];
+  if (!ids.length) return res.status(400).json({ message: 'Selecione pelo menos uma foto.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasEditReq = await hasColumn(client, 'king_galleries', 'allow_client_edit_request');
+    if (!hasEditReq || !(await hasTable(client, 'king_client_edit_requests'))) {
+      return res.status(503).json({ message: 'Pedidos de edição indisponíveis no servidor.' });
+    }
+    const gRes = await client.query(
+      `SELECT id${hasAm ? ', access_mode' : ''}, allow_client_edit_request FROM king_galleries WHERE id=$1`,
+      [req.ksClient.galleryId]
+    );
+    const gallery = gRes.rows[0];
+    if (!gallery) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const accessMode = ksNormAccessMode(hasAm ? gallery.access_mode : 'private');
+    if (accessMode !== 'public') {
+      return res.status(403).json({ message: 'Pedidos de edição só estão disponíveis no modo público.' });
+    }
+    if (!gallery.allow_client_edit_request) {
+      return res.status(403).json({ message: 'O fotógrafo não ativou pedidos de edição nesta galeria.' });
+    }
+
+    const { cid, sk } = req.ksCtx;
+    let clientId = parseInt(cid, 10) || 0;
+    if (!clientId) {
+      clientId = await resolveFaceClientIdForSession(client, req.ksClient.galleryId, cid, sk);
+    }
+    if (!clientId) {
+      return res.status(403).json({ message: 'Cadastre-se na galeria antes de enviar fotos para edição.' });
+    }
+
+    const validRes = await client.query(
+      'SELECT id FROM king_photos WHERE gallery_id=$1 AND id = ANY($2::int[])',
+      [req.ksClient.galleryId, ids]
+    );
+    const validIds = (validRes.rows || []).map((r) => parseInt(r.id, 10)).filter(Boolean);
+    if (!validIds.length) return res.status(400).json({ message: 'Nenhuma foto válida selecionada.' });
+
+    const noteClient = note != null ? String(note).trim().slice(0, 2000) : null;
+    const ins = await client.query(
+      `INSERT INTO king_client_edit_requests (gallery_id, client_id, status, note_client, created_at, updated_at)
+       VALUES ($1,$2,'pending',$3,NOW(),NOW())
+       RETURNING id`,
+      [req.ksClient.galleryId, clientId, noteClient || null]
+    );
+    const requestId = parseInt(ins.rows[0]?.id, 10) || 0;
+    if (!requestId) return res.status(500).json({ message: 'Não foi possível criar o pedido.' });
+
+    for (const pid of validIds) {
+      await client.query(
+        'INSERT INTO king_client_edit_request_photos (edit_request_id, photo_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+        [requestId, pid]
+      );
+    }
+
+    res.json({
+      success: true,
+      request_id: requestId,
+      photo_count: validIds.length,
+      message: `${validIds.length} foto(s) enviada(s) para edição. O fotógrafo será notificado no painel.`
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Fotógrafo: lista pedidos de edição da galeria (modo público). */
+router.get('/galleries/:id/edit-requests', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    if (!(await hasTable(client, 'king_client_edit_requests'))) {
+      return res.json({ success: true, requests: [] });
+    }
+
+    const rows = (await client.query(
+      `SELECT r.id, r.gallery_id, r.client_id, r.status, r.note_client, r.created_at, r.updated_at,
+              c.nome AS client_name, c.email AS client_email, c.telefone AS client_phone,
+              (SELECT COUNT(*)::int FROM king_client_edit_request_photos p WHERE p.edit_request_id = r.id) AS photo_count
+       FROM king_client_edit_requests r
+       LEFT JOIN king_gallery_clients c ON c.id = r.client_id
+       WHERE r.gallery_id=$1
+       ORDER BY r.created_at DESC, r.id DESC
+       LIMIT 200`,
+      [galleryId]
+    )).rows || [];
+
+    const reqIds = rows.map((r) => parseInt(r.id, 10)).filter(Boolean);
+    const photosByRequest = new Map();
+    if (reqIds.length && (await hasTable(client, 'king_client_edit_request_photos'))) {
+      const ph = await client.query(
+        `SELECT erp.edit_request_id, erp.photo_id, kp.original_name, kp."order"
+         FROM king_client_edit_request_photos erp
+         JOIN king_photos kp ON kp.id = erp.photo_id
+         WHERE erp.edit_request_id = ANY($1::int[])
+         ORDER BY kp."order" ASC, kp.id ASC`,
+        [reqIds]
+      );
+      for (const row of ph.rows || []) {
+        const rid = parseInt(row.edit_request_id, 10) || 0;
+        if (!rid) continue;
+        if (!photosByRequest.has(rid)) photosByRequest.set(rid, []);
+        photosByRequest.get(rid).push({
+          photo_id: row.photo_id,
+          original_name: row.original_name,
+          order: row.order
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      requests: rows.map((r) => {
+        const rid = parseInt(r.id, 10) || 0;
+        return {
+          id: rid,
+          status: String(r.status || 'pending'),
+          note_client: r.note_client || null,
+          created_at: r.created_at,
+          updated_at: r.updated_at,
+          client_id: r.client_id,
+          client_name: r.client_name || 'Cliente',
+          client_email: r.client_email || null,
+          client_phone: r.client_phone || null,
+          photo_count: parseInt(r.photo_count, 10) || 0,
+          photos: photosByRequest.get(rid) || []
+        };
+      })
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Fotógrafo: atualiza status de um pedido de edição. */
+router.patch('/galleries/:id/edit-requests/:requestId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const requestId = parseInt(req.params.requestId, 10);
+  if (!galleryId || !requestId) return res.status(400).json({ message: 'Parâmetros inválidos.' });
+
+  const statusIn = String((req.body || {}).status || '').trim().toLowerCase();
+  const allowed = ['pending', 'in_progress', 'done', 'rejected'];
+  if (!allowed.includes(statusIn)) {
+    return res.status(400).json({ message: 'Status inválido.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    if (!(await hasTable(client, 'king_client_edit_requests'))) {
+      return res.status(503).json({ message: 'Pedidos de edição indisponíveis.' });
+    }
+
+    const upd = await client.query(
+      `UPDATE king_client_edit_requests
+       SET status=$3, updated_at=NOW()
+       WHERE id=$1 AND gallery_id=$2
+       RETURNING id, status`,
+      [requestId, galleryId, statusIn]
+    );
+    if (!upd.rows.length) return res.status(404).json({ message: 'Pedido não encontrado.' });
+    res.json({ success: true, id: requestId, status: upd.rows[0].status });
   } finally {
     client.release();
   }

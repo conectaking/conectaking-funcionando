@@ -274,8 +274,15 @@
     /** Modo público: painel «Fotos para baixar» só visível após o cliente abrir (não ao cadastrar). */
     publicDownloadsPanelOpen: false,
     /** Pré-preenchimento (modo público) quando já existe cadastro real — não usar ficha técnica de sessão/rosto. */
-    clientContactPrefill: null
+    clientContactPrefill: null,
+    /** Modo público: pedido de edição ativado pelo fotógrafo. */
+    allowClientEditRequest: false,
+    /** Galerias muito grandes: quantas fotos renderizar na grade. */
+    gridVirtualShown: 120
   };
+
+  const KS_VIRTUAL_THRESHOLD = 2000;
+  const KS_VIRTUAL_BATCH = 120;
 
   /** Após modal de cadastro público: o que executar quando download já estiver liberado. */
   let pendingPublicDownloadAction = null;
@@ -613,6 +620,7 @@
           state.folderView = 'photos';
           persistFolderNav();
           renderFolders();
+          resetGridVirtualPaging();
           renderGrid();
         });
       });
@@ -1878,6 +1886,175 @@
       refreshSecondarySteps();
       syncSingleViewerSelectUI();
       syncFolderSelectAllToolbar();
+      syncEditRequestToolbar();
+    }
+  }
+
+  function resetGridVirtualPaging() {
+    state.gridVirtualShown = KS_VIRTUAL_BATCH;
+  }
+
+  function usesVirtualGridPaging(list) {
+    return Array.isArray(list) && list.length > KS_VIRTUAL_THRESHOLD;
+  }
+
+  function getGridSliceForVirtual(list) {
+    if (!usesVirtualGridPaging(list)) return list;
+    return list.slice(0, state.gridVirtualShown);
+  }
+
+  let _gridVirtualSentinelIo = null;
+
+  function disconnectGridVirtualSentinelIo() {
+    if (_gridVirtualSentinelIo) {
+      try { _gridVirtualSentinelIo.disconnect(); } catch (_) { }
+      _gridVirtualSentinelIo = null;
+    }
+  }
+
+  function buildPhotoCardHtml(p, anyFrozenInGallery, publicFree) {
+    const sel = state.selected.has(p.id);
+    const fr = sel && isFrozenPhoto(p.id);
+    const batch = parseInt(state.batchByPhoto[String(p.id)], 10) || 1;
+    const showSelTag = sel && anyFrozenInGallery;
+    const bubbleClass = ['ks-check-btn'];
+    if (sel) bubbleClass.push('ks-check-btn--on');
+    if (fr) bubbleClass.push('ks-check-btn--frozen');
+    const bubbleLabel = fr
+      ? 'Bloqueada (seleção anterior)'
+      : sel
+        ? 'Desmarcar'
+        : publicFree
+          ? 'Marcar (opcional)'
+          : 'Selecionar';
+    const barAction = fr
+      ? '<span class="ks-ph-act ks-ph-act--lock"><i class="fas fa-lock"></i> Bloqueada</span>'
+      : sel
+        ? `<button type="button" class="ks-ph-act ks-ph-act--remove" data-strip="${p.id}"><i class="fas fa-times"></i> ${publicFree ? 'Desmarcar' : 'Remover'}</button>`
+        : `<button type="button" class="ks-ph-act ks-ph-act--add" data-strip="${p.id}"><i class="fas fa-check"></i> ${publicFree ? 'Marcar' : 'Selecionar'}</button>`;
+    const dl =
+      state.photographerAllowsDownload && jwt
+        ? state.allowDownload
+          ? `<a class="ks-ph-dl r" href="${previewDownloadUrl(p.id)}" download target="_blank" rel="noopener" title="Descarregar" aria-label="Descarregar"><i class="fas fa-download"></i></a>`
+          : `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar — cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
+        : '';
+    return `
+        <div class="ks-ph ${sel ? 'selected' : ''} ${fr ? 'frozen' : ''}" data-pid="${p.id}">
+          <button type="button" class="${bubbleClass.join(' ')}" data-check="${p.id}" aria-label="${bubbleLabel}" title="${bubbleLabel}" ${fr ? 'disabled' : ''}>
+            ${sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : ''}
+          </button>
+          <div class="ks-ph-imgwrap ks-ph-imgwrap--loading" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
+            <img data-photo-id="${p.id}" data-src="${previewUrl(p.id, true)}" alt="" width="200" height="300" referrerpolicy="no-referrer" decoding="async" class="ks-img-loading" />
+          </div>
+          <div class="ks-ph-bar">
+            <div class="ks-ph-bar-main">${barAction}${showSelTag ? ` <span class="ks-ph-batch">S${batch}</span>` : ''}</div>
+            ${dl}
+            <button type="button" class="r" data-expand="${p.id}" title="Ampliar"><i class="fas fa-expand"></i></button>
+          </div>
+        </div>`;
+  }
+
+  function updateVirtualGridHint(list) {
+    const el = $('ks-virtual-grid-hint');
+    if (!el) return;
+    if (!usesVirtualGridPaging(list)) {
+      el.classList.add('ks-hidden');
+      el.textContent = '';
+      return;
+    }
+    const shown = Math.min(state.gridVirtualShown, list.length);
+    el.textContent = `A mostrar ${shown} de ${list.length} fotos — continue a rolar para carregar mais`;
+    el.classList.remove('ks-hidden');
+  }
+
+  function setupGridVirtualSentinel(grid, list) {
+    disconnectGridVirtualSentinelIo();
+    if (!grid || !usesVirtualGridPaging(list) || state.gridVirtualShown >= list.length) {
+      grid?.querySelector('.ks-grid-sentinel')?.remove();
+      updateVirtualGridHint(list);
+      return;
+    }
+    let sentinel = grid.querySelector('.ks-grid-sentinel');
+    if (!sentinel) {
+      sentinel = document.createElement('div');
+      sentinel.className = 'ks-grid-sentinel';
+      sentinel.setAttribute('aria-hidden', 'true');
+      grid.appendChild(sentinel);
+    } else {
+      grid.appendChild(sentinel);
+    }
+    updateVirtualGridHint(list);
+    if (typeof IntersectionObserver === 'undefined') return;
+    _gridVirtualSentinelIo = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) loadMoreVirtualGridPhotos();
+    }, { root: null, rootMargin: '500px 0px', threshold: 0.01 });
+    _gridVirtualSentinelIo.observe(sentinel);
+  }
+
+  function loadMoreVirtualGridPhotos() {
+    const list = getOrderedPhotosForGrid();
+    if (!usesVirtualGridPaging(list) || state.gridVirtualShown >= list.length) return;
+    const prevShown = state.gridVirtualShown;
+    state.gridVirtualShown = Math.min(list.length, state.gridVirtualShown + KS_VIRTUAL_BATCH);
+    const chunk = list.slice(prevShown, state.gridVirtualShown);
+    const grid = $('ks-grid');
+    if (!grid || !chunk.length) return;
+    grid.querySelector('.ks-grid-sentinel')?.remove();
+    const anyFrozenInGallery = [...state.selected].some((id) => isFrozenPhoto(id));
+    const publicFree = isPublicFreeDownloadGallery();
+    grid.insertAdjacentHTML('beforeend', chunk.map((p) => buildPhotoCardHtml(p, anyFrozenInGallery, publicFree)).join(''));
+    setupGridVirtualSentinel(grid, list);
+    hydrateGridPreviews(grid);
+  }
+
+  function publicEditRequestEnabled() {
+    return normKsAccessModeFromMeta() === 'public' && !!state.allowClientEditRequest;
+  }
+
+  function syncEditRequestToolbar() {
+    const btn = $('ks-send-edit');
+    if (!btn) return;
+    const show = publicEditRequestEnabled() && !selectionLockedForUi();
+    const n = countSelectedThisRound();
+    btn.classList.toggle('ks-hidden', !show);
+    btn.disabled = n === 0;
+    btn.title = n > 0
+      ? `Enviar ${n} foto(s) marcada(s) para edição`
+      : 'Marque as fotos que deseja enviar para edição';
+  }
+
+  async function submitEditRequest() {
+    if (!publicEditRequestEnabled()) return;
+    const ids = [...state.selected].filter((id) => !isFrozenPhoto(id));
+    if (!ids.length) {
+      toast('Marque pelo menos uma foto para enviar à edição.', 'err');
+      return;
+    }
+    if (!publicJwtHasRegisteredClient() && !state.resolvedClientId) {
+      toast('Cadastre-se na galeria antes de enviar fotos para edição.', 'err');
+      return;
+    }
+    const note = window.prompt(
+      'Observação para o fotógrafo (opcional):\nEx.: remover fundo, ajustar cor, recorte…',
+      ''
+    );
+    if (note === null) return;
+    const btn = $('ks-send-edit');
+    try {
+      if (btn) btn.disabled = true;
+      const res = await fetch(`${API}/api/king-selection/client/edit-request`, {
+        method: 'POST',
+        headers: authHeaders(true),
+        body: JSON.stringify({ slug, photo_ids: ids, note: note || undefined })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (handleClientUnauthorized(res, data)) return;
+      if (!res.ok) throw new Error(data.message || 'Erro ao enviar pedido');
+      toast(data.message || `${ids.length} foto(s) enviada(s) para edição.`, 'ok');
+    } catch (e) {
+      toast(e.message || 'Erro ao enviar', 'err');
+    } finally {
+      syncEditRequestToolbar();
     }
   }
 
@@ -2542,6 +2719,7 @@
     }
     state.gallery = g;
     applyClientCardHeightFromGallery(g);
+    state.allowClientEditRequest = !!(g && g.allow_client_edit_request);
     state.faceRecognitionUsable = !!data.faceRecognitionUsable;
     state.faceFilterIds = null;
     state.allowDownload = !!(g && g.allow_download);
@@ -2668,6 +2846,7 @@
     renderSalesUi();
     renderPublicDownloadsPanel();
     renderPublicDownloadHintBanner();
+    resetGridVirtualPaging();
     renderGrid();
     refreshSecondarySteps();
     renderSupportWhatsButton();
@@ -3037,6 +3216,7 @@
 
     if (state.locked && state.salesModeActive) {
       disconnectGridPreviewIo();
+      disconnectGridVirtualSentinelIo();
       if (grid) grid.innerHTML = '';
       hint?.classList.add('ks-hidden');
       if (empty) {
@@ -3049,6 +3229,7 @@
     }
     if (publicLockedDownloadPhaseActive()) {
       disconnectGridPreviewIo();
+      disconnectGridVirtualSentinelIo();
       if (grid) grid.innerHTML = '';
       empty?.classList.add('ks-hidden');
       hint?.classList.add('ks-hidden');
@@ -3058,6 +3239,7 @@
     }
     if (state.folderView === 'folders' && state.folders.length) {
       disconnectGridPreviewIo();
+      disconnectGridVirtualSentinelIo();
       if (grid) grid.innerHTML = '';
       empty?.classList.add('ks-hidden');
       hint?.classList.add('ks-hidden');
@@ -3099,51 +3281,14 @@
     disconnectGridPreviewIo();
     const anyFrozenInGallery = [...state.selected].some((id) => isFrozenPhoto(id));
     const publicFree = isPublicFreeDownloadGallery();
-    grid.innerHTML = list.map(p => {
-      const sel = state.selected.has(p.id);
-      const fr = sel && isFrozenPhoto(p.id);
-      const batch = parseInt(state.batchByPhoto[String(p.id)], 10) || 1;
-      const showSelTag = sel && anyFrozenInGallery;
-      const bubbleClass = ['ks-check-btn'];
-      if (sel) bubbleClass.push('ks-check-btn--on');
-      if (fr) bubbleClass.push('ks-check-btn--frozen');
-      const bubbleLabel = fr
-        ? 'Bloqueada (seleção anterior)'
-        : sel
-          ? (publicFree ? 'Desmarcar' : 'Desmarcar')
-          : publicFree
-            ? 'Marcar (opcional)'
-            : 'Selecionar';
-      const barAction = fr
-        ? '<span class="ks-ph-act ks-ph-act--lock"><i class="fas fa-lock"></i> Bloqueada</span>'
-        : sel
-          ? `<button type="button" class="ks-ph-act ks-ph-act--remove" data-strip="${p.id}"><i class="fas fa-times"></i> ${publicFree ? 'Desmarcar' : 'Remover'}</button>`
-          : `<button type="button" class="ks-ph-act ks-ph-act--add" data-strip="${p.id}"><i class="fas fa-check"></i> ${publicFree ? 'Marcar' : 'Selecionar'}</button>`;
-      const dl =
-        state.photographerAllowsDownload && jwt
-          ? state.allowDownload
-            ? `<a class="ks-ph-dl r" href="${previewDownloadUrl(p.id)}" download target="_blank" rel="noopener" title="Descarregar" aria-label="Descarregar"><i class="fas fa-download"></i></a>`
-            : `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar — cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
-          : '';
-      return `
-        <div class="ks-ph ${sel ? 'selected' : ''} ${fr ? 'frozen' : ''}" data-pid="${p.id}">
-          <button type="button" class="${bubbleClass.join(' ')}" data-check="${p.id}" aria-label="${bubbleLabel}" title="${bubbleLabel}" ${fr ? 'disabled' : ''}>
-            ${sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : ''}
-          </button>
-          <div class="ks-ph-imgwrap ks-ph-imgwrap--loading" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
-            <img data-photo-id="${p.id}" data-src="${previewUrl(p.id, true)}" alt="" width="200" height="300" referrerpolicy="no-referrer" decoding="async" class="ks-img-loading" />
-          </div>
-          <div class="ks-ph-bar">
-            <div class="ks-ph-bar-main">${barAction}${showSelTag ? ` <span class="ks-ph-batch">S${batch}</span>` : ''}</div>
-            ${dl}
-            <button type="button" class="r" data-expand="${p.id}" title="Ampliar"><i class="fas fa-expand"></i></button>
-          </div>
-        </div>`;
-    }).join('');
+    const displayList = getGridSliceForVirtual(list);
+    grid.innerHTML = displayList.map((p) => buildPhotoCardHtml(p, anyFrozenInGallery, publicFree)).join('');
 
     bindPhotoCardGrid(grid);
     hydrateGridPreviews(grid);
+    setupGridVirtualSentinel(grid, list);
     syncFolderSelectAllToolbar();
+    syncEditRequestToolbar();
     refreshFacePanelVisibility();
   }
 
@@ -4560,6 +4705,7 @@
   });
 
   $('ks-clear').addEventListener('click', () => clearCurrentRound());
+  $('ks-send-edit')?.addEventListener('click', () => submitEditRequest());
   $('ks-compare')?.addEventListener('click', () => openCompareStep());
   $('ks-advance')?.addEventListener('click', () => {
     if (state.salesModeActive) openConfirmStep();
@@ -4676,12 +4822,14 @@
 
   $('ks-search').addEventListener('input', () => {
     state.searchRaw = $('ks-search').value;
+    resetGridVirtualPaging();
     renderGrid();
   });
   $('ks-search-clear')?.addEventListener('click', () => {
     const inp = $('ks-search');
     if (inp) inp.value = '';
     state.searchRaw = '';
+    resetGridVirtualPaging();
     renderGrid();
   });
   const onBackToFolders = () => {
@@ -4689,6 +4837,7 @@
     state.activeFolderId = null;
     persistFolderNav();
     renderFolders();
+    resetGridVirtualPaging();
     renderGrid();
   };
   $('ks-folder-back')?.addEventListener('click', onBackToFolders);
@@ -5030,6 +5179,7 @@
       persistFolderNav();
       renderFolders();
       state.faceFilterIds = null;
+      resetGridVirtualPaging();
       renderGrid();
     if (msg) msg.textContent = 'Enviando foto do rosto…';
     setFaceActionsDisabled(true);
@@ -5060,6 +5210,7 @@
       if (scan.indexing) {
         if (msg) msg.textContent = scan.message || 'Estamos a preparar o reconhecimento. Aguarde alguns segundos e tente novamente.';
         toast('Selfie recebida. Estamos a preparar o reconhecimento.', 'ok');
+        resetGridVirtualPaging();
         renderGrid();
         return;
       }
@@ -5073,9 +5224,11 @@
         ids.length ? `${ids.length} foto(s) encontradas pelo rosto.` : noResultMsg,
         ids.length ? 'ok' : 'warn'
       );
+      resetGridVirtualPaging();
       renderGrid();
     } catch (e) {
       state.faceFilterIds = null;
+      resetGridVirtualPaging();
       renderGrid();
       if (msg) msg.textContent = '';
       const aborted = e && (e.name === 'AbortError' || e.name === 'TimeoutError');
@@ -5115,6 +5268,7 @@
 
   $('ks-sort').addEventListener('change', () => {
     state.sortMode = $('ks-sort').value;
+    resetGridVirtualPaging();
     renderGrid();
   });
 

@@ -323,6 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // privacy
   const savePrivacyBtn = document.getElementById('btn-save-privacy');
+  const publicEditRequestWrap = document.getElementById('ks-public-edit-request-wrap');
+  const allowClientEditRequestEl = document.getElementById('ks-allow-client-edit-request');
+  const editRequestsWrap = document.getElementById('ks-edit-requests-wrap');
+  const editRequestsList = document.getElementById('ks-edit-requests-list');
+  const editRequestsRefreshBtn = document.getElementById('ks-edit-requests-refresh');
 
   // clients (modelo atual: 1 cliente por galeria)
   const selfSignup = document.getElementById('ks-self-signup');
@@ -3348,9 +3353,95 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function syncPublicEditRequestPrivacyUi() {
+    const am = String(getRadio('access_mode') || gallery?.access_mode || 'private').toLowerCase();
+    const isPublic = am === 'public';
+    publicEditRequestWrap?.classList.toggle('hidden', !isPublic);
+    const showPanel = isPublic && !!(gallery?.allow_client_edit_request);
+    editRequestsWrap?.classList.toggle('hidden', !showPanel);
+    if (showPanel) loadEditRequests().catch(() => { });
+  }
+
+  function editRequestStatusLabel(st) {
+    const s = String(st || '').toLowerCase();
+    if (s === 'in_progress') return 'Em edição';
+    if (s === 'done') return 'Concluído';
+    if (s === 'rejected') return 'Recusado';
+    return 'Pendente';
+  }
+
+  async function loadEditRequests() {
+    if (!galleryId || !editRequestsList) return;
+    const am = String(gallery?.access_mode || '').toLowerCase();
+    if (am !== 'public' || !gallery?.allow_client_edit_request) {
+      editRequestsWrap?.classList.add('hidden');
+      return;
+    }
+    editRequestsWrap?.classList.remove('hidden');
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/edit-requests`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro ao carregar pedidos de edição');
+    renderEditRequestsList(Array.isArray(data.requests) ? data.requests : []);
+  }
+
+  function renderEditRequestsList(requests) {
+    if (!editRequestsList) return;
+    if (!requests.length) {
+      editRequestsList.innerHTML = '<p class="text-sm text-violet-900/70">Nenhum pedido de edição ainda.</p>';
+      return;
+    }
+    editRequestsList.innerHTML = requests.map((r) => {
+      const photos = Array.isArray(r.photos) ? r.photos : [];
+      const photoLines = photos.map((p) => {
+        const pid = parseInt(p.photo_id, 10) || 0;
+        const name = String(p.original_name || `foto-${pid}`).trim();
+        const ord = p.order != null ? ` · ordem ${p.order}` : '';
+        return `<li><b>#${pid}</b> ${escapeHtml(name)}${escapeHtml(ord)}</li>`;
+      }).join('');
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : '';
+      const note = r.note_client ? `<p class="text-sm text-violet-900/80 mt-1"><b>Obs.:</b> ${escapeHtml(r.note_client)}</p>` : '';
+      const st = String(r.status || 'pending');
+      return `
+        <div class="rounded-xl border border-violet-200 bg-white p-3" data-edit-req="${r.id}">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <div class="font-extrabold text-slate-900">${escapeHtml(r.client_name || 'Cliente')}</div>
+              <div class="text-xs text-slate-500">${escapeHtml(r.client_email || '')}${r.client_phone ? ' · ' + escapeHtml(r.client_phone) : ''}</div>
+              <div class="text-xs text-slate-500 mt-1">${escapeHtml(dt)} · ${r.photo_count || photos.length} foto(s)</div>
+            </div>
+            <span class="ks-abo-badge">${escapeHtml(editRequestStatusLabel(st))}</span>
+          </div>
+          ${note}
+          <ul class="mt-2 text-sm text-slate-800 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto">${photoLines || '<li>—</li>'}</ul>
+          <div class="flex flex-wrap gap-2 mt-3">
+            ${st !== 'in_progress' ? `<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="in_progress">Em edição</button>` : ''}
+            ${st !== 'done' ? `<button type="button" class="ks-btn ks-btn-sm ks-btn-primary" data-edit-req-st="${r.id}" data-st="done">Concluído</button>` : ''}
+            ${st !== 'rejected' ? `<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="rejected">Recusar</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function patchEditRequestStatus(requestId, status) {
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/edit-requests/${requestId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro ao atualizar pedido');
+    await loadEditRequests();
+  }
+
   function renderAll() {
     projectTitle.textContent = gallery?.nome_projeto || 'Projeto';
     projectSub.textContent = `slug: ${gallery?.slug || '-'}`;
+    syncPublicEditRequestPrivacyUi();
 
     // Activity — lista por cliente; painel usa o cliente em foco (ou legado sem tabela de clientes)
     const galleryStatus = gallery?.status || '-';
@@ -3830,6 +3921,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Privacy (password antigo = signup)
     const am = gallery?.access_mode || 'private';
     setRadio('access_mode', am === 'password' ? 'signup' : am);
+    if (allowClientEditRequestEl) {
+      allowClientEditRequestEl.checked = !!gallery?.allow_client_edit_request;
+    }
+    syncPublicEditRequestPrivacyUi();
 
     // Clients (multi-client)
     if (selfSignup) selfSignup.checked = !!gallery?.allow_self_signup;
@@ -7018,14 +7113,37 @@ document.addEventListener('DOMContentLoaded', () => {
       const accessModeVal = getRadio('access_mode') || 'private';
       const patch = { access_mode: accessModeVal };
       if (accessModeVal === 'signup' || accessModeVal === 'paid_event_photos') patch.allow_self_signup = true;
+      if (accessModeVal === 'public' && allowClientEditRequestEl) {
+        patch.allow_client_edit_request = !!allowClientEditRequestEl.checked;
+      } else if (accessModeVal !== 'public') {
+        patch.allow_client_edit_request = false;
+      }
       await savePatch(patch);
       await loadGallery();
+      syncPublicEditRequestPrivacyUi();
       toast('Alterações salvas.', { kind: 'ok', title: 'Salvo' });
     } catch (e) {
       showError(e.message || 'Erro ao salvar');
     } finally {
       savePrivacyBtn.disabled = false;
     }
+  });
+
+  document.querySelectorAll('input[name="access_mode"]').forEach((el) => {
+    el.addEventListener('change', () => syncPublicEditRequestPrivacyUi());
+  });
+
+  editRequestsRefreshBtn?.addEventListener('click', () => {
+    loadEditRequests().catch((e) => showError(e.message || 'Erro ao atualizar'));
+  });
+
+  editRequestsList?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-edit-req-st]');
+    if (!btn) return;
+    const rid = parseInt(btn.getAttribute('data-edit-req-st'), 10) || 0;
+    const st = String(btn.getAttribute('data-st') || '').trim();
+    if (!rid || !st) return;
+    patchEditRequestStatus(rid, st).catch((err) => showError(err.message || 'Erro'));
   });
 
   salesAddPackageBtn?.addEventListener('click', () => {

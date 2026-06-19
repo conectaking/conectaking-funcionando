@@ -686,6 +686,21 @@
     .ks-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;
     }
+    .ks-grid-sentinel {
+      grid-column: 1 / -1;
+      height: 48px;
+      pointer-events: none;
+    }
+    .ks-virtual-grid-hint {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin: 0 0 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+    }
     @media (min-width: 768px) {
       .ks-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
       :root { --ks-photo-frame-h: 280px; }
@@ -1669,6 +1684,9 @@
               <button type="button" class="ks-btn ks-btn-danger" id="ks-clear" title="Limpa só a seleção atual">
                 <i class="fas fa-trash-alt"></i> Limpar seleção
               </button>
+              <button type="button" class="ks-btn ks-btn-outline ks-hidden" id="ks-send-edit" title="Enviar fotos marcadas para edição">
+                <i class="fas fa-magic"></i> Enviar para edição
+              </button>
               <button type="button" class="ks-btn ks-dl-btn-selected ks-hidden" id="ks-pub-dl-selected" title="Baixar fotos marcadas na galeria">
                 <i class="fas fa-download"></i> Baixar selecionadas
               </button>
@@ -1802,6 +1820,7 @@
           <div class="ks-folder-grid" id="ks-folder-grid"></div>
         </div>
         <div class="ks-banner warn ks-hidden" id="ks-search-hint"></div>
+        <div class="ks-virtual-grid-hint ks-hidden" id="ks-virtual-grid-hint" aria-live="polite"></div>
         <div id="ks-grid" class="ks-grid"></div>
         <div class="ks-empty ks-hidden" id="ks-empty">Nenhuma foto corresponde à busca.</div>
         <p class="ks-gallery-foot" id="ks-gallery-foot">Revise as fotos acima. Use <strong>Avançar</strong> ou <strong>Comparar e ajustar</strong> para comparar; depois <strong>Revisar e enviar</strong> e <strong>Confirmar e enviar seleção</strong>.</p>
