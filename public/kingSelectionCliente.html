@@ -688,8 +688,14 @@
     }
     @media (min-width: 768px) {
       .ks-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+      :root { --ks-photo-frame-h: 280px; }
+    }
+    @media (min-width: 1200px) {
+      :root { --ks-photo-frame-h: 300px; }
     }
     @media (max-width: 700px) {
+      :root { --ks-photo-frame-h: 200px; }
+      .ks-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
       .ks-folder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .ks-folder-cover { height: 150px; }
       .ks-folder-card.ks-folder-card--landscape .ks-folder-cover { height: 128px; }
@@ -705,6 +711,8 @@
       color: inherit; font: inherit;
       display: flex;
       flex-direction: column;
+      content-visibility: auto;
+      contain-intrinsic-size: auto 320px;
     }
     .ks-ph.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(34,197,94,.2); }
     .ks-ph-imgwrap {
@@ -731,6 +739,36 @@
       user-select: none;
       pointer-events: none;
       background:#000;
+      transition: opacity .2s ease;
+    }
+    .ks-ph img.ks-img-loading { opacity: 0; }
+    .ks-ph img.ks-img-loaded { opacity: 1; }
+    .ks-ph-imgwrap--loading::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, #111 8%, #1f2937 18%, #111 33%);
+      background-size: 200% 100%;
+      animation: ks-shimmer 1.2s linear infinite;
+      pointer-events: none;
+    }
+    .ks-ph-imgwrap--error::after {
+      content: '⚠';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #6b7280;
+      background: rgba(0,0,0,.55);
+      pointer-events: none;
+    }
+    @keyframes ks-shimmer {
+      to { background-position-x: -200%; }
+    }
+    .ks-check-btn, .ks-ph-act, [data-expand] {
+      touch-action: manipulation;
     }
     .ks-check-btn {
       position: absolute; top: 8px; right: 8px; z-index: 15;

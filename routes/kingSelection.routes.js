@@ -1498,6 +1498,39 @@ function ksMergeDedupePhotoIdsKeepOrder(primaryIds, secondaryIds) {
   return out;
 }
 
+/** Confirma que a linha de seleção existe após INSERT … ON CONFLICT DO NOTHING. */
+async function ksClientSelectionRowExists(client, galleryId, photoId, { cid, anonSk, hasSessionKey, hasSelClientId }) {
+  const gid = parseInt(galleryId, 10) || 0;
+  const pid = parseInt(photoId, 10) || 0;
+  if (!gid || !pid) return false;
+  if (hasSelClientId && cid) {
+    const r = await client.query(
+      'SELECT id FROM king_selections WHERE gallery_id=$1 AND photo_id=$2 AND client_id=$3 LIMIT 1',
+      [gid, pid, cid]
+    );
+    return r.rows.length > 0;
+  }
+  if (hasSelClientId && anonSk && hasSessionKey) {
+    const r = await client.query(
+      'SELECT id FROM king_selections WHERE gallery_id=$1 AND photo_id=$2 AND client_id IS NULL AND session_key=$3 LIMIT 1',
+      [gid, pid, anonSk]
+    );
+    return r.rows.length > 0;
+  }
+  if (hasSelClientId) {
+    const r = await client.query(
+      `SELECT id FROM king_selections WHERE gallery_id=$1 AND photo_id=$2 AND client_id IS NULL${hasSessionKey ? " AND (session_key IS NULL OR session_key = '')" : ''} LIMIT 1`,
+      [gid, pid]
+    );
+    return r.rows.length > 0;
+  }
+  const r = await client.query(
+    'SELECT id FROM king_selections WHERE gallery_id=$1 AND photo_id=$2 LIMIT 1',
+    [gid, pid]
+  );
+  return r.rows.length > 0;
+}
+
 /**
  * URL da imagem da tela inicial (splash): sempre servida pela API.
  * Usa `ksFetchGalleryLinkCoverBuffer` (igual à prévia «Capa do link» no painel) — evita 404 em URLs
@@ -11860,6 +11893,17 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
         );
       }
     }
+    const inserted = await ksClientSelectionRowExists(client, galleryId, photoId, {
+      cid,
+      anonSk,
+      hasSessionKey,
+      hasSelClientId
+    });
+    if (!inserted) {
+      return res.status(409).json({
+        message: 'Não foi possível atualizar a seleção agora. Atualize a página e tente novamente.'
+      });
+    }
     res.json(hasSelBatch ? { success: true, selected: true, selection_batch: round } : { success: true, selected: true });
     } catch (e) {
       const msg = String(e?.message || '').toLowerCase();
@@ -12960,8 +13004,12 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Cache-Control', 'private, no-cache, must-revalidate, max-age=0');
-    res.set('Pragma', 'no-cache');
+    if (useThumb) {
+      res.set('Cache-Control', 'private, max-age=3600, stale-while-revalidate=86400');
+    } else {
+      res.set('Cache-Control', 'private, no-cache, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+    }
     res.send(out);
   } catch (previewErr) {
     logger.error('[king-selection] client preview', { photoId, message: previewErr && previewErr.message });
