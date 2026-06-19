@@ -323,11 +323,111 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // privacy
   const savePrivacyBtn = document.getElementById('btn-save-privacy');
-  const publicEditRequestWrap = document.getElementById('ks-public-edit-request-wrap');
-  const allowClientEditRequestEl = document.getElementById('ks-allow-client-edit-request');
-  const editRequestsWrap = document.getElementById('ks-edit-requests-wrap');
-  const editRequestsList = document.getElementById('ks-edit-requests-list');
+
+  function getPublicEditRequestWrap() {
+    return document.getElementById('ks-public-edit-request-wrap');
+  }
+  function getAllowClientEditRequestEl() {
+    return document.getElementById('ks-allow-client-edit-request');
+  }
+  function getEditRequestsWrap() {
+    return document.getElementById('ks-edit-requests-wrap');
+  }
+  function getEditRequestsList() {
+    return document.getElementById('ks-edit-requests-list');
+  }
+
+  function injectPublicEditRequestStyles() {
+    if (document.getElementById('ks-edit-request-privacy-style')) return;
+    const st = document.createElement('style');
+    st.id = 'ks-edit-request-privacy-style';
+    st.textContent = `
+      #ks-public-edit-request-wrap { display: none; }
+      #ks-access-mode-public-wrap:has(input[name="access_mode"][value="public"]:checked) #ks-public-edit-request-wrap,
+      #ks-access-mode-public-wrap.ks-public-mode-on #ks-public-edit-request-wrap {
+        display: block !important;
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  /** Garante UI no painel mesmo se o .html em produção ainda for antigo (sem deploy do HTML). */
+  function ensurePublicEditRequestPrivacyMarkup() {
+    injectPublicEditRequestStyles();
+    const publicRadio = document.querySelector('input[name="access_mode"][value="public"]');
+    if (!publicRadio) return;
+
+    let host = document.getElementById('ks-access-mode-public-wrap');
+    if (!host) {
+      const oldLabel = publicRadio.closest('label');
+      if (!oldLabel || !oldLabel.parentNode) return;
+      host = document.createElement('div');
+      host.id = 'ks-access-mode-public-wrap';
+      host.className = 'flex flex-col gap-0 rounded-xl border border-slate-200 bg-white overflow-hidden';
+      oldLabel.parentNode.insertBefore(host, oldLabel);
+      host.appendChild(oldLabel);
+    }
+
+    if (!getPublicEditRequestWrap()) {
+      const editBlock = document.createElement('div');
+      editBlock.id = 'ks-public-edit-request-wrap';
+      editBlock.className = 'border-t border-violet-200 bg-violet-50/90 px-4 py-3';
+      editBlock.innerHTML =
+        '<label class="flex items-start gap-3 cursor-pointer m-0">' +
+        '<input type="checkbox" id="ks-allow-client-edit-request" class="mt-1" />' +
+        '<span>' +
+        '<span class="font-extrabold text-violet-950 block">Permitir envio para edição</span>' +
+        '<span class="text-sm text-violet-900/80 block">O cliente marca fotos e clica em «Enviar para edição». Você recebe os números e nomes em «Atividades do cliente».</span>' +
+        '</span></label>';
+      host.appendChild(editBlock);
+    }
+
+    host.classList.toggle('ks-public-mode-on', !!publicRadio.checked);
+
+    const activityPane = document.querySelector('[data-pane="activity"]');
+    if (activityPane && !getEditRequestsWrap()) {
+      const abo = activityPane.querySelector('.ks-abo');
+      if (abo) {
+        const panel = document.createElement('div');
+        panel.id = 'ks-edit-requests-wrap';
+        panel.className = 'hidden mb-5 rounded-2xl border border-violet-200 bg-violet-50/60 p-4';
+        panel.innerHTML =
+          '<div class="flex flex-wrap items-center justify-between gap-2">' +
+          '<div><div class="font-extrabold text-violet-950">Pedidos de edição (modo público)</div>' +
+          '<div class="text-sm text-violet-900/75">Clientes que marcaram fotos e pediram edição.</div></div>' +
+          '<button type="button" class="ks-btn ks-btn-sm" id="ks-edit-requests-refresh"><i class="fas fa-sync-alt"></i> Atualizar</button></div>' +
+          '<div id="ks-edit-requests-list" class="mt-3 space-y-3"></div>';
+        activityPane.insertBefore(panel, abo);
+        panel.querySelector('#ks-edit-requests-refresh')?.addEventListener('click', () => {
+          loadEditRequests().catch((e) => showError(e.message || 'Erro ao atualizar'));
+        });
+        panel.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-edit-req-st]');
+          if (!btn) return;
+          const rid = parseInt(btn.getAttribute('data-edit-req-st'), 10) || 0;
+          const st = String(btn.getAttribute('data-st') || '').trim();
+          if (!rid || !st) return;
+          patchEditRequestStatus(rid, st).catch((err) => showError(err.message || 'Erro'));
+        });
+      }
+    }
+  }
+
   const editRequestsRefreshBtn = document.getElementById('ks-edit-requests-refresh');
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#ks-edit-requests-refresh')) {
+      loadEditRequests().catch((err) => showError(err.message || 'Erro ao atualizar'));
+      return;
+    }
+    const editStBtn = e.target.closest('[data-edit-req-st]');
+    if (editStBtn && editStBtn.closest('#ks-edit-requests-list')) {
+      const rid = parseInt(editStBtn.getAttribute('data-edit-req-st'), 10) || 0;
+      const st = String(editStBtn.getAttribute('data-st') || '').trim();
+      if (!rid || !st) return;
+      patchEditRequestStatus(rid, st).catch((err) => showError(err.message || 'Erro'));
+    }
+  });
 
   // clients (modelo atual: 1 cliente por galeria)
   const selfSignup = document.getElementById('ks-self-signup');
@@ -3355,14 +3455,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function syncPublicEditRequestPrivacyUi() {
+    ensurePublicEditRequestPrivacyMarkup();
     const am = String(getRadio('access_mode') || gallery?.access_mode || 'private').toLowerCase();
     const isPublic = am === 'public';
-    if (publicEditRequestWrap) {
-      publicEditRequestWrap.style.display = isPublic ? 'block' : 'none';
-      publicEditRequestWrap.classList.toggle('hidden', !isPublic);
+    const wrap = getPublicEditRequestWrap();
+    const host = document.getElementById('ks-access-mode-public-wrap');
+    if (host) host.classList.toggle('ks-public-mode-on', isPublic);
+    if (wrap) {
+      wrap.style.display = isPublic ? 'block' : 'none';
+      wrap.classList.toggle('hidden', !isPublic);
     }
     const showPanel = isPublic && !!(gallery?.allow_client_edit_request);
-    editRequestsWrap?.classList.toggle('hidden', !showPanel);
+    getEditRequestsWrap()?.classList.toggle('hidden', !showPanel);
     if (showPanel) loadEditRequests().catch(() => { });
   }
 
@@ -3375,13 +3479,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadEditRequests() {
-    if (!galleryId || !editRequestsList) return;
+    if (!galleryId || !getEditRequestsList()) return;
     const am = String(gallery?.access_mode || '').toLowerCase();
     if (am !== 'public' || !gallery?.allow_client_edit_request) {
-      editRequestsWrap?.classList.add('hidden');
+      getEditRequestsWrap()?.classList.add('hidden');
       return;
     }
-    editRequestsWrap?.classList.remove('hidden');
+    getEditRequestsWrap()?.classList.remove('hidden');
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/edit-requests`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3391,6 +3495,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderEditRequestsList(requests) {
+    const editRequestsList = getEditRequestsList();
     if (!editRequestsList) return;
     if (!requests.length) {
       editRequestsList.innerHTML = '<p class="text-sm text-violet-900/70">Nenhum pedido de edição ainda.</p>';
@@ -3925,8 +4030,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Privacy (password antigo = signup)
     const am = gallery?.access_mode || 'private';
     setRadio('access_mode', am === 'password' ? 'signup' : am);
-    if (allowClientEditRequestEl) {
-      allowClientEditRequestEl.checked = !!gallery?.allow_client_edit_request;
+    ensurePublicEditRequestPrivacyMarkup();
+    const allowEl = getAllowClientEditRequestEl();
+    if (allowEl) {
+      allowEl.checked = !!gallery?.allow_client_edit_request;
     }
     syncPublicEditRequestPrivacyUi();
 
@@ -7118,7 +7225,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const patch = { access_mode: accessModeVal };
       if (accessModeVal === 'signup' || accessModeVal === 'paid_event_photos') patch.allow_self_signup = true;
       if (accessModeVal === 'public') {
-        patch.allow_client_edit_request = !!(allowClientEditRequestEl && allowClientEditRequestEl.checked);
+        patch.allow_client_edit_request = !!(getAllowClientEditRequestEl() && getAllowClientEditRequestEl().checked);
       } else {
         patch.allow_client_edit_request = false;
       }
@@ -7135,19 +7242,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('input[name="access_mode"]').forEach((el) => {
     el.addEventListener('change', () => syncPublicEditRequestPrivacyUi());
-  });
-
-  editRequestsRefreshBtn?.addEventListener('click', () => {
-    loadEditRequests().catch((e) => showError(e.message || 'Erro ao atualizar'));
-  });
-
-  editRequestsList?.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-edit-req-st]');
-    if (!btn) return;
-    const rid = parseInt(btn.getAttribute('data-edit-req-st'), 10) || 0;
-    const st = String(btn.getAttribute('data-st') || '').trim();
-    if (!rid || !st) return;
-    patchEditRequestStatus(rid, st).catch((err) => showError(err.message || 'Erro'));
   });
 
   salesAddPackageBtn?.addEventListener('click', () => {
@@ -10556,9 +10650,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // init
   (async () => {
     try {
+      ensurePublicEditRequestPrivacyMarkup();
       const savedTab = String(localStorage.getItem(TAB_PREF_KEY) || '').trim();
       const startTab = savedTab || 'activity';
       await loadGallery();
+      ensurePublicEditRequestPrivacyMarkup();
+      syncPublicEditRequestPrivacyUi();
       setActiveTab(startTab);
     } catch (e) {
       showError(e.message || 'Erro ao carregar');

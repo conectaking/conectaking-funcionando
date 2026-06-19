@@ -2012,6 +2012,22 @@
     return state.allowClientEditRequest === true;
   }
 
+  function ensureClientEditRequestButton() {
+    if ($('ks-send-edit')) return;
+    const clearBtn = $('ks-clear');
+    if (!clearBtn || !clearBtn.parentNode) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'ks-send-edit';
+    btn.className = 'ks-btn ks-btn-edit-req ks-hidden';
+    btn.hidden = true;
+    btn.setAttribute('aria-hidden', 'true');
+    btn.title = 'Enviar fotos marcadas para edição';
+    btn.innerHTML = '<i class="fas fa-magic"></i> Enviar para edição';
+    clearBtn.insertAdjacentElement('afterend', btn);
+    btn.addEventListener('click', () => submitEditRequest());
+  }
+
   function syncEditRequestToolbar() {
     const btn = $('ks-send-edit');
     if (!btn) return;

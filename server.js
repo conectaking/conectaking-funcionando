@@ -587,6 +587,32 @@ function patchKingSelectionProjectHtml(html) {
             `/${KS_PROJECT_LOOSE_PATCH}?v=${patchVer}`
         );
     }
+    if (!out.includes('ks-public-edit-request-wrap')) {
+        const publicEditBlock =
+            '<div class="flex flex-col gap-0 rounded-xl border border-slate-200 bg-white overflow-hidden" id="ks-access-mode-public-wrap">' +
+            '<label class="flex items-start gap-3 p-4 cursor-pointer m-0">' +
+            '<input type="radio" name="access_mode" value="public" class="mt-1" />' +
+            '<span class="block"><span class="font-extrabold block">Público</span>' +
+            '<span class="text-sm ks-muted block">Qualquer pessoa com o link pode acessar a galeria.</span></span></label>' +
+            '<div id="ks-public-edit-request-wrap" class="border-t border-violet-200 bg-violet-50/90 px-4 py-3">' +
+            '<label class="flex items-start gap-3 cursor-pointer m-0">' +
+            '<input type="checkbox" id="ks-allow-client-edit-request" class="mt-1" />' +
+            '<span><span class="font-extrabold text-violet-950 block">Permitir envio para edição</span>' +
+            '<span class="text-sm text-violet-900/80 block">O cliente marca fotos e clica em «Enviar para edição». Você recebe os números e nomes em «Atividades do cliente».</span></span></label></div></div>';
+        out = out.replace(
+            /<label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">\s*<input type="radio" name="access_mode" value="public"[^>]*>\s*<div>\s*<div class="font-extrabold">Público<\/div>[\s\S]*?<\/label>/,
+            publicEditBlock
+        );
+        const editStyle =
+            '<style id="ks-edit-request-privacy-style">' +
+            '#ks-public-edit-request-wrap{display:none}' +
+            '#ks-access-mode-public-wrap:has(input[name="access_mode"][value="public"]:checked) #ks-public-edit-request-wrap,' +
+            '#ks-access-mode-public-wrap.ks-public-mode-on #ks-public-edit-request-wrap{display:block!important}' +
+            '</style>';
+        if (!out.includes('ks-edit-request-privacy-style')) {
+            out = out.replace('</head>', `${editStyle}\n</head>`);
+        }
+    }
     return out;
 }
 
