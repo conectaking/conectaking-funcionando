@@ -731,7 +731,16 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         allow_self_signup: !!(og && og.allow_self_signup),
         allow_client_edit_request: !!(og && og.allow_client_edit_request)
     };
-    const bootScript = `<script>window.__KS_BOOT_GALLERY_META=${JSON.stringify(bootMeta)};</script>`;
+    const editReqServerOn =
+        bootMeta.allow_client_edit_request && bootMeta.access_mode === 'public';
+    const bootScript =
+        `<script>window.__KS_BOOT_GALLERY_META=${JSON.stringify(bootMeta)};` +
+        (editReqServerOn ? 'document.documentElement.setAttribute("data-ks-edit-request","1");' : '') +
+        '</script>';
+    const editReqServerStyle = editReqServerOn
+        ? '<style id="ks-edit-req-server-on">html[data-ks-edit-request="1"] #ks-send-edit{display:inline-flex!important}' +
+          'html[data-ks-edit-request="1"] #ks-send-edit.ks-hidden{display:inline-flex!important}</style>'
+        : '';
 
     const metaBlock = [
         '<meta property="og:type" content="website" />',
@@ -751,7 +760,7 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         .filter(Boolean)
         .join('\n  ');
 
-    let html = tpl.replace('</head>', `  ${metaBlock}\n  ${bootScript}\n</head>`);
+    let html = tpl.replace('</head>', `  ${metaBlock}\n  ${editReqServerStyle}\n  ${bootScript}\n</head>`);
     html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escHtmlAttr(pageTitle)}</title>`);
     const ksClienteJsVer = resolveKingSelectionClienteJsVersion();
     html = html.replace(
@@ -778,6 +787,17 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         html = html.replace(
             new RegExp(`/${KS_CLIENTE_EDIT_PATCH}\\?v=[^"']+`, 'g'),
             `/${KS_CLIENTE_EDIT_PATCH}?v=${ksClienteEditVer}`
+        );
+    }
+
+    if (editReqServerOn) {
+        html = html.replace(
+            /(<button[^>]*\bid="ks-send-edit"[^>]*\bclass="[^"]*)\bks-hidden\b(\s*)/i,
+            '$1$2 data-ks-edit-request="1" '
+        );
+        html = html.replace(
+            /(<button[^>]*\bid="ks-send-edit"[^>]*)\saria-hidden="true"/i,
+            '$1 aria-hidden="false"'
         );
     }
 

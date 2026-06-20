@@ -2010,9 +2010,21 @@
     hydrateGridPreviews(grid);
   }
 
+  function ksEditRequestForcedOn() {
+    try {
+      if (document.documentElement.getAttribute('data-ks-edit-request') === '1') return true;
+      const btn = $('ks-send-edit');
+      if (btn && btn.getAttribute('data-ks-edit-request') === '1') return true;
+    } catch (_) { /* ignore */ }
+    return false;
+  }
+
   function publicEditRequestEnabled() {
+    if (ksEditRequestForcedOn()) return true;
     if (normKsAccessModeFromMeta() !== 'public') return false;
     if (state.allowClientEditRequest === true) return true;
+    if (state.gallery && state.gallery.allow_client_edit_request === true) return true;
+    if (galleryMeta && galleryMeta.allow_client_edit_request === true) return true;
     try {
       const boot = window.__KS_BOOT_GALLERY_META;
       if (boot && boot.allow_client_edit_request === true) return true;
@@ -2754,6 +2766,16 @@
         const boot = window.__KS_BOOT_GALLERY_META;
         if (boot && boot.allow_client_edit_request === true) state.allowClientEditRequest = true;
       } catch (_) { /* ignore */ }
+    }
+    if (!state.allowClientEditRequest && galleryMeta && galleryMeta.allow_client_edit_request === true) {
+      state.allowClientEditRequest = true;
+    }
+    if (!state.allowClientEditRequest && ksEditRequestForcedOn()) {
+      state.allowClientEditRequest = true;
+    }
+    if (state.allowClientEditRequest && g) {
+      g.allow_client_edit_request = true;
+      if (galleryMeta) galleryMeta.allow_client_edit_request = true;
     }
     state.faceRecognitionUsable = !!data.faceRecognitionUsable;
     state.faceFilterIds = null;
@@ -5761,15 +5783,23 @@
       });
       if (!r.ok) throw new Error(data.message || 'Galeria não encontrada.');
       galleryMeta = data.gallery;
+      if (galleryMeta && galleryMeta.allow_client_edit_request === true) {
+        state.allowClientEditRequest = true;
+      }
       try {
         const boot = typeof window !== 'undefined' ? window.__KS_BOOT_GALLERY_META : null;
-        if (boot && typeof boot === 'object' && boot.access_mode) {
+        if (boot && typeof boot === 'object') {
           galleryMeta = {
             ...galleryMeta,
-            access_mode: String(boot.access_mode).toLowerCase().trim(),
+            ...(boot.access_mode
+              ? { access_mode: String(boot.access_mode).toLowerCase().trim() }
+              : {}),
             ...(typeof boot.allow_self_signup === 'boolean' ? { allow_self_signup: boot.allow_self_signup } : {}),
             ...(boot.allow_client_edit_request === true ? { allow_client_edit_request: true } : {})
           };
+          if (boot.allow_client_edit_request === true) {
+            state.allowClientEditRequest = true;
+          }
         }
       } catch (_) {}
     } catch (e) {

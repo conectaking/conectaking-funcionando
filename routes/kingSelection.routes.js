@@ -8532,8 +8532,9 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
     const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
     const hasTutorialVideo = await hasColumn(client, 'king_galleries', 'tutorial_video_url');
+    const hasAllowClientEditReq = await hasColumn(client, 'king_galleries', 'allow_client_edit_request');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}${hasAccessMode ? ', access_mode' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}${hasAccessMode ? ', access_mode' : ''}${hasClientFolderLayout ? ', client_folder_layout' : ''}${hasEntrySplash ? ', client_entry_splash_enabled' : ''}${hasCoverPhoto ? ', gallery_link_cover_photo_id' : ''}${hasCoverFile ? ', gallery_link_cover_file_path' : ''}${hasTutorialVideo ? ', tutorial_video_url' : ''}${hasAllowClientEditReq ? ', allow_client_edit_request' : ''}
        FROM king_galleries
        WHERE slug=$1`,
       [slug]
@@ -8586,7 +8587,10 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
           ? !!(g.client_entry_splash_enabled || splashBoot)
           : !!splashBoot,
         entry_splash_url: entrySplashUrl || null,
-        tutorial_video_url: hasTutorialVideo ? (g.tutorial_video_url ? String(g.tutorial_video_url).trim() : null) : undefined
+        tutorial_video_url: hasTutorialVideo ? (g.tutorial_video_url ? String(g.tutorial_video_url).trim() : null) : undefined,
+        allow_client_edit_request: hasAllowClientEditReq
+          ? !!(accessMode === 'public' && g.allow_client_edit_request === true)
+          : false
       }
     });
   } finally {

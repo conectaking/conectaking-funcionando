@@ -472,6 +472,10 @@
     }
     .ks-btn-edit-req:hover:not(:disabled) { filter: brightness(1.08); }
     .ks-btn-edit-req:disabled { opacity: .45; cursor: not-allowed; }
+    html[data-ks-edit-request="1"] #ks-send-edit,
+    html[data-ks-edit-request="1"] #ks-send-edit.ks-hidden {
+      display: inline-flex !important;
+    }
     .ks-dl-counter {
       display: inline-flex;
       align-items: center;

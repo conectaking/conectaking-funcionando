@@ -69,10 +69,21 @@
     return document.querySelectorAll('.ks-ph.selected, .ks-ph.frozen').length;
   }
 
+  function editRequestAllowed() {
+    try {
+      if (document.documentElement.getAttribute('data-ks-edit-request') === '1') return true;
+      const btn = document.getElementById('ks-send-edit');
+      if (btn && btn.getAttribute('data-ks-edit-request') === '1') return true;
+      const boot = window.__KS_BOOT_GALLERY_META;
+      if (boot && boot.allow_client_edit_request === true) return true;
+    } catch (_) { /* ignore */ }
+    return allowEdit === true;
+  }
+
   function syncButton() {
     const btn = ensureSendButton();
     if (!btn) return;
-    const show = allowEdit === true;
+    const show = editRequestAllowed();
     btn.classList.toggle('ks-hidden', !show);
     btn.hidden = !show;
     btn.style.display = show ? '' : 'none';
