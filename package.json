@@ -19,7 +19,8 @@
     "cleanup:r2": "node scripts/cleanup-r2-orphans.js",
     "push": "powershell -ExecutionPolicy Bypass -File ./push-auto.ps1",
     "config-auth": "powershell -ExecutionPolicy Bypass -File ./configurar-autenticacao.ps1",
-    "sync:king-docs": "node scripts/sync-king-docs-to-public-html.js"
+    "sync:king-docs": "node scripts/sync-king-docs-to-public-html.js",
+    "sync:king-selection-cliente": "node scripts/sync-king-selection-cliente-to-public-html.js"
   },
   "keywords": [],
   "author": "",
