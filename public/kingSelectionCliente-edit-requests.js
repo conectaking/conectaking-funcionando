@@ -162,10 +162,35 @@
     };
   }
 
+  function bootstrapAllowEdit() {
+    try {
+      const boot = window.__KS_BOOT_GALLERY_META;
+      if (boot && boot.allow_client_edit_request === true) {
+        allowEdit = true;
+        syncButton();
+      }
+    } catch (_) { /* ignore */ }
+    gallerySlug = gallerySlug || getSlug();
+    if (!gallerySlug) return;
+    const jwt = localStorage.getItem(tokenKey(gallerySlug)) || '';
+    if (!jwt) return;
+    fetch(`${apiBase()}/api/king-selection/client/gallery?slug=${encodeURIComponent(gallerySlug)}`, {
+      headers: { Authorization: `Bearer ${jwt}`, Accept: 'application/json' }
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        allowEdit = !!(data.gallery && data.gallery.allow_client_edit_request === true);
+        syncButton();
+      })
+      .catch(() => {});
+  }
+
   function start() {
     gallerySlug = getSlug();
     injectStyles();
     patchFetchForGallery();
+    bootstrapAllowEdit();
     ensureSendButton();
     syncButton();
     const grid = document.getElementById('ks-grid');

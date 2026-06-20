@@ -728,7 +728,8 @@ async function serveKingSelectionClienteGallery(req, res, next) {
 
     const bootMeta = {
         access_mode: og ? String(og.access_mode || 'private').toLowerCase().trim() : 'private',
-        allow_self_signup: !!(og && og.allow_self_signup)
+        allow_self_signup: !!(og && og.allow_self_signup),
+        allow_client_edit_request: !!(og && og.allow_client_edit_request)
     };
     const bootScript = `<script>window.__KS_BOOT_GALLERY_META=${JSON.stringify(bootMeta)};</script>`;
 

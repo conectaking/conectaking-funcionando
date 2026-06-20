@@ -74,15 +74,17 @@ async function fetchKingSelectionOgData(pool, slug) {
 
     let accessMode = 'private';
     let allowSelfSignup = false;
+    let allowClientEditRequest = false;
     try {
       const amRes = await client.query(
-        `SELECT access_mode, COALESCE(allow_self_signup, false) AS allow_self_signup FROM king_galleries WHERE id = $1 LIMIT 1`,
+        `SELECT access_mode, COALESCE(allow_self_signup, false) AS allow_self_signup, COALESCE(allow_client_edit_request, false) AS allow_client_edit_request FROM king_galleries WHERE id = $1 LIMIT 1`,
         [g.id]
       );
       const row = amRes.rows[0];
       if (row) {
         accessMode = String(row.access_mode || 'private').toLowerCase().trim();
         allowSelfSignup = !!row.allow_self_signup;
+        allowClientEditRequest = accessMode === 'public' && !!row.allow_client_edit_request;
       }
     } catch (e) {
       if (e.code !== '42703') throw e;
@@ -167,7 +169,8 @@ async function fetchKingSelectionOgData(pool, slug) {
       slug: g.slug,
       imageUrl,
       access_mode: accessMode,
-      allow_self_signup: allowSelfSignup
+      allow_self_signup: allowSelfSignup,
+      allow_client_edit_request: allowClientEditRequest
     };
   } finally {
     client.release();

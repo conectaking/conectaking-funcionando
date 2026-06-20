@@ -2033,14 +2033,10 @@
     const btn = $('ks-send-edit');
     if (!btn) return;
     const show = publicEditRequestEnabled() && !selectionLockedForUi();
-    btn.classList.add('ks-hidden');
-    btn.style.display = 'none';
-    btn.setAttribute('aria-hidden', 'true');
-    if (show) {
-      btn.classList.remove('ks-hidden');
-      btn.style.display = '';
-      btn.setAttribute('aria-hidden', 'false');
-    }
+    btn.classList.toggle('ks-hidden', !show);
+    btn.hidden = !show;
+    btn.style.display = show ? '' : 'none';
+    btn.setAttribute('aria-hidden', show ? 'false' : 'true');
     const n = countSelectedThisRound();
     btn.disabled = n === 0;
     btn.title = n > 0
