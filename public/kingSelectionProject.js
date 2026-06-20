@@ -3475,6 +3475,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (s === 'in_progress') return 'Em edição';
     if (s === 'done') return 'Concluído';
     if (s === 'rejected') return 'Recusado';
+    if (s === 'cancelled') return 'Cancelado pelo cliente';
     return 'Pendente';
   }
 

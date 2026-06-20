@@ -12232,12 +12232,118 @@ router.post('/client/edit-request', requireClient, asyncHandler(async (req, res)
       );
     }
 
+    const ordRes = await client.query(
+      `SELECT COUNT(*)::int AS n FROM king_client_edit_requests
+       WHERE gallery_id=$1 AND client_id=$2 AND status <> 'cancelled'`,
+      [req.ksClient.galleryId, clientId]
+    );
+    const requestNumber = parseInt(ordRes.rows[0]?.n, 10) || 1;
+
     res.json({
       success: true,
       request_id: requestId,
+      request_number: requestNumber,
       photo_count: validIds.length,
-      message: `${validIds.length} foto(s) enviada(s) para edição. O fotógrafo será notificado no painel.`
+      message: `Pedido ${requestNumber}: ${validIds.length} foto(s) enviada(s) para edição. Marque outras fotos para criar um novo pedido.`
     });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Cliente (modo público): lista os próprios pedidos de edição. */
+router.get('/client/edit-requests', requireClient, asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || '').toString();
+  if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
+  if (slug !== req.ksClient.slug) return res.status(403).json({ message: 'Sem permissão.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasEditReq = await hasColumn(client, 'king_galleries', 'allow_client_edit_request');
+    if (!hasEditReq || !(await hasTable(client, 'king_client_edit_requests'))) {
+      return res.json({ success: true, requests: [] });
+    }
+    const gRes = await client.query(
+      `SELECT id${hasAm ? ', access_mode' : ''}, allow_client_edit_request FROM king_galleries WHERE id=$1`,
+      [req.ksClient.galleryId]
+    );
+    const gallery = gRes.rows[0];
+    if (!gallery) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const accessMode = ksNormAccessMode(hasAm ? gallery.access_mode : 'private');
+    if (accessMode !== 'public' || !gallery.allow_client_edit_request) {
+      return res.json({ success: true, requests: [] });
+    }
+
+    const { cid, sk } = req.ksCtx;
+    let clientId = parseInt(cid, 10) || 0;
+    if (!clientId) {
+      clientId = await resolveFaceClientIdForSession(client, req.ksClient.galleryId, cid, sk);
+    }
+    if (!clientId) return res.json({ success: true, requests: [] });
+
+    const rows = (await client.query(
+      `SELECT r.id, r.status, r.note_client, r.created_at, r.updated_at,
+              (SELECT COUNT(*)::int FROM king_client_edit_request_photos p WHERE p.edit_request_id = r.id) AS photo_count
+       FROM king_client_edit_requests r
+       WHERE r.gallery_id=$1 AND r.client_id=$2
+       ORDER BY r.created_at DESC, r.id DESC
+       LIMIT 50`,
+      [req.ksClient.galleryId, clientId]
+    )).rows || [];
+
+    res.json({ success: true, requests: rows });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Cliente (modo público): cancela pedido de edição ainda pendente. */
+router.post('/client/edit-request/:requestId/cancel', requireClient, asyncHandler(async (req, res) => {
+  const slug = (req.body?.slug || req.query?.slug || '').toString();
+  const requestId = parseInt(req.params.requestId, 10);
+  if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
+  if (!requestId) return res.status(400).json({ message: 'requestId inválido.' });
+  if (slug !== req.ksClient.slug) return res.status(403).json({ message: 'Sem permissão.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasEditReq = await hasColumn(client, 'king_galleries', 'allow_client_edit_request');
+    if (!hasEditReq || !(await hasTable(client, 'king_client_edit_requests'))) {
+      return res.status(503).json({ message: 'Pedidos de edição indisponíveis.' });
+    }
+    const gRes = await client.query(
+      `SELECT id${hasAm ? ', access_mode' : ''}, allow_client_edit_request FROM king_galleries WHERE id=$1`,
+      [req.ksClient.galleryId]
+    );
+    const gallery = gRes.rows[0];
+    if (!gallery) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const accessMode = ksNormAccessMode(hasAm ? gallery.access_mode : 'private');
+    if (accessMode !== 'public' || !gallery.allow_client_edit_request) {
+      return res.status(403).json({ message: 'Pedidos de edição só estão disponíveis no modo público.' });
+    }
+
+    const { cid, sk } = req.ksCtx;
+    let clientId = parseInt(cid, 10) || 0;
+    if (!clientId) {
+      clientId = await resolveFaceClientIdForSession(client, req.ksClient.galleryId, cid, sk);
+    }
+    if (!clientId) {
+      return res.status(403).json({ message: 'Cadastre-se na galeria antes de cancelar pedidos.' });
+    }
+
+    const upd = await client.query(
+      `UPDATE king_client_edit_requests
+       SET status='cancelled', updated_at=NOW()
+       WHERE id=$1 AND gallery_id=$2 AND client_id=$3 AND LOWER(status)='pending'
+       RETURNING id`,
+      [requestId, req.ksClient.galleryId, clientId]
+    );
+    if (!upd.rows.length) {
+      return res.status(409).json({ message: 'Só é possível cancelar pedidos ainda pendentes.' });
+    }
+    res.json({ success: true, id: requestId, status: 'cancelled' });
   } finally {
     client.release();
   }

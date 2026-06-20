@@ -280,6 +280,10 @@
     clientContactPrefill: null,
     /** Modo público: pedido de edição ativado pelo fotógrafo. */
     allowClientEditRequest: false,
+    /** Modo público + edição: fotos do pedido atual (independente de seleções anteriores). */
+    publicEditDraftIds: new Set(),
+    /** Pedidos de edição do cliente (modo público). */
+    clientEditRequests: [],
     /** Galerias muito grandes: quantas fotos renderizar na grade. */
     gridVirtualShown: 120
   };
@@ -2032,6 +2036,189 @@
     return false;
   }
 
+  /** Fotos marcadas para o pedido de edição atual (modo público). */
+  function publicEditDraftIdsArray() {
+    const out = [];
+    for (const id of state.publicEditDraftIds) {
+      if (!isFrozenPhoto(id)) out.push(id);
+    }
+    return out;
+  }
+
+  function countPublicEditDraft() {
+    if (!publicEditRequestEnabled()) return countSelectedThisRound();
+    return publicEditDraftIdsArray().length;
+  }
+
+  function clientEditRequestStatusLabel(st) {
+    const s = String(st || '').toLowerCase();
+    if (s === 'in_progress') return 'Em edição';
+    if (s === 'done') return 'Concluído';
+    if (s === 'rejected') return 'Recusado';
+    if (s === 'cancelled') return 'Cancelado';
+    return 'Aguardando fotógrafo';
+  }
+
+  function syncPublicEditClearButton() {
+    const btn = $('ks-clear');
+    if (!btn) return;
+    const edit = publicEditRequestEnabled() && !selectionLockedForUi();
+    const label = edit
+      ? '<i class="fas fa-eraser"></i> Descartar seleção (edição)'
+      : '<i class="fas fa-trash-alt"></i> Limpar seleção';
+    if (btn.innerHTML !== label) btn.innerHTML = label;
+    btn.title = edit
+      ? 'Remove as fotos marcadas para o pedido de edição atual'
+      : 'Limpa só a seleção atual';
+  }
+
+  async function unselectPhotoIdsBulk(ids) {
+    const clean = [...new Set(ids.map((x) => normalizePhotoId(x)).filter(Boolean))];
+    if (!clean.length) return;
+    const res = await fetch(`${API}/api/king-selection/client/select-bulk`, {
+      method: 'POST',
+      headers: authHeaders(true),
+      body: JSON.stringify({ slug, mode: 'unselect', photo_ids: clean })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (handleClientUnauthorized(res, data)) return;
+    if (!res.ok) throw new Error(data.message || 'Erro ao desmarcar fotos');
+  }
+
+  function removeIdsFromLocalSelection(ids) {
+    for (const raw of ids) {
+      const id = normalizePhotoId(raw);
+      if (!id) continue;
+      state.publicEditDraftIds.delete(id);
+      state.selected.delete(id);
+      if (state.hasSelectionBatch) delete state.batchByPhoto[String(id)];
+      updatePhotoCardUi(id);
+    }
+    renderSalesUi();
+    updateHeaderCounts();
+    syncPublicDownloadToolbar();
+    refreshSecondarySteps();
+    syncSingleViewerSelectUI();
+    syncFolderSelectAllToolbar();
+    syncEditRequestToolbar();
+    syncPublicEditClearButton();
+    renderPublicEditRequestsBanner();
+  }
+
+  async function clearPublicEditDraftAfterSubmit(sentIds) {
+    const ids = [...new Set(sentIds.map((x) => normalizePhotoId(x)).filter(Boolean))];
+    if (!ids.length) return;
+    try {
+      await unselectPhotoIdsBulk(ids);
+    } catch (_) { /* mantém limpeza local mesmo se API falhar */ }
+    removeIdsFromLocalSelection(ids);
+  }
+
+  async function discardPublicEditDraft() {
+    const ids = publicEditDraftIdsArray();
+    if (!ids.length) {
+      toast('Nenhuma foto marcada para este pedido de edição.', 'err');
+      return;
+    }
+    if (!confirm('Descartar a seleção atual para edição? As fotos serão desmarcadas.')) return;
+    try {
+      await unselectPhotoIdsBulk(ids);
+      removeIdsFromLocalSelection(ids);
+      toast('Seleção para edição descartada.', '');
+    } catch (e) {
+      toast(e.message || 'Erro', 'err');
+    }
+  }
+
+  async function refreshClientEditRequests() {
+    if (!publicEditRequestEnabled()) {
+      state.clientEditRequests = [];
+      renderPublicEditRequestsBanner();
+      return;
+    }
+    if (!publicJwtHasRegisteredClient() && !state.resolvedClientId) {
+      state.clientEditRequests = [];
+      renderPublicEditRequestsBanner();
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${API}/api/king-selection/client/edit-requests?slug=${encodeURIComponent(slug)}`,
+        { headers: authHeaders(true) }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (handleClientUnauthorized(res, data)) return;
+      if (!res.ok) throw new Error(data.message || 'Erro');
+      state.clientEditRequests = Array.isArray(data.requests) ? data.requests : [];
+    } catch (_) {
+      /* mantém lista anterior */
+    }
+    renderPublicEditRequestsBanner();
+  }
+
+  function renderPublicEditRequestsBanner() {
+    const el = $('ks-edit-requests-client');
+    if (!el) return;
+    if (!publicEditRequestEnabled()) {
+      el.classList.add('ks-hidden');
+      el.innerHTML = '';
+      return;
+    }
+    const pending = (state.clientEditRequests || []).filter(
+      (r) => String(r.status || '').toLowerCase() === 'pending'
+    );
+    const draftN = countPublicEditDraft();
+    const parts = [];
+    pending.forEach((r) => {
+      const rid = parseInt(r.id, 10) || 0;
+      const n = parseInt(r.photo_count, 10) || 0;
+      parts.push(
+        `<div class="ks-edit-req-row">` +
+        `<span><strong>Pedido #${rid}</strong> · ${n} foto(s) · ${clientEditRequestStatusLabel(r.status)}</span>` +
+        `<button type="button" class="ks-btn ks-btn-outline" data-ks-cancel-edit-req="${rid}" style="font-size:12px;padding:6px 10px">` +
+        `<i class="fas fa-times"></i> Cancelar pedido</button></div>`
+      );
+    });
+    if (draftN > 0) {
+      parts.push(
+        `<div class="ks-edit-req-row">` +
+        `<span><strong>Nova seleção:</strong> ${draftN} foto(s) marcada(s) para enviar à edição.</span></div>`
+      );
+    }
+    if (!parts.length) {
+      el.classList.add('ks-hidden');
+      el.innerHTML = '';
+      return;
+    }
+    el.innerHTML = parts.join('');
+    el.classList.remove('ks-hidden');
+    el.querySelectorAll('[data-ks-cancel-edit-req]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const rid = parseInt(btn.getAttribute('data-ks-cancel-edit-req') || '0', 10);
+        if (rid) void cancelClientEditRequest(rid);
+      });
+    });
+  }
+
+  async function cancelClientEditRequest(requestId) {
+    if (!requestId) return;
+    if (!confirm('Cancelar este pedido de edição? O fotógrafo deixará de vê-lo como pendente.')) return;
+    try {
+      const res = await fetch(`${API}/api/king-selection/client/edit-request/${requestId}/cancel`, {
+        method: 'POST',
+        headers: authHeaders(true),
+        body: JSON.stringify({ slug })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (handleClientUnauthorized(res, data)) return;
+      if (!res.ok) throw new Error(data.message || 'Erro ao cancelar');
+      toast('Pedido cancelado.', 'ok');
+      await refreshClientEditRequests();
+    } catch (e) {
+      toast(e.message || 'Erro', 'err');
+    }
+  }
+
   function ensureClientEditRequestButton() {
     if ($('ks-send-edit')) return;
     const clearBtn = $('ks-clear');
@@ -2057,16 +2244,18 @@
     btn.hidden = !show;
     btn.style.display = show ? '' : 'none';
     btn.setAttribute('aria-hidden', show ? 'false' : 'true');
-    const n = countSelectedThisRound();
+    const n = countPublicEditDraft();
     btn.disabled = n === 0;
     btn.title = n > 0
-      ? `Enviar ${n} foto(s) marcada(s) para edição`
+      ? `Enviar ${n} foto(s) marcada(s) para edição (novo pedido)`
       : 'Marque as fotos que deseja enviar para edição';
+    syncPublicEditClearButton();
+    renderPublicEditRequestsBanner();
   }
 
   async function submitEditRequest() {
     if (!publicEditRequestEnabled()) return;
-    const ids = [...state.selected].filter((id) => !isFrozenPhoto(id));
+    const ids = publicEditDraftIdsArray();
     if (!ids.length) {
       toast('Marque pelo menos uma foto para enviar à edição.', 'err');
       return;
@@ -2091,7 +2280,9 @@
       const data = await res.json().catch(() => ({}));
       if (handleClientUnauthorized(res, data)) return;
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar pedido');
-      toast(data.message || `${ids.length} foto(s) enviada(s) para edição.`, 'ok');
+      toast(data.message || `Pedido enviado: ${ids.length} foto(s) para edição.`, 'ok');
+      await clearPublicEditDraftAfterSubmit(ids);
+      await refreshClientEditRequests();
     } catch (e) {
       toast(e.message || 'Erro ao enviar', 'err');
     } finally {
@@ -2817,6 +3008,7 @@
         .map((x) => normalizePhotoId(typeof x === 'object' && x && x.photo_id != null ? x.photo_id : x))
         .filter(Boolean)
     );
+    state.publicEditDraftIds = new Set();
     state.hasSelectionBatch = !!(data.selectionBatchByPhotoId && typeof data.selectionBatchByPhotoId === 'object');
     if (state.hasSelectionBatch && data.selectionBatchByPhotoId) {
       state.batchByPhoto = {};
@@ -2916,6 +3108,7 @@
     syncSalesPostSubmitLayout();
     syncSalesConfirmBar();
     syncEditRequestToolbar();
+    if (publicEditRequestEnabled()) void refreshClientEditRequests();
   }
 
   function absolutizeAssetUrl(url) {
@@ -3176,9 +3369,13 @@
     let changed = false;
     for (const raw of ids) {
       const pid = normalizePhotoId(raw);
-      if (!pid) continue;
+      if (!pid || isFrozenPhoto(pid)) continue;
       if (!state.selected.has(pid)) {
         state.selected.add(pid);
+        changed = true;
+      }
+      if (publicEditRequestEnabled() && !state.publicEditDraftIds.has(pid)) {
+        state.publicEditDraftIds.add(pid);
         changed = true;
       }
     }
@@ -3188,6 +3385,7 @@
       updateHeaderCounts();
       syncPublicDownloadToolbar();
       refreshSecondarySteps();
+      syncEditRequestToolbar();
     }
   }
 
@@ -3879,8 +4077,13 @@
 
     const next = !state.selected.has(pid);
     const prev = new Set(state.selected);
+    const prevDraft = new Set(state.publicEditDraftIds);
     if (next) state.selected.add(pid);
     else state.selected.delete(pid);
+    if (publicEditRequestEnabled()) {
+      if (next) state.publicEditDraftIds.add(pid);
+      else state.publicEditDraftIds.delete(pid);
+    }
     _toggleInFlight.add(pid);
     syncSelectionUiAfterChange(pid);
 
@@ -3895,9 +4098,11 @@
       if (!res.ok) throw new Error(data.message || 'Erro ao salvar');
       if (data.selected === false) {
         state.selected.delete(pid);
+        state.publicEditDraftIds.delete(pid);
         if (state.hasSelectionBatch) delete state.batchByPhoto[String(pid)];
       } else if (data.selected === true) {
         state.selected.add(pid);
+        if (publicEditRequestEnabled()) state.publicEditDraftIds.add(pid);
         if (state.hasSelectionBatch && data.selection_batch != null) {
           const br = parseInt(data.selection_batch, 10);
           state.batchByPhoto[String(pid)] = Number.isFinite(br) ? br : state.currentRound;
@@ -3906,6 +4111,7 @@
       syncSelectionUiAfterChange(pid);
     } catch (err) {
       state.selected = prev;
+      state.publicEditDraftIds = prevDraft;
       syncSelectionUiAfterChange(pid);
       toast(err.message || 'Erro ao salvar', 'err');
     } finally {
@@ -3915,6 +4121,9 @@
 
   async function clearCurrentRound() {
     if (selectionLockedForUi()) return;
+    if (publicEditRequestEnabled() && publicEditDraftIdsArray().length > 0) {
+      return discardPublicEditDraft();
+    }
     const msg = isPublicFreeDownloadGallery()
       ? 'Limpar a marcação das fotos? A galeria continua igual — você pode baixar qualquer foto depois.'
       : 'Limpar todas as fotos desta seleção atual? (Seleções anteriores permanecem.)';

@@ -472,6 +472,22 @@
     }
     .ks-btn-edit-req:hover:not(:disabled) { filter: brightness(1.08); }
     .ks-btn-edit-req:disabled { opacity: .45; cursor: not-allowed; }
+    #ks-edit-requests-client {
+      border-color: rgba(139, 92, 246, .45);
+      background: rgba(124, 58, 237, .12);
+      color: #ede9fe;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .ks-edit-req-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 0;
+    }
+    .ks-edit-req-row + .ks-edit-req-row { border-top: 1px solid rgba(255,255,255,.08); }
     html[data-ks-edit-request="1"] #ks-send-edit,
     html[data-ks-edit-request="1"] #ks-send-edit.ks-hidden {
       display: inline-flex !important;
@@ -1742,6 +1758,7 @@
       </div>
       <div class="ks-wrap">
         <div class="ks-banner ks-hidden" id="ks-notice"></div>
+        <div class="ks-banner ks-hidden" id="ks-edit-requests-client" aria-live="polite"></div>
         <div class="ks-banner ks-hidden" id="ks-sales-banner"></div>
         <div class="ks-banner ks-hidden" id="ks-payment-balance-banner" style="border-color:rgba(56,189,248,.45);background:rgba(14,165,233,.10);color:#0c4a6e;font-size:13px;line-height:1.45"></div>
         <div class="ks-card ks-hidden" id="ks-downloads-panel" style="margin-bottom:14px;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(0,0,0,.25)">
