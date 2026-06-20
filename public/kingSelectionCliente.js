@@ -1,6 +1,9 @@
 (function () {
   'use strict';
 
+  /** Patches antigos (no-sem-pasta / edit-requests) não devem controlar o mesmo botão. */
+  window.__ksNativeEditRequestToolbar = true;
+
   const KS_FALLBACK_API_ORIGIN = 'https://conectaking-api.onrender.com';
 
   /** Evita API_URL apontando para conectaking.com.br (img /api/... → 404 sem marca d'água). */
@@ -2009,7 +2012,12 @@
 
   function publicEditRequestEnabled() {
     if (normKsAccessModeFromMeta() !== 'public') return false;
-    return state.allowClientEditRequest === true;
+    if (state.allowClientEditRequest === true) return true;
+    try {
+      const boot = window.__KS_BOOT_GALLERY_META;
+      if (boot && boot.allow_client_edit_request === true) return true;
+    } catch (_) { /* ignore */ }
+    return false;
   }
 
   function ensureClientEditRequestButton() {
@@ -2741,6 +2749,12 @@
     state.gallery = g;
     applyClientCardHeightFromGallery(g);
     state.allowClientEditRequest = !!(g && g.allow_client_edit_request === true);
+    if (!state.allowClientEditRequest) {
+      try {
+        const boot = window.__KS_BOOT_GALLERY_META;
+        if (boot && boot.allow_client_edit_request === true) state.allowClientEditRequest = true;
+      } catch (_) { /* ignore */ }
+    }
     state.faceRecognitionUsable = !!data.faceRecognitionUsable;
     state.faceFilterIds = null;
     state.allowDownload = !!(g && g.allow_download);
@@ -3011,6 +3025,7 @@
     const directReviewFlow = simpleSalesFlow || (publicNoCompare && !publicFree);
     syncPublicDownloadToolbar();
     syncSalesConfirmBar();
+    syncEditRequestToolbar();
     if (adv) {
       if (publicFree) {
         adv.classList.add('ks-hidden');
@@ -5752,7 +5767,8 @@
           galleryMeta = {
             ...galleryMeta,
             access_mode: String(boot.access_mode).toLowerCase().trim(),
-            ...(typeof boot.allow_self_signup === 'boolean' ? { allow_self_signup: boot.allow_self_signup } : {})
+            ...(typeof boot.allow_self_signup === 'boolean' ? { allow_self_signup: boot.allow_self_signup } : {}),
+            ...(boot.allow_client_edit_request === true ? { allow_client_edit_request: true } : {})
           };
         }
       } catch (_) {}

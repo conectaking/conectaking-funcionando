@@ -5,6 +5,8 @@
 (function () {
   'use strict';
 
+  if (window.__ksNativeEditRequestToolbar) return;
+
   const STYLE_ID = 'ks-client-edit-req-patch-style';
   let allowEdit = false;
   let gallerySlug = '';
@@ -209,5 +211,4 @@
     start();
   }
   window.addEventListener('load', start);
-  window.setInterval(syncButton, 2500);
 })();
