@@ -1670,13 +1670,15 @@
     return startBulkZipDownload(photoIds, {
       onStart: (parts, total, mode) => {
         setDownloadsProgress(0, mode === 'folder' ? total : parts, true, mode === 'folder' ? 'all' : 'zip');
-        opts?.onProgress?.(0, mode === 'folder' ? total : parts);
+        opts?.onProgress?.(0, mode === 'folder' ? total : parts, mode);
       },
       onProgress: (n, total, mode) => {
         setDownloadsProgress(n, total, true, mode === 'folder' ? 'all' : 'zip');
-        opts?.onProgress?.(n, total);
+        opts?.onProgress?.(n, total, mode);
       },
-      onDone: () => {}
+      onDone: (parts, total, mode) => {
+        opts?.onDone?.(parts, total, mode);
+      }
     });
   }
 
@@ -5835,19 +5837,24 @@
       const msgEl = $('ks-downloads-msg');
       const prevMsg = msgEl ? String(msgEl.textContent || '') : '';
       const zipMode = shouldPreferZipDownload(picks.length);
-      setDownloadsProgress(0, zipMode ? 1 : picks.length, true, zipMode ? 'zip' : 'selected');
+      setDownloadsProgress(0, picks.length, true, zipMode ? 'zip' : 'selected');
       if (msgEl) {
         msgEl.textContent = zipMode
-          ? `Preparando ZIP (${picks.length} foto(s))...`
+          ? `Preparando download (${picks.length} foto(s))...`
           : `Baixando 0/${picks.length}...`;
       }
       const out = await downloadAllPhotosSmart(picks, {
-        onProgress: (n, total) => {
-          setDownloadsProgress(n, total, true, zipMode ? 'zip' : 'selected');
+        onProgress: (n, total, mode) => {
+          const uiMode = mode === 'folder' ? 'all' : (zipMode ? 'zip' : 'selected');
+          setDownloadsProgress(n, total, true, uiMode);
           if (msgEl) {
-            msgEl.textContent = zipMode
-              ? `ZIP ${n}/${total} (${picks.length} foto(s) no total)...`
-              : `Baixando ${n}/${total}...`;
+            if (mode === 'folder') {
+              msgEl.textContent = `Salvando ${n}/${total} na pasta...`;
+            } else if (zipMode) {
+              msgEl.textContent = `ZIP parte ${n}/${total} (${picks.length} foto(s) no total)...`;
+            } else {
+              msgEl.textContent = `Baixando ${n}/${total}...`;
+            }
           }
         }
       });
@@ -5881,9 +5888,13 @@
       setDownloadsProgress(0, all.length, true, 'all');
       if (msgEl) msgEl.textContent = `Baixando 0/${all.length}...`;
       const out = await downloadAllPhotosSmart(all, {
-        onProgress: (n, total) => {
-          setDownloadsProgress(n, total, true, 'all');
-          if (msgEl) msgEl.textContent = `Baixando ${n}/${total}...`;
+        onProgress: (n, total, mode) => {
+          setDownloadsProgress(n, total, true, mode === 'folder' ? 'all' : 'all');
+          if (msgEl) {
+            msgEl.textContent = mode === 'folder'
+              ? `Salvando ${n}/${total} na pasta...`
+              : `Baixando ${n}/${total}...`;
+          }
         }
       });
       if (out?.mode === 'zip') {
@@ -5920,10 +5931,11 @@
           }
         },
         onProgress: (n, total, mode) => {
+          setDownloadsProgress(n, total, true, mode === 'folder' ? 'all' : 'zip');
           if (msgEl) {
             msgEl.textContent = mode === 'folder'
               ? `Salvando ${n}/${total} na pasta...`
-              : `ZIP ${n}/${total} (${all.length} foto(s) no total)...`;
+              : `ZIP parte ${n}/${total} (${all.length} foto(s) no total)...`;
           }
         },
         onDone: (parts, total, mode) => {
