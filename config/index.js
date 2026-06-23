@@ -112,7 +112,8 @@ const config = {
             'Pragma',
             'Expires',
             'X-King-Docs-Viewer',
-            'X-King-Docs-Repeat-Visit'
+            'X-King-Docs-Repeat-Visit',
+            'X-KS-Bulk-Download'
         ],
         exposedHeaders: ['Content-Disposition', 'Retry-After'],
         optionsSuccessStatus: 204,

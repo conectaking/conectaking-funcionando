@@ -13337,7 +13337,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     let photo = pRes.rows[0];
     const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
     const isDownload = String(req.query.download || '') === '1';
-    const bulkDownload = String(req.headers['x-ks-bulk-download'] || '') === '1';
+    const bulkDownload = ['1', 'true', 'yes'].includes(String(req.headers['x-ks-bulk-download'] || req.query.bulk || '').toLowerCase());
 
     const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');

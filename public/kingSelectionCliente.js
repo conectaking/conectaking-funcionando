@@ -1277,8 +1277,9 @@
     return m !== 'none' && m !== '';
   }
 
-  function previewDownloadUrl(photoId) {
+  function previewDownloadUrl(photoId, opts) {
     const q = new URLSearchParams({ slug, token: jwt || '', download: '1' });
+    if (opts && opts.bulk) q.set('bulk', '1');
     return `${resolveKsApiBase()}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
   }
 
@@ -1426,9 +1427,9 @@
         const i = idx;
         idx += 1;
         const pid = ids[i];
-        const res = await fetch(previewDownloadUrl(pid), {
+        const res = await fetch(previewDownloadUrl(pid, { bulk: true }), {
           method: 'GET',
-          headers: authHeadersBulk(false)
+          headers: authHeaders(false)
         });
         let dataErr = {};
         if (!res.ok) dataErr = await res.json().catch(() => ({}));
