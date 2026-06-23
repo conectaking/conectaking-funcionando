@@ -43,15 +43,15 @@ const KS_ZIP_MAX_PHOTOS = 10000;
 function ksZipPartMaxBytes() {
   const raw = process.env.KINGSELECTION_ZIP_PART_MAX_BYTES;
   const n = raw ? parseInt(raw, 10) : NaN;
-  if (Number.isFinite(n) && n >= 256 * 1024 * 1024) return Math.min(n, 4 * 1024 * 1024 * 1024);
-  return 2 * 1024 * 1024 * 1024;
+  if (Number.isFinite(n) && n >= 128 * 1024 * 1024) return Math.min(n, 4 * 1024 * 1024 * 1024);
+  return 750 * 1024 * 1024;
 }
 /** Máx. fotos por ZIP (evita timeout no Render em lotes grandes). Override: KINGSELECTION_ZIP_PART_MAX_PHOTOS */
 function ksZipPartMaxPhotos() {
   const raw = process.env.KINGSELECTION_ZIP_PART_MAX_PHOTOS;
   const n = raw ? parseInt(raw, 10) : NaN;
   if (Number.isFinite(n) && n >= 5) return Math.min(n, 200);
-  return 25;
+  return 35;
 }
 const KS_PAYMENT_PROOF_DIR = path.resolve(process.cwd(), 'uploads', 'kingselection-payment-proofs');
 
@@ -1712,11 +1712,12 @@ async function ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId
 }
 
 const ksDownloadLimiter = new Map();
-function ksEnforceDownloadRateLimit(galleryId, clientId, ip) {
+function ksEnforceDownloadRateLimit(galleryId, clientId, ip, opts) {
+  const bulk = !!(opts && opts.bulk);
   const key = `${galleryId}:${clientId || 'anon'}:${String(ip || '').slice(0, 80)}`;
   const now = Date.now();
   const windowMs = 60 * 1000;
-  const maxHits = 40;
+  const maxHits = bulk ? 500 : 80;
   const row = ksDownloadLimiter.get(key) || { t0: now, hits: 0 };
   if (now - row.t0 > windowMs) {
     row.t0 = now;
@@ -2522,7 +2523,8 @@ function ksTryRedirectPublicR2(res, filePath) {
   return true;
 }
 
-async function ksApproxBytesForGalleryFilePath(filePath) {
+async function ksApproxBytesForGalleryFilePath(filePath, planOnly) {
+  if (planOnly) return 6 * 1024 * 1024;
   const fp = String(filePath || '').trim();
   const k = extractR2Key(fp) || extractR2KeyFromPublicHttpsUrl(fp);
   if (k) {
@@ -10429,7 +10431,7 @@ router.post('/client/download-zip-plan', requireClient, asyncHandler(async (req,
         const sourcePath = mode === 'edited' ? String(r.edited_file_path || '').trim() : String(r.file_path || '').trim();
         if (!sourcePath) continue;
         // eslint-disable-next-line no-await-in-loop
-        const approx = await ksApproxBytesForGalleryFilePath(sourcePath);
+        const approx = await ksApproxBytesForGalleryFilePath(sourcePath, true);
         items.push({ photo_id: id, approx_bytes: approx });
       }
     } else if (accessMode === 'public') {
@@ -10451,7 +10453,7 @@ router.post('/client/download-zip-plan', requireClient, asyncHandler(async (req,
         const r = rowById.get(id);
         if (!r || !r.file_path) continue;
         // eslint-disable-next-line no-await-in-loop
-        const approx = await ksApproxBytesForGalleryFilePath(r.file_path);
+        const approx = await ksApproxBytesForGalleryFilePath(r.file_path, true);
         items.push({ photo_id: id, approx_bytes: approx });
       }
     } else {
@@ -10570,20 +10572,39 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       return res.status(409).json({ message: 'As fotos aprovadas em modo editado ainda não possuem arquivo enviado.' });
     }
 
+    const partLabel = body.zip_part != null && parseInt(body.zip_part, 10) > 0 ? `_part${parseInt(body.zip_part, 10)}` : '';
+
+    const appendable = selectedRows.filter((r) => {
+      const mode = ksNormDeliveryMode(r.delivery_mode);
+      const sourcePath = mode === 'edited' ? String(r.edited_file_path || '').trim() : String(r.file_path || '').trim();
+      return !!sourcePath && !(mode === 'edited' && !String(r.edited_file_path || '').trim());
+    });
+    if (!appendable.length) {
+      return res.status(404).json({ message: 'Nenhuma foto com arquivo disponível para o ZIP.' });
+    }
+
     const zipNameBase = String(gRes.rows[0]?.nome_projeto || payload.slug || 'fotos')
       .replace(/[^\w\-]+/g, '_')
       .replace(/^_+|_+$/g, '')
       .slice(0, 60) || 'fotos';
-    const partLabel = body.zip_part != null && parseInt(body.zip_part, 10) > 0 ? `_part${parseInt(body.zip_part, 10)}` : '';
+
+    res.set('Content-Type', 'application/zip');
+    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Content-Disposition', `attachment; filename="${zipNameBase}_aprovadas${partLabel}.zip"`);
 
     const archive = archiver('zip', { zlib: { level: 0 } });
+    archive.on('error', (err) => {
+      try { res.destroy(err); } catch (_) { }
+    });
+    archive.pipe(res);
+
     const usedNames = new Set();
     const toAudit = [];
     let appended = 0;
-    for (const r of selectedRows) {
+    for (const r of appendable) {
       const mode = ksNormDeliveryMode(r.delivery_mode);
       const sourcePath = mode === 'edited' ? String(r.edited_file_path || '').trim() : String(r.file_path || '').trim();
-      if (!sourcePath) continue;
       let fname = String(r.original_name || `foto-${r.photo_id}`).replace(/[\/\\:*?"<>|]+/g, '-').trim();
       if (!fname) fname = `foto-${r.photo_id}.jpg`;
       if (!/\.[a-z0-9]{2,5}$/i.test(fname)) fname = `${fname}.jpg`;
@@ -10607,22 +10628,7 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       toAudit.push({ photoId: parseInt(r.photo_id, 10) || 0, selectionBatch: parseInt(r.selection_batch, 10) || null });
     }
 
-    if (!appended) {
-      return res.status(502).json({
-        message: 'Não foi possível ler os arquivos das fotos no armazenamento. Tente novamente ou contacte o fotógrafo.'
-      });
-    }
-
-    res.set('Content-Type', 'application/zip');
-    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
-    res.set('Pragma', 'no-cache');
     res.set('X-KS-Zip-Entries', String(appended));
-    res.set('Content-Disposition', `attachment; filename="${zipNameBase}_aprovadas${partLabel}.zip"`);
-
-    archive.on('error', (err) => {
-      try { res.destroy(err); } catch (_) { }
-    });
-    archive.pipe(res);
 
     for (const a of toAudit) {
       if (!a.photoId) continue;
@@ -10676,7 +10682,17 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
         .slice(0, 60) || 'fotos';
       const partLabelPub = body.zip_part != null && parseInt(body.zip_part, 10) > 0 ? `_part${parseInt(body.zip_part, 10)}` : '';
 
+      res.set('Content-Type', 'application/zip');
+      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+      res.set('Content-Disposition', `attachment; filename="${zipNameBasePub}_galeria${partLabelPub}.zip"`);
+
       const archivePub = archiver('zip', { zlib: { level: 0 } });
+      archivePub.on('error', (err) => {
+        try { res.destroy(err); } catch (_) { }
+      });
+      archivePub.pipe(res);
+
       const usedNamesPub = new Set();
       let appendedPub = 0;
       for (const photo of rowsZip) {
@@ -10700,23 +10716,7 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
         if (okPub) appendedPub += 1;
       }
 
-      if (!appendedPub) {
-        return res.status(502).json({
-          message: 'Não foi possível ler os arquivos das fotos no armazenamento. Tente novamente ou contacte o fotógrafo.'
-        });
-      }
-
-      res.set('Content-Type', 'application/zip');
-      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
-      res.set('Pragma', 'no-cache');
       res.set('X-KS-Zip-Entries', String(appendedPub));
-      res.set('Content-Disposition', `attachment; filename="${zipNameBasePub}_galeria${partLabelPub}.zip"`);
-
-      archivePub.on('error', (err) => {
-        try { res.destroy(err); } catch (_) { }
-      });
-      archivePub.pipe(res);
-
       await archivePub.finalize();
       return;
     }
@@ -13337,6 +13337,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     let photo = pRes.rows[0];
     const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
     const isDownload = String(req.query.download || '') === '1';
+    const bulkDownload = String(req.headers['x-ks-bulk-download'] || '') === '1';
 
     const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
@@ -13365,7 +13366,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       if (!rightsPv.allowedPhotoIdSet.has(photoId)) {
         return res.status(403).send('Esta foto não está liberada para o seu download.');
       }
-      if (!ksEnforceDownloadRateLimit(payload.galleryId, rightsPv.rateLimitClientId, req.ip)) {
+      if (!ksEnforceDownloadRateLimit(payload.galleryId, rightsPv.rateLimitClientId, req.ip, { bulk: bulkDownload })) {
         return res.status(429).send('Muitas tentativas de download. Tente novamente em instantes.');
       }
     }
@@ -13384,7 +13385,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
         }
       }
       if (!cid) return res.status(403).send('Faça login para baixar as fotos aprovadas.');
-      if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip)) {
+      if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip, { bulk: bulkDownload })) {
         return res.status(429).send('Muitas tentativas de download. Tente novamente em instantes.');
       }
       if (!(await hasTable(client, 'king_selection_photo_approvals'))) {

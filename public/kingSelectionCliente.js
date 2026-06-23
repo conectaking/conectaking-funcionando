@@ -1381,8 +1381,151 @@
   const KS_DL_ZIP_AUTO_BYTES = 500 * 1024 * 1024;
   /** 2+ fotos → ZIP (1 popup de salvar). Só 1 foto baixa o arquivo direto. */
   const KS_DL_ZIP_MIN_COUNT = 2;
-  const KS_DL_ZIP_FALLBACK_CHUNK = 25;
+  const KS_DL_ZIP_FALLBACK_CHUNK = 35;
   const KS_DL_ZIP_FETCH_MS = 15 * 60 * 1000;
+  const KS_DL_FOLDER_MIN = 8;
+  let _zipDownloadBusy = false;
+
+  function authHeadersBulk(json) {
+    const h = authHeaders(json);
+    h['X-KS-Bulk-Download'] = '1';
+    return h;
+  }
+
+  async function requestDownloadFolder(photoCount) {
+    if (typeof window.showDirectoryPicker !== 'function') return null;
+    const n = parseInt(photoCount, 10) || 0;
+    if (n < KS_DL_FOLDER_MIN) return null;
+    const ok = confirm(
+      `Você vai baixar ${n} foto(s).\n\n` +
+      'Clique OK e escolha UMA PASTA no computador.\n' +
+      'Todas as fotos serão salvas lá automaticamente — sem clicar Salvar dezenas de vezes.'
+    );
+    if (!ok) return null;
+    try {
+      return await window.showDirectoryPicker({
+        id: `ks-dl-${String(slug || 'galeria').slice(0, 40)}`,
+        mode: 'readwrite'
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function savePhotosDirectToFolder(photoIds, dirHandle, onProgress) {
+    const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
+    if (!ids.length || !dirHandle) return 0;
+    const approvedMap = new Map(getApprovedDownloadsForClient().map((p) => [p.id, p.name]));
+    const usedNames = new Set();
+    let saved = 0;
+    const concurrency = 3;
+    let idx = 0;
+
+    async function worker() {
+      while (idx < ids.length) {
+        const i = idx;
+        idx += 1;
+        const pid = ids[i];
+        const res = await fetch(previewDownloadUrl(pid), {
+          method: 'GET',
+          headers: authHeadersBulk(false)
+        });
+        let dataErr = {};
+        if (!res.ok) dataErr = await res.json().catch(() => ({}));
+        if (handleClientUnauthorized(res, dataErr)) return;
+        if (!res.ok) throw new Error(dataErr?.message || `Falha ao baixar foto #${pid}.`);
+        const blob = await res.blob();
+        const fromHeader = parseFilenameFromContentDisposition(res.headers.get('content-disposition'));
+        let filename = fromHeader || String(approvedMap.get(pid) || `foto-${pid}.jpg`).trim() || `foto-${pid}.jpg`;
+        const low = filename.toLowerCase();
+        if (usedNames.has(low)) {
+          const dot = filename.lastIndexOf('.');
+          const base = dot > 0 ? filename.slice(0, dot) : filename;
+          const ext = dot > 0 ? filename.slice(dot) : '.jpg';
+          let k = 2;
+          let candidate = `${base} (${k})${ext}`;
+          while (usedNames.has(candidate.toLowerCase())) {
+            k += 1;
+            candidate = `${base} (${k})${ext}`;
+          }
+          filename = candidate;
+        }
+        usedNames.add(filename.toLowerCase());
+        await saveBlobDownload(blob, filename, dirHandle);
+        saved += 1;
+        if (typeof onProgress === 'function') onProgress(saved, ids.length);
+      }
+    }
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }).map(() => worker()));
+    return saved;
+  }
+
+  async function startBulkZipDownload(photoIds, ui) {
+    if (_zipDownloadBusy) {
+      toast('Já há um download em andamento. Aguarde terminar.', 'err');
+      return null;
+    }
+    const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
+    if (!ids.length) throw new Error('Nenhuma foto para baixar.');
+    if (publicMustRegisterToDownload()) {
+      pendingPublicDownloadAction = { type: 'zip', photoIds: ids.slice() };
+      openPublicRegisterModal();
+      return { mode: 'pending' };
+    }
+
+    _zipDownloadBusy = true;
+    try {
+      const dirHandle = await requestDownloadFolder(ids.length);
+      if (dirHandle) {
+        ui?.onStart?.(1, ids.length, 'folder');
+        const saved = await savePhotosDirectToFolder(ids, dirHandle, (n, total) => {
+          setDownloadsProgress(n, total, true, 'all');
+          ui?.onProgress?.(n, total, 'folder');
+        });
+        ui?.onDone?.(1, ids.length, 'folder');
+        return { mode: 'folder', count: saved };
+      }
+
+      let plan = null;
+      if (ids.length <= 100) {
+        try { plan = await fetchDownloadZipPlan(ids); } catch (_) { plan = null; }
+      }
+      const normalized = normalizeZipPlan(plan, ids);
+      const activeParts = (normalized.parts || []).filter((p) => Array.isArray(p.photo_ids) && p.photo_ids.length);
+      const partCount = activeParts.length;
+
+      ui?.onStart?.(partCount, ids.length, 'zip');
+
+      let zipDir = null;
+      if (partCount > 1 && typeof window.showDirectoryPicker === 'function') {
+        const pick = confirm(
+          `Serão ${partCount} arquivos ZIP (${ids.length} fotos).\n\n` +
+          'Clique OK e escolha UMA PASTA — todos os ZIPs serão salvos lá automaticamente.'
+        );
+        if (pick) {
+          try {
+            zipDir = await window.showDirectoryPicker({
+              id: `ks-dl-zip-${String(slug || 'galeria').slice(0, 36)}`,
+              mode: 'readwrite'
+            });
+          } catch (_) { zipDir = null; }
+        }
+      }
+
+      await downloadApprovedZipParts(normalized, ids, {
+        dirHandle: zipDir,
+        onProgress: (n, total) => {
+          setDownloadsProgress(n, total, true, 'zip');
+          ui?.onProgress?.(n, total, 'zip');
+        }
+      });
+      ui?.onDone?.(partCount, ids.length, 'zip');
+      return { mode: 'zip', parts: partCount };
+    } finally {
+      _zipDownloadBusy = false;
+    }
+  }
 
   function buildFallbackZipPlan(photoIds) {
     const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
@@ -1486,18 +1629,6 @@
     triggerBlobDownload(blob, filename);
   }
 
-  async function maybePickDownloadFolder(partCount) {
-    if (partCount <= 1) return null;
-    if (typeof window.showDirectoryPicker !== 'function') return null;
-    try {
-      return await window.showDirectoryPicker({
-        id: `ks-dl-${String(slug || 'galeria').slice(0, 40)}`,
-        mode: 'readwrite'
-      });
-    } catch (_) {
-      return null;
-    }
-  }
 
   async function downloadApprovedZipParts(plan, photoIdsFallback, opts) {
     const onProgress = typeof opts?.onProgress === 'function' ? opts.onProgress : null;
@@ -1508,25 +1639,26 @@
     const suffix = normKsAccessModeFromMeta() === 'public' ? 'galeria' : 'aprovadas';
     const activeParts = parts.filter((p) => Array.isArray(p.photo_ids) && p.photo_ids.length);
     const totalParts = activeParts.length;
-    let dirHandle = await maybePickDownloadFolder(totalParts);
-    if (dirHandle) {
-      toast('Pasta escolhida — os ZIPs serão salvos automaticamente nela.', 'ok');
-    }
+    const dirHandle = opts?.dirHandle || null;
     for (let i = 0; i < activeParts.length; i += 1) {
       const part = activeParts[i];
       const pnum = parseInt(part.part, 10) || (i + 1);
       const ids = part.photo_ids;
-      setDownloadsProgress(i, totalParts, true, 'zip');
-      if (onProgress) onProgress(i + 1, totalParts);
+      if (onProgress) onProgress(i, totalParts);
       const blob = await downloadZipPartBlob(ids, pnum);
-      if (!blob) return;
+      if (!blob) throw new Error(`Falha ao gerar ZIP parte ${pnum}.`);
       const partLabel = totalParts > 1 ? `_parte${pnum}` : '';
       const fname = `${baseName}_${suffix}${partLabel}.zip`;
+      if (!dirHandle && i > 0) {
+        const cont = confirm(`Parte ${pnum} de ${totalParts} pronta.\n\nClique OK para baixar a próxima parte.`);
+        if (!cont) throw new Error('Download cancelado.');
+      }
       // eslint-disable-next-line no-await-in-loop
       await saveBlobDownload(blob, fname, dirHandle);
+      setDownloadsProgress(i + 1, totalParts, true, 'zip');
       if (!dirHandle && i < activeParts.length - 1) {
         // eslint-disable-next-line no-await-in-loop
-        await new Promise((r) => setTimeout(r, 1800));
+        await new Promise((r) => setTimeout(r, 1200));
       }
     }
     setDownloadsProgress(totalParts, totalParts, true, 'zip');
@@ -1534,33 +1666,17 @@
   }
 
   async function downloadAllPhotosSmart(photoIds, opts) {
-    const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
-    if (!ids.length) throw new Error('Nenhuma foto para baixar.');
-    if (publicMustRegisterToDownload()) {
-      pendingPublicDownloadAction = {
-        type: 'zip',
-        photoIds: ids.slice()
-      };
-      openPublicRegisterModal();
-      return { mode: 'pending' };
-    }
-    let plan = null;
-    try {
-      plan = await fetchDownloadZipPlan(ids);
-    } catch (_) {
-      plan = null;
-    }
-    const totalBytes = parseInt(plan?.total_approx_bytes, 10) || 0;
-    const normalized = normalizeZipPlan(plan, ids);
-    const partCount = normalized.parts.length;
-    const useZip = ids.length >= KS_DL_ZIP_MIN_COUNT || partCount > 1 || totalBytes > KS_DL_ZIP_AUTO_BYTES;
-    if (useZip) {
-      setDownloadsProgress(0, partCount || 1, true, 'zip');
-      await downloadApprovedZipParts(normalized, ids, opts);
-      return { mode: 'zip', parts: partCount };
-    }
-    await downloadPhotosSequentially(ids, opts);
-    return { mode: 'sequential' };
+    return startBulkZipDownload(photoIds, {
+      onStart: (parts, total, mode) => {
+        setDownloadsProgress(0, mode === 'folder' ? total : parts, true, mode === 'folder' ? 'all' : 'zip');
+        opts?.onProgress?.(0, mode === 'folder' ? total : parts);
+      },
+      onProgress: (n, total, mode) => {
+        setDownloadsProgress(n, total, true, mode === 'folder' ? 'all' : 'zip');
+        opts?.onProgress?.(n, total);
+      },
+      onDone: () => {}
+    });
   }
 
   async function downloadPhotosSequentially(photoIds, opts) {
@@ -1642,28 +1758,21 @@
     pct.textContent = `${p}%`;
     if (m === 'zip') {
       text.textContent = t > 1
-        ? (p >= 100 ? `ZIP ${d}/${t} pronto` : `Preparando ZIP ${d + 1}/${t}...`)
-        : (p >= 100 ? 'ZIP pronto' : 'Preparando ZIP...');
+        ? (p >= 100 ? `ZIP ${d}/${t} pronto` : `Gerando ZIP ${d + 1}/${t}...`)
+        : (p >= 100 ? 'ZIP pronto' : 'Gerando ZIP...');
+    } else if (m === 'all' && t > 5) {
+      text.textContent = p >= 100 ? `Salvo ${d}/${t}` : `Salvando ${d}/${t}...`;
     } else {
       text.textContent = `Baixando ${d}/${t}`;
     }
   }
 
   async function downloadApprovedZip(photoIds) {
-    const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
-    if (!ids.length) throw new Error('Nenhuma foto selecionada para ZIP.');
-    if (publicMustRegisterToDownload()) {
-      pendingPublicDownloadAction = { type: 'zip', photoIds: ids.slice() };
-      openPublicRegisterModal();
-      return;
-    }
-    let plan = null;
-    try {
-      plan = await fetchDownloadZipPlan(ids);
-    } catch (_) {
-      plan = null;
-    }
-    await downloadApprovedZipParts(normalizeZipPlan(plan, ids), ids);
+    return startBulkZipDownload(photoIds, {
+      onProgress: (n, total, mode) => {
+        setDownloadsProgress(n, total, true, mode === 'folder' ? 'all' : 'zip');
+      }
+    });
   }
 
   function normalizeExportName(n) {
@@ -5801,39 +5910,42 @@
       if (!all.length) throw new Error('Ainda não há fotos liberadas para baixar em ZIP.');
       const msgEl = $('ks-downloads-msg');
       const prevMsg = msgEl ? String(msgEl.textContent || '') : '';
-      let plan = null;
-      try {
-        plan = await fetchDownloadZipPlan(all);
-      } catch (_) {
-        plan = null;
-      }
-      const normalized = normalizeZipPlan(plan, all);
-      const partCount = normalized.parts.length;
-      setDownloadsProgress(0, partCount, true, 'zip');
-      if (msgEl) {
-        msgEl.textContent = partCount > 1
-          ? `Preparando ${partCount} ZIP(s) com ${all.length} foto(s)...`
-          : `Preparando ZIP com ${all.length} foto(s)...`;
-      }
-      await downloadApprovedZipParts(normalized, all, {
-        onProgress: (n, total) => {
-          setDownloadsProgress(n, total, true, 'zip');
-          if (msgEl) msgEl.textContent = `ZIP ${n}/${total} (${all.length} foto(s) no total)...`;
+      const out = await startBulkZipDownload(all, {
+        onStart: (parts, total, mode) => {
+          if (msgEl) {
+            msgEl.textContent = mode === 'folder'
+              ? `Escolha a pasta e aguarde — ${total} foto(s)...`
+              : (parts > 1 ? `Gerando ${parts} ZIP(s) com ${total} foto(s)...` : `Gerando ZIP com ${total} foto(s)...`);
+          }
+        },
+        onProgress: (n, total, mode) => {
+          if (msgEl) {
+            msgEl.textContent = mode === 'folder'
+              ? `Salvando ${n}/${total} na pasta...`
+              : `ZIP ${n}/${total} (${all.length} foto(s) no total)...`;
+          }
+        },
+        onDone: (parts, total, mode) => {
+          if (msgEl) {
+            msgEl.textContent = mode === 'folder'
+              ? `Concluído: ${total} foto(s) salvas na pasta.`
+              : (parts > 1 ? `Concluído: ${parts} ZIP(s) com ${total} foto(s).` : `ZIP pronto com ${total} foto(s).`);
+          }
         }
       });
-      setDownloadsProgress(partCount, partCount, true, 'zip');
+      if (out?.mode === 'folder') {
+        toast(`${out.count || all.length} foto(s) salvas na pasta escolhida.`, 'ok');
+      } else if (out?.mode === 'zip') {
+        toast(out.parts > 1
+          ? `Download em ${out.parts} ZIP(s) (${all.length} foto(s)).`
+          : `ZIP gerado com ${all.length} foto(s).`, 'ok');
+      }
       if (msgEl) {
-        msgEl.textContent = partCount > 1
-          ? `Concluído: ${partCount} ZIP(s) com ${all.length} foto(s).`
-          : `ZIP pronto com ${all.length} foto(s).`;
         setTimeout(() => {
           if (msgEl) msgEl.textContent = prevMsg || msgEl.textContent;
           setDownloadsProgress(0, 1, false);
-        }, 3200);
+        }, 4000);
       }
-      toast(partCount > 1
-        ? `Download em ${partCount} ZIP(s) (${all.length} foto(s)).`
-        : `ZIP gerado com ${all.length} foto(s).`, 'ok');
     } catch (e) {
       setDownloadsProgress(0, 1, false);
       toast(e?.message || 'Erro ao gerar ZIP', 'err');
