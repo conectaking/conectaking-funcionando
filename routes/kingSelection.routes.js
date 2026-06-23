@@ -2532,12 +2532,15 @@ async function ksApproxBytesForGalleryFilePath(filePath) {
   return 4 * 1024 * 1024;
 }
 
-function ksPartitionZipItemsByMaxBytes(items, maxPartBytes) {
+function ksPartitionZipItemsByMaxBytes(items, maxPartBytes, maxPhotosPerPart) {
+  const maxPhotos = Math.max(5, parseInt(maxPhotosPerPart, 10) || ksZipPartMaxPhotos());
   const parts = [];
   let cur = { photo_ids: [], approx_bytes: 0 };
   for (const it of items) {
     const sz = Math.max(0, parseInt(it.approx_bytes, 10) || 0);
-    if (cur.photo_ids.length && cur.approx_bytes + sz > maxPartBytes) {
+    const hitPhotoCap = cur.photo_ids.length >= maxPhotos;
+    const hitByteCap = cur.photo_ids.length && cur.approx_bytes + sz > maxPartBytes;
+    if (hitPhotoCap || hitByteCap) {
       parts.push(cur);
       cur = { photo_ids: [], approx_bytes: 0 };
     }
@@ -2553,7 +2556,7 @@ function ksPartitionZipItemsByMaxBytes(items, maxPartBytes) {
   }));
 }
 
-/** ZIP: stream R2 → menos RAM; fallback buffer (Cloudflare, etc.). */
+/** ZIP: stream R2 → menos RAM; aguarda cada entrada antes da próxima (evita ZIP truncado). */
 async function ksAppendPhotoPathToZipArchive(archive, filePath, fname) {
   const fp = String(filePath || '').trim();
   const key = extractR2Key(fp) || extractR2KeyFromPublicHttpsUrl(fp);
@@ -2561,10 +2564,28 @@ async function ksAppendPhotoPathToZipArchive(archive, filePath, fname) {
     const stream = await r2GetObjectBodyStream(key);
     if (stream) {
       try {
-        stream.on('error', () => {});
-      } catch (_) { }
-      archive.append(stream, { name: fname });
-      return true;
+        await new Promise((resolve, reject) => {
+          const done = (err) => {
+            stream.removeListener('error', onErr);
+            stream.removeListener('end', onOk);
+            stream.removeListener('close', onOk);
+            if (err) reject(err);
+            else resolve();
+          };
+          const onErr = (e) => done(e);
+          const onOk = () => done(null);
+          stream.once('error', onErr);
+          stream.once('end', onOk);
+          stream.once('close', onOk);
+          archive.append(stream, { name: fname });
+        });
+        return true;
+      } catch (e) {
+        logger.warn('[king-selection] zip stream append failed', {
+          key: String(key).slice(0, 120),
+          message: e && e.message
+        });
+      }
     }
   }
   const buf = await fetchPhotoFileBufferFromFilePath(fp);
@@ -10443,12 +10464,13 @@ router.post('/client/download-zip-plan', requireClient, asyncHandler(async (req,
       success: true,
       gallery_name: String(gRes.rows[0]?.nome_projeto || '').trim() || null,
       part_max_bytes: maxPart,
+      part_max_photos: ksZipPartMaxPhotos(),
       total_photos: items.length,
       total_approx_bytes: totalApprox,
       parts,
       hint:
         parts.length > 1
-          ? `São ${parts.length} partes. Para cada uma, chame POST /api/king-selection/client/download-zip com o mesmo token e body.photo_ids = parts[n].photo_ids (n de 1 a ${parts.length}).`
+          ? `São ${parts.length} partes (máx. ${ksZipPartMaxPhotos()} fotos por ZIP). Baixe cada parte em sequência.`
           : 'Pode gerar um único ZIP com POST /client/download-zip com estes photo_ids.'
     });
   } finally {
@@ -10552,20 +10574,12 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       .replace(/[^\w\-]+/g, '_')
       .replace(/^_+|_+$/g, '')
       .slice(0, 60) || 'fotos';
-    res.set('Content-Type', 'application/zip');
-    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
-    res.set('Pragma', 'no-cache');
     const partLabel = body.zip_part != null && parseInt(body.zip_part, 10) > 0 ? `_part${parseInt(body.zip_part, 10)}` : '';
-    res.set('Content-Disposition', `attachment; filename="${zipNameBase}_aprovadas${partLabel}.zip"`);
 
     const archive = archiver('zip', { zlib: { level: 0 } });
-    archive.on('error', (err) => {
-      try { res.destroy(err); } catch (_) { }
-    });
-    archive.pipe(res);
-
     const usedNames = new Set();
     const toAudit = [];
+    let appended = 0;
     for (const r of selectedRows) {
       const mode = ksNormDeliveryMode(r.delivery_mode);
       const sourcePath = mode === 'edited' ? String(r.edited_file_path || '').trim() : String(r.file_path || '').trim();
@@ -10589,8 +10603,26 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       // eslint-disable-next-line no-await-in-loop
       const ok = await ksAppendPhotoPathToZipArchive(archive, sourcePath, fname);
       if (!ok) continue;
+      appended += 1;
       toAudit.push({ photoId: parseInt(r.photo_id, 10) || 0, selectionBatch: parseInt(r.selection_batch, 10) || null });
     }
+
+    if (!appended) {
+      return res.status(502).json({
+        message: 'Não foi possível ler os arquivos das fotos no armazenamento. Tente novamente ou contacte o fotógrafo.'
+      });
+    }
+
+    res.set('Content-Type', 'application/zip');
+    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('X-KS-Zip-Entries', String(appended));
+    res.set('Content-Disposition', `attachment; filename="${zipNameBase}_aprovadas${partLabel}.zip"`);
+
+    archive.on('error', (err) => {
+      try { res.destroy(err); } catch (_) { }
+    });
+    archive.pipe(res);
 
     for (const a of toAudit) {
       if (!a.photoId) continue;
@@ -10642,19 +10674,11 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
         .replace(/[^\w\-]+/g, '_')
         .replace(/^_+|_+$/g, '')
         .slice(0, 60) || 'fotos';
-      res.set('Content-Type', 'application/zip');
-      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
-      res.set('Pragma', 'no-cache');
       const partLabelPub = body.zip_part != null && parseInt(body.zip_part, 10) > 0 ? `_part${parseInt(body.zip_part, 10)}` : '';
-      res.set('Content-Disposition', `attachment; filename="${zipNameBasePub}_galeria${partLabelPub}.zip"`);
 
       const archivePub = archiver('zip', { zlib: { level: 0 } });
-      archivePub.on('error', (err) => {
-        try { res.destroy(err); } catch (_) { }
-      });
-      archivePub.pipe(res);
-
       const usedNamesPub = new Set();
+      let appendedPub = 0;
       for (const photo of rowsZip) {
         const pid = parseInt(photo.id, 10) || 0;
         let fname = ksClientDownloadAttachmentFilename(photo, pid, '.jpg');
@@ -10672,8 +10696,26 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
         }
         usedNamesPub.add(fname.toLowerCase());
         // eslint-disable-next-line no-await-in-loop
-        await ksAppendPhotoToZipArchiveForClient(client, archivePub, photo, payload.galleryId, fname);
+        const okPub = await ksAppendPhotoToZipArchiveForClient(client, archivePub, photo, payload.galleryId, fname);
+        if (okPub) appendedPub += 1;
       }
+
+      if (!appendedPub) {
+        return res.status(502).json({
+          message: 'Não foi possível ler os arquivos das fotos no armazenamento. Tente novamente ou contacte o fotógrafo.'
+        });
+      }
+
+      res.set('Content-Type', 'application/zip');
+      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+      res.set('X-KS-Zip-Entries', String(appendedPub));
+      res.set('Content-Disposition', `attachment; filename="${zipNameBasePub}_galeria${partLabelPub}.zip"`);
+
+      archivePub.on('error', (err) => {
+        try { res.destroy(err); } catch (_) { }
+      });
+      archivePub.pipe(res);
 
       await archivePub.finalize();
       return;
