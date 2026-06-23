@@ -2105,13 +2105,15 @@
     renderPublicEditRequestsBanner();
   }
 
-  async function clearPublicEditDraftAfterSubmit(sentIds) {
-    const ids = [...new Set(sentIds.map((x) => normalizePhotoId(x)).filter(Boolean))];
-    if (!ids.length) return;
+  async function clearPublicEditDraftAfterSubmit() {
+    state.publicEditDraftIds.clear();
     try {
-      await unselectPhotoIdsBulk(ids);
-    } catch (_) { /* mantém limpeza local mesmo se API falhar */ }
-    removeIdsFromLocalSelection(ids);
+      const data2 = await loadGallery();
+      applyGalleryData(data2);
+    } catch (_) {
+      syncEditRequestToolbar();
+      renderPublicEditRequestsBanner();
+    }
   }
 
   async function discardPublicEditDraft() {
@@ -2172,17 +2174,20 @@
     pending.forEach((r) => {
       const rid = parseInt(r.id, 10) || 0;
       const n = parseInt(r.photo_count, 10) || 0;
+      const batch = parseInt(r.selection_batch, 10) || 0;
+      const selLabel = batch > 0 ? `Seleção ${batch}` : `Pedido #${rid}`;
       parts.push(
         `<div class="ks-edit-req-row">` +
-        `<span><strong>Pedido #${rid}</strong> · ${n} foto(s) · ${clientEditRequestStatusLabel(r.status)}</span>` +
+        `<span><strong>${selLabel}</strong> · ${n} foto(s) · ${clientEditRequestStatusLabel(r.status)}</span>` +
         `<button type="button" class="ks-btn ks-btn-outline" data-ks-cancel-edit-req="${rid}" style="font-size:12px;padding:6px 10px">` +
         `<i class="fas fa-times"></i> Cancelar pedido</button></div>`
       );
     });
     if (draftN > 0) {
+      const nextBatch = Math.max(1, parseInt(state.currentRound, 10) || 1);
       parts.push(
         `<div class="ks-edit-req-row">` +
-        `<span><strong>Nova seleção:</strong> ${draftN} foto(s) marcada(s) para enviar à edição.</span></div>`
+        `<span><strong>Seleção ${nextBatch} (nova):</strong> ${draftN} foto(s) marcada(s) para enviar.</span></div>`
       );
     }
     if (!parts.length) {
@@ -2281,7 +2286,7 @@
       if (handleClientUnauthorized(res, data)) return;
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar pedido');
       toast(data.message || `Pedido enviado: ${ids.length} foto(s) para edição.`, 'ok');
-      await clearPublicEditDraftAfterSubmit(ids);
+      await clearPublicEditDraftAfterSubmit();
       await refreshClientEditRequests();
     } catch (e) {
       toast(e.message || 'Erro ao enviar', 'err');

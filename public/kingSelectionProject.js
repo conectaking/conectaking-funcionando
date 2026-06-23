@@ -3513,11 +3513,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : '';
       const note = r.note_client ? `<p class="text-sm text-violet-900/80 mt-1"><b>Obs.:</b> ${escapeHtml(r.note_client)}</p>` : '';
       const st = String(r.status || 'pending');
+      const batch = parseInt(r.selection_batch, 10) || 0;
+      const selTitle = batch > 0 ? `Seleção ${batch}` : `Pedido #${r.id}`;
       return `
         <div class="rounded-xl border border-violet-200 bg-white p-3" data-edit-req="${r.id}">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <div class="font-extrabold text-slate-900">${escapeHtml(r.client_name || 'Cliente')}</div>
+              <div class="font-extrabold text-slate-900">${escapeHtml(selTitle)} · ${escapeHtml(r.client_name || 'Cliente')}</div>
               <div class="text-xs text-slate-500">${escapeHtml(r.client_email || '')}${r.client_phone ? ' · ' + escapeHtml(r.client_phone) : ''}</div>
               <div class="text-xs text-slate-500 mt-1">${escapeHtml(dt)} · ${r.photo_count || photos.length} foto(s)</div>
             </div>

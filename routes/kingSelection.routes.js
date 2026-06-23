@@ -46,6 +46,13 @@ function ksZipPartMaxBytes() {
   if (Number.isFinite(n) && n >= 256 * 1024 * 1024) return Math.min(n, 4 * 1024 * 1024 * 1024);
   return 2 * 1024 * 1024 * 1024;
 }
+/** Máx. fotos por ZIP (evita timeout no Render em lotes grandes). Override: KINGSELECTION_ZIP_PART_MAX_PHOTOS */
+function ksZipPartMaxPhotos() {
+  const raw = process.env.KINGSELECTION_ZIP_PART_MAX_PHOTOS;
+  const n = raw ? parseInt(raw, 10) : NaN;
+  if (Number.isFinite(n) && n >= 5) return Math.min(n, 200);
+  return 25;
+}
 const KS_PAYMENT_PROOF_DIR = path.resolve(process.cwd(), 'uploads', 'kingselection-payment-proofs');
 
 const uploadMem = multer({
@@ -1215,6 +1222,58 @@ async function ksGetCurrentSelectionRound(pgClient, galleryId, cid) {
     return Number.isFinite(v) && v > 0 ? v : 1;
   }
   return 1;
+}
+
+/**
+ * Modo público + pedido de edição: garante fotos na rodada atual e abre a próxima
+ * (cada envio vira Seleção N no painel, sem apagar a anterior).
+ */
+async function ksEnsurePublicEditPhotosInBatch(pgClient, galleryId, clientId, photoIds, batch) {
+  const hasSelClientId = await hasColumn(pgClient, 'king_selections', 'client_id');
+  const hasSelBatch = await hasColumn(pgClient, 'king_selections', 'selection_batch');
+  if (!hasSelClientId || !hasSelBatch || !clientId || !photoIds.length) return;
+  const b = Math.max(1, parseInt(batch, 10) || 1);
+  for (const raw of photoIds) {
+    const pid = parseInt(raw, 10);
+    if (!pid) continue;
+    const ex = await pgClient.query(
+      'SELECT id, selection_batch FROM king_selections WHERE gallery_id=$1 AND client_id=$2 AND photo_id=$3 LIMIT 1',
+      [galleryId, clientId, pid]
+    );
+    if (ex.rows.length) {
+      const prev = parseInt(ex.rows[0].selection_batch, 10) || 1;
+      if (prev < b) continue;
+      if (prev !== b) {
+        await pgClient.query(
+          'UPDATE king_selections SET selection_batch=$4 WHERE gallery_id=$1 AND client_id=$2 AND photo_id=$3',
+          [galleryId, clientId, pid, b]
+        );
+      }
+    } else {
+      await pgClient.query(
+        'INSERT INTO king_selections (gallery_id, photo_id, client_id, feedback_cliente, selection_batch) VALUES ($1,$2,$3,NULL,$4)',
+        [galleryId, pid, clientId, b]
+      );
+    }
+  }
+}
+
+async function ksAdvanceClientSelectionRoundAfterPublicEdit(pgClient, galleryId, clientId, completedBatch) {
+  const hasCliRound = (await hasTable(pgClient, 'king_gallery_clients')) &&
+    (await hasColumn(pgClient, 'king_gallery_clients', 'selection_round'));
+  const batch = Math.max(1, parseInt(completedBatch, 10) || 1);
+  if (!hasCliRound || !clientId) return batch + 1;
+  const u = await pgClient.query(
+    `UPDATE king_gallery_clients
+     SET selection_round = $3,
+         status = CASE WHEN lower(COALESCE(status, '')) = 'finalizado' THEN 'andamento' ELSE status END,
+         updated_at = NOW()
+     WHERE gallery_id=$1 AND id=$2
+     RETURNING selection_round`,
+    [galleryId, clientId, batch + 1]
+  );
+  const next = parseInt(u.rows[0]?.selection_round, 10);
+  return Number.isFinite(next) && next > batch ? next : batch + 1;
 }
 
 function parseKsClientContext(payload) {
@@ -12216,36 +12275,67 @@ router.post('/client/edit-request', requireClient, asyncHandler(async (req, res)
     if (!validIds.length) return res.status(400).json({ message: 'Nenhuma foto válida selecionada.' });
 
     const noteClient = note != null ? String(note).trim().slice(0, 2000) : null;
-    const ins = await client.query(
-      `INSERT INTO king_client_edit_requests (gallery_id, client_id, status, note_client, created_at, updated_at)
-       VALUES ($1,$2,'pending',$3,NOW(),NOW())
-       RETURNING id`,
-      [req.ksClient.galleryId, clientId, noteClient || null]
-    );
-    const requestId = parseInt(ins.rows[0]?.id, 10) || 0;
-    if (!requestId) return res.status(500).json({ message: 'Não foi possível criar o pedido.' });
+    const hasEditBatchCol = await hasColumn(client, 'king_client_edit_requests', 'selection_batch');
+    const selectionBatch = await ksGetCurrentSelectionRound(client, req.ksClient.galleryId, clientId);
 
-    for (const pid of validIds) {
-      await client.query(
-        'INSERT INTO king_client_edit_request_photos (edit_request_id, photo_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-        [requestId, pid]
+    await client.query('BEGIN');
+    try {
+      const insCols = ['gallery_id', 'client_id', 'status', 'note_client'];
+      const insVals = [req.ksClient.galleryId, clientId, 'pending', noteClient || null];
+      if (hasEditBatchCol) {
+        insCols.push('selection_batch');
+        insVals.push(selectionBatch);
+      }
+      const placeholders = insVals.map((_, i) => `$${i + 1}`).join(',');
+      const ins = await client.query(
+        `INSERT INTO king_client_edit_requests (${insCols.join(', ')}, created_at, updated_at)
+         VALUES (${placeholders}, NOW(), NOW())
+         RETURNING id`,
+        insVals
       );
+      const requestId = parseInt(ins.rows[0]?.id, 10) || 0;
+      if (!requestId) {
+        await client.query('ROLLBACK');
+        return res.status(500).json({ message: 'Não foi possível criar o pedido.' });
+      }
+
+      for (const pid of validIds) {
+        await client.query(
+          'INSERT INTO king_client_edit_request_photos (edit_request_id, photo_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+          [requestId, pid]
+        );
+      }
+
+      await ksEnsurePublicEditPhotosInBatch(client, req.ksClient.galleryId, clientId, validIds, selectionBatch);
+      const nextRound = await ksAdvanceClientSelectionRoundAfterPublicEdit(
+        client,
+        req.ksClient.galleryId,
+        clientId,
+        selectionBatch
+      );
+
+      await client.query('COMMIT');
+
+      const ordRes = await client.query(
+        `SELECT COUNT(*)::int AS n FROM king_client_edit_requests
+         WHERE gallery_id=$1 AND client_id=$2 AND status <> 'cancelled'`,
+        [req.ksClient.galleryId, clientId]
+      );
+      const requestNumber = parseInt(ordRes.rows[0]?.n, 10) || 1;
+
+      res.json({
+        success: true,
+        request_id: requestId,
+        request_number: requestNumber,
+        selection_batch: selectionBatch,
+        next_selection_round: nextRound,
+        photo_count: validIds.length,
+        message: `Seleção ${selectionBatch} enviada (${validIds.length} foto(s)). Marque outras fotos para a Seleção ${nextRound}.`
+      });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
     }
-
-    const ordRes = await client.query(
-      `SELECT COUNT(*)::int AS n FROM king_client_edit_requests
-       WHERE gallery_id=$1 AND client_id=$2 AND status <> 'cancelled'`,
-      [req.ksClient.galleryId, clientId]
-    );
-    const requestNumber = parseInt(ordRes.rows[0]?.n, 10) || 1;
-
-    res.json({
-      success: true,
-      request_id: requestId,
-      request_number: requestNumber,
-      photo_count: validIds.length,
-      message: `Pedido ${requestNumber}: ${validIds.length} foto(s) enviada(s) para edição. Marque outras fotos para criar um novo pedido.`
-    });
   } finally {
     client.release();
   }
@@ -12282,8 +12372,11 @@ router.get('/client/edit-requests', requireClient, asyncHandler(async (req, res)
     }
     if (!clientId) return res.json({ success: true, requests: [] });
 
+    const hasEditBatchCol = await hasColumn(client, 'king_client_edit_requests', 'selection_batch');
+    const batchSel = hasEditBatchCol ? 'r.selection_batch,' : '';
+
     const rows = (await client.query(
-      `SELECT r.id, r.status, r.note_client, r.created_at, r.updated_at,
+      `SELECT r.id, ${batchSel} r.status, r.note_client, r.created_at, r.updated_at,
               (SELECT COUNT(*)::int FROM king_client_edit_request_photos p WHERE p.edit_request_id = r.id) AS photo_count
        FROM king_client_edit_requests r
        WHERE r.gallery_id=$1 AND r.client_id=$2
@@ -12368,8 +12461,11 @@ router.get('/galleries/:id/edit-requests', protectUser, asyncHandler(async (req,
       return res.json({ success: true, requests: [] });
     }
 
+    const hasEditBatchCol = await hasColumn(client, 'king_client_edit_requests', 'selection_batch');
+    const batchSel = hasEditBatchCol ? 'r.selection_batch,' : '';
+
     const rows = (await client.query(
-      `SELECT r.id, r.gallery_id, r.client_id, r.status, r.note_client, r.created_at, r.updated_at,
+      `SELECT r.id, r.gallery_id, r.client_id, ${batchSel} r.status, r.note_client, r.created_at, r.updated_at,
               c.nome AS client_name, c.email AS client_email, c.telefone AS client_phone,
               (SELECT COUNT(*)::int FROM king_client_edit_request_photos p WHERE p.edit_request_id = r.id) AS photo_count
        FROM king_client_edit_requests r
