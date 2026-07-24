@@ -1094,8 +1094,9 @@
                         const textFieldId = `field-text-${index}`;
                         const textPlaceholder = normalizedField.placeholder || 'Sua resposta';
                         const followUpLabel = normalizedField.followUpLabel || normalizedField.follow_up_label || '';
+                        const followUpTrigger = (normalizedField.followUpTrigger || normalizedField.follow_up_trigger || 'Sim') === 'Não' ? 'Não' : 'Sim';
                         fieldHTML += `
-                            <div class="yes-no-with-text-group" data-field-index="${index}">
+                            <div class="yes-no-with-text-group" data-field-index="${index}" data-follow-up-trigger="${followUpTrigger}">
                                 <div class="yes-no-group">
                                     <label class="radio-label">
                                         <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Sim" class="yes-no-with-text-trigger" ${normalizedField.required ? 'required' : ''}>
@@ -1222,8 +1223,9 @@
                 if (!textField) return;
                 
                 const textInput = textField.querySelector('input[type="text"]');
+                const triggerValue = group.dataset.followUpTrigger || 'Sim';
                 
-                if (triggerInput.value === 'Sim' && triggerInput.checked) {
+                if (triggerInput.checked && triggerInput.value === triggerValue) {
                     textField.style.display = 'block';
                     textField.style.animation = 'fadeInUp 0.3s ease-out';
                     if (textInput) {
@@ -1232,7 +1234,7 @@
                             textInput.setAttribute('required', 'required');
                         }
                     }
-                } else if (triggerInput.value === 'Não' && triggerInput.checked) {
+                } else if (triggerInput.checked) {
                     textField.style.display = 'none';
                     if (textInput) {
                         textInput.value = '';
