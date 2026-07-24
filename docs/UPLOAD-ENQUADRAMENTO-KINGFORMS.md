@@ -24,6 +24,7 @@
 
 | Uso              | Proporção | Exemplo (px) | Observação                          |
 |------------------|-----------|--------------|-------------------------------------|
+| **Imagem de Abertura/Evento** (KingForms) | 16:9 | 1920 × 1080 | Exibida inteira no mobile e no desktop (sem crop). |
 | **Imagem do Banner** (KingForms / cartão) | 16:9      | 1200 × 400   | Bom para destaque no cartão e no formulário. |
 | **Logo do Formulário** (KingForms)        | 1:1       | 400 × 400    | Quadrado; evita deformação no cabeçalho.     |
 | **Banner da portaria** (lista de convidados) | 16:9   | 1200 × 400   | Mesmo que Imagem do Banner.                  |
