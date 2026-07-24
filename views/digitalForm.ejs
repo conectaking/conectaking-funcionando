@@ -1077,6 +1077,7 @@
                         const textFieldName = `${normalizedField.id || `field_${index}`}_text`;
                         const textFieldId = `field-text-${index}`;
                         const textPlaceholder = normalizedField.placeholder || 'Sua resposta';
+                        const followUpLabel = normalizedField.followUpLabel || normalizedField.follow_up_label || '';
                         fieldHTML += `
                             <div class="yes-no-with-text-group" data-field-index="${index}">
                                 <div class="yes-no-group">
@@ -1090,6 +1091,7 @@
                                     </label>
                                 </div>
                                 <div id="${textFieldId}" class="yes-no-text-field" style="display: none; margin-top: 16px;">
+                                    ${followUpLabel ? `<label for="${textFieldId}-input" style="display: block; margin-bottom: 8px; font-weight: 600; color: #202124; font-size: 14px;">${followUpLabel}</label>` : ''}
                                     <input type="text" id="${textFieldId}-input" name="${textFieldName}" placeholder="${textPlaceholder}" style="width: 100%; padding: 14px 18px; border: 2px solid #dadce0; border-radius: 12px; font-size: 15px; background: white; color: #202124; box-sizing: border-box;">
                                 </div>
                             </div>

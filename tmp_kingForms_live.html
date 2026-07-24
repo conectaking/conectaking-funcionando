@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>King Forms - Conecta King</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=2025-01-31-01">
+    <link rel="stylesheet" href="dashboard.css?v=2025-01-31-01">
+    <style>
+        body { background: var(--bg-primary, #0D0D0F); color: var(--text-primary, #ECECEC); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; min-height: 100vh; }
+        .kf-container { max-width: 900px; margin: 0 auto; }
+        .kf-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 28px; }
+        .kf-header h1 { margin: 0; font-size: 1.75rem; display: flex; align-items: center; gap: 12px; color: var(--text-primary, #ECECEC); }
+        .kf-header h1 i { color: var(--dourado-principal, #FFC700); }
+        .kf-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; }
+        .kf-btn-primary { background: linear-gradient(135deg, #FFC700, #eab308); color: #000; }
+        .kf-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(255,199,0,0.35); }
+        .kf-btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-primary, #ECECEC); border: 1px solid rgba(255,255,255,0.15); }
+        .kf-btn-secondary:hover { background: rgba(255,255,255,0.12); }
+        .kf-btn-danger { background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.5); }
+        .kf-btn-danger:hover { background: rgba(220, 53, 69, 0.35); color: #ff6b7a; }
+        .kf-list { display: flex; flex-direction: column; gap: 12px; }
+        .kf-card { background: var(--card-background-color, #1C1C21); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .kf-card-title { font-weight: 600; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; }
+        .kf-card-title i { color: var(--dourado-principal, #FFC700); opacity: 0.9; }
+        .kf-card-actions { display: flex; align-items: center; gap: 10px; }
+        .kf-empty { text-align: center; padding: 48px 24px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1); color: var(--text-secondary, #888); }
+        .kf-empty p { margin: 0 0 20px; font-size: 1rem; }
+        .kf-back { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary, #888); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; }
+        .kf-back:hover { color: var(--dourado-principal, #FFC700); }
+        #kf-editor-view { display: none; flex-direction: column; height: calc(100vh - 24px); margin: -20px; padding: 20px; }
+        #kf-editor-view.kf-active { display: flex; }
+        #kf-list-view.kf-hidden { display: none !important; }
+        #kf-list-view { padding-top: 24px; }
+        .kf-header-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        #kf-editor-frame { flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; background: var(--bg-primary, #0D0D0F); min-height: 400px; }
+    </style>
+</head>
+<body>
+    <div id="kf-editor-view" class="kf-editor-view">
+        <iframe id="kf-editor-frame" title="Editor do formulário" src="about:blank"></iframe>
+    </div>
+    <div id="kf-list-view" class="kf-container">
+        <div class="kf-header">
+            <div class="kf-header-left">
+                <a href="dashboard.html" class="kf-btn kf-btn-secondary" id="kf-btn-back" style="text-decoration: none;"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+                <h1><i class="fas fa-file-signature"></i> King Forms</h1>
+            </div>
+            <button type="button" class="kf-btn kf-btn-primary" id="kf-btn-new">
+                <i class="fas fa-plus"></i> Criar novo formulário
+            </button>
+        </div>
+        <div class="kf-list" id="kf-list">
+            <div class="kf-empty" id="kf-empty">Carregando formulários...</div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var API_URL = window.API_BASE || window.API_URL || (typeof localStorage !== 'undefined' && (localStorage.getItem('apiBase') || localStorage.getItem('API_BASE'))) || 'https://conectaking-api.onrender.com';
+            if (typeof window !== 'undefined') { window.API_URL = API_URL; window.API_BASE = API_URL; }
+            var params = new URLSearchParams(window.location.search);
+            var editId = params.get('edit');
+            if (editId) {
+                document.getElementById('kf-editor-view').classList.add('kf-active');
+                document.getElementById('kf-list-view').classList.add('kf-hidden');
+                document.getElementById('kf-editor-frame').src = 'formPageEdit.html?itemId=' + encodeURIComponent(editId);
+            }
+            function getToken() {
+                try {
+                    return localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || sessionStorage.getItem('conectaKingToken') || sessionStorage.getItem('token') || '';
+                } catch (e) { return ''; }
+            }
+            function getHeaders() {
+                var t = getToken();
+                var h = { 'Content-Type': 'application/json' };
+                if (t) h['Authorization'] = 'Bearer ' + t;
+                return h;
+            }
+            function showLoginRequired() {
+                var list = document.getElementById('kf-list');
+                var empty = document.getElementById('kf-empty');
+                empty.remove();
+                list.innerHTML = '<div class="kf-empty" id="kf-empty">' +
+                    '<p><strong>Você precisa estar logado para usar o King Forms.</strong></p>' +
+                    '<p>Abra o painel, faça login e depois abra &quot;King Forms&quot; pelo menu lateral.</p>' +
+                    '<a href="dashboard.html" class="kf-btn kf-btn-primary" style="margin-top:16px;text-decoration:none;"><i class="fas fa-external-link-alt"></i> Abrir painel</a>' +
+                    '</div>';
+                document.getElementById('kf-btn-new').style.display = 'none';
+            }
+            function loadForms() {
+                var list = document.getElementById('kf-list');
+                var empty = document.getElementById('kf-empty');
+                if (!getToken()) {
+                    showLoginRequired();
+                    return;
+                }
+                fetch(API_URL + '/api/profile', { headers: getHeaders() })
+                    .then(function (r) {
+                        if (r.status === 401) {
+                            showLoginRequired();
+                            return Promise.reject(new Error('Não autorizado'));
+                        }
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        if (!data || data.success === false) {
+                            empty.textContent = 'Erro ao carregar. Faça login no painel e tente novamente.';
+                            empty.classList.remove('kf-empty');
+                            return;
+                        }
+                        var items = (data && data.items && Array.isArray(data.items)) ? data.items.filter(function (it) { return it.item_type === 'digital_form'; }) : [];
+                        empty.remove();
+                        list.innerHTML = '';
+                        if (items.length === 0) {
+                            list.innerHTML = '<div class="kf-empty" id="kf-empty"><p>Nenhum formulário ainda.</p><p>Crie um usando o botão acima e depois edite perguntas e aparência.</p></div>';
+                            return;
+                        }
+                        items.forEach(function (item) {
+                            var title = item.title || (item.digital_form_data && item.digital_form_data.form_title) || 'Formulário King';
+                            var card = document.createElement('div');
+                            card.className = 'kf-card';
+                            card.innerHTML = '<div class="kf-card-title"><i class="fas fa-file-signature"></i><span>' + escapeHtml(title) + '</span></div>' +
+                                '<div class="kf-card-actions">' +
+                                '<a href="kingForms.html?edit=' + encodeURIComponent(item.id) + '" class="kf-btn kf-btn-secondary"><i class="fas fa-pencil-alt"></i> Editar</a>' +
+                                '<button type="button" class="kf-btn kf-btn-danger kf-btn-delete" data-item-id="' + encodeURIComponent(item.id) + '" title="Apagar formulário"><i class="fas fa-trash-alt"></i> Apagar</button>' +
+                                '</div>';
+                            list.appendChild(card);
+                        });
+                    })
+                    .catch(function (err) {
+                        if (err && err.message === 'Não autorizado') return;
+                        var emptyEl = document.getElementById('kf-empty');
+                        if (emptyEl) {
+                            emptyEl.textContent = 'Erro ao carregar. Faça login no painel e tente novamente.';
+                            emptyEl.classList.remove('kf-empty');
+                        }
+                    });
+            }
+            function escapeHtml(s) {
+                var d = document.createElement('div');
+                d.textContent = s;
+                return d.innerHTML;
+            }
+            document.getElementById('kf-btn-new').addEventListener('click', function () {
+                if (!getToken()) {
+                    showLoginRequired();
+                    return;
+                }
+                var btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+                fetch(API_URL + '/api/profile/items', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ item_type: 'digital_form', title: 'Formulário King', is_active: false, display_order: 999 })
+                })
+                    .then(function (r) {
+                        if (r.status === 401) {
+                            showLoginRequired();
+                            return Promise.reject(new Error('Não autorizado'));
+                        }
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        if (data && data.id) {
+                            window.location.href = 'kingForms.html?edit=' + encodeURIComponent(data.id);
+                            return;
+                        } else {
+                            alert(data && data.message ? data.message : 'Erro ao criar formulário.');
+                        }
+                    })
+                    .catch(function (err) {
+                        if (err && err.message !== 'Não autorizado') alert('Erro ao criar formulário.');
+                    })
+                    .finally(function () { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Criar novo formulário'; });
+            });
+            document.getElementById('kf-list-view').addEventListener('click', function (e) {
+                var delBtn = e.target.closest('.kf-btn-delete');
+                if (!delBtn) return;
+                e.preventDefault();
+                var id = delBtn.getAttribute('data-item-id');
+                if (!id || !confirm('Tem certeza que deseja apagar este formulário? Esta ação não pode ser desfeita.')) return;
+                delBtn.disabled = true;
+                delBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Apagando...';
+                fetch(API_URL + '/api/profile/items/' + encodeURIComponent(id), { method: 'DELETE', headers: getHeaders() })
+                    .then(function (r) {
+                        if (r.status === 401) { showLoginRequired(); return Promise.reject(new Error('Não autorizado')); }
+                        if (!r.ok) return r.json().then(function (d) { throw new Error(d.message || 'Erro ao apagar'); });
+                        return r.json();
+                    })
+                    .then(function () {
+                        var card = delBtn.closest('.kf-card');
+                        if (card) card.remove();
+                        var list = document.getElementById('kf-list');
+                        if (list && list.querySelectorAll('.kf-card').length === 0) {
+                            list.innerHTML = '<div class="kf-empty" id="kf-empty"><p>Nenhum formulário ainda.</p><p>Crie um usando o botão acima e depois edite perguntas e aparência.</p></div>';
+                        }
+                    })
+                    .catch(function (err) {
+                        if (err && err.message !== 'Não autorizado') alert(err.message || 'Erro ao apagar formulário.');
+                        delBtn.disabled = false;
+                        delBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Apagar';
+                    });
+            });
+            loadForms();
+        })();
+    </script>
+</body>
+</html>
