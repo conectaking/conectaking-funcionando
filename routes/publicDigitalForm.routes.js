@@ -645,13 +645,18 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         
         // IMPORTANTE: Forçar enable_whatsapp a false se enable_guest_list_submit for true (após mesclar tudo)
         // IMPORTANTE: Garantir que sejam sempre booleanos
-        if (formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1') {
+        // send_mode checkin também ativa o modo Check-in
+        const sendModeRaw = (formData.send_mode || '').toString().toLowerCase();
+        const isCheckinMode = sendModeRaw === 'checkin' || sendModeRaw === 'system-only' ||
+            formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+        if (isCheckinMode) {
             formData.enable_guest_list_submit = true;
+            formData.send_mode = 'checkin';
             formData.enable_whatsapp = false;
-            logger.info(`🔘 [FORM/PUBLIC] enable_whatsapp forçado a false porque enable_guest_list_submit é true.`);
+            logger.info(`🔘 [FORM/PUBLIC] Modo Check-in ativo (send_mode/enable_guest_list_submit). WhatsApp forçado a false no público.`);
         } else {
-            // Garantir que seja false se não for true
             formData.enable_guest_list_submit = false;
+            formData.send_mode = 'lead';
         }
         
         // Garantir que enable_whatsapp seja booleano
@@ -1054,9 +1059,9 @@ router.post('/:slug/form/:itemId/submit',
         const item = itemRes.rows[0];
         const isGuestList = item.item_type === 'guest_list';
         
-        // Buscar configurações do formulário (enable_whatsapp, enable_guest_list_submit, checkout_enabled)
+        // Buscar configurações do formulário (enable_whatsapp, enable_guest_list_submit, send_mode, checkout)
         const formConfigRes = await client.query(
-            `SELECT enable_whatsapp, enable_guest_list_submit, 
+            `SELECT enable_whatsapp, enable_guest_list_submit, send_mode,
                     COALESCE(checkout_enabled, false) AS checkout_enabled
              FROM digital_form_items 
              WHERE profile_item_id = $1`,
@@ -1067,36 +1072,28 @@ router.post('/:slug/form/:itemId/submit',
         let enableGuestListSubmit = false; // Default
         let checkoutEnabled = false;
         
-        // NOVO: Determinar modo de envio baseado nas opções
-        // Se enable_guest_list_submit = true → Só Sistema (salva no sistema, sem WhatsApp)
-        // Se enable_whatsapp = true e enable_guest_list_submit = false → Ambos (salva no sistema + WhatsApp)
-        // Se enable_whatsapp = true e enable_guest_list_submit = false mas não salvar resposta → Só WhatsApp (apenas WhatsApp, não salva)
-        // Por padrão, se enable_whatsapp = true, é "Ambos" (para manter compatibilidade)
-        
-        let sendMode = 'both'; // 'whatsapp-only', 'system-only', 'both'
-        let shouldSaveToSystem = true; // Se deve salvar resposta no sistema
+        // lead = Captação (salva respostas, sem QR)
+        // checkin = Check-in (lista + QR + portaria)
+        let sendMode = 'lead';
+        let shouldSaveToSystem = true;
         
         if (formConfigRes.rows.length > 0) {
-            enableGuestListSubmit = formConfigRes.rows[0].enable_guest_list_submit === true || formConfigRes.rows[0].enable_guest_list_submit === 'true' || formConfigRes.rows[0].enable_guest_list_submit === 1 || formConfigRes.rows[0].enable_guest_list_submit === '1';
-            enableWhatsapp = formConfigRes.rows[0].enable_whatsapp !== false && formConfigRes.rows[0].enable_whatsapp !== 'false' && formConfigRes.rows[0].enable_whatsapp !== 0 && formConfigRes.rows[0].enable_whatsapp !== '0';
-            checkoutEnabled = !!formConfigRes.rows[0].checkout_enabled;
+            const row = formConfigRes.rows[0];
+            enableGuestListSubmit = row.enable_guest_list_submit === true || row.enable_guest_list_submit === 'true' || row.enable_guest_list_submit === 1 || row.enable_guest_list_submit === '1';
+            enableWhatsapp = row.enable_whatsapp !== false && row.enable_whatsapp !== 'false' && row.enable_whatsapp !== 0 && row.enable_whatsapp !== '0';
+            checkoutEnabled = !!row.checkout_enabled;
             
-            // Determinar modo baseado nas configurações
-            if (enableGuestListSubmit && !enableWhatsapp) {
-                // Só Sistema (salva no sistema, sem WhatsApp)
-                sendMode = 'system-only';
+            let dbSendMode = (row.send_mode || '').toString().toLowerCase();
+            if (dbSendMode === 'system-only') dbSendMode = 'checkin';
+            if (dbSendMode === 'both' || dbSendMode === 'whatsapp-only') dbSendMode = 'lead';
+            
+            if (dbSendMode === 'checkin' || enableGuestListSubmit) {
+                sendMode = 'checkin';
+                enableGuestListSubmit = true;
                 shouldSaveToSystem = true;
-            } else if (enableWhatsapp && !enableGuestListSubmit) {
-                // Ambos: WhatsApp + Sistema (salva no sistema E envia WhatsApp)
-                sendMode = 'both';
-                shouldSaveToSystem = true;
-            } else if (enableGuestListSubmit && enableWhatsapp) {
-                // Ambos: Sistema + Lista + WhatsApp (salva no sistema, na lista E envia WhatsApp)
-                sendMode = 'both';
-                shouldSaveToSystem = true;
-            } else if (!enableWhatsapp && !enableGuestListSubmit) {
-                // Se ambos estão false, não deveria acontecer, mas vamos tratar como "Só Sistema"
-                sendMode = 'system-only';
+            } else {
+                sendMode = 'lead';
+                enableGuestListSubmit = false;
                 shouldSaveToSystem = true;
             }
         }
@@ -1467,8 +1464,8 @@ router.post('/:slug/form/:itemId/submit',
             }
             
             // Renderizar página de sucesso
-            // IMPORTANTE: Mostrar QR code e informações do evento se enable_guest_list_submit estiver ativo OU se tiver guest_id e qr_token
-            const shouldShowGuestListInfo = enableGuestListSubmit || (response_guest_id && response_qr_token);
+            // Mostrar QR / info de Check-in somente no modo Check-in
+            const shouldShowGuestListInfo = !!enableGuestListSubmit;
             
             // Determinar URL do formulário para botão "Preencher Novamente"
             // Mesma lógica da rota GET /success acima
@@ -1733,7 +1730,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
 
         // Buscar dados do formulário (inclui form_fields para ordem correta na exibição)
         const formRes = await client.query(
-            `SELECT dfi.form_title, dfi.enable_whatsapp, dfi.enable_guest_list_submit, 
+            `SELECT dfi.form_title, dfi.enable_whatsapp, dfi.enable_guest_list_submit, dfi.send_mode,
                     dfi.whatsapp_number, dfi.primary_color, dfi.secondary_color,
                     dfi.background_color, dfi.background_image_url, dfi.background_opacity,
                     dfi.form_fields
@@ -1952,7 +1949,11 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         }
 
         // Determinar mensagem personalizada baseada no tipo de envio
-        const enableGuestListSubmitBool = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+        let sendModeSuccess = (formData.send_mode || '').toString().toLowerCase();
+        if (sendModeSuccess === 'system-only') sendModeSuccess = 'checkin';
+        if (sendModeSuccess === 'both' || sendModeSuccess === 'whatsapp-only') sendModeSuccess = 'lead';
+        const enableGuestListSubmitBool = sendModeSuccess === 'checkin' ||
+            formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
         let successMessage = 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.';
         if (enableGuestListSubmitBool) {
             successMessage = 'Parabéns! Sua inscrição foi realizada com sucesso. Você foi adicionado à nossa lista de convidados.';

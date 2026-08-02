@@ -2007,6 +2007,25 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 }
             }
 
+            if (send_mode !== undefined && send_mode !== null && String(send_mode).trim() !== '') {
+                const sendModeCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'send_mode'
+                `);
+                if (sendModeCheck.rows.length > 0) {
+                    let normalizedSendMode = String(send_mode).trim().toLowerCase();
+                    if (normalizedSendMode === 'system-only') normalizedSendMode = 'checkin';
+                    if (normalizedSendMode === 'both' || normalizedSendMode === 'whatsapp-only') normalizedSendMode = 'lead';
+                    if (!['lead', 'checkin', 'whatsapp-only', 'system-only', 'both'].includes(normalizedSendMode)) {
+                        normalizedSendMode = enable_guest_list_submit ? 'checkin' : 'lead';
+                    }
+                    updateFormFields.push(`send_mode = $${formParamIndex++}`);
+                    updateFormValues.push(normalizedSendMode);
+                    console.log(`💾 [DIGITAL_FORM] Salvando send_mode: ${normalizedSendMode}`);
+                }
+            }
+
             // IMPORTANTE: Sempre incluir pelo menos form_title no update
             if (updateFormFields.length > 0) {
                 // Usar o ID do registro mais recente (já definido acima)
@@ -2042,6 +2061,82 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     secondary_color: updateResult.rows[0].secondary_color,
                     id: updateResult.rows[0].id
                 });
+            }
+
+            // Check-in: garantir guest_list_items para QR/portaria; Captação: só sincroniza flags se já existir
+            try {
+                const savedGl = updateResult.rows[0]?.enable_guest_list_submit === true;
+                let savedMode = (updateResult.rows[0]?.send_mode || '').toString().toLowerCase();
+                if (savedMode === 'system-only') savedMode = 'checkin';
+                if (savedMode === 'both' || savedMode === 'whatsapp-only') savedMode = 'lead';
+                const isCheckinSave = savedMode === 'checkin' || savedGl;
+                const glExists = await client.query(
+                    'SELECT id FROM guest_list_items WHERE profile_item_id = $1 ORDER BY id DESC LIMIT 1',
+                    [itemId]
+                );
+                if (isCheckinSave && glExists.rows.length === 0) {
+                    const crypto = require('crypto');
+                    const formTitle = updateResult.rows[0]?.form_title || 'Check-in';
+                    const glCols = await client.query(`
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'guest_list_items'
+                    `);
+                    const available = new Set(glCols.rows.map(r => r.column_name));
+                    const cols = ['profile_item_id', 'event_title', 'require_confirmation', 'allow_self_registration', 'registration_token', 'confirmation_token'];
+                    const vals = [
+                        itemId,
+                        formTitle,
+                        true,
+                        true,
+                        crypto.randomBytes(16).toString('hex'),
+                        crypto.randomBytes(16).toString('hex')
+                    ];
+                    if (available.has('public_view_token')) {
+                        cols.push('public_view_token');
+                        vals.push(crypto.randomBytes(16).toString('hex'));
+                    }
+                    if (available.has('enable_whatsapp')) {
+                        cols.push('enable_whatsapp');
+                        vals.push(updateResult.rows[0]?.enable_whatsapp !== false);
+                    }
+                    if (available.has('enable_guest_list_submit')) {
+                        cols.push('enable_guest_list_submit');
+                        vals.push(true);
+                    }
+                    const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+                    await client.query(
+                        `INSERT INTO guest_list_items (${cols.join(', ')}) VALUES (${placeholders})`,
+                        vals
+                    );
+                    console.log(`✅ [DIGITAL_FORM] guest_list_items criado para Check-in (item ${itemId})`);
+                } else if (glExists.rows.length > 0) {
+                    const glCols = await client.query(`
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'guest_list_items'
+                          AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+                    `);
+                    const glColNames = glCols.rows.map(r => r.column_name);
+                    const sets = [];
+                    const vals = [];
+                    let idx = 1;
+                    if (glColNames.includes('enable_guest_list_submit')) {
+                        sets.push(`enable_guest_list_submit = $${idx++}`);
+                        vals.push(!!isCheckinSave);
+                    }
+                    if (glColNames.includes('enable_whatsapp') && updateResult.rows[0]?.enable_whatsapp !== undefined) {
+                        sets.push(`enable_whatsapp = $${idx++}`);
+                        vals.push(updateResult.rows[0].enable_whatsapp === true);
+                    }
+                    if (sets.length) {
+                        vals.push(glExists.rows[0].id);
+                        await client.query(
+                            `UPDATE guest_list_items SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${idx}`,
+                            vals
+                        );
+                    }
+                }
+            } catch (ensureGlErr) {
+                console.warn(`⚠️ [DIGITAL_FORM] Não foi possível garantir guest_list_items:`, ensureGlErr.message);
             }
             }
         } else {
@@ -2124,6 +2219,25 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 const enableGuestListSubmitValue = enable_guest_list_submit === true || enable_guest_list_submit === 'true' || enable_guest_list_submit === 1 || enable_guest_list_submit === '1';
                 extraParams.push(enableGuestListSubmitValue);
                 console.log(`💾 [DIGITAL_FORM] Criando registro com enable_guest_list_submit: ${enableGuestListSubmitValue}`);
+            }
+
+            // Adicionar send_mode se a coluna existir
+            const sendModeColCheck = await client.query(`
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'digital_form_items' AND column_name = 'send_mode'
+            `);
+            if (sendModeColCheck.rows.length > 0) {
+                let normalizedSendMode = (send_mode && String(send_mode).trim()) ? String(send_mode).trim().toLowerCase() : '';
+                if (normalizedSendMode === 'system-only') normalizedSendMode = 'checkin';
+                if (normalizedSendMode === 'both' || normalizedSendMode === 'whatsapp-only') normalizedSendMode = 'lead';
+                if (!normalizedSendMode || !['lead', 'checkin'].includes(normalizedSendMode)) {
+                    const gl = enable_guest_list_submit === true || enable_guest_list_submit === 'true' || enable_guest_list_submit === 1;
+                    normalizedSendMode = gl ? 'checkin' : 'lead';
+                }
+                extraFields += ', send_mode';
+                extraValues += `, $${paramIdx++}`;
+                extraParams.push(normalizedSendMode);
+                console.log(`💾 [DIGITAL_FORM] Criando registro com send_mode: ${normalizedSendMode}`);
             }
             
             // Construir lista de campos e valores dinamicamente
