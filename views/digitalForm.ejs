@@ -767,8 +767,13 @@
                                         const dependsOnValue = dependsOn ? (dependsOn.value || 'Sim') : null;
                                         const dependsOnFieldId = dependsOn ? (dependsOn.fieldId || dependsOn) : null;
                                         const isConditional = dependsOn !== undefined && dependsOn !== null;
+                                        const hideOnAnswer = field.hideOnAnswer || field.hide_on_answer || {};
+                                        const hideOnSim = Array.isArray(hideOnAnswer.Sim) ? hideOnAnswer.Sim.join(',') : (Array.isArray(hideOnAnswer.sim) ? hideOnAnswer.sim.join(',') : '');
+                                        const hideOnNao = Array.isArray(hideOnAnswer['Não']) ? hideOnAnswer['Não'].join(',') : (Array.isArray(hideOnAnswer.Nao) ? hideOnAnswer.Nao.join(',') : (Array.isArray(hideOnAnswer.nao) ? hideOnAnswer.nao.join(',') : ''));
                                     %>
-                                    <div class="form-group" data-field-type="<%= fieldType %>" data-field-id="<%= fieldId %>" 
+                                    <div class="form-group" data-field-type="<%= fieldType %>" data-field-id="<%= fieldId %>" data-field-index="<%= index %>"
+                                         <% if (hideOnSim) { %>data-hide-on-sim="<%= hideOnSim %>"<% } %>
+                                         <% if (hideOnNao) { %>data-hide-on-nao="<%= hideOnNao %>"<% } %>
                                          <% if (isConditional) { %>data-depends-on="<%= dependsOnFieldId %>" data-depends-on-value="<%= dependsOnValue %>" style="display: none;" class="conditional-field"<% } %>>
                                         <label for="field-<%= index %>" style="display: flex; align-items: flex-start; gap: 8px;">
                                             <span style="width: 3px; height: 18px; background: <%= decorativeBarColor %>; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
@@ -1026,6 +1031,16 @@
                         group.classList.add('conditional-field');
                     }
                 }
+
+                const hideOnAnswer = normalizedField.hideOnAnswer || normalizedField.hide_on_answer || field.hideOnAnswer || field.hide_on_answer;
+                if (hideOnAnswer && typeof hideOnAnswer === 'object') {
+                    const simList = Array.isArray(hideOnAnswer.Sim) ? hideOnAnswer.Sim : (Array.isArray(hideOnAnswer.sim) ? hideOnAnswer.sim : []);
+                    const naoList = Array.isArray(hideOnAnswer['Não']) ? hideOnAnswer['Não']
+                        : (Array.isArray(hideOnAnswer.Nao) ? hideOnAnswer.Nao
+                        : (Array.isArray(hideOnAnswer.nao) ? hideOnAnswer.nao : []));
+                    if (simList.length) group.dataset.hideOnSim = simList.map(String).join(',');
+                    if (naoList.length) group.dataset.hideOnNao = naoList.map(String).join(',');
+                }
                 
                 console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, normalizedField.label, '- Tipo:', normalizedField.type);
                 console.log(`🔍 [PUBLIC] Campo completo:`, normalizedField);
@@ -1264,6 +1279,7 @@
                         
                         // Lógica de campos condicionais
                         handleConditionalFields(this);
+                        handleHideOnAnswer(this);
                         
                         // Lógica para yes_no_with_text
                         if (this.classList.contains('yes-no-with-text-trigger')) {
@@ -1272,6 +1288,59 @@
                     });
                 });
             }, 100);
+
+            function clearHiddenFieldInputs(fieldEl) {
+                fieldEl.querySelectorAll('input, textarea, select').forEach(input => {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = false;
+                        input.closest('.radio-label, .checkbox-label')?.classList.remove('checked');
+                    } else {
+                        input.value = '';
+                    }
+                    if (input.hasAttribute('required')) {
+                        input.setAttribute('data-was-required', 'true');
+                        input.removeAttribute('required');
+                    }
+                });
+            }
+
+            function restoreHiddenFieldRequired(fieldEl) {
+                fieldEl.querySelectorAll('[data-was-required="true"]').forEach(input => {
+                    input.setAttribute('required', 'required');
+                });
+            }
+
+            function handleHideOnAnswer(triggerInput) {
+                const triggerGroup = triggerInput.closest('.form-group');
+                if (!triggerGroup) return;
+                const hideSim = String(triggerGroup.dataset.hideOnSim || '').split(',').map(x => x.trim()).filter(Boolean);
+                const hideNao = String(triggerGroup.dataset.hideOnNao || '').split(',').map(x => x.trim()).filter(Boolean);
+                if (!hideSim.length && !hideNao.length) return;
+
+                const allIds = new Set([...hideSim, ...hideNao]);
+                const val = String(triggerInput.value || '').toLowerCase().trim();
+                const isNao = val === 'não' || val === 'nao' || val === 'no' || val === 'n';
+                const isSim = val === 'sim' || val === 'yes' || val === 's';
+                const toHide = new Set(isNao ? hideNao : (isSim ? hideSim : []));
+
+                allIds.forEach(id => {
+                    const el = document.querySelector('.form-group[data-field-id="' + id + '"]');
+                    if (!el || el === triggerGroup) return;
+                    if (toHide.has(id)) {
+                        el.style.display = 'none';
+                        el.dataset.hiddenByHideOnAnswer = '1';
+                        el.classList.add('hide-on-answer-hidden');
+                        clearHiddenFieldInputs(el);
+                    } else if (el.dataset.hiddenByHideOnAnswer === '1') {
+                        delete el.dataset.hiddenByHideOnAnswer;
+                        el.classList.remove('hide-on-answer-hidden');
+                        if (!el.classList.contains('conditional-field')) {
+                            el.style.display = 'block';
+                            restoreHiddenFieldRequired(el);
+                        }
+                    }
+                });
+            }
             
             // Função para gerenciar campos condicionais
             function handleConditionalFields(triggerInput) {
@@ -1336,10 +1405,11 @@
                 });
             }
             
-            // Inicializar campos condicionais ao carregar
+            // Inicializar campos condicionais / ocultação ao carregar
             setTimeout(() => {
                 document.querySelectorAll('.form-group:not(.conditional-field) input[type="radio"]:checked, .form-group:not(.conditional-field) input[type="checkbox"]:checked').forEach(input => {
                     handleConditionalFields(input);
+                    handleHideOnAnswer(input);
                 });
             }, 200);
         }
@@ -1506,10 +1576,12 @@
                     fieldGroup.classList.remove('field-error', 'field-valid');
                     const errorMsg = fieldGroup.querySelector('.field-error-message');
                     if (errorMsg) errorMsg.remove();
-                    // Não validar campos condicionais ocultos (evita falso "corrija os erros")
-                    const isCondHidden = fieldGroup.classList.contains('conditional-field') &&
-                        (window.getComputedStyle(fieldGroup).display === 'none');
-                    if (isCondHidden) return;
+                    // Não validar campos condicionais / ocultos por Sim-Não
+                    const isDisplayNone = window.getComputedStyle(fieldGroup).display === 'none';
+                    const isCondHidden = fieldGroup.classList.contains('conditional-field') && isDisplayNone;
+                    const isHideOnAnswerHidden = fieldGroup.dataset.hiddenByHideOnAnswer === '1' ||
+                        fieldGroup.classList.contains('hide-on-answer-hidden');
+                    if (isCondHidden || isHideOnAnswerHidden || isDisplayNone) return;
                 }
                 
                 // Validar campo obrigatório
