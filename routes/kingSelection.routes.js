@@ -12555,6 +12555,7 @@ router.get('/galleries/:id/edit-requests', protectUser, asyncHandler(async (req,
           client_name: r.client_name || 'Cliente',
           client_email: r.client_email || null,
           client_phone: r.client_phone || null,
+          selection_batch: hasEditBatchCol ? (parseInt(r.selection_batch, 10) || null) : null,
           photo_count: parseInt(r.photo_count, 10) || 0,
           photos: photosByRequest.get(rid) || []
         };
@@ -12572,6 +12573,7 @@ router.patch('/galleries/:id/edit-requests/:requestId', protectUser, asyncHandle
   if (!galleryId || !requestId) return res.status(400).json({ message: 'Parâmetros inválidos.' });
 
   const statusIn = String((req.body || {}).status || '').trim().toLowerCase();
+  const releaseDownload = !!(req.body || {}).release_download;
   const allowed = ['pending', 'in_progress', 'done', 'rejected'];
   if (!allowed.includes(statusIn)) {
     return res.status(400).json({ message: 'Status inválido.' });
@@ -12591,15 +12593,103 @@ router.patch('/galleries/:id/edit-requests/:requestId', protectUser, asyncHandle
       return res.status(503).json({ message: 'Pedidos de edição indisponíveis.' });
     }
 
+    const hasEditBatchCol = await hasColumn(client, 'king_client_edit_requests', 'selection_batch');
+    const batchSel = hasEditBatchCol ? ', selection_batch' : '';
+    const before = await client.query(
+      `SELECT id, client_id, status${batchSel} FROM king_client_edit_requests WHERE id=$1 AND gallery_id=$2`,
+      [requestId, galleryId]
+    );
+    if (!before.rows.length) return res.status(404).json({ message: 'Pedido não encontrado.' });
+
     const upd = await client.query(
       `UPDATE king_client_edit_requests
        SET status=$3, updated_at=NOW()
        WHERE id=$1 AND gallery_id=$2
-       RETURNING id, status`,
+       RETURNING id, status, client_id${batchSel}`,
       [requestId, galleryId, statusIn]
     );
     if (!upd.rows.length) return res.status(404).json({ message: 'Pedido não encontrado.' });
-    res.json({ success: true, id: requestId, status: upd.rows[0].status });
+
+    let releasedCount = 0;
+    // Concluído (ou liberação explícita): aprova as fotos do pedido para o cliente baixar
+    if ((statusIn === 'done' || releaseDownload) && (await hasTable(client, 'king_selection_photo_approvals'))) {
+      const row = upd.rows[0];
+      const clientId = parseInt(row.client_id, 10) || 0;
+      let batch = hasEditBatchCol ? (parseInt(row.selection_batch, 10) || 0) : 0;
+      const ph = await client.query(
+        'SELECT photo_id FROM king_client_edit_request_photos WHERE edit_request_id=$1',
+        [requestId]
+      );
+      const photoIds = (ph.rows || []).map((r) => parseInt(r.photo_id, 10)).filter(Boolean);
+      if (clientId && photoIds.length) {
+        if (!batch) {
+          const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+          if (hasSelBatch) {
+            const bRes = await client.query(
+              `SELECT COALESCE(MAX(selection_batch), 1)::int AS b
+               FROM king_selections WHERE gallery_id=$1 AND client_id=$2 AND photo_id = ANY($3::int[])`,
+              [galleryId, clientId, photoIds]
+            );
+            batch = parseInt(bRes.rows[0]?.b, 10) || 1;
+          } else {
+            batch = 1;
+          }
+        }
+        const deliveryMode = typeof ksNormDeliveryMode === 'function' ? ksNormDeliveryMode('original') : 'original';
+        for (const photoId of photoIds) {
+          await client.query(
+            `INSERT INTO king_selection_photo_approvals
+               (gallery_id, client_id, selection_batch, photo_id, status, delivery_mode, decided_by_user_id, decided_at, created_at, updated_at)
+             VALUES ($1,$2,$3,$4,'approved',$5,$6,NOW(),NOW(),NOW())
+             ON CONFLICT (gallery_id, client_id, selection_batch, photo_id)
+             DO UPDATE SET status='approved', delivery_mode=EXCLUDED.delivery_mode,
+                           decided_by_user_id=EXCLUDED.decided_by_user_id, decided_at=NOW(), updated_at=NOW()`,
+            [galleryId, clientId, batch, photoId, deliveryMode, userId]
+          );
+          releasedCount += 1;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      id: requestId,
+      status: upd.rows[0].status,
+      released_photos: releasedCount
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Fotógrafo: exclui permanentemente um pedido de edição. */
+router.delete('/galleries/:id/edit-requests/:requestId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const requestId = parseInt(req.params.requestId, 10);
+  if (!galleryId || !requestId) return res.status(400).json({ message: 'Parâmetros inválidos.' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    if (!(await hasTable(client, 'king_client_edit_requests'))) {
+      return res.status(503).json({ message: 'Pedidos de edição indisponíveis.' });
+    }
+
+    const del = await client.query(
+      `DELETE FROM king_client_edit_requests
+       WHERE id=$1 AND gallery_id=$2
+       RETURNING id`,
+      [requestId, galleryId]
+    );
+    if (!del.rows.length) return res.status(404).json({ message: 'Pedido não encontrado.' });
+    res.json({ success: true, id: requestId, deleted: true });
   } finally {
     client.release();
   }

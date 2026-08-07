@@ -2360,21 +2360,34 @@
       el.innerHTML = '';
       return;
     }
-    const pending = (state.clientEditRequests || []).filter(
-      (r) => String(r.status || '').toLowerCase() === 'pending'
-    );
+    const pending = (state.clientEditRequests || []).filter((r) => {
+      const s = String(r.status || '').toLowerCase();
+      return s === 'pending' || s === 'in_progress' || s === 'done';
+    });
     const draftN = countPublicEditDraft();
     const parts = [];
     pending.forEach((r) => {
       const rid = parseInt(r.id, 10) || 0;
       const n = parseInt(r.photo_count, 10) || 0;
       const batch = parseInt(r.selection_batch, 10) || 0;
+      const st = String(r.status || '').toLowerCase();
       const selLabel = batch > 0 ? `Seleção ${batch}` : `Pedido #${rid}`;
+      const canCancel = st === 'pending';
+      const statusHint =
+        st === 'in_progress'
+          ? 'O fotógrafo está editando suas fotos.'
+          : st === 'done'
+            ? 'Concluído — fotos liberadas para baixar (abra «Fotos para baixar»).'
+            : 'Aguardando o fotógrafo.';
       parts.push(
         `<div class="ks-edit-req-row">` +
-        `<span><strong>${selLabel}</strong> · ${n} foto(s) · ${clientEditRequestStatusLabel(r.status)}</span>` +
-        `<button type="button" class="ks-btn ks-btn-outline" data-ks-cancel-edit-req="${rid}" style="font-size:12px;padding:6px 10px">` +
-        `<i class="fas fa-times"></i> Cancelar pedido</button></div>`
+        `<span><strong>${selLabel}</strong> · ${n} foto(s) · ${clientEditRequestStatusLabel(r.status)}` +
+        `<br><small style="opacity:.85">${statusHint}</small></span>` +
+        (canCancel
+          ? `<button type="button" class="ks-btn ks-btn-outline" data-ks-cancel-edit-req="${rid}" style="font-size:12px;padding:6px 10px">` +
+            `<i class="fas fa-times"></i> Cancelar pedido</button>`
+          : '') +
+        `</div>`
       );
     });
     if (draftN > 0) {

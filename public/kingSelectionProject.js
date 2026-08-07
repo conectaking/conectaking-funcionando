@@ -402,22 +402,29 @@ document.addEventListener('DOMContentLoaded', () => {
           loadEditRequests().catch((e) => showError(e.message || 'Erro ao atualizar'));
         });
         panel.addEventListener('click', (e) => {
-          const btn = e.target.closest('[data-edit-req-st]');
-          if (!btn) return;
-          const rid = parseInt(btn.getAttribute('data-edit-req-st'), 10) || 0;
-          const st = String(btn.getAttribute('data-st') || '').trim();
-          if (!rid || !st) return;
-          patchEditRequestStatus(rid, st).catch((err) => showError(err.message || 'Erro'));
+          handleEditRequestListClick(e);
         });
       }
     }
   }
 
   const editRequestsRefreshBtn = document.getElementById('ks-edit-requests-refresh');
+  let _editRequestsCache = [];
+  let _editRequestsFilter = 'active'; // active | done | rejected | all
 
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('#ks-edit-requests-refresh')) {
-      loadEditRequests().catch((err) => showError(err.message || 'Erro ao atualizar'));
+  function handleEditRequestListClick(e) {
+    const delBtn = e.target.closest('[data-edit-req-del]');
+    if (delBtn && delBtn.closest('#ks-edit-requests-list')) {
+      const rid = parseInt(delBtn.getAttribute('data-edit-req-del'), 10) || 0;
+      if (!rid) return;
+      if (!confirm('Excluir este pedido permanentemente? Ele sai da lista e não poderá ser recuperado.')) return;
+      deleteEditRequest(rid).catch((err) => showError(err.message || 'Erro ao excluir'));
+      return;
+    }
+    const filterBtn = e.target.closest('[data-edit-req-filter]');
+    if (filterBtn && filterBtn.closest('#ks-edit-requests-wrap')) {
+      _editRequestsFilter = String(filterBtn.getAttribute('data-edit-req-filter') || 'active');
+      renderEditRequestsList(_editRequestsCache);
       return;
     }
     const editStBtn = e.target.closest('[data-edit-req-st]');
@@ -425,7 +432,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const rid = parseInt(editStBtn.getAttribute('data-edit-req-st'), 10) || 0;
       const st = String(editStBtn.getAttribute('data-st') || '').trim();
       if (!rid || !st) return;
-      patchEditRequestStatus(rid, st).catch((err) => showError(err.message || 'Erro'));
+      if (st === 'rejected') {
+        if (!confirm('Recusar este pedido? Ele sai da lista de ativos.')) return;
+      }
+      if (st === 'done') {
+        if (!confirm('Marcar como concluído e liberar as fotos para o cliente baixar?')) return;
+      }
+      if (st === 'in_progress') {
+        if (!confirm('Marcar como Em edição? O cliente verá que o pedido está sendo editado.')) return;
+      }
+      const release = st === 'done' || editStBtn.getAttribute('data-release') === '1';
+      patchEditRequestStatus(rid, st, { releaseDownload: release }).catch((err) => showError(err.message || 'Erro'));
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#ks-edit-requests-refresh')) {
+      loadEditRequests().catch((err) => showError(err.message || 'Erro ao atualizar'));
+      return;
+    }
+    if (e.target.closest('#ks-edit-requests-wrap') || e.target.closest('#ks-edit-requests-list')) {
+      handleEditRequestListClick(e);
     }
   });
 
@@ -3492,17 +3519,72 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Erro ao carregar pedidos de edição');
-    renderEditRequestsList(Array.isArray(data.requests) ? data.requests : []);
+    _editRequestsCache = Array.isArray(data.requests) ? data.requests : [];
+    renderEditRequestsList(_editRequestsCache);
+  }
+
+  function filterEditRequestsByTab(requests) {
+    const list = Array.isArray(requests) ? requests : [];
+    const f = _editRequestsFilter || 'active';
+    if (f === 'all') return list;
+    if (f === 'done') return list.filter((r) => String(r.status || '').toLowerCase() === 'done');
+    if (f === 'rejected') {
+      return list.filter((r) => {
+        const s = String(r.status || '').toLowerCase();
+        return s === 'rejected' || s === 'cancelled';
+      });
+    }
+    // active: pending + in_progress
+    return list.filter((r) => {
+      const s = String(r.status || '').toLowerCase();
+      return s === 'pending' || s === 'in_progress' || !s;
+    });
   }
 
   function renderEditRequestsList(requests) {
     const editRequestsList = getEditRequestsList();
+    const wrap = getEditRequestsWrap();
     if (!editRequestsList) return;
-    if (!requests.length) {
-      editRequestsList.innerHTML = '<p class="text-sm text-slate-500">Nenhum pedido de edição ainda.</p>';
+
+    const all = Array.isArray(requests) ? requests : [];
+    const counts = {
+      active: all.filter((r) => ['pending', 'in_progress', ''].includes(String(r.status || '').toLowerCase())).length,
+      done: all.filter((r) => String(r.status || '').toLowerCase() === 'done').length,
+      rejected: all.filter((r) => ['rejected', 'cancelled'].includes(String(r.status || '').toLowerCase())).length,
+      all: all.length
+    };
+    const filtered = filterEditRequestsByTab(all);
+
+    let filtersEl = wrap?.querySelector('#ks-edit-requests-filters');
+    if (wrap && !filtersEl) {
+      filtersEl = document.createElement('div');
+      filtersEl.id = 'ks-edit-requests-filters';
+      filtersEl.className = 'flex flex-wrap gap-2 mt-3 mb-1';
+      const listParent = editRequestsList.parentNode;
+      listParent?.insertBefore(filtersEl, editRequestsList);
+    }
+    if (filtersEl) {
+      const chip = (key, label, n) => {
+        const on = (_editRequestsFilter || 'active') === key;
+        return `<button type="button" class="ks-btn ks-btn-sm ${on ? 'ks-btn-primary' : ''}" data-edit-req-filter="${key}">${label} (${n})</button>`;
+      };
+      filtersEl.innerHTML =
+        chip('active', 'Ativos', counts.active) +
+        chip('done', 'Concluídos', counts.done) +
+        chip('rejected', 'Recusados', counts.rejected) +
+        chip('all', 'Todos', counts.all);
+    }
+
+    if (!filtered.length) {
+      const emptyMsg =
+        (_editRequestsFilter || 'active') === 'active'
+          ? 'Nenhum pedido ativo. Recusados e concluídos ficam nas outras abas.'
+          : 'Nenhum pedido neste filtro.';
+      editRequestsList.innerHTML = `<p class="text-sm text-slate-500">${emptyMsg}</p>`;
       return;
     }
-    editRequestsList.innerHTML = requests.map((r) => {
+
+    editRequestsList.innerHTML = filtered.map((r) => {
       const photos = Array.isArray(r.photos) ? r.photos : [];
       const photoLines = photos.map((p) => {
         const pid = parseInt(p.photo_id, 10) || 0;
@@ -3515,6 +3597,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const st = String(r.status || 'pending');
       const batch = parseInt(r.selection_batch, 10) || 0;
       const selTitle = batch > 0 ? `Seleção ${batch}` : `Pedido #${r.id}`;
+      const actions = [];
+      if (st === 'pending') {
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="in_progress"><i class="fas fa-pen"></i> Em edição</button>`);
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm ks-btn-primary" data-edit-req-st="${r.id}" data-st="done" data-release="1"><i class="fas fa-check"></i> Concluído + liberar download</button>`);
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="rejected"><i class="fas fa-ban"></i> Recusar</button>`);
+      } else if (st === 'in_progress') {
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm ks-btn-primary" data-edit-req-st="${r.id}" data-st="done" data-release="1"><i class="fas fa-check"></i> Concluído + liberar download</button>`);
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="rejected"><i class="fas fa-ban"></i> Recusar</button>`);
+      } else if (st === 'done') {
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm ks-btn-primary" data-edit-req-st="${r.id}" data-st="done" data-release="1"><i class="fas fa-download"></i> Liberar fotos p/ cliente baixar</button>`);
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="in_progress"><i class="fas fa-pen"></i> Voltar p/ edição</button>`);
+      } else if (st === 'rejected' || st === 'cancelled') {
+        actions.push(`<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="pending"><i class="fas fa-undo"></i> Reabrir</button>`);
+      }
+      actions.push(`<button type="button" class="ks-btn ks-btn-sm" style="border-color:rgba(239,68,68,.45);color:#fca5a5" data-edit-req-del="${r.id}"><i class="fas fa-trash"></i> Excluir</button>`);
+
       return `
         <div class="rounded-xl border border-violet-200 bg-white p-3" data-edit-req="${r.id}">
           <div class="flex flex-wrap items-start justify-between gap-2">
@@ -3527,26 +3625,44 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           ${note}
           <ul class="mt-2 text-sm text-slate-900 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto ks-edit-req-photos">${photoLines || '<li>—</li>'}</ul>
-          <div class="flex flex-wrap gap-2 mt-3">
-            ${st !== 'in_progress' ? `<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="in_progress">Em edição</button>` : ''}
-            ${st !== 'done' ? `<button type="button" class="ks-btn ks-btn-sm ks-btn-primary" data-edit-req-st="${r.id}" data-st="done">Concluído</button>` : ''}
-            ${st !== 'rejected' ? `<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="rejected">Recusar</button>` : ''}
-          </div>
+          <div class="flex flex-wrap gap-2 mt-3">${actions.join('')}</div>
         </div>`;
     }).join('');
   }
 
-  async function patchEditRequestStatus(requestId, status) {
+  async function patchEditRequestStatus(requestId, status, opts = {}) {
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/edit-requests/${requestId}`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({
+        status,
+        release_download: !!opts.releaseDownload
+      })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Erro ao atualizar pedido');
+    if (status === 'rejected') {
+      _editRequestsFilter = 'active';
+    }
+    if (status === 'done' && (data.released_photos || 0) > 0) {
+      try { toast(`${data.released_photos} foto(s) liberada(s) para o cliente baixar.`, { kind: 'ok', title: 'Concluído' }); } catch (_) {}
+    }
+    if (status === 'rejected') {
+      try { toast('Pedido recusado e removido dos ativos.', { kind: 'ok', title: 'Recusado' }); } catch (_) {}
+    }
+    await loadEditRequests();
+  }
+
+  async function deleteEditRequest(requestId) {
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/edit-requests/${requestId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro ao excluir pedido');
     await loadEditRequests();
   }
 
