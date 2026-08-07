@@ -873,6 +873,45 @@
       display: block !important;
     }
 
+    /* Pedidos de edição: tema escuro — nomes/arquivos legíveis */
+    #ks-edit-requests-wrap {
+      background: rgba(24, 24, 27, 0.92) !important;
+      border-color: rgba(250, 204, 21, 0.28) !important;
+      color: #f8fafc !important;
+    }
+    #ks-edit-requests-wrap .text-violet-950,
+    #ks-edit-requests-wrap .font-extrabold.text-violet-950 {
+      color: #fde68a !important;
+    }
+    #ks-edit-requests-wrap .text-violet-900\/75,
+    #ks-edit-requests-wrap .text-violet-900\/70,
+    #ks-edit-requests-wrap .text-violet-900\/80,
+    #ks-edit-requests-wrap [class*="text-violet-900"] {
+      color: #e9d5ff !important;
+    }
+    #ks-edit-requests-wrap .text-slate-800,
+    #ks-edit-requests-wrap .text-slate-900,
+    #ks-edit-requests-wrap ul,
+    #ks-edit-requests-wrap ul li {
+      color: #f1f5f9 !important;
+    }
+    #ks-edit-requests-wrap ul li b {
+      color: #facc15 !important;
+    }
+    #ks-edit-requests-wrap .text-slate-500,
+    #ks-edit-requests-wrap .text-xs.text-slate-500 {
+      color: rgba(226, 232, 240, 0.72) !important;
+    }
+    #ks-edit-requests-wrap .bg-white,
+    #ks-edit-requests-wrap [data-edit-req] {
+      background: rgba(39, 39, 42, 0.95) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      color: #f8fafc !important;
+    }
+    #ks-edit-requests-wrap [data-edit-req] .font-extrabold {
+      color: #fafafa !important;
+    }
+
     .ks-bubble-card {
       display: flex;
       align-items: center;
@@ -2013,8 +2052,8 @@
           <div id="ks-edit-requests-wrap" class="hidden mb-5 rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <div class="font-extrabold text-violet-950">Pedidos de edição (modo público)</div>
-                <div class="text-sm text-violet-900/75">Clientes que marcaram fotos e pediram edição.</div>
+                <div class="font-extrabold text-slate-900">Pedidos de edição (modo público)</div>
+                <div class="text-sm text-slate-500">Clientes que marcaram fotos e pediram edição.</div>
               </div>
               <button type="button" class="ks-btn ks-btn-sm" id="ks-edit-requests-refresh"><i class="fas fa-sync-alt"></i> Atualizar</button>
             </div>
@@ -3691,7 +3730,7 @@
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
 
   <script src="/config.js?v=2026-06-09-api-fix"></script>
-  <script src="/kingSelectionProject.js?v=2026-06-09-delete-client"></script>
+  <script src="/kingSelectionProject.js?v=2026-08-07-edit-req-contrast"></script>
   <script src="/kingSelectionProject-loose-photos.js?v=2026-06-19-edit-req"></script>
   <script src="/kingSelectionProject-edit-requests.js?v=2026-06-19-edit-req"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>

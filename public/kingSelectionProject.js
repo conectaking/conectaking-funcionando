@@ -393,8 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
         panel.className = 'hidden mb-5 rounded-2xl border border-violet-200 bg-violet-50/60 p-4';
         panel.innerHTML =
           '<div class="flex flex-wrap items-center justify-between gap-2">' +
-          '<div><div class="font-extrabold text-violet-950">Pedidos de edição (modo público)</div>' +
-          '<div class="text-sm text-violet-900/75">Clientes que marcaram fotos e pediram edição.</div></div>' +
+          '<div><div class="font-extrabold text-slate-900">Pedidos de edição (modo público)</div>' +
+          '<div class="text-sm text-slate-500">Clientes que marcaram fotos e pediram edição.</div></div>' +
           '<button type="button" class="ks-btn ks-btn-sm" id="ks-edit-requests-refresh"><i class="fas fa-sync-alt"></i> Atualizar</button></div>' +
           '<div id="ks-edit-requests-list" class="mt-3 space-y-3"></div>';
         activityPane.insertBefore(panel, abo);
@@ -3499,7 +3499,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editRequestsList = getEditRequestsList();
     if (!editRequestsList) return;
     if (!requests.length) {
-      editRequestsList.innerHTML = '<p class="text-sm text-violet-900/70">Nenhum pedido de edição ainda.</p>';
+      editRequestsList.innerHTML = '<p class="text-sm text-slate-500">Nenhum pedido de edição ainda.</p>';
       return;
     }
     editRequestsList.innerHTML = requests.map((r) => {
@@ -3511,7 +3511,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<li><b>#${pid}</b> ${escapeHtml(name)}${escapeHtml(ord)}</li>`;
       }).join('');
       const dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : '';
-      const note = r.note_client ? `<p class="text-sm text-violet-900/80 mt-1"><b>Obs.:</b> ${escapeHtml(r.note_client)}</p>` : '';
+      const note = r.note_client ? `<p class="text-sm text-slate-500 mt-1"><b>Obs.:</b> ${escapeHtml(r.note_client)}</p>` : '';
       const st = String(r.status || 'pending');
       const batch = parseInt(r.selection_batch, 10) || 0;
       const selTitle = batch > 0 ? `Seleção ${batch}` : `Pedido #${r.id}`;
@@ -3526,7 +3526,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="ks-abo-badge">${escapeHtml(editRequestStatusLabel(st))}</span>
           </div>
           ${note}
-          <ul class="mt-2 text-sm text-slate-800 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto">${photoLines || '<li>—</li>'}</ul>
+          <ul class="mt-2 text-sm text-slate-900 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto ks-edit-req-photos">${photoLines || '<li>—</li>'}</ul>
           <div class="flex flex-wrap gap-2 mt-3">
             ${st !== 'in_progress' ? `<button type="button" class="ks-btn ks-btn-sm" data-edit-req-st="${r.id}" data-st="in_progress">Em edição</button>` : ''}
             ${st !== 'done' ? `<button type="button" class="ks-btn ks-btn-sm ks-btn-primary" data-edit-req-st="${r.id}" data-st="done">Concluído</button>` : ''}
