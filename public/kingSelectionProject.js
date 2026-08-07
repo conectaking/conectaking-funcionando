@@ -412,7 +412,42 @@ document.addEventListener('DOMContentLoaded', () => {
   let _editRequestsCache = [];
   let _editRequestsFilter = 'active'; // active | done | rejected | all
 
+  function getSelectedEditRequestIds() {
+    const list = getEditRequestsList();
+    if (!list) return [];
+    return Array.from(list.querySelectorAll('input[data-edit-req-check]:checked'))
+      .map((el) => parseInt(el.getAttribute('data-edit-req-check'), 10) || 0)
+      .filter(Boolean);
+  }
+
+  function syncEditRequestBulkBar() {
+    const bar = document.getElementById('ks-edit-requests-bulk');
+    const countEl = document.getElementById('ks-edit-req-selected-count');
+    const selectAll = document.getElementById('ks-edit-req-select-all');
+    const ids = getSelectedEditRequestIds();
+    if (countEl) countEl.textContent = String(ids.length);
+    if (bar) bar.style.opacity = ids.length ? '1' : '0.75';
+    if (selectAll) {
+      const boxes = Array.from(document.querySelectorAll('#ks-edit-requests-list input[data-edit-req-check]'));
+      const n = boxes.length;
+      const c = boxes.filter((b) => b.checked).length;
+      selectAll.checked = n > 0 && c === n;
+      selectAll.indeterminate = c > 0 && c < n;
+    }
+  }
+
   function handleEditRequestListClick(e) {
+    const bulkDel = e.target.closest('#ks-edit-req-delete-selected');
+    if (bulkDel) {
+      const ids = getSelectedEditRequestIds();
+      if (!ids.length) {
+        toast('Selecione pelo menos um pedido.', { kind: 'warn', title: 'Excluir' });
+        return;
+      }
+      if (!confirm(`Excluir ${ids.length} pedido(s) permanentemente?`)) return;
+      deleteEditRequestsBulk(ids).catch((err) => showError(err.message || 'Erro ao excluir'));
+      return;
+    }
     const delBtn = e.target.closest('[data-edit-req-del]');
     if (delBtn && delBtn.closest('#ks-edit-requests-list')) {
       const rid = parseInt(delBtn.getAttribute('data-edit-req-del'), 10) || 0;
@@ -453,6 +488,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (e.target.closest('#ks-edit-requests-wrap') || e.target.closest('#ks-edit-requests-list')) {
       handleEditRequestListClick(e);
+    }
+  });
+
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (!t) return;
+    if (t.id === 'ks-edit-req-select-all') {
+      const on = !!t.checked;
+      document.querySelectorAll('#ks-edit-requests-list input[data-edit-req-check]').forEach((cb) => {
+        cb.checked = on;
+      });
+      syncEditRequestBulkBar();
+      return;
+    }
+    if (t.matches && t.matches('input[data-edit-req-check]')) {
+      syncEditRequestBulkBar();
     }
   });
 
@@ -3575,12 +3626,35 @@ document.addEventListener('DOMContentLoaded', () => {
         chip('all', 'Todos', counts.all);
     }
 
+    let bulkEl = wrap?.querySelector('#ks-edit-requests-bulk');
+    if (wrap && !bulkEl) {
+      bulkEl = document.createElement('div');
+      bulkEl.id = 'ks-edit-requests-bulk';
+      bulkEl.className = 'flex flex-wrap items-center gap-3 mt-2 mb-2 px-1';
+      const listParent = editRequestsList.parentNode;
+      listParent?.insertBefore(bulkEl, editRequestsList);
+    }
+    if (bulkEl) {
+      bulkEl.innerHTML = `
+        <label class="inline-flex items-center gap-2 text-sm font-extrabold text-slate-900 cursor-pointer select-none">
+          <input type="checkbox" id="ks-edit-req-select-all" class="rounded border-slate-400" />
+          Selecionar todos
+        </label>
+        <span class="text-xs text-slate-500"><span id="ks-edit-req-selected-count">0</span> selecionado(s)</span>
+        <button type="button" id="ks-edit-req-delete-selected" class="ks-btn ks-btn-sm" style="border-color:rgba(239,68,68,.55);color:#fca5a5">
+          <i class="fas fa-trash"></i> Excluir selecionados
+        </button>
+      `;
+      bulkEl.style.display = filtered.length ? 'flex' : 'none';
+    }
+
     if (!filtered.length) {
       const emptyMsg =
         (_editRequestsFilter || 'active') === 'active'
           ? 'Nenhum pedido ativo. Recusados e concluídos ficam nas outras abas.'
           : 'Nenhum pedido neste filtro.';
       editRequestsList.innerHTML = `<p class="text-sm text-slate-500">${emptyMsg}</p>`;
+      syncEditRequestBulkBar();
       return;
     }
 
@@ -3616,10 +3690,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return `
         <div class="rounded-xl border border-violet-200 bg-white p-3" data-edit-req="${r.id}">
           <div class="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <div class="font-extrabold text-slate-900">${escapeHtml(selTitle)} · ${escapeHtml(r.client_name || 'Cliente')}</div>
-              <div class="text-xs text-slate-500">${escapeHtml(r.client_email || '')}${r.client_phone ? ' · ' + escapeHtml(r.client_phone) : ''}</div>
-              <div class="text-xs text-slate-500 mt-1">${escapeHtml(dt)} · ${r.photo_count || photos.length} foto(s)</div>
+            <div class="flex items-start gap-3 min-w-0 flex-1">
+              <label class="mt-1 shrink-0 cursor-pointer" title="Selecionar">
+                <input type="checkbox" data-edit-req-check="${r.id}" class="rounded border-slate-400 w-4 h-4" />
+              </label>
+              <div class="min-w-0">
+                <div class="font-extrabold text-slate-900">${escapeHtml(selTitle)} · ${escapeHtml(r.client_name || 'Cliente')}</div>
+                <div class="text-xs text-slate-500">${escapeHtml(r.client_email || '')}${r.client_phone ? ' · ' + escapeHtml(r.client_phone) : ''}</div>
+                <div class="text-xs text-slate-500 mt-1">${escapeHtml(dt)} · ${r.photo_count || photos.length} foto(s)</div>
+              </div>
             </div>
             <span class="ks-abo-badge">${escapeHtml(editRequestStatusLabel(st))}</span>
           </div>
@@ -3628,6 +3707,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="flex flex-wrap gap-2 mt-3">${actions.join('')}</div>
         </div>`;
     }).join('');
+    syncEditRequestBulkBar();
   }
 
   async function patchEditRequestStatus(requestId, status, opts = {}) {
@@ -3663,6 +3743,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Erro ao excluir pedido');
+    await loadEditRequests();
+  }
+
+  async function deleteEditRequestsBulk(ids) {
+    const clean = [...new Set((ids || []).map((x) => parseInt(x, 10)).filter(Boolean))];
+    if (!clean.length) return;
+    let ok = 0;
+    let fail = 0;
+    for (const id of clean) {
+      try {
+        const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/edit-requests/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) ok += 1;
+        else fail += 1;
+      } catch (_) {
+        fail += 1;
+      }
+    }
+    if (ok) toast(`${ok} pedido(s) excluído(s).`, { kind: 'ok', title: 'Excluir' });
+    if (fail) toast(`${fail} falha(s) ao excluir.`, { kind: 'warn', title: 'Excluir' });
     await loadEditRequests();
   }
 
