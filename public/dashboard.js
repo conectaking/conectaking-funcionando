@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando... v2026-05-19-banner-social-links');
+    console.log('Dashboard iniciando... v2026-08-13-banner-url-models');
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
@@ -933,11 +933,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function serializeBannerDestination(primaryUrl, instagramRaw, whatsappRaw) {
-        const ig = normalizeBannerInstagramUrl(instagramRaw);
-        const wa = normalizeBannerWhatsAppUrl(whatsappRaw);
-        const pr = String(primaryUrl || '').trim();
-        if (!ig && !wa) return pr;
-        return JSON.stringify({ primary_url: pr, instagram_url: ig, whatsapp_url: wa });
+        // Atalhos IG/WA abaixo do banner foram removidos: grava só a URL principal
+        // (ignora instagram/whatsapp legados para não recriar o overlay no cartão).
+        void instagramRaw;
+        void whatsappRaw;
+        return String(primaryUrl || '').trim();
     }
 
     function normalizeBannerInstagramUrl(raw) {
@@ -1006,30 +1006,27 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function bannerSocialLinksFieldsHtml(instagramVal, whatsappVal, useModalIds) {
-        const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-        const igIdAttr = useModalIds ? ' id="edit-banner-instagram"' : '';
-        const waIdAttr = useModalIds ? ' id="edit-banner-whatsapp"' : '';
+    function bannerUrlModelsHtml() {
+        const igModel = 'https://www.instagram.com/seuusuario/';
+        const waModel = 'https://wa.me/5511999999999';
         return `
                 <div class="banner-social-extras" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
-                    <label style="font-weight: 600;">Atalhos abaixo do banner (opcional)</label>
-                    <p class="banner-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Visitante toca e abre direto no Instagram ou WhatsApp. Cole o link ou só o @ / número.</p>
+                    <label style="font-weight: 600;">Modelos de link (cole na URL acima)</label>
+                    <p class="banner-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Copie o modelo, troque o @ ou o número e cole no campo <strong style="color:#ececec">URL ao clicar na imagem</strong>. Assim o banner fica com um link só — sem atalhos por cima da foto.</p>
                     <div class="banner-field-row" style="margin-bottom: 12px;">
-                        <label style="display: block; margin-bottom: 6px;"><i class="fab fa-instagram" style="margin-right: 6px;"></i>Instagram</label>
-                        <input type="text" class="banner-instagram-input"${igIdAttr} value="${esc(instagramVal)}" placeholder="@adrianokingg ou https://www.instagram.com/adrianokingg/" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
+                        <label style="display: block; margin-bottom: 6px;"><i class="fab fa-instagram" style="margin-right: 6px;"></i>Modelo Instagram</label>
+                        <code class="banner-url-model" data-model="${igModel}" style="display:block;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:rgba(0,0,0,0.25);color:#facc15;font-size:0.82rem;word-break:break-all;">${igModel}</code>
                         <div class="banner-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                            <button type="button" class="banner-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
-                            <button type="button" class="banner-example-fill-btn" data-value="https://www.instagram.com/adrianokingg/" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
-                            <button type="button" class="banner-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
+                            <button type="button" class="banner-copy-model-btn" data-model="${igModel}" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Copiar modelo</button>
+                            <button type="button" class="banner-use-model-btn" data-model="${igModel}" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Usar na URL</button>
                         </div>
                     </div>
                     <div class="banner-field-row">
-                        <label style="display: block; margin-bottom: 6px;"><i class="fab fa-whatsapp" style="margin-right: 6px;"></i>WhatsApp</label>
-                        <input type="text" class="banner-whatsapp-input"${waIdAttr} value="${esc(whatsappVal)}" placeholder="https://wa.me/5511988789417 ou 5511988789417" autocomplete="off" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
+                        <label style="display: block; margin-bottom: 6px;"><i class="fab fa-whatsapp" style="margin-right: 6px;"></i>Modelo WhatsApp</label>
+                        <code class="banner-url-model" data-model="${waModel}" style="display:block;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:rgba(0,0,0,0.25);color:#facc15;font-size:0.82rem;word-break:break-all;">${waModel}</code>
                         <div class="banner-field-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                            <button type="button" class="banner-clipboard-paste-btn" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Colar link</button>
-                            <button type="button" class="banner-example-fill-btn" data-value="https://wa.me/5511988789417" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Exemplo</button>
-                            <button type="button" class="banner-clear-field-btn" style="padding:6px 12px;border-radius:6px;border:none;background:rgba(255,68,68,0.2);color:#ff8888;cursor:pointer;font-size:0.85rem;">Limpar</button>
+                            <button type="button" class="banner-copy-model-btn" data-model="${waModel}" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,199,0,0.4);background:transparent;color:var(--dourado-principal,#FFC700);cursor:pointer;font-size:0.85rem;">Copiar modelo</button>
+                            <button type="button" class="banner-use-model-btn" data-model="${waModel}" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#ececec;cursor:pointer;font-size:0.85rem;">Usar na URL</button>
                         </div>
                     </div>
                 </div>`;
@@ -1037,11 +1034,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function bannerDestDisplayLabel(raw) {
         const p = parseBannerDestination(raw);
-        const parts = [];
-        if (p.primary_url) parts.push(p.primary_url.length > 40 ? p.primary_url.slice(0, 40) + '…' : p.primary_url);
-        if (p.instagram_url) parts.push('Instagram');
-        if (p.whatsapp_url) parts.push('WhatsApp');
-        return parts.length ? parts.join(' · ') : 'Sem destino';
+        if (!p.primary_url) return 'Sem destino';
+        return p.primary_url.length > 48 ? p.primary_url.slice(0, 48) + '…' : p.primary_url;
     }
 
     function wifiBannerUploadBlockHtml(itemId, bannerUrl) {
@@ -2726,7 +2720,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (itemType === 'banner') {
                 const bannerDestParsed = parseBannerDestination(itemEl.querySelector('.item-destination-url-input')?.value || '');
                 const bannerPrimary = bannerDestParsed.primary_url || '#';
-                const bannerSocialPrev = readBannerSocialFromItemEl(itemEl);
                 previewEl = document.createElement('div');
                 previewEl.className = 'preview-banner-wrap';
                 // FunÃ§Ã£o para sanitizar URL de imagem do banner
@@ -2765,30 +2758,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     banImg.alt = 'Banner Preview';
                     banImg.style.cssText = 'width:100%;height:auto;display:block;border-radius:12px;';
                     previewEl.appendChild(banImg);
-                }
-                if (bannerSocialPrev.instagram_url || bannerSocialPrev.whatsapp_url) {
-                    const socialRow = document.createElement('div');
-                    socialRow.className = 'banner-social';
-                    if (bannerSocialPrev.instagram_url) {
-                        const igA = document.createElement('a');
-                        igA.href = bannerSocialPrev.instagram_url;
-                        igA.target = '_blank';
-                        igA.rel = 'noopener noreferrer';
-                        igA.className = 'banner-social-link banner-social-ig';
-                        const igM = bannerSocialPrev.instagram_url.match(/instagram\.com\/([^/?#]+)/i);
-                        igA.innerHTML = `<i class="fab fa-instagram"></i><span>${igM ? '@' + igM[1] : 'Instagram'}</span>`;
-                        socialRow.appendChild(igA);
-                    }
-                    if (bannerSocialPrev.whatsapp_url) {
-                        const waA = document.createElement('a');
-                        waA.href = bannerSocialPrev.whatsapp_url;
-                        waA.target = '_blank';
-                        waA.rel = 'noopener noreferrer';
-                        waA.className = 'banner-social-link banner-social-wa';
-                        waA.innerHTML = '<i class="fab fa-whatsapp"></i><span>WhatsApp</span>';
-                        socialRow.appendChild(waA);
-                    }
-                    previewEl.appendChild(socialRow);
                 }
             } else if (itemType === 'carousel' || itemType === 'banner_carousel') {
                 // ===== CARROSSEL / BANNER_CAROUSEL - Preview =====
@@ -3632,8 +3601,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const bannerPrimaryDest = rawBannerDest.trim().startsWith('{')
                             ? bannerDestParts.primary_url
                             : sanitizeBannerDestLocal(rawBannerDest);
-                        const bannerIgVal = bannerInstagramEditorValue(bannerDestParts.instagram_url);
-                        const bannerWaVal = bannerWhatsAppEditorValue(bannerDestParts.whatsapp_url);
 
                         let bannerImageUrl = sanitizeImageUrl(item.image_url);
                         const bannerName = (item.title && item.title.trim()) || 'Banner';
@@ -3653,12 +3620,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <label>URL de Destino ao clicar na imagem (opcional)</label>
             <input type="text" class="item-destination-url-input" value="${bannerPrimaryDest.replace(/"/g, '&quot;')}" placeholder="https://link.do.banner">
             <input type="hidden" class="item-image-url-input" value="${bannerImageUrl}">
-            ${bannerSocialLinksFieldsHtml(bannerIgVal, bannerWaVal, false)}
+            ${bannerUrlModelsHtml()}
         `;
                         // Atualizar originalData com destino sanitizado (usar bannerDisplayDest que já está sanitizado)
                         try {
                             const originalData = itemEl.dataset.originalData ? JSON.parse(itemEl.dataset.originalData) : {};
-                            originalData.destination_url = serializeBannerDestination(bannerPrimaryDest, bannerIgVal, bannerWaVal);
+                            originalData.destination_url = serializeBannerDestination(bannerPrimaryDest, '', '');
                             originalData.image_url = bannerImageUrl;
                             originalData.aspect_ratio = item.aspect_ratio || 'tarja';
                             originalData.title = bannerName;
@@ -5885,13 +5852,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 thumbList.src = newImg;
                 thumbList.style.display = 'block';
             }
-            const listIg = itemEl.querySelector('.banner-instagram-input');
-            const listWa = itemEl.querySelector('.banner-whatsapp-input');
-            const igModal = document.getElementById('edit-banner-instagram');
-            const waModal = document.getElementById('edit-banner-whatsapp');
-            if (listIg && igModal) listIg.value = igModal.value;
-            if (listWa && waModal) listWa.value = waModal.value;
-            const serializedDest = serializeBannerDestination(newDest, listIg?.value || igModal?.value, listWa?.value || waModal?.value);
+            const serializedDest = serializeBannerDestination(newDest, '', '');
             if (destInputList) destInputList.value = newDest;
             if (displayDest) {
                 displayDest.textContent = bannerDestDisplayLabel(serializedDest);
@@ -7346,8 +7307,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 destValue = destInputItem.value.trim();
                             }
                             destValue = sanitizeBannerDest(destValue);
-                            const bannerSocialSave = readBannerSocialFromItemEl(itemEl);
-                            itemData.destination_url = serializeBannerDestination(destValue, bannerSocialSave.instagram_url, bannerSocialSave.whatsapp_url) || undefined;
+                            itemData.destination_url = serializeBannerDestination(destValue, '', '') || undefined;
 
                             // title (nome do banner) — priorizar modal
                             let bannerNameValue = '';
@@ -8675,8 +8635,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         // Se destination_url for JSON ou contiver imagem, limpar para não poluir o input
-        let bannerModalIg = '';
-        let bannerModalWa = '';
         if (itemType === 'banner') {
             window.currentCarouselItemId = null;
             const rawOpenDest = currentDestUrl;
@@ -8684,10 +8642,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentDestUrl = '';
             } else {
                 const openParts = parseBannerDestination(rawOpenDest);
-                bannerModalIg = itemEl.querySelector('.banner-instagram-input')?.value?.trim()
-                    || bannerInstagramEditorValue(openParts.instagram_url);
-                bannerModalWa = itemEl.querySelector('.banner-whatsapp-input')?.value?.trim()
-                    || bannerWhatsAppEditorValue(openParts.whatsapp_url);
                 currentDestUrl = rawOpenDest.trim().startsWith('{')
                     ? openParts.primary_url
                     : (() => {
@@ -8879,10 +8833,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="input-group">
                     <label>Mensagem WhatsApp (opcional)</label>
-                    <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:0 0 8px;">Usada no link do WhatsApp abaixo, se você quiser texto pré-preenchido.</small>
+                    <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:0 0 8px;">Se a URL acima for WhatsApp (wa.me), esta mensagem vai pré-preenchida no chat.</small>
                     <input type="text" id="edit-banner-title" value="${(currentWhatsappMsg || '').replace(/"/g, '&quot;')}" placeholder="Ex: Olá! Gostaria de saber mais sobre seus produtos.">
                 </div>
-                ${bannerSocialLinksFieldsHtml(bannerModalIg, bannerModalWa, true)}
+                ${bannerUrlModelsHtml()}
                 <input type="hidden" id="edit-image-url" value="${currentImageUrl || ''}">
             `;
                 break;
@@ -9258,8 +9212,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="input-group">
                     <label>Mensagem WhatsApp (opcional)</label>
                     <input type="text" id="edit-banner-title" value="${currentBannerTitle || ''}" placeholder="Ex: Olá! Gostaria de saber mais sobre seus produtos.">
-                    <small style="color: #999; display: block; margin-top: 5px;">Usada apenas quando o link for WhatsApp.</small>
+                    <small style="color: #999; display: block; margin-top: 5px;">Usada apenas quando a URL acima for WhatsApp.</small>
                 </div>
+                ${bannerUrlModelsHtml()}
                 <input type="hidden" id="edit-image-url" value="${currentImageUrl || ''}">
                 <input type="hidden" id="edit-dest-url-hidden" value="">
             `;
@@ -11572,38 +11527,33 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.editor-area').addEventListener('input', updateLivePreviewFromForm);
 
         document.addEventListener('click', async function (e) {
-            const actionBtn = e.target.closest('.banner-clipboard-paste-btn, .banner-example-fill-btn, .banner-clear-field-btn');
+            const actionBtn = e.target.closest('.banner-copy-model-btn, .banner-use-model-btn');
             if (!actionBtn) return;
-            const row = actionBtn.closest('.banner-field-row');
-            if (!row) return;
-            const input = row.querySelector('input[type="text"]');
-            if (!input) return;
+            const model = String(actionBtn.dataset.model || '').trim();
+            if (!model) return;
             e.preventDefault();
-            if (actionBtn.classList.contains('banner-example-fill-btn')) {
-                input.value = actionBtn.dataset.value || '';
-            } else if (actionBtn.classList.contains('banner-clear-field-btn')) {
-                input.value = '';
-            } else {
+            if (actionBtn.classList.contains('banner-copy-model-btn')) {
                 try {
-                    const pasted = await navigator.clipboard.readText();
-                    if (pasted && pasted.trim()) input.value = pasted.trim();
+                    await navigator.clipboard.writeText(model);
+                    const prev = actionBtn.textContent;
+                    actionBtn.textContent = 'Copiado!';
+                    setTimeout(() => { actionBtn.textContent = prev; }, 1200);
                 } catch (err) {
-                    const manual = window.prompt('Cole o link:', input.value || '');
-                    if (manual != null) input.value = manual.trim();
+                    window.prompt('Copie o modelo:', model);
                 }
+                return;
             }
-            const isIg = input.classList.contains('banner-instagram-input') || input.id === 'edit-banner-instagram';
-            const itemEl = row.closest('.module-item, .item');
-            const itemId = itemEl?.dataset?.id || SELECTORS.editItemModal?.dataset?.editingId;
-            const modal = itemId ? document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`) : null;
-            if (itemEl) {
-                const listIn = itemEl.querySelector(isIg ? '.banner-instagram-input' : '.banner-whatsapp-input');
-                if (listIn && listIn !== input) listIn.value = input.value;
-            }
-            if (modal) {
-                const modalIn = modal.querySelector(isIg ? '#edit-banner-instagram' : '#edit-banner-whatsapp');
-                if (modalIn && modalIn !== input) modalIn.value = input.value;
-            }
+            const itemId = SELECTORS.editItemModal?.dataset?.editingId
+                || actionBtn.closest('.module-item, .item')?.dataset?.id;
+            const modal = itemId ? document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`) : SELECTORS.editItemModal;
+            const destModal = modal?.querySelector('#edit-dest-url');
+            const itemEl = itemId ? document.querySelector(`.module-item[data-id="${itemId}"], .item[data-id="${itemId}"]`) : actionBtn.closest('.module-item, .item');
+            const destItem = itemEl?.querySelector('.item-destination-url-input');
+            if (destModal) destModal.value = model;
+            if (destItem) destItem.value = model;
+            const prev = actionBtn.textContent;
+            actionBtn.textContent = 'Colado na URL';
+            setTimeout(() => { actionBtn.textContent = prev; }, 1200);
             if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
         });
 
@@ -11691,18 +11641,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (targetId === 'edit-wifi-logo-size' && modal && listLogoSize) {
                     listLogoSize.value = modal.querySelector('#edit-wifi-logo-size')?.value || '';
                     itemEl.dataset.logoSize = listLogoSize.value;
-                }
-                const listIg = itemEl.querySelector('.banner-instagram-input');
-                const listWa = itemEl.querySelector('.banner-whatsapp-input');
-                if (e.target.id === 'edit-banner-instagram' && modal && listIg) {
-                    listIg.value = modal.querySelector('#edit-banner-instagram')?.value || '';
-                } else if (e.target.classList.contains('banner-instagram-input') && modal?.querySelector('#edit-banner-instagram')) {
-                    modal.querySelector('#edit-banner-instagram').value = e.target.value;
-                }
-                if (e.target.id === 'edit-banner-whatsapp' && modal && listWa) {
-                    listWa.value = modal.querySelector('#edit-banner-whatsapp')?.value || '';
-                } else if (e.target.classList.contains('banner-whatsapp-input') && modal?.querySelector('#edit-banner-whatsapp')) {
-                    modal.querySelector('#edit-banner-whatsapp').value = e.target.value;
                 }
                 updateLivePreviewFromForm();
             }

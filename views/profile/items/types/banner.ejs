@@ -10,18 +10,14 @@
 <%
     const ratioMap = { 'auto': '', 'tarja': '4 / 1', '2:1': '2 / 1', '4:3': '4 / 3', '1:1': '1 / 1', '3:4': '3 / 4', '10:16': '10 / 16' };
     const aspectRatioCSS = ratioMap[item.aspect_ratio] || '';
-    let containerStyle = aspectRatioCSS ? 'style="aspect-ratio: ' + aspectRatioCSS + ';"' : '';
+    const containerStyle = aspectRatioCSS ? 'style="aspect-ratio: ' + aspectRatioCSS + ';"' : '';
 
     let primaryUrl = '';
-    let instagramUrl = '';
-    let whatsappUrl = '';
     const rawDest = (item.destination_url || '').trim();
     if (rawDest.startsWith('{')) {
         try {
             const o = JSON.parse(rawDest);
             primaryUrl = (o.primary_url || o.link || '').trim();
-            instagramUrl = (o.instagram_url || '').trim();
-            whatsappUrl = (o.whatsapp_url || '').trim();
         } catch (e) {
             primaryUrl = rawDest;
         }
@@ -30,21 +26,17 @@
     }
 
     const mensagemPersonalizada = item.whatsapp_message || '';
-    if (whatsappUrl && mensagemPersonalizada) {
+    if (primaryUrl && mensagemPersonalizada) {
         const mensagem = String(mensagemPersonalizada).trim();
-        if (whatsappUrl.includes('wa.me') && !whatsappUrl.includes('?text=')) {
-            const match = whatsappUrl.match(/wa\.me\/([^/?]+)/);
+        if (primaryUrl.includes('wa.me') && !primaryUrl.includes('?text=')) {
+            const match = primaryUrl.match(/wa\.me\/([^/?]+)/);
             if (match && /^\d+$/.test(match[1].split('?')[0])) {
-                whatsappUrl = 'https://wa.me/' + match[1].split('?')[0] + '?text=' + encodeURIComponent(mensagem);
+                primaryUrl = 'https://wa.me/' + match[1].split('?')[0] + '?text=' + encodeURIComponent(mensagem);
             }
-        } else if (whatsappUrl.includes('api.whatsapp.com') && !whatsappUrl.includes('text=')) {
-            whatsappUrl = whatsappUrl + (whatsappUrl.includes('?') ? '&' : '?') + 'text=' + encodeURIComponent(mensagem);
+        } else if (primaryUrl.includes('api.whatsapp.com') && !primaryUrl.includes('text=')) {
+            primaryUrl = primaryUrl + (primaryUrl.includes('?') ? '&' : '?') + 'text=' + encodeURIComponent(mensagem);
         }
     }
-
-    let instagramLabel = 'Instagram';
-    const igMatch = instagramUrl.match(/instagram\.com\/([^/?#]+)/i);
-    if (igMatch) instagramLabel = '@' + igMatch[1];
 %>
 <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; background: transparent !important; background-color: transparent !important;">
     <% if (primaryUrl && primaryUrl !== '#') { %>
@@ -53,20 +45,6 @@
     </a>
     <% } else { %>
     <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
-    <% } %>
-    <% if (instagramUrl || whatsappUrl) { %>
-    <div class="banner-social">
-        <% if (instagramUrl) { %>
-        <a href="<%= instagramUrl %>" class="banner-social-link banner-social-ig" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-            <i class="fab fa-instagram" aria-hidden="true"></i><span><%= instagramLabel %></span>
-        </a>
-        <% } %>
-        <% if (whatsappUrl) { %>
-        <a href="<%= whatsappUrl %>" class="banner-social-link banner-social-wa" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-            <i class="fab fa-whatsapp" aria-hidden="true"></i><span>WhatsApp</span>
-        </a>
-        <% } %>
-    </div>
     <% } %>
 </div>
 <% } %>
