@@ -37,6 +37,23 @@
     <!-- Cache-buster para CSS - Atualizado para forçar reload -->
     <link rel="stylesheet" href="style.css?v=2025-01-31-01">
     <link rel="stylesheet" href="dashboard.css?v=2025-01-31-01">
+    <style>
+        .qr-art-hint { color: var(--text-dark, #A1A1A1); font-size: 13px; line-height: 1.45; margin: 0 0 14px; }
+        .qr-theme-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .qr-theme-chip {
+            border: 2px solid transparent; border-radius: 999px; padding: 6px 12px 6px 8px;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.04); color: var(--text, #ECECEC); font-size: 12px; font-weight: 700;
+        }
+        .qr-theme-chip.active { border-color: #FFC700; background: rgba(255,199,0,0.12); }
+        .qr-theme-swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); flex-shrink: 0; }
+        .qr-logo-toggle { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: var(--text, #ECECEC); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .qr-logo-toggle input { width: 16px; height: 16px; accent-color: #FFC700; }
+        .qr-hidden-source { position: absolute; left: -9999px; width: 280px; height: 280px; overflow: hidden; pointer-events: none; }
+        .qr-art-preview-wrap { display: flex; justify-content: center; margin: 8px 0 16px; }
+        #qr-art-canvas { width: min(100%, 340px); height: auto; border-radius: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.45); background: #111; }
+        #share-qr-art-card { position: relative; }
+    </style>
     <link rel="stylesheet" href="css/profile-wifi.css?v=2026-05-19-wifi-qr-popup">
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
     <script>
@@ -895,10 +912,18 @@
 
                 <div class="share-layout">
                     <div class="share-column-left">
-                        <div class="qr-code-card">
-                            <h4>Escaneie o QRCode</h4>
-                            <div id="qr-code-container">
-                                </div>
+                        <div class="qr-code-card" id="share-qr-art-card">
+                            <h4>QR Code da sua Tag</h4>
+                            <p class="qr-art-hint">Escolha um tema. A logomarca entra no centro e o PNG sai pronto para o cliente imprimir ou postar.</p>
+                            <div id="qr-theme-picker" class="qr-theme-picker" role="listbox" aria-label="Temas do QR Code"></div>
+                            <label class="qr-logo-toggle">
+                                <input type="checkbox" id="qr-include-logo" checked>
+                                <span>Incluir logomarca no centro</span>
+                            </label>
+                            <div id="qr-code-container" class="qr-hidden-source" aria-hidden="true"></div>
+                            <div class="qr-art-preview-wrap">
+                                <canvas id="qr-art-canvas" width="720" height="920"></canvas>
+                            </div>
                             <button id="download-qr-btn" class="btn btn-secondary"><i class="fas fa-download"></i> Baixar PNG</button>
                         </div>
                     </div>
@@ -1534,7 +1559,7 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-08-13-boot-perf" defer></script>
+    <script src="dashboard.js?v=2026-08-13-qr-art" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
     <script>
