@@ -337,10 +337,16 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
             </header>
             
             <%# ========================================================== %>
-            <%# SEÇÃO: QUADRADINHO PALAVRA DO DIA + REFLEXÃO (Bíblia visível) - ACIMA de Salvar Contato %>
+            <%# SEÇÃO: QUADRADINHO PALAVRA DO DIA + REFLEXÃO (Bíblia) - posição configurável %>
             <%# ========================================================== %>
-            <% if (typeof verseOfDay !== 'undefined' && verseOfDay && verseOfDay.texto) { %>
-            <div class="verse-of-day-box">
+            <%
+                const _vd = (typeof verseDisplay !== 'undefined' && verseDisplay) ? verseDisplay : { position: 'top', size: 'normal' };
+                const _versePos = (_vd.position === 'bottom') ? 'bottom' : 'top';
+                const _verseSize = ['small', 'xsmall'].includes(_vd.size) ? _vd.size : 'normal';
+                const _hasVerse = (typeof verseOfDay !== 'undefined' && verseOfDay && verseOfDay.texto);
+            %>
+            <% if (_hasVerse && _versePos === 'top') { %>
+            <div class="verse-of-day-box verse-size-<%= _verseSize %>">
                 <div class="verse-of-day-ref"><%= verseOfDay.ref || 'Versículo do Dia' %></div>
                 <div class="verse-of-day-text">"<%= verseOfDay.texto %>"</div>
                 <% if (verseOfDay.reflexao) { %>
@@ -2032,6 +2038,15 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
         <%# ========================================================== %>
         <%# SEÇÃO: LOGO DA EMPRESA / BRANDING (rodapé) %>
         <%# ========================================================== %>
+        <% if (_hasVerse && _versePos === 'bottom') { %>
+            <div class="verse-of-day-box verse-of-day-box--bottom verse-size-<%= _verseSize %>">
+                <div class="verse-of-day-ref"><%= verseOfDay.ref || 'Versículo do Dia' %></div>
+                <div class="verse-of-day-text">"<%= verseOfDay.texto %>"</div>
+                <% if (verseOfDay.reflexao) { %>
+                <div class="verse-of-day-reflexao"><%= verseOfDay.reflexao %></div>
+                <% } %>
+            </div>
+        <% } %>
         <% if (details.company_logo_url) { %>
             <% const rawSize = details.company_logo_size || 60; const logoSizePx = Math.min(120, Math.max(20, parseInt(rawSize, 10) || 60)); %>
             <% if (details.company_logo_link) { %>

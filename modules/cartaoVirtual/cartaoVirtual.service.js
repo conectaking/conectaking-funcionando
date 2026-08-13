@@ -584,7 +584,7 @@ async function getProfilePageData(client, identifier, req) {
             if (item.item_type === 'bible') {
                 try {
                     const bibleRes = await client.query(
-                        'SELECT translation_code, is_visible FROM bible_items WHERE profile_item_id = $1',
+                        'SELECT * FROM bible_items WHERE profile_item_id = $1',
                         [item.id]
                     );
                     if (bibleRes.rows.length > 0) {
@@ -593,11 +593,11 @@ async function getProfilePageData(client, identifier, req) {
                             return null;
                         }
                     } else {
-                        item.bible_data = { translation_code: 'nvi', is_visible: true };
+                        item.bible_data = { translation_code: 'nvi', is_visible: true, verse_position: 'top', verse_size: 'normal' };
                     }
                 } catch (bibleError) {
                     logger.error('Erro ao carregar bíblia', { itemId: item.id, error: bibleError.message });
-                    item.bible_data = { translation_code: 'nvi', is_visible: true };
+                    item.bible_data = { translation_code: 'nvi', is_visible: true, verse_position: 'top', verse_size: 'normal' };
                 }
             }
 
@@ -608,8 +608,15 @@ async function getProfilePageData(client, identifier, req) {
         
         // Versículo do dia para o quadradinho da Bíblia (quando visível)
         let verseOfDay = null;
+        let verseDisplay = { position: 'top', size: 'normal' };
         const bibleItem = itemsFiltered.find(i => i.item_type === 'bible');
         if (bibleItem && bibleItem.bible_data && bibleItem.bible_data.is_visible !== false) {
+            const pos = String(bibleItem.bible_data.verse_position || 'top');
+            const size = String(bibleItem.bible_data.verse_size || 'normal');
+            verseDisplay = {
+                position: pos === 'bottom' ? 'bottom' : 'top',
+                size: ['small', 'xsmall'].includes(size) ? size : 'normal'
+            };
             try {
                 const now = new Date();
                 const brDate = now.toLocaleString('en-CA', { timeZone: 'America/Sao_Paulo' }).slice(0, 10);
@@ -701,6 +708,7 @@ async function getProfilePageData(client, identifier, req) {
             details: details,
             items: itemsForLinks,
             verseOfDay: verseOfDay,
+            verseDisplay: verseDisplay,
             origin: req.protocol + '://' + req.get('host'),
             ogImageUrl: ogImageUrl,
             profile_slug: userProfileSlug, // Adicionar profile_slug para uso no template
@@ -712,7 +720,8 @@ async function getProfilePageData(client, identifier, req) {
             identifier,
             itemsCount: itemsForLinks.length,
             itemTypes: itemsForLinks.map(i => i.item_type),
-            hasVerseOfDay: !!verseOfDay
+            hasVerseOfDay: !!verseOfDay,
+            verseDisplay
         });
         return { type: 'render', view: 'profile', data: profileData };
 }

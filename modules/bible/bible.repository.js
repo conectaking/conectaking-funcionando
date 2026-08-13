@@ -34,14 +34,21 @@ async function create(profileItemId) {
 async function update(profileItemId, data) {
     const client = await db.pool.connect();
     try {
-        const allowed = ['translation_code', 'voice_id', 'is_visible'];
+        const allowed = ['translation_code', 'voice_id', 'is_visible', 'verse_position', 'verse_size'];
         const sets = [];
         const values = [];
         let i = 1;
         for (const key of allowed) {
             if (!(key in data)) continue;
+            let val = data[key];
+            if (key === 'verse_position') {
+                val = ['top', 'bottom'].includes(String(val)) ? String(val) : 'top';
+            }
+            if (key === 'verse_size') {
+                val = ['normal', 'small', 'xsmall'].includes(String(val)) ? String(val) : 'normal';
+            }
             sets.push(`${key} = $${i++}`);
-            values.push(data[key]);
+            values.push(val);
         }
         if (sets.length === 0) return await findByProfileItemId(profileItemId);
         values.push(profileItemId);

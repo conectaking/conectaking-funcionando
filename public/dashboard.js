@@ -3261,14 +3261,27 @@ document.addEventListener('DOMContentLoaded', () => {
             function updateBibleVisibilitySetting(itemsList) {
                 const bibleItem = (itemsList || window.currentProfileData?.items || []).find(function (it) { return it.item_type === 'bible'; });
                 const bibleSetting = document.getElementById('bible-visibility-setting');
+                const biblePosSetting = document.getElementById('bible-verse-position-setting');
+                const bibleSizeSetting = document.getElementById('bible-verse-size-setting');
                 if (bibleSetting) {
                     if (bibleItem) {
                         bibleSetting.style.display = 'flex';
+                        if (biblePosSetting) biblePosSetting.style.display = 'flex';
+                        if (bibleSizeSetting) bibleSizeSetting.style.display = 'flex';
                         const bibleVisible = bibleItem.bible_data && bibleItem.bible_data.is_visible !== false;
                         const bibleToggle = document.querySelector(`input[name="bible-toggle"][value="${bibleVisible ? 'true' : 'false'}"]`);
                         if (bibleToggle) bibleToggle.checked = true;
+                        const versePos = (bibleItem.bible_data && bibleItem.bible_data.verse_position === 'bottom') ? 'bottom' : 'top';
+                        const versePosRadio = document.querySelector(`input[name="bible-verse-position"][value="${versePos}"]`);
+                        if (versePosRadio) versePosRadio.checked = true;
+                        const rawSize = (bibleItem.bible_data && bibleItem.bible_data.verse_size) || 'normal';
+                        const verseSize = ['small', 'xsmall'].includes(rawSize) ? rawSize : 'normal';
+                        const verseSizeRadio = document.querySelector(`input[name="bible-verse-size"][value="${verseSize}"]`);
+                        if (verseSizeRadio) verseSizeRadio.checked = true;
                     } else {
                         bibleSetting.style.display = 'none';
+                        if (biblePosSetting) biblePosSetting.style.display = 'none';
+                        if (bibleSizeSetting) bibleSizeSetting.style.display = 'none';
                     }
                 }
             }
@@ -7599,25 +7612,35 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('✅ Dados salvos com sucesso:', result);
             console.log('✅ Resposta completa:', JSON.stringify(result, null, 2));
 
-            // Salvar toggle Bíblia (visível/oculto) em bible_items
+            // Salvar toggle Bíblia (visível/oculto) + posição/tamanho da Palavra do Dia
             // IMPORTANTE: Sempre salvar quando bibleItem existe - não depender de display (usuário pode estar em outra aba)
             const bibleItem = (window.currentProfileData?.items || saveData.items || []).find(function (it) { return it.item_type === 'bible'; });
             const bibleSetting = document.getElementById('bible-visibility-setting');
             if (bibleItem && bibleSetting) {
                 const bibleToggleChecked = document.querySelector('input[name="bible-toggle"]:checked');
                 const isVisible = bibleToggleChecked ? bibleToggleChecked.value === 'true' : true;
+                const posChecked = document.querySelector('input[name="bible-verse-position"]:checked');
+                const verse_position = posChecked && posChecked.value === 'bottom' ? 'bottom' : 'top';
+                const sizeChecked = document.querySelector('input[name="bible-verse-size"]:checked');
+                const sizeVal = sizeChecked ? sizeChecked.value : 'normal';
+                const verse_size = ['small', 'xsmall'].includes(sizeVal) ? sizeVal : 'normal';
                 try {
                     const bibleRes = await fetch(`${API_URL}/api/bible/config/${bibleItem.id}`, {
                         method: 'PUT',
                         headers: HEADERS,
-                        body: JSON.stringify({ is_visible: isVisible })
+                        body: JSON.stringify({ is_visible: isVisible, verse_position, verse_size })
                     });
                     if (bibleRes.ok) {
                         if (window.currentProfileData && window.currentProfileData.items) {
                             const bi = window.currentProfileData.items.find(function (it) { return it.item_type === 'bible'; });
-                            if (bi && bi.bible_data) bi.bible_data.is_visible = isVisible;
+                            if (bi) {
+                                if (!bi.bible_data) bi.bible_data = {};
+                                bi.bible_data.is_visible = isVisible;
+                                bi.bible_data.verse_position = verse_position;
+                                bi.bible_data.verse_size = verse_size;
+                            }
                         }
-                        console.log('✅ Config Bíblia (visibilidade) salva:', isVisible);
+                        console.log('✅ Config Bíblia salva:', { isVisible, verse_position, verse_size });
                     }
                 } catch (bibleErr) {
                     console.warn('⚠️ Erro ao salvar config Bíblia:', bibleErr);
@@ -11132,7 +11155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         // Atualizar preview ao mudar Salvar Contato ou Bíblia (visível/oculto)
         document.addEventListener('change', (e) => {
-            if (e.target && (e.target.name === 'vcard-toggle' || e.target.name === 'bible-toggle')) {
+            if (e.target && (e.target.name === 'vcard-toggle' || e.target.name === 'bible-toggle' || e.target.name === 'bible-verse-position' || e.target.name === 'bible-verse-size')) {
                 if (typeof updateLivePreviewFromForm === 'function') updateLivePreviewFromForm();
             }
         });

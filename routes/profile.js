@@ -272,17 +272,17 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             } else if (item.item_type === 'bible') {
                 try {
                     const bibleRes = await db.pool.query(
-                        'SELECT translation_code, is_visible FROM bible_items WHERE profile_item_id = $1',
+                        'SELECT * FROM bible_items WHERE profile_item_id = $1',
                         [item.id]
                     );
                     if (bibleRes.rows.length > 0) {
                         item.bible_data = bibleRes.rows[0];
                     } else {
-                        item.bible_data = { translation_code: 'nvi', is_visible: true };
+                        item.bible_data = { translation_code: 'nvi', is_visible: true, verse_position: 'top', verse_size: 'normal' };
                     }
                 } catch (bibleError) {
                     console.error('Erro ao carregar bíblia', { itemId: item.id, error: bibleError.message });
-                    item.bible_data = { translation_code: 'nvi', is_visible: true };
+                    item.bible_data = { translation_code: 'nvi', is_visible: true, verse_position: 'top', verse_size: 'normal' };
                 }
             } else if (item.item_type === 'location') {
                 try {

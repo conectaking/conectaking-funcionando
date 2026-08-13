@@ -138,6 +138,9 @@ body {
     margin: 0 16px 24px;
     text-align: left;
 }
+.verse-of-day-box--bottom {
+    margin: 24px 16px 12px;
+}
 .verse-of-day-ref {
     font-family: 'Lora', serif;
     font-size: 0.9rem;
@@ -159,6 +162,42 @@ body {
     font-style: italic;
     padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.verse-of-day-box.verse-size-small {
+    padding: 14px 16px;
+    border-radius: 12px;
+}
+.verse-of-day-box.verse-size-small .verse-of-day-ref {
+    font-size: 0.78rem;
+    margin-bottom: 7px;
+}
+.verse-of-day-box.verse-size-small .verse-of-day-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+.verse-of-day-box.verse-size-small .verse-of-day-reflexao {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    padding-top: 8px;
+}
+.verse-of-day-box.verse-size-xsmall {
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+.verse-of-day-box.verse-size-xsmall .verse-of-day-ref {
+    font-size: 0.7rem;
+    margin-bottom: 5px;
+}
+.verse-of-day-box.verse-size-xsmall .verse-of-day-text {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-bottom: 6px;
+}
+.verse-of-day-box.verse-size-xsmall .verse-of-day-reflexao {
+    font-size: 0.7rem;
+    line-height: 1.35;
+    padding-top: 6px;
 }
 
 .profile-items-container {

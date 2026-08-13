@@ -503,6 +503,36 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="setting-item" id="bible-verse-position-setting" style="display: none;">
+                            <div class="setting-label">
+                                <i class="fas fa-arrows-alt-v"></i>
+                                <span>Palavra do Dia — posição</span>
+                            </div>
+                            <div class="setting-control">
+                                <div class="segmented-control">
+                                    <input type="radio" id="bible-verse-pos-top" name="bible-verse-position" value="top" checked>
+                                    <label for="bible-verse-pos-top">Em cima</label>
+                                    <input type="radio" id="bible-verse-pos-bottom" name="bible-verse-position" value="bottom">
+                                    <label for="bible-verse-pos-bottom">Embaixo (logo)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting-item" id="bible-verse-size-setting" style="display: none;">
+                            <div class="setting-label">
+                                <i class="fas fa-text-height"></i>
+                                <span>Palavra do Dia — tamanho</span>
+                            </div>
+                            <div class="setting-control">
+                                <div class="segmented-control">
+                                    <input type="radio" id="bible-verse-size-normal" name="bible-verse-size" value="normal" checked>
+                                    <label for="bible-verse-size-normal">Normal</label>
+                                    <input type="radio" id="bible-verse-size-small" name="bible-verse-size" value="small">
+                                    <label for="bible-verse-size-small">Menor</label>
+                                    <input type="radio" id="bible-verse-size-xsmall" name="bible-verse-size" value="xsmall">
+                                    <label for="bible-verse-size-xsmall">Bem menor</label>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="setting-item">
                             <div class="setting-label">
@@ -1572,7 +1602,7 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-08-13-banner-url-models" defer></script>
+    <script src="dashboard.js?v=2026-08-13-bible-verse-display" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
     <script>
