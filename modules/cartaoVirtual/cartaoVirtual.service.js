@@ -673,21 +673,28 @@ async function getProfilePageData(client, identifier, req) {
             }
         }
 
-        // Preparar URL da imagem processada para og:image (se houver imagem)
-        // Priorizar share_image_url se existir, senão usar profile_image_url
-        // Adicionar cache-busting baseado na URL da imagem para forçar atualização
+        // Preparar URL da imagem processada para og:image (WhatsApp/Facebook)
+        // Priorizar share_image_url; senão profile_image_url; senão logo padrão.
+        // Sempre HTTPS + mesmo host da página + proxy JPEG 1200×630.
         let ogImageUrl = null;
-        const imageUrl = details.share_image_url || details.profile_image_url;
-        if (imageUrl) {
-            // Extrair parte única da URL (ID do Cloudflare) para cache-busting
-            const urlParts = imageUrl.match(/[a-zA-Z0-9_-]+/g);
-            const cacheBuster = urlParts ? urlParts[urlParts.length - 1] : Date.now();
-            ogImageUrl = `${req.protocol}://${req.get('host')}/api/image/profile-image?url=${encodeURIComponent(imageUrl)}&v=${cacheBuster}`;
-        }
-        
+        const imageUrl = (details.share_image_url || details.profile_image_url || '').trim();
+        const protoHdr = (req.headers['x-forwarded-proto'] || req.protocol || 'https').toString();
+        const proto = (protoHdr.split(',')[0].trim().split(/\s+/)[0] || 'https').replace(/:$/, '');
+        const hostHdr = (req.headers['x-forwarded-host'] || req.get('host') || '').toString();
+        const host = hostHdr.split(',')[0].trim() || 'tag.conectaking.com.br';
+        const safeProto = proto === 'http' && !/localhost|127\.0\.0\.1/i.test(host) ? 'https' : proto;
+        const sourceForOg = imageUrl || 'https://i.ibb.co/60sW9k75/logo.png';
+        const urlParts = sourceForOg.match(/[a-zA-Z0-9_-]+/g);
+        const cacheBuster = urlParts ? urlParts[urlParts.length - 1] : Date.now();
+        ogImageUrl = `${safeProto}://${host}/api/image/profile-image?url=${encodeURIComponent(sourceForOg)}&v=${encodeURIComponent(String(cacheBuster).slice(0, 48))}`;
+        const ogDescription = (details.bio && String(details.bio).trim())
+            ? String(details.bio).trim().slice(0, 200)
+            : 'Confira meu cartão de visita digital Conecta King!';
+
         // Buscar profile_slug do usuário para usar nas URLs
         const userSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
         const userProfileSlug = userSlugRes.rows[0]?.profile_slug || identifier;
+        const ogPageUrl = `${safeProto}://${host}/${encodeURIComponent(String(userProfileSlug || identifier || '').replace(/^\/+/, ''))}`;
         
         // Buscar configurações da agenda para verificar se está ativa no cartão
         let agendaSettings = null;
@@ -711,6 +718,8 @@ async function getProfilePageData(client, identifier, req) {
             verseDisplay: verseDisplay,
             origin: req.protocol + '://' + req.get('host'),
             ogImageUrl: ogImageUrl,
+            ogPageUrl: ogPageUrl,
+            ogDescription: ogDescription,
             profile_slug: userProfileSlug, // Adicionar profile_slug para uso no template
             identifier: identifier, // Adicionar identifier também
             agendaSettings: agendaSettings // Configurações da agenda

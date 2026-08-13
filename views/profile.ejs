@@ -31,9 +31,31 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
 
-    <meta property="og:title" content="<%= (details && details.display_name) ? details.display_name : 'Conecta King' %>">
-    <meta property="og:description" content="<%= (details && details.bio) ? details.bio : '' %>">
-    <meta property="og:image" content="<%= typeof ogImageUrl !== 'undefined' && ogImageUrl ? ogImageUrl : ((details && details.profile_image_url) ? details.profile_image_url : 'URL_DA_SUA_IMAGEM_PADRAO.png') %>">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Conecta King">
+    <meta property="og:title" content="<%= (details && details.display_name) ? String(details.display_name).replace(/"/g, '&quot;') : 'Conecta King' %>">
+    <meta property="og:description" content="<%= (typeof ogDescription !== 'undefined' && ogDescription ? String(ogDescription) : ((details && details.bio) ? details.bio : 'Confira meu cartão de visita digital Conecta King!')).replace(/"/g, '&quot;').substring(0, 200) %>">
+    <%
+      const _ogImg = (typeof ogImageUrl !== 'undefined' && ogImageUrl)
+        ? ogImageUrl
+        : ((details && details.share_image_url) ? details.share_image_url
+          : ((details && details.profile_image_url) ? details.profile_image_url
+            : 'https://i.ibb.co/60sW9k75/logo.png'));
+      const _ogUrl = (typeof ogPageUrl !== 'undefined' && ogPageUrl)
+        ? ogPageUrl
+        : ((typeof origin !== 'undefined' && origin ? origin : 'https://tag.conectaking.com.br') + '/' + ((details && details.profile_slug) ? details.profile_slug : ''));
+    %>
+    <meta property="og:url" content="<%= _ogUrl %>">
+    <meta property="og:image" content="<%= _ogImg %>">
+    <meta property="og:image:secure_url" content="<%= _ogImg %>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:alt" content="<%= (details && details.display_name) ? String(details.display_name).replace(/"/g, '&quot;') : 'Conecta King' %>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= (details && details.display_name) ? String(details.display_name).replace(/"/g, '&quot;') : 'Conecta King' %>">
+    <meta name="twitter:description" content="<%= (typeof ogDescription !== 'undefined' && ogDescription ? String(ogDescription) : ((details && details.bio) ? details.bio : 'Confira meu cartão de visita digital Conecta King!')).replace(/"/g, '&quot;').substring(0, 200) %>">
+    <meta name="twitter:image" content="<%= _ogImg %>">
 
     <style>
         body, h1, p, span { font-family: '<%= (details && details.font_family) ? details.font_family : "Inter" %>', sans-serif !important; }
