@@ -11580,9 +11580,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         e.preventDefault();
                         e.stopPropagation();
                         try {
+                            const details = (window.currentProfileData && window.currentProfileData.details) || {};
+                            const slug = String(details.profile_slug || details.slug || '').trim();
                             let itemId = (window.currentProfileData && window.currentProfileData.items)
                                 ? (window.currentProfileData.items.find(function (it) { return it.item_type === 'bible'; }) || {}).id
                                 : null;
+                            if (!itemId) {
+                                try {
+                                    itemId = sessionStorage.getItem('bible_item_id') || sessionStorage.getItem('bible_panel_item_id');
+                                } catch (e0) {}
+                            }
                             if (!itemId) {
                                 const res = await fetch(`${API_URL}/api/profile`, { headers: HEADERS });
                                 const data = await res.json().catch(function () { return {}; });
@@ -11605,7 +11612,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 sessionStorage.setItem('bible_item_id', String(itemId));
                                 sessionStorage.setItem('bible_panel_item_id', String(itemId));
                             } catch (e) {}
-                            window.location.href = 'bibliaking.html';
+                            if (slug) {
+                                window.location.href = `${API_URL}/${encodeURIComponent(slug)}/biblia`;
+                            } else {
+                                window.location.href = 'bibliaking.html';
+                            }
                         } catch (err) {
                             alert(err.message || 'Erro ao abrir Bíblia.');
                         }
@@ -14138,8 +14149,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     lastProfileFetch = Date.now();
 
-                    const profileAttempts = 3;
-                    const profileBackoffMs = [0, 900, 2400];
+                    const profileAttempts = 2;
+                    const profileBackoffMs = [0, 800];
                     let lastAttemptError = null;
 
                     for (let attempt = 0; attempt < profileAttempts; attempt++) {
@@ -14836,6 +14847,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const showLogo = planosComPersonalizarLogo.includes(accountType);
                 personalizacaoLogoLink.style.display = showLogo ? 'flex' : 'none';
             }
+
+            const separacaoLink = document.getElementById('separacao-pacotes-link');
+            if (separacaoLink) {
+                separacaoLink.style.display = isAdmin ? 'block' : 'none';
+            }
         }
 
         // Aplicar IMEDIATAMENTE com localStorage (antes de qualquer await) para evitar aba aparecer e sumir
@@ -14848,15 +14864,22 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('Erro ao aplicar visibilidade inicial da aba Empresa:', e);
         }
 
-        // Carregar dados do perfil com tratamento de erro
-        try {
-            console.log('📡 Chamando fetchProfileData()...');
-            await fetchProfileData();
+        // Perfil e status em paralelo (antes o painel esperava o perfil inteiro para só depois pedir o plano)
+        const profilePromise = fetchProfileData().then(function () {
             console.log('✅ fetchProfileData() concluído com sucesso');
-            // Se veio de King Forms (kingForms.html?edit=X) ou formPageEdit → dashboard?openForm=X: abrir modal do formulário
+        }).catch(function (error) {
+            console.error('❌ Erro ao carregar dados do perfil:', error);
+            if (error && error.status !== 429) {
+                console.warn('⚠️ Erro ao carregar perfil, continuando com interface básica:', error);
+            } else if (error && error.status === 429) {
+                console.error('🚫 Rate limit atingido. Aguarde antes de tentar novamente.');
+            }
+        });
+        const statusPromise = fetchAndUpdateUserStatus();
+        await profilePromise;
+        try {
             const openFormId = new URLSearchParams(window.location.search).get('openForm');
             if (openFormId && typeof openEditModal === 'function') {
-                // Garantir painel Editar ativo e depois aba Módulos
                 var editarLink = document.querySelector('.sidebar .nav-link[data-target="editar-pane"]');
                 if (editarLink && !editarLink.classList.contains('active')) editarLink.click();
                 var modulosTab = document.querySelector('[data-editor-target="items-editor"]');
@@ -14878,18 +14901,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!tryOpenFormModal()) setTimeout(tryOpenFormModal, 500);
                 }, 600);
             }
-        } catch (error) {
-            console.error('❌ Erro ao carregar dados do perfil:', error);
-            if (error.status !== 429) {
-                console.warn('⚠️ Erro ao carregar perfil, continuando com interface básica:', error);
-            } else {
-                console.error('🚫 Rate limit atingido. Aguarde antes de tentar novamente.');
-            }
-        }
+        } catch (eOpen) { /* ignore */ }
 
         // Atualizar status do usuário e reaplicar visibilidade (API é fonte da verdade)
         try {
-            const updatedUser = await fetchAndUpdateUserStatus();
+            const updatedUser = await statusPromise;
             if (!updatedUser) return;
 
             if (updatedUser.accountType === 'free') {
@@ -16862,8 +16878,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Verificar admin ao carregar página
-    checkAdminAndShowLink();
+    // Verificar admin ao carregar página (já aplicado em applyEmpresaTabAndControls via /api/account/status)
 
     // ============================================
     // FILTRO DE MÓDULOS POR PLANO

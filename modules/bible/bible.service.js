@@ -39,14 +39,18 @@ function getVerseOfDayIndex(dateStr) {
     return day + d;
 }
 
+let _verseOfDayList = null;
 function loadVerseOfDayList() {
+    if (_verseOfDayList) return _verseOfDayList;
     try {
         const filePath = path.join(DATA_DIR, 'verse_of_day.json');
         const data = fs.readFileSync(filePath, 'utf8');
-        return JSON.parse(data);
+        _verseOfDayList = JSON.parse(data);
+        return _verseOfDayList;
     } catch (e) {
         logger.error('bible.service loadVerseOfDayList:', e);
-        return [];
+        _verseOfDayList = [];
+        return _verseOfDayList;
     }
 }
 
@@ -474,14 +478,18 @@ async function getChapterStudy(bookId, chapterNumber) {
     return await repo.getChapterStudy(bookId, chapterNumber);
 }
 
+let _booksManifest = null;
 function loadBooksManifest() {
+    if (_booksManifest) return _booksManifest;
     try {
         const filePath = path.join(DATA_DIR, 'books_manifest.json');
         const data = fs.readFileSync(filePath, 'utf8');
-        return JSON.parse(data);
+        _booksManifest = JSON.parse(data);
+        return _booksManifest;
     } catch (e) {
         logger.error('bible.service loadBooksManifest:', e);
-        return { at: [], nt: [] };
+        _booksManifest = { at: [], nt: [] };
+        return _booksManifest;
     }
 }
 
@@ -700,25 +708,45 @@ function getTextForRef(ref, translation) {
     return { text, scope: 'chapter', ref: normalizedRef };
 }
 
-function getBookChapter(bookId, chapterNum, translation) {
+const _bookJsonCache = new Map();
+function loadBookJson(translation, bookId) {
     const trans = (translation || 'nvi').toLowerCase();
-    let bookPath = path.join(DATA_DIR, 'books', trans, bookId + '.json');
+    const id = String(bookId || '').trim();
+    if (!id) return null;
+    const cacheKey = trans + ':' + id;
+    if (_bookJsonCache.has(cacheKey)) return _bookJsonCache.get(cacheKey);
+
+    let bookPath = path.join(DATA_DIR, 'books', trans, id + '.json');
     if (!fs.existsSync(bookPath) && trans !== 'nvi') {
-        bookPath = path.join(DATA_DIR, 'books', 'nvi', bookId + '.json');
+        bookPath = path.join(DATA_DIR, 'books', 'nvi', id + '.json');
     }
     if (!fs.existsSync(bookPath)) {
-        logger.warn('bible.service getBookChapter: arquivo não encontrado', {
-            bookPath,
-            bookId,
-            chapter: chapterNum,
-            translation: trans,
-            dataDirExists: fs.existsSync(DATA_DIR),
-            booksDirExists: fs.existsSync(path.join(DATA_DIR, 'books'))
-        });
+        _bookJsonCache.set(cacheKey, null);
         return null;
     }
     try {
         const book = JSON.parse(fs.readFileSync(bookPath, 'utf8'));
+        _bookJsonCache.set(cacheKey, book);
+        return book;
+    } catch (e) {
+        logger.error('bible.service loadBookJson:', e);
+        _bookJsonCache.set(cacheKey, null);
+        return null;
+    }
+}
+
+function getBookChapter(bookId, chapterNum, translation) {
+    const trans = (translation || 'nvi').toLowerCase();
+    const book = loadBookJson(trans, bookId);
+    if (!book) {
+        logger.warn('bible.service getBookChapter: arquivo não encontrado', {
+            bookId,
+            chapter: chapterNum,
+            translation: trans
+        });
+        return null;
+    }
+    try {
         const chapters = book.chapters || [];
         const chIndex = parseInt(chapterNum, 10) - 1;
         if (chIndex < 0 || chIndex >= chapters.length) return null;
@@ -741,15 +769,25 @@ const TOTAL_CHAPTERS_BIBLE = 1189;
 /** Número de capítulos por livro, na ordem do books_manifest (at + nt). Evita 66 leituras de arquivo que travavam o servidor. */
 const CHAPTER_COUNTS_66 = [50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 4, 28, 16, 24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 3, 5, 1, 1, 1, 22];
 
-/** Número de capítulos de um livro (alinhado a books_manifest e CHAPTER_COUNTS_66). */
-function getChapterCountForBook(bookId) {
+let _chapterCountsByBook = null;
+function getChapterCountsByBook() {
+    if (_chapterCountsByBook) return _chapterCountsByBook;
     const manifest = loadBooksManifest();
     const allBooks = (manifest.at || []).concat(manifest.nt || []);
-    const idx = allBooks.findIndex(function (b) {
-        return b && b.id === bookId;
-    });
-    if (idx < 0) return 1;
-    const n = CHAPTER_COUNTS_66[idx];
+    const out = {};
+    for (let i = 0; i < allBooks.length; i++) {
+        const b = allBooks[i];
+        if (!b || !b.id) continue;
+        const n = CHAPTER_COUNTS_66[i];
+        out[b.id] = typeof n === 'number' && n >= 1 ? n : 1;
+    }
+    _chapterCountsByBook = out;
+    return out;
+}
+
+/** Número de capítulos de um livro (alinhado a books_manifest e CHAPTER_COUNTS_66). */
+function getChapterCountForBook(bookId) {
+    const n = getChapterCountsByBook()[bookId];
     return typeof n === 'number' && n >= 1 ? n : 1;
 }
 
@@ -1003,6 +1041,7 @@ module.exports = {
     getOutlineBySlug,
     searchBibleEcosystem,
     loadBooksManifest,
+    getChapterCountsByBook,
     getJesusVerseNumbersForChapter,
     getGodVerseNumbersForChapter,
     getSectionHeadingsForChapter,

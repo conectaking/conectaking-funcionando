@@ -210,7 +210,6 @@
         if (typeof window !== 'undefined') {
             window.addEventListener('load', function () {
                 ensureCoreSidebarNavVisible();
-                setTimeout(initModulesByPlan, 500);
             });
         }
     }

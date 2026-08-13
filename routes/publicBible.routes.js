@@ -276,10 +276,9 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 : [];
             const sectionHeadings = bibleService.getSectionHeadingsForChapter(bookId, chapter);
             const allBooksList = (manifestReader.at || []).concat(manifestReader.nt || []);
-            const chapterCountsByBook = {};
-            allBooksList.forEach((b) => {
-                if (b && b.id) chapterCountsByBook[b.id] = bibleService.getChapterCountForBook(b.id);
-            });
+            const chapterCountsByBook = typeof bibleService.getChapterCountsByBook === 'function'
+                ? bibleService.getChapterCountsByBook()
+                : {};
             const frontendBase = getFrontendBase();
             const isLocal = isLocalFrontend(frontendBase);
             const ttsScriptSrc = frontendBase + (isLocal ? '/public_html/js/tts.js' : '/js/tts.js');

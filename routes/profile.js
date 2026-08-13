@@ -188,7 +188,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             if (item.item_type === 'digital_form') {
                 try {
                     // IMPORTANTE: Buscar sempre o registro mais recente baseado em updated_at
-                    const digitalFormRes = await client.query(
+                    const digitalFormRes = await db.pool.query(
                         `SELECT * FROM digital_form_items 
                          WHERE profile_item_id = $1 
                          ORDER BY 
@@ -229,7 +229,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 }
             } else if (item.item_type === 'contract') {
                 try {
-                    const contractRes = await client.query(
+                    const contractRes = await db.pool.query(
                         'SELECT * FROM contract_items WHERE profile_item_id = $1',
                         [item.id]
                     );
@@ -248,7 +248,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             } else if (item.item_type === 'guest_list') {
                 try {
                     // IMPORTANTE: Buscar sempre o registro mais recente baseado em updated_at
-                    const guestListRes = await client.query(
+                    const guestListRes = await db.pool.query(
                         `SELECT * FROM guest_list_items 
                          WHERE profile_item_id = $1 
                          ORDER BY 
@@ -271,7 +271,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 }
             } else if (item.item_type === 'bible') {
                 try {
-                    const bibleRes = await client.query(
+                    const bibleRes = await db.pool.query(
                         'SELECT translation_code, is_visible FROM bible_items WHERE profile_item_id = $1',
                         [item.id]
                     );
@@ -286,7 +286,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 }
             } else if (item.item_type === 'location') {
                 try {
-                    const locRes = await client.query(
+                    const locRes = await db.pool.query(
                         'SELECT address, address_formatted, latitude, longitude, place_name FROM location_items WHERE profile_item_id = $1',
                         [item.id]
                     );
