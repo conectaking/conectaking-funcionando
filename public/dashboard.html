@@ -915,7 +915,14 @@
                         <div class="qr-code-card" id="share-qr-art-card">
                             <h4>QR Code da sua Tag</h4>
                             <p class="qr-art-hint">Escolha um tema. A logomarca entra no centro e o PNG sai pronto para o cliente imprimir ou postar.</p>
-                            <div id="qr-theme-picker" class="qr-theme-picker" role="listbox" aria-label="Temas do QR Code"></div>
+                            <div id="qr-theme-picker" class="qr-theme-picker" role="listbox" aria-label="Temas do QR Code">
+                                <button type="button" class="qr-theme-chip active" data-qr-theme="rei"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#FFC700,#1a1408)"></span>Rei</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="classico"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#fff,#C9A227)"></span>Clássico</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="noite"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#0ea5e9,#0b1220)"></span>Noite</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="ouro"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#fde68a,#92400e)"></span>Ouro</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="vinho"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#7f1d1d,#f59e0b)"></span>Vinho</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="minimal"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#111,#888)"></span>Minimal</button>
+                            </div>
                             <label class="qr-logo-toggle">
                                 <input type="checkbox" id="qr-include-logo" checked>
                                 <span>Incluir logomarca no centro</span>
@@ -1559,7 +1566,7 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-08-13-qr-art" defer></script>
+    <script src="dashboard.js?v=2026-08-13-qr-art2" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
     <script>

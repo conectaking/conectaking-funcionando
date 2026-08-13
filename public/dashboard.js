@@ -10038,13 +10038,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function fillQrThemePicker() {
         const picker = document.getElementById('qr-theme-picker');
-        if (!picker || picker.dataset.ready === '1') return;
-        const current = getSelectedQrThemeId();
-        picker.innerHTML = Object.keys(QR_ART_THEMES).map(function (id) {
-            const t = QR_ART_THEMES[id];
-            return '<button type="button" class="qr-theme-chip' + (id === current ? ' active' : '') + '" data-qr-theme="' + id + '" role="option">' +
-                '<span class="qr-theme-swatch" style="background:' + t.swatch + '"></span>' + t.name + '</button>';
-        }).join('');
+        if (!picker) return;
+        if (!picker.querySelector('[data-qr-theme]')) {
+            const current = getSelectedQrThemeId();
+            picker.innerHTML = Object.keys(QR_ART_THEMES).map(function (id) {
+                const t = QR_ART_THEMES[id];
+                return '<button type="button" class="qr-theme-chip' + (id === current ? ' active' : '') + '" data-qr-theme="' + id + '" role="option">' +
+                    '<span class="qr-theme-swatch" style="background:' + t.swatch + '"></span>' + t.name + '</button>';
+            }).join('');
+        }
+        if (picker.dataset.ready === '1') return;
         picker.dataset.ready = '1';
         picker.addEventListener('click', function (e) {
             const btn = e.target.closest('[data-qr-theme]');
