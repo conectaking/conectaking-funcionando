@@ -675,7 +675,7 @@ async function getProfilePageData(client, identifier, req) {
 
         // Preparar URL da imagem processada para og:image (WhatsApp/Facebook)
         // Priorizar share_image_url; senão profile_image_url; senão logo padrão.
-        // Sempre HTTPS + mesmo host da página + proxy JPEG 1200×630.
+        // Sempre HTTPS + mesmo host + JPEG quadrado 1200×1200 (WhatsApp não corta a foto).
         let ogImageUrl = null;
         const imageUrl = (details.share_image_url || details.profile_image_url || '').trim();
         const protoHdr = (req.headers['x-forwarded-proto'] || req.protocol || 'https').toString();
@@ -686,7 +686,7 @@ async function getProfilePageData(client, identifier, req) {
         const sourceForOg = imageUrl || 'https://i.ibb.co/60sW9k75/logo.png';
         const urlParts = sourceForOg.match(/[a-zA-Z0-9_-]+/g);
         const cacheBuster = urlParts ? urlParts[urlParts.length - 1] : Date.now();
-        ogImageUrl = `${safeProto}://${host}/api/image/profile-image?url=${encodeURIComponent(sourceForOg)}&v=${encodeURIComponent(String(cacheBuster).slice(0, 48))}`;
+        ogImageUrl = `${safeProto}://${host}/api/image/profile-image?url=${encodeURIComponent(sourceForOg)}&v=${encodeURIComponent(String(cacheBuster).slice(0, 48))}&frm=sq1`;
         const ogDescription = (details.bio && String(details.bio).trim())
             ? String(details.bio).trim().slice(0, 200)
             : 'Confira meu cartão de visita digital Conecta King!';
