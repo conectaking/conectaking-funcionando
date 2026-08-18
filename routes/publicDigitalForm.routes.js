@@ -1182,30 +1182,58 @@ router.post('/:slug/form/:itemId/submit',
                     const qrToken = crypto.randomBytes(32).toString('hex');
                     
                     // Inserir na lista de convidados com QR token
-                    const guestInsertResult = await client.query(`
-                        INSERT INTO guests (
-                            guest_list_id, name, email, phone, whatsapp, document, 
-                            address, neighborhood, city, state, zipcode, instagram,
-                            status, registration_source, custom_responses, qr_token, qr_code_generated_at
-                        )
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'registered', 'form', $13::jsonb, $14, NOW())
-                        RETURNING id, qr_token
-                    `, [
-                        guestListItemId,
-                        guestData.name.trim(),
-                        guestData.email ? guestData.email.trim() : null,
-                        guestData.phone ? guestData.phone.trim() : null,
-                        guestData.whatsapp ? guestData.whatsapp.trim() : null,
-                        guestData.document ? guestData.document.trim() : null,
-                        guestData.address ? guestData.address.trim() : null,
-                        guestData.neighborhood ? guestData.neighborhood.trim() : null,
-                        guestData.city ? guestData.city.trim() : null,
-                        guestData.state ? guestData.state.trim() : null,
-                        guestData.zipcode ? guestData.zipcode.trim() : null,
-                        guestData.instagram ? guestData.instagram.trim() : null,
-                        JSON.stringify(guestData.custom_responses),
-                        qrToken
-                    ]);
+                    let guestInsertResult;
+                    try {
+                        guestInsertResult = await client.query(`
+                            INSERT INTO guests (
+                                guest_list_id, name, email, phone, whatsapp, document, 
+                                address, neighborhood, city, state, zipcode, instagram,
+                                status, registration_source, custom_responses, qr_token, qr_code_generated_at, entry_mode
+                            )
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'registered', 'form', $13::jsonb, $14, NOW(), 'checkin')
+                            RETURNING id, qr_token
+                        `, [
+                            guestListItemId,
+                            guestData.name.trim(),
+                            guestData.email ? guestData.email.trim() : null,
+                            guestData.phone ? guestData.phone.trim() : null,
+                            guestData.whatsapp ? guestData.whatsapp.trim() : null,
+                            guestData.document ? guestData.document.trim() : null,
+                            guestData.address ? guestData.address.trim() : null,
+                            guestData.neighborhood ? guestData.neighborhood.trim() : null,
+                            guestData.city ? guestData.city.trim() : null,
+                            guestData.state ? guestData.state.trim() : null,
+                            guestData.zipcode ? guestData.zipcode.trim() : null,
+                            guestData.instagram ? guestData.instagram.trim() : null,
+                            JSON.stringify(guestData.custom_responses),
+                            qrToken
+                        ]);
+                    } catch (insertColErr) {
+                        guestInsertResult = await client.query(`
+                            INSERT INTO guests (
+                                guest_list_id, name, email, phone, whatsapp, document, 
+                                address, neighborhood, city, state, zipcode, instagram,
+                                status, registration_source, custom_responses, qr_token, qr_code_generated_at
+                            )
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'registered', 'form', $13::jsonb, $14, NOW())
+                            RETURNING id, qr_token
+                        `, [
+                            guestListItemId,
+                            guestData.name.trim(),
+                            guestData.email ? guestData.email.trim() : null,
+                            guestData.phone ? guestData.phone.trim() : null,
+                            guestData.whatsapp ? guestData.whatsapp.trim() : null,
+                            guestData.document ? guestData.document.trim() : null,
+                            guestData.address ? guestData.address.trim() : null,
+                            guestData.neighborhood ? guestData.neighborhood.trim() : null,
+                            guestData.city ? guestData.city.trim() : null,
+                            guestData.state ? guestData.state.trim() : null,
+                            guestData.zipcode ? guestData.zipcode.trim() : null,
+                            guestData.instagram ? guestData.instagram.trim() : null,
+                            JSON.stringify(guestData.custom_responses),
+                            qrToken
+                        ]);
+                    }
                     
                     const savedGuestId = guestInsertResult.rows[0]?.id;
                     const savedQrToken = guestInsertResult.rows[0]?.qr_token;
@@ -1246,11 +1274,12 @@ router.post('/:slug/form/:itemId/submit',
         let result = null;
         if (shouldSaveToSystem && sendMode !== 'whatsapp-only') {
             const paymentStatus = checkoutEnabled ? 'PENDING_PAYMENT' : null;
+            const entryMode = sendMode === 'checkin' ? 'checkin' : 'lead';
             if (response_guest_id) {
                 result = await client.query(`
                     INSERT INTO digital_form_responses (
-                        profile_item_id, response_data, responder_name, responder_email, responder_phone, guest_id, payment_status
-                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7::payment_status_enum)
+                        profile_item_id, response_data, responder_name, responder_email, responder_phone, guest_id, payment_status, entry_mode
+                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7::payment_status_enum, $8)
                     RETURNING id, submitted_at, guest_id
                 `, [
                     itemIdInt,
@@ -1259,14 +1288,15 @@ router.post('/:slug/form/:itemId/submit',
                     responder_email || null,
                     responder_phone || null,
                     response_guest_id,
-                    paymentStatus
+                    paymentStatus,
+                    entryMode
                 ]);
-                logger.info('✅ [SUBMIT] Resposta salva no sistema com guest_id' + (checkoutEnabled ? ' (checkout pendente)' : ''), response_guest_id);
+                logger.info('✅ [SUBMIT] Resposta salva no sistema com guest_id' + (checkoutEnabled ? ' (checkout pendente)' : ''), { guestId: response_guest_id, entryMode });
             } else {
                 result = await client.query(`
                     INSERT INTO digital_form_responses (
-                        profile_item_id, response_data, responder_name, responder_email, responder_phone, payment_status
-                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6::payment_status_enum)
+                        profile_item_id, response_data, responder_name, responder_email, responder_phone, payment_status, entry_mode
+                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6::payment_status_enum, $7)
                     RETURNING id, submitted_at
                 `, [
                     itemIdInt,
@@ -1274,9 +1304,10 @@ router.post('/:slug/form/:itemId/submit',
                     responder_name || null,
                     responder_email || null,
                     responder_phone || null,
-                    paymentStatus
+                    paymentStatus,
+                    entryMode
                 ]);
-                logger.info('✅ [SUBMIT] Resposta salva no sistema (digital_form_responses)' + (checkoutEnabled ? ' (checkout pendente)' : ''));
+                logger.info('✅ [SUBMIT] Resposta salva no sistema (digital_form_responses)' + (checkoutEnabled ? ' (checkout pendente)' : ''), { entryMode });
             }
         } else {
             logger.info('ℹ️ [SUBMIT] Resposta NÃO salva no sistema (modo: whatsapp-only)');

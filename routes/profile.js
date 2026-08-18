@@ -3764,10 +3764,17 @@ router.get('/digital-forms/:itemId/responses', protectUser, asyncHandler(async (
             return res.status(404).json({ message: 'Formulário não encontrado ou você não tem permissão.' });
         }
 
-        // Buscar respostas
+        // Buscar respostas (Captação = só mode=lead)
+        const listMode = String(req.query.mode || 'lead').toLowerCase();
+        let modeFilter = '';
+        if (listMode === 'lead') {
+            modeFilter = ` AND (COALESCE(entry_mode, CASE WHEN guest_id IS NOT NULL THEN 'checkin' ELSE 'lead' END) = 'lead')`;
+        } else if (listMode === 'checkin') {
+            modeFilter = ` AND (COALESCE(entry_mode, CASE WHEN guest_id IS NOT NULL THEN 'checkin' ELSE 'lead' END) = 'checkin')`;
+        }
         const responsesRes = await client.query(`
             SELECT * FROM digital_form_responses
-            WHERE profile_item_id = $1
+            WHERE profile_item_id = $1${modeFilter}
             ORDER BY submitted_at DESC
         `, [itemId]);
 
@@ -3780,7 +3787,7 @@ router.get('/digital-forms/:itemId/responses', protectUser, asyncHandler(async (
                 MIN(submitted_at) as first_response,
                 MAX(submitted_at) as last_response
             FROM digital_form_responses
-            WHERE profile_item_id = $1
+            WHERE profile_item_id = $1${modeFilter}
         `, [itemId]);
 
         console.log(`✅ Respostas do formulário ${itemId} buscadas: ${responsesRes.rows.length} resposta(s)`);
@@ -3830,18 +3837,47 @@ router.get('/items/digital_form/:id/responses', protectUser, asyncHandler(async 
         }
 
         // checkout_only=1: só respostas que passaram pelo fluxo de checkout (payment_status preenchido)
+        // mode=lead|checkin: separa Captação de Check-in
         const checkoutOnly = req.query.checkout_only === '1' || req.query.checkout_only === 'true';
-        const whereClause = checkoutOnly
-            ? 'WHERE profile_item_id = $1 AND payment_status IS NOT NULL'
-            : 'WHERE profile_item_id = $1';
-        const responsesRes = await client.query(
-            `SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at,
-                    payment_status, paid_at
-             FROM digital_form_responses
-             ${whereClause}
-             ORDER BY submitted_at DESC`,
-            [itemId]
-        );
+        const listMode = String(req.query.mode || '').toLowerCase();
+        const whereParts = ['profile_item_id = $1'];
+        if (checkoutOnly) {
+            whereParts.push('payment_status IS NOT NULL');
+        }
+        if (listMode === 'lead') {
+            whereParts.push(`(COALESCE(entry_mode, CASE WHEN guest_id IS NOT NULL THEN 'checkin' ELSE 'lead' END) = 'lead')`);
+        } else if (listMode === 'checkin') {
+            whereParts.push(`(COALESCE(entry_mode, CASE WHEN guest_id IS NOT NULL THEN 'checkin' ELSE 'lead' END) = 'checkin')`);
+        }
+        const whereClause = 'WHERE ' + whereParts.join(' AND ');
+        let responsesRes;
+        try {
+            responsesRes = await client.query(
+                `SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at,
+                        payment_status, paid_at, guest_id, entry_mode
+                 FROM digital_form_responses
+                 ${whereClause}
+                 ORDER BY submitted_at DESC`,
+                [itemId]
+            );
+        } catch (colErr) {
+            const fallbackWhere = ['profile_item_id = $1'];
+            if (checkoutOnly) fallbackWhere.push('payment_status IS NOT NULL');
+            responsesRes = await client.query(
+                `SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at,
+                        payment_status, paid_at, guest_id
+                 FROM digital_form_responses
+                 WHERE ${fallbackWhere.join(' AND ')}
+                 ORDER BY submitted_at DESC`,
+                [itemId]
+            );
+            if (listMode === 'lead' || listMode === 'checkin') {
+                responsesRes.rows = responsesRes.rows.filter((row) => {
+                    const isCheckin = !!row.guest_id;
+                    return listMode === 'checkin' ? isCheckin : !isCheckin;
+                });
+            }
+        }
 
         res.json({
             responses: responsesRes.rows.map(row => {

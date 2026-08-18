@@ -1346,6 +1346,14 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
             params.push(status);
             paramIndex++;
         }
+
+        // Check-in: só quem entrou no modo check-in (legado sem coluna conta como check-in)
+        const listMode = String(req.query.mode || 'checkin').toLowerCase();
+        if (listMode === 'checkin') {
+            query += ` AND COALESCE(entry_mode, 'checkin') = 'checkin'`;
+        } else if (listMode === 'lead') {
+            query += ` AND COALESCE(entry_mode, 'checkin') = 'lead'`;
+        }
         
         // Busca por texto (se fornecido)
         const { search } = req.query;
@@ -1363,7 +1371,13 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
         
         query += ' ORDER BY created_at DESC';
         
-        const result = await client.query(query, params);
+        let result;
+        try {
+            result = await client.query(query, params);
+        } catch (colErr) {
+            query = query.replace(/ AND COALESCE\(entry_mode, 'checkin'\) = '(checkin|lead)'/, '');
+            result = await client.query(query, params);
+        }
         
         // Parsear custom_responses se for string (PostgreSQL JSONB pode retornar como string)
         const guests = result.rows.map(row => {
