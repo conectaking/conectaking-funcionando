@@ -922,8 +922,9 @@
         // Verificar enable_whatsapp e enable_guest_list_submit corretamente
         // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
         // Porque "Salvar na Lista" significa enviar só para o sistema (sem WhatsApp)
-        const enableGuestListSubmit = formDataObj.enable_guest_list_submit === true || formDataObj.enable_guest_list_submit === 'true' || formDataObj.enable_guest_list_submit === 1 || formDataObj.enable_guest_list_submit === '1';
+        const enableGuestListSubmit = formDataObj.enable_guest_list_submit === true || formDataObj.enable_guest_list_submit === 'true' || formDataObj.enable_guest_list_submit === 1 || formDataObj.enable_guest_list_submit === '1' || formDataObj.send_mode === 'checkin' || formDataObj.send_mode === 'system-only';
         const enableWhatsapp = enableGuestListSubmit ? false : (formDataObj.enable_whatsapp === true || formDataObj.enable_whatsapp === 'true' || formDataObj.enable_whatsapp === 1 || formDataObj.enable_whatsapp === '1');
+        const enableCaptureSubmit = !enableWhatsapp && !enableGuestListSubmit;
         
         console.log('🔍 [FORM] Configurações processadas:', {
             enable_whatsapp_raw: formDataObj.enable_whatsapp,
@@ -932,8 +933,10 @@
             enable_guest_list_submit_raw: formDataObj.enable_guest_list_submit,
             enable_guest_list_submit_type: typeof formDataObj.enable_guest_list_submit,
             enableGuestListSubmit: enableGuestListSubmit,
+            enableCaptureSubmit: enableCaptureSubmit,
+            send_mode: formDataObj.send_mode,
             whatsappNumber: whatsappNumber,
-            rule: 'Se enableGuestListSubmit=true, enableWhatsapp deve ser false'
+            rule: 'Captação salva no sistema sem WhatsApp. Check-in usa lista. WhatsApp só se marcado.'
         });
         
         // Gerar session ID único
@@ -1879,25 +1882,18 @@
             
             const originalHTML = showLoadingState(submitBtn, 'Validando...');
 
-            // Verificar se WhatsApp está habilitado e se tem número configurado
-            // IMPORTANTE: Só verificar WhatsApp se realmente estiver ativo (não quando "Salvar na Lista" está ativo)
+            // WhatsApp só é obrigatório se o envio via WhatsApp estiver ligado
             if (enableWhatsapp && !enableGuestListSubmit && !whatsappNumber) {
                 restoreButton(submitBtn, originalHTML);
                 showErrorMessage('Número do WhatsApp não configurado. Entre em contato com o administrador.');
                 return;
             }
-            
-            // Se nem WhatsApp nem lista de convidados estão ativos, mostrar erro
-            // Mas lembrar que quando "Salvar na Lista" está ativo, enableWhatsapp será false
-            if (!enableWhatsapp && !enableGuestListSubmit) {
-                restoreButton(submitBtn, originalHTML);
-                showErrorMessage('Nenhuma opção de envio está configurada. Entre em contato com o administrador.');
-                return;
-            }
+            // Captação de Clientes (sem WhatsApp) também é envio válido: salva no sistema.
             
             console.log('✅ [SUBMIT] Validação passou:', {
                 enableWhatsapp,
                 enableGuestListSubmit,
+                enableCaptureSubmit,
                 whatsappNumber: whatsappNumber || 'não configurado',
                 submitBtnFound: !!submitBtn
             });
@@ -2427,9 +2423,11 @@
         }
         <% } %>
         
-        // Botão "Enviar via WhatsApp" - SEMPRE salva no sistema também
-        // Aguardar DOM estar completamente carregado antes de procurar o botão
+        // Botão "Enviar via WhatsApp" — só existe no modo Captação com WhatsApp marcado
         function initWhatsappButton() {
+            if (!enableWhatsapp) {
+                return;
+            }
             const whatsappBtn = document.getElementById('whatsapp-submit-btn');
             console.log('🔍 [WHATSAPP] Botão encontrado:', {
                 found: !!whatsappBtn,
@@ -2440,6 +2438,12 @@
             });
             
             if (!whatsappBtn) {
+                if (!initWhatsappButton.attempts) initWhatsappButton.attempts = 0;
+                initWhatsappButton.attempts += 1;
+                if (initWhatsappButton.attempts > 6) {
+                    console.warn('⚠️ [WHATSAPP] Botão não encontrado após várias tentativas. Modo Captação segue só com cadastro no sistema.');
+                    return;
+                }
                 console.warn('⚠️ [WHATSAPP] Botão não encontrado! Tentando novamente em 500ms...');
                 setTimeout(initWhatsappButton, 500);
                 return;
