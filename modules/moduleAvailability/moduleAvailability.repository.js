@@ -7,7 +7,7 @@ const MODULE_TYPES_PUBLIC = [
     'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
     'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
     'spotify', 'linkedin', 'pinterest',
-    'link', 'portfolio', 'banner', 'carousel',
+    'link', 'portfolio', 'banner', 'carousel', 'texto_com_botao',
     'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
     'finance', 'agenda', 'contract',
     'modo_empresa', 'branding', 'photographer_site', 'bible', 'location',

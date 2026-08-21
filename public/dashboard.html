@@ -356,7 +356,10 @@
                 <!-- Chips de cores -->
                 
                 <nav class="editor-nav">
-                    <a href="#" class="editor-nav-link active" data-editor-target="info-editor">
+                    <a href="#" class="editor-nav-link active" data-editor-target="modelos-editor">
+                        <i class="fas fa-layer-group"></i> Modelos
+                    </a>
+                    <a href="#" class="editor-nav-link" data-editor-target="info-editor">
                         <i class="fas fa-info-circle"></i> Informações
                     </a>
                     <a href="#" class="editor-nav-link" data-editor-target="items-editor">
@@ -368,7 +371,70 @@
                 </nav>
 
                 <div class="editor-area">
- <div id="info-editor" class="editor-pane active">
+ <div id="modelos-editor" class="editor-pane active">
+    <div class="info-section-header">
+        <h4><i class="fas fa-layer-group"></i> Modelos de Cartão</h4>
+        <p style="color: var(--text-dark, #A1A1A1); margin: 8px 0 0; font-size: 0.9rem;">Escolha o layout do seu cartão. O Modelo Clássico é o atual; o Modelo Vitrine usa arte no topo e faixa rolante.</p>
+    </div>
+    <div class="card-layout-selector" id="card-layout-selector" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:20px 0;">
+        <button type="button" class="card-layout-card active" data-layout="classic" id="card-layout-classic" style="text-align:left;padding:16px;border-radius:14px;border:2px solid var(--dourado-principal,#FFC700);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);cursor:pointer;">
+            <div style="font-weight:700;margin-bottom:6px;"><i class="fas fa-id-card"></i> Modelo Clássico</div>
+            <div style="font-size:0.85rem;color:var(--text-dark,#A1A1A1);line-height:1.4;">Avatar, nome, bio e módulos em coluna — o cartão que você já usa.</div>
+        </button>
+        <button type="button" class="card-layout-card" data-layout="vitrine" id="card-layout-vitrine" style="text-align:left;padding:16px;border-radius:14px;border:2px solid rgba(255,255,255,0.12);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);cursor:pointer;">
+            <div style="font-weight:700;margin-bottom:6px;"><i class="fas fa-panorama"></i> Modelo Vitrine</div>
+            <div style="font-size:0.85rem;color:var(--text-dark,#A1A1A1);line-height:1.4;">Arte larga no topo, faixa de texto rolante, banners e bloco texto com botão.</div>
+        </button>
+    </div>
+
+    <div id="vitrine-settings-panel" style="display:none;margin-top:8px;padding:20px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.2);">
+        <h5 style="margin:0 0 12px;color:var(--text,#ECECEC);"><i class="fas fa-image"></i> Arte do topo (proporção 16:9)</h5>
+        <a href="img/guia-arte-vitrine-1920x1080.png" download="guia-arte-vitrine-1920x1080.png" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:8px;margin:0 0 14px;font-size:0.85rem;text-decoration:none;">
+            <i class="fas fa-download"></i> Baixar guia de medidas
+        </a>
+        <div id="vitrine-hero-upload-area" class="photo-upload-area" style="width:100%;max-width:480px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;position:relative;cursor:pointer;border:2px dashed rgba(255,255,255,0.2);background:#111;">
+            <img id="vitrine-hero-preview" src="" alt="Arte Vitrine" style="width:100%;height:100%;object-fit:cover;display:none;">
+            <div id="vitrine-hero-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#A1A1A1;padding:16px;text-align:center;">
+                <i class="fas fa-cloud-upload-alt" style="font-size:1.8rem;color:var(--dourado-principal,#FFC700);"></i>
+                <span>Clique para enviar a arte do topo</span>
+            </div>
+            <input type="file" id="vitrine-hero-file-input" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:5;">
+        </div>
+        <button type="button" id="vitrine-hero-remove-btn" class="btn btn-secondary" style="margin-top:10px;display:none;"><i class="fas fa-trash"></i> Remover arte</button>
+
+        <div class="input-group" style="margin-top:20px;">
+            <label for="vitrine-marquee-text">Texto da faixa rolante</label>
+            <input type="text" id="vitrine-marquee-text" placeholder="Ex: PRÓXIMA TURMA: 18 a 20 de Setembro | Santos/SP" maxlength="200">
+            <p class="input-hint">Aparece logo abaixo da arte, passando de lado (como no cartão do Júlio Pereira).</p>
+        </div>
+        <div class="input-group">
+            <label>Velocidade da faixa</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-speed" value="slow" checked> Lenta</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-speed" value="normal"> Normal</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-speed" value="fast"> Rápida</label>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Logos na faixa (até 3)</label>
+            <div id="vitrine-marquee-logos-list" style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;"></div>
+            <input type="file" id="vitrine-marquee-logo-input" accept="image/*" style="display:none;">
+            <button type="button" id="vitrine-marquee-logo-add" class="btn btn-secondary" style="font-size:0.85rem;"><i class="fas fa-plus"></i> Adicionar logo</button>
+        </div>
+        <div class="input-group" style="margin-top:12px;">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" id="vitrine-show-footer">
+                Mostrar rodapé com nome e direitos reservados
+            </label>
+        </div>
+        <div id="vitrine-live-mini-preview" style="margin-top:20px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);background:#f2f2f4;max-width:420px;">
+            <div id="vitrine-mini-hero" style="aspect-ratio:16/9;background:#1a1a1f;display:flex;align-items:center;justify-content:center;color:#888;font-size:0.85rem;">Preview da arte</div>
+            <div id="vitrine-mini-marquee" style="background:#2a2a2e;color:#fff;padding:8px 12px;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Faixa rolante</div>
+        </div>
+    </div>
+</div>
+
+ <div id="info-editor" class="editor-pane">
     <div class="info-section-header">
         <h4><i class="fas fa-user"></i> Informações do Perfil</h4>
     </div>
@@ -1415,6 +1481,7 @@
                 <div class="module-choice-card" data-item-type="portfolio"><i class="fas fa-briefcase"></i><span>Portfólio</span></div>
                 <!-- KingSelection não é mais adicionado aqui; acesse pela aba lateral (abaixo de Gestão Financeira) -->
                 <div class="module-choice-card" data-item-type="banner"><i class="fas fa-image"></i><span>Banner</span></div>
+                <div class="module-choice-card" data-item-type="texto_com_botao"><i class="fas fa-font"></i><span>Texto com Botão</span></div>
                 <div class="module-choice-card" data-item-type="carousel"><i class="fas fa-images"></i><span>Carrossel</span></div>
                 <!-- <div class="module-choice-card" data-item-type="pdf"><i class="fas fa-file-pdf"></i><span>Baixar PDF</span></div> -->
                 <!-- Módulos incorporados: instagram_embed visível para ADM e pacotes com o módulo -->
@@ -1539,7 +1606,7 @@
             var map = {finance:'finance-pane','king-forms':'king-forms-pane',relatorios:'relatorios-pane',editar:'editar-pane',compartilhar:'compartilhar-pane',contratos:'contratos-pane',agenda:'agenda-pane',branding:'branding-pane','separacao-pacotes':'separacao-pacotes-pane',assinatura:'assinatura-pane','personalizar-link':'personalizar-link-pane'};
             var editorTab = null;
             if (map[tid]) tid = map[tid];
-            else if (tid === 'info-editor' || tid === 'items-editor' || tid === 'personalizar-editor') { editorTab = tid; tid = 'editar-pane'; }
+            else if (tid === 'modelos-editor' || tid === 'info-editor' || tid === 'items-editor' || tid === 'personalizar-editor') { editorTab = tid; tid = 'editar-pane'; }
             var target = document.getElementById(tid);
             var panes = document.querySelectorAll('.main-content');
             if (panes.length && target) {

@@ -22,6 +22,20 @@ async function getDetails(userId) {
     if (existingColumns.includes('share_image_url')) baseFields.push('p.share_image_url');
     if (existingColumns.includes('whatsapp')) baseFields.push('p.whatsapp');
     if (existingColumns.includes('whatsapp_number')) baseFields.push('p.whatsapp_number');
+    if (existingColumns.includes('card_layout')) {
+        baseFields.push("COALESCE(p.card_layout, 'classic') as card_layout");
+    } else {
+        baseFields.push("'classic' as card_layout");
+    }
+    if (existingColumns.includes('vitrine_hero_url')) baseFields.push('p.vitrine_hero_url');
+    if (existingColumns.includes('vitrine_marquee_text')) baseFields.push('p.vitrine_marquee_text');
+    if (existingColumns.includes('vitrine_marquee_logos')) baseFields.push('p.vitrine_marquee_logos');
+    if (existingColumns.includes('vitrine_marquee_speed')) {
+        baseFields.push("COALESCE(p.vitrine_marquee_speed, 'slow') as vitrine_marquee_speed");
+    }
+    if (existingColumns.includes('vitrine_show_footer')) {
+        baseFields.push("COALESCE(p.vitrine_show_footer, false) as vitrine_show_footer");
+    }
 
     const { rows } = await db.query(
         `SELECT ${baseFields.join(', ')}
@@ -48,8 +62,40 @@ async function updateDetails(client, userId, details) {
     if (existingColumns.includes('whatsapp_number')) infoFields.push('whatsapp_number');
     if (existingColumns.includes('avatar_format')) infoFields.push('avatar_format');
     if (existingColumns.includes('share_image_url')) infoFields.push('share_image_url');
+    if (existingColumns.includes('card_layout')) infoFields.push('card_layout');
+    if (existingColumns.includes('vitrine_hero_url')) infoFields.push('vitrine_hero_url');
+    if (existingColumns.includes('vitrine_marquee_text')) infoFields.push('vitrine_marquee_text');
+    if (existingColumns.includes('vitrine_marquee_logos')) infoFields.push('vitrine_marquee_logos');
+    if (existingColumns.includes('vitrine_marquee_speed')) infoFields.push('vitrine_marquee_speed');
+    if (existingColumns.includes('vitrine_show_footer')) infoFields.push('vitrine_show_footer');
 
     const getVal = (key, alt) => details[key] ?? details[alt] ?? null;
+
+    const normalizeLayout = (raw) => {
+        const v = String(raw || 'classic').toLowerCase();
+        return v === 'vitrine' ? 'vitrine' : 'classic';
+    };
+    const normalizeSpeed = (raw) => {
+        const v = String(raw || 'slow').toLowerCase();
+        return ['slow', 'normal', 'fast'].includes(v) ? v : 'slow';
+    };
+    const normalizeLogos = (raw) => {
+        if (raw == null) return null;
+        if (Array.isArray(raw)) return JSON.stringify(raw.filter(Boolean).slice(0, 3));
+        if (typeof raw === 'string') {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return JSON.stringify(parsed.filter(Boolean).slice(0, 3));
+            } catch (_) { /* ignore */ }
+            return JSON.stringify(raw.trim() ? [raw.trim()] : []);
+        }
+        return JSON.stringify([]);
+    };
+    const normalizeFooter = (raw) => {
+        if (raw === true || raw === 'true' || raw === 1 || raw === '1') return true;
+        if (raw === false || raw === 'false' || raw === 0 || raw === '0') return false;
+        return null;
+    };
 
     if (checkProfile.rows.length === 0) {
         const insertFields = ['user_id', ...infoFields];
@@ -63,6 +109,18 @@ async function updateDetails(client, userId, details) {
         if (existingColumns.includes('whatsapp_number')) insertValues.push(getVal('whatsapp_number', 'whatsappNumber'));
         if (existingColumns.includes('avatar_format')) insertValues.push(getVal('avatar_format', 'avatarFormat') || 'circular');
         if (existingColumns.includes('share_image_url')) insertValues.push(getVal('share_image_url'));
+        if (existingColumns.includes('card_layout')) insertValues.push(normalizeLayout(getVal('card_layout', 'cardLayout')));
+        if (existingColumns.includes('vitrine_hero_url')) insertValues.push(getVal('vitrine_hero_url', 'vitrineHeroUrl'));
+        if (existingColumns.includes('vitrine_marquee_text')) insertValues.push(getVal('vitrine_marquee_text', 'vitrineMarqueeText'));
+        if (existingColumns.includes('vitrine_marquee_logos')) {
+            insertValues.push(normalizeLogos(getVal('vitrine_marquee_logos', 'vitrineMarqueeLogos')) || '[]');
+        }
+        if (existingColumns.includes('vitrine_marquee_speed')) {
+            insertValues.push(normalizeSpeed(getVal('vitrine_marquee_speed', 'vitrineMarqueeSpeed')));
+        }
+        if (existingColumns.includes('vitrine_show_footer')) {
+            insertValues.push(normalizeFooter(getVal('vitrine_show_footer', 'vitrineShowFooter')) ?? false);
+        }
 
         const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
         await client.query(
@@ -97,6 +155,39 @@ async function updateDetails(client, userId, details) {
         if (existingColumns.includes('share_image_url')) {
             updateParts.push(`share_image_url = COALESCE($${idx++}, share_image_url)`);
             updateValues.push(getVal('share_image_url'));
+        }
+        if (existingColumns.includes('card_layout')) {
+            const layoutVal = getVal('card_layout', 'cardLayout');
+            if (layoutVal != null && String(layoutVal).trim() !== '') {
+                updateParts.push(`card_layout = $${idx++}`);
+                updateValues.push(normalizeLayout(layoutVal));
+            }
+        }
+        if (existingColumns.includes('vitrine_hero_url') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_hero_url') || Object.prototype.hasOwnProperty.call(details, 'vitrineHeroUrl'))) {
+            updateParts.push(`vitrine_hero_url = $${idx++}`);
+            updateValues.push(getVal('vitrine_hero_url', 'vitrineHeroUrl') || null);
+        }
+        if (existingColumns.includes('vitrine_marquee_text') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_marquee_text') || Object.prototype.hasOwnProperty.call(details, 'vitrineMarqueeText'))) {
+            updateParts.push(`vitrine_marquee_text = $${idx++}`);
+            updateValues.push(getVal('vitrine_marquee_text', 'vitrineMarqueeText') || null);
+        }
+        if (existingColumns.includes('vitrine_marquee_logos') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_marquee_logos') || Object.prototype.hasOwnProperty.call(details, 'vitrineMarqueeLogos'))) {
+            updateParts.push(`vitrine_marquee_logos = $${idx++}::jsonb`);
+            updateValues.push(normalizeLogos(getVal('vitrine_marquee_logos', 'vitrineMarqueeLogos')) || '[]');
+        }
+        if (existingColumns.includes('vitrine_marquee_speed')) {
+            const speedVal = getVal('vitrine_marquee_speed', 'vitrineMarqueeSpeed');
+            if (speedVal != null && String(speedVal).trim() !== '') {
+                updateParts.push(`vitrine_marquee_speed = $${idx++}`);
+                updateValues.push(normalizeSpeed(speedVal));
+            }
+        }
+        if (existingColumns.includes('vitrine_show_footer') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_show_footer') || Object.prototype.hasOwnProperty.call(details, 'vitrineShowFooter'))) {
+            const footerVal = normalizeFooter(getVal('vitrine_show_footer', 'vitrineShowFooter'));
+            if (footerVal !== null) {
+                updateParts.push(`vitrine_show_footer = $${idx++}`);
+                updateValues.push(footerVal);
+            }
         }
         updateValues.push(userId);
         await client.query(

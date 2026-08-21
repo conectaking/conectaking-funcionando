@@ -309,7 +309,11 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
     <%# ========================================================== %>
     <%# CONTAINER PRINCIPAL DO PERFIL %>
     <%# ========================================================== %>
-    <div class="profile-page-wrapper">
+    <%
+        const _cardLayout = (details && String(details.card_layout || 'classic').toLowerCase() === 'vitrine') ? 'vitrine' : 'classic';
+        const _vitrineFooter = !!(details && (details.vitrine_show_footer === true || details.vitrine_show_footer === 'true' || details.vitrine_show_footer === 1));
+    %>
+    <div class="profile-page-wrapper profile-layout-<%= _cardLayout %>">
         <div class="profile-card">
             
             <%# Botão de Compartilhar (canto superior direito) %>
@@ -318,8 +322,11 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
         </button>
 
             <%# ========================================================== %>
-            <%# SEÇÃO: HEADER DO PERFIL (Avatar, Nome, Bio) %>
+            <%# SEÇÃO: HEADER (Clássico = avatar | Vitrine = arte + marquee) %>
             <%# ========================================================== %>
+            <% if (_cardLayout === 'vitrine') { %>
+                <%- include('profile/include/vitrine_header', { details }) %>
+            <% } else { %>
             <header class="profile-header">
                 <%
                     const avatarFormat = details.avatar_format || 'circular';
@@ -357,6 +364,7 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
                 <h1 class="profile-name"><%= details.display_name || 'Nome do Usuário' %></h1>
                 <p class="profile-bio"><%= details.bio || 'Biografia do usuário.' %></p>
             </header>
+            <% } %>
             
             <%# ========================================================== %>
             <%# SEÇÃO: QUADRADINHO PALAVRA DO DIA + REFLEXÃO (Bíblia) - posição configurável %>
@@ -419,6 +427,12 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'banner') { %>
                         <%- include('profile/items/types/banner', { item }) %>
+
+                    <%# ========================================================== %>
+                    <%# TIPO: TEXTO COM BOTÃO (Modelo Vitrine / CTA) %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'texto_com_botao') { %>
+                        <%- include('profile/items/types/texto_com_botao', { item }) %>
 
                     <%# ========================================================== %>
                     <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) %>
@@ -2055,6 +2069,16 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
             <%# FIM: CONTAINER DE ITENS DO PERFIL %>
             <%# ========================================================== %>
         </section>
+
+            <% if (_cardLayout === 'vitrine' && _vitrineFooter) { %>
+            <footer class="vitrine-brand-footer">
+                <% if (details.profile_image_url) { %>
+                <img src="<%= details.profile_image_url %>" alt="" class="vitrine-brand-footer-logo" loading="lazy" decoding="async">
+                <% } %>
+                <div class="vitrine-brand-footer-name"><%= details.display_name || '' %></div>
+                <div class="vitrine-brand-footer-copy">Todos os Direitos Reservados © <%= new Date().getFullYear() %></div>
+            </footer>
+            <% } %>
         </div>
 
         <%# ========================================================== %>
@@ -2094,6 +2118,15 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
     <script>
 document.addEventListener('DOMContentLoaded', () => {
     console.log("✔️ DOM carregado. Script da página de perfil iniciado.");
+
+    // Marquee Vitrine: pausar no toque (mobile)
+    document.querySelectorAll('.vitrine-marquee').forEach(function (el) {
+        const pause = function () { el.classList.add('is-paused'); };
+        const resume = function () { el.classList.remove('is-paused'); };
+        el.addEventListener('touchstart', pause, { passive: true });
+        el.addEventListener('touchend', resume, { passive: true });
+        el.addEventListener('touchcancel', resume, { passive: true });
+    });
 
     // ==========================================================
     // 1. DECLARAÇÃO DE VARIÁVEIS E SELETORES

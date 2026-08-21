@@ -1,0 +1,51 @@
+<%# Partial: header + marquee do Modelo Vitrine. Variáveis: details %>
+<%
+    const heroUrl = (details.vitrine_hero_url || '').trim();
+    const marqueeText = (details.vitrine_marquee_text || '').trim();
+    let marqueeLogos = details.vitrine_marquee_logos || [];
+    if (typeof marqueeLogos === 'string') {
+        try { marqueeLogos = JSON.parse(marqueeLogos); } catch (e) { marqueeLogos = []; }
+    }
+    if (!Array.isArray(marqueeLogos)) marqueeLogos = [];
+    marqueeLogos = marqueeLogos.filter(Boolean).slice(0, 3);
+    const marqueeSpeed = ['slow', 'normal', 'fast'].includes(String(details.vitrine_marquee_speed || '').toLowerCase())
+        ? String(details.vitrine_marquee_speed).toLowerCase()
+        : 'slow';
+    const hasMarquee = !!(marqueeText || marqueeLogos.length);
+%>
+<header class="vitrine-hero-header">
+    <% if (heroUrl) { %>
+    <div class="vitrine-hero-media">
+        <img src="<%= heroUrl %>" alt="<%= details.display_name || 'Arte do cartão' %>" class="vitrine-hero-img" loading="eager" decoding="async"
+             onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+        <div class="vitrine-hero-placeholder" style="display:none;" aria-hidden="true">
+            <span>Adicione a arte do topo no editor</span>
+        </div>
+    </div>
+    <% } else { %>
+    <div class="vitrine-hero-media vitrine-hero-fallback">
+        <div class="vitrine-hero-placeholder">
+            <strong><%= details.display_name || 'Seu nome' %></strong>
+            <span>Envie a arte do topo (proporção 16:9) na aba Modelos</span>
+        </div>
+    </div>
+    <% } %>
+</header>
+
+<% if (hasMarquee) { %>
+<div class="vitrine-marquee vitrine-marquee--<%= marqueeSpeed %>" role="presentation">
+    <div class="vitrine-marquee-track">
+        <% for (let i = 0; i < 2; i++) { %>
+        <div class="vitrine-marquee-group" aria-hidden="<%= i === 1 ? 'true' : 'false' %>">
+            <% marqueeLogos.forEach(function(logoUrl) { %>
+            <img src="<%= logoUrl %>" alt="" class="vitrine-marquee-logo" loading="lazy" decoding="async">
+            <% }); %>
+            <% if (marqueeText) { %>
+            <span class="vitrine-marquee-text"><%= marqueeText %></span>
+            <% } %>
+            <span class="vitrine-marquee-sep" aria-hidden="true">•</span>
+        </div>
+        <% } %>
+    </div>
+</div>
+<% } %>

@@ -1,0 +1,42 @@
+<%# Partial: Texto com botão (Modelo Vitrine / eventos / CTA). Variável: item %>
+<%
+    let cfg = {};
+    try {
+        if (item.destination_url && String(item.destination_url).trim().startsWith('{')) {
+            cfg = JSON.parse(item.destination_url);
+        }
+    } catch (e) { cfg = {}; }
+
+    const ctaUrl = (cfg.url || (item.destination_url && !String(item.destination_url).trim().startsWith('{') ? item.destination_url : '') || '').trim();
+    const buttonLabel = (cfg.button_label || cfg.buttonLabel || 'Saiba mais').trim();
+    const eyebrow = (cfg.eyebrow || '').trim();
+    const lines = Array.isArray(cfg.lines) ? cfg.lines : [];
+    const title = (item.title || '').trim() || 'Título';
+%>
+<% if (ctaUrl) { %>
+<article class="vitrine-text-cta" data-item-id="<%= item.id %>">
+    <% if (eyebrow) { %>
+    <div class="vitrine-text-cta-eyebrow"><%= eyebrow %></div>
+    <% } %>
+    <h3 class="vitrine-text-cta-title"><%= title %></h3>
+    <% if (lines.length) { %>
+    <ul class="vitrine-text-cta-lines">
+        <% lines.forEach(function(line) {
+            if (!line) return;
+            const icon = (typeof line === 'object' ? (line.icon || '') : '');
+            const text = (typeof line === 'object' ? (line.text || '') : String(line)).trim();
+            if (!text) return;
+        %>
+        <li>
+            <% if (icon) { %><span class="vitrine-text-cta-icon" aria-hidden="true"><%= icon %></span><% } %>
+            <span><%= text %></span>
+        </li>
+        <% }); %>
+    </ul>
+    <% } %>
+    <a href="<%= ctaUrl %>" class="vitrine-text-cta-btn" target="_blank" rel="noopener noreferrer">
+        <span><%= buttonLabel %></span>
+        <span class="vitrine-text-cta-arrow" aria-hidden="true">→</span>
+    </a>
+</article>
+<% } %>
