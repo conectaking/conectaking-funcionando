@@ -424,20 +424,25 @@
 
         const heroInput = $('vitrine-hero-file-input');
         if (heroInput) {
-            heroInput.addEventListener('change', async function () {
+            heroInput.addEventListener('change', function () {
                 const file = heroInput.files && heroInput.files[0];
                 if (!file) return;
                 syncStateFromDom();
-                try {
-                    const url = await uploadImageFile(file);
-                    if (!url) throw new Error('URL vazia');
-                    state.heroUrl = url;
-                    markDirty();
-                    updateMiniPreview();
-                    pushToProfileCache();
-                } catch (e) {
-                    alert('Não foi possível enviar a arte. Tente novamente.');
-                    console.error(e);
+                // Abrir cropper 16:9 para o usuário ajustar o enquadramento
+                if (typeof window.openCropper === 'function') {
+                    window.openCropper(file, 'vitrine-hero', null, '16:9');
+                } else {
+                    // Fallback sem cropper (não deveria acontecer no dashboard)
+                    uploadImageFile(file).then(function (url) {
+                        if (!url) throw new Error('URL vazia');
+                        state.heroUrl = url;
+                        markDirty();
+                        updateMiniPreview();
+                        pushToProfileCache();
+                    }).catch(function (e) {
+                        alert('Não foi possível enviar a arte. Tente novamente.');
+                        console.error(e);
+                    });
                 }
                 heroInput.value = '';
             });
@@ -497,8 +502,18 @@
         }
     }
 
+    function applyVitrineHeroFromCrop(url) {
+        if (!url) return;
+        syncStateFromDom();
+        state.heroUrl = url;
+        markDirty();
+        updateMiniPreview();
+        pushToProfileCache();
+    }
+
     window.applyVitrineDetails = applyVitrineDetails;
     window.getVitrineDetailsForSave = getVitrineDetailsForSave;
+    window.applyVitrineHeroFromCrop = applyVitrineHeroFromCrop;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

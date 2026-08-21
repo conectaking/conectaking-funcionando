@@ -10332,7 +10332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let aspectRatio = NaN;
             if (triggerType === 'profile') {
                 aspectRatio = 1 / 1;
-            } else if (triggerType === 'background') {
+            } else if (triggerType === 'background' || triggerType === 'vitrine-hero') {
                 aspectRatio = 16 / 9;
             } else if (triggerType === 'share-image') {
                 // Usar proporção customizada se fornecida
@@ -10386,10 +10386,21 @@ document.addEventListener('DOMContentLoaded', () => {
             imageToUpload.trigger = triggerType;
             imageToUpload.element = itemElement;
             imageToUpload.originalFile = file;  // Armazenar arquivo original para preservar tipo
+
+            // Dica no modal para arte Vitrine
+            const tipEl = document.querySelector('#cropper-modal .cropper-tip');
+            if (tipEl) {
+                if (triggerType === 'vitrine-hero') {
+                    tipEl.innerHTML = 'Arte do <strong>Modelo Vitrine</strong>: corte em <strong>16:9</strong> (ex.: 1920×1080). Arraste e ajuste o enquadramento antes de enviar.';
+                } else if (triggerType === 'background') {
+                    tipEl.innerHTML = 'Sugestão para fundo do cartão: <strong>1920×1080</strong> (16:9) ou <strong>1600×900</strong>. Prepare a foto nesse tamanho ou aproxime ao cortar. No telemóvel o fundo cobre o ecrã todo (centrado); detalhes nas bordas laterais podem sair fora.';
+                }
+            }
         };
 
         reader.readAsDataURL(file);
     }
+    window.openCropper = openCropper;
 
     function closeCropper() {
         document.getElementById('cropper-modal').classList.remove('active');
@@ -13911,7 +13922,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const quality = isPNG ? 1.0 : 0.9;  // PNG usa qualidade máxima (sem perda)
 
             cropper.getCroppedCanvas({
-                width: 1920, // Largura maior para fundos de boa qualidade
+                width: imageToUpload.trigger === 'vitrine-hero' ? 1920 : 1920,
+                height: imageToUpload.trigger === 'vitrine-hero' ? 1080 : undefined,
                 imageSmoothingQuality: 'high',
             }).toBlob(blob => {
                 // Preservar PNG com nome correto para manter transparência
@@ -13931,6 +13943,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         handleImageUpload(pngFile, imageToUpload.element);
                     } else if (imageToUpload.trigger === 'share-image') {
                         handleShareImageUpload(pngFile);
+                    } else if (imageToUpload.trigger === 'vitrine-hero') {
+                        handleVitrineHeroUpload(pngFile);
                     }
                 } else {
                     // JPEG normal
@@ -13946,6 +13960,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         handleImageUpload(blob, imageToUpload.element);
                     } else if (imageToUpload.trigger === 'share-image') {
                         handleShareImageUpload(blob);
+                    } else if (imageToUpload.trigger === 'vitrine-hero') {
+                        handleVitrineHeroUpload(blob);
                     }
                 }
 
@@ -14257,6 +14273,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             alert(errorMessage);
+        }
+    }
+
+    /** Upload da arte do topo (Modelo Vitrine) após crop 16:9 */
+    async function handleVitrineHeroUpload(imageBlob) {
+        try {
+            const authResponse = await safeFetch(`${API_URL}/api/upload/auth`, {
+                method: 'POST',
+                headers: HEADERS_AUTH
+            });
+            if (!authResponse.ok) throw new Error('Falha na autorização para upload.');
+            const authData = await authResponse.json();
+            const uploadURL = authData.uploadURL;
+            if (!uploadURL) throw new Error('URL de upload não recebida');
+
+            const formData = new FormData();
+            const isPNG = imageBlob.type === 'image/png';
+            formData.append('file', imageBlob, isPNG ? 'vitrine-hero.png' : 'vitrine-hero.jpg');
+
+            const uploadResponse = await fetch(uploadURL, { method: 'POST', headers: getAuthHeaders(), body: formData });
+            if (!uploadResponse.ok) throw new Error('Falha no upload para o Cloudflare.');
+
+            const uploadData = await uploadResponse.json();
+            const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ";
+            const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && uploadData.result.id ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
+            if (!finalUrl) throw new Error('Resposta do servidor de upload inválida.');
+
+            if (typeof window.applyVitrineHeroFromCrop === 'function') {
+                window.applyVitrineHeroFromCrop(finalUrl);
+            } else {
+                console.warn('applyVitrineHeroFromCrop não disponível');
+            }
+        } catch (error) {
+            console.error('Erro no upload da arte Vitrine:', error);
+            alert(error.message || 'Não foi possível enviar a arte. Tente novamente.');
         }
     }
 
