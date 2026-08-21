@@ -415,19 +415,25 @@
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;align-items:flex-end;">
                 <div>
-                    <label for="vitrine-marquee-color1" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor 1</label>
+                    <label for="vitrine-marquee-color1" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor 1 (fundo)</label>
                     <input type="color" id="vitrine-marquee-color1" value="#2A2A2E" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
                 </div>
                 <div id="vitrine-marquee-color2-wrap">
                     <label for="vitrine-marquee-color2" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor 2 (degradê)</label>
                     <input type="color" id="vitrine-marquee-color2" value="#FFC700" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
                 </div>
-                <div>
-                    <label for="vitrine-marquee-text-color" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor do texto</label>
-                    <input type="color" id="vitrine-marquee-text-color" value="#FFC700" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
+            </div>
+            <div style="margin-top:16px;padding:14px;border-radius:10px;border:1px solid rgba(255,199,0,0.35);background:rgba(255,199,0,0.06);">
+                <label for="vitrine-marquee-text-color" style="display:block;font-weight:600;color:var(--text,#ECECEC);margin-bottom:8px;">
+                    <i class="fas fa-font"></i> Cor do texto da faixa rolante
+                </label>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <input type="color" id="vitrine-marquee-text-color" value="#FFC700" style="width:56px;height:40px;border:none;background:transparent;cursor:pointer;">
+                    <input type="text" id="vitrine-marquee-text-color-hex" value="#FFC700" maxlength="7" placeholder="#FFC700" style="width:110px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#111;color:#ECECEC;">
+                    <span style="font-size:0.8rem;color:var(--text-dark,#A1A1A1);">Escolha a cor ou digite o código (#RRGGBB)</span>
                 </div>
             </div>
-            <p class="input-hint">No degradê, a faixa vai da Cor 1 para a Cor 2.</p>
+            <p class="input-hint">No degradê, o fundo da faixa vai da Cor 1 para a Cor 2. A cor do texto é independente.</p>
         </div>
         <div class="input-group">
             <label>Velocidade da faixa</label>
@@ -1692,8 +1698,8 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-08-21-vitrine2" defer></script>
-    <script src="js/dashboard-vitrine.js?v=2026-08-21-vitrine2" defer></script>
+    <script src="dashboard.js?v=2026-08-21-vitrine3" defer></script>
+    <script src="js/dashboard-vitrine.js?v=2026-08-21-vitrine3" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
     <script>

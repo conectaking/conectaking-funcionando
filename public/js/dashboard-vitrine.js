@@ -1,6 +1,9 @@
 /**
  * Dashboard — Modelo Vitrine (isolado do restante do editor).
  * Expõe: window.applyVitrineDetails, window.getVitrineDetailsForSave
+ *
+ * Bugfix: não sobrescrever texto/cores/logos locais com dados antigos do servidor
+ * enquanto o usuário está editando (dirty). Sempre ler o DOM no save.
  */
 (function () {
     'use strict';
@@ -18,7 +21,11 @@
         marqueeTextColor: '#FFC700'
     };
 
+    let isDirty = false;
+
     function $(id) { return document.getElementById(id); }
+
+    function markDirty() { isDirty = true; }
 
     function getApiUrl() {
         return (typeof API_URL !== 'undefined' && API_URL) ? API_URL : (window.API_URL || '');
@@ -29,6 +36,37 @@
         if (typeof window.getHeaders === 'function') return window.getHeaders();
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         return token ? { Authorization: 'Bearer ' + token } : {};
+    }
+
+    function syncStateFromDom() {
+        const textInput = $('vitrine-marquee-text');
+        if (textInput) state.marqueeText = textInput.value || '';
+
+        const speedChecked = document.querySelector('input[name="vitrine-marquee-speed"]:checked');
+        if (speedChecked) state.marqueeSpeed = speedChecked.value;
+
+        const bgChecked = document.querySelector('input[name="vitrine-marquee-bg-type"]:checked');
+        if (bgChecked) state.marqueeBgType = bgChecked.value === 'gradient' ? 'gradient' : 'solid';
+
+        const c1 = $('vitrine-marquee-color1');
+        const c2 = $('vitrine-marquee-color2');
+        const tc = $('vitrine-marquee-text-color');
+        const tcHex = $('vitrine-marquee-text-color-hex');
+        if (c1 && c1.value) state.marqueeColor1 = c1.value;
+        if (c2 && c2.value) state.marqueeColor2 = c2.value;
+        if (tc && tc.value) state.marqueeTextColor = tc.value;
+        if (tcHex && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(tcHex.value.trim())) {
+            state.marqueeTextColor = tcHex.value.trim();
+            if (tc) tc.value = state.marqueeTextColor;
+        }
+
+        const footerCb = $('vitrine-show-footer');
+        if (footerCb) state.showFooter = !!footerCb.checked;
+
+        const activeLayout = document.querySelector('.card-layout-card.active');
+        if (activeLayout && activeLayout.dataset.layout) {
+            state.cardLayout = activeLayout.dataset.layout === 'vitrine' ? 'vitrine' : 'classic';
+        }
     }
 
     function syncBgTypeUI() {
@@ -42,6 +80,22 @@
             return 'linear-gradient(90deg, ' + state.marqueeColor1 + ' 0%, ' + state.marqueeColor2 + ' 100%)';
         }
         return state.marqueeColor1;
+    }
+
+    function pushToProfileCache() {
+        if (!window.currentProfileData) window.currentProfileData = { details: {}, items: [] };
+        if (!window.currentProfileData.details) window.currentProfileData.details = {};
+        const d = window.currentProfileData.details;
+        d.card_layout = state.cardLayout;
+        d.vitrine_hero_url = state.heroUrl || null;
+        d.vitrine_marquee_text = state.marqueeText || null;
+        d.vitrine_marquee_logos = state.marqueeLogos.slice(0, 3);
+        d.vitrine_marquee_speed = state.marqueeSpeed;
+        d.vitrine_show_footer = !!state.showFooter;
+        d.vitrine_marquee_bg_type = state.marqueeBgType;
+        d.vitrine_marquee_color1 = state.marqueeColor1;
+        d.vitrine_marquee_color2 = state.marqueeColor2;
+        d.vitrine_marquee_text_color = state.marqueeTextColor;
     }
 
     function setLayoutUI(layout) {
@@ -79,8 +133,10 @@
                 '<button type="button" data-idx="' + idx + '" style="position:absolute;top:2px;right:2px;border:none;border-radius:4px;background:#c0392b;color:#fff;width:20px;height:20px;cursor:pointer;font-size:10px;">×</button>';
             wrap.querySelector('button').addEventListener('click', function () {
                 state.marqueeLogos.splice(idx, 1);
+                markDirty();
                 renderLogoChips();
                 updateMiniPreview();
+                pushToProfileCache();
             });
             list.appendChild(wrap);
         });
@@ -103,7 +159,7 @@
             state.marqueeLogos.slice(0, 2).forEach(function (url) {
                 html += '<img src="' + url.replace(/"/g, '&quot;') + '" alt="" style="height:18px;width:auto;object-fit:contain;">';
             });
-            html += '<span>' + (state.marqueeText || 'Faixa rolante (digite o texto acima)') + '</span>';
+            html += '<span style="color:' + state.marqueeTextColor + ';">' + (state.marqueeText || 'Faixa rolante (digite o texto acima)') + '</span>';
             mq.innerHTML = html;
         }
         const preview = document.getElementById('vitrine-hero-preview');
@@ -122,6 +178,8 @@
                 if (removeBtn) removeBtn.style.display = 'none';
             }
         }
+        const tcHex = $('vitrine-marquee-text-color-hex');
+        if (tcHex && document.activeElement !== tcHex) tcHex.value = state.marqueeTextColor;
     }
 
     async function uploadImageFile(file) {
@@ -145,6 +203,22 @@
 
     function applyVitrineDetails(details) {
         if (!details) return;
+
+        // Preservar edições locais não publicadas (ex.: digitou o texto e depois enviou logo)
+        syncStateFromDom();
+        const preserved = isDirty ? {
+            marqueeText: state.marqueeText,
+            marqueeLogos: state.marqueeLogos.slice(),
+            marqueeSpeed: state.marqueeSpeed,
+            showFooter: state.showFooter,
+            marqueeBgType: state.marqueeBgType,
+            marqueeColor1: state.marqueeColor1,
+            marqueeColor2: state.marqueeColor2,
+            marqueeTextColor: state.marqueeTextColor,
+            heroUrl: state.heroUrl,
+            cardLayout: state.cardLayout
+        } : null;
+
         state.cardLayout = (String(details.card_layout || 'classic').toLowerCase() === 'vitrine') ? 'vitrine' : 'classic';
         state.heroUrl = details.vitrine_hero_url || '';
         state.marqueeText = details.vitrine_marquee_text || '';
@@ -162,6 +236,21 @@
         state.marqueeColor2 = details.vitrine_marquee_color2 || '#FFC700';
         state.marqueeTextColor = details.vitrine_marquee_text_color || '#FFC700';
 
+        if (preserved) {
+            state.cardLayout = preserved.cardLayout || state.cardLayout;
+            if (preserved.heroUrl) state.heroUrl = preserved.heroUrl;
+            state.marqueeText = preserved.marqueeText;
+            if (preserved.marqueeLogos && preserved.marqueeLogos.length) {
+                state.marqueeLogos = preserved.marqueeLogos;
+            }
+            state.marqueeSpeed = preserved.marqueeSpeed;
+            state.showFooter = preserved.showFooter;
+            state.marqueeBgType = preserved.marqueeBgType;
+            state.marqueeColor1 = preserved.marqueeColor1;
+            state.marqueeColor2 = preserved.marqueeColor2;
+            state.marqueeTextColor = preserved.marqueeTextColor;
+        }
+
         const textInput = $('vitrine-marquee-text');
         if (textInput) textInput.value = state.marqueeText;
         document.querySelectorAll('input[name="vitrine-marquee-speed"]').forEach(function (r) {
@@ -173,18 +262,24 @@
         const c1 = $('vitrine-marquee-color1');
         const c2 = $('vitrine-marquee-color2');
         const tc = $('vitrine-marquee-text-color');
+        const tcHex = $('vitrine-marquee-text-color-hex');
         if (c1) c1.value = state.marqueeColor1;
         if (c2) c2.value = state.marqueeColor2;
         if (tc) tc.value = state.marqueeTextColor;
+        if (tcHex) tcHex.value = state.marqueeTextColor;
         const footerCb = $('vitrine-show-footer');
         if (footerCb) footerCb.checked = state.showFooter;
 
         renderLogoChips();
         setLayoutUI(state.cardLayout);
         updateMiniPreview();
+        pushToProfileCache();
     }
 
     function getVitrineDetailsForSave() {
+        syncStateFromDom();
+        pushToProfileCache();
+        isDirty = false;
         return {
             card_layout: state.cardLayout,
             cardLayout: state.cardLayout,
@@ -212,10 +307,9 @@
     function bindEvents() {
         document.querySelectorAll('.card-layout-card').forEach(function (btn) {
             btn.addEventListener('click', function () {
+                markDirty();
                 setLayoutUI(btn.dataset.layout);
-                if (window.currentProfileData && window.currentProfileData.details) {
-                    window.currentProfileData.details.card_layout = state.cardLayout;
-                }
+                pushToProfileCache();
             });
         });
 
@@ -262,13 +356,19 @@
         if (textInput) {
             textInput.addEventListener('input', function () {
                 state.marqueeText = textInput.value;
+                markDirty();
                 updateMiniPreview();
+                pushToProfileCache();
             });
         }
 
         document.querySelectorAll('input[name="vitrine-marquee-speed"]').forEach(function (r) {
             r.addEventListener('change', function () {
-                if (r.checked) state.marqueeSpeed = r.value;
+                if (r.checked) {
+                    state.marqueeSpeed = r.value;
+                    markDirty();
+                    pushToProfileCache();
+                }
             });
         });
 
@@ -276,22 +376,49 @@
             r.addEventListener('change', function () {
                 if (!r.checked) return;
                 state.marqueeBgType = r.value === 'gradient' ? 'gradient' : 'solid';
+                markDirty();
                 syncBgTypeUI();
                 updateMiniPreview();
+                pushToProfileCache();
             });
         });
 
         const c1 = $('vitrine-marquee-color1');
         const c2 = $('vitrine-marquee-color2');
         const tc = $('vitrine-marquee-text-color');
-        if (c1) c1.addEventListener('input', function () { state.marqueeColor1 = c1.value; updateMiniPreview(); });
-        if (c2) c2.addEventListener('input', function () { state.marqueeColor2 = c2.value; updateMiniPreview(); });
-        if (tc) tc.addEventListener('input', function () { state.marqueeTextColor = tc.value; updateMiniPreview(); });
+        const tcHex = $('vitrine-marquee-text-color-hex');
+        function onColorChange() {
+            markDirty();
+            syncStateFromDom();
+            updateMiniPreview();
+            pushToProfileCache();
+        }
+        if (c1) c1.addEventListener('input', onColorChange);
+        if (c2) c2.addEventListener('input', onColorChange);
+        if (tc) {
+            tc.addEventListener('input', function () {
+                if (tcHex) tcHex.value = tc.value;
+                onColorChange();
+            });
+        }
+        if (tcHex) {
+            tcHex.addEventListener('input', function () {
+                const v = tcHex.value.trim();
+                if (/^#([0-9a-fA-F]{6})$/.test(v)) {
+                    state.marqueeTextColor = v;
+                    if (tc) tc.value = v;
+                    onColorChange();
+                }
+            });
+            tcHex.addEventListener('change', onColorChange);
+        }
 
         const footerCb = $('vitrine-show-footer');
         if (footerCb) {
             footerCb.addEventListener('change', function () {
                 state.showFooter = !!footerCb.checked;
+                markDirty();
+                pushToProfileCache();
             });
         }
 
@@ -300,14 +427,14 @@
             heroInput.addEventListener('change', async function () {
                 const file = heroInput.files && heroInput.files[0];
                 if (!file) return;
+                syncStateFromDom();
                 try {
                     const url = await uploadImageFile(file);
                     if (!url) throw new Error('URL vazia');
                     state.heroUrl = url;
+                    markDirty();
                     updateMiniPreview();
-                    if (window.currentProfileData && window.currentProfileData.details) {
-                        window.currentProfileData.details.vitrine_hero_url = url;
-                    }
+                    pushToProfileCache();
                 } catch (e) {
                     alert('Não foi possível enviar a arte. Tente novamente.');
                     console.error(e);
@@ -320,7 +447,9 @@
         if (removeBtn) {
             removeBtn.addEventListener('click', function () {
                 state.heroUrl = '';
+                markDirty();
                 updateMiniPreview();
+                pushToProfileCache();
             });
         }
 
@@ -328,6 +457,7 @@
         const logoInput = $('vitrine-marquee-logo-input');
         if (logoAdd && logoInput) {
             logoAdd.addEventListener('click', function () {
+                syncStateFromDom();
                 if (state.marqueeLogos.length >= 3) {
                     alert('Máximo de 3 logomarcas na faixa.');
                     return;
@@ -337,12 +467,18 @@
             logoInput.addEventListener('change', async function () {
                 const file = logoInput.files && logoInput.files[0];
                 if (!file) return;
+                // Importante: não perder o texto digitado durante o upload
+                syncStateFromDom();
+                markDirty();
                 try {
                     const url = await uploadImageFile(file);
                     if (url) {
+                        syncStateFromDom();
                         state.marqueeLogos.push(url);
+                        markDirty();
                         renderLogoChips();
                         updateMiniPreview();
+                        pushToProfileCache();
                     }
                 } catch (e) {
                     alert('Não foi possível enviar o logo.');
