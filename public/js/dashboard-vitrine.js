@@ -169,6 +169,46 @@
             });
         });
 
+        // Templates do módulo Texto com botão
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest && e.target.closest('.tcb-apply-template');
+            if (!btn) return;
+            e.preventDefault();
+            const itemEl = btn.closest('.item, .module-item, .tcb-dashboard-item');
+            if (!itemEl) return;
+            const tpl = btn.dataset.template || 'evento';
+            const titleEl = itemEl.querySelector('.tcb-title-input');
+            const eyebrowEl = itemEl.querySelector('.tcb-eyebrow-input');
+            const btnLabelEl = itemEl.querySelector('.tcb-button-label-input');
+            const line1 = itemEl.querySelector('.tcb-line1-input');
+            const line2 = itemEl.querySelector('.tcb-line2-input');
+            const line3 = itemEl.querySelector('.tcb-line3-input');
+            const tplHidden = itemEl.querySelector('.tcb-template-input');
+            if (tplHidden) tplHidden.value = tpl;
+            if (tpl === 'evento') {
+                if (eyebrowEl) eyebrowEl.value = '🌎 Mentoria / Evento';
+                if (titleEl) titleEl.value = 'Encontro Presencial';
+                if (line1) line1.value = '21/08/2026 → 22/08/2026';
+                if (line2) line2.value = '09:00 — 18:00';
+                if (line3) line3.value = 'Cidade — Local';
+                if (btnLabelEl) btnLabelEl.value = 'Inscrever-se';
+            } else if (tpl === 'curso') {
+                if (eyebrowEl) eyebrowEl.value = '🎓 Turma 2026';
+                if (titleEl) titleEl.value = 'Master Turma — Módulo';
+                if (line1) line1.value = '05/11/2026 → 08/11/2026';
+                if (line2) line2.value = '09:00 — 18:00';
+                if (line3) line3.value = '';
+                if (btnLabelEl) btnLabelEl.value = 'Quero participar';
+            } else {
+                if (eyebrowEl) eyebrowEl.value = '';
+                if (titleEl) titleEl.value = 'Título do destaque';
+                if (line1) line1.value = '';
+                if (line2) line2.value = '';
+                if (line3) line3.value = '';
+                if (btnLabelEl) btnLabelEl.value = 'Saiba mais';
+            }
+        });
+
         const textInput = $('vitrine-marquee-text');
         if (textInput) {
             textInput.addEventListener('input', function () {

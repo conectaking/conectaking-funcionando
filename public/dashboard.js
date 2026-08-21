@@ -3233,6 +3233,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatarFormat = details.avatar_format || 'circular';
             updateAvatarFormatSelector(avatarFormat);
             applyAvatarFormatToPreview(SELECTORS.previewAvatar, avatarFormat);
+            if (typeof window.applyVitrineDetails === 'function') {
+                window.applyVitrineDetails(details);
+            }
             if (SELECTORS.fontFamilySelect) SELECTORS.fontFamilySelect.value = details.font_family || 'Inter';
             if (SELECTORS.textColorPicker) SELECTORS.textColorPicker.value = details.text_color || '#ECECEC';
             if (SELECTORS.buttonColorPicker) SELECTORS.buttonColorPicker.value = details.button_color || '#1C1C21';
@@ -3884,6 +3887,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <input type="hidden" class="wifi-banner-url-input" value="${wifiBannerUrl.replace(/"/g, '&quot;')}">
             </div>
+        `;
+                        break;
+                    }
+                    case 'texto_com_botao': {
+                        itemEl.classList.add('link-item', 'tcb-dashboard-item');
+                        let tcb = {};
+                        try {
+                            if (item.destination_url && String(item.destination_url).trim().startsWith('{')) {
+                                tcb = JSON.parse(item.destination_url);
+                            }
+                        } catch (e) { tcb = {}; }
+                        const tcbEsc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                        const lines = Array.isArray(tcb.lines) ? tcb.lines : [];
+                        const l1 = lines[0] || {};
+                        const l2 = lines[1] || {};
+                        const l3 = lines[2] || {};
+                        const tpl = tcb.template || 'evento';
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-font'} item-icon-picker" title="Texto com Botão"></i>`;
+                        displayHTML = `<div class="item-display-title">${tcbEsc(item.title || 'Texto com Botão')}</div><div class="item-display-dest">${tcbEsc(tcb.button_label || 'Inscrever-se')} · ${tcbEsc(tcb.url || 'sem link')}</div>`;
+                        editHTML = `
+            <input type="hidden" class="tcb-template-input" value="${tcbEsc(tpl)}">
+            <div class="input-group">
+                <label>Modelo rápido</label>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                    <button type="button" class="btn btn-secondary tcb-apply-template" data-template="evento" style="font-size:0.8rem;">Evento</button>
+                    <button type="button" class="btn btn-secondary tcb-apply-template" data-template="curso" style="font-size:0.8rem;">Curso</button>
+                    <button type="button" class="btn btn-secondary tcb-apply-template" data-template="cta" style="font-size:0.8rem;">CTA simples</button>
+                </div>
+            </div>
+            <label>Selo / linha de cima (opcional)</label>
+            <input type="text" class="tcb-eyebrow-input" value="${tcbEsc(tcb.eyebrow || '')}" placeholder="Ex: 🌎 Mentoria Impactus CLUB">
+            <label>Título</label>
+            <input type="text" class="tcb-title-input item-title-input" value="${tcbEsc(item.title || '')}" placeholder="Ex: Encontro Presencial Agosto 2026">
+            <label>Linha 1 (data)</label>
+            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon1-input" value="${tcbEsc(l1.icon || '📅')}" style="width:56px;"><input type="text" class="tcb-line1-input" value="${tcbEsc(l1.text || '')}" placeholder="21/08/2026 → 22/08/2026" style="flex:1;"></div>
+            <label>Linha 2 (horário)</label>
+            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon2-input" value="${tcbEsc(l2.icon || '🕒')}" style="width:56px;"><input type="text" class="tcb-line2-input" value="${tcbEsc(l2.text || '')}" placeholder="09:00 — 18:00" style="flex:1;"></div>
+            <label>Linha 3 (local)</label>
+            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon3-input" value="${tcbEsc(l3.icon || '📍')}" style="width:56px;"><input type="text" class="tcb-line3-input" value="${tcbEsc(l3.text || '')}" placeholder="Cidade / local" style="flex:1;"></div>
+            <label>Texto do botão</label>
+            <input type="text" class="tcb-button-label-input" value="${tcbEsc(tcb.button_label || 'Inscrever-se')}" placeholder="Inscrever-se">
+            <label>Link do botão</label>
+            <input type="url" class="tcb-url-input item-destination-url-input" value="${tcbEsc(tcb.url || '')}" placeholder="https://...">
         `;
                         break;
                     }
@@ -6694,6 +6740,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 card_background_color: SELECTORS.cardBackgroundColorPicker?.value || '#141417'
             };
 
+            if (typeof window.getVitrineDetailsForSave === 'function') {
+                Object.assign(saveData.details, window.getVitrineDetailsForSave());
+            }
+
             console.log('🎨 [SAVE-ALL] Dados de personalização capturados:', {
                 fontFamily: saveData.details.fontFamily,
                 backgroundColor: saveData.details.backgroundColor,
@@ -7462,6 +7512,37 @@ document.addEventListener('DOMContentLoaded', () => {
                             itemData.logo_size = logoSizeVal;
                             const wifiIconEl = itemEl.querySelector('.item-icon-picker i');
                             itemData.icon_class = wifiIconEl ? wifiIconEl.className.trim() : getDefaultIcon('wifi');
+                            break;
+                        }
+                        case 'texto_com_botao': {
+                            const escTitle = itemEl.querySelector('.tcb-title-input')?.value?.trim()
+                                || itemEl.querySelector('.item-title-input')?.value?.trim()
+                                || 'Título';
+                            const buttonLabel = itemEl.querySelector('.tcb-button-label-input')?.value?.trim() || 'Inscrever-se';
+                            const eyebrow = itemEl.querySelector('.tcb-eyebrow-input')?.value?.trim() || '';
+                            const url = itemEl.querySelector('.tcb-url-input')?.value?.trim()
+                                || itemEl.querySelector('.item-destination-url-input')?.value?.trim()
+                                || '';
+                            const line1 = itemEl.querySelector('.tcb-line1-input')?.value?.trim() || '';
+                            const line2 = itemEl.querySelector('.tcb-line2-input')?.value?.trim() || '';
+                            const line3 = itemEl.querySelector('.tcb-line3-input')?.value?.trim() || '';
+                            const icon1 = itemEl.querySelector('.tcb-icon1-input')?.value?.trim() || '📅';
+                            const icon2 = itemEl.querySelector('.tcb-icon2-input')?.value?.trim() || '🕒';
+                            const icon3 = itemEl.querySelector('.tcb-icon3-input')?.value?.trim() || '📍';
+                            const template = itemEl.querySelector('.tcb-template-input')?.value || 'evento';
+                            const lines = [];
+                            if (line1) lines.push({ icon: icon1, text: line1 });
+                            if (line2) lines.push({ icon: icon2, text: line2 });
+                            if (line3) lines.push({ icon: icon3, text: line3 });
+                            itemData.title = escTitle;
+                            itemData.destination_url = JSON.stringify({
+                                url: url,
+                                button_label: buttonLabel,
+                                eyebrow: eyebrow,
+                                lines: lines,
+                                template: template
+                            });
+                            itemData.icon_class = getDefaultIcon('texto_com_botao');
                             break;
                         }
                         case 'pdf': case 'pdf_embed':
@@ -10376,9 +10457,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'pinterest': 'Pinterest',
             'portfolio': 'Portfólio',
             'banner': 'Banner',
+            'texto_com_botao': 'Texto com Botão',
             'carousel': 'Carrossel',
             'banner_carousel': 'Carrossel (Banner)',
             'pdf': 'PDF',
+            'wifi': 'Wi‑Fi',
             'instagram_embed': 'Instagram Incorporado',
             'youtube_embed': 'YouTube Incorporado',
             'tiktok_embed': 'TikTok Incorporado',
@@ -11103,6 +11186,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: getItemTypeName(itemType),
                         destination_url: itemType === 'wifi'
                             ? JSON.stringify({ ssid: '', password: '', security: 'WPA', hidden: false, display_format: 'button', banner_image_url: '', logo_url: '', logo_size: 48 })
+                            : itemType === 'texto_com_botao'
+                            ? JSON.stringify({ url: '', button_label: 'Inscrever-se', eyebrow: '', lines: [], template: 'evento' })
                             : itemType === 'whatsapp' ? '' : (itemType === 'email' ? '' : '#'),
                         pix_key: '',
                         recipient_name: '',
