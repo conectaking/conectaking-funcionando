@@ -1015,7 +1015,7 @@ body.light-theme .branding-logo span {
 }
 /* ========== MODELO VITRINE (isolado) ========== */
 .profile-layout-vitrine {
-    max-width: 1080px;
+    max-width: 680px;
 }
 
 .profile-layout-vitrine .profile-card {
@@ -1024,6 +1024,8 @@ body.light-theme .branding-logo span {
     background: #f2f2f4;
     color: #111;
     text-align: left;
+    display: flex;
+    flex-direction: column;
 }
 
 .profile-layout-vitrine .share-button-corner {
@@ -1031,6 +1033,7 @@ body.light-theme .branding-logo span {
     right: 12px;
     background: rgba(0,0,0,0.45);
     color: #fff;
+    z-index: 5;
 }
 
 .profile-layout-vitrine .profile-items-container {
@@ -1038,16 +1041,30 @@ body.light-theme .branding-logo span {
     flex-direction: column;
     gap: 16px;
     padding: 16px 16px 8px;
+    position: relative;
+    z-index: 1;
 }
 
-.profile-layout-vitrine .profile-actions,
+.profile-layout-vitrine .profile-actions {
+    position: relative;
+    z-index: 1;
+    margin: 16px 16px 0;
+}
+
 .profile-layout-vitrine .verse-of-day-box {
     margin-left: 16px;
     margin-right: 16px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Hero */
-.vitrine-hero-header { width: 100%; }
+.vitrine-hero-header {
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
 .vitrine-hero-media {
     width: 100%;
     aspect-ratio: 16 / 9;
@@ -1081,18 +1098,29 @@ body.light-theme .branding-logo span {
     font-size: 1.25rem;
 }
 
-/* Marquee */
+/* Marquee — faixa própria, nunca por cima dos botões */
 .vitrine-marquee {
+    position: relative;
+    z-index: 2;
+    display: block;
     width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
     overflow: hidden;
+    flex-shrink: 0;
     background: #2a2a2e;
     color: #fff;
     border-bottom: 1px solid rgba(255,255,255,0.06);
+    isolation: isolate;
+    margin: 0 0 4px 0;
 }
 .vitrine-marquee-track {
     display: flex;
+    align-items: center;
     width: max-content;
+    min-height: 44px;
     animation: vitrine-marquee-scroll 28s linear infinite;
+    will-change: transform;
 }
 .vitrine-marquee--slow .vitrine-marquee-track { animation-duration: 36s; }
 .vitrine-marquee--normal .vitrine-marquee-track { animation-duration: 24s; }
@@ -1106,13 +1134,15 @@ body.light-theme .branding-logo span {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 10px 20px;
+    padding: 12px 20px;
     white-space: nowrap;
+    box-sizing: border-box;
 }
 .vitrine-marquee-text {
     font-size: 0.92rem;
     font-weight: 600;
     letter-spacing: 0.02em;
+    color: #FFC700;
 }
 .vitrine-marquee-logo {
     height: 22px;
@@ -1214,24 +1244,33 @@ body.light-theme .branding-logo span {
     opacity: 0.75;
 }
 
-/* Banners em 2 colunas só no Vitrine (desktop) */
-@media (min-width: 900px) {
-    .profile-layout-vitrine .profile-items-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        padding: 20px 20px 8px;
-    }
-    .profile-layout-vitrine .profile-items-container > .vitrine-text-cta,
-    .profile-layout-vitrine .profile-items-container > .profile-link,
-    .profile-layout-vitrine .profile-items-container > a.profile-link {
-        grid-column: 1 / -1;
-    }
-    .profile-layout-vitrine .profile-banner-container,
-    .profile-layout-vitrine .profile-banner-item,
-    .profile-layout-vitrine a.banner-link {
-        width: 100%;
-    }
+/* Banners e módulos sempre em 1 coluna (igual mobile) — sem grid lado a lado */
+.profile-layout-vitrine .profile-items-container {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+}
+
+.profile-layout-vitrine .profile-banner-container,
+.profile-layout-vitrine .profile-banner-item,
+.profile-layout-vitrine a.banner-link,
+.profile-layout-vitrine .banner-link {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-column: auto !important;
+}
+
+.profile-layout-vitrine .branding-logo,
+.profile-layout-vitrine + .branding-logo,
+.profile-page-wrapper.profile-layout-vitrine > .branding-logo,
+.profile-page-wrapper.profile-layout-vitrine > a.branding-logo,
+.profile-page-wrapper.profile-layout-vitrine > img.branding-logo-custom {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 @media (max-width: 768px) {
