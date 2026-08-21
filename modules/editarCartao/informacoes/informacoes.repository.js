@@ -36,6 +36,18 @@ async function getDetails(userId) {
     if (existingColumns.includes('vitrine_show_footer')) {
         baseFields.push("COALESCE(p.vitrine_show_footer, false) as vitrine_show_footer");
     }
+    if (existingColumns.includes('vitrine_marquee_bg_type')) {
+        baseFields.push("COALESCE(p.vitrine_marquee_bg_type, 'solid') as vitrine_marquee_bg_type");
+    }
+    if (existingColumns.includes('vitrine_marquee_color1')) {
+        baseFields.push("COALESCE(p.vitrine_marquee_color1, '#2A2A2E') as vitrine_marquee_color1");
+    }
+    if (existingColumns.includes('vitrine_marquee_color2')) {
+        baseFields.push("COALESCE(p.vitrine_marquee_color2, '#FFC700') as vitrine_marquee_color2");
+    }
+    if (existingColumns.includes('vitrine_marquee_text_color')) {
+        baseFields.push("COALESCE(p.vitrine_marquee_text_color, '#FFC700') as vitrine_marquee_text_color");
+    }
 
     const { rows } = await db.query(
         `SELECT ${baseFields.join(', ')}
@@ -68,6 +80,10 @@ async function updateDetails(client, userId, details) {
     if (existingColumns.includes('vitrine_marquee_logos')) infoFields.push('vitrine_marquee_logos');
     if (existingColumns.includes('vitrine_marquee_speed')) infoFields.push('vitrine_marquee_speed');
     if (existingColumns.includes('vitrine_show_footer')) infoFields.push('vitrine_show_footer');
+    if (existingColumns.includes('vitrine_marquee_bg_type')) infoFields.push('vitrine_marquee_bg_type');
+    if (existingColumns.includes('vitrine_marquee_color1')) infoFields.push('vitrine_marquee_color1');
+    if (existingColumns.includes('vitrine_marquee_color2')) infoFields.push('vitrine_marquee_color2');
+    if (existingColumns.includes('vitrine_marquee_text_color')) infoFields.push('vitrine_marquee_text_color');
 
     const getVal = (key, alt) => details[key] ?? details[alt] ?? null;
 
@@ -78,6 +94,15 @@ async function updateDetails(client, userId, details) {
     const normalizeSpeed = (raw) => {
         const v = String(raw || 'slow').toLowerCase();
         return ['slow', 'normal', 'fast'].includes(v) ? v : 'slow';
+    };
+    const normalizeBgType = (raw) => {
+        const v = String(raw || 'solid').toLowerCase();
+        return v === 'gradient' ? 'gradient' : 'solid';
+    };
+    const normalizeColor = (raw, fallback) => {
+        const v = String(raw || '').trim();
+        if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(v)) return v;
+        return fallback;
     };
     const normalizeLogos = (raw) => {
         if (raw == null) return null;
@@ -120,6 +145,18 @@ async function updateDetails(client, userId, details) {
         }
         if (existingColumns.includes('vitrine_show_footer')) {
             insertValues.push(normalizeFooter(getVal('vitrine_show_footer', 'vitrineShowFooter')) ?? false);
+        }
+        if (existingColumns.includes('vitrine_marquee_bg_type')) {
+            insertValues.push(normalizeBgType(getVal('vitrine_marquee_bg_type', 'vitrineMarqueeBgType')));
+        }
+        if (existingColumns.includes('vitrine_marquee_color1')) {
+            insertValues.push(normalizeColor(getVal('vitrine_marquee_color1', 'vitrineMarqueeColor1'), '#2A2A2E'));
+        }
+        if (existingColumns.includes('vitrine_marquee_color2')) {
+            insertValues.push(normalizeColor(getVal('vitrine_marquee_color2', 'vitrineMarqueeColor2'), '#FFC700'));
+        }
+        if (existingColumns.includes('vitrine_marquee_text_color')) {
+            insertValues.push(normalizeColor(getVal('vitrine_marquee_text_color', 'vitrineMarqueeTextColor'), '#FFC700'));
         }
 
         const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
@@ -188,6 +225,22 @@ async function updateDetails(client, userId, details) {
                 updateParts.push(`vitrine_show_footer = $${idx++}`);
                 updateValues.push(footerVal);
             }
+        }
+        if (existingColumns.includes('vitrine_marquee_bg_type') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_marquee_bg_type') || Object.prototype.hasOwnProperty.call(details, 'vitrineMarqueeBgType'))) {
+            updateParts.push(`vitrine_marquee_bg_type = $${idx++}`);
+            updateValues.push(normalizeBgType(getVal('vitrine_marquee_bg_type', 'vitrineMarqueeBgType')));
+        }
+        if (existingColumns.includes('vitrine_marquee_color1') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_marquee_color1') || Object.prototype.hasOwnProperty.call(details, 'vitrineMarqueeColor1'))) {
+            updateParts.push(`vitrine_marquee_color1 = $${idx++}`);
+            updateValues.push(normalizeColor(getVal('vitrine_marquee_color1', 'vitrineMarqueeColor1'), '#2A2A2E'));
+        }
+        if (existingColumns.includes('vitrine_marquee_color2') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_marquee_color2') || Object.prototype.hasOwnProperty.call(details, 'vitrineMarqueeColor2'))) {
+            updateParts.push(`vitrine_marquee_color2 = $${idx++}`);
+            updateValues.push(normalizeColor(getVal('vitrine_marquee_color2', 'vitrineMarqueeColor2'), '#FFC700'));
+        }
+        if (existingColumns.includes('vitrine_marquee_text_color') && (Object.prototype.hasOwnProperty.call(details, 'vitrine_marquee_text_color') || Object.prototype.hasOwnProperty.call(details, 'vitrineMarqueeTextColor'))) {
+            updateParts.push(`vitrine_marquee_text_color = $${idx++}`);
+            updateValues.push(normalizeColor(getVal('vitrine_marquee_text_color', 'vitrineMarqueeTextColor'), '#FFC700'));
         }
         updateValues.push(userId);
         await client.query(

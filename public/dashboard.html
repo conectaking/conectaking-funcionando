@@ -405,7 +405,29 @@
         <div class="input-group" style="margin-top:20px;">
             <label for="vitrine-marquee-text">Texto da faixa rolante</label>
             <input type="text" id="vitrine-marquee-text" placeholder="Ex: PRÓXIMA TURMA: 18 a 20 de Setembro | Santos/SP" maxlength="200">
-            <p class="input-hint">Aparece logo abaixo da arte, passando de lado (como no cartão do Júlio Pereira).</p>
+            <p class="input-hint">Aparece logo abaixo da arte, passando de lado. A logomarca (se houver) fica na frente do texto.</p>
+        </div>
+        <div class="input-group">
+            <label>Cor da faixa (fundo)</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-bg-type" value="solid" checked> Cor sólida</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-bg-type" value="gradient"> Degradê</label>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;align-items:flex-end;">
+                <div>
+                    <label for="vitrine-marquee-color1" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor 1</label>
+                    <input type="color" id="vitrine-marquee-color1" value="#2A2A2E" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
+                </div>
+                <div id="vitrine-marquee-color2-wrap">
+                    <label for="vitrine-marquee-color2" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor 2 (degradê)</label>
+                    <input type="color" id="vitrine-marquee-color2" value="#FFC700" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
+                </div>
+                <div>
+                    <label for="vitrine-marquee-text-color" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor do texto</label>
+                    <input type="color" id="vitrine-marquee-text-color" value="#FFC700" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
+                </div>
+            </div>
+            <p class="input-hint">No degradê, a faixa vai da Cor 1 para a Cor 2.</p>
         </div>
         <div class="input-group">
             <label>Velocidade da faixa</label>
@@ -416,10 +438,11 @@
             </div>
         </div>
         <div class="input-group">
-            <label>Logos na faixa (até 3)</label>
+            <label>Logomarca na frente do texto (até 3)</label>
+            <p class="input-hint" style="margin-top:4px;">A primeira logo aparece logo antes do nome/texto que rola. Você pode adicionar até 3.</p>
             <div id="vitrine-marquee-logos-list" style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;"></div>
             <input type="file" id="vitrine-marquee-logo-input" accept="image/*" style="display:none;">
-            <button type="button" id="vitrine-marquee-logo-add" class="btn btn-secondary" style="font-size:0.85rem;"><i class="fas fa-plus"></i> Adicionar logo</button>
+            <button type="button" id="vitrine-marquee-logo-add" class="btn btn-secondary" style="font-size:0.85rem;"><i class="fas fa-plus"></i> Adicionar logomarca</button>
         </div>
         <div class="input-group" style="margin-top:12px;">
             <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -429,7 +452,7 @@
         </div>
         <div id="vitrine-live-mini-preview" style="margin-top:20px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);background:#f2f2f4;max-width:420px;">
             <div id="vitrine-mini-hero" style="aspect-ratio:16/9;background:#1a1a1f;display:flex;align-items:center;justify-content:center;color:#888;font-size:0.85rem;">Preview da arte</div>
-            <div id="vitrine-mini-marquee" style="background:#2a2a2e;color:#fff;padding:8px 12px;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Faixa rolante</div>
+            <div id="vitrine-mini-marquee" style="background:#2a2a2e;color:#FFC700;padding:8px 12px;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px;">Faixa rolante</div>
         </div>
     </div>
 </div>
