@@ -1142,7 +1142,7 @@ body.light-theme .branding-logo span {
     font-size: 0.92rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    color: #FFC700;
+    color: var(--vitrine-marquee-text, #FFC700);
 }
 .vitrine-marquee-logo {
     height: 22px;

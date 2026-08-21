@@ -11,6 +11,13 @@
     const marqueeSpeed = ['slow', 'normal', 'fast'].includes(String(details.vitrine_marquee_speed || '').toLowerCase())
         ? String(details.vitrine_marquee_speed).toLowerCase()
         : 'slow';
+    const bgType = String(details.vitrine_marquee_bg_type || 'solid').toLowerCase() === 'gradient' ? 'gradient' : 'solid';
+    const color1 = (details.vitrine_marquee_color1 || '#2A2A2E').trim() || '#2A2A2E';
+    const color2 = (details.vitrine_marquee_color2 || '#FFC700').trim() || '#FFC700';
+    const textColor = (details.vitrine_marquee_text_color || '#FFC700').trim() || '#FFC700';
+    const marqueeBg = bgType === 'gradient'
+        ? `linear-gradient(90deg, ${color1} 0%, ${color2} 100%)`
+        : color1;
     const hasMarquee = !!(marqueeText || marqueeLogos.length);
 %>
 <header class="vitrine-hero-header">
@@ -33,17 +40,19 @@
 </header>
 
 <% if (hasMarquee) { %>
-<div class="vitrine-marquee vitrine-marquee--<%= marqueeSpeed %>" role="presentation">
+<div class="vitrine-marquee vitrine-marquee--<%= marqueeSpeed %>" role="presentation"
+     style="background: <%= marqueeBg %>; --vitrine-marquee-text: <%= textColor %>;">
     <div class="vitrine-marquee-track">
         <% for (let i = 0; i < 2; i++) { %>
         <div class="vitrine-marquee-group" aria-hidden="<%= i === 1 ? 'true' : 'false' %>">
+            <%# Logomarcas sempre na frente do texto %>
             <% marqueeLogos.forEach(function(logoUrl) { %>
             <img src="<%= logoUrl %>" alt="" class="vitrine-marquee-logo" loading="lazy" decoding="async">
             <% }); %>
             <% if (marqueeText) { %>
-            <span class="vitrine-marquee-text"><%= marqueeText %></span>
+            <span class="vitrine-marquee-text" style="color: <%= textColor %>;"><%= marqueeText %></span>
             <% } %>
-            <span class="vitrine-marquee-sep" aria-hidden="true">•</span>
+            <span class="vitrine-marquee-sep" aria-hidden="true" style="color: <%= textColor %>;">•</span>
         </div>
         <% } %>
     </div>

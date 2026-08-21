@@ -11,7 +11,11 @@
         marqueeText: '',
         marqueeLogos: [],
         marqueeSpeed: 'slow',
-        showFooter: false
+        showFooter: false,
+        marqueeBgType: 'solid',
+        marqueeColor1: '#2A2A2E',
+        marqueeColor2: '#FFC700',
+        marqueeTextColor: '#FFC700'
     };
 
     function $(id) { return document.getElementById(id); }
@@ -25,6 +29,19 @@
         if (typeof window.getHeaders === 'function') return window.getHeaders();
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         return token ? { Authorization: 'Bearer ' + token } : {};
+    }
+
+    function syncBgTypeUI() {
+        const wrap = $('vitrine-marquee-color2-wrap');
+        if (wrap) wrap.style.opacity = state.marqueeBgType === 'gradient' ? '1' : '0.4';
+        if (wrap) wrap.style.pointerEvents = state.marqueeBgType === 'gradient' ? 'auto' : 'none';
+    }
+
+    function marqueeBackgroundCss() {
+        if (state.marqueeBgType === 'gradient') {
+            return 'linear-gradient(90deg, ' + state.marqueeColor1 + ' 0%, ' + state.marqueeColor2 + ' 100%)';
+        }
+        return state.marqueeColor1;
     }
 
     function setLayoutUI(layout) {
@@ -43,6 +60,7 @@
                 ? 'No Modelo Vitrine o topo é a arte. Formato do avatar vale no Clássico.'
                 : '';
         }
+        syncBgTypeUI();
         updateMiniPreview();
     }
 
@@ -53,7 +71,11 @@
         state.marqueeLogos.forEach(function (url, idx) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'position:relative;width:56px;height:56px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.15);';
+            const badge = idx === 0
+                ? '<span style="position:absolute;left:2px;bottom:2px;font-size:9px;background:rgba(0,0,0,0.75);color:#FFC700;padding:1px 4px;border-radius:3px;">frente</span>'
+                : '';
             wrap.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:contain;background:#111;" alt="">' +
+                badge +
                 '<button type="button" data-idx="' + idx + '" style="position:absolute;top:2px;right:2px;border:none;border-radius:4px;background:#c0392b;color:#fff;width:20px;height:20px;cursor:pointer;font-size:10px;">×</button>';
             wrap.querySelector('button').addEventListener('click', function () {
                 state.marqueeLogos.splice(idx, 1);
@@ -75,7 +97,14 @@
             }
         }
         if (mq) {
-            mq.textContent = state.marqueeText || 'Faixa rolante (digite o texto acima)';
+            mq.style.background = marqueeBackgroundCss();
+            mq.style.color = state.marqueeTextColor;
+            let html = '';
+            state.marqueeLogos.slice(0, 2).forEach(function (url) {
+                html += '<img src="' + url.replace(/"/g, '&quot;') + '" alt="" style="height:18px;width:auto;object-fit:contain;">';
+            });
+            html += '<span>' + (state.marqueeText || 'Faixa rolante (digite o texto acima)') + '</span>';
+            mq.innerHTML = html;
         }
         const preview = document.getElementById('vitrine-hero-preview');
         const ph = document.getElementById('vitrine-hero-placeholder');
@@ -128,12 +157,25 @@
             ? String(details.vitrine_marquee_speed).toLowerCase()
             : 'slow';
         state.showFooter = !!(details.vitrine_show_footer === true || details.vitrine_show_footer === 'true' || details.vitrine_show_footer === 1);
+        state.marqueeBgType = String(details.vitrine_marquee_bg_type || 'solid').toLowerCase() === 'gradient' ? 'gradient' : 'solid';
+        state.marqueeColor1 = details.vitrine_marquee_color1 || '#2A2A2E';
+        state.marqueeColor2 = details.vitrine_marquee_color2 || '#FFC700';
+        state.marqueeTextColor = details.vitrine_marquee_text_color || '#FFC700';
 
         const textInput = $('vitrine-marquee-text');
         if (textInput) textInput.value = state.marqueeText;
         document.querySelectorAll('input[name="vitrine-marquee-speed"]').forEach(function (r) {
             r.checked = r.value === state.marqueeSpeed;
         });
+        document.querySelectorAll('input[name="vitrine-marquee-bg-type"]').forEach(function (r) {
+            r.checked = r.value === state.marqueeBgType;
+        });
+        const c1 = $('vitrine-marquee-color1');
+        const c2 = $('vitrine-marquee-color2');
+        const tc = $('vitrine-marquee-text-color');
+        if (c1) c1.value = state.marqueeColor1;
+        if (c2) c2.value = state.marqueeColor2;
+        if (tc) tc.value = state.marqueeTextColor;
         const footerCb = $('vitrine-show-footer');
         if (footerCb) footerCb.checked = state.showFooter;
 
@@ -155,7 +197,15 @@
             vitrine_marquee_speed: state.marqueeSpeed,
             vitrineMarqueeSpeed: state.marqueeSpeed,
             vitrine_show_footer: !!state.showFooter,
-            vitrineShowFooter: !!state.showFooter
+            vitrineShowFooter: !!state.showFooter,
+            vitrine_marquee_bg_type: state.marqueeBgType,
+            vitrineMarqueeBgType: state.marqueeBgType,
+            vitrine_marquee_color1: state.marqueeColor1,
+            vitrineMarqueeColor1: state.marqueeColor1,
+            vitrine_marquee_color2: state.marqueeColor2,
+            vitrineMarqueeColor2: state.marqueeColor2,
+            vitrine_marquee_text_color: state.marqueeTextColor,
+            vitrineMarqueeTextColor: state.marqueeTextColor
         };
     }
 
@@ -169,7 +219,6 @@
             });
         });
 
-        // Templates do módulo Texto com botão
         document.addEventListener('click', function (e) {
             const btn = e.target.closest && e.target.closest('.tcb-apply-template');
             if (!btn) return;
@@ -223,6 +272,22 @@
             });
         });
 
+        document.querySelectorAll('input[name="vitrine-marquee-bg-type"]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                if (!r.checked) return;
+                state.marqueeBgType = r.value === 'gradient' ? 'gradient' : 'solid';
+                syncBgTypeUI();
+                updateMiniPreview();
+            });
+        });
+
+        const c1 = $('vitrine-marquee-color1');
+        const c2 = $('vitrine-marquee-color2');
+        const tc = $('vitrine-marquee-text-color');
+        if (c1) c1.addEventListener('input', function () { state.marqueeColor1 = c1.value; updateMiniPreview(); });
+        if (c2) c2.addEventListener('input', function () { state.marqueeColor2 = c2.value; updateMiniPreview(); });
+        if (tc) tc.addEventListener('input', function () { state.marqueeTextColor = tc.value; updateMiniPreview(); });
+
         const footerCb = $('vitrine-show-footer');
         if (footerCb) {
             footerCb.addEventListener('change', function () {
@@ -264,7 +329,7 @@
         if (logoAdd && logoInput) {
             logoAdd.addEventListener('click', function () {
                 if (state.marqueeLogos.length >= 3) {
-                    alert('Máximo de 3 logos na faixa.');
+                    alert('Máximo de 3 logomarcas na faixa.');
                     return;
                 }
                 logoInput.click();
