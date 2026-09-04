@@ -563,24 +563,8 @@ async function getProfilePageData(client, identifier, req) {
                 }
             }
             
-            if (item.item_type === 'contract') {
-                try {
-                    // Buscar dados do contrato
-                    const contractRes = await client.query(
-                        'SELECT * FROM contract_items WHERE profile_item_id = $1',
-                        [item.id]
-                    );
-                    if (contractRes.rows.length > 0) {
-                        item.contract_data = contractRes.rows[0];
-                    }
-                } catch (contractError) {
-                    logger.error('Erro ao carregar contrato', { 
-                        itemId: item.id, 
-                        error: contractError.message 
-                    });
-                }
-            }
-
+            // Contrato Digital removido — não carregar dados
+            
             if (item.item_type === 'bible') {
                 try {
                     const bibleRes = await client.query(
@@ -696,21 +680,6 @@ async function getProfilePageData(client, identifier, req) {
         const userProfileSlug = userSlugRes.rows[0]?.profile_slug || identifier;
         const ogPageUrl = `${safeProto}://${host}/${encodeURIComponent(String(userProfileSlug || identifier || '').replace(/^\/+/, ''))}`;
         
-        // Buscar configurações da agenda para verificar se está ativa no cartão
-        let agendaSettings = null;
-        try {
-            const agendaSettingsRes = await client.query(
-                'SELECT is_active_in_card, card_button_text, card_button_icon FROM agenda_settings WHERE owner_user_id = $1',
-                [userId]
-            );
-            if (agendaSettingsRes.rows.length > 0) {
-                agendaSettings = agendaSettingsRes.rows[0];
-            }
-        } catch (agendaError) {
-            // Se não existir a tabela ou coluna, continuar sem erro
-            logger.debug('Configurações da agenda não encontradas ou tabela não existe', { error: agendaError.message });
-        }
-        
         const profileData = {
             details: details,
             items: itemsForLinks,
@@ -720,9 +689,8 @@ async function getProfilePageData(client, identifier, req) {
             ogImageUrl: ogImageUrl,
             ogPageUrl: ogPageUrl,
             ogDescription: ogDescription,
-            profile_slug: userProfileSlug, // Adicionar profile_slug para uso no template
-            identifier: identifier, // Adicionar identifier também
-            agendaSettings: agendaSettings // Configurações da agenda
+            profile_slug: userProfileSlug,
+            identifier: identifier
         };
         
         logger.debug('✅ Renderizando perfil público', {

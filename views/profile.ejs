@@ -1892,37 +1892,8 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
                             <% } %>
                         <% } %>
 
-                    <%# ========================================================== %>
-                    <%# TIPO: AGENDA (Agenda Inteligente) %>
-                    <%# ========================================================== %>
+                    <%# Agenda Inteligente removida do produto %>
                     <% } else if (item.item_type === 'agenda') { %>
-                        <% 
-                            // Usar configurações da agenda passadas do route handler
-                            const isAgendaActive = typeof agendaSettings !== 'undefined' && agendaSettings && agendaSettings.is_active_in_card === true;
-                            const agendaButtonText = (typeof agendaSettings !== 'undefined' && agendaSettings && agendaSettings.card_button_text) ? agendaSettings.card_button_text : 'Agendar Reunião';
-                            const agendaButtonIcon = (typeof agendaSettings !== 'undefined' && agendaSettings && agendaSettings.card_button_icon) ? agendaSettings.card_button_icon : 'fa-calendar';
-                            
-                            // Verificar se tem logo para agenda
-                            const agendaHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
-                            const agendaLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
-                            const agendaIsJpeg = agendaHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
-                            const agendaBorderRadius = agendaHasLogo ? (agendaIsJpeg ? '50%' : '0') : '50%';
-                            let agendaObjectFit = 'contain';
-                            if (agendaHasLogo && item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) {
-                                agendaObjectFit = item.logo_fit_mode;
-                            }
-                        %>
-                        <% if (isAgendaActive) { %>
-                            <a href="/<%= item.slug || profile_slug || details.user_id || identifier %>/agenda" class="profile-link" data-item-id="<%= item.id %>" style="background: linear-gradient(135deg, rgba(255, 199, 0, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%); border: 2px solid rgba(255, 199, 0, 0.3);">
-                                <% if (agendaHasLogo) { %>
-                                    <img src="<%= item.image_url %>" alt="<%= item.title || 'Agenda Inteligente' %>" class="profile-link-logo <%= agendaIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= agendaLogoSize %>px !important; height: <%= agendaLogoSize %>px !important; border-radius: <%= agendaBorderRadius %>; object-fit: <%= agendaObjectFit %> !important;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
-                                    <i class="<%= agendaButtonIcon.startsWith('fa-') ? 'fas ' + agendaButtonIcon : agendaButtonIcon %>" style="display: none;"></i>
-                                <% } else { %>
-                                    <i class="<%= agendaButtonIcon.startsWith('fa-') ? 'fas ' + agendaButtonIcon : agendaButtonIcon %>"></i>
-                                <% } %>
-                                <span><%= item.title || agendaButtonText %></span>
-                            </a>
-                        <% } %>
 
                     <%# ========================================================== %>
                     <%# TIPO: SALES PAGE (Página de Vendas) %>
@@ -2017,24 +1988,8 @@ const hasWifi = profileItems.some(function (i) { return i && i.item_type === 'wi
                             </div>
                         </a>
 
-                    <%# ========================================================== %>
-                    <%# TIPO: CONTRATO DIGITAL %>
-                    <%# ========================================================== %>
-                    <% } else if (item.item_type === 'contract' && item.contract_data) { %>
-                        <% 
-                            const contract = item.contract_data;
-                            const hasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
-                            const logoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
-                            const contractUrl = `/contract/${contract.id}`;
-                        %>
-                        <a href="<%= contractUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <% if (hasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Contrato Digital' %>" class="profile-link-logo" style="max-width: <%= logoSize %>px; max-height: <%= logoSize %>px; border-radius: 8px;">
-                            <% } else { %>
-                                <i class="fas fa-file-contract"></i>
-                            <% } %>
-                            <span><%= item.title || contract.contract_title || 'Contrato Digital' %></span>
-                        </a>
+                    <%# Contrato Digital removido do produto %>
+                    <% } else if (item.item_type === 'contract') { %>
 
                     <%# ========================================================== %>
                     <%# TIPO: BÍBLIA %>

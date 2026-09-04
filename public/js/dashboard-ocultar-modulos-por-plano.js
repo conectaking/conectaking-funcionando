@@ -54,27 +54,18 @@
         /** IDs estáveis do dashboard — evita fallback por texto quando o HTML ainda não tem data-module. */
         var explicitSidebarIds = {
             finance: ['#finance-link'],
-            contract: ['#contratos-link'],
-            agenda: ['#agenda-link'],
             branding: ['#branding-link'],
-            kingbrief: ['#kingbrief-sidebar-link'],
             king_selection: ['#king-selection-sidebar-link'],
-            king_bolao: ['#king-bolao-sidebar-link'],
             digital_form: ['#king-forms-sidebar-link'],
             king_docs: ['#king-docs-sidebar-link'],
-            photographer_site: ['#meusite-sidebar-link'],
             recibos_orcamentos: ['#recibos-orcamentos-sidebar-link']
         };
 
         var map = [
             { key: 'hasFinance', module: 'finance' },
-            { key: 'hasContract', module: 'contract' },
-            { key: 'hasAgenda', module: 'agenda' },
             { key: 'hasModoEmpresa', module: 'modo_empresa' },
             { key: 'hasBranding', module: 'branding' },
-            { key: 'hasKingBrief', module: 'kingbrief' },
             { key: 'hasKingSelection', module: 'king_selection' },
-            { key: 'hasKingBolao', module: 'king_bolao' },
             { key: 'hasDigitalForm', module: 'digital_form' },
             { key: 'hasKingDocs', module: 'king_docs' }
         ];
@@ -96,8 +87,7 @@
                 if (
                     item.key === 'hasDigitalForm' ||
                     item.key === 'hasKingDocs' ||
-                    item.key === 'hasKingSelection' ||
-                    item.key === 'hasKingBrief'
+                    item.key === 'hasKingSelection'
                 ) {
                     show = true;
                 }

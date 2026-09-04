@@ -68,12 +68,10 @@ const salesPageRoutes = require('./modules/salesPage/salesPage.routes');
 const productRoutes = require('./modules/salesPage/products/product.routes');
 const analyticsRoutesSalesPage = require('./modules/salesPage/analytics/analytics.routes');
 const suggestionsRoutes = require('./routes/suggestions');
-const contractsRoutes = require('./modules/contracts/contract.routes');
 const guestListRoutes = require('./routes/guestList.routes');
 const publicGuestListRoutes = require('./routes/publicGuestList.routes');
 const cadastroLinksRoutes = require('./routes/cadastroLinks.routes');
 const guestListCustomizeRoutes = require('./routes/guestListCustomize.routes');
-const publicContractRoutes = require('./routes/publicContract.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 const checkinRoutes = require('./routes/checkin.routes');
@@ -82,9 +80,7 @@ const checkoutRoutes = require('./modules/checkout/checkout.routes');
 const checkoutWebhookRoutes = require('./modules/checkout/webhook.routes');
 const kingSelectionRoutes = require('./routes/kingSelection.routes');
 const kingSelectionR2Routes = require('./routes/kingSelectionR2.routes');
-const kingbriefRoutes = require('./routes/kingbrief.routes');
 const kingDocsRoutes = require('./modules/kingDocs/kingDocs.routes');
-const kingBolaoRoutes = require('./modules/kingBolao/kingBolao.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
 const autoMigrate = require('./utils/auto-migrate');
@@ -378,16 +374,6 @@ const kingSelectionLimiter = rateLimit({
             retryAfter: retryAfter
         });
     }
-});
-
-const kingbriefLimiter = rateLimit({
-    windowMs: config.rateLimit.kingbrief.windowMs,
-    max: config.rateLimit.kingbrief.max,
-    standardHeaders: true,
-    legacyHeaders: false,
-    validate: { trustProxy: false },
-    skip: (req) => req.method === 'OPTIONS' || process.env.NODE_ENV === 'development',
-    message: 'Muitos processamentos de áudio. Aguarde 1 hora para tentar novamente.',
 });
 
 cron.schedule('0 8 * * *', async () => {
@@ -1033,28 +1019,6 @@ app.get('/admin-prosperidade-31.html', (req, res) => {
     res.type('html').sendFile(adminProsperidadeHtmlPath);
 });
 
-// King Bolão — módulo isolado (public/kingBolao + /api/king-bolao)
-const kingBolaoDir = path.join(__dirname, 'public', 'kingBolao');
-const kingBolaoPublicHtml = path.join(kingBolaoDir, 'kingBolao.html');
-const kingBolaoAdminHtml = path.join(kingBolaoDir, 'kingBolaoAdmin.html');
-app.use('/kingBolao', express.static(kingBolaoDir, { maxAge: 0, etag: true }));
-app.get(['/kingBolao', '/kingBolao/'], (req, res) => {
-    if (!fs.existsSync(kingBolaoAdminHtml)) {
-        return res.status(404).type('text/plain').send('Not found');
-    }
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.type('html').sendFile(kingBolaoAdminHtml);
-});
-function serveKingBolaoPublicHtml(req, res) {
-    if (!fs.existsSync(kingBolaoPublicHtml)) {
-        return res.status(404).type('text/plain').send('Not found');
-    }
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.type('html').sendFile(kingBolaoPublicHtml);
-}
-app.get('/bolao/:slug/m/:token', serveKingBolaoPublicHtml);
-app.get('/bolao/:slug', serveKingBolaoPublicHtml);
-
 // Painel admin Devocionais 365: versão canónica em public/ (public_html pode ter cópia antiga sem os botões novos)
 // na Hostinger usa o dashboard.html do public_html do cliente — não confundir.
 const dashboardHtmlPath = path.join(__dirname, 'public', 'dashboard.html');
@@ -1320,7 +1284,6 @@ app.use((req, res, next) => {
         path.startsWith('/api/upload') ||
         path.startsWith('/api/analytics') ||
         path.startsWith('/api/business') ||
-        path.startsWith('/api/contracts') ||
         path.startsWith('/api/guest-list') ||
         path.startsWith('/api/sales-page') ||
         path.startsWith('/api/products') ||
@@ -1388,25 +1351,18 @@ app.use('/api/upload', (req, res, next) => {
 app.use('/api/king-selection', kingSelectionLimiter, kingSelectionR2Routes);
 // KingSelection: rate limit mais alto para upload em massa
 app.use('/api/king-selection', kingSelectionLimiter, kingSelectionRoutes);
-app.use('/api/kingbrief', kingbriefLimiter, kingbriefRoutes);
 app.use('/api/king-docs', apiLimiter, kingDocsRoutes);
-app.use('/api/king-bolao', apiLimiter, kingBolaoRoutes);
 app.use('/download', downloadRoutes);
 app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
-app.use('/api/contracts', apiLimiter, contractsRoutes);
 const financeRoutes = require('./routes/finance.routes');
 app.use('/api/finance', apiLimiter, financeRoutes);
-const agendaRoutes = require('./routes/agenda.routes');
-app.use('/api/agenda', apiLimiter, agendaRoutes);
 const bibleRoutes = require('./modules/bible/bible.routes');
 const locationRoutes = require('./modules/location/location.routes');
 app.use('/api/bible', apiLimiter, bibleRoutes);
 app.use('/api/location', apiLimiter, locationRoutes);
-const sitesRoutes = require('./modules/sites/sites.routes');
-app.use('/api/sites', apiLimiter, sitesRoutes);
 const orcamentosRoutes = require('./modules/orcamentos/orcamentos.routes');
 app.use('/api/orcamentos', apiLimiter, orcamentosRoutes);
 const documentosRoutes = require('./modules/documentos/documentos.routes');
@@ -1426,18 +1382,6 @@ app.use('/api/push', apiLimiter, pushNotificationsRoutes);
 const confirmationHistoryRoutes = require('./routes/confirmationHistory.routes');
 app.use('/api/guest-lists', apiLimiter, confirmationHistoryRoutes);
 
-// IMPORTANTE: Rotas públicas de agenda devem vir ANTES das rotas genéricas (/) para evitar interceptação
-// Rotas específicas de API primeiro
-const publicAgendaRoutes = require('./routes/publicAgenda.routes');
-const oauthAgendaRoutes = require('./routes/oauthAgenda.routes');
-// Registrar rotas de API primeiro (mais específicas)
-app.use('/api/agenda', publicAgendaRoutes);
-app.use('/api/oauth/agenda', oauthAgendaRoutes);
-// Depois registrar rotas públicas genéricas
-app.use('/agenda', publicAgendaRoutes);
-
-// IMPORTANTE: Rotas públicas de contrato devem vir ANTES das rotas genéricas (/) para evitar interceptação
-app.use('/contract', publicContractRoutes);
 app.use('/vcard', vcardRoutes);
 
 // Recuperar senha e resetar senha – PRIMEIRO para não serem capturadas por /:slug
@@ -1500,9 +1444,6 @@ app.use('/', publicProductRoutes);
 // Bíblia pública (/:slug/bible)
 const publicBibleRoutes = require('./routes/publicBible.routes');
 app.use('/', publicBibleRoutes);
-// Meu site público (/:slug/site)
-const publicSiteRoutes = require('./routes/publicSite.routes');
-app.use('/', publicSiteRoutes);
 
 // Perfis públicos (sem rate limiting)
 app.use('/', publicProfileRoutes);

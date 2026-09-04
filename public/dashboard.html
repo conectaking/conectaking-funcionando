@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -78,7 +78,6 @@
     </script>
     <!-- Deve carregar antes do dashboard.js para evitar erro "applyModulesVisibility não está disponível" -->
     <script src="js/dashboard-ocultar-modulos-por-plano.js?v=2026-08-13-boot-perf"></script>
-    <script src="js/dashboard-kingBolao-nav.js?v=2026-06-13"></script>
 
     <style>
     /* Detalhes expansíveis: orçamento e arquétipo (aparecem abaixo da linha) */
@@ -312,14 +311,9 @@
         <a href="#" class="nav-link nav-link-by-plan" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira" style="display: none;"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
         <a href="kingForms.html" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
         <a href="/kingSelection?v=2026-03-23-anticache-a1" class="nav-link nav-link-by-plan" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection" style="display: none;"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
-        <a href="/kingBolao" class="nav-link nav-link-by-plan" data-module="king_bolao" id="king-bolao-sidebar-link" title="King Bolão" style="display: none;"><i class="fas fa-futbol"></i> <span>King Bolão</span></a>
-        <a href="kingbrief-dashboard.html" class="nav-link nav-link-by-plan" data-module="kingbrief" id="kingbrief-sidebar-link" title="King Briefing" style="display: none;"><i class="fas fa-microphone-alt"></i> <span>King Briefing</span></a>
         <a href="#" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
         <a href="kingDocs.html" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
-        <a href="#" class="nav-link nav-link-by-plan" id="meusite-sidebar-link" data-module="photographer_site" data-target="meu-site-pane" title="Meu site" style="display: none;"><i class="fas fa-globe"></i> <span>Meu site</span></a>
         <a href="recibos-orcamentos.html" class="nav-link nav-link-by-plan" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos" style="display: none;"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
-        <a href="contracts.html" class="nav-link nav-link-by-plan" data-module="contract" id="contratos-link" title="Contratos" style="display: none;"><i class="fas fa-file-contract"></i> <span>Contratos</span></a>
-        <a href="#" class="nav-link nav-link-by-plan" data-module="agenda" data-target="agenda-pane" id="agenda-link" title="Agenda Inteligente" style="display: none;"><i class="fas fa-calendar-check"></i> <span>Agenda Inteligente</span></a>
         <a href="#" class="nav-link" data-target="relatorios-pane" title="Relatórios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
         <a href="#" class="nav-link" data-target="compartilhar-pane" title="Compartilhar"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></a>
         <a href="#" class="nav-link nav-link-by-plan" data-module="branding" data-target="branding-pane" id="branding-link" title="Personalização da Marca" style="display: none;"><i class="fas fa-palette"></i> <span>Personalização da Marca</span></a>
@@ -873,40 +867,8 @@
                 </header>
                 <p>Página em desenvolvimento</p>
             </main>
-
-            <!-- Meu site: orçamentos e teste de arquétipo -->
-            <main id="meu-site-pane" class="main-content" data-pane style="display: none;">
-                <header class="content-header">
-                    <h1><i class="fas fa-globe"></i> Meu site</h1>
-                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">O que acontece no seu site: orçamentos e resultados do teste de arquétipo.</p>
-                </header>
-                <div style="padding: 20px; max-width: 1000px;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px;">
-                        <a href="#" id="meu-site-ver-link" class="btn btn-primary" target="_blank" rel="noopener" style="display: none;"><i class="fas fa-external-link-alt"></i> Ver meu site</a>
-                        <a href="#" id="meu-site-editar-link" class="btn btn-secondary"><i class="fas fa-pencil-alt"></i> Editar meu site</a>
-                        <a href="orcamentos.html" class="btn btn-secondary"><i class="fas fa-file-invoice-dollar"></i> Ver todos os orçamentos</a>
-                        <a href="arquetipo-resultados.html" class="btn btn-secondary"><i class="fas fa-user-check"></i> Ver todos os testes de arquétipo</a>
-                        <button type="button" id="meu-site-copiar-link-orcamento" class="btn btn-secondary" title="Copiar link para enviar ao cliente solicitar orçamento"><i class="fas fa-link"></i> Copiar link orçamento</button>
-                    </div>
-                    <div class="meu-site-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color, #333);">
-                            <h2 style="color: var(--text-primary, #fff); font-size: 1.1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-file-invoice-dollar" style="color: #facc15;"></i> Orçamentos recebidos</h2>
-                            <div id="meu-site-orcamentos-list" style="min-height: 120px;">
-                                <p style="color: var(--text-secondary, #888); text-align: center; padding: 20px;">Carregando...</p>
-                            </div>
-                        </div>
-                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color, #333);">
-                            <h2 style="color: var(--text-primary, #fff); font-size: 1.1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-user-check" style="color: #facc15;"></i> Resultados do Teste de Arquétipo</h2>
-                            <div id="meu-site-arquetipo-list" style="min-height: 120px;">
-                                <p style="color: var(--text-secondary, #888); text-align: center; padding: 20px;">Carregando...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p style="color: var(--text-secondary, #666); font-size: 0.85rem; margin-top: 20px;">Quando alguém enviar um orçamento ou concluir o teste de arquétipo no seu site, os dados aparecem aqui. Clique em <strong>Ver detalhes</strong> para expandir as informações abaixo da linha.</p>
-                </div>
-            </main>
             
-            <!-- Página de Finanças -->
+<!-- Página de Finanças -->
             <main id="finance-pane" class="main-content" data-pane style="display: none;">
                 <header class="content-header">
                     <h1><i class="fas fa-wallet"></i> Gestão Financeira</h1>
@@ -934,58 +896,7 @@
                 </div>
             </main>
             
-            <!-- Página de Agenda -->
-            <main id="agenda-pane" class="main-content" data-pane style="display: none;">
-                <header class="content-header">
-                    <h1><i class="fas fa-calendar-check"></i> Agenda Inteligente</h1>
-                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
-                        Gerencie seus agendamentos e reuniões com integração Google Calendar
-                    </p>
-                </header>
-                <div id="agenda-content" style="padding: 20px;">
-                    <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 30px; margin-bottom: 20px; text-align: center;">
-                        <i class="fas fa-calendar-check" style="font-size: 4rem; color: #FFC700; margin-bottom: 20px;"></i>
-                        <h2 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">Agenda Inteligente</h2>
-                        <p style="color: var(--text-secondary, #888888); margin-bottom: 30px; line-height: 1.6;">
-                            Configure sua agenda para receber agendamentos de clientes. Integre com Google Calendar e Google Meet para reuniões profissionais.
-                        </p>
-                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="window.agendaModule?.init()">
-                                <i class="fas fa-cog"></i> Configurar Agenda
-                            </button>
-                            <button class="btn btn-secondary" onclick="window.agendaModule?.connectGoogle()">
-                                <i class="fab fa-google"></i> Conectar Google Calendar
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 25px;">
-                            <h3 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">
-                                <i class="fas fa-clock"></i> Próximos Agendamentos
-                            </h3>
-                            <div id="agenda-upcoming-appointments">
-                                <p style="color: var(--text-secondary, #888888); text-align: center; padding: 20px;">
-                                    Nenhum agendamento próximo.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div style="background: var(--bg-card, #1C1C21); border-radius: 12px; padding: 25px;">
-                            <h3 style="color: var(--text-primary, #FFFFFF); margin-bottom: 15px;">
-                                <i class="fas fa-chart-line"></i> Estatísticas
-                            </h3>
-                            <div id="agenda-stats">
-                                <p style="color: var(--text-secondary, #888888); text-align: center; padding: 20px;">
-                                    Carregando estatísticas...
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-            
-            <main id="relatorios-pane" class="main-content" data-pane>
+<main id="relatorios-pane" class="main-content" data-pane>
                 <header class="content-header">
                     <h1>Relatórios de Desempenho</h1>
                     <div class="header-actions">
@@ -1420,15 +1331,8 @@
                     </div>
                 </div>
             </main>
-
-            <!-- Contratos Pane (aba própria, como King Forms) -->
-            <main id="contratos-pane" class="main-content" data-pane style="display: none;">
-                <div id="contracts-content" style="padding: 0; height: calc(100vh - 140px); min-height: 400px;">
-                    <iframe id="contratos-iframe" src="about:blank" title="Contratos" style="width: 100%; height: 100%; border: none; border-radius: 12px; background: var(--bg-primary, #0D0D0F);"></iframe>
-                </div>
-            </main>
-
-        </div>
+            
+</div>
 
 <aside class="live-preview">
     <div class="preview-header-section">
@@ -1524,8 +1428,6 @@
                 <div class="module-choice-card" data-item-type="digital_form"><i class="fas fa-file-signature"></i><span>Formulário King</span></div>
                 <div class="module-choice-card" data-item-type="sales_page"><i class="fas fa-store"></i><span>Página de Vendas</span></div>
                 <div class="module-choice-card" data-item-type="guest_list"><i class="fas fa-users"></i><span>Lista de Convidados</span></div>
-                <div class="module-choice-card" data-item-type="contract"><i class="fas fa-file-contract"></i><span>Contrato Digital</span></div>
-                <div class="module-choice-card" data-item-type="agenda"><i class="fas fa-calendar-check"></i><span>Agenda Inteligente</span></div>
                 <div class="module-choice-card" data-item-type="bible"><i class="fas fa-bible"></i><span>Bíblia</span></div>
                 <div class="module-choice-card" data-item-type="location"><i class="fas fa-map-marker-alt"></i><span>Localização</span></div>
             </div>
@@ -1633,7 +1535,7 @@
             if (!hash || hash === '#') return;
             var tid = hash.replace(/^#/,'').trim();
             if (tid.startsWith('finance-pane-tab-')) tid = 'finance-pane';
-            var map = {finance:'finance-pane','king-forms':'king-forms-pane',relatorios:'relatorios-pane',editar:'editar-pane',compartilhar:'compartilhar-pane',contratos:'contratos-pane',agenda:'agenda-pane',branding:'branding-pane','separacao-pacotes':'separacao-pacotes-pane',assinatura:'assinatura-pane','personalizar-link':'personalizar-link-pane'};
+            var map = {finance:'finance-pane','king-forms':'king-forms-pane',relatorios:'relatorios-pane',editar:'editar-pane',compartilhar:'compartilhar-pane',branding:'branding-pane','separacao-pacotes':'separacao-pacotes-pane',assinatura:'assinatura-pane','personalizar-link':'personalizar-link-pane'};
             var editorTab = null;
             if (map[tid]) tid = map[tid];
             else if (tid === 'modelos-editor' || tid === 'info-editor' || tid === 'items-editor' || tid === 'personalizar-editor') { editorTab = tid; tid = 'editar-pane'; }

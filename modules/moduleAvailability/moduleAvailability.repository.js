@@ -9,9 +9,9 @@ const MODULE_TYPES_PUBLIC = [
     'spotify', 'linkedin', 'pinterest',
     'link', 'portfolio', 'banner', 'carousel', 'texto_com_botao',
     'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
-    'finance', 'agenda', 'contract',
-    'modo_empresa', 'branding', 'photographer_site', 'bible', 'location',
-    'recibos_orcamentos', 'kingbrief', 'king_bolao'
+    'finance',
+    'modo_empresa', 'branding', 'bible', 'location',
+    'recibos_orcamentos'
 ];
 
 async function getPlanAvailabilityPublic(client) {

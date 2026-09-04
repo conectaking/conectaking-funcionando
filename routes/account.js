@@ -151,15 +151,15 @@ router.get('/status', protectUser, async (req, res) => {
         // Nenhum override para admin: o que está ativo/desativado no painel "Módulos por Plano" vale para todos, inclusive ADM.
         user.hasModoEmpresa = hasModule('modo_empresa');
         user.hasFinance = hasModule('finance');
-        user.hasContract = hasModule('contract');
-        user.hasAgenda = hasModule('agenda');
+        user.hasContract = false; // módulo removido
+        user.hasAgenda = false; // módulo removido
         user.hasBranding = hasModule('branding');
-        user.hasKingBrief = hasModule('kingbrief');
+        user.hasKingBrief = false; // módulo removido
         user.hasKingSelection = hasModule('king_selection');
-        user.hasPhotographerSite = hasModule('photographer_site');
+        user.hasPhotographerSite = false; // módulo removido
         user.hasDigitalForm = hasModule('digital_form');
         user.hasKingDocs = hasModule('king_docs');
-        user.hasKingBolao = hasModule('king_bolao');
+        user.hasKingBolao = false; // módulo removido
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
         
         // Buscar limites de links (módulo isolado)
@@ -305,12 +305,12 @@ router.get('/debug-plan/:email', protectUser, async (req, res) => {
             },
             flags: {
                 hasFinance: availableModules.includes('finance') || indRes.rows.some(r => r.module_type === 'finance'),
-                hasContract: availableModules.includes('contract') || indRes.rows.some(r => r.module_type === 'contract'),
-                hasAgenda: availableModules.includes('agenda') || indRes.rows.some(r => r.module_type === 'agenda'),
+                hasContract: false,
+                hasAgenda: false,
                 hasModoEmpresa: availableModules.includes('modo_empresa') || indRes.rows.some(r => r.module_type === 'modo_empresa'),
                 hasBranding: availableModules.includes('branding') || indRes.rows.some(r => r.module_type === 'branding'),
-                hasKingBrief: availableModules.includes('kingbrief') || indRes.rows.some(r => r.module_type === 'kingbrief'),
-                hasPhotographerSite: availableModules.includes('photographer_site') || indRes.rows.some(r => r.module_type === 'photographer_site')
+                hasKingBrief: false,
+                hasPhotographerSite: false
             }
         });
     } catch (error) {

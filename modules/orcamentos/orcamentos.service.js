@@ -1,5 +1,4 @@
 const orcamentosRepository = require('./orcamentos.repository');
-const sitesRepository = require('../sites/sites.repository');
 const logger = require('../../utils/logger');
 
 /**
@@ -35,17 +34,11 @@ function computeTicket(respostas) {
 }
 
 async function submitBySlug(slug, data) {
-    const site = await sitesRepository.findBySlug(slug);
-    if (!site) throw new Error('Site não encontrado.');
-    if (site.site_em_manutencao) throw new Error('Site em manutenção.');
-    return _insertLead(site.user_id, data);
+    throw new Error('Captação por site público foi desativada (módulo Meu site removido).');
 }
 
 async function submitByHost(host, data) {
-    const site = await sitesRepository.findByCustomDomain(host);
-    if (!site) throw new Error('Site não encontrado.');
-    if (site.site_em_manutencao) throw new Error('Site em manutenção.');
-    return _insertLead(site.user_id, data);
+    throw new Error('Captação por site público foi desativada (módulo Meu site removido).');
 }
 
 function _insertLead(userId, data) {
