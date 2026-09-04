@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+# Preferir lock; se estiver dessincronizado (comum em OneDrive), cair para npm install
+RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY . .
 
