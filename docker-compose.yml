@@ -1,0 +1,55 @@
+# Conecta King — ambiente local (pré-visualizar no PC antes de subir)
+# Uso: docker compose --env-file .env.docker up --build
+#
+# Painel: http://localhost:5000/dashboard.html?api=local
+# Health: http://localhost:5000/health
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: conectaking-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-conectaking}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-conectaking}
+      POSTGRES_DB: ${POSTGRES_DB:-conectaking}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-conectaking} -d ${POSTGRES_DB:-conectaking}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: conectaking-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.docker
+    environment:
+      PORT: "5000"
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-conectaking}:${POSTGRES_PASSWORD:-conectaking}@db:5432/${POSTGRES_DB:-conectaking}
+      DATABASE_SSL: "false"
+      JWT_SECRET: ${JWT_SECRET:-conectaking-local-dev-secret-change-me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+    ports:
+      # Host:Container — container sempre escuta 5000
+      - "${PORT:-5000}:5000"
+    volumes:
+      # Persist uploads locais entre restarts (opcional)
+      - api_uploads:/app/uploads
+
+volumes:
+  pgdata:
+  api_uploads:
