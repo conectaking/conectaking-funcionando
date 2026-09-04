@@ -10,7 +10,8 @@ yarn-error.log*
 .env.path
 .env.local
 .env.*.local
-.env.docker
+backups/
+*.dump
 
 # Logs
 logs
