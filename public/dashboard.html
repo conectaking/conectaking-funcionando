@@ -1724,7 +1724,13 @@
           var params = new URLSearchParams(window.location.search || '');
           var forceLocal =
             (params.get('api') || '').toLowerCase() === 'local' ||
-            (localStorage.getItem('useLocalApi') === 'true');
+            (localStorage.getItem('useLocalApi') === 'true') ||
+            ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+              String(window.location.port || '') === '5000');
+
+          if (forceLocal) {
+            try { localStorage.setItem('useLocalApi', 'true'); } catch (e) {}
+          }
 
           var host = window.location.hostname || 'localhost';
           var localApiBase = 'http://' + host + ':5000';
