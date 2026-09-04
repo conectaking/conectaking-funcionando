@@ -91,9 +91,7 @@ const MODULE_NAME_TO_CODE = {
     Portfólio: 'portfolio',
     Banner: 'banner',
     'Gestão Financeira': 'finance',
-    Contratos: 'contract',
-    'Agenda Inteligente': 'agenda',
-    'Modo Empresa': 'modo_empresa',
+'Modo Empresa': 'modo_empresa',
     'King Docs': 'king_docs',
 };
 

@@ -24,8 +24,8 @@
     }
 
     /**
-     * Esconde ou mostra os itens do menu conforme hasFinance, hasContract, hasAgenda, hasModoEmpresa.
-     * @param {Object} user - Objeto com hasFinance, hasContract, hasAgenda, hasModoEmpresa (boolean)
+     * Esconde ou mostra os itens do menu conforme hasFinance, hasModoEmpresa.
+     * @param {Object} user - Objeto com hasFinance, hasModoEmpresa (boolean)
      */
     function applyModulesVisibility(user) {
         if (!user) {
@@ -42,12 +42,9 @@
 
         console.log('[applyModulesVisibility] Aplicando visibilidade dos módulos:', {
             hasFinance: user.hasFinance,
-            hasContract: user.hasContract,
-            hasAgenda: user.hasAgenda,
             hasModoEmpresa: user.hasModoEmpresa,
             hasBranding: user.hasBranding,
             hasKingSelection: user.hasKingSelection,
-            hasKingBolao: user.hasKingBolao,
             hasDigitalForm: user.hasDigitalForm
         });
 

@@ -2882,6 +2882,11 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
         const userId = req.user.userId;
         const { item_type, title, destination_url, icon_class, pix_key, recipient_name, pix_amount, pix_description, pdf_url, aspect_ratio, image_url, logo_size } = req.body;
 
+        const REMOVED_CARD_MODULES = new Set(['agenda', 'contract', 'photographer_site', 'kingbrief', 'king_bolao']);
+        if (REMOVED_CARD_MODULES.has(String(item_type || '').trim())) {
+            return res.status(410).json({ message: 'Este módulo foi removido do Conecta King.' });
+        }
+
         if (!item_type) {
             return res.status(400).json({ message: 'Tipo de item é obrigatório.' });
         }

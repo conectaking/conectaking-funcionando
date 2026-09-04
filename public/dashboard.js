@@ -1247,9 +1247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         carousel: 'Carrossel',
         pdf: 'PDF',
         pdf_embed: 'PDF',
-        contract: 'Contrato Digital',
         finance: 'Gestão Financeira',
-        agenda: 'Agenda Inteligente',
         guest_list: 'Lista de Convidados',
         pix: 'PIX',
         pix_qrcode: 'PIX QR Code',
@@ -1261,12 +1259,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modo_empresa: 'Modo Empresa',
         branding: 'Personalização da Marca',
         convite: 'Convite Digital',
-        photographer_site: 'Meu site',
         bible: 'Bíblia',
         location: 'Localização',
-        recibos_orcamentos: 'Recibos e Orçamentos',
-        kingbrief: 'KingBrief',
-        king_bolao: 'King Bolão'
+        recibos_orcamentos: 'Recibos e Orçamentos'
     };
 
     const URL_TYPE_TAGS = {
@@ -2926,6 +2921,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function appendMinimalModuleListItem(item) {
+        const REMOVED_UI_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1 };
+        if (item && REMOVED_UI_MODULES[item.item_type]) return false;
         const container = SELECTORS.itemsContainer || document.getElementById('items-container');
         if (!container || !item || item.id == null) return false;
         const idStr = String(item.id);
@@ -3960,37 +3957,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
                         break;
                     case 'agenda':
-                        // Agenda Inteligente - renderizar como módulo
-                        itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-calendar-check'} item-icon-picker" title="Agenda Inteligente"></i>`;
-                        displayHTML = `<div class="item-display-title">${item.title || 'Agenda Inteligente'}</div><div class="item-display-dest">Gerencie seus agendamentos</div>`;
-
-                        // HTML de edição simplificado
-                        editHTML = `
-            <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
-                <i class="fas fa-calendar-check" style="font-size: 3rem; color: var(--dourado-principal, #FFC700); margin-bottom: 1rem;"></i>
-                <p>A configuração completa da Agenda Inteligente é feita no painel dedicado.</p>
-                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-dark, #A1A1A1);">Acesse pelo menu lateral para gerenciar slots e agendamentos.</p>
-            </div>
-            <input type="hidden" class="item-title-input" value="${item.title || 'Agenda Inteligente'}">
-        `;
-                        break;
                     case 'contract':
-                        // Contrato Digital - renderizar como módulo
-                        itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-file-contract'} item-icon-picker" title="Contrato Digital"></i>`;
-                        const contractData = item.contract_data || {};
-                        const signaturesCount = contractData.signatures_count || 0;
-                        displayHTML = `<div class="item-display-title">${item.title || 'Contrato Digital'}</div><div class="item-display-dest">${signaturesCount} assinatura(s)</div>`;
-
-                        // HTML de edição - será carregado dinamicamente
-                        editHTML = `
-            <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
-                <i class="fas fa-file-contract" style="font-size: 3rem; color: var(--dourado-principal, #FFC700); margin-bottom: 1rem;"></i>
-                <p>Clique em "Salvar" e depois em "Editar" para configurar o contrato.</p>
-            </div>
-            <input type="hidden" class="item-title-input" value="${item.title || 'Contrato Digital'}">
-        `;
+                    case 'photographer_site':
+                        // módulos removidos — não renderizar no editor
                         break;
                     case 'convite':
                         itemEl.classList.add('link-item');
@@ -10289,9 +10258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'sales_page': 'Página de Vendas',
             'digital_form': 'Formulário King',
             'guest_list': 'Lista de Convidados',
-            'contract': 'Contrato Digital',
             'convite': 'Convite Digital',
-            'agenda': 'Agenda Inteligente',
             'king_selection': 'King Selection',
             'bible': 'Bíblia',
             'location': 'Localização',
@@ -15849,12 +15816,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label>Módulos Incluídos (separados por vírgula):</label>
                         <textarea class="form-input" id="plan-included-modules-${plan.id}" rows="4" placeholder="Ex: Carrossel, Portfólio, Banner, Loja Virtual">${preservedIncluded}</textarea>
                         <small style="color: var(--text-secondary, #888888); display: block; margin-top: 5px;">
-                            Módulos disponíveis: Carrossel, Loja Virtual, King Forms, Portfólio, Banner, Gestão Financeira, Contratos, Agenda Inteligente
+                            Módulos disponíveis: Carrossel, Loja Virtual, King Forms, Portfólio, Banner, Gestão Financeira
                         </small>
                     </div>
                     <div class="form-group">
                         <label>Módulos Não Incluídos (separados por vírgula):</label>
-                        <textarea class="form-input" id="plan-excluded-modules-${plan.id}" rows="4" placeholder="Ex: King Forms, Gestão Financeira, Contratos, Agenda Inteligente">${preservedExcluded}</textarea>
+                        <textarea class="form-input" id="plan-excluded-modules-${plan.id}" rows="4" placeholder="Ex: King Forms, Gestão Financeira">${preservedExcluded}</textarea>
                         <small style="color: var(--text-secondary, #888888); display: block; margin-top: 5px;">
                             Lista os módulos que NÃO estão incluídos neste plano
                         </small>
