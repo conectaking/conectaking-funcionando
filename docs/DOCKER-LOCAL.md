@@ -47,6 +47,43 @@ Com o banco vazio, use o fluxo de registro do próprio site/login, ou importe um
 docker compose exec -T db pg_restore -U conectaking -d conectaking --no-owner < backup.dump
 ```
 
+## Copiar usuários/senhas do Render para o Docker
+
+Sim: as senhas no banco são **hash** — ao copiar o Postgres, o login de produção funciona no Docker.
+
+### Pré-requisito
+
+No painel do Render → seu **PostgreSQL** → **Connect** → copie a URL **External** (não a Internal).
+
+Coloque no arquivo do `.env` (o caminho em `.env.path`), por exemplo:
+
+```env
+DATABASE_URL=postgresql://USER:SENHA@HOST-externo.render.com/DB?sslmode=require
+```
+
+ou confira se `DB_HOST` / `DB_USER` / `DB_PASSWORD` / `DB_DATABASE` são da conexão **External**.
+
+Seu PC precisa conseguir conectar na porta **5432** do host externo do Render (firewall/rede).
+
+### Comando
+
+Com o Docker Desktop ligado e `conectaking-db` no ar:
+
+```powershell
+cd C:\Users\playa\OneDrive\Documentos\conectaking-funcionando
+docker compose --env-file .env.docker up -d
+node scripts/sync-render-db-to-docker.js
+```
+
+Depois: http://localhost:5000/login.html com o **mesmo e-mail e senha** de produção.
+
+### Se der erro SSL / “Connection terminated”
+
+1. Confirme que está usando a URL **External** do Render (não Internal).  
+2. No Render → Database → Info: banco não pode estar suspenso.  
+3. Teste de outra rede (4G) — alguns Wi‑Fi bloqueiam porta 5432.  
+4. Alternativa: no Render Shell / máquina que conecta, gere o dump e coloque em `backups/render-to-docker.dump`, depois rode só o restore (peça ajuda se precisar).
+
 ## Notas
 
 - Não use **Go Live** neste fluxo: o container da API já serve `public/` e `public_html/`.
