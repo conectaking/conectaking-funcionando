@@ -19,11 +19,17 @@ const UPLOAD_CORS_ORIGINS = new Set([
     'http://127.0.0.1:5500', 'http://127.0.0.1:5000', 'http://127.0.0.1:3000',
     'http://localhost:5500', 'http://localhost:5000', 'http://localhost:3000', 'http://localhost',
     'https://conectaking.com.br', 'https://www.conectaking.com.br', 'https://tag.conectaking.com.br',
+    'https://cnking.bio', 'https://www.cnking.bio',
     ...(process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean)
 ]);
 router.use((req, res, next) => {
     const origin = req.get('Origin');
-    const allow = origin && (UPLOAD_CORS_ORIGINS.has(origin) || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin));
+    const allow = origin && (
+        UPLOAD_CORS_ORIGINS.has(origin) ||
+        /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin) ||
+        /^https:\/\/([a-z0-9-]+\.)*conectaking\.com\.br$/i.test(origin) ||
+        /^https:\/\/(www\.)?cnking\.bio$/i.test(origin)
+    );
     if (allow) {
         res.set('Access-Control-Allow-Origin', origin);
         res.set('Access-Control-Allow-Credentials', 'true');

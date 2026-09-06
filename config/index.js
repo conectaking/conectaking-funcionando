@@ -66,6 +66,8 @@ const config = {
                 'https://conectaking.com.br',
                 'https://www.conectaking.com.br',
                 'https://tag.conectaking.com.br',
+                'https://cnking.bio',
+                'https://www.cnking.bio',
                 ...envList
             ]);
             function isConectakingSiteOrigin(origin) {
@@ -75,7 +77,9 @@ const config = {
                     return (
                         host === 'conectaking.com.br' ||
                         host === 'www.conectaking.com.br' ||
-                        host.endsWith('.conectaking.com.br')
+                        host.endsWith('.conectaking.com.br') ||
+                        host === 'cnking.bio' ||
+                        host === 'www.cnking.bio'
                     );
                 } catch (e) {
                     return false;

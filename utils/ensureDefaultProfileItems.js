@@ -15,8 +15,15 @@ async function ensureDefaultProfileItemsForUser(client, userId) {
     const n = parseInt(cnt.rows[0]?.c, 10) || 0;
     if (n > 0) return;
 
+    let usedSavepoint = false;
     try {
         await client.query('SAVEPOINT ensure_default_bible');
+        usedSavepoint = true;
+    } catch (_) {
+        // Fora de transação (ex.: GET /api/profile) — segue sem savepoint
+    }
+
+    try {
         const bibleItem = await client.query(
             `INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
              VALUES ($1, 'bible', 'Bíblia', true, 0) RETURNING id`,
@@ -26,11 +33,15 @@ async function ensureDefaultProfileItemsForUser(client, userId) {
             `INSERT INTO bible_items (profile_item_id, translation_code, is_visible) VALUES ($1, 'nvi', true)`,
             [bibleItem.rows[0].id]
         );
-        await client.query('RELEASE SAVEPOINT ensure_default_bible');
+        if (usedSavepoint) {
+            await client.query('RELEASE SAVEPOINT ensure_default_bible');
+        }
     } catch (err) {
-        try {
-            await client.query('ROLLBACK TO SAVEPOINT ensure_default_bible');
-        } catch (_) { /* ignore */ }
+        if (usedSavepoint) {
+            try {
+                await client.query('ROLLBACK TO SAVEPOINT ensure_default_bible');
+            } catch (_) { /* ignore */ }
+        }
         // CHECK/enum desatualizado ou tabela bible_items ausente — não deve bloquear save do cartão
         console.warn('[ensureDefaultProfileItems] skip bible default:', err?.message || err);
     }
