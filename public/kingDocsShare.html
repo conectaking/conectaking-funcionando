@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
@@ -147,7 +147,7 @@
     var dt = normShareKey(file.docType || '');
     return dt === 'foto pessoal' || dt.indexOf('foto pessoal') >= 0;
   }
-  /** Foto do cartÃ£o de visita: campo dedicado ou Â«Foto pessoalÂ» incluÃ­da no link */
+  /** Foto do cartão de visita: campo dedicado ou «Foto pessoal» incluída no link */
   function resolveProfileFileId(snap) {
     var pid = snap.profileImageFileId != null ? parseInt(snap.profileImageFileId, 10) : null;
     if (pid && Number.isFinite(pid)) return pid;
@@ -206,7 +206,7 @@
     const rm = await fetch(api('/api/king-docs/public/' + encodeURIComponent(token) + '/meta'));
     const meta = await rm.json();
     if (!meta.ok) {
-      root.innerHTML = '<div class="card"><p class="bad">' + esc(meta.message || 'Link invÃ¡lido ou expirado.') + '</p></div>';
+      root.innerHTML = '<div class="card"><p class="bad">' + esc(meta.message || 'Link inválido ou expirado.') + '</p></div>';
       return;
     }
     if (meta.needsPassword && !getViewer()) {
@@ -264,7 +264,7 @@
         if (mime.indexOf('image/') === 0) {
           var img = document.createElement('img');
           img.className = 'kd-share-preview-img';
-          img.alt = 'PrÃ©-visualizaÃ§Ã£o do documento';
+          img.alt = 'Pré-visualização do documento';
           img.src = bu;
           slot.appendChild(img);
         } else if (mime.indexOf('pdf') >= 0 || (blob.type && String(blob.type).indexOf('pdf') >= 0)) {
@@ -275,10 +275,10 @@
           slot.appendChild(iframe);
         } else {
           URL.revokeObjectURL(bu);
-          slot.innerHTML = '<p class="hint" style="margin:0">PrÃ©-visualizaÃ§Ã£o nÃ£o disponÃ­vel para este tipo de ficheiro. Usa o botÃ£o para descarregar.</p>';
+          slot.innerHTML = '<p class="hint" style="margin:0">Pré-visualização não disponível para este tipo de ficheiro. Usa o botão para descarregar.</p>';
         }
       }).catch(function () {
-        slot.innerHTML = '<p class="bad" style="margin:0;font-size:.85rem">NÃ£o foi possÃ­vel mostrar a prÃ©-visualizaÃ§Ã£o.</p>';
+        slot.innerHTML = '<p class="bad" style="margin:0;font-size:.85rem">Não foi possível mostrar a pré-visualização.</p>';
       });
     });
   }
@@ -331,7 +331,7 @@
         }
         if (row.file) {
           const fm = esc(row.file.mime || '');
-          html += '<div class="kd-preview-slot kd-preview-slot--inline" data-file-id="' + row.file.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar prÃ©-visualizaÃ§Ã£oâ€¦</p></div>';
+          html += '<div class="kd-preview-slot kd-preview-slot--inline" data-file-id="' + row.file.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização�?�</p></div>';
           const url = api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + row.file.id);
           html += '<div class="actions"><a class="btn kd-dl" href="' + esc(url) + '">Baixar ficheiro</a></div>';
         }
@@ -348,12 +348,12 @@
       if (shouldHideExtraForProfile(ed, profileFid)) return;
       html += '<div class="sec"><h2>' + esc(ed.label || 'Documento') + '</h2>';
       const fm = esc(ed.mime || '');
-      html += '<div class="kd-preview-slot" data-file-id="' + ed.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar prÃ©-visualizaÃ§Ã£oâ€¦</p></div>';
+      html += '<div class="kd-preview-slot" data-file-id="' + ed.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização�?�</p></div>';
       const url = api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + ed.id);
       html += '<div class="actions" style="margin-top:.5rem"><a class="btn primary kd-dl" href="' + esc(url) + '">Baixar</a></div></div>';
     });
 
-    html += '<p class="hint">Os links de download sÃ³ funcionam neste browser enquanto a sessÃ£o de partilha for vÃ¡lida. Se usaste senha, nÃ£o feches o separador sem guardar o que precisas.</p>';
+    html += '<p class="hint">Os links de download só funcionam neste browser enquanto a sessão de partilha for válida. Se usaste senha, não feches o separador sem guardar o que precisas.</p>';
     html += '</div>';
 
     root.innerHTML = html;
@@ -391,7 +391,7 @@
       a.addEventListener('click', function(ev) {
         ev.preventDefault();
         fetch(this.href, { headers: headersDl() }).then(function(r) {
-          if (!r.ok) { showToast('NÃ£o foi possÃ­vel descarregar.', true); return; }
+          if (!r.ok) { showToast('Não foi possível descarregar.', true); return; }
           return r.blob();
         }).then(function(blob) {
           if (!blob) return;

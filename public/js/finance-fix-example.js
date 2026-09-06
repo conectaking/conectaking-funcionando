@@ -1,48 +1,48 @@
 /**
- * CORREÇÃO DO FRONTEND DO FINANCEIRO
+ * CORRE��O DO FRONTEND DO FINANCEIRO
  * 
- * Este arquivo mostra como o frontend deve tratar a criação de despesas
- * para evitar que o botão fique travado em "Salvando..."
+ * Este arquivo mostra como o frontend deve tratar a cria��o de despesas
+ * para evitar que o bot�o fique travado em "Salvando..."
  * 
  * PROBLEMA IDENTIFICADO:
- * - Botão fica em estado "Salvando..." e não finaliza
- * - Página não fecha após salvar
+ * - Bot�o fica em estado "Salvando..." e n�o finaliza
+ * - P�gina n�o fecha ap�s salvar
  * 
- * SOLUÇÃO:
+ * SOLU��O:
  * - Adicionar tratamento de erro adequado
- * - Restaurar botão em caso de erro
- * - Fechar modal/página em caso de sucesso
+ * - Restaurar bot�o em caso de erro
+ * - Fechar modal/p�gina em caso de sucesso
  * - Adicionar timeout para evitar travamentos
  */
 
-// Função para criar despesa (CORRIGIDA)
+// Fun��o para criar despesa (CORRIGIDA)
 async function criarDespesa(formData) {
     const saveButton = document.querySelector('button[type="submit"]') || 
                        document.querySelector('.save-button') ||
                        document.querySelector('button:contains("Salvar")');
     
     if (!saveButton) {
-        console.error('Botão de salvar não encontrado');
+        console.error('Bot�o de salvar n�o encontrado');
         return;
     }
 
-    // Salvar HTML original do botão
+    // Salvar HTML original do bot�o
     const originalHTML = saveButton.innerHTML;
     const originalDisabled = saveButton.disabled;
 
     try {
-        // Desabilitar botão e mostrar estado de carregamento
+        // Desabilitar bot�o e mostrar estado de carregamento
         saveButton.disabled = true;
         saveButton.innerHTML = 'Salvando...';
 
-        // Obter token de autenticação
+        // Obter token de autentica��o
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         
         if (!token) {
-            throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+            throw new Error('Token de autentica��o n�o encontrado. Fa�a login novamente.');
         }
 
-        // Preparar dados da transação
+        // Preparar dados da transa��o
         const transactionData = {
             type: 'EXPENSE',
             amount: parseFloat(formData.amount) || 0,
@@ -62,7 +62,7 @@ async function criarDespesa(formData) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
 
-        // Fazer requisição
+        // Fazer requisi��o
         const response = await fetch('/api/finance/transactions', {
             method: 'POST',
             headers: {
@@ -75,7 +75,7 @@ async function criarDespesa(formData) {
 
         clearTimeout(timeoutId);
 
-        // Verificar se a resposta é OK
+        // Verificar se a resposta � OK
         if (!response.ok) {
             let errorMessage = 'Erro ao salvar despesa';
             try {
@@ -96,7 +96,7 @@ async function criarDespesa(formData) {
             throw new Error(result.error?.message || 'Erro ao salvar despesa');
         }
 
-        // SUCESSO - Atualizar botão e fechar modal
+        // SUCESSO - Atualizar bot�o e fechar modal
         saveButton.innerHTML = '<i class="fas fa-check"></i> Salvo!';
         saveButton.style.background = '#4caf50';
         
@@ -109,7 +109,7 @@ async function criarDespesa(formData) {
                      document.querySelector('.expense-modal');
         
         if (modal) {
-            // Fechar modal com animação
+            // Fechar modal com anima��o
             modal.style.opacity = '0';
             modal.style.transition = 'opacity 0.3s';
             setTimeout(() => {
@@ -119,17 +119,17 @@ async function criarDespesa(formData) {
                 if (overlay) overlay.remove();
             }, 300);
         } else {
-            // Se não houver modal, recarregar página ou redirecionar
+            // Se n�o houver modal, recarregar p�gina ou redirecionar
             window.location.reload();
         }
 
-        // Opcional: Mostrar notificação de sucesso
+        // Opcional: Mostrar notifica��o de sucesso
         mostrarNotificacao('Despesa salva com sucesso!', 'success');
 
     } catch (error) {
         console.error('Erro ao criar despesa:', error);
 
-        // Restaurar botão original
+        // Restaurar bot�o original
         saveButton.innerHTML = originalHTML;
         saveButton.disabled = originalDisabled;
 
@@ -137,7 +137,7 @@ async function criarDespesa(formData) {
         let errorMessage = 'Erro ao salvar despesa';
         
         if (error.name === 'AbortError') {
-            errorMessage = 'Tempo de espera esgotado. Verifique sua conexão e tente novamente.';
+            errorMessage = 'Tempo de espera esgotado. Verifique sua conex�o e tente novamente.';
         } else if (error.message) {
             errorMessage = error.message;
         }
@@ -149,13 +149,13 @@ async function criarDespesa(formData) {
     }
 }
 
-// Função auxiliar para mostrar notificações
+// Fun��o auxiliar para mostrar notifica��es
 function mostrarNotificacao(mensagem, tipo = 'info') {
-    // Remover notificações anteriores
+    // Remover notifica��es anteriores
     const existing = document.querySelector('.finance-notification');
     if (existing) existing.remove();
 
-    // Criar notificação
+    // Criar notifica��o
     const notification = document.createElement('div');
     notification.className = 'finance-notification';
     notification.style.cssText = `
@@ -173,7 +173,7 @@ function mostrarNotificacao(mensagem, tipo = 'info') {
     `;
     notification.textContent = mensagem;
 
-    // Adicionar animação
+    // Adicionar anima��o
     const style = document.createElement('style');
     style.textContent = `
         @keyframes slideIn {
@@ -194,14 +194,14 @@ function mostrarNotificacao(mensagem, tipo = 'info') {
 
     document.body.appendChild(notification);
 
-    // Remover após 5 segundos
+    // Remover ap�s 5 segundos
     setTimeout(() => {
         notification.style.animation = 'slideIn 0.3s ease-out reverse';
         setTimeout(() => notification.remove(), 300);
     }, 5000);
 }
 
-// Exemplo de uso no formulário
+// Exemplo de uso no formul�rio
 document.addEventListener('DOMContentLoaded', function() {
     const expenseForm = document.querySelector('#expense-form') || 
                        document.querySelector('form[data-type="expense"]');
@@ -210,19 +210,19 @@ document.addEventListener('DOMContentLoaded', function() {
         expenseForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Coletar dados do formulário
+            // Coletar dados do formul�rio
             const formData = new FormData(expenseForm);
             const data = {};
             for (const [key, value] of formData.entries()) {
                 data[key] = value;
             }
             
-            // Chamar função de criação
+            // Chamar fun��o de cria��o
             await criarDespesa(data);
         });
     }
 
-    // Adicionar listener ao botão de cancelar
+    // Adicionar listener ao bot�o de cancelar
     const cancelButton = document.querySelector('.cancel-button') ||
                          document.querySelector('button[type="button"]:contains("Cancelar")');
     
@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Exportar função para uso global
+// Exportar fun��o para uso global
 if (typeof window !== 'undefined') {
     window.criarDespesa = criarDespesa;
     window.mostrarNotificacao = mostrarNotificacao;

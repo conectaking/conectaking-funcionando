@@ -1,11 +1,11 @@
 /**
- * Dashboard – Aba Empresa (Minha equipe, códigos de convite, personalização da marca)
- * Lógica da aba Empresa (data-tab="times" / pane empresa) e Personalização da Marca (#branding-pane).
- * Incluir no dashboard.html após dashboard.js:
+ * Dashboard - Aba Empresa (Minha equipe, c�digos de convite, personaliza��o da marca)
+ * L�gica da aba Empresa (data-tab="times" / pane empresa) e Personaliza��o da Marca (#branding-pane).
+ * Incluir no dashboard.html ap�s dashboard.js:
  *   <script src="js/dashboard-empresa.js" defer></script>
  * No dashboard.js, ao exibir a aba Empresa, chamar:
  *   if (window.DashboardEmpresa && typeof DashboardEmpresa.init === 'function') DashboardEmpresa.init();
- * No fluxo mobile, quando o hash for #branding-pane, loadBrandingData() é chamado automaticamente.
+ * No fluxo mobile, quando o hash for #branding-pane, loadBrandingData() � chamado automaticamente.
  */
 (function (global) {
     'use strict';
@@ -27,8 +27,8 @@
         _initialized: false,
 
         /**
-         * Inicializa a aba Empresa (equipe, códigos convite, branding).
-         * Chamado quando o usuário abre a aba Empresa no sidebar.
+         * Inicializa a aba Empresa (equipe, c�digos convite, branding).
+         * Chamado quando o usu�rio abre a aba Empresa no sidebar.
          */
         init: function () {
             if (this._initialized) return;
@@ -40,29 +40,29 @@
         },
 
         _bindEmpresaPane: function (pane) {
-            // Migrar aqui: Minha equipe, códigos de convite, personalização (branding) da empresa.
-            // Ex.: botões, tabelas, modais que hoje estão no dashboard.js para a aba Empresa.
+            // Migrar aqui: Minha equipe, c�digos de convite, personaliza��o (branding) da empresa.
+            // Ex.: bot�es, tabelas, modais que hoje est�o no dashboard.js para a aba Empresa.
         },
 
         _bindBrandingPane: function () {
             var brandingPane = document.getElementById('branding-pane') || document.querySelector('[data-pane="branding"]');
             if (!brandingPane) return;
-            // Quando o pane de branding for exibido, carregar dados se necessário.
+            // Quando o pane de branding for exibido, carregar dados se necess�rio.
             // Ex.: new MutationObserver ou evento customizado disparado pelo dashboard.js.
         },
 
         /**
-         * Carrega dados da Personalização da Marca (branding).
-         * Chamado ao abrir a aba/pane de branding ou quando hash é #branding-pane (mobile).
+         * Carrega dados da Personaliza��o da Marca (branding).
+         * Chamado ao abrir a aba/pane de branding ou quando hash � #branding-pane (mobile).
          */
         loadBrandingData: function () {
             var pane = document.getElementById('branding-pane') || document.querySelector('[data-pane="branding"]');
             if (!pane) return Promise.resolve();
             var url = (API_BASE || '').replace(/\/$/, '') + '/api/account/status';
             return fetch(url, { credentials: 'include', headers: getAuthHeaders() })
-                .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('Não autenticado')); })
+                .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('N�o autenticado')); })
                 .then(function (data) {
-                    // Ex.: preencher formulário de logo, cores da empresa, etc.
+                    // Ex.: preencher formul�rio de logo, cores da empresa, etc.
                     if (typeof global.DashboardEmpresaOnBrandingLoaded === 'function') {
                         global.DashboardEmpresaOnBrandingLoaded(data);
                     }

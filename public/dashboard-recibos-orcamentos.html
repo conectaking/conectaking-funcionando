@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html class="dark" lang="pt-BR">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Painel â€” Recibos e OrÃ§amentos | ConectaKing</title>
+    <title>Painel �?" Recibos e Orçamentos | ConectaKing</title>
     <script src="https://www.conectaking.com.br/api-config.js"></script>
     <script>
         (function () {
@@ -51,9 +51,9 @@
             <span class="material-icons-outlined">receipt_long</span>
             <span class="text-[10px] font-semibold uppercase">Recibos</span>
         </a>
-        <a href="dashboard-recibos-orcamentos.html?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="OrÃ§amentos">
+        <a href="dashboard-recibos-orcamentos.html?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos">
             <span class="material-icons-outlined">request_quote</span>
-            <span class="text-[10px] font-semibold uppercase">OrÃ§amentos</span>
+            <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
         </a>
     </nav>
     <div class="flex flex-col gap-6 mt-6">
@@ -61,7 +61,7 @@
             <span class="material-icons-outlined">people</span>
             <span class="text-[10px] font-semibold uppercase">Clientes</span>
         </a>
-        <a href="./configuracoes-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="ConfiguraÃ§Ãµes">
+        <a href="./configuracoes-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Configurações">
             <span class="material-icons-outlined">settings</span>
             <span class="text-[10px] font-semibold uppercase">Config.</span>
         </a>
@@ -72,8 +72,8 @@
     <div class="max-w-4xl mx-auto w-full">
         <header class="mb-6 lg:mb-8 flex flex-col sm:flex-row flex-wrap justify-between items-start gap-4">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-2">Painel â€” Recibos e OrÃ§amentos</h1>
-                <p class="text-slate-500 dark:text-slate-400">Gerencie seus documentos e acesse as outras Ã¡reas do mÃ³dulo.</p>
+                <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-2">Painel �?" Recibos e Orçamentos</h1>
+                <p class="text-slate-500 dark:text-slate-400">Gerencie seus documentos e acesse as outras áreas do módulo.</p>
             </div>
             <a href="dashboard.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 hover:bg-slate-200 dark:hover:bg-black/40 transition-all text-inherit no-underline">
                 <span class="material-icons-outlined text-lg">arrow_back</span>
@@ -86,14 +86,14 @@
                 <span class="material-icons-outlined text-4xl text-primary">receipt_long</span>
                 <div>
                     <h2 class="font-bold text-lg dark:text-white">Recibo</h2>
-                    <p class="text-sm text-slate-500">Criar novo, continuar o Ãºltimo ou escolher na lista</p>
+                    <p class="text-sm text-slate-500">Criar novo, continuar o último ou escolher na lista</p>
                 </div>
             </button>
             <button type="button" id="btn-abrir-orcamento" data-tipo="orcamento" class="flex items-center gap-4 p-6 rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all text-left w-full">
                 <span class="material-icons-outlined text-4xl text-primary">request_quote</span>
                 <div>
-                    <h2 class="font-bold text-lg dark:text-white">OrÃ§amento</h2>
-                    <p class="text-sm text-slate-500">Criar novo, continuar o Ãºltimo ou escolher na lista</p>
+                    <h2 class="font-bold text-lg dark:text-white">Orçamento</h2>
+                    <p class="text-sm text-slate-500">Criar novo, continuar o último ou escolher na lista</p>
                 </div>
             </button>
         </div>
@@ -108,10 +108,10 @@
                     <select id="filter-tipo" class="text-sm rounded-lg bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark px-3 py-1">
                         <option value="">Todos</option>
                         <option value="recibo">Recibos</option>
-                        <option value="orcamento">OrÃ§amentos</option>
+                        <option value="orcamento">Orçamentos</option>
                     </select>
                 </div>
-                <span id="loading-docs" class="text-sm text-slate-500">A carregarâ€¦</span>
+                <span id="loading-docs" class="text-sm text-slate-500">A carregar�?�</span>
                 <div id="bulk-actions" class="flex items-center gap-3 hidden">
                     <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
                         <input type="checkbox" id="select-all" class="rounded border-slate-300 text-primary focus:ring-primary"/>
@@ -126,7 +126,7 @@
             <div id="lista-documentos" class="space-y-2 max-h-96 overflow-y-auto">
                 <!-- preenchido via JS -->
             </div>
-            <p id="empty-docs" class="text-slate-500 text-sm hidden">Nenhum documento ainda. Crie um recibo ou orÃ§amento acima.</p>
+            <p id="empty-docs" class="text-slate-500 text-sm hidden">Nenhum documento ainda. Crie um recibo ou orçamento acima.</p>
         </section>
     </div>
 </main>
@@ -134,15 +134,15 @@
 <div id="modal-escolha-doc" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-black/60" aria-hidden="true">
     <div class="w-full max-w-md rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark shadow-xl p-6" role="dialog" aria-labelledby="modal-escolha-titulo">
         <h3 id="modal-escolha-titulo" class="text-xl font-bold dark:text-white mb-1">Recibo</h3>
-        <p id="modal-escolha-sub" class="text-sm text-slate-500 dark:text-slate-400 mb-5">O que vocÃª deseja fazer?</p>
+        <p id="modal-escolha-sub" class="text-sm text-slate-500 dark:text-slate-400 mb-5">O que você deseja fazer?</p>
         <div class="flex flex-col gap-2">
             <button type="button" id="modal-btn-novo" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition-opacity text-left">
                 <span class="material-icons-outlined">add_circle</span>
-                <span><span class="block">Criar novo em branco</span><span class="block text-xs font-normal opacity-80">Documento vazio, nÃºmero novo</span></span>
+                <span><span class="block">Criar novo em branco</span><span class="block text-xs font-normal opacity-80">Documento vazio, número novo</span></span>
             </button>
             <button type="button" id="modal-btn-continuar" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 text-left hidden">
                 <span class="material-icons-outlined text-primary">edit</span>
-                <span><span class="block font-medium dark:text-white" id="modal-continuar-label">Continuar o Ãºltimo</span><span class="block text-xs text-slate-500" id="modal-continuar-sub"></span></span>
+                <span><span class="block font-medium dark:text-white" id="modal-continuar-label">Continuar o último</span><span class="block text-xs text-slate-500" id="modal-continuar-sub"></span></span>
             </button>
             <button type="button" id="modal-btn-lista" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 text-left">
                 <span class="material-icons-outlined">list</span>
@@ -192,7 +192,7 @@
         tipo = (tipo || 'orcamento').toLowerCase();
         modalTipoAtual = tipo;
         var isRecibo = tipo === 'recibo';
-        var label = isRecibo ? 'Recibo' : 'OrÃ§amento';
+        var label = isRecibo ? 'Recibo' : 'Orçamento';
         document.getElementById('modal-escolha-titulo').textContent = label;
         document.getElementById('modal-escolha-sub').textContent = 'Escolha se quer um documento novo ou continuar um existente.';
         var ult = ultimoPorTipo[tipo];
@@ -200,8 +200,8 @@
         if (ult && ult.id) {
             btnCont.classList.remove('hidden');
             var tit = ult.titulo || (ult.emitente_json && ult.emitente_json.nome) || ('#' + ult.id);
-            document.getElementById('modal-continuar-label').textContent = 'Continuar o Ãºltimo ' + label.toLowerCase();
-            document.getElementById('modal-continuar-sub').textContent = tit + (ult.data_documento ? ' Â· ' + ult.data_documento.slice(0, 10) : '');
+            document.getElementById('modal-continuar-label').textContent = 'Continuar o último ' + label.toLowerCase();
+            document.getElementById('modal-continuar-sub').textContent = tit + (ult.data_documento ? ' · ' + ult.data_documento.slice(0, 10) : '');
             btnCont.dataset.id = String(ult.id);
         } else {
             btnCont.classList.add('hidden');
@@ -252,7 +252,7 @@
 
     fetch(API, { method: 'GET', credentials: 'include', headers: getAuthHeaders() })
         .then(function(r) {
-            if (r.status === 401) { loading.textContent = 'FaÃ§a login para ver os documentos.'; return null; }
+            if (r.status === 401) { loading.textContent = 'Faça login para ver os documentos.'; return null; }
             return r.json().then(function(data) { return r.ok ? data : null; }).catch(function() { return null; });
         })
         .then(function(data) {
@@ -277,7 +277,7 @@
                 lista.innerHTML = '';
                 docs.forEach(function(doc) {
                 var tipo = (doc.tipo || 'orcamento').toLowerCase();
-                var label = tipo === 'recibo' ? 'Recibo' : 'OrÃ§amento';
+                var label = tipo === 'recibo' ? 'Recibo' : 'Orçamento';
                 var titulo = doc.titulo || (doc.emitente_json && doc.emitente_json.nome) || ('Documento #' + doc.id);
                 var dataDoc = doc.data_documento ? doc.data_documento.slice(0, 10) : '';
                 var row = document.createElement('div');

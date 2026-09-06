@@ -1,5 +1,5 @@
 /**
- * Sales Page - JavaScript da Página Pública
+ * Sales Page - JavaScript da P�gina P�blica
  * Gerencia carrinho, checkout WhatsApp e tracking de eventos
  */
 
@@ -32,7 +32,7 @@
     const shareUrlInput = document.getElementById('share-url-input');
     const copyUrlBtn = document.getElementById('copy-url-btn');
 
-    // Produtos disponíveis (carregados da página)
+    // Produtos dispon�veis (carregados da p�gina)
     const products = {};
     document.querySelectorAll('.product-card').forEach(card => {
         const productId = card.dataset.productId;
@@ -152,10 +152,10 @@
                     return { items: [], total: 0 };
                 }
                 const cart = JSON.parse(cartStr);
-                // Garantir estrutura válida
+                // Garantir estrutura v�lida
                 if (!cart.items) cart.items = [];
                 if (typeof cart.total !== 'number') {
-                    // Recalcular total se não for número
+                    // Recalcular total se n�o for n�mero
                     cart.total = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 }
                 return cart;
@@ -188,7 +188,7 @@
             const product = products[productId];
             
             if (!product) {
-                console.error('Produto não encontrado:', productId);
+                console.error('Produto n�o encontrado:', productId);
                 return;
             }
 
@@ -276,8 +276,8 @@
                 }
                 console.log('Contador atualizado com sucesso:', itemCount);
             } else {
-                console.warn('Elemento cart-count não encontrado. Tentando novamente...');
-                // Tentar novamente após um pequeno delay
+                console.warn('Elemento cart-count n�o encontrado. Tentando novamente...');
+                // Tentar novamente ap�s um pequeno delay
                 setTimeout(() => {
                     const retryCartCount = document.getElementById('cart-count');
                     if (retryCartCount) {
@@ -289,7 +289,7 @@
                         }
                         console.log('Contador atualizado na segunda tentativa:', itemCount);
                     } else {
-                        console.error('Elemento cart-count ainda não encontrado após retry');
+                        console.error('Elemento cart-count ainda n�o encontrado ap�s retry');
                     }
                 }, 100);
             }
@@ -299,7 +299,7 @@
             if (cartTotalEl) {
                 cartTotalEl.textContent = this.formatCurrency(cart.total);
             } else {
-                console.warn('Elemento cart-total não encontrado');
+                console.warn('Elemento cart-total n�o encontrado');
             }
             
             // Renderizar itens
@@ -308,7 +308,7 @@
 
         renderItems(cart) {
             if (!cartItems) {
-                console.error('Elemento cart-items não encontrado');
+                console.error('Elemento cart-items n�o encontrado');
                 return;
             }
 
@@ -316,7 +316,7 @@
                 cartItems.innerHTML = `
                     <div class="cart-empty-state">
                         <i class="fas fa-shopping-cart" aria-hidden="true"></i>
-                        <p class="cart-empty-title">Seu carrinho está vazio</p>
+                        <p class="cart-empty-title">Seu carrinho est� vazio</p>
                         <p class="cart-empty-text">Adicione produtos para finalizar sua compra pelo WhatsApp.</p>
                         <button type="button" class="btn-continue-shopping" id="cart-btn-continue-shopping">
                             <i class="fas fa-arrow-left"></i> Continuar comprando
@@ -333,14 +333,14 @@
                 return;
             }
 
-            // Filtrar apenas itens válidos (produtos que ainda existem na página)
+            // Filtrar apenas itens v�lidos (produtos que ainda existem na p�gina)
             const validItems = cart.items.filter(item => {
-                // Se o produto não existe mais na página, manter no carrinho mesmo assim
-                // (pode ter sido removido temporariamente ou o usuário pode querer finalizar a compra)
+                // Se o produto n�o existe mais na p�gina, manter no carrinho mesmo assim
+                // (pode ter sido removido temporariamente ou o usu�rio pode querer finalizar a compra)
                 return item.id && item.name && item.price;
             });
 
-            // Se houver itens inválidos, atualizar o carrinho
+            // Se houver itens inv�lidos, atualizar o carrinho
             if (validItems.length !== cart.items.length) {
                 cart.items = validItems;
                 this.calculateTotal(cart);
@@ -363,7 +363,7 @@
                 </div>
             `).join('');
 
-            // Adicionar event listeners após renderizar (CSP safe)
+            // Adicionar event listeners ap�s renderizar (CSP safe)
             this.attachCartItemListeners();
         },
 
@@ -553,25 +553,25 @@
     function formatWhatsAppMessage(cart, storeInfo, customerName, observation) {
         // Obter profile_slug e base URL
         const baseUrl = window.location.origin;
-        const profileSlug = getProfileSlug(); // Função auxiliar para obter profile_slug
+        const profileSlug = getProfileSlug(); // Fun��o auxiliar para obter profile_slug
         
-        let message = 'Olá! Gostaria de comprar:\n\n';
+        let message = 'Ol�! Gostaria de comprar:\n\n';
 
         cart.items.forEach((item, index) => {
-            // Nome do produto (em maiúsculas)
+            // Nome do produto (em mai�sculas)
             message += `${item.name.toUpperCase()}\n`;
             
-            // Preço unitário
+            // Pre�o unit�rio
             message += `${Cart.formatCurrency(item.price)}\n`;
             
             // Quantidade
             message += `Quantidade: ${item.quantity}\n`;
             
-            // Link personalizável do produto
+            // Link personaliz�vel do produto
             const productUrl = `${baseUrl}/${profileSlug}/produto/${item.id}`;
-            message += `🔗 ${productUrl}`;
+            message += `?? ${productUrl}`;
             
-            // Adicionar linha em branco entre produtos (exceto no último)
+            // Adicionar linha em branco entre produtos (exceto no �ltimo)
             if (index < cart.items.length - 1) {
                 message += '\n\n';
             } else {
@@ -586,14 +586,14 @@
         }
 
         if (observation && observation.trim()) {
-            message += `\nObservação: ${observation.trim()}\n`;
+            message += `\nObserva��o: ${observation.trim()}\n`;
         }
 
         return message;
     }
 
     /**
-     * Obter profile_slug da URL atual ou de dados da página
+     * Obter profile_slug da URL atual ou de dados da p�gina
      */
     function getProfileSlug() {
         // Primeiro: tentar obter de data attribute do body
@@ -614,8 +614,8 @@
             return pathParts[0];
         }
         
-        // Último fallback: usar valor padrão (não ideal, mas evita erro)
-        console.warn('Profile slug não encontrado, usando fallback');
+        // �ltimo fallback: usar valor padr�o (n�o ideal, mas evita erro)
+        console.warn('Profile slug n�o encontrado, usando fallback');
         return 'perfil';
     }
 
@@ -635,15 +635,15 @@
         const cart = Cart.get();
         
         if (cart.items.length === 0) {
-            alert('Seu carrinho está vazio!');
+            alert('Seu carrinho est� vazio!');
             return;
         }
 
-        // Buscar informações da loja
+        // Buscar informa��es da loja
         const salesPageEl = document.querySelector('.sales-page');
         const whatsappNumber = salesPageEl?.dataset?.whatsappNumber || '';
         if (!whatsappNumber) {
-            alert('Número do WhatsApp não configurado!');
+            alert('N�mero do WhatsApp n�o configurado!');
             return;
         }
 
@@ -658,7 +658,7 @@
         // Tracking
         trackCheckout();
 
-        // Limpar carrinho após enviar para WhatsApp
+        // Limpar carrinho ap�s enviar para WhatsApp
         Cart.clear();
         
         // Fechar sidebar do carrinho se estiver aberto
@@ -697,7 +697,7 @@
     /**
      * Event Listeners
      */
-    // Configurar listeners do carrinho após o DOM estar pronto
+    // Configurar listeners do carrinho ap�s o DOM estar pronto
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', setupCartListeners);
     } else {
@@ -716,10 +716,10 @@
 
     checkoutBtn?.addEventListener('click', checkout);
 
-    // Função para adicionar event listeners aos botões de adicionar ao carrinho
+    // Fun��o para adicionar event listeners aos bot�es de adicionar ao carrinho
     function attachAddToCartListeners() {
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-            // Verificar se já tem listener
+            // Verificar se j� tem listener
             if (btn.dataset.listenerAttached === 'true') {
                 return;
             }
@@ -734,7 +734,7 @@
                     Cart.add(productId, 1);
                     trackProductClick(productId);
                 } else {
-                    console.error('Produto não encontrado:', productId, products);
+                    console.error('Produto n�o encontrado:', productId, products);
                 }
             });
         });
@@ -756,17 +756,17 @@
         observer.observe(productsGridForObserver, { childList: true, subtree: true });
     }
 
-    // Prevenir que o link do produto dispare quando clicar no botão de adicionar ao carrinho
+    // Prevenir que o link do produto dispare quando clicar no bot�o de adicionar ao carrinho
     document.querySelectorAll('.product-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            // Se o clique foi em um botão ou elemento interativo, não seguir o link
+            // Se o clique foi em um bot�o ou elemento interativo, n�o seguir o link
             if (e.target.closest('.add-to-cart-btn') || e.target.closest('.view-details-btn')) {
                 e.preventDefault();
             }
         });
     });
 
-    // Tracking de visualização de produtos (Intersection Observer)
+    // Tracking de visualiza��o de produtos (Intersection Observer)
     const observerOptions = {
         root: null,
         rootMargin: '0px',
@@ -790,7 +790,7 @@
     });
 
     /**
-     * Configurar controles de visualização
+     * Configurar controles de visualiza��o
      */
     function setupViewControls() {
         const productsGridEl = document.getElementById('products-grid');
@@ -798,19 +798,19 @@
         const sizeButtons = document.querySelectorAll('.size-btn');
 
         if (!productsGridEl) {
-            console.warn('Elemento products-grid não encontrado');
+            console.warn('Elemento products-grid n�o encontrado');
             return;
         }
 
-        // Carregar preferências do localStorage
+        // Carregar prefer�ncias do localStorage
         const savedViewMode = localStorage.getItem(`sales_page_view_mode_${salesPageId}`) || 'grid';
         const savedCardSize = localStorage.getItem(`sales_page_card_size_${salesPageId}`) || 'small';
 
-        // Aplicar preferências salvas
+        // Aplicar prefer�ncias salvas
         productsGridEl.setAttribute('data-view-mode', savedViewMode);
         productsGridEl.setAttribute('data-card-size', savedCardSize);
         
-        // Atualizar botões ativos
+        // Atualizar bot�es ativos
         viewModeButtons.forEach(btn => {
             if (btn.dataset.mode === savedViewMode) {
                 btn.classList.add('active');
@@ -827,7 +827,7 @@
             }
         });
 
-        // Event listeners para modo de visualização
+        // Event listeners para modo de visualiza��o
         viewModeButtons.forEach(btn => {
             // Remover listeners antigos
             const newBtn = btn.cloneNode(true);
@@ -837,9 +837,9 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const mode = newBtn.dataset.mode;
-                console.log('Modo de visualização clicado:', mode);
+                console.log('Modo de visualiza��o clicado:', mode);
                 
-                // Atualizar botões
+                // Atualizar bot�es
                 document.querySelectorAll('.view-btn').forEach(b => {
                     if (b.dataset.mode === mode) {
                         b.classList.add('active');
@@ -869,7 +869,7 @@
                 const size = newBtn.dataset.size;
                 console.log('Tamanho clicado:', size);
                 
-                // Atualizar botões
+                // Atualizar bot�es
                 document.querySelectorAll('.size-btn').forEach(b => {
                     if (b.dataset.size === size) {
                         b.classList.add('active');
@@ -888,14 +888,14 @@
         });
     }
 
-    // Configurar controles de visualização após o DOM estar pronto
+    // Configurar controles de visualiza��o ap�s o DOM estar pronto
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', setupViewControls);
     } else {
         setTimeout(setupViewControls, 100);
     }
 
-    // Inicialização - garantir que o carrinho seja restaurado quando a página carregar
+    // Inicializa��o - garantir que o carrinho seja restaurado quando a p�gina carregar
     function initializeCart() {
         console.log('Inicializando carrinho...');
         try {
@@ -919,11 +919,11 @@
                 cart.total = 0;
             }
             
-            // Validar e manter itens válidos
+            // Validar e manter itens v�lidos
             if (cart.items && cart.items.length > 0) {
-                // Recalcular total para garantir consistência
+                // Recalcular total para garantir consist�ncia
                 Cart.calculateTotal(cart);
-                // Salvar novamente para garantir que está sincronizado
+                // Salvar novamente para garantir que est� sincronizado
                 localStorage.setItem(CART_KEY, JSON.stringify(cart));
                 console.log('Carrinho validado e salvo. Total de itens:', cart.items.length);
             }
@@ -933,7 +933,7 @@
             console.log('Carrinho inicializado com', cart.items.length, 'itens');
         } catch (error) {
             console.error('Erro ao inicializar carrinho:', error);
-            // Em caso de erro, limpar e começar do zero
+            // Em caso de erro, limpar e come�ar do zero
             localStorage.removeItem(CART_KEY);
             Cart.updateUI();
         }
@@ -958,7 +958,7 @@
      */
     const Share = {
         /**
-         * Obter URL atual da página
+         * Obter URL atual da p�gina
          */
         getCurrentUrl() {
             return window.location.href;
@@ -1032,7 +1032,7 @@
         },
 
         /**
-         * Copiar link para área de transferência
+         * Copiar link para �rea de transfer�ncia
          */
         async copyLink() {
             const data = this.getShareData();
@@ -1049,8 +1049,8 @@
                         copyBtn.style.color = '';
                     }, 2000);
                 }
-                // Mostrar notificação
-                this.showNotification('Link copiado para a área de transferência!');
+                // Mostrar notifica��o
+                this.showNotification('Link copiado para a �rea de transfer�ncia!');
             } catch (error) {
                 console.error('Erro ao copiar link:', error);
                 // Fallback: selecionar texto do input
@@ -1064,10 +1064,10 @@
         },
 
         /**
-         * Mostrar notificação
+         * Mostrar notifica��o
          */
         showNotification(message) {
-            // Criar elemento de notificação
+            // Criar elemento de notifica��o
             const notification = document.createElement('div');
             notification.className = 'share-notification';
             notification.textContent = message;
@@ -1078,7 +1078,7 @@
                 notification.classList.add('show');
             }, 10);
             
-            // Remover após 3 segundos
+            // Remover ap�s 3 segundos
             setTimeout(() => {
                 notification.classList.remove('show');
                 setTimeout(() => {
@@ -1118,7 +1118,7 @@
          * Inicializar compartilhamento
          */
         init() {
-            // Botão de compartilhamento
+            // Bot�o de compartilhamento
             shareBtn?.addEventListener('click', () => {
                 this.openMenu();
             });
@@ -1132,7 +1132,7 @@
                 this.closeMenu();
             });
 
-            // Botões de compartilhamento
+            // Bot�es de compartilhamento
             document.querySelectorAll('.share-option-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const platform = btn.dataset.share;
@@ -1159,12 +1159,12 @@
                 });
             });
 
-            // Botão copiar URL
+            // Bot�o copiar URL
             copyUrlBtn?.addEventListener('click', () => {
                 this.copyLink();
             });
 
-            // Tentar usar Web Share API se disponível (mobile)
+            // Tentar usar Web Share API se dispon�vel (mobile)
             if (navigator.share) {
                 shareBtn?.addEventListener('click', async (e) => {
                     // Se for mobile, usar Web Share API nativa
@@ -1189,7 +1189,7 @@
         }
     };
 
-    // Modal de vídeo do produto (YouTube)
+    // Modal de v�deo do produto (YouTube)
     function getYouTubeVideoId(url) {
         if (!url || typeof url !== 'string') return null;
         const u = url.trim();

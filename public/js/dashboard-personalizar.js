@@ -1,8 +1,8 @@
 /**
- * Dashboard – Aba Personalizar (Editar Conecta King)
- * Lógica da aba #personalizar-editor: tema, cores, fonte, botões, fundo, logo do cartão.
+ * Dashboard - Aba Personalizar (Editar Conecta King)
+ * L�gica da aba #personalizar-editor: tema, cores, fonte, bot�es, fundo, logo do cart�o.
  * Backend: modules/editarCartao/personalizar/
- * Incluir no dashboard.html após dashboard.js:
+ * Incluir no dashboard.html ap�s dashboard.js:
  *   <script src="js/dashboard-personalizar.js" defer></script>
  * No dashboard.js, ao exibir a aba Personalizar, chamar:
  *   if (window.DashboardPersonalizar && typeof DashboardPersonalizar.init === 'function') DashboardPersonalizar.init();
@@ -14,8 +14,8 @@
         _initialized: false,
 
         /**
-         * Inicializa a aba Personalizar (tema, cores, botões, logo).
-         * Chamado quando o usuário abre a aba Editar Conecta King → Personalizar.
+         * Inicializa a aba Personalizar (tema, cores, bot�es, logo).
+         * Chamado quando o usu�rio abre a aba Editar Conecta King ? Personalizar.
          */
         init: function () {
             if (this._initialized) return;
@@ -26,8 +26,8 @@
         },
 
         /**
-         * Associa eventos a tema, cores, botões, upload de logo, etc.
-         * Migrar aqui a lógica que hoje está no dashboard.js para a aba Personalizar.
+         * Associa eventos a tema, cores, bot�es, upload de logo, etc.
+         * Migrar aqui a l�gica que hoje est� no dashboard.js para a aba Personalizar.
          */
         _bindThemeAndColors: function (container) {
             // Ex.: selects de tema, color pickers, preview, upload de logo
@@ -36,8 +36,8 @@
         },
 
         /**
-         * Recarrega o preview do perfil após Publicar alterações (evita ter que atualizar a página).
-         * Chamar após save-all com sucesso, ex.:
+         * Recarrega o preview do perfil ap�s Publicar altera��es (evita ter que atualizar a p�gina).
+         * Chamar ap�s save-all com sucesso, ex.:
          *   fetch('/api/profile/save-all', {...}).then(r=>r.json()).then(function(data){
          *     if (data.success && data.timestamp && window.DashboardPersonalizar && DashboardPersonalizar.reloadPreview) {
          *       DashboardPersonalizar.reloadPreview(data.timestamp);

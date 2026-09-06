@@ -1,7 +1,7 @@
 /**
  * Enriquece o Cropper do dashboard antes de dashboard.js carregar:
- * - Mostra medidas do corte (px) e proporção aproximada
- * - Faixa tracejada central (referência para telemóvel em fundo "cover")
+ * - Mostra medidas do corte (px) e propor��o aproximada
+ * - Faixa tracejada central (refer�ncia para telem�vel em fundo "cover")
  */
 (function () {
     'use strict';
@@ -9,7 +9,7 @@
     if (!Native || Native.__ckEnhanceWrap) return;
 
     function fmtRatio(w, h) {
-        if (!w || !h) return '—';
+        if (!w || !h) return '-';
         var r = w / h;
         if (Math.abs(r - 16 / 9) < 0.04) return '16 : 9';
         if (Math.abs(r - 9 / 16) < 0.04) return '9 : 16';
@@ -24,7 +24,7 @@
         if (!d || !sz || !ar) return;
         var w = Math.max(0, Math.round(Number(d.width) || 0));
         var h = Math.max(0, Math.round(Number(d.height) || 0));
-        sz.textContent = w + ' × ' + h + ' px';
+        sz.textContent = w + ' � ' + h + ' px';
         ar.textContent = fmtRatio(w, h);
     }
 
@@ -41,7 +41,7 @@
         if (!box || box.querySelector('.ck-crop-mobile-strip')) return;
         var strip = document.createElement('div');
         strip.className = 'ck-crop-mobile-strip';
-        strip.setAttribute('title', 'Zona central aproximada em ecrã estreito (telefone)');
+        strip.setAttribute('title', 'Zona central aproximada em ecr� estreito (telefone)');
         box.appendChild(strip);
     }
 

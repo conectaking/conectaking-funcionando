@@ -1,8 +1,8 @@
 /**
- * Oculta no menu do dashboard itens cujo módulo não está no plano (module_plan_availability
- * + individual_user_plans − exclusions), via flags de /api/account/status (ex.: Gestão Financeira,
+ * Oculta no menu do dashboard itens cujo m�dulo n�o est� no plano (module_plan_availability
+ * + individual_user_plans ? exclusions), via flags de /api/account/status (ex.: Gest�o Financeira,
  * Contratos, Agenda, King Forms, etc.).
- * Inclua este script no dashboard.html e chame applyModulesVisibility(user) após carregar o usuário,
+ * Inclua este script no dashboard.html e chame applyModulesVisibility(user) ap�s carregar o usu�rio,
  * OU chame initModulesByPlan() para buscar /api/account/status e aplicar.
  */
 
@@ -29,7 +29,7 @@
      */
     function applyModulesVisibility(user) {
         if (!user) {
-            console.warn('[applyModulesVisibility] Usuário não fornecido');
+            console.warn('[applyModulesVisibility] Usu�rio n�o fornecido');
             return;
         }
 
@@ -40,7 +40,7 @@
             }
         } catch (e) {}
 
-        console.log('[applyModulesVisibility] Aplicando visibilidade dos módulos:', {
+        console.log('[applyModulesVisibility] Aplicando visibilidade dos m�dulos:', {
             hasFinance: user.hasFinance,
             hasModoEmpresa: user.hasModoEmpresa,
             hasBranding: user.hasBranding,
@@ -48,7 +48,7 @@
             hasDigitalForm: user.hasDigitalForm
         });
 
-        /** IDs estáveis do dashboard — evita fallback por texto quando o HTML ainda não tem data-module. */
+        /** IDs est�veis do dashboard - evita fallback por texto quando o HTML ainda n�o tem data-module. */
         var explicitSidebarIds = {
             finance: ['#finance-link'],
             branding: ['#branding-link'],
@@ -76,10 +76,10 @@
         }
 
         map.forEach(function (item) {
-            // Verificar se o módulo está ativo (true ou 1 ou 'true')
+            // Verificar se o m�dulo est� ativo (true ou 1 ou 'true')
             var raw = user[item.key];
             var show = raw === true || raw === 1 || raw === 'true';
-            /* Contas novas: API por vezes omite chaves — não assumir "sem módulo" (ocultaria atalhos). */
+            /* Contas novas: API por vezes omite chaves - n�o assumir "sem m�dulo" (ocultaria atalhos). */
             if (raw === undefined) {
                 if (
                     item.key === 'hasDigitalForm' ||
@@ -99,9 +99,9 @@
                     if (n) arr.push(n);
                 });
             }
-            /* Não usar busca por texto: o seletor "aside a.nav-link" apanha Editar/Compartilhar e falsos positivos. */
+            /* N�o usar busca por texto: o seletor "aside a.nav-link" apanha Editar/Compartilhar e falsos positivos. */
             
-            console.log('[applyModulesVisibility] Módulo ' + item.module + ': show=' + show + ', encontrados ' + arr.length + ' elementos');
+            console.log('[applyModulesVisibility] M�dulo ' + item.module + ': show=' + show + ', encontrados ' + arr.length + ' elementos');
             
             arr.forEach(function (el) {
                 var target = resolveMenuRow(el);
@@ -115,10 +115,10 @@
                     target.style.visibility = '';
                     target.removeAttribute('hidden');
                     target.classList.remove('hidden', 'd-none');
-                    console.log('[applyModulesVisibility] ✅ Mostrando:', item.module, target);
+                    console.log('[applyModulesVisibility] ? Mostrando:', item.module, target);
                 } else {
                     target.style.display = 'none';
-                    console.log('[applyModulesVisibility] ❌ Ocultando:', item.module, target);
+                    console.log('[applyModulesVisibility] ? Ocultando:', item.module, target);
                 }
             });
         });
@@ -127,7 +127,7 @@
     }
 
     /**
-     * Itens que não são "módulos por plano" — nunca devem ficar escondidos por engano de CSS/JS antigo.
+     * Itens que n�o s�o "m�dulos por plano" - nunca devem ficar escondidos por engano de CSS/JS antigo.
      */
     function ensureCoreSidebarNavVisible() {
         var sel = [
@@ -157,8 +157,8 @@
     }
 
     /**
-     * Busca /api/account/status e aplica a visibilidade dos módulos no menu.
-     * Chame após o DOM estar pronto (ex.: no load do dashboard).
+     * Busca /api/account/status e aplica a visibilidade dos m�dulos no menu.
+     * Chame ap�s o DOM estar pronto (ex.: no load do dashboard).
      */
     function initModulesByPlan() {
         var base =
@@ -173,9 +173,9 @@
             .then(applyModulesVisibility)
             .catch(function (err) {
                 if (err && err.status === 404) return;
-                /* Isto é só JSON do plano/módulos; a página HTML continua no front (origem atual). */
+                /* Isto � s� JSON do plano/m�dulos; a p�gina HTML continua no front (origem atual). */
                 console.warn(
-                    '[initModulesByPlan] Falha ao falar com a API (não é o HTML do dashboard):',
+                    '[initModulesByPlan] Falha ao falar com a API (n�o � o HTML do dashboard):',
                     url,
                     err && err.status ? 'HTTP ' + err.status : err
                 );

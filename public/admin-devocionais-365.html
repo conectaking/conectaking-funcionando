@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BÃ­blia &amp; Devocionais (ADM)</title>
+    <title>Bíblia &amp; Devocionais (ADM)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -80,22 +80,22 @@
     </style>
 </head>
 <body>
-    <!-- admin-dev365-ui: gerar-por-ia + checkboxes + remover-seleccionados â€” se nÃ£o vir isto no "Ver cÃ³digo-fonte", o ficheiro no servidor estÃ¡ desactualizado -->
+    <!-- admin-dev365-ui: gerar-por-ia + checkboxes + remover-seleccionados �?" se não vir isto no "Ver código-fonte", o ficheiro no servidor está desactualizado -->
     <div class="wrap">
-        <h1><i class="fas fa-book-bible"></i> BÃ­blia &amp; Devocionais (ADM)</h1>
-        <p class="sub">Admin da BÃ­blia no cartÃ£o: <strong>Devocional 365</strong>, <strong>Prosperidade antes de dormir</strong> (Do Fracasso ao Legado), plano de leitura e estudos por livro. Requer token de administrador.</p>
+        <h1><i class="fas fa-book-bible"></i> Bíblia &amp; Devocionais (ADM)</h1>
+        <p class="sub">Admin da Bíblia no cartão: <strong>Devocional 365</strong>, <strong>Prosperidade antes de dormir</strong> (Do Fracasso ao Legado), plano de leitura e estudos por livro. Requer token de administrador.</p>
 
         <div id="flash"></div>
 
         <div class="auth-bar">
-            <label style="flex:1;min-width:220px">Token (ou inicie sessÃ£o no dashboard no mesmo domÃ­nio)
-                <input type="password" class="token-input" id="token-manual" placeholder="Cole Bearer token se necessÃ¡rio" autocomplete="off">
+            <label style="flex:1;min-width:220px">Token (ou inicie sessão no dashboard no mesmo domínio)
+                <input type="password" class="token-input" id="token-manual" placeholder="Cole Bearer token se necessário" autocomplete="off">
             </label>
             <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-save"></i> Usar token</button>
         </div>
         <div class="auth-bar" style="margin-top:-8px">
-            <label style="flex:1;min-width:260px">URL base da API (obrigatÃ³rio se esta pÃ¡gina estÃ¡ no Hostinger sem /api â€” ex.: <code style="color:#7dd3fc">https://www.conectaking.com.br</code>)
-                <input type="text" class="token-input" id="api-base-url" placeholder="Deixe vazio para usar o mesmo domÃ­nio desta pÃ¡gina" autocomplete="off">
+            <label style="flex:1;min-width:260px">URL base da API (obrigatório se esta página está no Hostinger sem /api �?" ex.: <code style="color:#7dd3fc">https://www.conectaking.com.br</code>)
+                <input type="text" class="token-input" id="api-base-url" placeholder="Deixe vazio para usar o mesmo domínio desta página" autocomplete="off">
             </label>
             <button type="button" class="btn btn-secondary" id="btn-save-api-base"><i class="fas fa-link"></i> Guardar URL</button>
         </div>
@@ -103,15 +103,15 @@
         <div class="tabs" role="tablist">
             <button type="button" class="active" data-tab="dev365"><i class="fas fa-calendar-alt"></i> Devocionais 365</button>
             <button type="button" data-tab="prosperidade"><i class="fas fa-moon"></i> Prosperidade antes de dormir</button>
-            <button type="button" data-tab="plano"><i class="fas fa-book-open"></i> Um capÃ­tulo por dia</button>
+            <button type="button" data-tab="plano"><i class="fas fa-book-open"></i> Um capítulo por dia</button>
             <button type="button" data-tab="estudo"><i class="fas fa-book-reader"></i> Estudo por livro</button>
             <button type="button" data-tab="ajuda"><i class="fas fa-question-circle"></i> Ajuda</button>
         </div>
 
         <section id="panel-dev365" class="panel active">
             <div class="card">
-                <h2><i class="fas fa-palette"></i> Temas por mÃªs (ficheiro no seu computador)</h2>
-                <p style="margin-bottom:12px"><strong>Carregar temas</strong> abre um ficheiro JSON no PC e preenche os meses que existirem no ficheiro (se tiver 12 meses, preenche os 12; se tiver sÃ³ 2, sÃ³ esses dois â€” os restantes ficam vazios). <strong>Guardar temas editados</strong> grava no computador o que estÃ¡ nos campos (descarga de JSON). A geraÃ§Ã£o com IA abaixo continua a usar o servidor (URL da API + token).</p>
+                <h2><i class="fas fa-palette"></i> Temas por mês (ficheiro no seu computador)</h2>
+                <p style="margin-bottom:12px"><strong>Carregar temas</strong> abre um ficheiro JSON no PC e preenche os meses que existirem no ficheiro (se tiver 12 meses, preenche os 12; se tiver só 2, só esses dois �?" os restantes ficam vazios). <strong>Guardar temas editados</strong> grava no computador o que está nos campos (descarga de JSON). A geração com IA abaixo continua a usar o servidor (URL da API + token).</p>
                 <input type="file" id="themes-file-input" accept=".json,application/json" style="display:none" aria-hidden="true">
                 <div class="row">
                     <div>
@@ -120,14 +120,14 @@
                     </div>
                     <button type="button" class="btn btn-secondary" id="btn-themes-load"><i class="fas fa-folder-open"></i> Carregar temas</button>
                     <button type="button" class="btn btn-secondary" id="btn-themes-save"><i class="fas fa-save"></i> Guardar temas editados</button>
-                    <button type="button" class="btn btn-secondary" id="btn-themes-generate-all"><i class="fas fa-magic"></i> Gerar linha para os 12 meses (automÃ¡tico)</button>
+                    <button type="button" class="btn btn-secondary" id="btn-themes-generate-all"><i class="fas fa-magic"></i> Gerar linha para os 12 meses (automático)</button>
                 </div>
                 <div id="themes-months-host" style="margin-top:14px"></div>
             </div>
 
             <div class="card" id="card-batch-job">
-                <h2><i class="fas fa-cloud"></i> Gerar vÃ¡rios meses (civil) â€” sÃ­ncrono ou segundo plano</h2>
-                <p style="margin-bottom:10px">Marque os meses e o ano civil. <strong>Gerar agora</strong> bloqueia atÃ© terminar. <strong>Segundo plano</strong> continua no servidor; ao recarregar a pÃ¡gina, o progresso reaparece se o trabalho ainda existir na memÃ³ria do Render.</p>
+                <h2><i class="fas fa-cloud"></i> Gerar vários meses (civil) �?" síncrono ou segundo plano</h2>
+                <p style="margin-bottom:10px">Marque os meses e o ano civil. <strong>Gerar agora</strong> bloqueia até terminar. <strong>Segundo plano</strong> continua no servidor; ao recarregar a página, o progresso reaparece se o trabalho ainda existir na memória do Render.</p>
                 <div class="row">
                     <div>
                         <label for="batch-year">Ano civil</label>
@@ -136,7 +136,7 @@
                 </div>
                 <div class="month-checks" id="batch-month-checks"></div>
                 <div class="row" style="margin-top:8px">
-                    <button type="button" class="btn" id="btn-batch-sync"><i class="fas fa-play"></i> Gerar agora (sÃ­ncrono)</button>
+                    <button type="button" class="btn" id="btn-batch-sync"><i class="fas fa-play"></i> Gerar agora (síncrono)</button>
                     <button type="button" class="btn btn-secondary" id="btn-batch-async"><i class="fas fa-server"></i> Gerar em segundo plano (servidor)</button>
                     <button type="button" class="btn btn-secondary" id="btn-batch-stop" style="display:none;border-color:rgba(220,80,80,0.5);color:#f5a097"><i class="fas fa-stop"></i> Parar</button>
                 </div>
@@ -147,11 +147,11 @@
             </div>
 
             <div class="card">
-                <h2><i class="fas fa-robot"></i> Gerar com IA â€” por dia ou por mÃªs civil</h2>
+                <h2><i class="fas fa-robot"></i> Gerar com IA �?" por dia ou por mês civil</h2>
                 <p style="margin-bottom:14px">Use os atalhos abaixo ou a tabela. Cada pedido chama a API no servidor (OpenAI configurada no Render).</p>
                 <div class="row">
                     <div>
-                        <label for="gen-day">Dia do ano (1â€“365)</label>
+                        <label for="gen-day">Dia do ano (1�?"365)</label>
                         <input type="number" id="gen-day" min="1" max="365" value="1" style="width:100px">
                     </div>
                     <div>
@@ -161,30 +161,30 @@
                     <div>
                         <label for="gen-tema">Modo de tema</label>
                         <select id="gen-tema">
-                            <option value="mes_auto">AutomÃ¡tico do mÃªs</option>
-                            <option value="ano_auto">AutomÃ¡tico do ano</option>
-                            <option value="mes_e_ano">MÃªs + ano</option>
+                            <option value="mes_auto">Automático do mês</option>
+                            <option value="ano_auto">Automático do ano</option>
+                            <option value="mes_e_ano">Mês + ano</option>
                             <option value="personalizado">Personalizado</option>
                         </select>
                     </div>
                     <div>
                         <label for="gen-estilo">Estilo</label>
                         <select id="gen-estilo">
-                            <option value="padrao">PadrÃ£o</option>
+                            <option value="padrao">Padrão</option>
                             <option value="cunha">Estilo cunha</option>
                         </select>
                     </div>
                     <div style="padding-bottom:8px;font-size:0.82rem;color:#888">
                         <input type="hidden" id="gen-full" value="1">
-                        GeraÃ§Ã£o <strong>sempre completa</strong>: novo tÃ­tulo, nova passagem e textos (a IA evita repetir versÃ­culos jÃ¡ usados no mÃªs).
+                        Geração <strong>sempre completa</strong>: novo título, nova passagem e textos (a IA evita repetir versículos já usados no mês).
                     </div>
                     <button type="button" class="btn" id="btn-gen-one-day"><i class="fas fa-magic"></i> Gerar este dia</button>
                 </div>
                 <div class="row">
                     <div>
-                        <label for="gen-month">MÃªs civil</label>
+                        <label for="gen-month">Mês civil</label>
                         <select id="gen-month">
-                            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">MarÃ§o</option><option value="4">Abril</option>
+                            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
                             <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
                             <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
                         </select>
@@ -197,29 +197,29 @@
                         <label for="gen-delay">Intervalo entre dias (ms)</label>
                         <input type="number" id="gen-delay" min="0" value="400" style="width:90px">
                     </div>
-                    <button type="button" class="btn" id="btn-gen-whole-month"><i class="fas fa-calendar-check"></i> Gerar todo o mÃªs</button>
+                    <button type="button" class="btn" id="btn-gen-whole-month"><i class="fas fa-calendar-check"></i> Gerar todo o mês</button>
                 </div>
-                <p class="msg-warn" style="margin-top:12px;margin-bottom:0"><i class="fas fa-info-circle"></i> Gerar um mÃªs inteiro pode levar vÃ¡rios minutos e consumir muitos tokens. NÃ£o feche o separador atÃ© o servidor responder.</p>
+                <p class="msg-warn" style="margin-top:12px;margin-bottom:0"><i class="fas fa-info-circle"></i> Gerar um mês inteiro pode levar vários minutos e consumir muitos tokens. Não feche o separador até o servidor responder.</p>
             </div>
 
             <div class="card">
                 <h2><i class="fas fa-list"></i> Todos os dias registados</h2>
                 <div class="row">
                     <div>
-                        <label for="filtro-dia">Filtrar por nÃºmero do dia</label>
+                        <label for="filtro-dia">Filtrar por número do dia</label>
                         <input type="text" id="filtro-dia" placeholder="ex.: 94 ou 9" style="width:140px">
                     </div>
                     <div>
-                        <label for="filtro-mes">Filtrar por mÃªs civil</label>
+                        <label for="filtro-mes">Filtrar por mês civil</label>
                         <select id="filtro-mes">
                             <option value="">Todos</option>
-                            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">MarÃ§o</option><option value="4">Abril</option>
+                            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
                             <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
                             <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-ano-tabela">Ano (para mÃªs civil)</label>
+                        <label for="filtro-ano-tabela">Ano (para mês civil)</label>
                         <input type="number" id="filtro-ano-tabela" min="2000" max="2100" style="width:100px">
                     </div>
                     <button type="button" class="btn btn-secondary" id="btn-reload-table"><i class="fas fa-sync"></i> Atualizar lista</button>
@@ -230,9 +230,9 @@
                         <thead>
                             <tr>
                                 <th>Dia</th>
-                                <th>TÃ­tulo</th>
+                                <th>Título</th>
                                 <th>Passagem</th>
-                                <th>PrÃ©via</th>
+                                <th>Prévia</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -244,15 +244,15 @@
 
         <section id="panel-prosperidade" class="panel">
             <div class="card">
-                <h2><i class="fas fa-moon"></i> Prosperidade antes de dormir â€” Do Fracasso ao Legado</h2>
-                <p>31 AtivaÃ§Ãµes (ProvÃ©rbios 1â€“31) para a aba pÃºblica na BÃ­blia. Colar texto, gerar com IA, revisar e <strong>publicar</strong> â€” sÃ³ publicadas aparecem no cartÃ£o.</p>
+                <h2><i class="fas fa-moon"></i> Prosperidade antes de dormir �?" Do Fracasso ao Legado</h2>
+                <p>31 Ativações (Provérbios 1�?"31) para a aba pública na Bíblia. Colar texto, gerar com IA, revisar e <strong>publicar</strong> �?" só publicadas aparecem no cartão.</p>
                 <div class="row">
                     <button type="button" class="btn btn-secondary" id="btn-pros-reload-grid"><i class="fas fa-sync"></i> Recarregar grid</button>
                     <button type="button" class="btn btn-secondary" id="btn-pros-export"><i class="fas fa-download"></i> Exportar JSON</button>
                     <label class="btn btn-secondary" style="cursor:pointer;margin:0"><i class="fas fa-upload"></i> Importar JSON<input type="file" id="pros-import-file" accept=".json" style="display:none"></label>
                 </div>
                 <div class="row" style="margin-top:12px">
-                    <div><label for="pros-batch-start">Lote IA â€” inÃ­cio</label><input type="number" id="pros-batch-start" min="1" max="31" value="1" style="width:70px"></div>
+                    <div><label for="pros-batch-start">Lote IA �?" início</label><input type="number" id="pros-batch-start" min="1" max="31" value="1" style="width:70px"></div>
                     <div><label for="pros-batch-end">fim</label><input type="number" id="pros-batch-end" min="1" max="31" value="7" style="width:70px"></div>
                     <div><label for="pros-batch-delay">delay ms</label><input type="number" id="pros-batch-delay" value="800" style="width:80px"></div>
                     <button type="button" class="btn" id="btn-pros-batch-async"><i class="fas fa-robot"></i> Gerar lote (async)</button>
@@ -262,7 +262,7 @@
                 <div class="grid-31" id="pros-grid-31" style="margin-top:16px"><p style="color:#888">Carregue o grid (token + URL da API acima).</p></div>
             </div>
             <div class="card" id="pros-editor-panel" style="display:none">
-                <h2>AtivaÃ§Ã£o <span id="pros-ed-num">1</span> â€” <span id="pros-ed-status"></span></h2>
+                <h2>Ativação <span id="pros-ed-num">1</span> �?" <span id="pros-ed-status"></span></h2>
                 <div class="cheatsheet" id="pros-cheatsheet"></div>
                 <div class="tabs-ed" role="tablist">
                     <button type="button" class="active" data-ed="colar">Colar por escrito</button>
@@ -271,37 +271,37 @@
                     <button type="button" data-ed="preview">Preview</button>
                 </div>
                 <div id="pros-panel-colar" class="panel-ed active">
-                    <div class="field-pros"><label>AtivaÃ§Ã£o completa (use tÃ­tulos: DECRETO DE ENTRADA, FUNDAMENTO SAGRADOâ€¦)</label><textarea id="pros-paste-full" rows="10"></textarea></div>
-                    <button type="button" class="btn btn-secondary" id="btn-pros-parse"><i class="fas fa-cut"></i> Dividir seÃ§Ãµes</button>
+                    <div class="field-pros"><label>Ativação completa (use títulos: DECRETO DE ENTRADA, FUNDAMENTO SAGRADO�?�)</label><textarea id="pros-paste-full" rows="10"></textarea></div>
+                    <button type="button" class="btn btn-secondary" id="btn-pros-parse"><i class="fas fa-cut"></i> Dividir seções</button>
                 </div>
                 <div id="pros-panel-ia" class="panel-ed">
-                    <button type="button" class="btn" id="btn-pros-gen-one"><i class="fas fa-magic"></i> Gerar esta AtivaÃ§Ã£o</button>
+                    <button type="button" class="btn" id="btn-pros-gen-one"><i class="fas fa-magic"></i> Gerar esta Ativação</button>
                     <p id="pros-gen-status" class="job-status" style="margin-top:10px"></p>
                 </div>
                 <div id="pros-panel-campos" class="panel-ed">
-                    <div class="field-pros"><label>TÃ­tulo</label><input id="pros-f-titulo"></div>
+                    <div class="field-pros"><label>Título</label><input id="pros-f-titulo"></div>
                     <div class="field-pros"><label>Decreto de entrada</label><textarea id="pros-f-decreto" rows="2"></textarea></div>
                     <div class="field-pros"><label>1. Fundamento sagrado</label><textarea id="pros-f-fundamento" rows="5"></textarea></div>
-                    <div class="field-pros"><label>2. ExtraÃ§Ã£o de prosperidade</label><textarea id="pros-f-diagnostico"></textarea></div>
+                    <div class="field-pros"><label>2. Extração de prosperidade</label><textarea id="pros-f-diagnostico"></textarea></div>
                     <p style="font-size:0.82rem;color:#FFC700;margin:12px 0 6px"><strong>Frases de impacto do KING (4)</strong></p>
                     <div class="field-pros"><label>Frase 1</label><textarea id="pros-f-frase-1" rows="2"></textarea></div>
                     <div class="field-pros"><label>Frase 2</label><textarea id="pros-f-frase-2" rows="2"></textarea></div>
                     <div class="field-pros"><label>Frase 3</label><textarea id="pros-f-frase-3" rows="2"></textarea></div>
                     <div class="field-pros"><label>Frase 4</label><textarea id="pros-f-frase-4" rows="2"></textarea></div>
                     <textarea id="pros-f-ie" style="display:none" aria-hidden="true"></textarea>
-                    <div class="field-pros"><label>3. Na estrada + CÃ³digo da Virada</label><textarea id="pros-f-estrada" rows="5"></textarea></div>
-                    <div class="field-pros"><label>Diretriz de ilustraÃ§Ã£o</label><textarea id="pros-f-ilustracao"></textarea></div>
+                    <div class="field-pros"><label>3. Na estrada + Código da Virada</label><textarea id="pros-f-estrada" rows="5"></textarea></div>
+                    <div class="field-pros"><label>Diretriz de ilustração</label><textarea id="pros-f-ilustracao"></textarea></div>
                     <div class="field-pros"><label>Drive escassez</label><textarea id="pros-f-travada" rows="2"></textarea></div>
                     <div class="field-pros"><label>Drive governo</label><textarea id="pros-f-nova" rows="2"></textarea></div>
                     <div class="field-pros"><label>Protocolo neuro-celular</label><textarea id="pros-f-exercicio" rows="6"></textarea></div>
-                    <div class="field-pros"><label>Treino campo (01â€“04)</label><textarea id="pros-f-negocios"></textarea></div>
-                    <div class="field-pros"><label>Treino altar (05â€“07 + leitura)</label><textarea id="pros-f-altar"></textarea></div>
-                    <div class="field-pros"><label>SentenÃ§a diÃ¡ria</label><textarea id="pros-f-sentenca"></textarea></div>
-                    <div class="field-pros"><label>PrÃ³ximo episÃ³dio</label><textarea id="pros-f-proximo"></textarea></div>
+                    <div class="field-pros"><label>Treino campo (01�?"04)</label><textarea id="pros-f-negocios"></textarea></div>
+                    <div class="field-pros"><label>Treino altar (05�?"07 + leitura)</label><textarea id="pros-f-altar"></textarea></div>
+                    <div class="field-pros"><label>Sentença diária</label><textarea id="pros-f-sentenca"></textarea></div>
+                    <div class="field-pros"><label>Próximo episódio</label><textarea id="pros-f-proximo"></textarea></div>
                 </div>
                 <div id="pros-panel-preview" class="panel-ed"><div id="pros-preview-host" style="font-size:0.9rem;color:#ccc"></div></div>
                 <div class="row" style="margin-top:16px;flex-wrap:wrap">
-                    <button type="button" class="btn" id="btn-pros-save-activation"><i class="fas fa-save"></i> Salvar ativaÃ§Ã£o</button>
+                    <button type="button" class="btn" id="btn-pros-save-activation"><i class="fas fa-save"></i> Salvar ativação</button>
                     <button type="button" class="btn btn-secondary" id="btn-pros-save"><i class="fas fa-file-alt"></i> Salvar rascunho</button>
                     <button type="button" class="btn" id="btn-pros-publish" style="background:#2a2a2a;border:1px solid #FFC700;color:#FFC700"><i class="fas fa-check"></i> Publicar</button>
                     <button type="button" class="btn btn-secondary" id="btn-pros-unpublish"><i class="fas fa-eye-slash"></i> Despublicar</button>
@@ -312,24 +312,24 @@
 
         <section id="panel-plano" class="panel">
             <div class="card">
-                <h2>Plano de leitura â€” um capÃ­tulo por dia</h2>
-                <p>Isto Ã© diferente do <strong>Devocional 365</strong> (texto diÃ¡rio com reflexÃ£o, aplicaÃ§Ã£o e oraÃ§Ã£o â€” gerado ou editado na aba <strong>Devocionais 365</strong>). O plano de leitura segue a sequÃªncia de capÃ­tulos da BÃ­blia ao longo do ano; o visitante vÃª os capÃ­tulos do dia na experiÃªncia pÃºblica.</p>
+                <h2>Plano de leitura �?" um capítulo por dia</h2>
+                <p>Isto é diferente do <strong>Devocional 365</strong> (texto diário com reflexão, aplicação e oração �?" gerado ou editado na aba <strong>Devocionais 365</strong>). O plano de leitura segue a sequência de capítulos da Bíblia ao longo do ano; o visitante vê os capítulos do dia na experiência pública.</p>
                 <ul>
                     <li>O texto do <strong>Devocional 365</strong> edita-se e gera-se com IA na aba <strong>Devocionais 365</strong> (acima).</li>
-                    <li>O leitor acompanha o capÃ­tulo sugerido na pÃ¡gina pÃºblica do cartÃ£o.</li>
+                    <li>O leitor acompanha o capítulo sugerido na página pública do cartão.</li>
                 </ul>
                 <div class="row" style="margin-top:16px">
-                    <a class="btn" href="/bible.html" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> BÃ­blia (bible.html)</a>
-                    <a class="btn btn-secondary" href="#" id="link-biblia-api"><i class="fas fa-link"></i> BÃ­blia (URL da API)</a>
+                    <a class="btn" href="/bible.html" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Bíblia (bible.html)</a>
+                    <a class="btn btn-secondary" href="#" id="link-biblia-api"><i class="fas fa-link"></i> Bíblia (URL da API)</a>
                     <a class="btn btn-secondary" href="/dashboard.html"><i class="fas fa-th-large"></i> Ir ao painel</a>
                 </div>
-                <p style="margin-top:14px;font-size:0.85rem;color:#666">Se um dos links falhar, experimente o outro (ficheiro estÃ¡tico vs. servidor da API).</p>
+                <p style="margin-top:14px;font-size:0.85rem;color:#666">Se um dos links falhar, experimente o outro (ficheiro estático vs. servidor da API).</p>
             </div>
             <div class="card" style="border-color:rgba(52,152,219,0.35)">
                 <h2><i class="fas fa-magic"></i> IA para o Devocional 365 neste plano</h2>
-                <p>O conteÃºdo que o visitante lÃª em <strong>Devocional diÃ¡rio</strong> na BÃ­blia pÃºblica vem do mesmo registo que vocÃª gera aqui. Use <strong>Gerar este dia</strong> ou <strong>Gerar todo o mÃªs</strong> na aba Devocionais 365, ou os atalhos rÃ¡pidos:</p>
+                <p>O conteúdo que o visitante lê em <strong>Devocional diário</strong> na Bíblia pública vem do mesmo registo que você gera aqui. Use <strong>Gerar este dia</strong> ou <strong>Gerar todo o mês</strong> na aba Devocionais 365, ou os atalhos rápidos:</p>
                 <div class="row">
-                    <button type="button" class="btn btn-secondary" id="btn-goto-gen"><i class="fas fa-arrow-up"></i> Abrir geraÃ§Ã£o IA (aba Devocionais 365)</button>
+                    <button type="button" class="btn btn-secondary" id="btn-goto-gen"><i class="fas fa-arrow-up"></i> Abrir geração IA (aba Devocionais 365)</button>
                 </div>
             </div>
         </section>
@@ -337,11 +337,11 @@
         <section id="panel-estudo" class="panel">
             <div class="card">
                 <h2><i class="fas fa-book-reader"></i> Estudo por livro</h2>
-                <p>Envie Word/PDF <strong>ou</strong> use <strong>Gerar por IA</strong> (entre Enviar e Remover) para criar um estudo longo e completo (como o de GÃªnesis no site). Requer a URL da API e token acima. MÃ¡x. 15 MB por ficheiro.</p>
+                <p>Envie Word/PDF <strong>ou</strong> use <strong>Gerar por IA</strong> (entre Enviar e Remover) para criar um estudo longo e completo (como o de Gênesis no site). Requer a URL da API e token acima. Máx. 15 MB por ficheiro.</p>
                 <div class="row" style="margin-top:10px">
                     <div style="flex:1;min-width:200px">
-                        <label for="study-book-search">Pesquisar livro (nome ou cÃ³digo, ex.: jo, Salmos)</label>
-                        <input type="text" id="study-book-search" placeholder="Filtrar listaâ€¦" style="width:100%;max-width:320px">
+                        <label for="study-book-search">Pesquisar livro (nome ou código, ex.: jo, Salmos)</label>
+                        <input type="text" id="study-book-search" placeholder="Filtrar lista�?�" style="width:100%;max-width:320px">
                     </div>
                     <button type="button" class="btn btn-secondary" id="btn-study-reload"><i class="fas fa-sync"></i> Atualizar lista de livros</button>
                     <button type="button" class="btn btn-secondary" id="btn-study-bulk-remove" style="border-color:rgba(220,80,80,0.45);color:#f5a097"><i class="fas fa-trash-alt"></i> Remover estudos seleccionados</button>
@@ -350,11 +350,11 @@
                     <table>
                         <thead>
                             <tr>
-                                <th style="width:40px;text-align:center" title="Seleccionar para remover em massa"><input type="checkbox" id="study-select-all" aria-label="Seleccionar todos os livros visÃ­veis"></th>
+                                <th style="width:40px;text-align:center" title="Seleccionar para remover em massa"><input type="checkbox" id="study-select-all" aria-label="Seleccionar todos os livros visíveis"></th>
                                 <th>Livro</th>
                                 <th>Estado</th>
                                 <th>Importar</th>
-                                <th style="min-width:200px">Enviar Â· Gerar por IA Â· Remover</th>
+                                <th style="min-width:200px">Enviar · Gerar por IA · Remover</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-study-books"><tr><td colspan="5">Carregue a lista.</td></tr></tbody>
@@ -367,11 +367,11 @@
             <div class="card">
                 <h2>Ajuda</h2>
                 <ul>
-                    <li><strong>Devocionais 365:</strong> gera/edita o texto do â€œDevocional diÃ¡rioâ€ na BÃ­blia pÃºblica.</li>
-                    <li><strong>Prosperidade antes de dormir:</strong> cadastra as 31 AtivaÃ§Ãµes (Do Fracasso ao Legado) â€” colar, IA, publicar. SÃ³ publicadas aparecem na aba da BÃ­blia.</li>
-                    <li><strong>Gerar este dia:</strong> cria/atualiza o devocional do dia 1â€“365 na base (tÃ­tulo, versÃ­culo, reflexÃ£o, aplicaÃ§Ã£o, oraÃ§Ã£o).</li>
-                    <li><strong>Gerar todo o mÃªs:</strong> percorre todos os dias do mÃªs civil no ano escolhido (ex.: todos os dias de abril de 2026).</li>
-                    <li>Ã‰ necessÃ¡rio <code>OPENAI_API_KEY</code> (ou <code>BIBLE_OPENAI_API_KEY</code>) no servidor.</li>
+                    <li><strong>Devocionais 365:</strong> gera/edita o texto do �?oDevocional diário�?� na Bíblia pública.</li>
+                    <li><strong>Prosperidade antes de dormir:</strong> cadastra as 31 Ativações (Do Fracasso ao Legado) �?" colar, IA, publicar. Só publicadas aparecem na aba da Bíblia.</li>
+                    <li><strong>Gerar este dia:</strong> cria/atualiza o devocional do dia 1�?"365 na base (título, versículo, reflexão, aplicação, oração).</li>
+                    <li><strong>Gerar todo o mês:</strong> percorre todos os dias do mês civil no ano escolhido (ex.: todos os dias de abril de 2026).</li>
+                    <li>�? necessário <code>OPENAI_API_KEY</code> (ou <code>BIBLE_OPENAI_API_KEY</code>) no servidor.</li>
                 </ul>
             </div>
         </section>
@@ -488,7 +488,7 @@
                 '<td>' + st + '</td>' +
                 '<td style="min-width:200px"><input type="file" class="study-file-inp" accept=".doc,.docx,.pdf" data-bid="' + bid + '" style="max-width:180px;font-size:0.72rem;vertical-align:middle"></td>' +
                 '<td style="white-space:normal"><button type="button" class="btn btn-secondary btn-sm study-upload-btn" data-bid="' + bid + '">Enviar</button> ' +
-                '<button type="button" class="btn btn-sm study-ai-btn" data-bid="' + bid + '" title="Gera estudo longo completo (como GÃªnesis)"><i class="fas fa-magic"></i> Gerar por IA</button> ' +
+                '<button type="button" class="btn btn-sm study-ai-btn" data-bid="' + bid + '" title="Gera estudo longo completo (como Gênesis)"><i class="fas fa-magic"></i> Gerar por IA</button> ' +
                 '<button type="button" class="btn btn-secondary btn-sm study-remove-btn" data-bid="' + bid + '">Remover</button></td></tr>';
         }).join('');
 
@@ -513,9 +513,9 @@
         tb.querySelectorAll('.study-ai-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var bid = btn.getAttribute('data-bid');
-                if (!confirm('Gerar estudo COMPLETO por IA para este livro? Pode demorar vÃ¡rios minutos e usar muitos tokens. Para livros que nÃ£o sejam GÃªnesis, o servidor usa o estudo de GÃªnesis (se existir) sÃ³ como referÃªncia de formato.')) return;
+                if (!confirm('Gerar estudo COMPLETO por IA para este livro? Pode demorar vários minutos e usar muitos tokens. Para livros que não sejam Gênesis, o servidor usa o estudo de Gênesis (se existir) só como referência de formato.')) return;
                 btn.disabled = true;
-                flash('A gerar estudo por IAâ€¦ aguarde (nÃ£o feche o separador).', 'warn');
+                flash('A gerar estudo por IA�?� aguarde (não feche o separador).', 'warn');
                 apiFetch('/api/admin/bible/study/book/' + encodeURIComponent(bid) + '/generate-ai', { method: 'POST', body: '{}' })
                     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
                     .then(function (x) {
@@ -571,11 +571,11 @@
     function loadStudyBooksList() {
         var tb = document.getElementById('tbody-study-books');
         if (!tb) return;
-        tb.innerHTML = '<tr><td colspan="5">A carregarâ€¦</td></tr>';
+        tb.innerHTML = '<tr><td colspan="5">A carregar�?�</td></tr>';
         apiFetch('/api/admin/bible/study/books')
             .then(function (r) { return r.json(); })
             .then(function (j) {
-                if (!j.success || !j.data || !j.data.books) throw new Error(j.message || 'Lista invÃ¡lida');
+                if (!j.success || !j.data || !j.data.books) throw new Error(j.message || 'Lista inválida');
                 studyBooksData = j.data.books;
                 renderStudyBooksTable();
             })
@@ -585,7 +585,7 @@
     }
 
     function monthNamesPt() {
-        return ['Janeiro','Fevereiro','MarÃ§o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        return ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     }
 
     function buildThemesHost() {
@@ -594,7 +594,7 @@
         host.innerHTML = names.map(function (nm, i) {
             var m = i + 1;
             return '<div class="theme-row"><div><label for="theme-m-' + m + '">' + nm + '</label>' +
-                '<textarea id="theme-m-' + m + '" rows="2" placeholder="Tema ou linha de orientaÃ§Ã£o para o mÃªsâ€¦"></textarea></div>' +
+                '<textarea id="theme-m-' + m + '" rows="2" placeholder="Tema ou linha de orientação para o mês�?�"></textarea></div>' +
                 '<button type="button" class="btn btn-secondary btn-sm btn-theme-gen" data-month="' + m + '">Gerar</button></div>';
         }).join('');
         host.querySelectorAll('.btn-theme-gen').forEach(function (b) {
@@ -613,7 +613,7 @@
                         if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
                         var t = x.j.data && x.j.data.text;
                         if (hintEl && t) hintEl.value = t;
-                        flash('Tema do mÃªs ' + mo + ' gerado e guardado no servidor.', 'ok');
+                        flash('Tema do mês ' + mo + ' gerado e guardado no servidor.', 'ok');
                     })
                     .catch(function (e) { flash(e.message || 'Erro ao gerar tema.', 'err'); })
                     .finally(function () { b.disabled = false; });
@@ -652,11 +652,11 @@
         btnStop.style.display = (d.status === 'running' || d.status === 'queued') ? 'inline-flex' : 'none';
         var pct = d.progress != null ? d.progress : 0;
         bar.style.width = Math.min(100, pct) + '%';
-        var eta = d.etaMinutes != null ? ' â€¢ ~' + d.etaMinutes + ' min restantes' : '';
-        var cur = d.currentDay != null ? ' â€¢ a gerar: dia ' + d.currentDay : '';
-        st.textContent = (pct || 0) + '%' + eta + ' â€¢ ' + (d.processed || 0) + '/' + (d.total || 0) + ' dias' + cur +
-            ' â€” estado: ' + (d.status || '?') + (d.errorMessage ? ' â€” ' + d.errorMessage : '') +
-            ' â€” Ãºltima actualizaÃ§Ã£o: ' + new Date().toLocaleTimeString('pt-BR');
+        var eta = d.etaMinutes != null ? ' �?� ~' + d.etaMinutes + ' min restantes' : '';
+        var cur = d.currentDay != null ? ' �?� a gerar: dia ' + d.currentDay : '';
+        st.textContent = (pct || 0) + '%' + eta + ' �?� ' + (d.processed || 0) + '/' + (d.total || 0) + ' dias' + cur +
+            ' �?" estado: ' + (d.status || '?') + (d.errorMessage ? ' �?" ' + d.errorMessage : '') +
+            ' �?" última actualização: ' + new Date().toLocaleTimeString('pt-BR');
     }
 
     function stopBgPoll() {
@@ -674,7 +674,7 @@
                     try { localStorage.removeItem(LS_JOB); } catch (e) {}
                     stopBgPoll();
                     applyJobUi(null);
-                    flash('Trabalho em segundo plano nÃ£o encontrado (servidor reiniciou ou expirou).', 'warn');
+                    flash('Trabalho em segundo plano não encontrado (servidor reiniciou ou expirou).', 'warn');
                     return;
                 }
                 if (!x.j.success || !x.j.data) {
@@ -686,9 +686,9 @@
                 if (d.status === 'done' || d.status === 'error' || d.status === 'cancelled') {
                     try { localStorage.removeItem(LS_JOB); } catch (e) {}
                     stopBgPoll();
-                    if (d.status === 'done') flash('GeraÃ§Ã£o em segundo plano concluÃ­da.', 'ok');
-                    else if (d.status === 'cancelled') flash('GeraÃ§Ã£o em segundo plano cancelada.', 'warn');
-                    else flash('GeraÃ§Ã£o em segundo plano terminou com erro.', 'err');
+                    if (d.status === 'done') flash('Geração em segundo plano concluída.', 'ok');
+                    else if (d.status === 'cancelled') flash('Geração em segundo plano cancelada.', 'warn');
+                    else flash('Geração em segundo plano terminou com erro.', 'err');
                     loadTable();
                 }
             })
@@ -722,15 +722,15 @@
         if (!v) {
             try { localStorage.removeItem(LS_API); } catch (e) {}
             setApiBaseUi();
-            flash('A usar o domÃ­nio desta pÃ¡gina. Para gerar devocionais ou temas por IA no servidor, indique a URL da API (Render).', 'warn');
+            flash('A usar o domínio desta página. Para gerar devocionais ou temas por IA no servidor, indique a URL da API (Render).', 'warn');
             return;
         }
         try {
             localStorage.setItem(LS_API, v.replace(/\/$/, ''));
             setApiBaseUi();
-            flash('URL da API guardada. GeraÃ§Ã£o com IA e devocionais passam a usar este servidor.', 'ok');
+            flash('URL da API guardada. Geração com IA e devocionais passam a usar este servidor.', 'ok');
         } catch (e) {
-            flash('NÃ£o foi possÃ­vel guardar.', 'err');
+            flash('Não foi possível guardar.', 'err');
         }
     });
 
@@ -758,7 +758,7 @@
         }
     }
 
-    /** Aceita { year, themes: { "1": "..." } }, ou sÃ³ themes, ou objecto plano com chaves "1".."12". */
+    /** Aceita { year, themes: { "1": "..." } }, ou só themes, ou objecto plano com chaves "1".."12". */
     function parseThemesJsonObject(raw) {
         var obj = raw;
         if (!obj || typeof obj !== 'object') return { year: null, themes: {} };
@@ -817,13 +817,13 @@
                 var obj = JSON.parse(text);
                 var parsed = parseThemesJsonObject(obj);
                 var n = applyThemesFromFileParsed(parsed);
-                flash('Ficheiro carregado: ' + n + ' mÃªs(es) com texto. O ano no campo foi ' + (parsed.year != null ? 'actualizado para ' + parsed.year + '.' : 'mantido.'), 'ok');
+                flash('Ficheiro carregado: ' + n + ' mês(es) com texto. O ano no campo foi ' + (parsed.year != null ? 'actualizado para ' + parsed.year + '.' : 'mantido.'), 'ok');
             } catch (e) {
-                flash('Ficheiro invÃ¡lido. Use JSON com formato { "year": 2026, "themes": { "1": "...", "2": "..." } } ou sÃ³ as chaves dos meses.', 'err');
+                flash('Ficheiro inválido. Use JSON com formato { "year": 2026, "themes": { "1": "...", "2": "..." } } ou só as chaves dos meses.', 'err');
             }
         };
         reader.onerror = function () {
-            flash('NÃ£o foi possÃ­vel ler o ficheiro.', 'err');
+            flash('Não foi possível ler o ficheiro.', 'err');
         };
         reader.readAsText(f, 'UTF-8');
     });
@@ -841,7 +841,7 @@
 
     document.getElementById('btn-themes-generate-all').addEventListener('click', function () {
         var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
-        if (!confirm('Gerar automaticamente uma linha de tema para cada um dos 12 meses de ' + yr + '? Isto chama a IA vÃ¡rias vezes.')) return;
+        if (!confirm('Gerar automaticamente uma linha de tema para cada um dos 12 meses de ' + yr + '? Isto chama a IA várias vezes.')) return;
         var btn = document.getElementById('btn-themes-generate-all');
         btn.disabled = true;
         apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr + '/generate-all', {
@@ -860,10 +860,10 @@
 
     document.getElementById('btn-batch-sync').addEventListener('click', function () {
         var months = getSelectedBatchMonths();
-        if (!months.length) { flash('Seleccione pelo menos um mÃªs.', 'err'); return; }
+        if (!months.length) { flash('Seleccione pelo menos um mês.', 'err'); return; }
         var year = parseInt(document.getElementById('batch-year').value, 10) || yNow;
         var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
-        if (!confirm('Gerar com IA todos os dias dos meses seleccionados em ' + year + ', um mÃªs apÃ³s o outro? O navegador fica Ã  espera atÃ© terminar.')) return;
+        if (!confirm('Gerar com IA todos os dias dos meses seleccionados em ' + year + ', um mês após o outro? O navegador fica à espera até terminar.')) return;
         var btn = document.getElementById('btn-batch-sync');
         btn.disabled = true;
         var o = bodyGenOpts();
@@ -875,19 +875,19 @@
                     body: JSON.stringify(Object.assign({ delayMs: delayMs }, o))
                 }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
                     .then(function (x) {
-                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || ('MÃªs ' + m + ' falhou'));
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || ('Mês ' + m + ' falhou'));
                     });
             });
         });
         chain
             .then(function () { flash('Todos os meses seleccionados foram gerados.', 'ok'); loadTable(); })
-            .catch(function (e) { flash(e.message || 'Erro na geraÃ§Ã£o sÃ­ncrona.', 'err'); })
+            .catch(function (e) { flash(e.message || 'Erro na geração síncrona.', 'err'); })
             .finally(function () { btn.disabled = false; });
     });
 
     document.getElementById('btn-batch-async').addEventListener('click', function () {
         var months = getSelectedBatchMonths();
-        if (!months.length) { flash('Seleccione pelo menos um mÃªs.', 'err'); return; }
+        if (!months.length) { flash('Seleccione pelo menos um mês.', 'err'); return; }
         var year = parseInt(document.getElementById('batch-year').value, 10) || yNow;
         var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
         var o = bodyGenOpts();
@@ -902,7 +902,7 @@
                 if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao iniciar trabalho.');
                 var jobId = x.j.data && x.j.data.jobId;
                 if (!jobId) throw new Error('Sem jobId.');
-                flash('GeraÃ§Ã£o em segundo plano iniciada. Pode recarregar a pÃ¡gina â€” o progresso continua enquanto o servidor nÃ£o reiniciar.', 'ok');
+                flash('Geração em segundo plano iniciada. Pode recarregar a página �?" o progresso continua enquanto o servidor não reiniciar.', 'ok');
                 startBgPoll(jobId);
             })
             .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
@@ -918,8 +918,8 @@
         apiFetch('/api/admin/bible/devotionals-365/generation-job/' + encodeURIComponent(id) + '/cancel', { method: 'POST', body: '{}' })
             .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
             .then(function (x) {
-                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'NÃ£o cancelou');
-                flash('Pedido de paragem enviado (termina apÃ³s o dia actual).', 'ok');
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Não cancelou');
+                flash('Pedido de paragem enviado (termina após o dia actual).', 'ok');
                 pollJob(id);
             })
             .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
@@ -933,7 +933,7 @@
             localStorage.setItem('token', v);
             flash('Token guardado em localStorage (chave token).', 'ok');
         } catch (e) {
-            flash('NÃ£o foi possÃ­vel guardar.', 'err');
+            flash('Não foi possível guardar.', 'err');
         }
     });
 
@@ -989,7 +989,7 @@
         var year = parseInt(document.getElementById('gen-year-month').value, 10);
         var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
         if (isNaN(year)) year = yNow;
-        if (!confirm('Gerar com IA todos os dias do mÃªs ' + month + '/' + year + '? Pode demorar.')) return;
+        if (!confirm('Gerar com IA todos os dias do mês ' + month + '/' + year + '? Pode demorar.')) return;
         var btn = document.getElementById('btn-gen-whole-month');
         btn.disabled = true;
         var o = bodyGenOpts();
@@ -1001,10 +1001,10 @@
             .then(function (x) {
                 if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
                 var d = x.j.data || {};
-                flash('MÃªs gerado. Total: ' + (d.total != null ? d.total : 'â€”') + '. Erros: ' + (d.errors != null ? d.errors : 'â€”'), 'ok');
+                flash('Mês gerado. Total: ' + (d.total != null ? d.total : '�?"') + '. Erros: ' + (d.errors != null ? d.errors : '�?"'), 'ok');
                 loadTable();
             })
-            .catch(function (e) { flash(e.message || 'Erro ao gerar mÃªs.', 'err'); })
+            .catch(function (e) { flash(e.message || 'Erro ao gerar mês.', 'err'); })
             .finally(function () { btn.disabled = false; });
     });
 
@@ -1023,11 +1023,11 @@
 
     function loadTable() {
         var tb = document.getElementById('tbody-dev365');
-        tb.innerHTML = '<tr><td colspan="5">A carregarâ€¦</td></tr>';
+        tb.innerHTML = '<tr><td colspan="5">A carregar�?�</td></tr>';
         apiFetch('/api/admin/bible/devotionals-365/admin-full')
             .then(function (r) { return r.json(); })
             .then(function (j) {
-                if (!j.success || !j.data || !j.data.rows) throw new Error(j.message || 'Lista invÃ¡lida');
+                if (!j.success || !j.data || !j.data.rows) throw new Error(j.message || 'Lista inválida');
                 tableRows = j.data.rows;
                 renderTable();
             })
@@ -1073,13 +1073,13 @@
                     .then(function (j) {
                         if (!j.success || !j.data) throw new Error(j.message || 'Erro');
                         var d = j.data;
-                        document.getElementById('modal-ver-title').textContent = 'Dia ' + day + ' â€” ' + (d.titulo || '');
+                        document.getElementById('modal-ver-title').textContent = 'Dia ' + day + ' �?" ' + (d.titulo || '');
                         var text = [
                             d.versiculo_ref || '',
                             d.versiculo_texto ? '\n\n' + d.versiculo_texto : '',
-                            d.reflexao ? '\n\nâ€” ReflexÃ£o â€”\n' + d.reflexao : '',
-                            d.aplicacao ? '\n\nâ€” AplicaÃ§Ã£o â€”\n' + d.aplicacao : '',
-                            d.oracao ? '\n\nâ€” OraÃ§Ã£o â€”\n' + d.oracao : ''
+                            d.reflexao ? '\n\n�?" Reflexão �?"\n' + d.reflexao : '',
+                            d.aplicacao ? '\n\n�?" Aplicação �?"\n' + d.aplicacao : '',
+                            d.oracao ? '\n\n�?" Oração �?"\n' + d.oracao : ''
                         ].join('');
                         document.getElementById('modal-ver-body').textContent = text;
                         document.getElementById('modal-ver').classList.add('show');
@@ -1123,13 +1123,13 @@
     function buildMonthQuick() {
         var host = document.getElementById('month-quick-btns');
         var names = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-        host.innerHTML = '<span style="width:100%;font-size:0.82rem;color:#888;margin-bottom:4px">Gerar IA â€” mÃªs civil (use o ano do bloco &quot;Gerar todo o mÃªs&quot; acima):</span>';
+        host.innerHTML = '<span style="width:100%;font-size:0.82rem;color:#888;margin-bottom:4px">Gerar IA �?" mês civil (use o ano do bloco &quot;Gerar todo o mês&quot; acima):</span>';
         names.forEach(function (nm, i) {
             var m = i + 1;
             var b = document.createElement('button');
             b.type = 'button';
             b.className = 'btn btn-secondary btn-sm';
-            b.textContent = nm + ' â€” Gerar';
+            b.textContent = nm + ' �?" Gerar';
             b.addEventListener('click', function () {
                 var yr = yearForMonthActions();
                 if (!confirm('Gerar com IA todos os dias de ' + nm + '/' + yr + '?')) return;
@@ -1143,7 +1143,7 @@
                     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
                     .then(function (x) {
                         if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
-                        flash(nm + ' concluÃ­do.', 'ok');
+                        flash(nm + ' concluído.', 'ok');
                         loadTable();
                     })
                     .catch(function (e) { flash(e.message || 'Erro', 'err'); })
@@ -1186,7 +1186,7 @@
                     studyBulkRemoveBtn.disabled = false;
                     var master = document.getElementById('study-select-all');
                     if (master) master.checked = false;
-                    flash('Removidos: ' + ok + (fail ? ' Â· NÃ£o removidos (sem estudo ou erro): ' + fail : ''), fail ? 'warn' : 'ok');
+                    flash('Removidos: ' + ok + (fail ? ' · Não removidos (sem estudo ou erro): ' + fail : ''), fail ? 'warn' : 'ok');
                     loadStudyBooksList();
                     return;
                 }
@@ -1205,7 +1205,7 @@
     }
     loadStudyBooksList();
 
-    // --- Prosperidade antes de dormir (31 AtivaÃ§Ãµes) ---
+    // --- Prosperidade antes de dormir (31 Ativações) ---
     var LS_PROS_JOB = 'prosperidade_bg_job_id';
     var prosCurrentN = null;
     var prosPollTimer = null;
@@ -1220,7 +1220,7 @@
             return r.json().then(function (j) {
                 if (!r.ok || j.success === false) {
                     var msg = (j && j.message) || r.statusText;
-                    if (j && j.missing && j.missing.length) msg += ' â€” Falta: ' + j.missing.join(', ');
+                    if (j && j.missing && j.missing.length) msg += ' �?" Falta: ' + j.missing.join(', ');
                     throw new Error(msg);
                 }
                 return j;
@@ -1315,7 +1315,7 @@
         if (!el) return;
         if (!d) { el.textContent = ''; return; }
         if (d.can_publish) {
-            el.textContent = 'AtivaÃ§Ã£o pronta para publicar na BÃ­blia pÃºblica.';
+            el.textContent = 'Ativação pronta para publicar na Bíblia pública.';
             el.style.color = '#86efac';
         } else if (d.missing_for_publish && d.missing_for_publish.length) {
             el.textContent = 'Para publicar, falta: ' + d.missing_for_publish.join(', ') + '.';
@@ -1363,7 +1363,7 @@
                         }
                         if (!r.ok || !j.success) {
                             var msg = (j && j.message) || 'Erro ao salvar.';
-                            if (j && j.missing && j.missing.length) msg += ' â€” Falta: ' + j.missing.join(', ');
+                            if (j && j.missing && j.missing.length) msg += ' �?" Falta: ' + j.missing.join(', ');
                             throw new Error(msg);
                         }
                         return j;
@@ -1375,7 +1375,7 @@
                 prosFillForm(d);
                 document.getElementById('pros-ed-status').textContent = d.status || '';
                 prosUpdateSaveHint(d);
-                flash(json.message || 'AtivaÃ§Ã£o salva.', 'ok');
+                flash(json.message || 'Ativação salva.', 'ok');
                 loadProsperidadeGrid();
                 return d;
             })
@@ -1385,13 +1385,13 @@
     function loadProsperidadeGrid() {
         var host = document.getElementById('pros-grid-31');
         if (!host) return;
-        host.innerHTML = '<p style="color:#888">A carregarâ€¦</p>';
+        host.innerHTML = '<p style="color:#888">A carregar�?�</p>';
         prosApiJson('/api/admin/bible/prosperidade')
             .then(function (json) {
                 var list = (json.data && json.data.activations) || [];
                 prosGridLoaded = true;
                 host.innerHTML = list.map(function (a) {
-                    return '<div class="act-card" data-n="' + a.activation_number + '"><strong>AtivaÃ§Ã£o ' + a.activation_number + '</strong><div style="font-size:0.78rem;color:#888;margin-top:4px">' + String(a.titulo || '').substring(0, 36) + '</div><span class="' + prosBadgeClass(a.status) + '">' + a.status + '</span></div>';
+                    return '<div class="act-card" data-n="' + a.activation_number + '"><strong>Ativação ' + a.activation_number + '</strong><div style="font-size:0.78rem;color:#888;margin-top:4px">' + String(a.titulo || '').substring(0, 36) + '</div><span class="' + prosBadgeClass(a.status) + '">' + a.status + '</span></div>';
                 }).join('');
                 host.querySelectorAll('.act-card').forEach(function (c) {
                     c.addEventListener('click', function () { openProsperidadeEditor(parseInt(c.getAttribute('data-n'), 10)); });
@@ -1412,7 +1412,7 @@
                 var d = json.data || {};
                 document.getElementById('pros-ed-status').textContent = d.status || '';
                 var st = d.storytelling || {};
-                document.getElementById('pros-cheatsheet').innerHTML = '<strong>Fase ' + n + ':</strong> ' + (st.titulo || '') + ' â€” ' + (st.resumo || '');
+                document.getElementById('pros-cheatsheet').innerHTML = '<strong>Fase ' + n + ':</strong> ' + (st.titulo || '') + ' �?" ' + (st.resumo || '');
                 prosFillForm(d);
                 prosRenderPreview(d);
                 prosUpdateSaveHint(d);
@@ -1451,7 +1451,7 @@
             .then(function (json) {
                 var s = (json.data && json.data.sections) || {};
                 prosFillForm(s);
-                flash('SeÃ§Ãµes divididas â€” revise em Campos.', 'ok');
+                flash('Seções divididas �?" revise em Campos.', 'ok');
                 document.querySelector('.tabs-ed button[data-ed="campos"]').click();
             })
             .catch(function (e) { flash(e.message, 'err'); });
@@ -1460,14 +1460,14 @@
     document.getElementById('btn-pros-gen-one').addEventListener('click', function () {
         if (!prosCurrentN) return;
         var st = document.getElementById('pros-gen-status');
-        st.textContent = 'Gerandoâ€¦';
+        st.textContent = 'Gerando�?�';
         var btn = document.getElementById('btn-pros-gen-one');
         btn.disabled = true;
         prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/generate-ai', { method: 'POST', body: '{}' })
             .then(function (json) {
                 prosFillForm(Object.assign({}, json.data, { content_source: 'ai' }));
-                st.textContent = 'Tokens: ' + ((json.tokens && json.tokens.total) || 'â€”');
-                flash('IA concluÃ­da â€” revise e salve.', 'ok');
+                st.textContent = 'Tokens: ' + ((json.tokens && json.tokens.total) || '�?"');
+                flash('IA concluída �?" revise e salve.', 'ok');
                 document.querySelector('.tabs-ed button[data-ed="campos"]').click();
             })
             .catch(function (e) { st.textContent = e.message; flash(e.message, 'err'); })
@@ -1493,7 +1493,7 @@
         prosSaveActivation()
             .then(function (d) {
                 if (d && d.can_publish === false) {
-                    throw new Error('Para publicar, falta: ' + (d.missing_for_publish || []).join(', ') + '. Cole a AtivaÃ§Ã£o completa e use Salvar ativaÃ§Ã£o.');
+                    throw new Error('Para publicar, falta: ' + (d.missing_for_publish || []).join(', ') + '. Cole a Ativação completa e use Salvar ativação.');
                 }
                 return prosApiJson('/api/admin/bible/prosperidade/' + prosCurrentN + '/publish', {
                     method: 'PATCH',
@@ -1504,7 +1504,7 @@
                 var d = (json && json.data) || {};
                 prosFillForm(d);
                 prosUpdateSaveHint(d);
-                flash('AtivaÃ§Ã£o publicada na BÃ­blia!', 'ok');
+                flash('Ativação publicada na Bíblia!', 'ok');
                 loadProsperidadeGrid();
                 openProsperidadeEditor(prosCurrentN);
             })
@@ -1547,7 +1547,7 @@
                 body: JSON.stringify({ activations: items })
             });
         })
-            .then(function () { flash('ImportaÃ§Ã£o concluÃ­da.', 'ok'); loadProsperidadeGrid(); })
+            .then(function () { flash('Importação concluída.', 'ok'); loadProsperidadeGrid(); })
             .catch(function (e) { flash(e.message, 'err'); });
         ev.target.value = '';
     });
@@ -1561,7 +1561,7 @@
                     var j = json.data || {};
                     var pct = j.total ? Math.round((j.done / j.total) * 100) : 0;
                     document.getElementById('pros-batch-progress-bar').style.width = pct + '%';
-                    document.getElementById('pros-batch-status').textContent = 'Job ' + j.status + ' â€” ' + j.done + '/' + j.total + ' (tokens: ' + (j.tokensTotal || 0) + ')';
+                    document.getElementById('pros-batch-status').textContent = 'Job ' + j.status + ' �?" ' + j.done + '/' + j.total + ' (tokens: ' + (j.tokensTotal || 0) + ')';
                     if (j.status === 'done' || j.status === 'partial' || j.status === 'failed' || j.status === 'cancelled') {
                         clearInterval(prosPollTimer);
                         localStorage.removeItem(LS_PROS_JOB);
@@ -1575,8 +1575,8 @@
     document.getElementById('btn-pros-batch-async').addEventListener('click', function () {
         var start = parseInt(document.getElementById('pros-batch-start').value, 10);
         var end = parseInt(document.getElementById('pros-batch-end').value, 10);
-        if (end - start + 1 > 15) { flash('MÃ¡ximo 15 AtivaÃ§Ãµes por lote.', 'err'); return; }
-        if (!confirm('Gerar AtivaÃ§Ãµes ' + start + ' a ' + end + ' com IA? Revise antes de publicar.')) return;
+        if (end - start + 1 > 15) { flash('Máximo 15 Ativações por lote.', 'err'); return; }
+        if (!confirm('Gerar Ativações ' + start + ' a ' + end + ' com IA? Revise antes de publicar.')) return;
         prosApiJson('/api/admin/bible/prosperidade/generate-range-ai', {
             method: 'POST',
             body: JSON.stringify({

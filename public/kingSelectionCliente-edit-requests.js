@@ -1,5 +1,5 @@
-﻿/**
- * BotÃ£o Â«Enviar para ediÃ§Ã£oÂ» no cliente â€” sÃ³ quando o fotÃ³grafo ativou na galeria pÃºblica.
+/**
+ * Botão «Enviar para edição» no cliente �?" só quando o fotógrafo ativou na galeria pública.
  * Funciona na Hostinger com kingSelectionCliente.js antigo em cache.
  */
 (function () {
@@ -53,8 +53,8 @@
     btn.className = 'ks-btn ks-btn-edit-req ks-hidden';
     btn.hidden = true;
     btn.setAttribute('aria-hidden', 'true');
-    btn.title = 'Enviar fotos marcadas para ediÃ§Ã£o';
-    btn.innerHTML = '<i class="fas fa-magic"></i> Enviar para ediÃ§Ã£o';
+    btn.title = 'Enviar fotos marcadas para edição';
+    btn.innerHTML = '<i class="fas fa-magic"></i> Enviar para edição';
     anchor.insertAdjacentElement('afterend', btn);
     btn.addEventListener('click', () => submitEditRequest());
     return btn;
@@ -91,7 +91,7 @@
     if (show) {
       const n = countSelected();
       btn.disabled = n === 0;
-      btn.title = n > 0 ? `Enviar ${n} foto(s) para ediÃ§Ã£o` : 'Marque as fotos que deseja enviar para ediÃ§Ã£o';
+      btn.title = n > 0 ? `Enviar ${n} foto(s) para edição` : 'Marque as fotos que deseja enviar para edição';
     }
   }
 
@@ -120,16 +120,16 @@
     gallerySlug = gallerySlug || getSlug();
     const jwt = localStorage.getItem(tokenKey(gallerySlug)) || '';
     if (!jwt) {
-      toast('Cadastre-se na galeria antes de enviar fotos para ediÃ§Ã£o.', 'err');
+      toast('Cadastre-se na galeria antes de enviar fotos para edição.', 'err');
       return;
     }
     const ids = collectSelectedPhotoIds();
     if (!ids.length) {
-      toast('Marque pelo menos uma foto para enviar Ã  ediÃ§Ã£o.', 'err');
+      toast('Marque pelo menos uma foto para enviar à edição.', 'err');
       return;
     }
     const note = window.prompt(
-      'ObservaÃ§Ã£o para o fotÃ³grafo (opcional):\nEx.: remover fundo, ajustar cor, recorteâ€¦',
+      'Observação para o fotógrafo (opcional):\nEx.: remover fundo, ajustar cor, recorte�?�',
       ''
     );
     if (note === null) return;
@@ -146,7 +146,7 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar pedido');
-      toast(data.message || `${ids.length} foto(s) enviada(s) para ediÃ§Ã£o.`, 'ok');
+      toast(data.message || `${ids.length} foto(s) enviada(s) para edição.`, 'ok');
     } catch (e) {
       toast(e.message || 'Erro ao enviar', 'err');
     } finally {

@@ -1,5 +1,5 @@
 /**
- * Parser Prosperidade — compartilhado Node + browser (formato Gemini v2/v3)
+ * Parser Prosperidade - compartilhado Node + browser (formato Gemini v2/v3)
  */
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) {
@@ -16,17 +16,17 @@ function cleanLine(line) {
 }
 
 function isIntroLine(line) {
-    return /(?:FASE|ATIVA[CÇ][AÃ]O)\s*\d+/i.test(cleanLine(line));
+    return /(?:FASE|ATIVA[C�][A�]O)\s*\d+/i.test(cleanLine(line));
 }
 
 function extractIntroTitle(line) {
     const raw = cleanLine(line);
-    const m = raw.match(/(?:FASE|ATIVA[CÇ][AÃ]O)\s*\d+\s*[:\-–—]\s*(.+)$/i);
+    const m = raw.match(/(?:FASE|ATIVA[C�][A�]O)\s*\d+\s*[:\---]\s*(.+)$/i);
     if (!m) return '';
     let title = m[1].replace(/\*+/g, '').trim();
-    const quoteIdx = title.search(/["""«']/);
+    const quoteIdx = title.search(/["""�']/);
     if (quoteIdx >= 0) title = title.slice(0, quoteIdx).trim();
-    title = title.replace(/\s*[📜🔍💎🦅⚡👁🧠✍🗣📚🎬].*$/, '').trim();
+    title = title.replace(/\s*[????????????????????].*$/, '').trim();
     title = title.replace(/\s+\d+\.\s*.*$/, '').trim();
     if (title.length > 200) title = title.slice(0, 200).trim();
     return title;
@@ -35,9 +35,9 @@ function extractIntroTitle(line) {
 function sanitizeTitulo(v) {
     let t = String(v || '').trim();
     if (!t) return '';
-    const quoteIdx = t.search(/["""«']/);
+    const quoteIdx = t.search(/["""�']/);
     if (quoteIdx > 0) t = t.slice(0, quoteIdx).trim();
-    t = t.replace(/\s*[📜🔍💎🦅⚡👁🧠✍🗣📚🎬].*$/, '').trim();
+    t = t.replace(/\s*[????????????????????].*$/, '').trim();
     t = t.replace(/\s+\d+\.\s*.*$/, '').trim();
     if (t.length > 200) t = t.slice(0, 200).trim();
     return t;
@@ -47,44 +47,44 @@ function normalizePaste(raw) {
     let t = String(raw || '').replace(/\r\n/g, '\n').trim();
     if (!t) return t;
     t = t.replace(
-        /((?:ATIVA[CÇ][AÃ]O|FASE)\s+\d+\s*:[^\n"""«']{2,120})(["""«'])/gi,
+        /((?:ATIVA[C�][A�]O|FASE)\s+\d+\s*:[^\n"""�']{2,120})(["""�'])/gi,
         '$1\n\n$2'
     );
     const markerRes = [
-        /(\S)\s*(?=(?:📜\s*)?\d+\.\s*(?:O\s+)?FUNDAMENTO\s+SAGRADO\s*:)/gi,
-        /(\S)\s*(?=(?:🔍\s*)?\d+\.\s*(?:EXTRA[ÇC][AÃ]O\s+DE\s+PROSPERIDADE|DIAGN[OÓ]STICO))/gi,
-        /(\S)\s*(?=💎\s*FRASES\s+DE\s+IMPACTO)/gi,
-        /(\S)\s*(?=(?:🦅\s*)?\d+\.\s*NA\s+ESTRADA\s+COM)/gi,
-        /(\S)\s*(?=⚡\s*C[OÓ]DIGO\s+DA\s+VIRADA)/gi,
-        /(\S)\s*(?=👁[^\n]*DIRETRIZ\s+DE\s+ILUSTRA)/gi,
-        /(\S)\s*(?=(?:🧠\s*)?\d+\.\s*REPROGRAMA[ÇC][ÃA]O\s+MENTAL)/gi,
-        /(\S)\s*(?=(?:✍\s*)?\d+\.\s*(?:O\s+)?TREINO\s+DO\s+REI)/gi,
-        /(\S)\s*(?=(?:🗣\s*)?\d+\.\s*SENTEN[ÇC]A\s+DE\s+ATIVA)/gi,
-        /(\S)\s*(?=(?:📚\s*)?\d+\.\s*ATIVA[ÇC][AÃ]O\s+COMPLEMENTAR)/gi,
-        /(\S)\s*(?=🎬\s*PR[OÓ]XIMO\s+EPIS)/gi
+        /(\S)\s*(?=(?:??\s*)?\d+\.\s*(?:O\s+)?FUNDAMENTO\s+SAGRADO\s*:)/gi,
+        /(\S)\s*(?=(?:??\s*)?\d+\.\s*(?:EXTRA[�C][A�]O\s+DE\s+PROSPERIDADE|DIAGN[O�]STICO))/gi,
+        /(\S)\s*(?=??\s*FRASES\s+DE\s+IMPACTO)/gi,
+        /(\S)\s*(?=(?:??\s*)?\d+\.\s*NA\s+ESTRADA\s+COM)/gi,
+        /(\S)\s*(?=?\s*C[O�]DIGO\s+DA\s+VIRADA)/gi,
+        /(\S)\s*(?=??[^\n]*DIRETRIZ\s+DE\s+ILUSTRA)/gi,
+        /(\S)\s*(?=(?:??\s*)?\d+\.\s*REPROGRAMA[�C][�A]O\s+MENTAL)/gi,
+        /(\S)\s*(?=(?:?\s*)?\d+\.\s*(?:O\s+)?TREINO\s+DO\s+REI)/gi,
+        /(\S)\s*(?=(?:??\s*)?\d+\.\s*SENTEN[�C]A\s+DE\s+ATIVA)/gi,
+        /(\S)\s*(?=(?:??\s*)?\d+\.\s*ATIVA[�C][A�]O\s+COMPLEMENTAR)/gi,
+        /(\S)\s*(?=??\s*PR[O�]XIMO\s+EPIS)/gi
     ];
     for (const re of markerRes) t = t.replace(re, '$1\n\n');
-    t = t.replace(/(["""»'"]\s*[—\-–]\s*KING)\s*(?=\S)/gi, '$1\n\n');
+    t = t.replace(/(["""�'"]\s*[-\--]\s*KING)\s*(?=\S)/gi, '$1\n\n');
     return t.trim();
 }
 
 function extractDecretoQuote(lines) {
     for (let i = 0; i < lines.length; i++) {
         if (!isIntroLine(lines[i])) continue;
-        const sameLine = lines[i].match(/["""«']([^""»'"]{10,})["""»'"]\s*[—\-–]?\s*KING/i);
+        const sameLine = lines[i].match(/["""�']([^""�'"]{10,})["""�'"]\s*[-\--]?\s*KING/i);
         if (sameLine) return sameLine[1].trim();
         for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
             const l = lines[j].trim();
             if (!l) continue;
-            if (/^["'“"«]/.test(l) || /KING\s*$/i.test(l)) {
+            if (/^["'""�]/.test(l) || /KING\s*$/i.test(l)) {
                 return l
-                    .replace(/^["""«']+/, '')
-                    .replace(/["""»']+\s*$/, '')
-                    .replace(/\s*[—\-–]\s*KING\s*$/i, '')
+                    .replace(/^["""�']+/, '')
+                    .replace(/["""�']+\s*$/, '')
+                    .replace(/\s*[-\--]\s*KING\s*$/i, '')
                     .trim() || l;
             }
             const c = cleanLine(l);
-            if (/FUNDAMENTO\s+SAGRADO|EXTRA[ÇC][AÃ]O\s+DE\s+PROSPERIDADE/i.test(c)) break;
+            if (/FUNDAMENTO\s+SAGRADO|EXTRA[�C][A�]O\s+DE\s+PROSPERIDADE/i.test(c)) break;
         }
         break;
     }
@@ -95,26 +95,26 @@ const MARKER_DEFS = [
     { key: 'fundamento_sagrado', re: /(?:^|\n)\s*\d+\.\s*(?:O\s+)?FUNDAMENTO\s+SAGRADO\s*:[^\n]*/gi },
     {
         key: 'diagnostico_escassez',
-        re: /(?:^|\n)\s*\d+\.\s*(?:O\s+)?(?:DIAGN[OÓ]STICO\s+DA\s+ESCASSEZ|EXTRA[ÇC][AÃ]O\s+DE\s+PROSPERIDADE)\s*:[^\n]*/gi
+        re: /(?:^|\n)\s*\d+\.\s*(?:O\s+)?(?:DIAGN[O�]STICO\s+DA\s+ESCASSEZ|EXTRA[�C][A�]O\s+DE\s+PROSPERIDADE)\s*:[^\n]*/gi
     },
     { key: 'ie_chave', re: /(?:^|\n)\s*FRASES\s+DE\s+IMPACTO\s+DO\s+KING\s*:?\s*/gi },
     { key: 'estrada_com_king', re: /(?:^|\n)\s*\d+\.\s*NA\s+ESTRADA\s+COM\s+(?:O\s+)?KING\s*:[^\n]*/gi },
-    { key: '__codigo_virada__', re: /(?:^|\n)\s*C[OÓ]DIGO\s+DA\s+VIRADA\s*:?\s*/gi },
-    { key: 'diretriz_ilustracao', re: /(?:^|\n)\s*DIRETRIZ\s+DE\s+ILUSTRA[ÇC][ÃA]O[^:\n]*:\s*/gi },
+    { key: '__codigo_virada__', re: /(?:^|\n)\s*C[O�]DIGO\s+DA\s+VIRADA\s*:?\s*/gi },
+    { key: 'diretriz_ilustracao', re: /(?:^|\n)\s*DIRETRIZ\s+DE\s+ILUSTRA[�C][�A]O[^:\n]*:\s*/gi },
     {
         key: '__reprogram__',
-        re: /(?:^|\n)\s*\d+\.\s*REPROGRAMA[ÇC][ÃA]O\s+MENTAL(?:\s+DE\s+IMPACTO)?\s*:[^\n]*/gi
+        re: /(?:^|\n)\s*\d+\.\s*REPROGRAMA[�C][�A]O\s+MENTAL(?:\s+DE\s+IMPACTO)?\s*:[^\n]*/gi
     },
     { key: '__treino__', re: /(?:^|\n)\s*\d+\.\s*(?:O\s+)?TREINO\s+DO\s+REI[^\n]*/gi },
     {
         key: 'sentenca_ativacao',
-        re: /(?:^|\n)\s*\d+\.\s*SENTEN[ÇC]A\s+DE\s+ATIVA[ÇC][ÃA]O(?:\s+DI[AÁ]RIA)?\s*/gi
+        re: /(?:^|\n)\s*\d+\.\s*SENTEN[�C]A\s+DE\s+ATIVA[�C][�A]O(?:\s+DI[A�]RIA)?\s*/gi
     },
     {
         key: '__complementar__',
-        re: /(?:^|\n)\s*\d+\.\s*ATIVA[ÇC][AÃ]O\s+COMPLEMENTAR\s*:[^\n]*/gi
+        re: /(?:^|\n)\s*\d+\.\s*ATIVA[�C][A�]O\s+COMPLEMENTAR\s*:[^\n]*/gi
     },
-    { key: 'proximo_episodio', re: /(?:^|\n)\s*PR[OÓ]XIMO\s+EPIS[OÓ]DIO\s*:[^\n]*/gi }
+    { key: 'proximo_episodio', re: /(?:^|\n)\s*PR[O�]XIMO\s+EPIS[O�]DIO\s*:[^\n]*/gi }
 ];
 
 function findMarkers(cleanText) {
@@ -145,9 +145,9 @@ function parseFrasesImpacto(text) {
         const l = raw.trim();
         if (!l || /^FRASES\s+DE\s+IMPACTO/i.test(l)) continue;
         if (/^\d+\.\s*NA\s+ESTRADA/i.test(cleanLine(l))) break;
-        if (/^C[OÓ]DIGO\s+DA\s+VIRADA/i.test(cleanLine(l))) break;
+        if (/^C[O�]DIGO\s+DA\s+VIRADA/i.test(cleanLine(l))) break;
         const bullet = l.replace(/^\*\s*/, '').trim();
-        const q = bullet.match(/^["""«']([^""»'"]+)["""»'"]/);
+        const q = bullet.match(/^["""�']([^""�'"]+)["""�'"]/);
         if (q) {
             const phrase = q[1].trim();
             if (phrase.length > 8 && !seen.has(phrase)) {
@@ -157,7 +157,7 @@ function parseFrasesImpacto(text) {
         }
     }
     if (!phrases.length) {
-        const reQuote = /["""«']([^""»'"]{12,})["""»'"]/g;
+        const reQuote = /["""�']([^""�'"]{12,})["""�'"]/g;
         let m;
         while ((m = reQuote.exec(text)) !== null) {
             const phrase = m[1].trim();
@@ -196,14 +196,14 @@ function parseReprogramacaoBlock(text) {
     );
     if (travada && !out.mentalidade_travada) out.mentalidade_travada = travada[1].trim();
     const nova = text.match(
-        /A\s+Nova\s+Mentalidade[^:]*(?:\([^)]*\))?\s*:\s*([\s\S]*?)(?=\n\s*(?:Exerc[ií]cio|Ativa[çc][ãa]o\s+Pr[aá]tica|Protocolo)|$)/i
+        /A\s+Nova\s+Mentalidade[^:]*(?:\([^)]*\))?\s*:\s*([\s\S]*?)(?=\n\s*(?:Exerc[i�]cio|Ativa[�c][�a]o\s+Pr[a�]tica|Protocolo)|$)/i
     );
     if (nova && !out.nova_mentalidade) out.nova_mentalidade = nova[1].trim();
     const protocolo = text.match(
         /Protocolo\s+Neuro-Celular[^:]*:\s*([\s\S]*?)(?=\n\s*\d+\.\s*(?:O\s+)?TREINO|$)/i
     );
     const exerc = text.match(
-        /(?:Exerc[ií]cio\s+de\s+Fixa[çc][ãa]o\s+Mental|Ativa[çc][ãa]o\s+Pr[aá]tica\s+das\s+Conex[oõ]es\s+de\s+Governo)\s*[^:]*:\s*([\s\S]*?)(?=\n\s*\d+\.\s*(?:O\s+)?TREINO|$)/i
+        /(?:Exerc[i�]cio\s+de\s+Fixa[�c][�a]o\s+Mental|Ativa[�c][�a]o\s+Pr[a�]tica\s+das\s+Conex[o�]es\s+de\s+Governo)\s*[^:]*:\s*([\s\S]*?)(?=\n\s*\d+\.\s*(?:O\s+)?TREINO|$)/i
     );
     if (protocolo) out.exercicio_fixacao = protocolo[1].trim();
     else if (exerc) out.exercicio_fixacao = exerc[1].trim();
@@ -213,16 +213,16 @@ function parseReprogramacaoBlock(text) {
 function parseTreinoBlock(text) {
     const out = {};
     if (!text) return out;
-    const intro = text.match(/^[\s\S]*?(?=Tarefa\s+0?1|BLOCO\s+DE\s+CAMPO|A[çc][ãa]o\s+de\s+Campo)/i);
+    const intro = text.match(/^[\s\S]*?(?=Tarefa\s+0?1|BLOCO\s+DE\s+CAMPO|A[�c][�a]o\s+de\s+Campo)/i);
     const introText = intro ? intro[0].trim() : '';
     const campo = text.match(
-        /(?:BLOCO\s+DE\s+CAMPO|A[çc][ãa]o\s+de\s+Campo)[^:]*:\s*([\s\S]*?)(?=\n\s*(?:BLOCO\s+DE\s+ALTAR|A[çc][ãa]o\s+de\s+Altar)|$)/i
+        /(?:BLOCO\s+DE\s+CAMPO|A[�c][�a]o\s+de\s+Campo)[^:]*:\s*([\s\S]*?)(?=\n\s*(?:BLOCO\s+DE\s+ALTAR|A[�c][�a]o\s+de\s+Altar)|$)/i
     );
     if (campo) out.treino_negocios = (introText ? introText + '\n\n' : '') + campo[1].trim();
     const altar = text.match(
-        /(?:BLOCO\s+DE\s+ALTAR|A[çc][ãa]o\s+de\s+Altar)[^:]*:\s*([\s\S]*?)(?=\n\s*\d+\.\s*SENTEN|$)/i
+        /(?:BLOCO\s+DE\s+ALTAR|A[�c][�a]o\s+de\s+Altar)[^:]*:\s*([\s\S]*?)(?=\n\s*\d+\.\s*SENTEN|$)/i
     )
-        || text.match(/(?:BLOCO\s+DE\s+ALTAR|A[çc][ãa]o\s+de\s+Altar)[^:]*:\s*([\s\S]*?)$/i);
+        || text.match(/(?:BLOCO\s+DE\s+ALTAR|A[�c][�a]o\s+de\s+Altar)[^:]*:\s*([\s\S]*?)$/i);
     if (altar) out.treino_altar = altar[1].trim();
     return out;
 }
@@ -230,26 +230,26 @@ function parseTreinoBlock(text) {
 function parseSentencaBlock(text) {
     if (!text) return '';
     let t = text.trim().replace(/^\([^)]*declare[^)]*\)\s*/i, '').trim();
-    const quotes = [...t.matchAll(/["""«']([^""»'"]{30,})["""»'"]/g)];
+    const quotes = [...t.matchAll(/["""�']([^""�'"]{30,})["""�'"]/g)];
     if (quotes.length) return quotes[quotes.length - 1][1].trim();
     const lines = t.split(/\n/).map((l) => l.trim()).filter(Boolean);
-    const speech = lines.find((l) => /^["'“"]/.test(l) || l.length > 40);
-    return speech ? speech.replace(/^["'“"]+|["'“"]+$/g, '').trim() : t;
+    const speech = lines.find((l) => /^["'""]/.test(l) || l.length > 40);
+    return speech ? speech.replace(/^["'""]+|["'""]+$/g, '').trim() : t;
 }
 
 function parseProximoBlock(text) {
     if (!text) return '';
     const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
     if (!lines.length) return text.trim();
-    const titleLine = lines[0].replace(/^PR[OÓ]XIMO\s+EPIS[OÓ]DIO\s*:\s*/i, '').trim();
+    const titleLine = lines[0].replace(/^PR[O�]XIMO\s+EPIS[O�]DIO\s*:\s*/i, '').trim();
     return lines.length === 1 ? titleLine : titleLine + '\n\n' + lines.slice(1).join('\n\n');
 }
 
 function parseCodigoVirada(text) {
     if (!text) return '';
-    const quote = text.match(/["""«']([^""»'"]+)["""»'"]/);
-    const quoteLine = quote ? '"' + quote[1].trim() + '" — KING' : '';
-    const rest = text.replace(/^["""«'][^""]+["""»'"]\s*[—\-–]?\s*KING\s*/i, '').trim();
+    const quote = text.match(/["""�']([^""�'"]+)["""�'"]/);
+    const quoteLine = quote ? '"' + quote[1].trim() + '" - KING' : '';
+    const rest = text.replace(/^["""�'][^""]+["""�'"]\s*[-\--]?\s*KING\s*/i, '').trim();
     return quoteLine ? quoteLine + '\n\n' + rest : text.trim();
 }
 
@@ -275,19 +275,19 @@ function parseByMarkers(raw) {
         if (hit.key === 'sentenca_ativacao') { sections.sentenca_ativacao = parseSentencaBlock(body); continue; }
         if (hit.key === 'proximo_episodio') { sections.proximo_episodio = parseProximoBlock(body); continue; }
         if (hit.key === 'ie_chave') { sections.ie_chave = parseFrasesImpacto(body); continue; }
-        if (hit.key === 'fundamento_sagrado') body = body.replace(/^PROV[EÉ]RBIOS\s+\d+[^\n]*\n?/i, '').trim();
+        if (hit.key === 'fundamento_sagrado') body = body.replace(/^PROV[E�]RBIOS\s+\d+[^\n]*\n?/i, '').trim();
         if (body) sections[hit.key] = body;
     }
     if (codigoBody) {
         sections.estrada_com_king = sections.estrada_com_king
-            ? sections.estrada_com_king + '\n\n⚡ CÓDIGO DA VIRADA:\n' + codigoBody
+            ? sections.estrada_com_king + '\n\n? C�DIGO DA VIRADA:\n' + codigoBody
             : codigoBody;
     }
     if (sections.__complementar_body__) {
         const comp = sections.__complementar_body__.trim();
         sections.treino_altar = sections.treino_altar
-            ? sections.treino_altar + '\n\n---\n\n📚 ATIVAÇÃO COMPLEMENTAR\n\n' + comp
-            : '📚 ATIVAÇÃO COMPLEMENTAR\n\n' + comp;
+            ? sections.treino_altar + '\n\n---\n\n?? ATIVA��O COMPLEMENTAR\n\n' + comp
+            : '?? ATIVA��O COMPLEMENTAR\n\n' + comp;
         delete sections.__complementar_body__;
     }
     return sections;
@@ -325,13 +325,13 @@ function parsePastedActivation(text) {
             ok: true,
             partial: true,
             sections,
-            warning: 'Divisão parcial (' + n + ' blocos). Revise sentença e decreto se faltarem.'
+            warning: 'Divis�o parcial (' + n + ' blocos). Revise senten�a e decreto se faltarem.'
         };
     }
     const found = Object.keys(sections).filter((k) => String(sections[k] || '').trim());
     return {
-        error: 'Não foi possível dividir. Encontrado: ' + (found.join(', ') || 'nada')
-            + '. Use os marcadores: FUNDAMENTO SAGRADO, FRASES DE IMPACTO, SENTENÇA DE ATIVAÇÃO.'
+        error: 'N�o foi poss�vel dividir. Encontrado: ' + (found.join(', ') || 'nada')
+            + '. Use os marcadores: FUNDAMENTO SAGRADO, FRASES DE IMPACTO, SENTEN�A DE ATIVA��O.'
     };
 }
 

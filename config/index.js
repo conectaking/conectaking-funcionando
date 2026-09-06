@@ -1,11 +1,11 @@
 ﻿require('dotenv').config();
 
 /**
- * ConfiguraÃ§Ã£o centralizada da aplicaÃ§Ã£o
- * Valida variÃ¡veis de ambiente obrigatÃ³rias
+ * Configuração centralizada da aplicação
+ * Valida variáveis de ambiente obrigatórias
  */
 
-// Se DATABASE_URL estiver definida, nÃ£o exige DB_* (conexÃ£o por URL). Caso contrÃ¡rio exige DB_USER, DB_HOST, etc.
+// Se DATABASE_URL estiver definida, não exige DB_* (conexão por URL). Caso contrário exige DB_USER, DB_HOST, etc.
 const hasDatabaseUrl = !!(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
 const requiredEnvVars = hasDatabaseUrl
     ? ['JWT_SECRET']
@@ -13,8 +13,8 @@ const requiredEnvVars = hasDatabaseUrl
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
-    console.error('âŒ VariÃ¡veis de ambiente obrigatÃ³rias faltando:', missingVars.join(', '));
-    console.error('   No Render: Environment â†’ verifique se todas estÃ£o definidas. Logs: aba Logs do serviÃ§o.');
+    console.error('Variaveis de ambiente obrigatorias faltando:', missingVars.join(', '));
+    console.error('Defina JWT_SECRET e DATABASE_URL (ou DB_*) no .env / .env.prod.');
     process.exit(1);
 }
 
@@ -48,7 +48,7 @@ const config = {
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d'
     },
     
-    // CORS: com credentials: true o origin nÃ£o pode ser '*'; devolver o Origin exato no preflight.
+    // CORS: com credentials: true o origin não pode ser '*'; devolver o Origin exato no preflight.
     cors: {
         origin: (function() {
             const envList = (process.env.CORS_ORIGIN || '')
@@ -119,11 +119,11 @@ const config = {
         maxAge: 86400
     },
     
-    // Rate Limiting (aumentado para evitar problemas com usuÃ¡rios normais)
+    // Rate Limiting (aumentado para evitar problemas com usuários normais)
     rateLimit: {
         auth: {
             windowMs: 15 * 60 * 1000, // 15 minutos
-            max: 50 // 50 requisiÃ§Ãµes por janela (aumentado de 20)
+            max: 50 // 50 requisições por janela (aumentado de 20)
         },
         upload: {
             windowMs: 60 * 60 * 1000, // 1 hora
@@ -131,11 +131,11 @@ const config = {
         },
         api: {
             windowMs: 15 * 60 * 1000, // 15 minutos
-            max: 600 // 600 requisiÃ§Ãµes por janela (aumentado de 300 para reduzir rate limiting)
+            max: 600 // 600 requisições por janela (aumentado de 300 para reduzir rate limiting)
         },
         kingbrief: {
             windowMs: 60 * 60 * 1000, // 1 hora
-            max: parseInt(process.env.KINGBRIEF_RATE_LIMIT_MAX || '200', 10) // 200 por hora (evita 429; ajustÃ¡vel via KINGBRIEF_RATE_LIMIT_MAX)
+            max: parseInt(process.env.KINGBRIEF_RATE_LIMIT_MAX || '200', 10) // 200 por hora (evita 429; ajustável via KINGBRIEF_RATE_LIMIT_MAX)
         },
         /** Tentativas de senha em links partilhados King Docs (anti brute-force no POST /public/:token/unlock) */
         kingDocsUnlock: {
@@ -146,8 +146,8 @@ const config = {
     
     // Upload
     upload: {
-        maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '104857600', 10), // 100MB em bytes (aumentado para permitir BÃ­blia completa e livros grandes)
-        kingbriefMaxFileSize: parseInt(process.env.KINGBRIEF_MAX_FILE_SIZE || '209715200', 10), // 200MB para Ã¡udio KingBrief
+        maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '104857600', 10), // 100MB em bytes (aumentado para permitir Bíblia completa e livros grandes)
+        kingbriefMaxFileSize: parseInt(process.env.KINGBRIEF_MAX_FILE_SIZE || '209715200', 10), // 200MB para áudio KingBrief
         allowedMimeTypes: {
             image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
             pdf: ['application/pdf']

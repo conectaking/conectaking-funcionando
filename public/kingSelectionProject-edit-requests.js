@@ -1,6 +1,6 @@
-﻿/**
- * Pedidos de ediÃ§Ã£o (modo pÃºblico) â€” funciona na Hostinger com HTML/JS antigos em cache.
- * Injeta Â«Permitir envio para ediÃ§Ã£oÂ» e envia allow_client_edit_request no PUT da privacidade.
+/**
+ * Pedidos de edição (modo público) �?" funciona na Hostinger com HTML/JS antigos em cache.
+ * Injeta «Permitir envio para edição» e envia allow_client_edit_request no PUT da privacidade.
  */
 (function () {
   'use strict';
@@ -70,8 +70,8 @@
         '<label class="flex items-start gap-3 cursor-pointer m-0" style="display:flex;align-items:flex-start;gap:12px">' +
         '<input type="checkbox" id="ks-allow-client-edit-request" class="mt-1" style="margin-top:4px" />' +
         '<span>' +
-        '<span class="ks-er-title">Permitir envio para ediÃ§Ã£o</span>' +
-        '<span class="ks-er-sub">O cliente marca fotos e clica em Â«Enviar para ediÃ§Ã£oÂ». VocÃª vÃª os pedidos em Â«Atividades do clienteÂ».</span>' +
+        '<span class="ks-er-title">Permitir envio para edição</span>' +
+        '<span class="ks-er-sub">O cliente marca fotos e clica em «Enviar para edição». Você vê os pedidos em «Atividades do cliente».</span>' +
         '</span></label>';
       host.appendChild(editBlock);
     }
