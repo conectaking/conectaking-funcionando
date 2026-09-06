@@ -432,7 +432,7 @@ router.get('/bible/devotionals-365/month-themes/:year', protectAdmin, async (req
         return res.status(400).json({ success: false, message: 'Ano inválido.' });
     }
     try {
-        const themes = bibleAdminDev365.getMonthThemesForYear(year);
+        const themes = await bibleAdminDev365.getMonthThemesForYear(year);
         res.json({ success: true, data: { year, themes } });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
@@ -446,7 +446,7 @@ router.put('/bible/devotionals-365/month-themes/:year', protectAdmin, async (req
         return res.status(400).json({ success: false, message: 'Ano inválido.' });
     }
     try {
-        const themes = bibleAdminDev365.setAllMonthThemesForYear(year, req.body || {});
+        const themes = await bibleAdminDev365.setAllMonthThemesForYear(year, req.body || {});
         res.json({ success: true, data: { year, themes } });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
@@ -464,7 +464,7 @@ router.post('/bible/devotionals-365/month-themes/:year/generate/:month', protect
         const hint = (req.body && req.body.hint) || '';
         const r = await bibleDevotionalAi.generateMonthThemeLine(year, month, hint);
         if (r.error) return res.status(400).json({ success: false, message: r.error });
-        const themes = bibleAdminDev365.setMonthTheme(year, month, r.text);
+        const themes = await bibleAdminDev365.setMonthTheme(year, month, r.text);
         res.json({ success: true, data: { year, month, text: r.text, themes } });
     } catch (e) {
         logger.error('adminBibleStudy generate month theme:', e);
@@ -484,7 +484,7 @@ router.post('/bible/devotionals-365/month-themes/:year/generate-all', protectAdm
         if (r.errors && r.errors.length === 12) {
             return res.status(400).json({ success: false, message: r.errors[0].error || 'Falha.', errors: r.errors });
         }
-        const themes = bibleAdminDev365.setAllMonthThemesForYear(year, r.themes);
+        const themes = await bibleAdminDev365.setAllMonthThemesForYear(year, r.themes);
         res.json({ success: true, data: { year, themes, errors: r.errors } });
     } catch (e) {
         logger.error('adminBibleStudy generate-all month themes:', e);
