@@ -2,6 +2,7 @@ const { convertYouTubeUrlToEmbed } = require('../../utils/youtube');
 const logger = require('../../utils/logger');
 const fetch = require('node-fetch');
 const bibleService = require('../bible/bible.service');
+const { canonicalizeProfileSlug } = require('../../utils/profileSlugAliases');
 
 function hexToRgb(hex) {
     if (!hex || typeof hex !== 'string') return { r: 20, g: 20, b: 23 }; 
@@ -19,8 +20,16 @@ function hexToRgb(hex) {
  * @returns {{ type: 'notFound', message: string }|{ type: 'redirect', url: string, statusCode?: number }|{ type: 'inactive' }|{ type: 'render', view: string, data: object }}
  */
 async function getProfilePageData(client, identifier, req) {
-    const identifierLower = identifier.toLowerCase();
-    logger.debug('🔍 Buscando perfil público', { identifier });
+    const rawIdentifier = String(identifier || '').trim();
+    const canonical = canonicalizeProfileSlug(rawIdentifier);
+    if (canonical && canonical.toLowerCase() !== rawIdentifier.toLowerCase()) {
+        const qsIndex = req.originalUrl ? req.originalUrl.indexOf('?') : -1;
+        const qs = qsIndex >= 0 ? req.originalUrl.substring(qsIndex) : '';
+        return { type: 'redirect', statusCode: 301, url: `/${canonical}${qs}` };
+    }
+
+    const identifierLower = rawIdentifier.toLowerCase();
+    logger.debug('🔍 Buscando perfil público', { identifier: rawIdentifier });
         // Buscar de forma case-insensitive por slug (links podem vir com caixa diferente),
         // e permitir acesso por id sem estourar erro de type cast.
         const userRes = await client.query(
@@ -28,7 +37,7 @@ async function getProfilePageData(client, identifier, req) {
              FROM users
              WHERE LOWER(profile_slug) = LOWER($1) OR id::text = $1
              LIMIT 1`,
-            [identifier]
+            [rawIdentifier]
         );
         
         if (userRes.rows.length === 0) {
