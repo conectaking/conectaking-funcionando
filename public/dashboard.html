@@ -1597,7 +1597,7 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-08-21-vitrine4" defer></script>
+    <script src="dashboard.js?v=2026-09-06-api-same-origin" defer></script>
     <script src="js/dashboard-vitrine.js?v=2026-08-21-vitrine4" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
@@ -1717,31 +1717,38 @@
             }
         })();
     </script>
-    <!-- Base da API (produ��o por padr�o; local apenas quando explicitamente solicitado) -->
+    <!-- Base da API: mesma origem no VPS/dominio; :5000 so em localhost -->
     <script>
       (function () {
         try {
+          var host = String(window.location.hostname || '').toLowerCase();
+          var port = String(window.location.port || '');
           var params = new URLSearchParams(window.location.search || '');
-          var forceLocal =
+          var isLocalHost = host === 'localhost' || host === '127.0.0.1';
+          var isProdHost = host === 'conectaking.com.br' || host === 'www.conectaking.com.br' || host.endsWith('.conectaking.com.br');
+          var wantLocal =
             (params.get('api') || '').toLowerCase() === 'local' ||
-            (localStorage.getItem('useLocalApi') === 'true') ||
-            ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
-              String(window.location.port || '') === '5000');
+            (isLocalHost && (port === '5000' || localStorage.getItem('useLocalApi') === 'true'));
 
-          if (forceLocal) {
-            try { localStorage.setItem('useLocalApi', 'true'); } catch (e) {}
+          // Em producao (dominio), nunca usar :5000 nem flag antiga de local
+          if (isProdHost || (params.get('api') || '').toLowerCase() === 'prod') {
+            try {
+              localStorage.removeItem('useLocalApi');
+              localStorage.setItem('useProductionApi', 'true');
+            } catch (e) {}
+            wantLocal = false;
           }
 
-          var host = window.location.hostname || 'localhost';
-          var localApiBase = 'http://' + host + ':5000';
-          var prodApiBase = 'https://www.conectaking.com.br';
+          var sameOrigin = String(window.location.origin || '').replace(/\/$/, '');
+          var localApiBase = (isLocalHost && port === '5000')
+            ? sameOrigin
+            : ('http://' + (host || 'localhost') + ':5000');
+          var prodApiBase = isProdHost ? sameOrigin : 'https://www.conectaking.com.br';
 
-          // Define para todos os scripts (planRenderer / ocultar-m�dulos / dashboard.js etc)
-          window.API_BASE = forceLocal ? localApiBase : prodApiBase;
+          window.API_BASE = wantLocal ? localApiBase : prodApiBase;
           window.API_URL = window.API_BASE;
-          window.USE_LOCAL_API_5000 = !!forceLocal;
+          window.USE_LOCAL_API_5000 = !!(wantLocal && isLocalHost);
         } catch (e) {
-          // Fallback seguro (evita base vazia virar /api no Live Server)
           window.API_BASE = window.API_BASE || window.API_URL || 'https://www.conectaking.com.br';
           window.API_URL = window.API_URL || window.API_BASE;
           window.USE_LOCAL_API_5000 = false;

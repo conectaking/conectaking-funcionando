@@ -53,23 +53,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let token = localStorage.getItem('conectaKingToken');
-    const useLocalApi = (typeof window !== 'undefined') && (
+    const hostLower = (typeof window !== 'undefined' && window.location && window.location.hostname)
+        ? String(window.location.hostname).toLowerCase()
+        : '';
+    const isProdHost = hostLower === 'conectaking.com.br' || hostLower === 'www.conectaking.com.br' || hostLower.endsWith('.conectaking.com.br');
+    if (isProdHost) {
+        try {
+            localStorage.removeItem('useLocalApi');
+            localStorage.setItem('useProductionApi', 'true');
+        } catch (e) {}
+    }
+    const useLocalApi = (typeof window !== 'undefined') && !isProdHost && (
         (window.location.search || '').toLowerCase().includes('api=local') ||
         (localStorage.getItem('useLocalApi') === 'true')
     );
     const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const useLocalApi5000 = typeof window !== 'undefined' && window.USE_LOCAL_API_5000 === true;
+    const useLocalApi5000 = typeof window !== 'undefined' && window.USE_LOCAL_API_5000 === true && isLocalhost;
     const inheritedApi = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL))
         ? String(window.API_BASE || window.API_URL).replace(/\/$/, '')
         : '';
-    const computedLocal = window.API_CONFIG?.baseURL || `http://${window.location.hostname}:5000`;
-    const computedProd = 'https://www.conectaking.com.br';
-    const explicitLocalApi = !!(useLocalApi5000 || (useLocalApi && isLocalhost));
-    let API_URL = inheritedApi && /^https?:\/\//i.test(inheritedApi)
+    const sameOrigin = (typeof window !== 'undefined' && window.location && window.location.origin)
+        ? String(window.location.origin).replace(/\/$/, '')
+        : '';
+    const computedLocal = (isLocalhost && String(window.location.port || '') === '5000')
+        ? sameOrigin
+        : (window.API_CONFIG?.baseURL || `http://${window.location.hostname}:5000`);
+    const computedProd = isProdHost ? (sameOrigin || 'https://www.conectaking.com.br') : 'https://www.conectaking.com.br';
+    // Nunca usar http://dominio:5000 em producao
+    if (inheritedApi && /:5000$/i.test(inheritedApi) && isProdHost) {
+        try { window.API_BASE = computedProd; window.API_URL = computedProd; } catch (e) {}
+    }
+    const safeInherited = (inheritedApi && /^https?:\/\//i.test(inheritedApi) && !(isProdHost && /:5000$/i.test(inheritedApi)))
         ? inheritedApi
+        : '';
+    const explicitLocalApi = !!(useLocalApi5000 || (useLocalApi && isLocalhost));
+    let API_URL = safeInherited
+        ? safeInherited
         : (explicitLocalApi ? computedLocal : computedProd);
-    if (!API_URL || !/^https?:\/\//i.test(API_URL)) {
-        API_URL = explicitLocalApi ? computedLocal : computedProd;
+    if (!API_URL || !/^https?:\/\//i.test(API_URL) || (isProdHost && /:5000$/i.test(API_URL))) {
+        API_URL = explicitLocalApi && !isProdHost ? computedLocal : computedProd;
     }
 
     // Tornar API_URL disponível globalmente para planRenderer.js, module-link-limits.js e kingForms.html (nova aba)
