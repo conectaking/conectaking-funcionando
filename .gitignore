@@ -10,6 +10,9 @@ yarn-error.log*
 .env.path
 .env.local
 .env.*.local
+.env.docker
+.env.prod
+.env.production
 backups/
 *.dump
 
