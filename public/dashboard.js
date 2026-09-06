@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUN�f�?��f�'O MELHORADA PARA FETCH (COMPAT�fVEL COM ANDROID) ---
+    // --- FUN�f�?�AO MELHORADA PARA FETCH (COMPAT�fVEL COM ANDROID) ---
     // Cache de requisições para evitar rate limit
     const requestCache = new Map();
     const CACHE_DURATION = 30000; // 30 segundos de cache para GET requests
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUN�f�?��f�'O ESPEC�fFICA PARA UPLOAD DE PDF ---
+    // --- FUN�f�?�AO ESPEC�fFICA PARA UPLOAD DE PDF ---
     async function uploadPDF(file, progressCallback = null) {
         if (!file) {
             throw new Error('Nenhum arquivo selecionado');
@@ -435,17 +435,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!contentType || !contentType.includes('application/json')) {
                 const responseText = await response.text();
-                console.error('â�' Resposta n�f£o �f© JSON:', responseText.substring(0, 500));
+                console.error('Resposta n�f£o �f© JSON:', responseText.substring(0, 500));
 
                 // Mensagens espec�f­ficas para diferentes tipos de erro
                 if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-                    throw new Error('â�' SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf n�f£o est�f¡ funcionando. Verifique o arquivo SERVER-FIXES.md para corre�f§�fµes necess�f¡rias.');
+                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf n�f£o est�f¡ funcionando. Verifique o arquivo SERVER-FIXES.md para corre�f§�fµes necess�f¡rias.');
                 } else if (response.status === 404) {
-                    throw new Error('â�' ENDPOINT N�f�'O ENCONTRADO: O endpoint /api/upload/pdf n�f£o existe no servidor. Implemente conforme SERVER-FIXES.md');
+                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf n�f£o existe no servidor. Implemente conforme SERVER-FIXES.md');
                 } else if (response.status === 401) {
-                    throw new Error('â�' N�f�'O AUTORIZADO: Token inv�f¡lido ou expirado. Fa�f§a login novamente.');
+                    throw new Error('NAO AUTORIZADO: Token inv�f¡lido ou expirado. Fa�f§a login novamente.');
                 } else if (response.status === 500) {
-                    throw new Error('â�' ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as corre�f§�fµes do SERVER-FIXES.md');
+                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as corre�f§�fµes do SERVER-FIXES.md');
                 } else {
                     throw new Error(`â�' ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para corre�f§�fµes.`);
                 }
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return result;
 
         } catch (error) {
-            console.error('â�' Erro no upload do PDF:', error);
+            console.error('Erro no upload do PDF:', error);
 
             if (progressCallback) {
                 progressCallback('Erro no envio');
@@ -474,16 +474,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Re-lan�f§a o erro com informa�f§�fµes espec�f­ficas
             if (error.message.includes('Failed to fetch')) {
-                throw new Error('â�' ERRO DE CONEX�f�'O: N�f£o foi poss�f­vel conectar ao servidor. Verifique sua internet e se o servidor est�f¡ funcionando.');
+                throw new Error('ERRO DE CONEXAO: N�f£o foi poss�f­vel conectar ao servidor. Verifique sua internet e se o servidor est�f¡ funcionando.');
             } else if (error.message.includes('Unexpected token')) {
-                throw new Error('â�' ERRO DE RESPOSTA: Servidor retornou dados inv�f¡lidos. Implemente as corre�f§�fµes do SERVER-FIXES.md');
+                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados inv�f¡lidos. Implemente as corre�f§�fµes do SERVER-FIXES.md');
             } else {
                 throw error;
             }
         }
     }
 
-    // --- FUN�f�?��f�'O DE TESTE PARA VERIFICAR ENDPOINT ---
+    // --- FUN�f�?�AO DE TESTE PARA VERIFICAR ENDPOINT ---
     async function testPDFEndpoint() {
         console.log('ðŸ§ª Testando conectividade com o servidor...');
 
@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error('â�' Servidor n�f£o acess�f­vel:', error);
+            console.error('Servidor n�f£o acess�f­vel:', error);
             return {
                 server: false,
                 error: error.message,
@@ -841,7 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
                 <div class="banner-social-extras" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
                     <label style="font-weight: 600;">Modelos de link (cole na URL acima)</label>
-                    <p class="banner-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Copie o modelo, troque o @ ou o número e cole no campo <strong style="color:#ececec">URL ao clicar na imagem</strong>. Assim o banner fica com um link só �?" sem atalhos por cima da foto.</p>
+                    <p class="banner-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Copie o modelo, troque o @ ou o número e cole no campo <strong style="color:#ececec">URL ao clicar na imagem</strong>. Assim o banner fica com um link só - sem atalhos por cima da foto.</p>
                     <div class="banner-field-row" style="margin-bottom: 12px;">
                         <label style="display: block; margin-bottom: 6px;"><i class="fab fa-instagram" style="margin-right: 6px;"></i>Modelo Instagram</label>
                         <code class="banner-url-model" data-model="${igModel}" style="display:block;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:rgba(0,0,0,0.25);color:#facc15;font-size:0.82rem;word-break:break-all;">${igModel}</code>
@@ -864,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function bannerDestDisplayLabel(raw) {
         const p = parseBannerDestination(raw);
         if (!p.primary_url) return 'Sem destino';
-        return p.primary_url.length > 48 ? p.primary_url.slice(0, 48) + '�?�' : p.primary_url;
+        return p.primary_url.length > 48 ? p.primary_url.slice(0, 48) + '...': p.primary_url;
     }
 
     function wifiBannerUploadBlockHtml(itemId, bannerUrl) {
@@ -890,7 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
     }
 
-    // --- FUN�f�?��f�'O DE TESTE E DEBUG PARA PIX ---
+    // --- FUN�f�?�AO DE TESTE E DEBUG PARA PIX ---
     function testPixCode(pixKey, recipientName, amount = null, description = '') {
         console.log('ðŸ§ª Testando c�f³digo PIX...');
         console.log('ðŸ�?o�?� Dados de entrada:');
@@ -908,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pixCode.startsWith('000201')) {
                 console.log('â�"�?� C�f³digo come�f§a corretamente com 000201');
             } else {
-                console.log('â�' ERRO: C�f³digo n�f£o come�f§a com 000201');
+                console.log('ERRO: C�f³digo n�f£o come�f§a com 000201');
             }
 
             // Verificar se termina com CRC v�f¡lido
@@ -919,19 +919,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pixCode.includes('BR.GOV.BCB.PIX')) {
                 console.log('â�"�?� Cont�f©m identificador BR.GOV.BCB.PIX');
             } else {
-                console.log('â�' ERRO: N�f£o cont�f©m BR.GOV.BCB.PIX');
+                console.log('ERRO: N�f£o cont�f©m BR.GOV.BCB.PIX');
             }
 
             if (pixCode.includes(pixKey)) {
                 console.log('â�"�?� Cont�f©m chave PIX');
             } else {
-                console.log('â�' ERRO: N�f£o cont�f©m chave PIX');
+                console.log('ERRO: N�f£o cont�f©m chave PIX');
             }
 
             return pixCode;
 
         } catch (error) {
-            console.error('â�' Erro ao gerar c�f³digo PIX:', error);
+            console.error('Erro ao gerar c�f³digo PIX:', error);
             return null;
         }
     }
@@ -1273,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', () => {
         guest_list: 'Lista de Convidados',
         pix: 'PIX',
         pix_qrcode: 'PIX QR Code',
-        wifi: 'Wi�?'Fi',
+        wifi: 'Wi-Fi',
         sales_page: 'Página de Vendas',
         product_catalog: 'Catálogo de Produtos',
         banner_carousel: 'Carrossel de Banners',
@@ -2407,7 +2407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wifiBannerUrl = (itemEl.querySelector('.wifi-banner-url-input')?.value || '').trim();
                 const wifiLogoUrl = (itemEl.querySelector('.wifi-logo-url-input')?.value || '').trim();
                 const wifiLogoSize = Math.min(600, Math.max(20, parseInt(itemEl.querySelector('.wifi-logo-size-input')?.value || itemEl.dataset.logoSize || '48', 10) || 48));
-                const wifiSafeTitle = (title || 'Wi�?'Fi').trim();
+                const wifiSafeTitle = (title || 'Wi-Fi').trim();
                 const wifiCfgEnc = encodeURIComponent(JSON.stringify({
                     ssid: wifiSsid,
                     password: wifiPassword,
@@ -2423,7 +2423,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     wifiBanBtn.type = 'button';
                     wifiBanBtn.className = 'wifi-banner-btn';
                     wifiBanBtn.setAttribute('data-wifi-config', wifiCfgEnc);
-                    wifiBanBtn.setAttribute('aria-label', wifiSsid ? `Wi�?'Fi: rede ${wifiSsid}` : 'Abrir QR Wi�?'Fi');
+                    wifiBanBtn.setAttribute('aria-label', wifiSsid ? `Wi-Fi: rede ${wifiSsid}` : 'Abrir QR Wi-Fi');
                     wifiBanBtn.innerHTML = `<img src="${wifiBannerUrl}" alt="${wifiSsid ? 'Rede: ' + wifiSsid : wifiSafeTitle}" style="width:100%;height:auto;display:block;border-radius:12px;" loading="lazy">`;
                     previewEl.appendChild(wifiBanBtn);
                 } else {
@@ -2532,7 +2532,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const defaultIconsMap = { link: 'fas fa-link', convite: 'fas fa-envelope-open-text', bible: 'fas fa-bible', pix: 'fa-solid fa-qrcode', pix_qrcode: 'fas fa-qrcode', wifi: 'fas fa-wifi', digital_form: 'fas fa-file-signature', sales_page: 'fas fa-store' };
-                const defaultTitlesMap = { link: 'Link Personalizado', convite: 'Convite Digital', bible: 'Bíblia', pix: 'PIX', pix_qrcode: 'PIX QR Code', wifi: 'Wi�?'Fi', digital_form: 'Formulário King', sales_page: 'Página de Vendas' };
+                const defaultTitlesMap = { link: 'Link Personalizado', convite: 'Convite Digital', bible: 'Bíblia', pix: 'PIX', pix_qrcode: 'PIX QR Code', wifi: 'Wi-Fi', digital_form: 'Formulário King', sales_page: 'Página de Vendas' };
                 const displayTitle = (title || defaultTitlesMap[itemType] || 'Novo Item') + (isDisabled ? ' (Desativado)' : '');
                 if (hasLogo && itemType === 'link') {
                     const defaultIconFallback = 'fas fa-link';
@@ -2998,7 +2998,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return !container.querySelector('[data-id="' + it.id + '"]');
         });
         if (stillMissing.length) {
-            console.warn('�s�️ Re-render completo �?" ainda faltam:', stillMissing.map(function (m) {
+            console.warn('�s�️ Re-render completo - ainda faltam:', stillMissing.map(function (m) {
                 return (m.item_type || '?') + '#' + m.id;
             }).join(', '));
             renderEditor(profileData);
@@ -3628,7 +3628,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const wifiLogoUrl = (wifiCfg.logo_url || '').trim();
                         const wifiLogoSize = Math.min(600, Math.max(20, parseInt(wifiCfg.logo_size || item.logo_size || 48, 10) || 48));
                         if (wifiDisplay === 'banner' && wifiBannerUrl && !wifiBannerUrl.includes('placeholder')) {
-                            iconOrThumbHTML = `<img src="${wifiBannerUrl}" class="banner-preview-thumb" alt="Wi�?'Fi" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fas fa-wifi" style="display: none;"></i>`;
+                            iconOrThumbHTML = `<img src="${wifiBannerUrl}" class="banner-preview-thumb" alt="Wi-Fi" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fas fa-wifi" style="display: none;"></i>`;
                         } else if (wifiLogoUrl && !wifiLogoUrl.includes('placeholder')) {
                             iconOrThumbHTML = `<img src="${wifiLogoUrl}" class="item-logo-preview" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"><i class="${item.icon_class || 'fas fa-wifi'} item-icon-picker" title="Alterar Ícone" style="display:none;"></i>`;
                         } else {
@@ -3636,7 +3636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         const rawWifiTitle = (item.title && String(item.title).trim()) ? String(item.title).trim() : '';
-                        const moduleTitle = (rawWifiTitle && rawWifiTitle !== 'Item') ? rawWifiTitle : 'Wi�?'Fi (QR Code)';
+                        const moduleTitle = (rawWifiTitle && rawWifiTitle !== 'Item') ? rawWifiTitle : 'Wi-Fi (QR Code)';
                         const destLabel = wifiSsid
                             ? `${wifiDisplay === 'banner' ? 'Banner' : 'Botão'} · Rede: ${wifiSsid}`
                             : 'Informe o nome da rede (SSID)';
@@ -3644,7 +3644,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         editHTML = `
             <label>Título no cartão</label>
-            <input type="text" class="item-title-input" value="${moduleTitle.replace(/"/g, '&quot;')}" placeholder="Ex: Wi�?'Fi da loja (texto do botão no cartão)">
+            <input type="text" class="item-title-input" value="${moduleTitle.replace(/"/g, '&quot;')}" placeholder="Ex: Wi-Fi da loja (texto do botão no cartão)">
             <div class="input-group">
                 <label>Formato</label>
                 <div style="display: flex; gap: 15px; margin-top: 10px;">
@@ -3658,8 +3658,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </label>
                 </div>
             </div>
-            <label>Nome da rede Wi�?'Fi (SSID)</label>
-            <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">�? o nome que aparece na lista de redes do celular �?" obrigatório para gerar o QR Code.</small>
+            <label>Nome da rede Wi-Fi (SSID)</label>
+            <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">�? o nome que aparece na lista de redes do celular - obrigatório para gerar o QR Code.</small>
             <input type="text" class="wifi-ssid-input" value="${wifiSsid.replace(/"/g, '&quot;')}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
             <label>Seguran�f§a</label>
             <select class="wifi-security-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
@@ -3747,11 +3747,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <label>Título</label>
             <input type="text" class="tcb-title-input item-title-input" value="${tcbEsc(item.title || '')}" placeholder="Ex: Encontro Presencial Agosto 2026">
             <label>Linha 1 (data)</label>
-            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon1-input" value="${tcbEsc(l1.icon || '�Y".')}" style="width:56px;"><input type="text" class="tcb-line1-input" value="${tcbEsc(l1.text || '')}" placeholder="21/08/2026 �?' 22/08/2026" style="flex:1;"></div>
+            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon1-input" value="${tcbEsc(l1.icon || '')}" style="width:56px;"><input type="text" class="tcb-line1-input" value="${tcbEsc(l1.text || '')}" placeholder="21/08/2026 �?' 22/08/2026" style="flex:1;"></div>
             <label>Linha 2 (horário)</label>
-            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon2-input" value="${tcbEsc(l2.icon || '�Y.'')}" style="width:56px;"><input type="text" class="tcb-line2-input" value="${tcbEsc(l2.text || '')}" placeholder="09:00 �?" 18:00" style="flex:1;"></div>
+            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon2-input" value="${tcbEsc(l2.icon || '')}" style="width:56px;"><input type="text" class="tcb-line2-input" value="${tcbEsc(l2.text || '')}" placeholder="09:00 - 18:00" style="flex:1;"></div>
             <label>Linha 3 (local)</label>
-            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon3-input" value="${tcbEsc(l3.icon || '�Y"�')}" style="width:56px;"><input type="text" class="tcb-line3-input" value="${tcbEsc(l3.text || '')}" placeholder="Cidade / local" style="flex:1;"></div>
+            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon3-input" value="${tcbEsc(l3.icon || '')}" style="width:56px;"><input type="text" class="tcb-line3-input" value="${tcbEsc(l3.text || '')}" placeholder="Cidade / local" style="flex:1;"></div>
             <label>Texto do botão</label>
             <input type="text" class="tcb-button-label-input" value="${tcbEsc(tcb.button_label || 'Inscrever-se')}" placeholder="Inscrever-se">
             <label>Link do botão</label>
@@ -3981,7 +3981,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'agenda':
                     case 'contract':
                     case 'photographer_site':
-                        // módulos removidos �?" não renderizar no editor
+                        // módulos removidos - não renderizar no editor
                         break;
                     case 'convite':
                         itemEl.classList.add('link-item');
@@ -4485,7 +4485,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Função para salvar o formato do avatar
     async function saveAvatarFormat(format) {
         try {
-            console.log('�Y'� Salvando formato do avatar:', format);
+            console.log('Salvando formato do avatar:', format);
             const response = await safeFetch(`${API_URL}/api/profile/avatar-format`, {
                 method: 'PUT',
                 headers: {
@@ -4522,7 +4522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleImageUpload(imageFile, itemElement) {
-        // Wi�?'Fi: upload da imagem do banner (não usar rota de banner nem salvar como item "banner")
+        // Wi-Fi: upload da imagem do banner (não usar rota de banner nem salvar como item "banner")
         const isDomElStart = itemElement && typeof itemElement.querySelector === 'function';
         const isWifiItem = isDomElStart && itemElement.dataset && itemElement.dataset.itemType === 'wifi';
         if (isWifiItem) {
@@ -4569,7 +4569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 updateLivePreviewFromForm();
             } catch (error) {
-                console.error('Erro no upload Wi�?'Fi banner:', error);
+                console.error('Erro no upload Wi-Fi banner:', error);
                 alert(`Erro: ${error.message}`);
             } finally {
                 if (itemElement.classList) itemElement.classList.remove('is-uploading');
@@ -4970,7 +4970,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.querySelector(`.duplicate-item-btn[data-item-id="${itemId}"], .module-action-btn.duplicate[data-item-id="${itemId}"]`);
         const origTitle = btn?.getAttribute?.('title');
         const url = `${typeof API_URL !== 'undefined' ? API_URL : window.API_URL || ''}/api/profile/items/${itemId}/duplicate`;
-        console.log('�Y"" Duplicando módulo:', itemId, '�?'', url);
+        console.log('�Y"" Duplicando módulo:', itemId, '', url);
         try {
             if (btn) {
                 btn.disabled = true;
@@ -5278,7 +5278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.warn(`�s�️ Item ${itemId} (${itemType}) não está na lista do editor �?" re-render`);
+            console.warn(`�s�️ Item ${itemId} (${itemType}) não está na lista do editor - re-render`);
             const pid = String(itemId);
             if (window.currentProfileData?.items) {
                 const idx = window.currentProfileData.items.findIndex(function (i) { return String(i.id) === pid; });
@@ -6464,7 +6464,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return !(el.querySelector('.wifi-ssid-input')?.value || '').trim();
         });
         if (wifiMissingSsid) {
-            alert('Preencha o nome da rede (SSID) em todos os módulos Wi�?'Fi antes de publicar.');
+            alert('Preencha o nome da rede (SSID) em todos os módulos Wi-Fi antes de publicar.');
             return;
         }
 
@@ -7171,7 +7171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             destValue = sanitizeBannerDest(destValue);
                             itemData.destination_url = serializeBannerDestination(destValue, '', '') || undefined;
 
-                            // title (nome do banner) �?" priorizar modal
+                            // title (nome do banner) - priorizar modal
                             let bannerNameValue = '';
                             if (nameInputModal && nameInputModal.value) {
                                 bannerNameValue = nameInputModal.value.trim();
@@ -7279,7 +7279,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             break;
                         case 'wifi': {
                             const titleWifiModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-title`)?.value;
-                            itemData.title = (titleWifiModal !== undefined ? titleWifiModal : itemEl.querySelector('.item-title-input')?.value)?.trim() || 'Wi�?'Fi';
+                            itemData.title = (titleWifiModal !== undefined ? titleWifiModal : itemEl.querySelector('.item-title-input')?.value)?.trim() || 'Wi-Fi';
                             const fmt = itemEl.querySelector('.wifi-display-format-input:checked')?.value || 'button';
                             const ssid = itemEl.querySelector('.wifi-ssid-input')?.value?.trim() || '';
                             const password = itemEl.querySelector('.wifi-password-input')?.value ?? '';
@@ -7324,9 +7324,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             const line1 = itemEl.querySelector('.tcb-line1-input')?.value?.trim() || '';
                             const line2 = itemEl.querySelector('.tcb-line2-input')?.value?.trim() || '';
                             const line3 = itemEl.querySelector('.tcb-line3-input')?.value?.trim() || '';
-                            const icon1 = itemEl.querySelector('.tcb-icon1-input')?.value?.trim() || '�Y".';
-                            const icon2 = itemEl.querySelector('.tcb-icon2-input')?.value?.trim() || '�Y.'';
-                            const icon3 = itemEl.querySelector('.tcb-icon3-input')?.value?.trim() || '�Y"�';
+                            const icon1 = itemEl.querySelector('.tcb-icon1-input')?.value?.trim() || '';
+                            const icon2 = itemEl.querySelector('.tcb-icon2-input')?.value?.trim() || '';
+                            const icon3 = itemEl.querySelector('.tcb-icon3-input')?.value?.trim() || '';
                             const template = itemEl.querySelector('.tcb-template-input')?.value || 'evento';
                             const lines = [];
                             if (line1) lines.push({ icon: icon1, text: line1 });
@@ -7388,7 +7388,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 addedFromServer++;
             });
             if (addedFromServer > 0) {
-                console.log('�Y"O ' + addedFromServer + ' item(ns) do servidor que não estavam no DOM foram incluídos no save para não sumir do cartão público.');
+                console.log('+ addedFromServer + ' item(ns) do servidor que não estavam no DOM foram incluídos no save para não sumir do cartão público.');
             }
 
             // IMPORTANTE: Verificar se há sales_page no array antes de enviar
@@ -7653,7 +7653,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (hasSalesPageItems) {
                 console.log(`�s�️ Detectado ${salesPageElements.length} item(ns) sales_page na lista.`);
-                console.log('�Y'� Buscando dados atualizados APENAS do sales_page para preservar alterações salvas.');
+                console.log('Buscando dados atualizados APENAS do sales_page para preservar alterações salvas.');
 
                 // Buscar dados atualizados de cada sales_page diretamente do servidor
                 for (const itemEl of salesPageElements) {
@@ -7751,9 +7751,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('�O window.currentProfileData ou items não existe!');
                 }
 
-                console.log('�Y'� N�fO recarregando todos os dados para preservar alterações salvas na página de vendas.');
-                console.log('�Y'� Os dados da página de vendas foram atualizados diretamente do servidor.');
-                console.log('�Y'� O botão "Publicar alterações" apenas publica os outros módulos, não afeta a página de vendas.');
+                console.log('N�fO recarregando todos os dados para preservar alterações salvas na página de vendas.');
+                console.log('Os dados da página de vendas foram atualizados diretamente do servidor.');
+                console.log('O botão "Publicar alterações" apenas publica os outros módulos, não afeta a página de vendas.');
 
                 // Re-renderizar para garantir que os dados atualizados do sales_page sejam exibidos
                 if (window.currentProfileData) {
@@ -7952,7 +7952,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         })));
                     }
 
-                    // Re-renderizar lista de módulos (Wi�?'Fi e outros que estavam no servidor mas não no DOM)
+                    // Re-renderizar lista de módulos (Wi-Fi e outros que estavam no servidor mas não no DOM)
                     console.log('�Y"" Renderizando lista de módulos após publicar...');
                     if (window.currentProfileData) {
                         renderEditor(window.currentProfileData);
@@ -8922,7 +8922,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formHTML = `
                 <div class="input-group">
                     <label>Título no cartão</label>
-                    <input type="text" id="edit-title" value="${escWifiModal(currentTitle)}" placeholder="Texto do botão (ex: Conectar ao Wi�?'Fi)">
+                    <input type="text" id="edit-title" value="${escWifiModal(currentTitle)}" placeholder="Texto do botão (ex: Conectar ao Wi-Fi)">
                 </div>
                 <div class="input-group">
                     <label>Formato</label>
@@ -8938,7 +8938,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Nome da rede Wi�?'Fi (SSID)</label>
+                    <label>Nome da rede Wi-Fi (SSID)</label>
                     <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">Obrigatório. �? o nome exato que aparece na lista de redes do celular (usado no QR Code).</small>
                     <input type="text" id="edit-wifi-ssid" value="${escWifiModal(wSsid)}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
                 </div>
@@ -9577,7 +9577,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'carousel': 'Editar Carrossel',
             'digital_form': 'Editar Formulário King',
             'location': 'Editar Localização',
-            'wifi': 'Editar Wi�?'Fi (QR Code)',
+            'wifi': 'Editar Wi-Fi (QR Code)',
         };
         SELECTORS.editModalTitle.textContent = modalTitleMap[itemType] || (itemType === 'banner' ? 'Editar Banner' : `Editar ${itemType.replace('_', ' ').charAt(0).toUpperCase() + itemType.replace('_', ' ').slice(1)}`);
         SELECTORS.editModalBody.innerHTML = formHTML;
@@ -10270,7 +10270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'carousel': 'Carrossel',
             'banner_carousel': 'Carrossel (Banner)',
             'pdf': 'PDF',
-            'wifi': 'Wi�?'Fi',
+            'wifi': 'Wi-Fi',
             'instagram_embed': 'Instagram Incorporado',
             'youtube_embed': 'YouTube Incorporado',
             'tiktok_embed': 'TikTok Incorporado',
@@ -10284,7 +10284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'king_selection': 'King Selection',
             'bible': 'Bíblia',
             'location': 'Localização',
-            'wifi': 'Wi�?'Fi (QR Code)'
+            'wifi': 'Wi-Fi (QR Code)'
         };
         return names[itemType] || 'Item';
     }
@@ -10426,7 +10426,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formHTML = `
                     <div class="input-group">
                         <label>Título no cartão</label>
-                        <input type="text" id="edit-title" value="${escN(tempItem.title || 'Wi�?'Fi')}" placeholder="Texto do botão (ex: Wi�?'Fi da loja)">
+                        <input type="text" id="edit-title" value="${escN(tempItem.title || 'Wi-Fi')}" placeholder="Texto do botão (ex: Wi-Fi da loja)">
                     </div>
                     <div class="input-group">
                         <label>Formato</label>
@@ -10442,7 +10442,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="input-group">
-                        <label>Nome da rede Wi�?'Fi (SSID)</label>
+                        <label>Nome da rede Wi-Fi (SSID)</label>
                         <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">Obrigatório. Nome que aparece na lista de redes do celular.</small>
                         <input type="text" id="edit-wifi-ssid" value="${escN(ws)}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
                     </div>
@@ -10896,7 +10896,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 display_order: 999
                             };
                             if (itemType === 'wifi') {
-                                postBody.title = 'Wi�?'Fi (QR Code)';
+                                postBody.title = 'Wi-Fi (QR Code)';
                                 postBody.icon_class = 'fas fa-wifi';
                                 postBody.destination_url = JSON.stringify({
                                     ssid: '',
@@ -10925,7 +10925,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     else if (itemType === 'digital_form') moduleName = 'formulário digital';
                                     else if (itemType === 'agenda') moduleName = 'agenda inteligente';
                                     else if (itemType === 'convite') moduleName = 'convite digital';
-                                    else if (itemType === 'wifi') moduleName = 'Wi�?'Fi (QR Code)';
+                                    else if (itemType === 'wifi') moduleName = 'Wi-Fi (QR Code)';
 
                                     let errorMsg = `Limite atingido: ${errorData.message || `Você atingiu o limite de links do tipo ${moduleName}`}\n\n`;
                                     errorMsg += `Links atuais: ${errorData.current || 0} de ${errorData.limit || 0}\n\n`;
@@ -10965,7 +10965,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         else if (itemType === 'digital_form') moduleName = 'formulário digital';
                         else if (itemType === 'agenda') moduleName = 'agenda inteligente';
                         else if (itemType === 'convite') moduleName = 'convite digital';
-                        else if (itemType === 'wifi') moduleName = 'Wi�?'Fi (QR Code)';
+                        else if (itemType === 'wifi') moduleName = 'Wi-Fi (QR Code)';
 
                         // Não mostrar erro se já foi tratado acima (limite excedido)
                         if (error.message && !error.message.includes('Limite atingido')) {
@@ -11397,7 +11397,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fonteItemType: e.target.dataset.itemType ? 'input' : (e.target.closest('.image-upload-area')?.dataset.itemType ? 'uploadArea' : (SELECTORS.editItemModal?.dataset.itemType ? 'modal' : 'lista'))
                 });
 
-                // Banner normal ou banner Wi�?'Fi
+                // Banner normal ou banner Wi-Fi
                 if (file && (itemType === 'banner' || itemType === 'wifi-banner')) {
                     const cropTrigger = itemType === 'wifi-banner' ? 'wifi-banner' : 'banner';
                     const modalItemType = SELECTORS.editItemModal?.dataset?.itemType;
@@ -14013,7 +14013,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('�o. URL final gerada:', finalUrl);
 
             // Salvar no servidor
-            console.log('�Y'� Salvando URL no servidor...');
+            console.log('Salvando URL no servidor...');
             const saveResponse = await safeFetch(`${API_URL}/api/profile/share-image`, {
                 method: 'PUT',
                 headers: {
@@ -15726,7 +15726,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Stack:', error.stack);
         }
 
-        // Mapear módulos importantes (inclui Modo Empresa �?" separação de pacotes)
+        // Mapear módulos importantes (inclui Modo Empresa - separação de pacotes)
         const moduleLabels = {
             'carousel': 'Carrossel',
             'sales_page': 'Loja Virtual',
@@ -16078,7 +16078,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const preservedIncludedValue = includedFieldBefore ? includedFieldBefore.value.trim() : '';
             const preservedExcludedValue = excludedFieldBefore ? excludedFieldBefore.value.trim() : '';
 
-            console.log('�Y'� Valores preservados antes de recarregar:');
+            console.log('Valores preservados antes de recarregar:');
             console.log(`   Incluídos: "${preservedIncludedValue}"`);
             console.log(`   Não incluídos: "${preservedExcludedValue}"`);
 
@@ -16949,7 +16949,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /** Garante cartão Wi�?'Fi no modal (deploy antigo do dashboard.html sem o bloco no HTML). */
+    /** Garante cartão Wi-Fi no modal (deploy antigo do dashboard.html sem o bloco no HTML). */
     function ensureWifiModuleCardInAddModal() {
         const modal = document.getElementById('add-item-modal');
         if (!modal || modal.querySelector('.module-choice-card[data-item-type="wifi"]')) return;
@@ -16959,7 +16959,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.createElement('div');
         card.className = 'module-choice-card';
         card.setAttribute('data-item-type', 'wifi');
-        card.innerHTML = '<i class="fas fa-wifi"></i><span>Wi�?'Fi (QR Code)</span>';
+        card.innerHTML = '<i class="fas fa-wifi"></i><span>Wi-Fi (QR Code)</span>';
         const pixQr = contactGallery.querySelector('.module-choice-card[data-item-type="pix_qrcode"]');
         if (pixQr && pixQr.parentNode) {
             pixQr.insertAdjacentElement('afterend', card);
@@ -17008,7 +17008,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.display = 'none';
                 return;
             }
-            // Wi�?'Fi (QR): módulo do cartão virtual �?" sempre visível no modal «Adicionar módulo»
+            // Wi-Fi (QR): módulo do cartão virtual - sempre visível no modal «Adicionar módulo»
             if (moduleType === 'wifi') {
                 card.style.display = 'block';
                 return;
@@ -18553,7 +18553,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (tabId === 'fluxo') {
                     const list = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10) }));
                     const canEdit = function(f) { return (typeof f.id === 'number' || (f.id != null && String(f.id).match(/^[0-9]+$/))); };
-                    container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:var(--finance-text-primary);margin:0;">Fluxo de Caixa</h3><button type="button" onclick="window.showNovoLancamentoChoiceModal && window.showNovoLancamentoChoiceModal()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Lançamento</button></div><div style="display:flex;flex-direction:column;gap:0.75rem;">' + (list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento ou a aba Resumo.</p>' : list.map(f => '<div class="kf-card" style="' + styleKfCard + 'display:flex;justify-content:space-between;align-items:center;padding:1rem;gap:12px;"><div style="display:flex;align-items:center;gap:1rem;flex:1;min-width:0;"><span style="color:' + (f.tipo === 'receita' ? '#22c55e' : '#f43f5e') + ';">' + (f.tipo === 'receita' ? '�?'' : '�?"') + '</span><div style="min-width:0;"><p style="font-size:12px;font-weight:700;margin:0;">' + (f.descricao || '').slice(0, 40) + '</p><p style="font-size:9px;color:#64748b;margin:4px 0 0 0;">' + f.data + '</p></div></div><span style="font-weight:800;color:' + (f.tipo === 'receita' ? '#22c55e' : '#f43f5e') + ';">R$ ' + fmt(f.valor) + '</span>' + (canEdit(f) ? '<button type="button" onclick="window.editFinanceTransaction && window.editFinanceTransaction(' + f.id + ')" style="padding:6px 12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Editar"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i>Editar</button>' : '') + '</div>').join('')) + '</div>';
+                    container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:var(--finance-text-primary);margin:0;">Fluxo de Caixa</h3><button type="button" onclick="window.showNovoLancamentoChoiceModal && window.showNovoLancamentoChoiceModal()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Lançamento</button></div><div style="display:flex;flex-direction:column;gap:0.75rem;">' + (list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento ou a aba Resumo.</p>' : list.map(f => '<div class="kf-card" style="' + styleKfCard + 'display:flex;justify-content:space-between;align-items:center;padding:1rem;gap:12px;"><div style="display:flex;align-items:center;gap:1rem;flex:1;min-width:0;"><span style="color:' + (f.tipo === 'receita' ? '#22c55e' : '#f43f5e') + ';">' + (f.tipo === 'receita' ? '�?'' : '-') + '</span><div style="min-width:0;"><p style="font-size:12px;font-weight:700;margin:0;">' + (f.descricao || '').slice(0, 40) + '</p><p style="font-size:9px;color:#64748b;margin:4px 0 0 0;">' + f.data + '</p></div></div><span style="font-weight:800;color:' + (f.tipo === 'receita' ? '#22c55e' : '#f43f5e') + ';">R$ ' + fmt(f.valor) + '</span>' + (canEdit(f) ? '<button type="button" onclick="window.editFinanceTransaction && window.editFinanceTransaction(' + f.id + ')" style="padding:6px 12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Editar"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i>Editar</button>' : '') + '</div>').join('')) + '</div>';
                     return;
                 }
                 if (tabId === 'trabalhos') {
@@ -18716,7 +18716,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     var faltaEsteMesHtml = '';
                     if (faltaEsteMesList.length > 0) {
                         var mesNome = new Date(currentYearT, currentMonthT, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-                        faltaEsteMesHtml = '<div class="kf-card" style="' + styleKfCard + 'margin-bottom:1.5rem;border-left:4px solid #ef4444;"><h4 style="font-size:1rem;font-weight:800;color:#fca5a5;margin:0 0 12px 0;"><i class="fas fa-calendar-times" style="margin-right:8px;"></i>Falta pagar este mês (' + mesNome + ')</h4><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Contas com vencimento neste mês que ainda têm valor a pagar.</p><ul style="list-style:none;padding:0;margin:0 0 12px 0;">' + faltaEsteMesList.map(function (x) { return '<li style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:12px;color:#e2e8f0;">' + (x.pessoaNome + ' �?" ' + x.contaNome).replace(/</g, ' ').slice(0, 50) + '</span><strong style="color:#fcd34d;">R$ ' + fmt(x.restante) + '</strong></li>'; }).join('') + '</ul><p style="font-size:14px;font-weight:800;color:#fca5a5;margin:0;">Total: R$ ' + fmt(totalFaltaEsteMes) + '</p></div>';
+                        faltaEsteMesHtml = '<div class="kf-card" style="' + styleKfCard + 'margin-bottom:1.5rem;border-left:4px solid #ef4444;"><h4 style="font-size:1rem;font-weight:800;color:#fca5a5;margin:0 0 12px 0;"><i class="fas fa-calendar-times" style="margin-right:8px;"></i>Falta pagar este mês (' + mesNome + ')</h4><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Contas com vencimento neste mês que ainda têm valor a pagar.</p><ul style="list-style:none;padding:0;margin:0 0 12px 0;">' + faltaEsteMesList.map(function (x) { return '<li style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:12px;color:#e2e8f0;">' + (x.pessoaNome + ' - ' + x.contaNome).replace(/</g, ' ').slice(0, 50) + '</span><strong style="color:#fcd34d;">R$ ' + fmt(x.restante) + '</strong></li>'; }).join('') + '</ul><p style="font-size:14px;font-weight:800;color:#fca5a5;margin:0;">Total: R$ ' + fmt(totalFaltaEsteMes) + '</p></div>';
                     }
                     var contentArea = '';
                     if (list.length === 0) {
@@ -19509,7 +19509,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         var timeoutImg = setTimeout(function () { abortImg.abort(); }, 300000);
                         fetch(API_URL + '/api/finance/serasa/import-image-preview', { method: 'POST', headers: HEADERS_AUTH || {}, body: formData, signal: abortImg.signal }).then(function (res) {
                             clearTimeout(timeoutImg); return res.json().catch(function () { return {}; }).then(function (json) {
-                                if (!res.ok) { previewEl.innerHTML = '<p style="color:#f43f5e;">' + (json.message || (res.status === 500 ? 'Erro interno. Tente menos imagens (até 50) ou em lotes de 15�?"20.' : 'Erro ao processar imagens.')) + '</p>'; return; }
+                                if (!res.ok) { previewEl.innerHTML = '<p style="color:#f43f5e;">' + (json.message || (res.status === 500 ? 'Erro interno. Tente menos imagens (até 50) ou em lotes de 15-20.' : 'Erro ao processar imagens.')) + '</p>'; return; }
                                 importedOffers = (json.data && json.data.offers) ? json.data.offers : [];
                                 if (importedOffers.length === 0) { previewEl.innerHTML = '<p style="color:#f59e0b;">Nenhum dado reconhecido. Envie imagens com nome e valor (JPEG/PNG).</p>'; confirmBtn.style.display = 'none'; return; }
                                 var tbl = '<p style="font-size:0.75rem;color:#94a3b8;margin-bottom:8px;">' + f.length + ' ficheiro(s) · ' + importedOffers.length + ' conta(s) reconhecida(s). Serão adicionadas como contas com pessoas (nome + valor).</p><div style="max-height:320px;overflow:auto;"><table style="width:100%;font-size:0.8rem;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><th style="text-align:left;padding:8px;color:#94a3b8;">Nome (pessoa/credor)</th><th style="text-align:right;padding:8px;color:#94a3b8;">Valor total</th></tr></thead><tbody>';
@@ -19518,7 +19518,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 previewEl.innerHTML = tbl;
                                 confirmBtn.style.display = 'inline-block';
                             });
-                        }).catch(function (e) { clearTimeout(timeoutImg); previewEl.innerHTML = '<p style="color:#f43f5e;">' + (e.name === 'AbortError' ? 'Demorou muito. Envie menos imagens (ex.: 15�?"20 por vez).' : 'Erro de conexão.') + '</p>'; });
+                        }).catch(function (e) { clearTimeout(timeoutImg); previewEl.innerHTML = '<p style="color:#f43f5e;">' + (e.name === 'AbortError' ? 'Demorou muito. Envie menos imagens (ex.: 15-20 por vez).' : 'Erro de conexão.') + '</p>'; });
                     };
                     confirmBtn.onclick = function () {
                         if (importedOffers.length === 0) return;
@@ -19592,7 +19592,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     var isPdf = mode === 'pdf';
                     var titulo = isPdf ? 'Importar PDF (valores)' : 'Importar imagem';
                     var descricao = isPdf
-                        ? 'Envie o relatório PDF. <strong>Só serão atualizados os valores de negociação</strong> (valor original, valor atual, total) nos acordos que já existem �?" pelo nome do credor. Nada mais é alterado e nenhum acordo novo é criado.'
+                        ? 'Envie o relatório PDF. <strong>Só serão atualizados os valores de negociação</strong> (valor original, valor atual, total) nos acordos que já existem - pelo nome do credor. Nada mais é alterado e nenhum acordo novo é criado.'
                         : 'Envie até 50 imagens (JPEG/PNG) da tela &quot;Detalhes da dívida&quot;. <strong>Importação completa:</strong> credores existentes serão atualizados; novos serão adicionados. Muitas imagens podem demorar alguns minutos.';
                     var fileSection = isPdf
                         ? '<div id="serasa-import-pdf-wrap"><input type="file" id="serasa-import-file" accept=".pdf,application/pdf" style="margin-bottom:16px;color:#94a3b8;"></div>'
@@ -20070,7 +20070,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento acima ou a aba Resumo.</p>' : list.map(f => `
                             <div class="kf-card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
                                 <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <span style="color: ${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};">${f.tipo === 'receita' ? '�?'' : '�?"'}</span>
+                                    <span style="color: ${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};">${f.tipo === 'receita' ? '�?'' : '-'}</span>
                                     <div><p style="font-size: 12px; font-weight: 700; margin: 0;">${(f.descricao || '').slice(0, 40)}</p><p style="font-size: 9px; color: #64748b; margin: 4px 0 0 0;">${f.data}</p></div>
                                 </div>
                                 <span style="font-weight: 800; color: ${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};">R$ ${fmt(f.valor)}</span>
@@ -20608,7 +20608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const pagamentos = Array.isArray(t.pagamentos) ? t.pagamentos : [];
             const recebido = pagamentos.reduce((s, p) => s + (Number(p.valor) || 0), 0);
             const falta = Math.max(0, val - recebido);
-            const descBase = [t.servico, t.cliente].filter(Boolean).join(' �?" ') || 'Serviço registrado';
+            const descBase = [t.servico, t.cliente].filter(Boolean).join(' - ') || 'Serviço registrado';
             pagamentos.forEach((p, i) => {
                 const v = Number(p.valor) || 0;
                 if (v <= 0) return;
@@ -20646,7 +20646,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 var pago = (c.pagamentos || []).reduce(function (a, x) { return a + (Number(x.valor) || 0); }, 0);
                 var restante = valConta - pago;
                 var statusConta = restante <= 0 ? 'PAID' : 'PENDING';
-                items.push({ id: 'terc-add-' + p.id + '-' + c.id, type: 'EXPENSE', amount: valConta, description: 'Dívida ' + (p.nome || '') + ' �?" ' + (c.nomeConta || 'Conta'), transaction_date: dtConta, source: 'terceiros', status: statusConta, _pessoaId: p.id, _contaId: c.id });
+                items.push({ id: 'terc-add-' + p.id + '-' + c.id, type: 'EXPENSE', amount: valConta, description: 'Dívida ' + (p.nome || '') + ' - ' + (c.nomeConta || 'Conta'), transaction_date: dtConta, source: 'terceiros', status: statusConta, _pessoaId: p.id, _contaId: c.id });
             });
         });
         items.sort((a, b) => parseDate(b.transaction_date) - parseDate(a.transaction_date));
@@ -20825,11 +20825,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!itens || itens.length === 0) return '<p style="color:#94a3b8;text-align:center;padding:2rem;">Nenhum lançamento encontrado.</p>';
             var html = itens.map(function (item) {
                 var dt = (item.data || '').toString().slice(0, 10);
-                if (dt && dt.length >= 10) { var p = dt.split('-'); dt = p[2] + '/' + p[1] + '/' + p[0]; } else dt = '�?"';
+                if (dt && dt.length >= 10) { var p = dt.split('-'); dt = p[2] + '/' + p[1] + '/' + p[0]; } else dt = '-';
                 var origem = (item.origem || '').toLowerCase();
                 var origemLabel = origem === 'transacao' ? 'Lançamento' : origem === 'trabalho' ? 'Trabalho' : origem === 'recibo' ? 'Recibo' : 'Outro';
                 var desc = (item.cliente ? item.cliente + ' · ' : '') + (item.descricao || '');
-                return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><div><span style="color:#f1f5f9;">' + (desc || '�?"').replace(/</g, ' ').slice(0, 55) + '</span><br><span style="font-size:0.8rem;color:#64748b;">' + dt + ' · ' + origemLabel + '</span></div><strong style="color:#22c55e;">+R$ ' + fmt(item.valor) + '</strong></div>';
+                return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><div><span style="color:#f1f5f9;">' + (desc || '-').replace(/</g, ' ').slice(0, 55) + '</span><br><span style="font-size:0.8rem;color:#64748b;">' + dt + ' · ' + origemLabel + '</span></div><strong style="color:#22c55e;">+R$ ' + fmt(item.valor) + '</strong></div>';
             }).join('');
             return html;
         }
@@ -20860,14 +20860,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         var dtPag = (x.data || c.dataVencimento || '').toString().trim();
                         if (extrairAnoMesExp(dtPag) !== mesRef) return;
                         var dtExib = dtPag; if (dtExib && dtExib.indexOf('-') >= 0 && dtExib.length >= 10) { var pp = dtExib.split('-'); dtExib = pp[2] + '/' + pp[1] + '/' + pp[0]; }
-                        listItems.push({ desc: (p.nome || 'Pessoa') + ' �?" ' + (c.nomeConta || 'Conta'), dt: dtExib, valor: Number(x.valor) || 0, tipo: 'terceiros' });
+                        listItems.push({ desc: (p.nome || 'Pessoa') + ' - ' + (c.nomeConta || 'Conta'), dt: dtExib, valor: Number(x.valor) || 0, tipo: 'terceiros' });
                         totalExp += Number(x.valor) || 0;
                     });
                 });
             });
             listItems.sort(function (a, b) { return (a.dt || '').localeCompare(b.dt || ''); });
-            var listHtml = listItems.length === 0 ? '<p style="color:#94a3b8;text-align:center;padding:2rem;">Nenhuma despesa paga neste mês.</p>' : listItems.map(function (it) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><div><span style="color:#f1f5f9;">' + (it.desc || '�?"') + '</span><br><span style="font-size:0.8rem;color:#64748b;">' + (it.dt || '�?"') + ' · Pago</span></div><strong style="color:#ef4444;">-R$ ' + fmt(it.valor) + '</strong></div>'; }).join('');
-            content = '<h2 style="margin:0 0 20px 0;color:#f1f5f9;font-size:1.35rem;"><i class="fas fa-check-circle" style="color:#ef4444;margin-right:10px;"></i>O que foi pago �?" ' + mesNome + '</h2><p style="color:#94a3b8;font-size:0.9rem;margin:0 0 16px 0;">Despesas efetivamente pagas neste mês (fluxo + Quem eu devo).</p><div style="max-height:320px;overflow-y:auto;margin-bottom:16px;">' + listHtml + '</div><div style="font-size:1.25rem;font-weight:800;color:#ef4444;padding-top:12px;border-top:2px solid rgba(239,68,68,0.3);">Total: -R$ ' + fmt(totalExp) + '</div>';
+            var listHtml = listItems.length === 0 ? '<p style="color:#94a3b8;text-align:center;padding:2rem;">Nenhuma despesa paga neste mês.</p>' : listItems.map(function (it) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><div><span style="color:#f1f5f9;">' + (it.desc || '-') + '</span><br><span style="font-size:0.8rem;color:#64748b;">' + (it.dt || '-') + ' · Pago</span></div><strong style="color:#ef4444;">-R$ ' + fmt(it.valor) + '</strong></div>'; }).join('');
+            content = '<h2 style="margin:0 0 20px 0;color:#f1f5f9;font-size:1.35rem;"><i class="fas fa-check-circle" style="color:#ef4444;margin-right:10px;"></i>O que foi pago - ' + mesNome + '</h2><p style="color:#94a3b8;font-size:0.9rem;margin:0 0 16px 0;">Despesas efetivamente pagas neste mês (fluxo + Quem eu devo).</p><div style="max-height:320px;overflow-y:auto;margin-bottom:16px;">' + listHtml + '</div><div style="font-size:1.25rem;font-weight:800;color:#ef4444;padding-top:12px;border-top:2px solid rgba(239,68,68,0.3);">Total: -R$ ' + fmt(totalExp) + '</div>';
         } else if (type === 'income') {
             var itensReceitas = [];
             var totalReceitas = 0;
@@ -20910,7 +20910,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             totalReceitas = itensReceitas.reduce(function (s, x) { return s + (parseFloat(x.valor) || 0); }, 0);
             itensReceitas.sort(function (a, b) { return (b.data || '').localeCompare(a.data || ''); });
-            content = '<h2 style="margin:0 0 20px 0;color:#f1f5f9;font-size:1.35rem;"><i class="fas fa-arrow-trend-up" style="color:#22c55e;margin-right:10px;"></i>De onde veio �?" Receitas de ' + mesNome + '</h2><p style="color:#94a3b8;font-size:0.9rem;margin:0 0 16px 0;">Origem de cada valor recebido no mês (transações, trabalhos, recibos). Mesma base do Saldo.</p><div style="max-height:320px;overflow-y:auto;margin-bottom:16px;">' + renderBreakdownList(itensReceitas) + '</div><div style="font-size:1.25rem;font-weight:800;color:#22c55e;padding-top:12px;border-top:2px solid rgba(34,197,94,0.3);">Total: +R$ ' + fmt(totalReceitas) + '</div>';
+            content = '<h2 style="margin:0 0 20px 0;color:#f1f5f9;font-size:1.35rem;"><i class="fas fa-arrow-trend-up" style="color:#22c55e;margin-right:10px;"></i>De onde veio - Receitas de ' + mesNome + '</h2><p style="color:#94a3b8;font-size:0.9rem;margin:0 0 16px 0;">Origem de cada valor recebido no mês (transações, trabalhos, recibos). Mesma base do Saldo.</p><div style="max-height:320px;overflow-y:auto;margin-bottom:16px;">' + renderBreakdownList(itensReceitas) + '</div><div style="font-size:1.25rem;font-weight:800;color:#22c55e;padding-top:12px;border-top:2px solid rgba(34,197,94,0.3);">Total: +R$ ' + fmt(totalReceitas) + '</div>';
         } else if (type === 'balance' || type === 'goals') {
             var bd = (type === 'goals' && window._financeGoalsBreakdown) ? window._financeGoalsBreakdown : saldoDetalhado;
             var itensSaldo = bd.itens || [];
@@ -20939,7 +20939,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalSaldo = itensSaldo.reduce(function (s, x) { return s + (x.valor || 0); }, 0);
             }
             var tituloGoals = type === 'goals' ? 'Valor já ganho (Metas)' : 'Saldo disponível';
-            content = '<h2 style="margin:0 0 20px 0;color:#f1f5f9;font-size:1.35rem;"><i class="fas fa-wallet" style="color:#3b82f6;margin-right:10px;"></i>De onde veio �?" ' + tituloGoals + '</h2><p style="color:#94a3b8;font-size:0.9rem;margin:0 0 16px 0;">Origem do seu patrimônio (receitas acumuladas de transações, trabalhos e recibos).</p><div style="max-height:320px;overflow-y:auto;margin-bottom:16px;">' + renderBreakdownList(itensSaldo) + '</div><div style="font-size:1.25rem;font-weight:800;color:#3b82f6;padding-top:12px;border-top:2px solid rgba(59,130,246,0.3);">Total: R$ ' + fmt(totalSaldo) + '</div>';
+            content = '<h2 style="margin:0 0 20px 0;color:#f1f5f9;font-size:1.35rem;"><i class="fas fa-wallet" style="color:#3b82f6;margin-right:10px;"></i>De onde veio - ' + tituloGoals + '</h2><p style="color:#94a3b8;font-size:0.9rem;margin:0 0 16px 0;">Origem do seu patrimônio (receitas acumuladas de transações, trabalhos e recibos).</p><div style="max-height:320px;overflow-y:auto;margin-bottom:16px;">' + renderBreakdownList(itensSaldo) + '</div><div style="font-size:1.25rem;font-weight:800;color:#3b82f6;padding-top:12px;border-top:2px solid rgba(59,130,246,0.3);">Total: R$ ' + fmt(totalSaldo) + '</div>';
         } else {
             if (typeof window.loadFinanceTransactions === 'function') await window.loadFinanceTransactions();
             var allTx2 = window.allFinanceTransactions || [];
