@@ -77,6 +77,37 @@ async function updateSettings(client, userId, details) {
         return first ? `${first[1]}px` : '12px';
     };
 
+    /** Coluna INTEGER: aceita 16, "16", "16px". */
+    const normalizeFontSize = (raw) => {
+        if (raw === undefined || raw === null || raw === '') return undefined;
+        if (typeof raw === 'number' && Number.isFinite(raw)) return Math.round(raw);
+        const m = String(raw).trim().match(/(\d+(\.\d+)?)/);
+        return m ? Math.round(parseFloat(m[1])) : undefined;
+    };
+
+    /** NUMERIC: aceita 0.8, "0.8", "80%". */
+    const normalizeOpacity = (raw) => {
+        if (raw === undefined || raw === null || raw === '') return undefined;
+        if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+        const s = String(raw).trim();
+        if (s.endsWith('%')) {
+            const n = parseFloat(s);
+            return Number.isFinite(n) ? n / 100 : undefined;
+        }
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : undefined;
+    };
+
+    const coerceThemeValue = (key, v) => {
+        if (v === undefined || v === null) return v;
+        if (key === 'button_border_radius') return normalizeBorderRadius(v);
+        if (key === 'button_font_size') return normalizeFontSize(v);
+        if (key === 'button_opacity' || key === 'card_opacity' || key === 'background_image_opacity') {
+            return normalizeOpacity(v);
+        }
+        return v;
+    };
+
     const fieldDefs = [
         ['font_family', 'fontFamily'],
         ['background_color', 'backgroundColor'],
@@ -95,11 +126,7 @@ async function updateSettings(client, userId, details) {
         ['show_vcard_button', 'showVcardButton'],
     ];
 
-    const themeValues = fieldDefs.map(([key, alt]) => {
-        const v = getVal(key, alt);
-        if (key === 'button_border_radius') return normalizeBorderRadius(v);
-        return v;
-    });
+    const themeValues = fieldDefs.map(([key, alt]) => coerceThemeValue(key, getVal(key, alt)));
 
     if (checkProfile.rows.length === 0) {
         const insertFields = [
@@ -132,8 +159,7 @@ async function updateSettings(client, userId, details) {
         ];
         fieldDefs.forEach(([key, alt], i) => {
             if (hasKey(details, key, alt)) {
-                let val = getVal(key, alt);
-                if (key === 'button_border_radius') val = normalizeBorderRadius(val);
+                const val = coerceThemeValue(key, getVal(key, alt));
                 updateParts.push(`${dbColumns[i]} = $${paramIndex}`);
                 updateValues.push(val !== undefined && val !== null ? val : null);
                 paramIndex++;

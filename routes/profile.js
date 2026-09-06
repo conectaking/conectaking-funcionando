@@ -377,8 +377,8 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             await personalizarService.updateSettings(client, userId, details);
         }
 
-        // Salvar itens do perfil
-        if (items && Array.isArray(items)) {
+        // Salvar itens do perfil (array vazio = só detalhes; NÃO sincronizar/apagar módulos)
+        if (items && Array.isArray(items) && items.length > 0) {
             console.log(`📦 [SAVE-ALL] Processando ${items.length} itens do perfil...`);
             
             // IMPORTANTE: NÃO deletar mais todos os itens - usar UPDATE para preservar dados
