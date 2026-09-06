@@ -1095,6 +1095,32 @@ app.get('/js/tts.js', (req, res) => {
         res.status(404).type('text/plain').send('Not found');
     }
 });
+app.use(express.static(path.join(__dirname, 'public'), {
+    etag: false,
+    lastModified: false,
+    maxAge: 0,
+    immutable: false,
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html')) {
+            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+            if (filePath.endsWith('.js')) {
+                res.set('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.css')) {
+                res.set('Content-Type', 'text/css; charset=utf-8');
+            } else if (filePath.endsWith('.html')) {
+                res.set('Content-Type', 'text/html; charset=utf-8');
+            }
+        } else {
+            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+        }
+    }
+}));
+
+// public_html depois: só preenche o que não existe em public/ (evita dashboard.js antigo com encoding quebrado)
 app.use(express.static(publicHtmlDir, {
     etag: false,
     lastModified: false,
@@ -1106,28 +1132,12 @@ app.use(express.static(publicHtmlDir, {
             res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.set('Pragma', 'no-cache');
             res.set('Expires', '0');
+            if (filePath.endsWith('.js')) {
+                res.set('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.html')) {
+                res.set('Content-Type', 'text/html; charset=utf-8');
+            }
         } else {
-            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.set('Pragma', 'no-cache');
-            res.set('Expires', '0');
-        }
-    }
-}));
-
-// Servir arquivos estáticos SEM cache (forçar atualização no host)
-app.use(express.static(path.join(__dirname, 'public'), {
-    etag: false,
-    lastModified: false,
-    maxAge: 0,
-    immutable: false,
-    setHeaders: (res, path) => {
-        // Para arquivos JS, CSS e HTML, adicionar headers que forçam atualização
-        if (path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.html')) {
-            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.set('Pragma', 'no-cache');
-            res.set('Expires', '0');
-        } else {
-            // Demais assets (imagens, etc.) sem cache forte
             res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.set('Pragma', 'no-cache');
             res.set('Expires', '0');
