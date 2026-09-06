@@ -10178,7 +10178,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 aspectRatio: aspectRatio,
                 viewMode: 1,
                 background: false,
-                autoCropArea: 0.9
+                autoCropArea: 0.9,
+                responsive: true,
+                restore: false,
+                checkOrientation: true,
+                // Mostra a foto o máximo possível na área; pan/zoom no cropper (sem scroll do modal)
+                dragMode: 'move',
+                ready() {
+                    try {
+                        const modal = document.getElementById('cropper-modal');
+                        const box = modal && modal.querySelector('.cropper-container');
+                        if (box && this.cropper) {
+                            this.cropper.resize();
+                        }
+                    } catch (_) { /* ignore */ }
+                }
             });
 
             imageToUpload.trigger = triggerType;

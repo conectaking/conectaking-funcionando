@@ -36,7 +36,7 @@
 
     <!-- Cache-buster para CSS - Atualizado para forçar reload -->
     <link rel="stylesheet" href="style.css?v=2025-01-31-01">
-    <link rel="stylesheet" href="dashboard.css?v=2025-01-31-01">
+    <link rel="stylesheet" href="dashboard.css?v=2026-09-06-cropper-fit">
     <style>
         .qr-art-hint { color: var(--text-dark, #A1A1A1); font-size: 13px; line-height: 1.45; margin: 0 0 14px; }
         .qr-theme-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -115,7 +115,22 @@
     .cropper-mobile-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; color: #e5e5e5; font-size: 0.8rem; user-select: none; }
     .cropper-mobile-toggle input { width: 16px; height: 16px; accent-color: #facc15; }
     #crop-size-readout, #crop-aspect-readout { color: #fff; font-weight: 600; }
-    .cropper-body .cropper-container { position: relative; }
+    .cropper-body .cropper-container { position: relative; overflow: hidden; }
+    #cropper-modal .modal-body.cropper-body { overflow: hidden !important; }
+    #cropper-modal .cropper-container {
+      height: auto !important;
+      min-height: 280px;
+      overflow: hidden;
+    }
+    @media (max-width: 768px) {
+      #cropper-modal .cropper-container {
+        height: calc(100dvh - 210px) !important;
+        min-height: 42dvh;
+      }
+      #cropper-modal .modal-body.cropper-body {
+        overflow: hidden !important;
+      }
+    }
     .ck-crop-mobile-strip {
         position: absolute;
         left: 50%;
@@ -1575,7 +1590,7 @@
     <script src="android-fix.js?v=2026-03-22-no-fetch-patch"></script>
     <script src="js/planRenderer.js?v=2025-01-31-01" defer></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="js/dashboard-cropper-enhance.js?v=2026-04-23-bg-mobile" defer></script>
+    <script src="js/dashboard-cropper-enhance.js?v=2026-09-06-cropper-fit" defer></script>
     <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
         <div class="wifi-modal-content">
             <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
@@ -1597,7 +1612,7 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-09-06-syntax-fix" defer></script>
+    <script src="dashboard.js?v=2026-09-06-cropper-fit" defer></script>
     <script src="js/dashboard-vitrine.js?v=2026-08-21-vitrine4" defer></script>
     
     <!-- Script para remover texto "image.png" que aparece no mobile -->
