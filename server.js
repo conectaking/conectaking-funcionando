@@ -617,13 +617,34 @@ function patchKingSelectionProjectHtml(html) {
     return out;
 }
 
-const KS_PROJECT_SCROLL_MARKER = 'king-selection-project-scroll.js';
 let _ksPhotographerHtmlCache = { filePath: '', mtimeMs: 0, html: null };
 
-/** Injeta CSS/JS anti-scroll preso no mobile; cache invalida quando o .html muda. */
+function kingSelectionQuerySuffix(req) {
+    const raw = String(req.originalUrl || req.url || '');
+    const i = raw.indexOf('?');
+    return i >= 0 ? raw.slice(i) : '';
+}
+
+function requestHasGalleryId(req) {
+    const g = req.query && req.query.galleryId;
+    if (g == null || g === '') return false;
+    const n = parseInt(String(g), 10);
+    return Number.isFinite(n) && n > 0;
+}
+
+function isKingSelectionProjectRequestPath(req) {
+    return /selectionproject/i.test(String(req.path || ''));
+}
+
+/**
+ * Lista de projetos do fotógrafo (/kingSelection).
+ * NÃO usar kingSelectionProject.html aqui — essa página exige ?galleryId= e mostra
+ * "galleryId inválido na URL" se aberta sem o parâmetro.
+ */
 function getInjectedKingSelectionPhotographerHtml() {
-    const filePath = resolveKingSelectionProjectHtmlPath()
-        || (fs.existsSync(kingSelectionEditHtml) ? kingSelectionEditHtml : null);
+    const filePath = fs.existsSync(kingSelectionEditHtml)
+        ? kingSelectionEditHtml
+        : null;
     if (!filePath) return null;
     let st;
     try {
@@ -639,13 +660,11 @@ function getInjectedKingSelectionPhotographerHtml() {
         return _ksPhotographerHtmlCache.html;
     }
     let html = fs.readFileSync(filePath, 'utf8');
-    if (!html.includes(KS_PROJECT_SCROLL_MARKER) && html.includes('</head>')) {
-        html = html.replace(
-            '</head>',
-            '  <link rel="stylesheet" href="/king-selection-project-mobile.css?v=4" />\n  <script src="/king-selection-project-scroll.js?v=4" defer></script>\n</head>'
-        );
-    }
-    html = patchKingSelectionProjectHtml(html);
+    const jsVer = resolveKingSelectionJsVersion('kingSelectionEdit.js');
+    html = html.replace(
+        /\/kingSelectionEdit\.js(\?v=[^"']*)?/g,
+        `/kingSelectionEdit.js?v=${jsVer}`
+    );
     _ksPhotographerHtmlCache = { filePath, mtimeMs: st.mtimeMs, html };
     return html;
 }
@@ -662,10 +681,24 @@ function serveKingSelectionProjectHtmlPage(req, res) {
 }
 
 function serveKingSelectionPhotographerPage(req, res, next) {
+    // /kingSelection?galleryId=123 → painel do projeto (não a lista)
+    if (requestHasGalleryId(req)) {
+        return serveKingSelectionProjectHtmlPage(req, res);
+    }
     const html = getInjectedKingSelectionPhotographerHtml();
     if (!html) return next();
-    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.type('html').send(html);
+}
+
+/** URLs legadas *project* → servir o HTML do projeto (preserva query na mesma request). */
+function redirectOrServeKingSelectionLegacy(req, res) {
+    if (isKingSelectionProjectRequestPath(req) || requestHasGalleryId(req)) {
+        return serveKingSelectionProjectHtmlPage(req, res);
+    }
+    return res.redirect(302, '/kingSelection' + kingSelectionQuerySuffix(req));
 }
 
 function escHtmlAttr(s) {
@@ -883,13 +916,14 @@ app.get(
     serveKingSelectionPhotographerPage
 );
 
-// Compat legado: qualquer URL antiga kingSelectionEdit* deve cair no caminho oficial /kingSelection
+// Compat legado: kingSelectionEdit* → lista oficial /kingSelection (preserva ?api= etc.)
 app.get(
     ['/kingSelectionEdit', '/kingSelectionEdit/', '/kingselectionedit', '/kingselectionedit/', '/kingSelectionEdit.html', '/kingselectionedit.html'],
     (req, res) => {
-        res.redirect(302, '/kingSelection');
+        res.redirect(302, '/kingSelection' + kingSelectionQuerySuffix(req));
     }
 );
+// URLs *project* legadas: servir o painel do projeto (NÃO redirecionar sem query — apagava galleryId)
 app.get(
     [
         '/kingselectionproject',
@@ -911,19 +945,15 @@ app.get(
         '/mr/ringsselectionproject/',
         '/mr/ringsselectionproject.html'
     ],
-    (req, res) => {
-        res.redirect(302, '/kingSelection');
-    }
+    redirectOrServeKingSelectionLegacy
 );
 app.get(
     ['/mr/kingSelectionEdit', '/mr/kingSelectionEdit/', '/mr/kingSelectionEdit.html', '/mr/kingselectionedit', '/mr/kingselectionedit/', '/mr/kingselectionedit.html'],
     (req, res) => {
-        res.redirect(302, '/kingSelection');
+        res.redirect(302, '/kingSelection' + kingSelectionQuerySuffix(req));
     }
 );
-app.get(/^\/(?:mr\/)?(?:ring|rings|king)selection(?:edit|project)(?:\.html)?\/?$/i, (req, res) => {
-    res.redirect(302, '/kingSelection');
-});
+app.get(/^\/(?:mr\/)?(?:ring|rings|king)selection(?:edit|project)(?:\.html)?\/?$/i, redirectOrServeKingSelectionLegacy);
 
 // Galeria cliente (Node) ANTES do proxy.
 // Aceita aliases para manter compatibilidade com links antigos/variantes enviados por WhatsApp.
@@ -1067,6 +1097,9 @@ function sendKingSelectionClienteJsFile(res, baseName) {
 
 app.get(['/kingSelectionCliente.js', '/mr/kingSelectionCliente.js'], (req, res) => {
     sendKingSelectionClienteJsFile(res, 'kingSelectionCliente.js');
+});
+app.get(['/kingSelectionEdit.js', '/mr/kingSelectionEdit.js'], (req, res) => {
+    sendKingSelectionClienteJsFile(res, 'kingSelectionEdit.js');
 });
 app.get(['/kingSelectionCliente-no-sem-pasta.js', '/mr/kingSelectionCliente-no-sem-pasta.js'], (req, res) => {
     sendKingSelectionClienteJsFile(res, 'kingSelectionCliente-no-sem-pasta.js');
