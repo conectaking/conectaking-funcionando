@@ -12,19 +12,15 @@ function check() {
 
 function globalFix(s) {
   return s
-    // ❌ / emojis: '�' ou 'â�' fecha a string cedo
-    .replace(/'(?:â�|âŒ|\uFFFD)'\s+/g, "'")
-    // 💾 etc: '�Y'� Rest
-    .replace(/(console\.(?:error|log|warn)|throw new Error)\('\uFFFDY'\uFFFD\s+/g, "$1('")
-    .replace(/(console\.(?:error|log|warn)|throw new Error)\('\uFFFD[^']{0,8}'\uFFFD?\s+/g, "$1('")
-    .replace(/N\uFFFDf\uFFFD'O/g, 'NAO')
-    .replace(/n\uFFFDf\uFFFD'o/g, 'nao')
-    .replace(/\uFFFDf\uFFFD'O/g, 'AO')
-    .replace(/\uFFFDf\uFFFD'o/g, 'ao')
+    // Só quando a aspas fecha cedo e a seguir vem palavra (não concatenação +)
+    .replace(/'(?:â�|âŒ|\uFFFD)'\s+(?=[A-Za-zÀ-ÿ])/g, "'")
+    .replace(/(console\.(?:error|log|warn)|throw new Error)\('\uFFFDY'\uFFFD\s+(?=[A-Za-zÀ-ÿ])/g, "$1('")
+    .replace(/(console\.(?:error|log|warn)|throw new Error)\('\uFFFD[^']{0,8}'\s+(?=[A-Za-zÀ-ÿ])/g, "$1('")
     .replace(/N�f�'O/g, 'NAO')
     .replace(/n�f�'o/g, 'nao')
     .replace(/�f�'O/g, 'AO')
     .replace(/�f�'o/g, 'ao')
+    .replace(/\uFFFDf\uFFFD'O/g, 'AO')
     .replace(/'Wi-'Fi'/g, "'Wi-Fi'")
     .replace(/Wi-'Fi/g, 'Wi-Fi')
     .replace(/Wi\uFFFD\?'Fi/g, 'Wi-Fi')
@@ -36,16 +32,20 @@ function globalFix(s) {
     .replace(/\+\s*'\uFFFD[^']{0,6}'?\s*:/g, "+ '...':")
     .replace(/\|\|\s*'\uFFFD[^']{0,10}'+/g, "|| ''")
     .replace(/\|\|\s*''+'/g, "|| ''")
-    // args quebrados: , '�?'',  → , '',
     .replace(/,\s*'\uFFFD[^']{0,6}'+/g, ", ''")
-    .replace(/,\s*'�\?'+'/g, ", ''");
+    .replace(/,\s*'�\?'+'/g, ", ''")
+    // receita ? '▲' : '-' corrompido para '�?''
+    .replace(/\?\s*'\uFFFD[^']{0,4}'+/g, "? '+'")
+    .replace(/\?\s*'�\?'+/g, "? '+'")
+    // prefixo emoji já comido: console.log('+ var + ' rest → console.log(var + ' rest
+    .replace(/console\.log\('\+\s*([A-Za-z_][\w]*)\s*\+\s*'/g, "console.log($1 + '");
 }
 
 let s = fs.readFileSync(file, 'utf8');
 s = globalFix(s);
 fs.writeFileSync(file, s);
 
-for (let i = 0; i < 60; i++) {
+for (let i = 0; i < 80; i++) {
   const c = check();
   if (c.ok) {
     console.log('OK after', i, 'surgical fixes');
@@ -59,7 +59,7 @@ for (let i = 0; i < 60; i++) {
     n = L.replace(/([A-Za-zÀ-ÿ])'([A-Za-zÀ-ÿ]{2,})/g, '$1$2');
   }
   if (n === L) {
-    n = L.replace(/(console\.(?:error|log|warn)|throw new Error)\('[^']{0,12}'\s+/g, "$1('");
+    n = L.replace(/(console\.(?:error|log|warn)|throw new Error)\('[^']{0,12}'\s+(?=[A-Za-zÀ-ÿ])/g, "$1('");
   }
   if (n === L && /throw new Error/.test(L)) {
     n = L.replace(/throw new Error\([^;]*\)/, "throw new Error('Erro')");
@@ -68,9 +68,9 @@ for (let i = 0; i < 60; i++) {
     n = L.replace(/\|\|\s*'[^']*'/g, "|| ''");
   }
   if (n === L && /,\s*'/.test(L) && /console\.|throw /.test(L)) {
-    n = L.replace(/,\s*'[^']{0,12}'+/g, ", ''");
+    n = L.replace(/,\s*'\uFFFD[^']{0,12}'+/g, ", ''").replace(/,\s*'�[^']{0,8}'+/g, ", ''");
   }
-  if (n === L && /\+\s*'/.test(L)) {
+  if (n === L && /\+\s*'/.test(L) && !/\+\s*'[^']*'\s*\+/.test(L)) {
     n = L.replace(/\+\s*'[^']*'\s*:/, "+ '...':").replace(/\+\s*'[^':]*:/, "+ '...':");
   }
   if (n === L) {
