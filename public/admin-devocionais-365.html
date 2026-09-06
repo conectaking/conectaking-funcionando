@@ -822,7 +822,7 @@
                 var obj = JSON.parse(text);
                 var parsed = parseThemesJsonObject(obj);
                 var n = applyThemesFromFileParsed(parsed);
-                flash('Ficheiro carregado: ' + n + ' mês(es) com texto. O ano no campo foi ' + (parsed.year != null ? 'actualizado para ' + parsed.year + '.' : 'mantido.'), 'ok');
+                flash('Ficheiro importado: ' + n + ' mês(es) com texto. Clique em «Guardar no servidor» para gravar na base de dados.', 'ok');
             } catch (e) {
                 flash('Ficheiro inválido. Use JSON com formato { "year": 2026, "themes": { "1": "...", "2": "..." } } ou só as chaves dos meses.', 'err');
             }
@@ -833,17 +833,61 @@
         reader.readAsText(f, 'UTF-8');
     });
 
+    function loadThemesFromServer() {
+        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+        return apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr)
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao carregar temas.');
+                fillThemesFromServer(x.j.data && x.j.data.themes);
+                flash('Temas de ' + yr + ' carregados do servidor.', 'ok');
+            });
+    }
+
+    var btnLoadServer = document.getElementById('btn-themes-load-server');
+    if (btnLoadServer) {
+        btnLoadServer.addEventListener('click', function () {
+            btnLoadServer.disabled = true;
+            loadThemesFromServer()
+                .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
+                .finally(function () { btnLoadServer.disabled = false; });
+        });
+    }
+
     document.getElementById('btn-themes-save').addEventListener('click', function () {
         var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
-        var blob = new Blob([JSON.stringify({ year: yr, themes: collectThemesBody() }, null, 2)], { type: 'application/json;charset=utf-8' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'dev365_temas_' + yr + '.json';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        flash('Ficheiro guardado no computador: dev365_temas_' + yr + '.json', 'ok');
+        var btn = document.getElementById('btn-themes-save');
+        btn.disabled = true;
+        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr, {
+            method: 'PUT',
+            body: JSON.stringify(collectThemesBody())
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao guardar.');
+                fillThemesFromServer(x.j.data && x.j.data.themes);
+                flash('Temas de ' + yr + ' guardados na base de dados.', 'ok');
+            })
+            .catch(function (e) { flash(e.message || 'Erro ao guardar temas.', 'err'); })
+            .finally(function () { btn.disabled = false; });
     });
 
+    var btnExport = document.getElementById('btn-themes-export');
+    if (btnExport) {
+        btnExport.addEventListener('click', function () {
+            var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+            var blob = new Blob([JSON.stringify({ year: yr, themes: collectThemesBody() }, null, 2)], { type: 'application/json;charset=utf-8' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'dev365_temas_' + yr + '.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            flash('JSON exportado: dev365_temas_' + yr + '.json', 'ok');
+        });
+    }
+
+    // Carregar temas do servidor ao abrir a aba Devocionais 365
+    try { loadThemesFromServer().catch(function () { /* silencioso no arranque */ }); } catch (e) { /* ignore */ }
     document.getElementById('btn-themes-generate-all').addEventListener('click', function () {
         var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
         if (!confirm('Gerar automaticamente uma linha de tema para cada um dos 12 meses de ' + yr + '? Isto chama a IA várias vezes.')) return;
