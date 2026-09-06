@@ -17,7 +17,13 @@ const THEME_FIELDS = [
 
 async function getSettings(userId) {
     const existingColumns = await getExistingProfileColumns();
-    const fields = [...THEME_FIELDS];
+    const fields = THEME_FIELDS
+        .map((f) => f.replace(/^p\./, ''))
+        .filter((col) => existingColumns.includes(col))
+        .map((col) => `p.${col}`);
+    if (fields.length === 0) {
+        fields.push('p.display_name');
+    }
     if (existingColumns.includes('logo_spacing')) {
         fields.push("COALESCE(p.logo_spacing, 'center') as logo_spacing");
     } else {
@@ -57,6 +63,20 @@ async function updateSettings(client, userId, details) {
         return v !== undefined && v !== null ? v : undefined;
     };
 
+    /** Aceita número, "12", "12px" ou "12px 12px …" e devolve string CSS segura. */
+    const normalizeBorderRadius = (raw) => {
+        if (raw === undefined || raw === null || raw === '') return undefined;
+        const s = String(raw).trim();
+        if (!s) return undefined;
+        if (/^\d+(\.\d+)?(px|%|rem|em)?(\s+\d+(\.\d+)?(px|%|rem|em)?){0,3}$/i.test(s)) {
+            return s.includes('px') || s.includes('%') || /rem|em/i.test(s)
+                ? s
+                : `${parseFloat(s)}px`;
+        }
+        const first = s.match(/(\d+(\.\d+)?)/);
+        return first ? `${first[1]}px` : '12px';
+    };
+
     const fieldDefs = [
         ['font_family', 'fontFamily'],
         ['background_color', 'backgroundColor'],
@@ -75,7 +95,11 @@ async function updateSettings(client, userId, details) {
         ['show_vcard_button', 'showVcardButton'],
     ];
 
-    const themeValues = fieldDefs.map(([key, alt]) => getVal(key, alt));
+    const themeValues = fieldDefs.map(([key, alt]) => {
+        const v = getVal(key, alt);
+        if (key === 'button_border_radius') return normalizeBorderRadius(v);
+        return v;
+    });
 
     if (checkProfile.rows.length === 0) {
         const insertFields = [
@@ -108,7 +132,8 @@ async function updateSettings(client, userId, details) {
         ];
         fieldDefs.forEach(([key, alt], i) => {
             if (hasKey(details, key, alt)) {
-                const val = getVal(key, alt);
+                let val = getVal(key, alt);
+                if (key === 'button_border_radius') val = normalizeBorderRadius(val);
                 updateParts.push(`${dbColumns[i]} = $${paramIndex}`);
                 updateValues.push(val !== undefined && val !== null ? val : null);
                 paramIndex++;

@@ -47,6 +47,28 @@ const accountTypeToPlanCode = {
 
 router.get('/status', protectUser, async (req, res) => {
     try {
+        const { getExistingProfileColumns } = require('../modules/editarCartao/shared/profileColumns');
+        const cols = await getExistingProfileColumns();
+        const profileImageSelect = cols.includes('profile_image_url')
+            ? 'p.profile_image_url AS "profileImageUrl"'
+            : 'NULL::text AS "profileImageUrl"';
+        const userColsRes = await db.query(
+            `SELECT column_name FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'users'
+               AND column_name IN ('company_logo_url','company_logo_size','company_logo_link')`
+        );
+        const userCols = new Set(userColsRes.rows.map((r) => r.column_name));
+        const companyLogoSelect = [
+            userCols.has('company_logo_url')
+                ? 'u.company_logo_url AS "companyLogoUrl"'
+                : 'NULL::text AS "companyLogoUrl"',
+            userCols.has('company_logo_size')
+                ? 'u.company_logo_size AS "companyLogoSize"'
+                : 'NULL::int AS "companyLogoSize"',
+            userCols.has('company_logo_link')
+                ? 'u.company_logo_link AS "companyLogoLink"'
+                : 'NULL::text AS "companyLogoLink"',
+        ].join(',\n                ');
         const query = `
             SELECT 
                 u.id, u.email,
@@ -54,12 +76,10 @@ router.get('/status', protectUser, async (req, res) => {
                 u.subscription_id AS "subscriptionId",
                 u.is_admin AS "isAdmin",    
                 p.display_name AS "name",
-                p.profile_image_url AS "profileImageUrl",
+                ${profileImageSelect},
                 u.subscription_status AS "subscriptionStatus",
                 u.subscription_expires_at AS "subscriptionExpiresAt",
-                u.company_logo_url AS "companyLogoUrl",
-                u.company_logo_size AS "companyLogoSize",   
-                u.company_logo_link AS "companyLogoLink"   
+                ${companyLogoSelect}
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
             WHERE u.id = $1

@@ -12,8 +12,12 @@ async function getDetails(userId) {
     const existingColumns = await getExistingProfileColumns();
     const baseFields = [
         'u.id', 'u.email', 'u.profile_slug',
-        'p.display_name', 'p.bio', 'p.profile_image_url',
+        'p.display_name',
     ];
+    if (existingColumns.includes('bio')) baseFields.push('p.bio');
+    else baseFields.push('NULL::text as bio');
+    if (existingColumns.includes('profile_image_url')) baseFields.push('p.profile_image_url');
+    else baseFields.push('NULL::text as profile_image_url');
     if (existingColumns.includes('avatar_format')) {
         baseFields.push("COALESCE(p.avatar_format, 'circular') as avatar_format");
     } else {
