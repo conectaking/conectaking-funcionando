@@ -1,6 +1,8 @@
 /**
  * Script para executar migrations SQL
  * Uso: node scripts/run-migrations.js
+ *
+ * Preferência: DATABASE_URL (igual a db.js). Fallback: config.db (DB_*).
  */
 
 const path = require('path');
@@ -10,124 +12,96 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const config = require('../config');
 
-// Detectar se deve usar SSL baseado no host
-// Render.com e outros serviços em nuvem REQUEREM SSL
-// Localhost não precisa de SSL
-const isLocalhost = config.db.host === 'localhost' || 
-                    config.db.host === '127.0.0.1' || 
-                    config.db.host?.includes('localhost') ||
-                    config.db.host === '::1' ||
-                    !config.db.host;
+const databaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim();
+const isLocalUrl = databaseUrl && /localhost|127\.0\.0\.1/.test(databaseUrl);
+const useSslFromUrl = (process.env.DATABASE_SSL === 'false' || process.env.DATABASE_SSL === '0')
+  ? false
+  : !isLocalUrl;
 
-// Render.com e outros serviços em nuvem REQUEREM SSL
-const isCloudDatabase = config.db.host?.includes('render.com') || 
-                        config.db.host?.includes('amazonaws.com') ||
-                        config.db.host?.includes('azure.com') ||
-                        config.db.host?.includes('googleapis.com') ||
-                        process.env.DB_REQUIRE_SSL === 'true';
-
-// Usar SSL se for banco em nuvem OU se explicitamente solicitado
-const useSSL = isCloudDatabase || (process.env.DB_USE_SSL === 'true' && !isLocalhost);
-
-console.log(`🔌 Conectando ao banco: ${config.db.host}:${config.db.port}`);
-console.log(`   isLocalhost: ${isLocalhost}`);
-console.log(`   isCloudDatabase: ${isCloudDatabase}`);
-console.log(`   SSL: ${useSSL ? 'HABILITADO (requerido)' : 'DESABILITADO'}`);
-
-// Configuração do pool
-const poolConfig = {
+let poolConfig;
+if (databaseUrl) {
+  poolConfig = {
+    connectionString: databaseUrl,
+    ssl: useSslFromUrl ? { rejectUnauthorized: false } : false
+  };
+  console.log(`🔌 Conectando via DATABASE_URL (SSL: ${useSslFromUrl ? 'sim' : 'não'})`);
+} else {
+  const isLocalhost = config.db.host === 'localhost' ||
+    config.db.host === '127.0.0.1' ||
+    config.db.host?.includes('localhost') ||
+    config.db.host === '::1' ||
+    !config.db.host;
+  const isCloudDatabase = config.db.host?.includes('render.com') ||
+    config.db.host?.includes('amazonaws.com') ||
+    config.db.host?.includes('azure.com') ||
+    config.db.host?.includes('googleapis.com') ||
+    process.env.DB_REQUIRE_SSL === 'true';
+  const useSSL = isCloudDatabase || (process.env.DB_USE_SSL === 'true' && !isLocalhost);
+  poolConfig = {
     user: config.db.user,
     host: config.db.host,
     database: config.db.database,
     password: config.db.password,
-    port: parseInt(config.db.port, 10)
-};
-
-// Configurar SSL baseado no tipo de banco
-if (useSSL) {
-    // Usar configuração SSL do config (rejectUnauthorized: false para Render.com)
-    poolConfig.ssl = config.db.ssl || { rejectUnauthorized: false };
-    console.log('   ✅ SSL habilitado para conexão segura');
-} else {
-    poolConfig.ssl = false;
-    console.log('   ✅ SSL desabilitado (localhost)');
+    port: parseInt(config.db.port, 10),
+    ssl: useSSL ? (config.db.ssl || { rejectUnauthorized: false }) : false
+  };
+  console.log(`🔌 Conectando ao banco: ${config.db.host}:${config.db.port}`);
+  console.log(`   SSL: ${useSSL ? 'HABILITADO' : 'DESABILITADO'}`);
 }
 
 const pool = new Pool(poolConfig);
 
 async function runMigrations() {
-    const migrationsDir = path.join(__dirname, '..', 'migrations');
-    const files = fs.readdirSync(migrationsDir)
-        .filter(file => file.endsWith('.sql'))
-        .sort(); // Executar em ordem
+  const migrationsDir = path.join(__dirname, '..', 'migrations');
+  const files = fs.readdirSync(migrationsDir)
+    .filter(file => file.endsWith('.sql'))
+    .sort();
 
-    console.log(`📦 Encontradas ${files.length} migrations para executar...\n`);
+  console.log(`📦 Encontradas ${files.length} migrations para executar...\n`);
+  console.log('⚠️  Este runner NÃO grava schema_migrations. Prefira: npm run migrate-auto\n');
 
-    const client = await pool.connect();
-    
-    let successCount = 0;
-    let skippedCount = 0;
-    let errorCount = 0;
-    
-    try {
-        // Executar cada migration em sua própria transação
-        for (const file of files) {
-            const filePath = path.join(migrationsDir, file);
-            const sql = fs.readFileSync(filePath, 'utf8');
-            
-            console.log(`🔄 Executando: ${file}...`);
-            
-            // Iniciar transação para esta migration específica
-            await client.query('BEGIN');
-            
-            try {
-                await client.query(sql);
-                await client.query('COMMIT');
-                console.log(`✅ ${file} executado com sucesso\n`);
-                successCount++;
-            } catch (error) {
-                // Rollback da transação desta migration
-                await client.query('ROLLBACK');
-                
-                // Apenas ignorar quando objeto já existe (tabela/índice/constraint) — não esconder outros erros
-                if (error.code === '42P07' || error.code === '42710' || error.code === '42P16' || error.code === '42704') {
-                    console.log(`⚠️  ${file} já foi executado anteriormente (ignorando)\n`);
-                    skippedCount++;
-                } else if (error.code === '23505') {
-                    // unique_violation: registro já existe (ex.: INSERT duplicado)
-                    console.log(`⚠️  ${file}: registro já existe (ignorando)\n`);
-                    skippedCount++;
-                } else {
-                    console.error(`❌ Erro ao executar ${file}:`, error.message);
-                    console.error(`   Código: ${error.code}`);
-                    errorCount++;
-                }
-            }
-        }
+  const client = await pool.connect();
 
-        // Resumo final
-        console.log('\n' + '='.repeat(50));
-        console.log('📊 RESUMO DAS MIGRATIONS:');
-        console.log(`   ✅ Executadas com sucesso: ${successCount}`);
-        console.log(`   ⚠️  Já executadas (ignoradas): ${skippedCount}`);
-        if (errorCount > 0) {
-            console.log(`   ❌ Erros: ${errorCount}`);
-            console.log('\n⚠️  Algumas migrations falharam. Verifique os erros acima.');
-            process.exit(1);
+  let successCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+
+  try {
+    for (const file of files) {
+      const filePath = path.join(migrationsDir, file);
+      const sql = fs.readFileSync(filePath, 'utf8');
+
+      console.log(`🔄 Executando: ${file}...`);
+
+      try {
+        await client.query('BEGIN');
+        await client.query(sql);
+        await client.query('COMMIT');
+        console.log(`✅ ${file} OK\n`);
+        successCount++;
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        const code = error.code || '';
+        const msg = error.message || String(error);
+        if (code === '42P07' || code === '42710' || code === '42P16' || code === '42704' || code === '23505') {
+          console.log(`⏭️  ${file} já aplicada (${code})\n`);
+          skippedCount++;
         } else {
-            console.log('✅ Todas as migrations foram processadas!');
+          console.error(`❌ ${file}: ${msg}\n`);
+          errorCount++;
         }
-    } catch (error) {
-        console.error('❌ Erro fatal ao executar migrations:', error);
-        process.exit(1);
-    } finally {
-        client.release();
-        await pool.end();
+      }
     }
+  } finally {
+    client.release();
+    await pool.end();
+  }
+
+  console.log(`\n📊 Resumo: ${successCount} ok, ${skippedCount} skip, ${errorCount} erros`);
+  if (errorCount > 0) process.exit(1);
 }
 
-runMigrations().catch(error => {
-    console.error('Erro fatal:', error);
-    process.exit(1);
+runMigrations().catch((err) => {
+  console.error('Falha fatal:', err);
+  process.exit(1);
 });
-

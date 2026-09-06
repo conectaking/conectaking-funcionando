@@ -25,7 +25,12 @@ const pool = databaseUrl
       database: config.db.database,
       password: config.db.password,
       port: config.db.port,
-      ssl: config.db.ssl,
+      ssl: (() => {
+        const host = String(config.db.host || '').toLowerCase();
+        const local = !host || host === 'localhost' || host === '127.0.0.1' || host === '::1';
+        if (local || process.env.DATABASE_SSL === 'false' || process.env.DATABASE_SSL === '0') return false;
+        return config.db.ssl || { rejectUnauthorized: false };
+      })(),
       ...poolOptions
     });
 

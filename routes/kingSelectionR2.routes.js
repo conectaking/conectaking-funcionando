@@ -4,6 +4,7 @@
  */
 const express = require('express');
 const { protectUser } = require('../middleware/protectUser');
+const { protectAdmin } = require('../middleware/protectAdmin');
 const { asyncHandler } = require('../middleware/errorHandler');
 const r2Service = require('../services/kingSelectionR2.service');
 
@@ -28,7 +29,8 @@ router.get('/r2-inventory', protectUser, asyncHandler(async (req, res) => {
   }
 }));
 
-router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
+/** Limpeza global de órfãos R2 — apenas admin (destrutivo em todas as galerias). */
+router.post('/cleanup-r2', protectAdmin, asyncHandler(async (req, res) => {
   const rawDry = req.body?.dryRun ?? req.query?.dryRun ?? '1';
   const dryRun = rawDry === false || rawDry === 0 || String(rawDry).toLowerCase() === '0' || String(rawDry).toLowerCase() === 'false'
     ? false

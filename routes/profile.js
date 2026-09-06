@@ -798,6 +798,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         console.error('❌ Error message:', error.message);
         throw error; // Deixar asyncHandler tratar o erro
     } finally {
+        clearTimeout(timeout);
         console.log('🔄 Liberando conexão do banco de dados...');
         client.release();
         console.log('✅ Conexão liberada');

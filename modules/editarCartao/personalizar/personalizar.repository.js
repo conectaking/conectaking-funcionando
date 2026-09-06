@@ -129,14 +129,13 @@ async function updateSettings(client, userId, details) {
     const themeValues = fieldDefs.map(([key, alt]) => coerceThemeValue(key, getVal(key, alt)));
 
     if (checkProfile.rows.length === 0) {
-        const insertFields = [
-            'user_id', 'font_family', 'background_color', 'text_color', 'button_color', 'button_text_color',
-            'button_opacity', 'button_border_radius', 'button_content_align',
-            'background_type', 'background_image_url',
-            'card_background_color', 'card_opacity',
-            'button_font_size', 'background_image_opacity', 'show_vcard_button',
-        ];
-        const insertValues = [userId, ...themeValues.map((v) => v ?? null)];
+        const insertFields = ['user_id'];
+        const insertValues = [userId];
+        fieldDefs.forEach(([key, alt], i) => {
+            if (!existingColumns.includes(key)) return;
+            insertFields.push(key);
+            insertValues.push(themeValues[i] ?? null);
+        });
         if (existingColumns.includes('logo_spacing')) {
             insertFields.push('logo_spacing');
             insertValues.push(getVal('logo_spacing', 'logoSpacing') ?? 'center');
@@ -150,17 +149,11 @@ async function updateSettings(client, userId, details) {
         const updateParts = [];
         const updateValues = [];
         let paramIndex = 1;
-        const dbColumns = [
-            'font_family', 'background_color', 'text_color', 'button_color', 'button_text_color',
-            'button_opacity', 'button_border_radius', 'button_content_align',
-            'background_type', 'background_image_url',
-            'card_background_color', 'card_opacity',
-            'button_font_size', 'background_image_opacity', 'show_vcard_button',
-        ];
-        fieldDefs.forEach(([key, alt], i) => {
+        fieldDefs.forEach(([key, alt]) => {
+            if (!existingColumns.includes(key)) return;
             if (hasKey(details, key, alt)) {
                 const val = coerceThemeValue(key, getVal(key, alt));
-                updateParts.push(`${dbColumns[i]} = $${paramIndex}`);
+                updateParts.push(`${key} = $${paramIndex}`);
                 updateValues.push(val !== undefined && val !== null ? val : null);
                 paramIndex++;
             }

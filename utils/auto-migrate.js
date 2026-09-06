@@ -208,20 +208,12 @@ class AutoMigrator {
                 return { success: true, skipped: true, executionTime };
             }
 
-            // 42703 = undefined_column / 42P01 = undefined_table: coluna ou tabela não existe (schema diferente ou ordem). Marcar como aplicada para não bloquear.
+            // 42703 / 42P01 = coluna ou tabela em falta: NÃO marcar como sucesso.
+            // Antes isto engolia a falha e o schema ficava incompleto para sempre (ex.: company_logo_*, button_border_radius).
             if (error.code === '42703' || error.code === '42P01') {
-                logger.warn(`⚠️  Migration ${migrationName}: coluna/tabela indefinida (${error.code}). Marcando como aplicada.`);
-                await db.query(`
-                    INSERT INTO schema_migrations (migration_name, execution_time_ms, success)
-                    VALUES ($1, $2, TRUE)
-                    ON CONFLICT (migration_name) 
-                    DO UPDATE SET 
-                        executed_at = NOW(),
-                        execution_time_ms = $2,
-                        success = TRUE,
-                        error_message = NULL
-                `, [migrationName, executionTime]);
-                return { success: true, skipped: true, executionTime };
+                logger.error(`❌ Migration ${migrationName} falhou por schema incompleto (${error.code}): ${error.message}`);
+                logger.error('   Corrija a ordem/dependências da migration; ela será retentada no próximo arranque.');
+                return { success: false, error: error.message, executionTime };
             }
             
             logger.error(`❌ Erro ao executar migration ${migrationName}:`, error);

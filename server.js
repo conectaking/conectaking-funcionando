@@ -483,7 +483,13 @@ app.use(requestLogger);
 
 // public_html (KingSelection cliente + express.static)
 const publicHtmlDir = path.join(__dirname, 'public_html');
-const kingSelectionClienteHtml = path.join(publicHtmlDir, 'kingSelectionCliente.html');
+const kingSelectionClienteHtmlCandidates = [
+    path.join(__dirname, 'public', 'kingSelectionCliente.html'),
+    path.join(publicHtmlDir, 'kingSelectionCliente.html')
+];
+const kingSelectionClienteHtml = kingSelectionClienteHtmlCandidates.find((p) => {
+    try { return fs.existsSync(p); } catch (_) { return false; }
+}) || path.join(publicHtmlDir, 'kingSelectionCliente.html');
 const kingSelectionEditHtml = path.join(publicHtmlDir, 'kingSelectionEdit.html');
 function resolveKingSelectionProjectHtmlPath() {
     const candidates = [
@@ -717,7 +723,7 @@ async function serveKingSelectionClienteGallery(req, res, next) {
     if (!tpl) return next();
 
     const defaultOgImage = defaultOgImageUrl();
-    let pageTitle = 'King Selection �?" Galeria';
+    let pageTitle = 'King Selection — Galeria';
     let ogTitle = pageTitle;
     let ogDesc = 'Aceda à sua galeria King Selection e selecione as suas fotografias.';
     let ogImage = defaultOgImage;
@@ -731,7 +737,7 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         const hostHdr = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
         const host = hostHdr.split(',')[0].trim();
         if (og) {
-            ogTitle = `${og.title} �?" King Selection`;
+            ogTitle = `${og.title} — King Selection`;
             pageTitle = ogTitle;
             ogDesc = buildKingSelectionOgDescription(og.title, og.access_mode, og.allow_self_signup);
             // Mesmo host da página (WhatsApp ignora ou falha com og:image só no domínio externo da API).
@@ -1263,19 +1269,22 @@ app.use((req, res, next) => {
     // IMPORTANTE: Não bloquear rotas válidas como /api/profile, /api/pix, etc.
     const isGenericApiAccess = path === '/api' && !req.path.startsWith('/api/');
 
-    // Padrões de user-agent suspeitos (incluindo URLs como user-agent)
+    // Crawlers legítimos (OG/SEO/WhatsApp) — NÃO bloquear
+    const isAllowedCrawler = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|applebot|semrushbot|ahrefsbot|preview/i.test(userAgent);
+    if (isAllowedCrawler) {
+        return next();
+    }
+
+    // Scanners/exploit tools (NÃO usar "bot"/"crawler" genéricos — bloqueava Googlebot/Twitterbot)
     const suspiciousUserAgents = [
         'sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp', 'w3af',
-        'dirbuster', 'gobuster', 'wfuzz', 'scanner', 'bot', 'crawler',
-        'spider', 'scraper', 'http://', 'https://', // User-agent que é uma URL é suspeito
-        'http://cnking.bio', 'https://cnking.bio', // User-agents que são URLs do próprio domínio
-        'http://tag.conectaking.com.br', 'https://tag.conectaking.com.br'
+        'dirbuster', 'gobuster', 'wfuzz', 'nuclei', 'httpx'
     ];
 
     // Verificar se o path corresponde a padrões de bot
     const isBotPath = botPatterns.some(pattern => path.includes(pattern));
 
-    // Verificar se o user-agent é suspeito (URL como user-agent é sempre suspeito)
+    // UA suspeito: ferramenta conhecida OU user-agent que é só uma URL
     const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern)) ||
         userAgent.startsWith('http://') ||
         userAgent.startsWith('https://');

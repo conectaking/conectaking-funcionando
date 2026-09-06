@@ -1,5 +1,6 @@
 -- Migration 244: colunas de logo na empresa + border radius CSS + item_types do cartão
 -- Corrige 500 em /api/account/status e /api/profile/save-all no VPS Hetzner.
+-- Idempotente: seguro reexecutar (não transforma "12px" em "12pxpx").
 
 -- 1) Logo da empresa em users (usado por account/status, cartão, documentos)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS company_logo_url TEXT;
@@ -7,14 +8,36 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS company_logo_size INTEGER DEFAULT 60;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS company_logo_link TEXT;
 
 -- 2) button_border_radius: frontend envia CSS ("12px" / "12px 12px 12px 12px"), não INTEGER
-ALTER TABLE user_profiles
-  ALTER COLUMN button_border_radius TYPE TEXT
-  USING (
-    CASE
-      WHEN button_border_radius IS NULL THEN NULL
-      ELSE button_border_radius::text || 'px'
-    END
-  );
+-- Só converte quando a coluna ainda é numérica.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'user_profiles'
+      AND column_name = 'button_border_radius'
+      AND data_type IN ('integer', 'bigint', 'smallint', 'numeric', 'real', 'double precision')
+  ) THEN
+    ALTER TABLE user_profiles
+      ALTER COLUMN button_border_radius TYPE TEXT
+      USING (
+        CASE
+          WHEN button_border_radius IS NULL THEN NULL
+          ELSE button_border_radius::text || 'px'
+        END
+      );
+  ELSIF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'user_profiles'
+      AND column_name = 'button_border_radius'
+  ) THEN
+    ALTER TABLE user_profiles ADD COLUMN button_border_radius TEXT DEFAULT '12px';
+  END IF;
+END $$;
+
 ALTER TABLE user_profiles ALTER COLUMN button_border_radius SET DEFAULT '12px';
 
 -- 3) CHECK de item_type desatualizada (sem bible, wifi, location, etc.)
