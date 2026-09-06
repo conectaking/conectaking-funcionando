@@ -1,8 +1,8 @@
 ﻿/**
- * Landing / index: mostra "Sair" no header quando hÃ¡ sessÃ£o (token), para trocar de conta.
+ * Landing / index: mostra "Sair" no header quando há sessão (token), para trocar de conta.
  * Incluir no index.html antes de </body>:
  *   <script src="js/landing-exit.js?v=2026-04-23" defer></script>
- * Opcional: <span id="landing-sair-slot"></span> no header â€” o botÃ£o Ã© inserido aqui.
+ * Opcional: <span id="landing-sair-slot"></span> no header — o botão é inserido aqui.
  */
 (function () {
     'use strict';
@@ -70,7 +70,7 @@
         el.className = 'ck-landing-exit-link';
         el.textContent = 'Sair';
         el.setAttribute('role', 'button');
-        el.setAttribute('title', 'Encerrar sessÃ£o e entrar com outra conta');
+        el.setAttribute('title', 'Encerrar sessão e entrar com outra conta');
         el.style.cssText =
             'display:inline-flex;align-items:center;justify-content:center;margin-right:12px;padding:10px 18px;border-radius:8px;border:1px solid rgba(250,204,21,.9);color:#facc15;font-weight:600;font-size:0.875rem;text-decoration:none;font-family:inherit;background:transparent;cursor:pointer;transition:background .2s,color .2s,border-color .2s';
         el.addEventListener('mouseenter', function () {
@@ -83,7 +83,7 @@
         });
         el.addEventListener('click', function (e) {
             e.preventDefault();
-            if (window.confirm('Sair desta conta e voltar Ã  pÃ¡gina inicial?')) {
+            if (window.confirm('Sair desta conta e voltar Ã  página inicial?')) {
                 exitToLogin();
             }
         });
@@ -97,7 +97,7 @@
         a.id = 'ck-landing-exit-fab';
         a.className = 'ck-landing-exit-fab';
         a.textContent = 'Sair da conta';
-        a.setAttribute('title', 'Encerrar sessÃ£o');
+        a.setAttribute('title', 'Encerrar sessão');
         a.style.cssText =
             'position:fixed;bottom:16px;right:16px;z-index:2147483000;padding:10px 14px;background:rgba(10,10,10,.92);border:1px solid #444;border-radius:8px;color:#facc15;font-size:0.8rem;font-weight:600;text-decoration:none;font-family:system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.45)';
         a.addEventListener('click', function (e) {

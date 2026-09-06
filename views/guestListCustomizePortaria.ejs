@@ -311,8 +311,8 @@
     <script src="/js/image-crop-modal.js"></script>
     <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
         <% 
-            // Determinar se estÃ¡ dentro de iframe
-            // Se estiver dentro de iframe, esconder o botÃ£o "Voltar" (nÃ£o Ã© necessÃ¡rio)
+            // Determinar se está dentro de iframe
+            // Se estiver dentro de iframe, esconder o botão "Voltar" (não é necessário)
             const isInIframe = true;
         %>
         <div id="back-button-container" style="display: none;">
@@ -326,20 +326,20 @@
     </div>
     
     <script>
-        // Detectar se estÃ¡ dentro de iframe e esconder botÃ£o "Voltar"
+        // Detectar se está dentro de iframe e esconder botão "Voltar"
         (function() {
             // Verificar se estamos dentro de um iframe
             if (window.self !== window.top) {
-                // Estamos dentro de um iframe - esconder o botÃ£o "Voltar" completamente
+                // Estamos dentro de um iframe - esconder o botão "Voltar" completamente
                 const backButtonContainer = document.getElementById('back-button-container');
                 if (backButtonContainer) {
                     backButtonContainer.style.display = 'none';
                 }
-                console.log('âœ… [CUSTOMIZE_PORTARIA] Detectado iframe - botÃ£o "Voltar" escondido');
+                console.log('âœ… [CUSTOMIZE_PORTARIA] Detectado iframe - botão "Voltar" escondido');
             }
         })();
         
-        // FunÃ§Ã£o para lidar com o clique no botÃ£o "Voltar" (se necessÃ¡rio)
+        // Função para lidar com o clique no botão "Voltar" (se necessário)
         function handleVoltarClick(event, backUrl) {
             event.preventDefault();
             
@@ -363,16 +363,16 @@
                                 registeredTab.click();
                             }
                         } catch (e) {
-                            console.log('NÃ£o foi possÃ­vel acessar o documento pai diretamente, usando postMessage');
+                            console.log('Não foi possível acessar o documento pai diretamente, usando postMessage');
                         }
                     }
                 } catch (e) {
                     console.error('Erro ao comunicar com o pai:', e);
-                    // Fallback: usar histÃ³rico do navegador
+                    // Fallback: usar histórico do navegador
                     history.back();
                 }
             } else {
-                // NÃ£o estamos em um iframe - navegaÃ§Ã£o normal
+                // Não estamos em um iframe - navegação normal
                 if (backUrl) {
                     window.location.href = backUrl;
                 } else if (document.referrer && !document.referrer.includes('customize-portaria')) {
@@ -387,15 +387,15 @@
         <div class="sidebar">
             
             <form id="customize-form">
-                <!-- Temas PrÃ©-definidos -->
+                <!-- Temas Pré-definidos -->
                 <div class="form-group">
                     <label class="section-title">
-                        <i class="fas fa-palette"></i> Temas PrÃ©-definidos
+                        <i class="fas fa-palette"></i> Temas Pré-definidos
                     </label>
                     <div class="theme-grid" style="grid-template-columns: repeat(3, 1fr);">
                         <div class="theme-card" data-theme="default" onclick="selectTheme('default')">
                             <div class="theme-preview" style="background: linear-gradient(135deg, #FFC700, #FFB700);"></div>
-                            <div class="theme-name">PadrÃ£o</div>
+                            <div class="theme-name">Padrão</div>
                         </div>
                         <div class="theme-card" data-theme="dark" onclick="selectTheme('dark')">
                             <div class="theme-preview" style="background: linear-gradient(135deg, #1C1C21, #0D0D0F);"></div>
@@ -463,13 +463,13 @@
                         <i class="fas fa-fill-drip"></i> Cores
                     </label>
                     
-                    <label>Cor PrimÃ¡ria</label>
+                    <label>Cor Primária</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="primary_color" value="<%= guestList.primary_color || '#FFC700' %>" onchange="updateColor('primary_color', this.value)">
                         <input type="text" id="primary_color_text" value="<%= guestList.primary_color || '#FFC700' %>" onchange="updateColorFromText('primary_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 12px;">Cor SecundÃ¡ria</label>
+                    <label style="margin-top: 12px;">Cor Secundária</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="secondary_color" value="<%= guestList.secondary_color || '#FFB700' %>" onchange="updateColor('secondary_color', this.value)">
                         <input type="text" id="secondary_color_text" value="<%= guestList.secondary_color || '#FFB700' %>" onchange="updateColorFromText('secondary_color', this.value)">
@@ -495,11 +495,11 @@
                     </label>
                     
                     <label>Banner da portaria</label>
-                    <p style="font-size: 13px; color: #A1A1A1; margin-bottom: 10px;">A portaria usa a mesma imagem da <strong>abertura do evento</strong> (definida em Links personalizados / ConfirmaÃ§Ã£o). Aqui vocÃª sÃ³ ajusta o enquadramento.</p>
+                    <p style="font-size: 13px; color: #A1A1A1; margin-bottom: 10px;">A portaria usa a mesma imagem da <strong>abertura do evento</strong> (definida em Links personalizados / Confirmação). Aqui você só ajusta o enquadramento.</p>
                     <label style="margin-top: 8px; display: block;">Enquadramento do banner</label>
                     <select id="header_banner_fit" name="header_banner_fit" style="width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: #ECECEC; font-size: 14px;">
-                        <option value="auto" <%= (guestList.header_banner_fit !== 'cover') ? 'selected' : '' %>>AutomÃ¡tico â€” mostrar inteiro, nÃ£o cortar</option>
-                        <option value="cover" <%= guestList.header_banner_fit === 'cover' ? 'selected' : '' %>>Preencher â€” pode cortar bordas</option>
+                        <option value="auto" <%= (guestList.header_banner_fit !== 'cover') ? 'selected' : '' %>>Automático — mostrar inteiro, não cortar</option>
+                        <option value="cover" <%= guestList.header_banner_fit === 'cover' ? 'selected' : '' %>>Preencher — pode cortar bordas</option>
                     </select>
                     
                     <label style="margin-top: 16px;">Logo</label>
@@ -543,74 +543,74 @@
                     </div>
                 </div>
                 
-                <!-- PersonalizaÃ§Ã£o de Textos e Cores EspecÃ­ficas -->
+                <!-- Personalização de Textos e Cores Específicas -->
                 <div class="form-group" style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
                     <label class="section-title">
-                        <i class="fas fa-text-width"></i> PersonalizaÃ§Ã£o de Textos e BotÃµes
+                        <i class="fas fa-text-width"></i> Personalização de Textos e Botões
                     </label>
                     
-                    <label style="margin-top: 12px;">TÃ­tulo "InscriÃ§Ã£o no Curso"</label>
-                    <input type="text" id="event_title_custom" name="event_title_custom" value="<%= guestList.event_title_custom || guestList.event_title || 'InscriÃ§Ã£o no Curso' %>" placeholder="Ex: InscriÃ§Ã£o no Curso" style="margin-bottom: 8px;">
-                    <label style="margin-top: 12px;">SubtÃ­tulo (abaixo do tÃ­tulo)</label>
-                    <input type="text" id="portaria_subtitle" name="portaria_subtitle" value="<%= guestList.portaria_subtitle || 'VisualizaÃ§Ã£o completa para portaria' %>" placeholder="Ex: VisualizaÃ§Ã£o completa para portaria" style="margin-bottom: 8px;">
-                    <label style="margin-top: 8px; font-size: 12px;">Cor do Texto do TÃ­tulo</label>
+                    <label style="margin-top: 12px;">Título "Inscrição no Curso"</label>
+                    <input type="text" id="event_title_custom" name="event_title_custom" value="<%= guestList.event_title_custom || guestList.event_title || 'Inscrição no Curso' %>" placeholder="Ex: Inscrição no Curso" style="margin-bottom: 8px;">
+                    <label style="margin-top: 12px;">Subtítulo (abaixo do título)</label>
+                    <input type="text" id="portaria_subtitle" name="portaria_subtitle" value="<%= guestList.portaria_subtitle || 'Visualização completa para portaria' %>" placeholder="Ex: Visualização completa para portaria" style="margin-bottom: 8px;">
+                    <label style="margin-top: 8px; font-size: 12px;">Cor do Texto do Título</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="title_text_color" value="<%= guestList.title_text_color || '#FFFFFF' %>" onchange="updateColor('title_text_color', this.value)">
                         <input type="text" id="title_text_color_text" value="<%= guestList.title_text_color || '#FFFFFF' %>" onchange="updateColorFromText('title_text_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 16px;">Texto do BotÃ£o QR Code</label>
+                    <label style="margin-top: 16px;">Texto do Botão QR Code</label>
                     <input type="text" id="qr_code_button_text" name="qr_code_button_text" value="<%= guestList.qr_code_button_text || 'Ler QR Code' %>" placeholder="Ex: Ler QR Code">
                     
-                    <label style="margin-top: 12px;">Cor do BotÃ£o QR Code</label>
+                    <label style="margin-top: 12px;">Cor do Botão QR Code</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="qr_code_button_color" value="<%= guestList.qr_code_button_color || '#FFC700' %>" onchange="updateColor('qr_code_button_color', this.value)">
                         <input type="text" id="qr_code_button_color_text" value="<%= guestList.qr_code_button_color || '#FFC700' %>" onchange="updateColorFromText('qr_code_button_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 8px; font-size: 12px;">Cor SecundÃ¡ria (para degradÃª)</label>
+                    <label style="margin-top: 8px; font-size: 12px;">Cor Secundária (para degradê)</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="qr_code_button_color_secondary" value="<%= guestList.qr_code_button_color_secondary || '#FFB700' %>" onchange="updateColor('qr_code_button_color_secondary', this.value)">
                         <input type="text" id="qr_code_button_color_secondary_text" value="<%= guestList.qr_code_button_color_secondary || '#FFB700' %>" onchange="updateColorFromText('qr_code_button_color_secondary', this.value)">
                     </div>
                     
-                    <label style="margin-top: 12px;">Cor do Texto do BotÃ£o QR Code</label>
+                    <label style="margin-top: 12px;">Cor do Texto do Botão QR Code</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="qr_code_button_text_color" value="<%= guestList.qr_code_button_text_color || '#000000' %>" onchange="updateColor('qr_code_button_text_color', this.value)">
                         <input type="text" id="qr_code_button_text_color_text" value="<%= guestList.qr_code_button_text_color || '#000000' %>" onchange="updateColorFromText('qr_code_button_text_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 16px;">Cor do Texto "ConfirmaÃ§Ã£o RÃ¡pida"</label>
+                    <label style="margin-top: 16px;">Cor do Texto "Confirmação Rápida"</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="quick_confirm_title_color" value="<%= guestList.quick_confirm_title_color || '#FFC700' %>" onchange="updateColor('quick_confirm_title_color', this.value)">
                         <input type="text" id="quick_confirm_title_color_text" value="<%= guestList.quick_confirm_title_color || '#FFC700' %>" onchange="updateColorFromText('quick_confirm_title_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 16px;">Cor do Ãcone "ConfirmaÃ§Ã£o RÃ¡pida" (raio/flash)</label>
+                    <label style="margin-top: 16px;">Cor do Ãcone "Confirmação Rápida" (raio/flash)</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="quick_confirm_icon_color" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColor('quick_confirm_icon_color', this.value)">
                         <input type="text" id="quick_confirm_icon_color_text" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColorFromText('quick_confirm_icon_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 16px;">Cor dos NÃºmeros dos Cards (19, 1, 18)</label>
+                    <label style="margin-top: 16px;">Cor dos Números dos Cards (19, 1, 18)</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="stats_number_color" value="<%= guestList.stats_number_color || '#FFC700' %>" onchange="updateColor('stats_number_color', this.value)">
                         <input type="text" id="stats_number_color_text" value="<%= guestList.stats_number_color || '#FFC700' %>" onchange="updateColorFromText('stats_number_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 16px;">Cor do BotÃ£o de Busca</label>
+                    <label style="margin-top: 16px;">Cor do Botão de Busca</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="search_button_color" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColor('search_button_color', this.value)">
                         <input type="text" id="search_button_color_text" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColorFromText('search_button_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 8px; font-size: 12px;">Cor SecundÃ¡ria (para degradÃª)</label>
+                    <label style="margin-top: 8px; font-size: 12px;">Cor Secundária (para degradê)</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="search_button_color_secondary" value="<%= guestList.search_button_color_secondary || '#20BA5A' %>" onchange="updateColor('search_button_color_secondary', this.value)">
                         <input type="text" id="search_button_color_secondary_text" value="<%= guestList.search_button_color_secondary || '#20BA5A' %>" onchange="updateColorFromText('search_button_color_secondary', this.value)">
                     </div>
                     
-                    <label style="margin-top: 12px;">Cor do Texto do BotÃ£o de Busca</label>
+                    <label style="margin-top: 12px;">Cor do Texto do Botão de Busca</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="search_button_text_color" value="<%= guestList.search_button_text_color || '#FFFFFF' %>" onchange="updateColor('search_button_text_color', this.value)">
                         <input type="text" id="search_button_text_color_text" value="<%= guestList.search_button_text_color || '#FFFFFF' %>" onchange="updateColorFromText('search_button_text_color', this.value)">
@@ -624,7 +624,7 @@
                 </div>
                 
                 <button type="submit" class="btn-save">
-                    <i class="fas fa-save"></i> Salvar PersonalizaÃ§Ã£o
+                    <i class="fas fa-save"></i> Salvar Personalização
                 </button>
             </form>
         </div>
@@ -643,22 +643,22 @@
         const profileItemId = <%= profileItemId %>;
         
         // Obter token da URL (query string) ou do localStorage
-        // Usar variÃ¡vel global para garantir acesso em todas as funÃ§Ãµes
+        // Usar variável global para garantir acesso em todas as funções
         const urlParams = new URLSearchParams(window.location.search);
-        window.urlParams = urlParams; // Tornar global para acesso em funÃ§Ãµes
+        window.urlParams = urlParams; // Tornar global para acesso em funções
         let authToken = urlParams.get('token');
         
         // Se o token veio da URL, pode estar codificado - tentar decodificar
         if (authToken) {
             try {
-                // Tentar decodificar se necessÃ¡rio
+                // Tentar decodificar se necessário
                 authToken = decodeURIComponent(authToken);
             } catch (e) {
                 console.warn('Aviso ao decodificar token da URL:', e);
             }
         }
         
-        // Se nÃ£o tiver token na URL, tentar do localStorage
+        // Se não tiver token na URL, tentar do localStorage
         if (!authToken) {
             authToken = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
         }
@@ -671,19 +671,19 @@
             tokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'none'
         });
         
-        // Se nÃ£o tiver token, mostrar erro e tentar obter novamente
+        // Se não tiver token, mostrar erro e tentar obter novamente
         if (!authToken) {
-            console.error('âŒ Token nÃ£o encontrado na URL nem no localStorage');
+            console.error('âŒ Token não encontrado na URL nem no localStorage');
             console.error('âŒ URL completa:', window.location.href);
             console.error('âŒ Query params:', window.location.search);
-            alert('Erro: Token de autenticaÃ§Ã£o nÃ£o encontrado.\n\nPor favor:\n1. Feche esta pÃ¡gina\n2. Volte para a pÃ¡gina de ediÃ§Ã£o do formulÃ¡rio\n3. Clique novamente em "Personalizar Link da Portaria"');
+            alert('Erro: Token de autenticação não encontrado.\n\nPor favor:\n1. Feche esta página\n2. Volte para a página de edição do formulário\n3. Clique novamente em "Personalizar Link da Portaria"');
         } else {
             // Salvar token no localStorage para uso futuro
             localStorage.setItem('conectaKingToken', authToken);
             console.log('âœ… Token salvo no localStorage');
         }
         
-        // Selecionar tema ativo (cores serÃ£o aplicadas ao final do script)
+        // Selecionar tema ativo (cores serão aplicadas ao final do script)
         var initialTheme = '<%= (guestList.theme_portaria || "default").replace(/'/g, "\\'") %>';
         document.querySelectorAll('.theme-card').forEach(function(c) { c.classList.remove('active'); });
         var activeCard = document.querySelector('[data-theme="' + initialTheme + '"]');
@@ -765,7 +765,7 @@
                 form_logo_url: g('form_logo_url'),
                 theme_portaria: g('theme_portaria'),
                 event_title_custom: (g('event_title_custom') || '').trim() || null,
-                portaria_subtitle: (g('portaria_subtitle') || '').trim() || 'VisualizaÃ§Ã£o completa para portaria',
+                portaria_subtitle: (g('portaria_subtitle') || '').trim() || 'Visualização completa para portaria',
                 title_text_color: document.getElementById('title_text_color') ? document.getElementById('title_text_color').value : null,
                 qr_code_button_text: g('qr_code_button_text'),
                 qr_code_button_color: g('qr_code_button_color'),
@@ -823,7 +823,7 @@
         async function handleImageUpload(type, input) {
             const file = input.files[0];
             if (!file) return;
-            // Enquadramento (crop) para banner e logo â€” igual ao da troca de foto de perfil
+            // Enquadramento (crop) para banner e logo — igual ao da troca de foto de perfil
             if (typeof ImageCropModal !== 'undefined' && (type === 'header_image' || type === 'logo_image')) {
                 var aspectRatio = type === 'header_image' ? 16 / 9 : 1;
                 ImageCropModal.open(file, { aspectRatio: aspectRatio }, function (url, errMsg) {
@@ -868,7 +868,7 @@
             }
             
             if (!authToken) {
-                alert('Erro: Token de autenticaÃ§Ã£o nÃ£o encontrado. Por favor, faÃ§a login novamente.');
+                alert('Erro: Token de autenticação não encontrado. Por favor, faça login novamente.');
                 return;
             }
             
@@ -918,7 +918,7 @@
             setUploadState(true, null);
             
             try {
-                // Sempre usar o mesmo origem da pÃ¡gina para o upload (evita erro em iframe/redirecionamento)
+                // Sempre usar o mesmo origem da página para o upload (evita erro em iframe/redirecionamento)
                 var uploadUrl = (window.location.origin || '') + '/api/upload/image';
                 
                 const response = await fetch(uploadUrl, {
@@ -936,8 +936,8 @@
                     data = await response.json();
                 } else {
                     var text = await response.text();
-                    console.error('Resposta nÃ£o Ã© JSON:', text);
-                    setUploadState(false, 'Resposta invÃ¡lida do servidor.');
+                    console.error('Resposta não é JSON:', text);
+                    setUploadState(false, 'Resposta inválida do servidor.');
                     restoreEmptyBlock();
                     input.value = '';
                     return;
@@ -964,7 +964,7 @@
                 }
             } catch (error) {
                 console.error('âŒ Erro ao fazer upload:', error);
-                setUploadState(false, (error.message || 'Erro de conexÃ£o. Tente novamente.'));
+                setUploadState(false, (error.message || 'Erro de conexão. Tente novamente.'));
                 restoreEmptyBlock();
                 var filledEl = document.getElementById(filledId);
                 if (filledEl) filledEl.style.display = 'none';
@@ -976,7 +976,7 @@
         document.getElementById('customize-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Desabilitar botÃ£o durante o salvamento
+            // Desabilitar botão durante o salvamento
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.disabled = true;
@@ -992,9 +992,9 @@
                 header_banner_fit: (document.getElementById('header_banner_fit') && document.getElementById('header_banner_fit').value) ? document.getElementById('header_banner_fit').value : 'auto',
                 form_logo_url: document.getElementById('form_logo_url').value,
                 theme_portaria: document.getElementById('theme_portaria').value,
-                // Novos campos de personalizaÃ§Ã£o
+                // Novos campos de personalização
                 event_title_custom: (document.getElementById('event_title_custom')?.value ?? '').trim() || null,
-                portaria_subtitle: (document.getElementById('portaria_subtitle')?.value ?? '').trim() || 'VisualizaÃ§Ã£o completa para portaria',
+                portaria_subtitle: (document.getElementById('portaria_subtitle')?.value ?? '').trim() || 'Visualização completa para portaria',
                 title_text_color: document.getElementById('title_text_color')?.value || null,
                 qr_code_button_text: document.getElementById('qr_code_button_text')?.value || null,
                 qr_code_button_color: document.getElementById('qr_code_button_color')?.value || null,
@@ -1023,25 +1023,25 @@
                 }
                 
                 if (!authToken) {
-                    alert('Erro: Token de autenticaÃ§Ã£o nÃ£o encontrado. Por favor, feche esta pÃ¡gina e abra novamente atravÃ©s do botÃ£o "Personalizar Link da Portaria".');
+                    alert('Erro: Token de autenticação não encontrado. Por favor, feche esta página e abra novamente através do botão "Personalizar Link da Portaria".');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalBtnText;
                     return;
                 }
                 
-                console.log('ðŸ’¾ Salvando personalizaÃ§Ã£o...', {
+                console.log('ðŸ’¾ Salvando personalização...', {
                     profileItemId: profileItemId,
                     hasToken: !!authToken,
                     tokenLength: authToken.length
                 });
                 
-                // Determinar URL base (usar URL completa se necessÃ¡rio)
+                // Determinar URL base (usar URL completa se necessário)
                 const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'https://www.conectaking.com.br' 
                     : '';
                 
                 const url = `${apiBaseUrl}/api/guest-lists/${profileItemId}/customize-portaria`;
-                console.log('ðŸ“¤ Enviando requisiÃ§Ã£o PUT para:', url);
+                console.log('ðŸ“¤ Enviando requisição PUT para:', url);
                 
                 const response = await fetch(url, {
                     method: 'PUT',
@@ -1059,7 +1059,7 @@
                     headers: Object.fromEntries(response.headers.entries())
                 });
                 
-                // Verificar se a resposta Ã© JSON antes de fazer parse
+                // Verificar se a resposta é JSON antes de fazer parse
                 const contentType = response.headers.get('content-type');
                 let data;
                 
@@ -1067,12 +1067,12 @@
                     data = await response.json();
                 } else {
                     const text = await response.text();
-                    console.error('Resposta nÃ£o Ã© JSON:', text);
-                    throw new Error(`Resposta invÃ¡lida do servidor: ${text.substring(0, 200)}`);
+                    console.error('Resposta não é JSON:', text);
+                    throw new Error(`Resposta inválida do servidor: ${text.substring(0, 200)}`);
                 }
                 
                 if (response.ok && data.success) {
-                    alert('âœ… PersonalizaÃ§Ã£o salva com sucesso!');
+                    alert('âœ… Personalização salva com sucesso!');
                     // Recarregar preview
                     const iframe = document.getElementById('preview-iframe');
                     if (iframe) {
@@ -1084,11 +1084,11 @@
                     alert('âŒ Erro ao salvar: ' + errorMessage);
                 }
             } catch (error) {
-                console.error('âŒ Erro ao salvar personalizaÃ§Ã£o:', error);
+                console.error('âŒ Erro ao salvar personalização:', error);
                 console.error('âŒ Stack trace:', error.stack);
-                alert('âŒ Erro ao salvar personalizaÃ§Ã£o: ' + (error.message || 'Erro de conexÃ£o. Verifique sua internet e tente novamente.'));
+                alert('âŒ Erro ao salvar personalização: ' + (error.message || 'Erro de conexão. Verifique sua internet e tente novamente.'));
             } finally {
-                // Reabilitar botÃ£o
+                // Reabilitar botão
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
             }
