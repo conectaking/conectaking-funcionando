@@ -41,6 +41,7 @@ function getDayOfYearListForCalendarMonth(year, month) {
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'bible');
 const MONTH_THEMES_FILE = path.join(DATA_DIR, 'dev365_month_themes.json');
+const db = require('../../db');
 
 function loadMonthThemesFile() {
     try {
@@ -53,41 +54,86 @@ function loadMonthThemesFile() {
 }
 
 function saveMonthThemesFile(all) {
-    fs.writeFileSync(MONTH_THEMES_FILE, JSON.stringify(all, null, 2), 'utf8');
+    try {
+        if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+        fs.writeFileSync(MONTH_THEMES_FILE, JSON.stringify(all, null, 2), 'utf8');
+    } catch (e) {
+        logger.warn('bible.adminDev365 saveMonthThemesFile (não crítico):', e.message);
+    }
 }
 
-function getMonthThemesForYear(year) {
-    const y = String(year);
+/** Lê temas do ano a partir do Postgres (com fallback para ficheiro legado). */
+async function getMonthThemesForYear(year) {
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    try {
+        const { rows } = await db.query(
+            `SELECT month, theme_text FROM bible_dev365_month_themes WHERE year = $1 ORDER BY month`,
+            [y]
+        );
+        if (rows.length) {
+            const out = {};
+            rows.forEach((r) => {
+                out[String(r.month)] = r.theme_text || '';
+            });
+            return out;
+        }
+    } catch (e) {
+        logger.warn('bible.adminDev365 getMonthThemesForYear DB:', e.message);
+    }
     const all = loadMonthThemesFile();
-    return all[y] || {};
+    return all[String(y)] || {};
 }
 
-function setMonthTheme(year, month, text) {
-    const y = String(year);
-    const m = String(Math.max(1, Math.min(12, parseInt(month, 10) || 1)));
-    const all = loadMonthThemesFile();
-    if (!all[y]) all[y] = {};
-    all[y][m] = String(text || '').trim().slice(0, 500);
-    saveMonthThemesFile(all);
-    return all[y];
+async function setMonthTheme(year, month, text) {
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    const m = Math.max(1, Math.min(12, parseInt(month, 10) || 1));
+    const theme = String(text || '').trim().slice(0, 500);
+    try {
+        await db.query(
+            `INSERT INTO bible_dev365_month_themes (year, month, theme_text, updated_at)
+             VALUES ($1, $2, $3, NOW())
+             ON CONFLICT (year, month) DO UPDATE SET theme_text = EXCLUDED.theme_text, updated_at = NOW()`,
+            [y, m, theme]
+        );
+    } catch (e) {
+        logger.error('bible.adminDev365 setMonthTheme DB:', e);
+        // fallback ficheiro
+        const all = loadMonthThemesFile();
+        if (!all[String(y)]) all[String(y)] = {};
+        all[String(y)][String(m)] = theme;
+        saveMonthThemesFile(all);
+    }
+    return getMonthThemesForYear(y);
 }
 
-function setAllMonthThemesForYear(year, monthsObj) {
-    const y = String(year);
-    const all = loadMonthThemesFile();
+async function setAllMonthThemesForYear(year, monthsObj) {
+    const y = parseInt(year, 10) || new Date().getFullYear();
     const out = {};
     for (let m = 1; m <= 12; m++) {
         const key = String(m);
         const raw = monthsObj && (monthsObj[key] !== undefined && monthsObj[key] !== null
             ? monthsObj[key]
             : monthsObj[m]);
-        if (raw !== undefined && raw !== null && String(raw).trim()) {
-            out[key] = String(raw).trim().slice(0, 500);
+        const theme = raw !== undefined && raw !== null ? String(raw).trim().slice(0, 500) : '';
+        out[key] = theme;
+        try {
+            await db.query(
+                `INSERT INTO bible_dev365_month_themes (year, month, theme_text, updated_at)
+                 VALUES ($1, $2, $3, NOW())
+                 ON CONFLICT (year, month) DO UPDATE SET theme_text = EXCLUDED.theme_text, updated_at = NOW()`,
+                [y, m, theme]
+            );
+        } catch (e) {
+            logger.error('bible.adminDev365 setAllMonthThemesForYear DB month ' + m + ':', e.message);
         }
     }
-    all[y] = out;
-    saveMonthThemesFile(all);
-    return all[y];
+    // espelho em ficheiro (backup)
+    try {
+        const all = loadMonthThemesFile();
+        all[String(y)] = out;
+        saveMonthThemesFile(all);
+    } catch (_) { /* ignore */ }
+    return out;
 }
 
 /** Lista todos os registos para o painel admin (tabela + filtros). */
