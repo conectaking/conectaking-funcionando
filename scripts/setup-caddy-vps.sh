@@ -1,6 +1,22 @@
-# Produção no VPS (Hetzner) — API só em localhost; Caddy faz 80/443
-# Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#!/bin/bash
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
+# Caddy
+apt-get update -qq
+apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl gnupg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
+apt-get update -qq
+apt-get install -y -qq caddy
+
+# Liberar portas no UFW
+ufw allow 80/tcp || true
+ufw allow 443/tcp || true
+
+# Docker API só em localhost (Caddy na frente)
+cd /opt/conectaking
+cat > docker-compose.prod.yml <<'EOF'
 services:
   db:
     image: postgres:16-alpine
@@ -51,3 +67,25 @@ volumes:
 networks:
   cknet:
     driver: bridge
+EOF
+
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+# Caddyfile
+cat > /etc/caddy/Caddyfile <<'EOF'
+{
+	email admin@conectaking.com.br
+}
+
+conectaking.com.br, www.conectaking.com.br, tag.conectaking.com.br {
+	encode gzip
+	reverse_proxy 127.0.0.1:5000
+}
+EOF
+
+systemctl enable --now caddy
+systemctl reload caddy
+sleep 3
+systemctl is-active caddy
+curl -sS -o /dev/null -w "local:%{http_code}\n" http://127.0.0.1:5000/health
+echo CADDY_OK
