@@ -59,8 +59,8 @@ const securityHeaders = (req, res, next) => {
     // X-Content-Type-Options previne MIME type sniffing
     res.setHeader('X-Content-Type-Options', 'nosniff');
     
-    // X-Frame-Options previne clickjacking
-    res.setHeader('X-Frame-Options', 'DENY');
+    // Iframe da home (www) embute tag.* — CSP frame-ancestors no helmet controla isso.
+    // Nao enviar X-Frame-Options: DENY (bloqueava o cartao na landing).
     
     // X-XSS-Protection (para browsers antigos)
     res.setHeader('X-XSS-Protection', '1; mode=block');
