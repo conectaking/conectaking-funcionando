@@ -14,7 +14,8 @@ Stack: Docker (`api` + `postgres`) em `/opt/conectaking`
 ## Login inicial (banco novo)
 
 - E-mail: `conectaking@gmail.com`
-- Senha: a do seed (`ConectaKing2026!`) — altere depois no painel
+- Senha: a que você definiu (alterada no VPS)
+
 
 ## Comandos no VPS
 
