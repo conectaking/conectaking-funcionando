@@ -3,6 +3,7 @@ const fs = require('fs');
 const repository = require('./bible.repository');
 const devotionalAi = require('./bibleDevotionalAi.service');
 const logger = require('../../utils/logger');
+const db = require('../../db');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'bible');
 const DEV365_MONTH_THEMES_FILE = path.join(DATA_DIR, 'dev365_month_themes.json');
@@ -12,15 +13,55 @@ const MESES_PT_LOWER = [
     'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
 ];
 
-function loadDev365MonthThemeOverrides() {
+/** Cache em memória dos temas mensais (Postgres + ficheiro). */
+let _dev365MonthThemesCache = null;
+
+function loadDev365MonthThemeOverridesFromFile() {
     try {
         if (!fs.existsSync(DEV365_MONTH_THEMES_FILE)) return {};
         return JSON.parse(fs.readFileSync(DEV365_MONTH_THEMES_FILE, 'utf8'));
     } catch (e) {
-        logger.error('bible.service loadDev365MonthThemeOverrides:', e);
+        logger.error('bible.service loadDev365MonthThemeOverridesFromFile:', e);
         return {};
     }
 }
+
+async function refreshDev365MonthThemesCache() {
+    try {
+        const { rows } = await db.query(
+            'SELECT year, month, theme_text FROM bible_dev365_month_themes ORDER BY year, month'
+        );
+        if (rows && rows.length) {
+            const all = {};
+            rows.forEach((r) => {
+                const y = String(r.year);
+                if (!all[y]) all[y] = {};
+                all[y][String(r.month)] = r.theme_text || '';
+            });
+            _dev365MonthThemesCache = all;
+            try {
+                if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+                fs.writeFileSync(DEV365_MONTH_THEMES_FILE, JSON.stringify(all, null, 2), 'utf8');
+            } catch (_) { /* ignore */ }
+            return all;
+        }
+    } catch (e) {
+        logger.warn('bible.service refreshDev365MonthThemesCache:', e.message);
+    }
+    _dev365MonthThemesCache = loadDev365MonthThemeOverridesFromFile();
+    return _dev365MonthThemesCache;
+}
+
+function loadDev365MonthThemeOverrides() {
+    if (_dev365MonthThemesCache) return _dev365MonthThemesCache;
+    _dev365MonthThemesCache = loadDev365MonthThemeOverridesFromFile();
+    // hidratar a partir da BD em background
+    refreshDev365MonthThemesCache().catch(() => {});
+    return _dev365MonthThemesCache;
+}
+
+// Arranque: tentar carregar temas da BD
+refreshDev365MonthThemesCache().catch(() => {});
 
 function getVerseOfDayIndex(dateStr) {
     let y, m, d;
@@ -1019,6 +1060,7 @@ async function searchBibleEcosystem(query, limit) {
 
 module.exports = {
     resolveThemeForDev365,
+    refreshDev365MonthThemesCache,
     getVerseOfDay,
     getNumbers,
     getNameMeaning,

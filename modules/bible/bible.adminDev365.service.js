@@ -103,7 +103,7 @@ async function setMonthTheme(year, month, text) {
         all[String(y)][String(m)] = theme;
         saveMonthThemesFile(all);
     }
-    return getMonthThemesForYear(y);
+    return await getMonthThemesForYear(y);
 }
 
 async function setAllMonthThemesForYear(year, monthsObj) {
@@ -132,6 +132,11 @@ async function setAllMonthThemesForYear(year, monthsObj) {
         const all = loadMonthThemesFile();
         all[String(y)] = out;
         saveMonthThemesFile(all);
+    } catch (_) { /* ignore */ }
+    try {
+        if (bibleService.refreshDev365MonthThemesCache) {
+            await bibleService.refreshDev365MonthThemesCache();
+        }
     } catch (_) { /* ignore */ }
     return out;
 }
