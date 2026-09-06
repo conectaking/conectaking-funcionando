@@ -1,12 +1,12 @@
-(function () {
+﻿(function () {
   'use strict';
 
-  /** Patches antigos (no-sem-pasta / edit-requests) não devem controlar o mesmo botão. */
+  /** Patches antigos (no-sem-pasta / edit-requests) nÃ£o devem controlar o mesmo botÃ£o. */
   window.__ksNativeEditRequestToolbar = true;
 
-  const KS_FALLBACK_API_ORIGIN = 'https://conectaking-api.onrender.com';
+  const KS_FALLBACK_API_ORIGIN = 'https://www.conectaking.com.br';
 
-  /** Evita API_URL apontando para conectaking.com.br (img /api/... → 404 sem marca d'água). */
+  /** Evita API_URL apontando para conectaking.com.br (img /api/... â†’ 404 sem marca d'Ã¡gua). */
   function resolveKsApiBase() {
     const fallback = KS_FALLBACK_API_ORIGIN;
     const tryList = [
@@ -21,18 +21,18 @@
         const h = new URL(raw).hostname.toLowerCase();
         if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br') continue;
         return raw;
-      } catch (_) { /* próximo */ }
+      } catch (_) { /* prÃ³ximo */ }
     }
     return fallback;
   }
 
   const API = resolveKsApiBase();
 
-  /** Pedidos ao arranque: sem timeout o Safari/rede móvel pode ficar em "A carregar…" para sempre. */
+  /** Pedidos ao arranque: sem timeout o Safari/rede mÃ³vel pode ficar em "A carregarâ€¦" para sempre. */
   const KS_FETCH_BOOT_MS = 35000;
-  /** Corpo JSON: se o servidor enviar bytes sem fim, `json()` pode bloquear após o fetch terminar. */
+  /** Corpo JSON: se o servidor enviar bytes sem fim, `json()` pode bloquear apÃ³s o fetch terminar. */
   const KS_JSON_BOOT_MS = 18000;
-  /** Se ainda estiver no ecrã de arranque, força mensagem (rede/API bloqueada). */
+  /** Se ainda estiver no ecrÃ£ de arranque, forÃ§a mensagem (rede/API bloqueada). */
   const KS_BOOT_WATCHDOG_MS = 22000;
 
   let _bootWatchdogTimer = null;
@@ -52,7 +52,7 @@
       showLogin();
       const sub = $('ks-login-sub');
       if (sub) {
-        sub.textContent = 'A ligação ao servidor está a demorar. Verifique a rede ou atualize a página.';
+        sub.textContent = 'A ligaÃ§Ã£o ao servidor estÃ¡ a demorar. Verifique a rede ou atualize a pÃ¡gina.';
       }
       $('ks-login-body')?.classList.add('ks-hidden');
       const errEl = $('ks-login-err');
@@ -71,17 +71,17 @@
     return Promise.race([
       res.json().catch(() => ({})),
       new Promise((_, rej) => {
-        setTimeout(() => rej(new Error('O servidor demorou a enviar os dados. Atualize a página.')), ms);
+        setTimeout(() => rej(new Error('O servidor demorou a enviar os dados. Atualize a pÃ¡gina.')), ms);
       })
     ]);
   }
 
   function friendlyFetchError(e) {
-    if (!e) return new Error('Erro de rede. Tente atualizar a página.');
+    if (!e) return new Error('Erro de rede. Tente atualizar a pÃ¡gina.');
     const n = String(e.name || '');
     const m = String(e.message || '');
     if (n === 'AbortError' || /aborted|AbortError/i.test(m)) {
-      return new Error('A ligação ao servidor demorou demais. Verifique a rede ou tente atualizar a página.');
+      return new Error('A ligaÃ§Ã£o ao servidor demorou demais. Verifique a rede ou tente atualizar a pÃ¡gina.');
     }
     return e instanceof Error ? e : new Error(m || 'Erro de rede.');
   }
@@ -104,7 +104,7 @@
   }
 
   function getSlug() {
-    // Não tratar ficheiros .html do painel como slug (ex.: /kingSelection/kingSelectionProject.html → 404 na API)
+    // NÃ£o tratar ficheiros .html do painel como slug (ex.: /kingSelection/kingSelectionProject.html â†’ 404 na API)
     var RESERVED = {
       'kingselectioncliente.html': 1,
       'kingselectionproject.html': 1,
@@ -149,7 +149,7 @@
   function isRegisterEmailExistsMessage(msg) {
     const m = String(msg || '').toLowerCase();
     return (
-      m.includes('já existe') ||
+      m.includes('jÃ¡ existe') ||
       m.includes('ja existe') ||
       m.includes('already exists') ||
       m.includes('e-mail nesta galeria')
@@ -158,7 +158,7 @@
 
   function isLoginByDetailsNotFound(msg) {
     const m = String(msg || '').toLowerCase();
-    return m.includes('não encontramos') || m.includes('nao encontramos');
+    return m.includes('nÃ£o encontramos') || m.includes('nao encontramos');
   }
 
   function $(id) {
@@ -187,19 +187,19 @@
   if (!slug) {
     document.body.innerHTML =
       '<div class="ks-wrap" style="padding:32px;max-width:520px;margin:0 auto;text-align:left;color:#9ca3af;line-height:1.6">' +
-      '<p style="margin:0 0 12px">URL inválida para a <strong style="color:#e5e7eb">galeria do cliente</strong>.</p>' +
+      '<p style="margin:0 0 12px">URL invÃ¡lida para a <strong style="color:#e5e7eb">galeria do cliente</strong>.</p>' +
       '<p style="margin:0 0 8px">Use o link do tipo:</p>' +
       '<p style="margin:0 0 12px"><code style="color:#facc15">/kingSelection/slug-da-galeria</code></p>' +
       '<p style="margin:0 0 8px">ou</p>' +
       '<p style="margin:0 0 12px"><code style="color:#facc15">kingSelectionCliente.html?slug=slug-da-galeria</code></p>' +
-      '<p style="margin:0;font-size:13px;opacity:.9">O painel do fotógrafo é outra página (<code style="color:#e5e7eb">kingSelectionProject.html</code> com login), não abre aqui.</p>' +
+      '<p style="margin:0;font-size:13px;opacity:.9">O painel do fotÃ³grafo Ã© outra pÃ¡gina (<code style="color:#e5e7eb">kingSelectionProject.html</code> com login), nÃ£o abre aqui.</p>' +
       '</div>';
     return;
   }
 
   let jwt = null;
 
-  /** Link pessoal (?access=JWT): substitui sessão antiga e evita cair no cadastro de outro cliente. */
+  /** Link pessoal (?access=JWT): substitui sessÃ£o antiga e evita cair no cadastro de outro cliente. */
   function consumeAccessTokenFromUrl() {
     if (!slug) return false;
     try {
@@ -225,7 +225,7 @@
   }
 
   let galleryMeta = null;
-  /** thumbTargetMode: 'auto' alterna A/B a cada clique na faixa; 'pinA'|'pinB' só mexe nesse lado até tocar de novo na mesma foto/rótulo. */
+  /** thumbTargetMode: 'auto' alterna A/B a cada clique na faixa; 'pinA'|'pinB' sÃ³ mexe nesse lado atÃ© tocar de novo na mesma foto/rÃ³tulo. */
   let compareState = { thumbTargetMode: 'auto', nextThumbSlot: 'A', idA: null, idB: null };
 
   function hideBootScreen() {
@@ -241,7 +241,7 @@
     activeFolderId: null,
     selected: new Set(),
     batchByPhoto: {},
-    /** API envia mapa de lotes (coluna selection_batch); sem isto, não há rodadas no servidor. */
+    /** API envia mapa de lotes (coluna selection_batch); sem isto, nÃ£o hÃ¡ rodadas no servidor. */
     hasSelectionBatch: false,
     currentRound: 1,
     frozenIds: new Set(),
@@ -249,15 +249,15 @@
     searchRaw: '',
     sortMode: 'order',
     folderSortMode: 'name',
-    /** Cadastro só no envio (JWT com session key). */
+    /** Cadastro sÃ³ no envio (JWT com session key). */
     deferredSignupActive: false,
     /** Reconhecimento facial (API: faceRecognitionUsable). */
     faceRecognitionUsable: false,
-    /** Subconjunto de IDs após filtro por rosto; null = sem filtro. */
+    /** Subconjunto de IDs apÃ³s filtro por rosto; null = sem filtro. */
     faceFilterIds: null,
-    /** Painel: permitir download com marca d'água (API gallery.allow_download). */
+    /** Painel: permitir download com marca d'Ã¡gua (API gallery.allow_download). */
     allowDownload: false,
-    /** Fotógrafos: download ativado nas definições (antes do filtro público/anónimo). */
+    /** FotÃ³grafos: download ativado nas definiÃ§Ãµes (antes do filtro pÃºblico/anÃ³nimo). */
     photographerAllowsDownload: false,
     salesModeActive: false,
     salesConfig: null,
@@ -268,21 +268,21 @@
     approvalsState: [],
     approvedPhotoIds: [],
     clientAuthenticated: false,
-    /** Modo público: >0 quando o JWT está associado a um registo (king_gallery_clients). */
+    /** Modo pÃºblico: >0 quando o JWT estÃ¡ associado a um registo (king_gallery_clients). */
     resolvedClientId: 0,
-    /** pastas | flat — vem da API (painel). */
+    /** pastas | flat â€” vem da API (painel). */
     clientFolderLayout: 'folders',
     downloadsSelected: new Set(),
     downloadsTouched: false,
-    /** Modo público: painel «Fotos para baixar» só visível após o cliente abrir (não ao cadastrar). */
+    /** Modo pÃºblico: painel Â«Fotos para baixarÂ» sÃ³ visÃ­vel apÃ³s o cliente abrir (nÃ£o ao cadastrar). */
     publicDownloadsPanelOpen: false,
-    /** Pré-preenchimento (modo público) quando já existe cadastro real — não usar ficha técnica de sessão/rosto. */
+    /** PrÃ©-preenchimento (modo pÃºblico) quando jÃ¡ existe cadastro real â€” nÃ£o usar ficha tÃ©cnica de sessÃ£o/rosto. */
     clientContactPrefill: null,
-    /** Modo público: pedido de edição ativado pelo fotógrafo. */
+    /** Modo pÃºblico: pedido de ediÃ§Ã£o ativado pelo fotÃ³grafo. */
     allowClientEditRequest: false,
-    /** Modo público + edição: fotos do pedido atual (independente de seleções anteriores). */
+    /** Modo pÃºblico + ediÃ§Ã£o: fotos do pedido atual (independente de seleÃ§Ãµes anteriores). */
     publicEditDraftIds: new Set(),
-    /** Pedidos de edição do cliente (modo público). */
+    /** Pedidos de ediÃ§Ã£o do cliente (modo pÃºblico). */
     clientEditRequests: [],
     /** Galerias muito grandes: quantas fotos renderizar na grade. */
     gridVirtualShown: 120
@@ -291,7 +291,7 @@
   const KS_VIRTUAL_THRESHOLD = 2000;
   const KS_VIRTUAL_BATCH = 120;
 
-  /** Após modal de cadastro público: o que executar quando download já estiver liberado. */
+  /** ApÃ³s modal de cadastro pÃºblico: o que executar quando download jÃ¡ estiver liberado. */
   let pendingPublicDownloadAction = null;
 
   const KS_OPEN_DOWNLOADS_BTN_HTML =
@@ -397,7 +397,7 @@
     }
     const label = String(state.gallery?.support_whatsapp_label || '').trim() || 'Suporte no WhatsApp';
     const msgCfg = String(state.gallery?.support_whatsapp_message || '').trim();
-    const msg = msgCfg || `Olá! Preciso de ajuda com a galeria "${state.gallery?.nome_projeto || ''}".`;
+    const msg = msgCfg || `OlÃ¡! Preciso de ajuda com a galeria "${state.gallery?.nome_projeto || ''}".`;
     btn.title = label;
     btn.setAttribute('aria-label', label);
     if (text) text.textContent = label;
@@ -467,12 +467,12 @@
       }))
       .map((f) => {
         const list = byFolder.get(f.id) || [];
-        // Capa automática: usa a primeira foto da pasta quando não houver capa definida.
+        // Capa automÃ¡tica: usa a primeira foto da pasta quando nÃ£o houver capa definida.
         if (!f.cover_photo_id && list.length) {
           const first = list.find((p) => parseInt(p?.id, 10));
           if (first) f.cover_photo_id = parseInt(first.id, 10) || null;
         }
-        // Recalcula sempre no cliente para evitar exibir pasta "0 foto(s)" quando já há fotos carregadas.
+        // Recalcula sempre no cliente para evitar exibir pasta "0 foto(s)" quando jÃ¡ hÃ¡ fotos carregadas.
         f.photo_count = list.length;
         return f;
       })
@@ -480,7 +480,7 @@
     return filterClientVisibleFolders(normalized);
   }
 
-  /** ID de foto vindo da API (int/string/bigint) → número inteiro > 0 ou 0. */
+  /** ID de foto vindo da API (int/string/bigint) â†’ nÃºmero inteiro > 0 ou 0. */
   function normalizePhotoId(v) {
     if (v == null || v === '') return 0;
     const n =
@@ -490,7 +490,7 @@
     return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
-  /** Garante `id` e `folder_id` numéricos — evita falha em `Set.has` e filtros de pasta. */
+  /** Garante `id` e `folder_id` numÃ©ricos â€” evita falha em `Set.has` e filtros de pasta. */
   function normalizeGalleryPhotosForState(gallery) {
     if (!gallery) return gallery;
     const photos = Array.isArray(gallery.photos)
@@ -589,7 +589,7 @@
     wrap.classList.remove('ks-hidden');
     const inFolderList = state.folderView === 'folders';
     searchBlock?.classList.toggle('ks-hidden', inFolderList);
-    backBtn?.classList.add('ks-hidden'); // mantém botão antigo desativado (agora no topo)
+    backBtn?.classList.add('ks-hidden'); // mantÃ©m botÃ£o antigo desativado (agora no topo)
     backTopBtn?.classList.toggle('ks-hidden', inFolderList);
 
     if (inFolderList) {
@@ -645,11 +645,11 @@
     const code = String($('ks-promo-code-input')?.value || '').trim();
     const ok = !!$('ks-promo-social-ok')?.checked;
     if (!ok) {
-      toast('Só marque a confirmação depois de seguir os perfis de verdade.', 'err');
+      toast('SÃ³ marque a confirmaÃ§Ã£o depois de seguir os perfis de verdade.', 'err');
       return;
     }
     if (!code) {
-      toast('Informe o código do cupom.', 'err');
+      toast('Informe o cÃ³digo do cupom.', 'err');
       return;
     }
     try {
@@ -685,7 +685,7 @@
     }
     el.classList.remove('ks-hidden');
     if (p.expired) {
-      el.innerHTML = '<div style="font-weight:800">Cupom encerrado.</div><div style="font-size:12px;margin-top:6px;opacity:.9">Fale com o fotógrafo.</div>';
+      el.innerHTML = '<div style="font-weight:800">Cupom encerrado.</div><div style="font-size:12px;margin-top:6px;opacity:.9">Fale com o fotÃ³grafo.</div>';
       return;
     }
     if (p.validated) {
@@ -702,13 +702,13 @@
       if (mode === 'public_download') {
         const n = Math.max(0, parseInt(p.free_photo_count, 10) || 0);
         el.innerHTML = `<div style="font-weight:800"><i class="fas fa-ticket"></i> Cupom aplicado</div>
-          <div style="font-size:12px;margin-top:6px;line-height:1.45">Pode baixar até <b>${n}</b> foto(s) selecionada(s) (por ordem da galeria), com marca d’água, conforme definido pelo fotógrafo.</div>${codeBlock}`;
+          <div style="font-size:12px;margin-top:6px;line-height:1.45">Pode baixar atÃ© <b>${n}</b> foto(s) selecionada(s) (por ordem da galeria), com marca dâ€™Ã¡gua, conforme definido pelo fotÃ³grafo.</div>${codeBlock}`;
         return;
       }
       const free = p.promo_photos_applied != null ? p.promo_photos_applied : 0;
       const bill = p.billable_photo_count != null ? p.billable_photo_count : 0;
       el.innerHTML = `<div style="font-weight:800"><i class="fas fa-ticket"></i> Cupom aplicado</div>
-        <div style="font-size:12px;margin-top:6px;line-height:1.45">No <strong>valor estimado</strong> (total no topo), até <b>${free}</b> foto(s) contam como cortesia deste cupom; a cobrança considera <b>${bill}</b> foto(s). Isso só ajusta o preço mostrado — o fotógrafo continua a aprovar cada foto (cortesia, pago, etc.) como de costume.</div>${codeBlock}`;
+        <div style="font-size:12px;margin-top:6px;line-height:1.45">No <strong>valor estimado</strong> (total no topo), atÃ© <b>${free}</b> foto(s) contam como cortesia deste cupom; a cobranÃ§a considera <b>${bill}</b> foto(s). Isso sÃ³ ajusta o preÃ§o mostrado â€” o fotÃ³grafo continua a aprovar cada foto (cortesia, pago, etc.) como de costume.</div>${codeBlock}`;
       return;
     }
     const links = Array.isArray(p.social_links) ? p.social_links : [];
@@ -725,8 +725,8 @@
       : '';
     const lead =
       mode === 'public_download'
-        ? `<p style="font-size:12px;margin:0 0 8px;line-height:1.45;opacity:.95"><strong>Siga os perfis</strong>, confirme com verdade abaixo e <strong>digite o cupom à mão</strong> no campo (não preenchemos pelo link) — assim liberamos o número de fotos combinado para download com marca d’água.</p>`
-        : `<p style="font-size:12px;margin:0 0 8px;line-height:1.45;opacity:.95">Ao validar, as fotos gratuitas do cupom <strong>saem do cálculo do total estimado</strong>. A aprovação final continua com o fotógrafo.</p>`;
+        ? `<p style="font-size:12px;margin:0 0 8px;line-height:1.45;opacity:.95"><strong>Siga os perfis</strong>, confirme com verdade abaixo e <strong>digite o cupom Ã  mÃ£o</strong> no campo (nÃ£o preenchemos pelo link) â€” assim liberamos o nÃºmero de fotos combinado para download com marca dâ€™Ã¡gua.</p>`
+        : `<p style="font-size:12px;margin:0 0 8px;line-height:1.45;opacity:.95">Ao validar, as fotos gratuitas do cupom <strong>saem do cÃ¡lculo do total estimado</strong>. A aprovaÃ§Ã£o final continua com o fotÃ³grafo.</p>`;
     el.innerHTML = `
       <div style="font-weight:800;margin-bottom:6px"><i class="fas fa-gift"></i> Cupom promocional</div>
       ${lead}
@@ -734,16 +734,16 @@
       <div style="margin-top:8px">${linkHtml}</div>
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;font-size:12px;line-height:1.45">
         <input type="checkbox" id="ks-promo-social-ok" style="margin-top:2px;flex-shrink:0" />
-        <span>Declaro com sinceridade que segui os perfis indicados acima (Instagram / outras redes). <strong>Se marcar sem ter seguido de verdade, está a mentir</strong> — Deus vê e vigia; o fotógrafo também pode conferir.</span>
+        <span>Declaro com sinceridade que segui os perfis indicados acima (Instagram / outras redes). <strong>Se marcar sem ter seguido de verdade, estÃ¡ a mentir</strong> â€” Deus vÃª e vigia; o fotÃ³grafo tambÃ©m pode conferir.</span>
       </label>
       <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-        <input type="text" id="ks-promo-code-input" class="ks-input" placeholder="Código do cupom" style="max-width:240px" autocomplete="off" />
+        <input type="text" id="ks-promo-code-input" class="ks-input" placeholder="CÃ³digo do cupom" style="max-width:240px" autocomplete="off" />
         <button type="button" class="ks-btn ks-btn-yellow" id="ks-promo-verify-btn"><i class="fas fa-check"></i> Validar cupom</button>
       </div>`;
     $('ks-promo-verify-btn')?.addEventListener('click', () => onPromoVerifyClick());
   }
 
-  /** Aprovações do modo vendas (DB + fallback approvedPhotoIds da API). */
+  /** AprovaÃ§Ãµes do modo vendas (DB + fallback approvedPhotoIds da API). */
   function getSalesApprovedEntries() {
     const fromState = Array.isArray(state.approvalsState)
       ? state.approvalsState.filter((a) => String(a.status || '').toLowerCase() === 'approved')
@@ -811,7 +811,7 @@
       const prevState = String(downloadsCounter.getAttribute('data-state') || '');
       if (prevState && prevState !== nextState) {
         downloadsCounter.classList.remove('ks-dl-counter--pulse');
-        // reinicia a animação sempre que muda de estado
+        // reinicia a animaÃ§Ã£o sempre que muda de estado
         void downloadsCounter.offsetWidth;
         downloadsCounter.classList.add('ks-dl-counter--pulse');
         clearTimeout(downloadsCounter._pulseTimer);
@@ -884,9 +884,9 @@
           </div>
         `;
       }).join('')
-      : '<div style="color:#64748b;font-size:12px">Pacotes ainda não configurados.</div>';
+      : '<div style="color:#64748b;font-size:12px">Pacotes ainda nÃ£o configurados.</div>';
     const warn = overLimitLive || pricing?.over_limit_warn
-      ? ' • Você ultrapassou a faixa dos pacotes: valor final pode ser negociado com o fotógrafo.'
+      ? ' â€¢ VocÃª ultrapassou a faixa dos pacotes: valor final pode ser negociado com o fotÃ³grafo.'
       : '';
     banner.style.background = '#f8fafc';
     banner.style.borderColor = '#c7d2fe';
@@ -894,7 +894,7 @@
     banner.style.boxShadow = '0 10px 24px rgba(15,23,42,.12)';
     banner.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div style="font-weight:900;color:#4f46e5;letter-spacing:.02em"><i class="fas fa-square-poll-vertical"></i> Resumo da seleção</div>
+        <div style="font-weight:900;color:#4f46e5;letter-spacing:.02em"><i class="fas fa-square-poll-vertical"></i> Resumo da seleÃ§Ã£o</div>
       </div>
       <div class="ks-sales-resumo-metrics" style="margin-top:10px">
         <div style="border:1px solid #bae6fd;background:#ecfeff;border-radius:12px;padding:10px;min-width:0">
@@ -927,10 +927,10 @@
       if (showFin) {
         payBalEl.classList.remove('ks-hidden');
         payBalEl.innerHTML = `
-          <div style="font-weight:900;margin-bottom:4px"><i class="fas fa-scale-balanced"></i> Situação do pagamento</div>
-          <div>Total do pacote (estimado): <b>${escapeHtml(formatCentsBr(ps.expected_total_cents || 0))}</b> • Confirmado pelo fotógrafo: <b>${escapeHtml(formatCentsBr(ps.amount_received_cumulative_cents || 0))}</b> • Cortesia: <b>${escapeHtml(formatCentsBr(ps.courtesy_cents || 0))}</b></div>
+          <div style="font-weight:900;margin-bottom:4px"><i class="fas fa-scale-balanced"></i> SituaÃ§Ã£o do pagamento</div>
+          <div>Total do pacote (estimado): <b>${escapeHtml(formatCentsBr(ps.expected_total_cents || 0))}</b> â€¢ Confirmado pelo fotÃ³grafo: <b>${escapeHtml(formatCentsBr(ps.amount_received_cumulative_cents || 0))}</b> â€¢ Cortesia: <b>${escapeHtml(formatCentsBr(ps.courtesy_cents || 0))}</b></div>
           <div style="margin-top:6px;font-weight:900;color:#0369a1">Falta pagar: ${escapeHtml(formatCentsBr(bal))}</div>
-          <div style="margin-top:6px;font-size:12px;opacity:.95">Envie o comprovante de cada pagamento parcial pelo fluxo do fotógrafo (comprovante na galeria).</div>`;
+          <div style="margin-top:6px;font-size:12px;opacity:.95">Envie o comprovante de cada pagamento parcial pelo fluxo do fotÃ³grafo (comprovante na galeria).</div>`;
       } else {
         payBalEl.classList.add('ks-hidden');
         payBalEl.innerHTML = '';
@@ -977,15 +977,15 @@
           <div class="ks-ph">
             <img src="${previewUrl(p.id, true)}" alt="${escapeHtml(p.original_name || '')}" loading="lazy" />
             <div class="ks-ph-meta">${escapeHtml(p.original_name || `Foto #${p.id}`)}</div>
-            <button type="button" class="ks-btn ks-wait-lock" disabled title="Aguardando aprovação">
-              <i class="fas fa-hourglass-half"></i> Aguardando aprovação
+            <button type="button" class="ks-btn ks-wait-lock" disabled title="Aguardando aprovaÃ§Ã£o">
+              <i class="fas fa-hourglass-half"></i> Aguardando aprovaÃ§Ã£o
             </button>
           </div>
         `);
       setDlMsg(
         waitingCards.length
-          ? `Você já tem ${approvedCards.length} foto(s) liberada(s). As demais continuam aguardando aprovação do fotógrafo.`
-          : 'Todas as fotos selecionadas já foram liberadas para download em alta qualidade.'
+          ? `VocÃª jÃ¡ tem ${approvedCards.length} foto(s) liberada(s). As demais continuam aguardando aprovaÃ§Ã£o do fotÃ³grafo.`
+          : 'Todas as fotos selecionadas jÃ¡ foram liberadas para download em alta qualidade.'
       );
       downloadsGrid.innerHTML = approvedCards.concat(waitingCards).join('');
       downloadsGrid.querySelectorAll('input[data-dl-pick]').forEach((inp) => {
@@ -1005,26 +1005,26 @@
       if (downloadsActions) downloadsActions.classList.add('ks-hidden');
       setDownloadsCounter(0, 0);
       if (!selectedForClient.length) {
-        setDlMsg('Selecione e envie suas fotos primeiro. Depois aguarde a aprovação do fotógrafo para liberar o download.');
+        setDlMsg('Selecione e envie suas fotos primeiro. Depois aguarde a aprovaÃ§Ã£o do fotÃ³grafo para liberar o download.');
       } else if (!state.clientAuthenticated) {
-        setDlMsg(`Você já marcou ${selectedForClient.length} foto(s). Clique em Avançar, envie sua seleção e depois aguarde aprovação para baixar.`);
+        setDlMsg(`VocÃª jÃ¡ marcou ${selectedForClient.length} foto(s). Clique em AvanÃ§ar, envie sua seleÃ§Ã£o e depois aguarde aprovaÃ§Ã£o para baixar.`);
       } else if (state.locked && state.salesModeActive) {
         setDlMsg(
-          'Suas fotos enviadas aparecem abaixo com marca d\'água. Quando o fotógrafo liberar, toque em «Atualizar liberações» ou atualize a página (F5) para baixar em alta qualidade.'
+          'Suas fotos enviadas aparecem abaixo com marca d\'Ã¡gua. Quando o fotÃ³grafo liberar, toque em Â«Atualizar liberaÃ§ÃµesÂ» ou atualize a pÃ¡gina (F5) para baixar em alta qualidade.'
         );
       } else {
         setDlMsg(
           state.locked
-            ? 'Sua seleção já foi enviada. Aguarde a liberação do fotógrafo para baixar as fotos aprovadas. Para selecionar mais fotos, peça ao retratista no botão Suporte / Retratos.'
-            : 'Sua seleção já foi enviada. Aguarde a liberação do fotógrafo para baixar as fotos aprovadas.'
+            ? 'Sua seleÃ§Ã£o jÃ¡ foi enviada. Aguarde a liberaÃ§Ã£o do fotÃ³grafo para baixar as fotos aprovadas. Para selecionar mais fotos, peÃ§a ao retratista no botÃ£o Suporte / Retratos.'
+            : 'Sua seleÃ§Ã£o jÃ¡ foi enviada. Aguarde a liberaÃ§Ã£o do fotÃ³grafo para baixar as fotos aprovadas.'
         );
       }
       downloadsGrid.innerHTML = selectedForClient.map((p) => `
         <div class="ks-ph">
           <img src="${previewUrl(p.id, true)}" alt="${escapeHtml(p.original_name || '')}" loading="lazy" />
           <div class="ks-ph-meta">${escapeHtml(p.original_name || `Foto #${p.id}`)}</div>
-          <button type="button" class="ks-btn ks-wait-lock" disabled title="Aguardando liberação">
-            <i class="fas fa-lock"></i> Aguardando liberação
+          <button type="button" class="ks-btn ks-wait-lock" disabled title="Aguardando liberaÃ§Ã£o">
+            <i class="fas fa-lock"></i> Aguardando liberaÃ§Ã£o
           </button>
         </div>
       `).join('');
@@ -1039,7 +1039,7 @@
     syncSalesConfirmBar();
   }
 
-  /** Modo público + cupom: painel separado. Público gratuito usa só a galeria (syncPublicDownloadToolbar). */
+  /** Modo pÃºblico + cupom: painel separado. PÃºblico gratuito usa sÃ³ a galeria (syncPublicDownloadToolbar). */
   function renderPublicDownloadsPanel() {
     if (state.salesModeActive || normKsAccessModeFromMeta() !== 'public') return;
     if (isPublicFreeDownloadGallery()) {
@@ -1145,7 +1145,7 @@
               Selecionar
             </label>
             <img src="${previewUrl(pid, false)}" alt="${escapeHtml(p.name || '')}" loading="lazy" />
-            <div class="ks-ph-meta">${escapeHtml(p.name || `Foto #${pid}`)} <span class="ks-dl-badge-liberada">Disponível</span></div>
+            <div class="ks-ph-meta">${escapeHtml(p.name || `Foto #${pid}`)} <span class="ks-dl-badge-liberada">DisponÃ­vel</span></div>
             <a class="ks-btn" href="${previewDownloadUrl(pid)}" download>
               <i class="fas fa-download"></i> Baixar
             </a>
@@ -1154,7 +1154,7 @@
     });
 
     setDlMsg(
-      'Galeria pública: baixe com marca d’água. Use os botões para várias fotos ou ZIP. As fotos seguem a qualidade definida pelo fotógrafo.'
+      'Galeria pÃºblica: baixe com marca dâ€™Ã¡gua. Use os botÃµes para vÃ¡rias fotos ou ZIP. As fotos seguem a qualidade definida pelo fotÃ³grafo.'
     );
     downloadsGrid.innerHTML = cards.join('');
     downloadsGrid.querySelectorAll('input[data-dl-pick]').forEach((inp) => {
@@ -1196,11 +1196,11 @@
     if (isPublicFreeDownloadGallery()) {
       el.classList.remove('ks-hidden');
       const wmNote = galleryWatermarkEnabled()
-        ? ' (com marca d’água na visualização e no download)'
-        : ' (sem marca d’água)';
+        ? ' (com marca dâ€™Ã¡gua na visualizaÃ§Ã£o e no download)'
+        : ' (sem marca dâ€™Ã¡gua)';
       el.innerHTML = `
       <div style="border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.1);color:#dcfce7;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:10px">
-        <strong>Todas as fotos liberadas</strong>${wmNote}. Use a <strong>seta</strong> em cada foto ou os botões <strong>Baixar selecionadas</strong> / <strong>Baixar todas</strong> / <strong>ZIP</strong> no topo.
+        <strong>Todas as fotos liberadas</strong>${wmNote}. Use a <strong>seta</strong> em cada foto ou os botÃµes <strong>Baixar selecionadas</strong> / <strong>Baixar todas</strong> / <strong>ZIP</strong> no topo.
       </div>`;
       return;
     }
@@ -1220,11 +1220,11 @@
     el.classList.remove('ks-hidden');
     el.innerHTML = `
       <div style="border:1px solid rgba(250,204,21,.45);background:rgba(234,179,8,.12);color:#fef3c7;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:10px">
-        <strong>Download com marca d’água.</strong> Escolha as fotos; ao clicar em <strong>Baixar</strong> ou em <strong>Fotos para baixar</strong>, pedimos um cadastro rápido (nome, e-mail, WhatsApp) e liberamos na hora.
+        <strong>Download com marca dâ€™Ã¡gua.</strong> Escolha as fotos; ao clicar em <strong>Baixar</strong> ou em <strong>Fotos para baixar</strong>, pedimos um cadastro rÃ¡pido (nome, e-mail, WhatsApp) e liberamos na hora.
       </div>`;
   }
 
-  /** PIX + comprovante no painel «Fotos para baixar» (modo vendas após envio). Some quando já não falta liberação nas fotos selecionadas. */
+  /** PIX + comprovante no painel Â«Fotos para baixarÂ» (modo vendas apÃ³s envio). Some quando jÃ¡ nÃ£o falta liberaÃ§Ã£o nas fotos selecionadas. */
   function renderDownloadsPixBanner() {
     const wrap = $('ks-downloads-pix-wrap');
     const block = $('ks-dl-pix-block');
@@ -1251,8 +1251,8 @@
     const pixKey = String(cfg.pix_key || '').trim();
     const pixHolder = String(cfg.pix_holder_name || '').trim();
     if (block) block.classList.toggle('ks-hidden', !pixKey);
-    if (holder) holder.textContent = pixHolder || '—';
-    if (keyEl) keyEl.textContent = pixKey || '—';
+    if (holder) holder.textContent = pixHolder || 'â€”';
+    if (keyEl) keyEl.textContent = pixKey || 'â€”';
     if (copyBtn) copyBtn.setAttribute('data-pix-key', pixKey || '');
   }
 
@@ -1335,7 +1335,7 @@
       .filter(Boolean);
   }
 
-  /** Seleção já enviada + modo público + há fotos no painel «Fotos para baixar»: esconder grelha duplicada. */
+  /** SeleÃ§Ã£o jÃ¡ enviada + modo pÃºblico + hÃ¡ fotos no painel Â«Fotos para baixarÂ»: esconder grelha duplicada. */
   function publicLockedDownloadPhaseActive() {
     if (isPublicFreeDownloadGallery()) return false;
     if (state.salesModeActive) return false;
@@ -1350,7 +1350,7 @@
     $('ks-step-gallery')?.classList.toggle('ks-public-dl-minimal', publicLockedDownloadPhaseActive());
   }
 
-  /** Modo vendas após envio: só painel de download (marca d'água) — sem grelha de seleção. */
+  /** Modo vendas apÃ³s envio: sÃ³ painel de download (marca d'Ã¡gua) â€” sem grelha de seleÃ§Ã£o. */
   function salesPostSubmitPhaseActive() {
     return !!(state.salesModeActive && state.locked);
   }
@@ -1380,7 +1380,7 @@
   }
 
   const KS_DL_ZIP_AUTO_BYTES = 500 * 1024 * 1024;
-  /** 2+ fotos → ZIP (1 popup de salvar). Só 1 foto baixa o arquivo direto. */
+  /** 2+ fotos â†’ ZIP (1 popup de salvar). SÃ³ 1 foto baixa o arquivo direto. */
   const KS_DL_ZIP_MIN_COUNT = 2;
   const KS_DL_ZIP_FALLBACK_CHUNK = 35;
   const KS_DL_ZIP_FETCH_MS = 15 * 60 * 1000;
@@ -1398,9 +1398,9 @@
     const n = parseInt(photoCount, 10) || 0;
     if (n < KS_DL_FOLDER_MIN) return null;
     const ok = confirm(
-      `Você vai baixar ${n} foto(s).\n\n` +
+      `VocÃª vai baixar ${n} foto(s).\n\n` +
       'Clique OK e escolha UMA PASTA no computador.\n' +
-      'Todas as fotos serão salvas lá automaticamente — sem clicar Salvar dezenas de vezes.'
+      'Todas as fotos serÃ£o salvas lÃ¡ automaticamente â€” sem clicar Salvar dezenas de vezes.'
     );
     if (!ok) return null;
     try {
@@ -1464,7 +1464,7 @@
 
   async function startBulkZipDownload(photoIds, ui) {
     if (_zipDownloadBusy) {
-      toast('Já há um download em andamento. Aguarde terminar.', 'err');
+      toast('JÃ¡ hÃ¡ um download em andamento. Aguarde terminar.', 'err');
       return null;
     }
     const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
@@ -1501,8 +1501,8 @@
       let zipDir = null;
       if (partCount > 1 && typeof window.showDirectoryPicker === 'function') {
         const pick = confirm(
-          `Serão ${partCount} arquivos ZIP (${ids.length} fotos).\n\n` +
-          'Clique OK e escolha UMA PASTA — todos os ZIPs serão salvos lá automaticamente.'
+          `SerÃ£o ${partCount} arquivos ZIP (${ids.length} fotos).\n\n` +
+          'Clique OK e escolha UMA PASTA â€” todos os ZIPs serÃ£o salvos lÃ¡ automaticamente.'
         );
         if (pick) {
           try {
@@ -1562,7 +1562,7 @@
     try { data = await res.json(); } catch (_) { /* ignore */ }
     if (!res.ok) {
       if (handleClientUnauthorized(res, data)) return null;
-      throw new Error(data?.message || 'Não foi possível planear o download.');
+      throw new Error(data?.message || 'NÃ£o foi possÃ­vel planear o download.');
     }
     return data;
   }
@@ -1651,7 +1651,7 @@
       const partLabel = totalParts > 1 ? `_parte${pnum}` : '';
       const fname = `${baseName}_${suffix}${partLabel}.zip`;
       if (!dirHandle && i > 0) {
-        const cont = confirm(`Parte ${pnum} de ${totalParts} pronta.\n\nClique OK para baixar a próxima parte.`);
+        const cont = confirm(`Parte ${pnum} de ${totalParts} pronta.\n\nClique OK para baixar a prÃ³xima parte.`);
         if (!cont) throw new Error('Download cancelado.');
       }
       // eslint-disable-next-line no-await-in-loop
@@ -1891,7 +1891,7 @@
     return arr;
   }
 
-  /** Lote da seleção no servidor; sem chave, assume 1 (dados antigos / backfill). */
+  /** Lote da seleÃ§Ã£o no servidor; sem chave, assume 1 (dados antigos / backfill). */
   function effectiveSelectionBatch(photoId) {
     const bRaw = parseInt(state.batchByPhoto[String(photoId)], 10);
     return Number.isFinite(bRaw) ? bRaw : 1;
@@ -1904,7 +1904,7 @@
     return effectiveSelectionBatch(photoId) < state.currentRound;
   }
 
-  /** Fotos escolhidas nesta rodada (ainda não “congeladas”). */
+  /** Fotos escolhidas nesta rodada (ainda nÃ£o â€œcongeladasâ€). */
   function countSelectedThisRound() {
     let n = 0;
     for (const id of state.selected) {
@@ -1913,7 +1913,7 @@
     return n;
   }
 
-  /** Limite de contrato: em galerias com rodadas, só conta a seleção atual. */
+  /** Limite de contrato: em galerias com rodadas, sÃ³ conta a seleÃ§Ã£o atual. */
   function effectiveSelectedCountForMaxLimit() {
     return state.hasSelectionBatch ? countSelectedThisRound() : state.selected.size;
   }
@@ -2023,7 +2023,7 @@
   }
 
   function photoCardBubbleLabel(sel, fr, publicFree) {
-    if (fr) return 'Bloqueada (seleção anterior)';
+    if (fr) return 'Bloqueada (seleÃ§Ã£o anterior)';
     if (sel) return 'Desmarcar';
     return publicFree ? 'Marcar (opcional)' : 'Selecionar';
   }
@@ -2122,7 +2122,7 @@
     if (sel) bubbleClass.push('ks-check-btn--on');
     if (fr) bubbleClass.push('ks-check-btn--frozen');
     const bubbleLabel = fr
-      ? 'Bloqueada (seleção anterior)'
+      ? 'Bloqueada (seleÃ§Ã£o anterior)'
       : sel
         ? 'Desmarcar'
         : publicFree
@@ -2137,14 +2137,14 @@
       state.photographerAllowsDownload && jwt
         ? state.allowDownload
           ? `<a class="ks-ph-dl r" href="${previewDownloadUrl(p.id)}" download target="_blank" rel="noopener" title="Descarregar" aria-label="Descarregar"><i class="fas fa-download"></i></a>`
-          : `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar — cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
+          : `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar â€” cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
         : '';
     return `
         <div class="ks-ph ${sel ? 'selected' : ''} ${fr ? 'frozen' : ''}" data-pid="${p.id}">
           <button type="button" class="${bubbleClass.join(' ')}" data-check="${p.id}" aria-label="${bubbleLabel}" title="${bubbleLabel}" ${fr ? 'disabled' : ''}>
             ${sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : ''}
           </button>
-          <div class="ks-ph-imgwrap ks-ph-imgwrap--loading" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleção">
+          <div class="ks-ph-imgwrap ks-ph-imgwrap--loading" data-strip-zone="${p.id}" role="button" tabindex="0" aria-label="Alternar seleÃ§Ã£o">
             <img data-photo-id="${p.id}" data-src="${previewUrl(p.id, true)}" alt="" width="200" height="300" referrerpolicy="no-referrer" decoding="async" class="ks-img-loading" />
           </div>
           <div class="ks-ph-bar">
@@ -2164,7 +2164,7 @@
       return;
     }
     const shown = Math.min(state.gridVirtualShown, list.length);
-    el.textContent = `A mostrar ${shown} de ${list.length} fotos — continue a rolar para carregar mais`;
+    el.textContent = `A mostrar ${shown} de ${list.length} fotos â€” continue a rolar para carregar mais`;
     el.classList.remove('ks-hidden');
   }
 
@@ -2230,7 +2230,7 @@
     return false;
   }
 
-  /** Fotos marcadas para o pedido de edição atual (modo público). */
+  /** Fotos marcadas para o pedido de ediÃ§Ã£o atual (modo pÃºblico). */
   function publicEditDraftIdsArray() {
     const out = [];
     for (const id of state.publicEditDraftIds) {
@@ -2246,11 +2246,11 @@
 
   function clientEditRequestStatusLabel(st) {
     const s = String(st || '').toLowerCase();
-    if (s === 'in_progress') return 'Em edição';
-    if (s === 'done') return 'Concluído';
+    if (s === 'in_progress') return 'Em ediÃ§Ã£o';
+    if (s === 'done') return 'ConcluÃ­do';
     if (s === 'rejected') return 'Recusado';
     if (s === 'cancelled') return 'Cancelado';
-    return 'Aguardando fotógrafo';
+    return 'Aguardando fotÃ³grafo';
   }
 
   function syncPublicEditClearButton() {
@@ -2258,12 +2258,12 @@
     if (!btn) return;
     const edit = publicEditRequestEnabled() && !selectionLockedForUi();
     const label = edit
-      ? '<i class="fas fa-eraser"></i> Descartar seleção (edição)'
-      : '<i class="fas fa-trash-alt"></i> Limpar seleção';
+      ? '<i class="fas fa-eraser"></i> Descartar seleÃ§Ã£o (ediÃ§Ã£o)'
+      : '<i class="fas fa-trash-alt"></i> Limpar seleÃ§Ã£o';
     if (btn.innerHTML !== label) btn.innerHTML = label;
     btn.title = edit
-      ? 'Remove as fotos marcadas para o pedido de edição atual'
-      : 'Limpa só a seleção atual';
+      ? 'Remove as fotos marcadas para o pedido de ediÃ§Ã£o atual'
+      : 'Limpa sÃ³ a seleÃ§Ã£o atual';
   }
 
   async function unselectPhotoIdsBulk(ids) {
@@ -2313,14 +2313,14 @@
   async function discardPublicEditDraft() {
     const ids = publicEditDraftIdsArray();
     if (!ids.length) {
-      toast('Nenhuma foto marcada para este pedido de edição.', 'err');
+      toast('Nenhuma foto marcada para este pedido de ediÃ§Ã£o.', 'err');
       return;
     }
-    if (!confirm('Descartar a seleção atual para edição? As fotos serão desmarcadas.')) return;
+    if (!confirm('Descartar a seleÃ§Ã£o atual para ediÃ§Ã£o? As fotos serÃ£o desmarcadas.')) return;
     try {
       await unselectPhotoIdsBulk(ids);
       removeIdsFromLocalSelection(ids);
-      toast('Seleção para edição descartada.', '');
+      toast('SeleÃ§Ã£o para ediÃ§Ã£o descartada.', '');
     } catch (e) {
       toast(e.message || 'Erro', 'err');
     }
@@ -2347,7 +2347,7 @@
       if (!res.ok) throw new Error(data.message || 'Erro');
       state.clientEditRequests = Array.isArray(data.requests) ? data.requests : [];
     } catch (_) {
-      /* mantém lista anterior */
+      /* mantÃ©m lista anterior */
     }
     renderPublicEditRequestsBanner();
   }
@@ -2371,17 +2371,17 @@
       const n = parseInt(r.photo_count, 10) || 0;
       const batch = parseInt(r.selection_batch, 10) || 0;
       const st = String(r.status || '').toLowerCase();
-      const selLabel = batch > 0 ? `Seleção ${batch}` : `Pedido #${rid}`;
+      const selLabel = batch > 0 ? `SeleÃ§Ã£o ${batch}` : `Pedido #${rid}`;
       const canCancel = st === 'pending';
       const statusHint =
         st === 'in_progress'
-          ? 'O fotógrafo está editando suas fotos.'
+          ? 'O fotÃ³grafo estÃ¡ editando suas fotos.'
           : st === 'done'
-            ? 'Concluído — fotos liberadas para baixar (abra «Fotos para baixar»).'
-            : 'Aguardando o fotógrafo.';
+            ? 'ConcluÃ­do â€” fotos liberadas para baixar (abra Â«Fotos para baixarÂ»).'
+            : 'Aguardando o fotÃ³grafo.';
       parts.push(
         `<div class="ks-edit-req-row">` +
-        `<span><strong>${selLabel}</strong> · ${n} foto(s) · ${clientEditRequestStatusLabel(r.status)}` +
+        `<span><strong>${selLabel}</strong> Â· ${n} foto(s) Â· ${clientEditRequestStatusLabel(r.status)}` +
         `<br><small style="opacity:.85">${statusHint}</small></span>` +
         (canCancel
           ? `<button type="button" class="ks-btn ks-btn-outline" data-ks-cancel-edit-req="${rid}" style="font-size:12px;padding:6px 10px">` +
@@ -2394,7 +2394,7 @@
       const nextBatch = Math.max(1, parseInt(state.currentRound, 10) || 1);
       parts.push(
         `<div class="ks-edit-req-row">` +
-        `<span><strong>Seleção ${nextBatch} (nova):</strong> ${draftN} foto(s) marcada(s) para enviar.</span></div>`
+        `<span><strong>SeleÃ§Ã£o ${nextBatch} (nova):</strong> ${draftN} foto(s) marcada(s) para enviar.</span></div>`
       );
     }
     if (!parts.length) {
@@ -2414,7 +2414,7 @@
 
   async function cancelClientEditRequest(requestId) {
     if (!requestId) return;
-    if (!confirm('Cancelar este pedido de edição? O fotógrafo deixará de vê-lo como pendente.')) return;
+    if (!confirm('Cancelar este pedido de ediÃ§Ã£o? O fotÃ³grafo deixarÃ¡ de vÃª-lo como pendente.')) return;
     try {
       const res = await fetch(`${API}/api/king-selection/client/edit-request/${requestId}/cancel`, {
         method: 'POST',
@@ -2441,8 +2441,8 @@
     btn.className = 'ks-btn ks-btn-edit-req ks-hidden';
     btn.hidden = true;
     btn.setAttribute('aria-hidden', 'true');
-    btn.title = 'Enviar fotos marcadas para edição';
-    btn.innerHTML = '<i class="fas fa-magic"></i> Enviar para edição';
+    btn.title = 'Enviar fotos marcadas para ediÃ§Ã£o';
+    btn.innerHTML = '<i class="fas fa-magic"></i> Enviar para ediÃ§Ã£o';
     clearBtn.insertAdjacentElement('afterend', btn);
     btn.addEventListener('click', () => submitEditRequest());
   }
@@ -2459,8 +2459,8 @@
     const n = countPublicEditDraft();
     btn.disabled = n === 0;
     btn.title = n > 0
-      ? `Enviar ${n} foto(s) marcada(s) para edição (novo pedido)`
-      : 'Marque as fotos que deseja enviar para edição';
+      ? `Enviar ${n} foto(s) marcada(s) para ediÃ§Ã£o (novo pedido)`
+      : 'Marque as fotos que deseja enviar para ediÃ§Ã£o';
     syncPublicEditClearButton();
     renderPublicEditRequestsBanner();
   }
@@ -2469,15 +2469,15 @@
     if (!publicEditRequestEnabled()) return;
     const ids = publicEditDraftIdsArray();
     if (!ids.length) {
-      toast('Marque pelo menos uma foto para enviar à edição.', 'err');
+      toast('Marque pelo menos uma foto para enviar Ã  ediÃ§Ã£o.', 'err');
       return;
     }
     if (!publicJwtHasRegisteredClient() && !state.resolvedClientId) {
-      toast('Cadastre-se na galeria antes de enviar fotos para edição.', 'err');
+      toast('Cadastre-se na galeria antes de enviar fotos para ediÃ§Ã£o.', 'err');
       return;
     }
     const note = window.prompt(
-      'Observação para o fotógrafo (opcional):\nEx.: remover fundo, ajustar cor, recorte…',
+      'ObservaÃ§Ã£o para o fotÃ³grafo (opcional):\nEx.: remover fundo, ajustar cor, recorteâ€¦',
       ''
     );
     if (note === null) return;
@@ -2492,7 +2492,7 @@
       const data = await res.json().catch(() => ({}));
       if (handleClientUnauthorized(res, data)) return;
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar pedido');
-      toast(data.message || `Pedido enviado: ${ids.length} foto(s) para edição.`, 'ok');
+      toast(data.message || `Pedido enviado: ${ids.length} foto(s) para ediÃ§Ã£o.`, 'ok');
       await clearPublicEditDraftAfterSubmit();
       await refreshClientEditRequests();
     } catch (e) {
@@ -2502,7 +2502,7 @@
     }
   }
 
-  /** Lotes (selection_batch) já confirmados em rodadas anteriores. */
+  /** Lotes (selection_batch) jÃ¡ confirmados em rodadas anteriores. */
   function frozenBatchNumberSet() {
     const s = new Set();
     for (const id of state.selected) {
@@ -2513,8 +2513,8 @@
   }
 
   /**
-   * Nível exibido ao cliente: próxima rodada “humana” após o maior lote congelado.
-   * Evita mostrar 4 no topo quando na grelha só existem S1, S2 (buraco no contador do servidor).
+   * NÃ­vel exibido ao cliente: prÃ³xima rodada â€œhumanaâ€ apÃ³s o maior lote congelado.
+   * Evita mostrar 4 no topo quando na grelha sÃ³ existem S1, S2 (buraco no contador do servidor).
    */
   function clientVisibleRoundLevel() {
     const frozen = frozenBatchNumberSet();
@@ -2528,7 +2528,7 @@
     return m;
   }
 
-  /** Só modo público: cadastro na entrada e download liberado após cadastro (não mistura com privado / vendidas / autocadastro). */
+  /** SÃ³ modo pÃºblico: cadastro na entrada e download liberado apÃ³s cadastro (nÃ£o mistura com privado / vendidas / autocadastro). */
   function mustRegisterBeforeGallery() {
     if (!galleryMeta) return false;
     return normKsAccessModeFromMeta() === 'public';
@@ -2553,9 +2553,9 @@
   }
 
   /**
-   * Modo público: sempre pedir nome/e-mail/WhatsApp no Confirmar.
-   * O JWT pode ter `resolvedClientId` por sessão/rosto/cupom (e-mail técnico __ks_face_sess_...), mas o finalize
-   * ainda exige dados reais no body — sem isto o utilizador via toast sem campos visíveis.
+   * Modo pÃºblico: sempre pedir nome/e-mail/WhatsApp no Confirmar.
+   * O JWT pode ter `resolvedClientId` por sessÃ£o/rosto/cupom (e-mail tÃ©cnico __ks_face_sess_...), mas o finalize
+   * ainda exige dados reais no body â€” sem isto o utilizador via toast sem campos visÃ­veis.
    */
   function confirmStepNeedsContactFields() {
     if (state.salesModeActive) return true;
@@ -2573,13 +2573,13 @@
     );
   }
 
-  /** No modo público gratuito, «bloqueado/revisão» não trava a galeria (só marcação opcional para lote). */
+  /** No modo pÃºblico gratuito, Â«bloqueado/revisÃ£oÂ» nÃ£o trava a galeria (sÃ³ marcaÃ§Ã£o opcional para lote). */
   function selectionLockedForUi() {
     if (isPublicFreeDownloadGallery()) return false;
     return !!state.locked;
   }
 
-  /** Público gratuito (sem cupom/vendas): uma só galeria — tudo liberado para baixar, sem painel «Fotos para baixar». */
+  /** PÃºblico gratuito (sem cupom/vendas): uma sÃ³ galeria â€” tudo liberado para baixar, sem painel Â«Fotos para baixarÂ». */
   function isPublicFreeDownloadGallery() {
     if (normKsAccessModeFromMeta() !== 'public') return false;
     if (state.salesModeActive) return false;
@@ -2702,8 +2702,8 @@
   }
 
   /**
-   * Modo público: entrar com nome + e-mail + WhatsApp (sem senha).
-   * Tenta login; se não existir cadastro, cria; se e-mail já existir, valida os dados.
+   * Modo pÃºblico: entrar com nome + e-mail + WhatsApp (sem senha).
+   * Tenta login; se nÃ£o existir cadastro, cria; se e-mail jÃ¡ existir, valida os dados.
    */
   async function enterPublicGalleryWithContact(nome, email, telefone, opts = {}) {
     const errEl = opts.errEl || $('ks-register-first-err');
@@ -2754,7 +2754,7 @@
       const { isNew } = await enterPublicGalleryWithContact(nome, email, telefone, { errEl: err });
       toast(
         isNew
-          ? 'Cadastro concluído. Escolha as fotos e use a seta de download ou «Fotos para baixar».'
+          ? 'Cadastro concluÃ­do. Escolha as fotos e use a seta de download ou Â«Fotos para baixarÂ».'
           : 'Bem-vindo de volta! Escolha as fotos que deseja baixar.',
         'ok'
       );
@@ -2788,7 +2788,7 @@
         runPendingDownload: true
       });
       closePublicRegisterModal();
-      toast(isNew ? 'Cadastro concluído. Download liberado.' : 'Acesso liberado.', 'ok');
+      toast(isNew ? 'Cadastro concluÃ­do. Download liberado.' : 'Acesso liberado.', 'ok');
     } catch (e) {
       if (err) {
         err.textContent = e.message || 'Erro';
@@ -2800,9 +2800,9 @@
   }
 
   /**
-   * paid_event_photos → nome + e-mail + WhatsApp (API login-by-details).
-   * private → e-mail + senha (API client/login).
-   * signup → e-mail + senha para voltar (primeira visita costuma usar sessão anónima via signup-enter).
+   * paid_event_photos â†’ nome + e-mail + WhatsApp (API login-by-details).
+   * private â†’ e-mail + senha (API client/login).
+   * signup â†’ e-mail + senha para voltar (primeira visita costuma usar sessÃ£o anÃ³nima via signup-enter).
    */
   function configureLoginUI() {
     const body = $('ks-login-body');
@@ -2830,15 +2830,15 @@
       const lead = $('ks-register-first-lead');
       if (lead) {
         lead.innerHTML =
-          'Modo <strong>público</strong>: informe <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> (sem senha). Na primeira vez criamos seu cadastro; depois use os mesmos dados para voltar.';
+          'Modo <strong>pÃºblico</strong>: informe <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> (sem senha). Na primeira vez criamos seu cadastro; depois use os mesmos dados para voltar.';
       }
       $('ks-login-sub').textContent = galleryMeta.nome_projeto
-        ? `${galleryMeta.nome_projeto} — acesso à galeria`
+        ? `${galleryMeta.nome_projeto} â€” acesso Ã  galeria`
         : 'Informe seus dados para continuar';
       if (foot) {
         foot.style.display = '';
         foot.textContent =
-          'Use sempre o mesmo nome, e-mail e WhatsApp. Se trocar de aparelho, basta preencher de novo — não precisa lembrar senha.';
+          'Use sempre o mesmo nome, e-mail e WhatsApp. Se trocar de aparelho, basta preencher de novo â€” nÃ£o precisa lembrar senha.';
       }
       return;
     }
@@ -2848,11 +2848,11 @@
       modePw?.classList.add('ks-hidden');
       modePub?.classList.remove('ks-hidden');
       $('ks-login-sub').textContent =
-        'Modo público: entre de novo como visitante ou com e-mail e senha. O cadastro para baixar pedimos só quando você for descarregar fotos.';
+        'Modo pÃºblico: entre de novo como visitante ou com e-mail e senha. O cadastro para baixar pedimos sÃ³ quando vocÃª for descarregar fotos.';
       if (foot) {
         foot.style.display = '';
         foot.textContent =
-          'Na galeria você escolhe as fotos primeiro; ao usar Baixar, pedimos nome, e-mail e WhatsApp se o fotógrafo liberou download.';
+          'Na galeria vocÃª escolhe as fotos primeiro; ao usar Baixar, pedimos nome, e-mail e WhatsApp se o fotÃ³grafo liberou download.';
       }
       return;
     }
@@ -2861,40 +2861,40 @@
       modeDetails?.classList.remove('ks-hidden');
       modePw?.classList.add('ks-hidden');
       $('ks-login-sub').textContent =
-        'Modo fotos vendidas: entre com o mesmo nome, e-mail e WhatsApp usados ao enviar a seleção.';
+        'Modo fotos vendidas: entre com o mesmo nome, e-mail e WhatsApp usados ao enviar a seleÃ§Ã£o.';
       const lead = $('ks-login-details-lead');
       if (lead) {
         lead.innerHTML =
-          'Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleção). Informe com DDD e, se necessário, código do país (ex.: 55). Se o fotógrafo não salvou seu WhatsApp no cadastro, pode deixar em branco.';
+          'Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleÃ§Ã£o). Informe com DDD e, se necessÃ¡rio, cÃ³digo do paÃ­s (ex.: 55). Se o fotÃ³grafo nÃ£o salvou seu WhatsApp no cadastro, pode deixar em branco.';
       }
       if (foot) {
         foot.style.display = '';
         foot.textContent =
-          'Na primeira visita você já pode ver as fotos; ao enviar a seleção, confirme nome, e-mail e WhatsApp.';
+          'Na primeira visita vocÃª jÃ¡ pode ver as fotos; ao enviar a seleÃ§Ã£o, confirme nome, e-mail e WhatsApp.';
       }
       return;
     }
 
     modeDetails?.classList.add('ks-hidden');
     modePw?.classList.remove('ks-hidden');
-    $('ks-login-pw-section-h').textContent = mode === 'signup' ? 'Entrar com seu cadastro' : 'Acesso privado à galeria';
+    $('ks-login-pw-section-h').textContent = mode === 'signup' ? 'Entrar com seu cadastro' : 'Acesso privado Ã  galeria';
     const leadPw = $('ks-login-pw-lead');
     if (leadPw) {
       leadPw.textContent =
         mode === 'signup'
-          ? 'Informe o e-mail e a senha que você definiu ao se cadastrar nesta galeria.'
-          : 'Informe o e-mail e a senha que o fotógrafo enviou para você (modo privado).';
+          ? 'Informe o e-mail e a senha que vocÃª definiu ao se cadastrar nesta galeria.'
+          : 'Informe o e-mail e a senha que o fotÃ³grafo enviou para vocÃª (modo privado).';
     }
     $('ks-login-sub').textContent =
       mode === 'signup'
         ? 'Entre com e-mail e senha do seu cadastro.'
-        : 'Entre com e-mail e senha fornecidos pelo fotógrafo.';
+        : 'Entre com e-mail e senha fornecidos pelo fotÃ³grafo.';
     if (foot) {
       foot.style.display = '';
       foot.textContent =
         mode === 'signup'
-          ? 'Primeira vez neste link? A galeria pode abrir direto; você completa o cadastro ao enviar a seleção.'
-          : 'O fotógrafo deve ter enviado o link com e-mail e senha (por exemplo no WhatsApp).';
+          ? 'Primeira vez neste link? A galeria pode abrir direto; vocÃª completa o cadastro ao enviar a seleÃ§Ã£o.'
+          : 'O fotÃ³grafo deve ter enviado o link com e-mail e senha (por exemplo no WhatsApp).';
     }
   }
 
@@ -2941,17 +2941,17 @@
     const pixHolder = String(paymentPix?.pix_holder_name || '').trim();
     const shouldShow = !!pixKey;
     if (wrap) wrap.classList.toggle('ks-hidden', !shouldShow);
-    if (holder) holder.textContent = pixHolder || 'Não informado';
-    if (keyEl) keyEl.textContent = pixKey || '—';
+    if (holder) holder.textContent = pixHolder || 'NÃ£o informado';
+    if (keyEl) keyEl.textContent = pixKey || 'â€”';
     if (copyBtn) copyBtn.setAttribute('data-pix-key', pixKey || '');
     if (waBtn) {
-      const waPaidMsg = `Olá! Acabei de enviar minha seleção na galeria "${state.gallery?.nome_projeto || ''}" e já fiz o pagamento via PIX. Pode confirmar, por favor?`;
+      const waPaidMsg = `OlÃ¡! Acabei de enviar minha seleÃ§Ã£o na galeria "${state.gallery?.nome_projeto || ''}" e jÃ¡ fiz o pagamento via PIX. Pode confirmar, por favor?`;
       const waLink = buildSupportWhatsLink(waPaidMsg);
       waBtn.classList.toggle('ks-hidden', !waLink);
       waBtn.setAttribute('data-whats-link', waLink || '');
     }
     if (waPendingBtn) {
-      const waPendingMsg = `Olá! Acabei de enviar minha seleção na galeria "${state.gallery?.nome_projeto || ''}" e vou realizar o pagamento via PIX em breve.`;
+      const waPendingMsg = `OlÃ¡! Acabei de enviar minha seleÃ§Ã£o na galeria "${state.gallery?.nome_projeto || ''}" e vou realizar o pagamento via PIX em breve.`;
       const waPendingLink = buildSupportWhatsLink(waPendingMsg);
       waPendingBtn.classList.toggle('ks-hidden', !waPendingLink);
       waPendingBtn.setAttribute('data-whats-link', waPendingLink || '');
@@ -3019,7 +3019,7 @@
       throw friendlyFetchError(e);
     }
     const data = await safeResponseJson(res, KS_JSON_BOOT_MS).catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Galeria pública indisponível.');
+    if (!res.ok) throw new Error(data.message || 'Galeria pÃºblica indisponÃ­vel.');
     return data.token;
   }
 
@@ -3063,7 +3063,7 @@
     if (res.status === 401) {
       jwt = null;
       try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
-      throw new Error('Sessão expirada. Entre novamente.');
+      throw new Error('SessÃ£o expirada. Entre novamente.');
     }
     if (!res.ok) throw new Error(data.message || 'Erro ao carregar galeria');
     return data;
@@ -3075,7 +3075,7 @@
     try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
     showLogin();
     toast(
-      String(data?.message || 'Seu acesso foi encerrado pelo fotógrafo. Entre novamente.'),
+      String(data?.message || 'Seu acesso foi encerrado pelo fotÃ³grafo. Entre novamente.'),
       'err'
     );
     return true;
@@ -3084,7 +3084,7 @@
   function replaceThankYouPlaceholders(msg, { selectionCount, photographerDisplayName, clientDisplayName }) {
     let s = String(msg || '');
     s = s.replace(/\{\{\s*quantidade\s*\}\}/gi, String(selectionCount ?? ''));
-    s = s.replace(/\{\{\s*nome\s*\}\}/gi, photographerDisplayName || 'Fotógrafo');
+    s = s.replace(/\{\{\s*nome\s*\}\}/gi, photographerDisplayName || 'FotÃ³grafo');
     s = s.replace(/\{\{\s*nome_cliente\s*\}\}/gi, clientDisplayName || 'Cliente');
     return s;
   }
@@ -3100,16 +3100,16 @@
     const max = g.total_fotos_contratadas != null ? parseInt(g.total_fotos_contratadas, 10) : 0;
     let livre = '';
     if (max <= 0) livre = '(livre)';
-    else livre = `(máx. ${max})`;
+    else livre = `(mÃ¡x. ${max})`;
 
     let topExtra = '';
-    if (min > 0) topExtra += ` · mín. ${min}`;
+    if (min > 0) topExtra += ` Â· mÃ­n. ${min}`;
     if (totalAcumulado > estaRodada) {
-      topExtra += ` · <span class="ks-summary-muted">Total acumulado: ${totalAcumulado}</span>`;
+      topExtra += ` Â· <span class="ks-summary-muted">Total acumulado: ${totalAcumulado}</span>`;
     }
     const nivel = clientVisibleRoundLevel();
     if (estaRodada > 0 && nivel > 1) {
-      topExtra += ` · <span class="ks-summary-muted">seleção atual: nível ${nivel}</span>`;
+      topExtra += ` Â· <span class="ks-summary-muted">seleÃ§Ã£o atual: nÃ­vel ${nivel}</span>`;
     }
 
     const pill = isPublicFreeDownloadGallery()
@@ -3128,7 +3128,7 @@
       const billableForEstimate = billablePhotoCountForSalesEstimate(nSel);
       const computedByClient = estimateClientTotalByPackages(billableForEstimate, packs, mode, unit);
       const priceStr = escapeHtml(formatCentsBr(computedByClient));
-      statsRight += `<span class="ks-header-sel-total" title="Valor estimado com pacotes/preço; se o cupom estiver validado, já desconta as fotos gratuitas do cupom. A aprovação (cortesia/pago) é feita pelo fotógrafo depois do envio."><span class="ks-header-sel-total__label">Total</span><span class="ks-header-sel-total__val">${priceStr}</span></span>`;
+      statsRight += `<span class="ks-header-sel-total" title="Valor estimado com pacotes/preÃ§o; se o cupom estiver validado, jÃ¡ desconta as fotos gratuitas do cupom. A aprovaÃ§Ã£o (cortesia/pago) Ã© feita pelo fotÃ³grafo depois do envio."><span class="ks-header-sel-total__label">Total</span><span class="ks-header-sel-total__val">${priceStr}</span></span>`;
     }
     statsRight += `<span class="ks-summary-livre">${escapeHtml(livre)}</span>`;
 
@@ -3143,7 +3143,7 @@
     updateGalleryToolbarButtons();
   }
 
-  /** Reconhecimento facial só quando ainda dá para escolher fotos (não bloqueado e existe foto não selecionada). */
+  /** Reconhecimento facial sÃ³ quando ainda dÃ¡ para escolher fotos (nÃ£o bloqueado e existe foto nÃ£o selecionada). */
   function refreshFacePanelVisibility() {
     const fp = $('ks-face-panel');
     if (!fp) return;
@@ -3292,8 +3292,8 @@
       notice.style.color = '';
       if (selectionLockedForUi()) {
         notice.textContent = state.salesModeActive
-          ? 'Seleção enviada! Suas fotos estão no painel «Fotos para baixar» (marca d\'água). Quando o fotógrafo liberar, use «Atualizar liberações» ou F5.'
-          : (data.lockedMessage || 'Sua seleção já foi enviada e está bloqueada. Peça ao fotógrafo para reativar ou abrir uma nova seleção.');
+          ? 'SeleÃ§Ã£o enviada! Suas fotos estÃ£o no painel Â«Fotos para baixarÂ» (marca d\'Ã¡gua). Quando o fotÃ³grafo liberar, use Â«Atualizar liberaÃ§ÃµesÂ» ou F5.'
+          : (data.lockedMessage || 'Sua seleÃ§Ã£o jÃ¡ foi enviada e estÃ¡ bloqueada. PeÃ§a ao fotÃ³grafo para reativar ou abrir uma nova seleÃ§Ã£o.');
         notice.classList.remove('ks-hidden');
       } else if (data.immutableSelectionNotice) {
         notice.textContent = data.immutableSelectionNotice;
@@ -3339,7 +3339,7 @@
     return String(state.gallery?.entry_splash_url || galleryMeta?.entry_splash_url || '').trim();
   }
 
-  /** Capa de início: todos os modos quando a API envia a URL da capa do link. */
+  /** Capa de inÃ­cio: todos os modos quando a API envia a URL da capa do link. */
   function shouldShowEntrySplash() {
     return !!entrySplashUrlAvailable();
   }
@@ -3371,7 +3371,7 @@
     }
   }
 
-  /** Mostra overlay de capa; devolve false se não houver URL/elementos. */
+  /** Mostra overlay de capa; devolve false se nÃ£o houver URL/elementos. */
   function presentEntrySplash(onClose) {
     const raw = entrySplashUrlAvailable();
     const url = absolutizeAssetUrl(raw);
@@ -3400,7 +3400,7 @@
     return true;
   }
 
-  /** Ao abrir o link (antes do login): capa + «Ver fotos» como no modo público. */
+  /** Ao abrir o link (antes do login): capa + Â«Ver fotosÂ» como no modo pÃºblico. */
   async function awaitEntrySplashIfNeeded() {
     if (!shouldShowEntrySplash() || entrySplashAlreadySeen()) return;
     await new Promise((resolve) => {
@@ -3462,10 +3462,10 @@
         if (directReviewFlow) {
           adv.innerHTML = simpleSalesFlow
             ? '<i class="fas fa-paper-plane"></i> Confirmar'
-            : '<i class="fas fa-paper-plane"></i> Confirmar seleção';
-          adv.title = simpleSalesFlow ? 'Ir direto para confirmação e envio' : 'Rever a seleção e seguir para baixar (se liberado)';
+            : '<i class="fas fa-paper-plane"></i> Confirmar seleÃ§Ã£o';
+          adv.title = simpleSalesFlow ? 'Ir direto para confirmaÃ§Ã£o e envio' : 'Rever a seleÃ§Ã£o e seguir para baixar (se liberado)';
         } else {
-          adv.innerHTML = '<i class="fas fa-arrow-right"></i> Avançar';
+          adv.innerHTML = '<i class="fas fa-arrow-right"></i> AvanÃ§ar';
           adv.title = 'Ir para comparar e ajustar';
         }
         adv.disabled = selectionLockedForUi() || !canCompareRound;
@@ -3490,15 +3490,15 @@
         foot.classList.remove('ks-hidden');
         foot.innerHTML =         publicFree
           ? (galleryWatermarkEnabled()
-            ? 'Todas as fotos estão liberadas. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>. Marcar fotos é opcional (só para <strong>Baixar selecionadas</strong>).'
-            : 'Todas as fotos estão liberadas <strong>sem marca d’água</strong>. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>.')
+            ? 'Todas as fotos estÃ£o liberadas. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>. Marcar fotos Ã© opcional (sÃ³ para <strong>Baixar selecionadas</strong>).'
+            : 'Todas as fotos estÃ£o liberadas <strong>sem marca dâ€™Ã¡gua</strong>. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>.')
           : simpleSalesFlow
-            ? 'Revise as fotos acima e clique em <strong>Confirmar</strong> para seguir direto ao cadastro e envio da seleção.'
+            ? 'Revise as fotos acima e clique em <strong>Confirmar</strong> para seguir direto ao cadastro e envio da seleÃ§Ã£o.'
             : publicNoCompare
               ? (state.allowDownload
                 ? 'Marque as fotos e baixe com a <strong>seta</strong> em cada foto.'
                 : 'Revise as fotos acima.')
-              : 'Revise as fotos acima. Use <strong>Avançar</strong> ou <strong>Comparar e ajustar</strong> para comparar; depois <strong>Revisar e enviar</strong> e <strong>Confirmar e enviar seleção</strong>.';
+              : 'Revise as fotos acima. Use <strong>AvanÃ§ar</strong> ou <strong>Comparar e ajustar</strong> para comparar; depois <strong>Revisar e enviar</strong> e <strong>Confirmar e enviar seleÃ§Ã£o</strong>.';
       }
     }
     if (clr) clr.disabled = selectionLockedForUi();
@@ -3527,8 +3527,8 @@
       } else {
         filtered = filtered.filter((p) => (parseInt(p.folder_id, 10) || null) === state.activeFolderId);
       }
-      // Fallback visual: se o backend não mandar folder_id mas houver fotos na galeria,
-      // evita tela vazia total e mantém navegação funcional até o backend sincronizar.
+      // Fallback visual: se o backend nÃ£o mandar folder_id mas houver fotos na galeria,
+      // evita tela vazia total e mantÃ©m navegaÃ§Ã£o funcional atÃ© o backend sincronizar.
       if (!filtered.length && all.length && !all.some((p) => parseInt(p.folder_id, 10))) {
         filtered = all.slice();
       }
@@ -3540,7 +3540,7 @@
     return sortPhotos(filtered, state.sortMode);
   }
 
-  /** Fotos do escopo atual da pasta (ou galeria inteira), sem busca nem filtro facial — para “selecionar todas”. */
+  /** Fotos do escopo atual da pasta (ou galeria inteira), sem busca nem filtro facial â€” para â€œselecionar todasâ€. */
   function getPhotosInCurrentFolderScopeOnly() {
     const all = Array.isArray(state.gallery?.photos) ? state.gallery.photos : [];
     let filtered = all.slice();
@@ -3557,7 +3557,7 @@
     return sortPhotos(filtered, state.sortMode);
   }
 
-  /** IDs ainda não selecionáveis em lote (exclui frozen e respeita limite de contrato). */
+  /** IDs ainda nÃ£o selecionÃ¡veis em lote (exclui frozen e respeita limite de contrato). */
   function getSelectableIdsForFolderBulk() {
     const photos = getPhotosInCurrentFolderScopeOnly();
     const max = state.gallery?.total_fotos_contratadas != null ? parseInt(state.gallery.total_fotos_contratadas, 10) : 0;
@@ -3576,7 +3576,7 @@
     return ids;
   }
 
-  /** Se o GET da galeria vier desatualizado após select-bulk, garante os IDs escolhidos no estado local. */
+  /** Se o GET da galeria vier desatualizado apÃ³s select-bulk, garante os IDs escolhidos no estado local. */
   function mergeBulkSelectIntoState(ids) {
     if (!ids || !ids.length) return;
     let changed = false;
@@ -3628,7 +3628,7 @@
     if (selectionLockedForUi()) return;
     const ids = getSelectableIdsForFolderBulk();
     if (!ids.length) {
-      toast('Não há mais fotos para selecionar neste álbum (ou já atingiu o limite).', '');
+      toast('NÃ£o hÃ¡ mais fotos para selecionar neste Ã¡lbum (ou jÃ¡ atingiu o limite).', '');
       return;
     }
     const btn = $('ks-folder-select-all');
@@ -3649,12 +3649,12 @@
     } catch (e) {
       const raw = String(e?.message || '').toLowerCase();
       if (
-        raw.includes('já foi enviada') ||
+        raw.includes('jÃ¡ foi enviada') ||
         raw.includes('ja foi enviada') ||
-        raw.includes('revisão') ||
+        raw.includes('revisÃ£o') ||
         raw.includes('revisao')
       ) {
-        toast('Não foi possível atualizar a seleção agora. Atualize a página ou peça ao fotógrafo.', 'err');
+        toast('NÃ£o foi possÃ­vel atualizar a seleÃ§Ã£o agora. Atualize a pÃ¡gina ou peÃ§a ao fotÃ³grafo.', 'err');
       } else {
         toast(e.message || 'Erro', 'err');
       }
@@ -3666,7 +3666,7 @@
 
   /**
    * Fotos selecionadas em ordem da galeria.
-   * @param {{ currentRoundOnly?: boolean }} [opts] — se true, só a rodada atual (exclui bloqueadas de rodadas anteriores); usar em Comparar / Confirmar.
+   * @param {{ currentRoundOnly?: boolean }} [opts] â€” se true, sÃ³ a rodada atual (exclui bloqueadas de rodadas anteriores); usar em Comparar / Confirmar.
    */
   function getSelectedPhotosOrderedForReview(opts) {
     const currentOnly = !!(opts && opts.currentRoundOnly);
@@ -3690,7 +3690,7 @@
       if (grid) grid.innerHTML = '';
       hint?.classList.add('ks-hidden');
       if (empty) {
-        empty.textContent = 'Sua seleção já foi enviada. Se quiser selecionar mais fotos, clique em Suporte / Retratos e peça ao retratista para liberar nova seleção.';
+        empty.textContent = 'Sua seleÃ§Ã£o jÃ¡ foi enviada. Se quiser selecionar mais fotos, clique em Suporte / Retratos e peÃ§a ao retratista para liberar nova seleÃ§Ã£o.';
         empty.classList.remove('ks-hidden');
       }
       syncFolderSelectAllToolbar();
@@ -3729,8 +3729,8 @@
       if (faceOn) bits.push(`Filtro por rosto: ${list.length} foto(s).`);
       if (tokens.length) {
         bits.push(list.length
-          ? `Busca por código: ${list.length} foto(s). Limpe o campo para ampliar.`
-          : 'Nenhuma foto encontrada para estes códigos/números. Tente o ID da foto ou o trecho ADR… do nome.');
+          ? `Busca por cÃ³digo: ${list.length} foto(s). Limpe o campo para ampliar.`
+          : 'Nenhuma foto encontrada para estes cÃ³digos/nÃºmeros. Tente o ID da foto ou o trecho ADRâ€¦ do nome.');
       }
       hint.textContent = bits.join(' ');
       hint.classList.remove('ks-hidden');
@@ -3742,8 +3742,8 @@
       disconnectGridPreviewIo();
       grid.innerHTML = '';
       empty.textContent = state.activeFolderId
-        ? 'Esta pasta ainda não tem fotos.'
-        : 'Nenhuma foto corresponde à busca.';
+        ? 'Esta pasta ainda nÃ£o tem fotos.'
+        : 'Nenhuma foto corresponde Ã  busca.';
       empty.classList.toggle('ks-hidden', !(tokens.length || faceOn || state.activeFolderId));
       syncFolderSelectAllToolbar();
       syncEditRequestToolbar();
@@ -3909,7 +3909,7 @@
       return;
     }
     grid.innerHTML = avail.map((p) =>
-      `<button type="button" class="ks-cmp-add-tile" data-cmp-add-pid="${p.id}" title="Adicionar à seleção">
+      `<button type="button" class="ks-cmp-add-tile" data-cmp-add-pid="${p.id}" title="Adicionar Ã  seleÃ§Ã£o">
         <img src="${previewUrl(p.id, true)}" alt="" loading="lazy" />
         <span class="ks-cmp-add-tile-cap">${escapeHtml(normalizeExportName(p.original_name) || 'foto')}</span>
       </button>`
@@ -3936,15 +3936,15 @@
     const n = list.length;
     if (title) {
       const base = n === 1
-        ? `1 foto nesta rodada — ajuste A e B (use a mesma em ambos se quiser)`
-        : `${n} foto(s) nesta rodada — ajuste A e B juntas`;
+        ? `1 foto nesta rodada â€” ajuste A e B (use a mesma em ambos se quiser)`
+        : `${n} foto(s) nesta rodada â€” ajuste A e B juntas`;
       let modeHint = '';
       if (compareState.thumbTargetMode === 'pinA') {
-        modeHint = ' · só Foto A (toque de novo na foto ou no rótulo para alternar A/B)';
+        modeHint = ' Â· sÃ³ Foto A (toque de novo na foto ou no rÃ³tulo para alternar A/B)';
       } else if (compareState.thumbTargetMode === 'pinB') {
-        modeHint = ' · só Foto B (toque de novo na foto ou no rótulo para alternar A/B)';
+        modeHint = ' Â· sÃ³ Foto B (toque de novo na foto ou no rÃ³tulo para alternar A/B)';
       } else {
-        modeHint = ` · miniaturas: alternância (próximo → Foto ${compareState.nextThumbSlot})`;
+        modeHint = ` Â· miniaturas: alternÃ¢ncia (prÃ³ximo â†’ Foto ${compareState.nextThumbSlot})`;
       }
       title.textContent = base + modeHint;
     }
@@ -3963,7 +3963,7 @@
       </button>`;
     }).join('');
     if (compareCanAddMorePhotos()) {
-      html += `<button type="button" class="ks-cmp-thumb ks-cmp-thumb-add" id="ks-cmp-add-trigger" title="Adicionar mais fotos sem voltar à galeria" aria-label="Adicionar fotos à seleção">
+      html += `<button type="button" class="ks-cmp-thumb ks-cmp-thumb-add" id="ks-cmp-add-trigger" title="Adicionar mais fotos sem voltar Ã  galeria" aria-label="Adicionar fotos Ã  seleÃ§Ã£o">
         <span class="ks-cmp-thumb-add-inner"><i class="fas fa-plus" aria-hidden="true"></i></span>
       </button>`;
     }
@@ -4077,13 +4077,13 @@
     const er = countSelectedThisRound();
     const nTotal = state.selected.size;
     if (state.deferredSignupActive) {
-      const extra = nTotal > er ? ` Há ${nTotal} foto(s) no total acumulado; abaixo só esta rodada (${er}).` : '';
-      lead.textContent = `Revise as ${er} foto(s) desta rodada.${extra} Ao enviar, preencha nome, e-mail e WhatsApp com DDD — não precisa criar senha antes.`;
+      const extra = nTotal > er ? ` HÃ¡ ${nTotal} foto(s) no total acumulado; abaixo sÃ³ esta rodada (${er}).` : '';
+      lead.textContent = `Revise as ${er} foto(s) desta rodada.${extra} Ao enviar, preencha nome, e-mail e WhatsApp com DDD â€” nÃ£o precisa criar senha antes.`;
       return;
     }
     if (normKsAccessModeFromMeta() === 'public' && !publicJwtHasRegisteredClient()) {
-      const extra = nTotal > er ? ` (${nTotal} no total acumulado; abaixo só esta rodada — ${er}).` : '';
-      lead.textContent = `Revise as ${er} foto(s) selecionada(s).${extra} Para enviar ao fotógrafo, preencha nome, e-mail e WhatsApp (com DDD) abaixo — cadastro rápido, sem senha neste passo.`;
+      const extra = nTotal > er ? ` (${nTotal} no total acumulado; abaixo sÃ³ esta rodada â€” ${er}).` : '';
+      lead.textContent = `Revise as ${er} foto(s) selecionada(s).${extra} Para enviar ao fotÃ³grafo, preencha nome, e-mail e WhatsApp (com DDD) abaixo â€” cadastro rÃ¡pido, sem senha neste passo.`;
       return;
     }
     if (nTotal > er) {
@@ -4118,7 +4118,7 @@
         Selecionar mais fotos
       </button>`;
     wrap.innerHTML = cards + more;
-    // Evita abrir no meio da lista (aparência de fotos "cortadas" no topo).
+    // Evita abrir no meio da lista (aparÃªncia de fotos "cortadas" no topo).
     wrap.scrollTop = 0;
     if (!wrap.dataset.ksConfirmDelegate) {
       wrap.dataset.ksConfirmDelegate = '1';
@@ -4174,14 +4174,14 @@
     const approvedCount = getSalesApprovedEntries().length;
     box.innerHTML = `
       <div style="border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px;box-shadow:0 10px 24px rgba(15,23,42,.10)">
-        <div style="font-weight:900;color:#4f46e5;letter-spacing:.02em;margin-bottom:8px"><i class="fas fa-square-poll-vertical"></i> Resumo da seleção</div>
+        <div style="font-weight:900;color:#4f46e5;letter-spacing:.02em;margin-bottom:8px"><i class="fas fa-square-poll-vertical"></i> Resumo da seleÃ§Ã£o</div>
         <div class="ks-sales-resumo-metrics">
           <div style="border:1px solid #bae6fd;background:#ecfeff;border-radius:10px;padding:8px;min-width:0">
             <div style="font-size:11px;color:#0e7490;font-weight:800">SELECIONADAS (TOTAL)</div>
             <div style="font-size:19px;color:#0369a1;font-weight:900">${selectedCount}</div>
           </div>
           <div style="border:1px solid #bae6fd;background:#ecfeff;border-radius:10px;padding:8px;min-width:0">
-            <div style="font-size:11px;color:#0e7490;font-weight:800">NESTA SESSÃO</div>
+            <div style="font-size:11px;color:#0e7490;font-weight:800">NESTA SESSÃƒO</div>
             <div style="font-size:19px;color:#0369a1;font-weight:900">${thisRound}</div>
           </div>
           <div style="border:1px solid #86efac;background:#ecfdf5;border-radius:10px;padding:8px;min-width:0">
@@ -4211,7 +4211,7 @@
       return;
     }
     if (countSelectedThisRound() === 0) {
-      toast('Nesta rodada ainda não há fotos novas. Selecione fotos na galeria antes de revisar o envio.', 'err');
+      toast('Nesta rodada ainda nÃ£o hÃ¡ fotos novas. Selecione fotos na galeria antes de revisar o envio.', 'err');
       return;
     }
     closeCompareAddOverlay();
@@ -4279,7 +4279,7 @@
     if (_toggleInFlight.has(pid)) return;
     if (selectionLockedForUi()) return;
     if (state.selected.has(pid) && isFrozenPhoto(pid)) {
-      toast('Esta foto já foi confirmada numa seleção anterior e não pode ser desmarcada.', 'err');
+      toast('Esta foto jÃ¡ foi confirmada numa seleÃ§Ã£o anterior e nÃ£o pode ser desmarcada.', 'err');
       return;
     }
     const max = state.gallery.total_fotos_contratadas != null ? parseInt(state.gallery.total_fotos_contratadas, 10) : 0;
@@ -4338,8 +4338,8 @@
       return discardPublicEditDraft();
     }
     const msg = isPublicFreeDownloadGallery()
-      ? 'Limpar a marcação das fotos? A galeria continua igual — você pode baixar qualquer foto depois.'
-      : 'Limpar todas as fotos desta seleção atual? (Seleções anteriores permanecem.)';
+      ? 'Limpar a marcaÃ§Ã£o das fotos? A galeria continua igual â€” vocÃª pode baixar qualquer foto depois.'
+      : 'Limpar todas as fotos desta seleÃ§Ã£o atual? (SeleÃ§Ãµes anteriores permanecem.)';
     if (!confirm(msg)) return;
     try {
       const res = await fetch(`${API}/api/king-selection/client/select-bulk`, {
@@ -4352,17 +4352,17 @@
       if (!res.ok) throw new Error(data.message || 'Erro');
       const data2 = await loadGallery();
       applyGalleryData(data2);
-      toast('Seleção limpa.', '');
+      toast('SeleÃ§Ã£o limpa.', '');
     } catch (e) {
       const raw = String(e?.message || '').toLowerCase();
       if (
-        raw.includes('já foi enviada') ||
+        raw.includes('jÃ¡ foi enviada') ||
         raw.includes('ja foi enviada') ||
         raw.includes('ja foi finalizada') ||
-        raw.includes('já foi finalizada') ||
+        raw.includes('jÃ¡ foi finalizada') ||
         raw.includes('nada para enviar')
       ) {
-        toast('Sua seleção já foi enviada. Peça ao fotógrafo para abrir nova seleção ou reativar seu cadastro.', 'err');
+        toast('Sua seleÃ§Ã£o jÃ¡ foi enviada. PeÃ§a ao fotÃ³grafo para abrir nova seleÃ§Ã£o ou reativar seu cadastro.', 'err');
       } else {
         toast(e.message || 'Erro', 'err');
       }
@@ -4372,7 +4372,7 @@
   async function finalizeSubmit() {
     if (state.locked) return;
     if (state.selected.size === 0) {
-      toast('Não há fotos selecionadas.', 'err');
+      toast('NÃ£o hÃ¡ fotos selecionadas.', 'err');
       return;
     }
     const min = state.gallery.min_selections != null ? parseInt(state.gallery.min_selections, 10) : 0;
@@ -4397,7 +4397,7 @@
       payload.email = email;
       payload.telefone = telefone;
     }
-    if (!confirm('Enviar sua seleção para o fotógrafo?')) return;
+    if (!confirm('Enviar sua seleÃ§Ã£o para o fotÃ³grafo?')) return;
     try {
       const res = await fetch(`${API}/api/king-selection/client/finalize`, {
         method: 'POST',
@@ -4411,7 +4411,7 @@
         try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
       }
       const ty = data.thankYouConfig || {};
-      const rawMsg = ty.message || 'Obrigado! Sua seleção foi recebida.';
+      const rawMsg = ty.message || 'Obrigado! Sua seleÃ§Ã£o foi recebida.';
       const msg = replaceThankYouPlaceholders(rawMsg, {
         selectionCount: data.selectionCount,
         photographerDisplayName: data.photographerDisplayName,
@@ -4425,7 +4425,7 @@
           const fd = new FormData();
           fd.append('slug', slug);
           fd.append('proof', proofFile);
-          fd.append('note', 'Comprovante enviado junto com a finalização da seleção.');
+          fd.append('note', 'Comprovante enviado junto com a finalizaÃ§Ã£o da seleÃ§Ã£o.');
           const up = await fetch(`${API}/api/king-selection/client/payment-proof`, {
             method: 'POST',
             headers: authHeaders(false),
@@ -4435,7 +4435,7 @@
           if (!up.ok) throw new Error(upData.message || 'Falha ao enviar comprovante');
           proofOkWithSelection = true;
         } catch (proofErr) {
-          toast(proofErr?.message || 'Seleção enviada, mas não foi possível enviar o comprovante agora.', 'err');
+          toast(proofErr?.message || 'SeleÃ§Ã£o enviada, mas nÃ£o foi possÃ­vel enviar o comprovante agora.', 'err');
         }
       }
 
@@ -4444,7 +4444,7 @@
           const gd = await loadGallery();
           applyGalleryData(gd);
         } catch (bootErr) {
-          toast(bootErr?.message || 'Seleção enviada, mas houve erro ao atualizar a página.', 'err');
+          toast(bootErr?.message || 'SeleÃ§Ã£o enviada, mas houve erro ao atualizar a pÃ¡gina.', 'err');
         }
         syncSalesPostSubmitLayout();
         $('ks-downloads-panel')?.classList.remove('ks-hidden');
@@ -4457,8 +4457,8 @@
         });
         toast(
           proofOkWithSelection
-            ? 'Seleção enviada! Abaixo estão suas fotos (marca d\'água). Atualize a página quando o fotógrafo liberar.'
-            : 'Seleção enviada! Veja suas fotos abaixo. Quando o fotógrafo liberar, use «Atualizar liberações».',
+            ? 'SeleÃ§Ã£o enviada! Abaixo estÃ£o suas fotos (marca d\'Ã¡gua). Atualize a pÃ¡gina quando o fotÃ³grafo liberar.'
+            : 'SeleÃ§Ã£o enviada! Veja suas fotos abaixo. Quando o fotÃ³grafo liberar, use Â«Atualizar liberaÃ§ÃµesÂ».',
           'ok'
         );
       } else {
@@ -4471,7 +4471,7 @@
           applyGalleryData(gd);
           galleryReloadOk = true;
         } catch (bootErr) {
-          toast(bootErr?.message || 'Seleção enviada, mas não foi possível atualizar a página agora.', 'err');
+          toast(bootErr?.message || 'SeleÃ§Ã£o enviada, mas nÃ£o foi possÃ­vel atualizar a pÃ¡gina agora.', 'err');
         }
 
         const canShowPublicDownloads =
@@ -4518,7 +4518,7 @@
             },
             { once: true }
           );
-          toast('Seleção enviada! Abaixo você pode baixar suas fotos com marca d’água.', 'ok');
+          toast('SeleÃ§Ã£o enviada! Abaixo vocÃª pode baixar suas fotos com marca dâ€™Ã¡gua.', 'ok');
         } else {
           showLockedScreen(ty.title || 'Obrigado!', msg, tagHtml, data.paymentPix || null);
         }
@@ -4526,13 +4526,13 @@
     } catch (e) {
       const raw = String(e?.message || '').toLowerCase();
       if (
-        raw.includes('já foi enviada') ||
+        raw.includes('jÃ¡ foi enviada') ||
         raw.includes('ja foi enviada') ||
         raw.includes('ja foi finalizada') ||
-        raw.includes('já foi finalizada') ||
+        raw.includes('jÃ¡ foi finalizada') ||
         raw.includes('nada para enviar')
       ) {
-        toast('Sua seleção já foi enviada. Peça ao fotógrafo para abrir nova seleção ou reativar seu cadastro.', 'err');
+        toast('Sua seleÃ§Ã£o jÃ¡ foi enviada. PeÃ§a ao fotÃ³grafo para abrir nova seleÃ§Ã£o ou reativar seu cadastro.', 'err');
       } else {
         toast(e.message || 'Erro', 'err');
       }
@@ -4618,7 +4618,7 @@
     a.removeAttribute('data-pub-dl');
   }
 
-  /** Controles de seleção na vista ampliada (mesma lógica dos cartões da grelha). */
+  /** Controles de seleÃ§Ã£o na vista ampliada (mesma lÃ³gica dos cartÃµes da grelha). */
   function syncSingleViewerSelectUI() {
     const ov = $('ks-viewer');
     const checkBtn = $('ks-viewer-check');
@@ -4649,7 +4649,7 @@
       checkBtn.disabled = !!fr;
       checkBtn.innerHTML = sel ? '<i class="fas fa-check" aria-hidden="true"></i>' : '';
       const bubbleLabel = fr
-        ? 'Bloqueada (seleção anterior)'
+        ? 'Bloqueada (seleÃ§Ã£o anterior)'
         : sel ? 'Desmarcar' : 'Selecionar';
       checkBtn.setAttribute('aria-label', bubbleLabel);
       checkBtn.title = bubbleLabel;
@@ -4664,7 +4664,7 @@
       } else if (sel) {
         actionBtn.disabled = false;
         actionBtn.className = 'ks-viewer-select-action ks-viewer-select-action--remove';
-        actionBtn.innerHTML = '<i class="fas fa-times"></i> Remover da seleção';
+        actionBtn.innerHTML = '<i class="fas fa-times"></i> Remover da seleÃ§Ã£o';
       } else {
         actionBtn.disabled = false;
         actionBtn.className = 'ks-viewer-select-action ks-viewer-select-action--add';
@@ -4957,7 +4957,7 @@
     if (!nome || !email) {
       if (err) {
         err.textContent =
-          'Preencha nome e e-mail. O WhatsApp só é necessário se já estiver salvo no cadastro (use o mesmo número de quando enviou).';
+          'Preencha nome e e-mail. O WhatsApp sÃ³ Ã© necessÃ¡rio se jÃ¡ estiver salvo no cadastro (use o mesmo nÃºmero de quando enviou).';
         err.classList.remove('ks-hidden');
       }
       return;
@@ -5098,7 +5098,7 @@
       $('ks-downloads-panel')?.classList.remove('ks-hidden');
       window.scrollTo(0, 0);
     } catch (e) {
-      toast(e?.message || 'Não foi possível abrir suas fotos agora.', 'err');
+      toast(e?.message || 'NÃ£o foi possÃ­vel abrir suas fotos agora.', 'err');
     }
   });
   $('ks-confirm-paid')?.addEventListener('change', () => {
@@ -5121,13 +5121,13 @@
       }
       toast('Chave PIX copiada.', 'ok');
     } catch (_) {
-      toast('Não foi possível copiar automaticamente. Copie a chave manualmente.', 'err');
+      toast('NÃ£o foi possÃ­vel copiar automaticamente. Copie a chave manualmente.', 'err');
     }
   });
   $('ks-locked-pix-whats')?.addEventListener('click', () => {
     const url = String($('ks-locked-pix-whats')?.getAttribute('data-whats-link') || '').trim();
     if (!url) {
-      toast('WhatsApp do fotógrafo não configurado.', 'err');
+      toast('WhatsApp do fotÃ³grafo nÃ£o configurado.', 'err');
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -5135,7 +5135,7 @@
   $('ks-locked-pix-whats-pending')?.addEventListener('click', () => {
     const url = String($('ks-locked-pix-whats-pending')?.getAttribute('data-whats-link') || '').trim();
     if (!url) {
-      toast('WhatsApp do fotógrafo não configurado.', 'err');
+      toast('WhatsApp do fotÃ³grafo nÃ£o configurado.', 'err');
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -5157,7 +5157,7 @@
       }
       toast('Chave PIX copiada.', 'ok');
     } catch (_) {
-      toast('Não foi possível copiar automaticamente. Copie a chave manualmente.', 'err');
+      toast('NÃ£o foi possÃ­vel copiar automaticamente. Copie a chave manualmente.', 'err');
     }
   });
 
@@ -5165,7 +5165,7 @@
     try {
       if (!state.salesModeActive) return;
       if (!state.clientAuthenticated) {
-        throw new Error('Finalize e envie sua seleção antes de enviar comprovante.');
+        throw new Error('Finalize e envie sua seleÃ§Ã£o antes de enviar comprovante.');
       }
       const file = $('ks-dl-proof-file')?.files?.[0];
       if (!file) throw new Error('Selecione a imagem do comprovante.');
@@ -5180,7 +5180,7 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar comprovante');
       if ($('ks-dl-proof-file')) $('ks-dl-proof-file').value = '';
-      if ($('ks-dl-proof-status')) $('ks-dl-proof-status').textContent = 'Comprovante enviado. Aguarde validação do fotógrafo.';
+      if ($('ks-dl-proof-status')) $('ks-dl-proof-status').textContent = 'Comprovante enviado. Aguarde validaÃ§Ã£o do fotÃ³grafo.';
       const gd = await loadGallery();
       applyGalleryData(gd);
       toast('Comprovante enviado com sucesso.', 'ok');
@@ -5216,7 +5216,7 @@
     e.stopPropagation();
     toggleComparePinB();
   });
-  /** Fixar A/B ao tocar na foto ou na coluna (não no select). Capturing evita perder o clique se algo bloquear a fase bubble. */
+  /** Fixar A/B ao tocar na foto ou na coluna (nÃ£o no select). Capturing evita perder o clique se algo bloquear a fase bubble. */
   function compareImgcolPinClick(e, toggleFn) {
     const t = e.target;
     if (!(t instanceof Element) || typeof t.closest !== 'function') return;
@@ -5264,8 +5264,8 @@
       const n = getSalesApprovedEntries().length;
       toast(
         n > 0
-          ? `${n} foto(s) liberada(s)! Você já pode baixar em alta qualidade.`
-          : 'Ainda aguardando liberação do fotógrafo. Tente de novo em instantes.',
+          ? `${n} foto(s) liberada(s)! VocÃª jÃ¡ pode baixar em alta qualidade.`
+          : 'Ainda aguardando liberaÃ§Ã£o do fotÃ³grafo. Tente de novo em instantes.',
         n > 0 ? 'ok' : ''
       );
     } catch (e) {
@@ -5346,7 +5346,7 @@
    */
   async function runFaceScanAllPages(msgEl, opts) {
     if (_faceScanInFlight) {
-      throw new Error('Já existe uma busca facial em curso. Aguarde terminar.');
+      throw new Error('JÃ¡ existe uma busca facial em curso. Aguarde terminar.');
     }
     _faceScanInFlight = true;
     const ac = new AbortController();
@@ -5378,10 +5378,10 @@
           await sleep(400 * Math.pow(2, attempt - 1));
         }
       }
-      return { ok: false, data: { message: lastErr ? lastErr.message : `${attemptLabel}: erro transitório` }, transientExhausted: true };
+      return { ok: false, data: { message: lastErr ? lastErr.message : `${attemptLabel}: erro transitÃ³rio` }, transientExhausted: true };
     }
     try {
-      // Primeira página de cache (limite moderado); modo on-demand sem cache devolve FACE_USE_CHUNKED, não precisa de limit=8000.
+      // Primeira pÃ¡gina de cache (limite moderado); modo on-demand sem cache devolve FACE_USE_CHUNKED, nÃ£o precisa de limit=8000.
       const probe = await fetchJsonWithRetry(`${base}?page=1&limit=500&speedMode=${encodeURIComponent(speedMode)}${ncu()}`, 'Probe face-results', 3);
       if (!probe.ok) {
         throw new Error((probe.data && probe.data.message) || 'Erro ao iniciar reconhecimento facial');
@@ -5405,9 +5405,9 @@
         let page = 2;
         while (merged.length < totalHi) {
           if (msgEl && (!o.fromEnroll || page > 2)) {
-            msgEl.textContent = `A carregar resultado guardado… ${merged.length} / ${totalHi}`;
+            msgEl.textContent = `A carregar resultado guardadoâ€¦ ${merged.length} / ${totalHi}`;
           }
-          const r2o = await fetchJsonWithRetry(`${base}?page=${page}&limit=${limitPg}&speedMode=${encodeURIComponent(speedMode)}${ncu()}`, 'Página cache facial', 3);
+          const r2o = await fetchJsonWithRetry(`${base}?page=${page}&limit=${limitPg}&speedMode=${encodeURIComponent(speedMode)}${ncu()}`, 'PÃ¡gina cache facial', 3);
           if (!r2o.ok) throw new Error((r2o.data && r2o.data.message) || 'Erro ao carregar cache facial');
           const d2 = r2o.data || {};
           const chunk = (d2.photoIds || []).map((x) => parseInt(x, 10)).filter(Boolean);
@@ -5425,15 +5425,15 @@
 
       if (resProbe.ok && (!d0.photoIds || d0.photoIds.length === 0) && (d0.total === 0 || d0.total == null)) {
         const msg = String(d0.message || '');
-        if (msg.includes('referência') || msg.includes('referencia') || msg.includes('Cadastre')) {
+        if (msg.includes('referÃªncia') || msg.includes('referencia') || msg.includes('Cadastre')) {
           return { photoIds: [], total: 0 };
         }
       }
 
       /**
-       * Modo indexado (REKOG_ON_DEMAND=false): API lê matches no Postgres.
-       * Não usar chunked=1 aqui — o servidor ignora esse parâmetro e devolve outro JSON; o loop antigo
-       * interpretava photoBatchReturned em falta como 40 e saía com anyHasMore=false → zero fotos sempre.
+       * Modo indexado (REKOG_ON_DEMAND=false): API lÃª matches no Postgres.
+       * NÃ£o usar chunked=1 aqui â€” o servidor ignora esse parÃ¢metro e devolve outro JSON; o loop antigo
+       * interpretava photoBatchReturned em falta como 40 e saÃ­a com anyHasMore=false â†’ zero fotos sempre.
        */
       if (resProbe.ok && !d0.fromCache && d0.code !== 'FACE_USE_CHUNKED' && d0.faceChunk !== true) {
         let merged = (d0.photoIds || []).map((x) => parseInt(x, 10)).filter(Boolean);
@@ -5443,9 +5443,9 @@
         let page = 2;
         while (merged.length < totalHi) {
           if (msgEl && (!o.fromEnroll || page > 2)) {
-            msgEl.textContent = `A carregar resultado… ${merged.length} / ${totalHi}`;
+            msgEl.textContent = `A carregar resultadoâ€¦ ${merged.length} / ${totalHi}`;
           }
-          const r2o = await fetchJsonWithRetry(`${base}?page=${page}&limit=${limitPg}&speedMode=${encodeURIComponent(speedMode)}${ncu()}`, 'Página face-results', 3);
+          const r2o = await fetchJsonWithRetry(`${base}?page=${page}&limit=${limitPg}&speedMode=${encodeURIComponent(speedMode)}${ncu()}`, 'PÃ¡gina face-results', 3);
           if (!r2o.ok) throw new Error((r2o.data && r2o.data.message) || 'Erro ao filtrar por rosto');
           const d2 = r2o.data || {};
           if (d2.code === 'FACE_USE_CHUNKED') break;
@@ -5469,7 +5469,7 @@
         throw new Error(d0.message || 'Erro ao filtrar por rosto');
       }
 
-      // Modo rápido: lotes pequenos e paralelismo moderado.
+      // Modo rÃ¡pido: lotes pequenos e paralelismo moderado.
       const FACE_BATCH = 18;
       const FACE_PARALLEL = speedMode === 'fast' ? 2 : 1;
       const FACE_EARLY_STOP_MIN_MATCHES = 6;
@@ -5494,10 +5494,10 @@
       for (;;) {
         if (msgEl && skip === 0 && galleryTotal == null) {
           msgEl.textContent = o.fromEnroll
-            ? 'A comparar o seu rosto com a galeria em blocos no servidor… Não feche.'
+            ? 'A comparar o seu rosto com a galeria em blocos no servidorâ€¦ NÃ£o feche.'
             : o.cacheClick
-              ? 'A analisar em blocos no servidor…'
-              : 'A analisar a galeria em blocos…';
+              ? 'A analisar em blocos no servidorâ€¦'
+              : 'A analisar a galeria em blocosâ€¦';
         }
         const waveSkips = [];
         for (let i = 0; i < FACE_PARALLEL; i++) {
@@ -5507,7 +5507,7 @@
         }
         if (!waveSkips.length) break;
 
-        // inclui speedMode nas chamadas de chunk para modo rápido no backend
+        // inclui speedMode nas chamadas de chunk para modo rÃ¡pido no backend
         const resultsFast = await Promise.all(
           waveSkips.map((photoSkip) =>
             fetchJsonWithRetry(
@@ -5573,8 +5573,8 @@
           if (now - lastFaceUiAt >= 2000 || !anyHasMore || processedEnd >= galleryTotal) {
             lastFaceUiAt = now;
             msgEl.textContent = o.fromEnroll
-              ? `A procurar o seu rosto… ${pctDone}%`
-              : `A analisar a galeria… ${pctDone}%`;
+              ? `A procurar o seu rostoâ€¦ ${pctDone}%`
+              : `A analisar a galeriaâ€¦ ${pctDone}%`;
           }
         }
 
@@ -5584,7 +5584,7 @@
           mergedSet.size >= FACE_EARLY_STOP_MIN_MATCHES &&
           emptyWavesSinceLastHit >= FACE_EARLY_STOP_EMPTY_WAVES
         ) {
-          // Em modo rápido, encerra cedo quando já há resultados e as últimas ondas não trouxeram novos hits.
+          // Em modo rÃ¡pido, encerra cedo quando jÃ¡ hÃ¡ resultados e as Ãºltimas ondas nÃ£o trouxeram novos hits.
           break;
         }
         if (!anyHasMore) break;
@@ -5605,7 +5605,7 @@
       });
       const saveD = await saveRes.json().catch(() => ({}));
       if (!saveRes.ok) {
-        toast(saveD.message || 'Não foi possível guardar o cache; na próxima pode demorar outra vez.', 'err');
+        toast(saveD.message || 'NÃ£o foi possÃ­vel guardar o cache; na prÃ³xima pode demorar outra vez.', 'err');
       }
 
       return {
@@ -5653,7 +5653,7 @@
     const sig = `${file.name || 'noname'}:${file.size || 0}:${file.lastModified || 0}`;
     const now = Date.now();
     if (_faceImageProcessInFlight) return;
-    // Evita duplo disparo quando o input é acionado duas vezes.
+    // Evita duplo disparo quando o input Ã© acionado duas vezes.
     if (_lastFacePickSig === sig && now - _lastFacePickAt < 2500) return;
     _lastFacePickSig = sig;
     _lastFacePickAt = now;
@@ -5666,7 +5666,7 @@
       state.faceFilterIds = null;
       resetGridVirtualPaging();
       renderGrid();
-    if (msg) msg.textContent = 'Enviando foto do rosto…';
+    if (msg) msg.textContent = 'Enviando foto do rostoâ€¦';
     setFaceActionsDisabled(true);
     try {
       const fd = new FormData();
@@ -5681,7 +5681,7 @@
       if (!enrollRes.ok) throw new Error(enrollData.message || 'Erro ao registar o rosto');
       if (msg) {
         msg.textContent =
-          'A procurar as suas fotos… A análise corre em blocos no servidor (costuma ser bem mais rápida do que “foto a foto”). Não feche.';
+          'A procurar as suas fotosâ€¦ A anÃ¡lise corre em blocos no servidor (costuma ser bem mais rÃ¡pida do que â€œfoto a fotoâ€). NÃ£o feche.';
       }
       const scan = await runFaceScanAllPages(msg, { fromEnroll: true });
       const ids = scan.photoIds || [];
@@ -5719,7 +5719,7 @@
       const aborted = e && (e.name === 'AbortError' || e.name === 'TimeoutError');
       toast(
         aborted
-          ? 'Tempo esgotado ou ligação interrompida. Tente de novo (em galerias muito grandes demore um pouco).'
+          ? 'Tempo esgotado ou ligaÃ§Ã£o interrompida. Tente de novo (em galerias muito grandes demore um pouco).'
           : (e.message || 'Erro'),
         'err'
       );
@@ -5729,8 +5729,8 @@
     }
   }
 
-  // Botões de selfie/galeria usam fallback inline no HTML para evitar perda de clique por cache antigo.
-  // Não ligar listeners duplicados aqui, para não abrir seletor duas vezes.
+  // BotÃµes de selfie/galeria usam fallback inline no HTML para evitar perda de clique por cache antigo.
+  // NÃ£o ligar listeners duplicados aqui, para nÃ£o abrir seletor duas vezes.
   $('ks-face-open-btn')?.addEventListener('click', () => openFaceModal());
   $('ks-face-modal-close')?.addEventListener('click', () => closeFaceModal());
   $('ks-face-modal')?.addEventListener('click', (ev) => {
@@ -5781,7 +5781,7 @@
   $('ks-pub-dl-selected')?.addEventListener('click', async () => {
     try {
       const picks = getPublicMarkedPhotoIdsForDownload();
-      if (!picks.length) throw new Error('Marque pelo menos 1 foto ou use «Baixar todas».');
+      if (!picks.length) throw new Error('Marque pelo menos 1 foto ou use Â«Baixar todasÂ».');
       const out = await downloadAllPhotosSmart(picks, {
         onProgress: (n, total) => setDownloadsProgress(n, total, true, shouldPreferZipDownload(picks.length) ? 'zip' : 'selected')
       });
@@ -5799,7 +5799,7 @@
   $('ks-pub-dl-all')?.addEventListener('click', async () => {
     try {
       const all = getPublicGalleryPhotoList().map((p) => p.id);
-      if (!all.length) throw new Error('Não há fotos na galeria.');
+      if (!all.length) throw new Error('NÃ£o hÃ¡ fotos na galeria.');
       const out = await downloadAllPhotosSmart(all, {
         onProgress: (n, total) => setDownloadsProgress(n, total, true, 'all')
       });
@@ -5817,7 +5817,7 @@
   $('ks-pub-dl-zip')?.addEventListener('click', async () => {
     try {
       const all = getPublicGalleryPhotoList().map((p) => p.id);
-      if (!all.length) throw new Error('Não há fotos na galeria.');
+      if (!all.length) throw new Error('NÃ£o hÃ¡ fotos na galeria.');
       setDownloadsProgress(0, 1, true, 'zip');
       await downloadApprovedZip(all);
       toast(`ZIP gerado com ${all.length} foto(s).`, 'ok');
@@ -5872,12 +5872,12 @@
         }
       });
       if (out?.mode === 'zip') {
-        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) — ${picks.length} foto(s).`;
+        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) â€” ${picks.length} foto(s).`;
         toast(`Download em ${out.parts} ZIP(s) (${picks.length} foto(s)).`, 'ok');
       } else {
         setDownloadsProgress(picks.length, picks.length, true, 'selected');
         if (msgEl) {
-          msgEl.textContent = `Concluído: ${picks.length}/${picks.length} download(s) iniciados.`;
+          msgEl.textContent = `ConcluÃ­do: ${picks.length}/${picks.length} download(s) iniciados.`;
         }
         toast(`Download iniciado (${picks.length} foto(s)).`, 'ok');
       }
@@ -5895,7 +5895,7 @@
   $('ks-downloads-download-all')?.addEventListener('click', async () => {
     try {
       const all = getApprovedDownloadsForClient().map((p) => p.id);
-      if (!all.length) throw new Error('Ainda não há fotos liberadas para baixar.');
+      if (!all.length) throw new Error('Ainda nÃ£o hÃ¡ fotos liberadas para baixar.');
       const msgEl = $('ks-downloads-msg');
       const prevMsg = msgEl ? String(msgEl.textContent || '') : '';
       setDownloadsProgress(0, all.length, true, 'all');
@@ -5911,12 +5911,12 @@
         }
       });
       if (out?.mode === 'zip') {
-        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) — ${all.length} foto(s).`;
+        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) â€” ${all.length} foto(s).`;
         toast(`Download em ${out.parts} ZIP(s) (${all.length} foto(s)).`, 'ok');
       } else {
         setDownloadsProgress(all.length, all.length, true, 'all');
         if (msgEl) {
-          msgEl.textContent = `Concluído: ${all.length}/${all.length} download(s) iniciados.`;
+          msgEl.textContent = `ConcluÃ­do: ${all.length}/${all.length} download(s) iniciados.`;
           setTimeout(() => {
             if (msgEl) msgEl.textContent = prevMsg || msgEl.textContent;
             setDownloadsProgress(0, 1, false);
@@ -5932,14 +5932,14 @@
   $('ks-downloads-download-zip')?.addEventListener('click', async () => {
     try {
       const all = getApprovedDownloadsForClient().map((p) => p.id);
-      if (!all.length) throw new Error('Ainda não há fotos liberadas para baixar em ZIP.');
+      if (!all.length) throw new Error('Ainda nÃ£o hÃ¡ fotos liberadas para baixar em ZIP.');
       const msgEl = $('ks-downloads-msg');
       const prevMsg = msgEl ? String(msgEl.textContent || '') : '';
       const out = await startBulkZipDownload(all, {
         onStart: (parts, total, mode) => {
           if (msgEl) {
             msgEl.textContent = mode === 'folder'
-              ? `Escolha a pasta e aguarde — ${total} foto(s)...`
+              ? `Escolha a pasta e aguarde â€” ${total} foto(s)...`
               : (parts > 1 ? `Gerando ${parts} ZIP(s) com ${total} foto(s)...` : `Gerando ZIP com ${total} foto(s)...`);
           }
         },
@@ -5954,8 +5954,8 @@
         onDone: (parts, total, mode) => {
           if (msgEl) {
             msgEl.textContent = mode === 'folder'
-              ? `Concluído: ${total} foto(s) salvas na pasta.`
-              : (parts > 1 ? `Concluído: ${parts} ZIP(s) com ${total} foto(s).` : `ZIP pronto com ${total} foto(s).`);
+              ? `ConcluÃ­do: ${total} foto(s) salvas na pasta.`
+              : (parts > 1 ? `ConcluÃ­do: ${parts} ZIP(s) com ${total} foto(s).` : `ZIP pronto com ${total} foto(s).`);
           }
         }
       });
@@ -5993,7 +5993,7 @@
     try {
       if (!state.salesModeActive) return;
       if (!state.clientAuthenticated) {
-        throw new Error('Finalize e envie sua seleção antes de enviar comprovante.');
+        throw new Error('Finalize e envie sua seleÃ§Ã£o antes de enviar comprovante.');
       }
       const file = $('ks-proof-file')?.files?.[0];
       if (!file) throw new Error('Selecione a imagem do comprovante.');
@@ -6013,7 +6013,7 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar comprovante');
       if ($('ks-proof-file')) $('ks-proof-file').value = '';
-      if ($('ks-proof-status')) $('ks-proof-status').textContent = 'Comprovante enviado. Aguarde validação do fotógrafo.';
+      if ($('ks-proof-status')) $('ks-proof-status').textContent = 'Comprovante enviado. Aguarde validaÃ§Ã£o do fotÃ³grafo.';
       const gd = await loadGallery();
       applyGalleryData(gd);
       toast('Comprovante enviado com sucesso.', 'ok');
@@ -6256,7 +6256,7 @@
       const data = await safeResponseJson(r, KS_JSON_BOOT_MS).catch((e) => {
         throw friendlyFetchError(e);
       });
-      if (!r.ok) throw new Error(data.message || 'Galeria não encontrada.');
+      if (!r.ok) throw new Error(data.message || 'Galeria nÃ£o encontrada.');
       galleryMeta = data.gallery;
       if (galleryMeta && galleryMeta.allow_client_edit_request === true) {
         state.allowClientEditRequest = true;
@@ -6308,9 +6308,9 @@
         } catch (e) {
           const msg = String(e?.message || '').toLowerCase();
           const expired =
-            msg.includes('sessão expirada') ||
+            msg.includes('sessÃ£o expirada') ||
             msg.includes('sessao expirada') ||
-            msg.includes('não autorizado') ||
+            msg.includes('nÃ£o autorizado') ||
             msg.includes('nao autorizado');
           if (expired || !jwtPayloadClientId()) {
             jwt = null;
@@ -6344,7 +6344,7 @@
         const d = await safeResponseJson(res, KS_JSON_BOOT_MS).catch((e) => {
           throw friendlyFetchError(e);
         });
-        if (!res.ok) throw new Error(d.message || 'Não foi possível iniciar a sessão.');
+        if (!res.ok) throw new Error(d.message || 'NÃ£o foi possÃ­vel iniciar a sessÃ£o.');
         jwt = d.token;
         try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
         const gd = await loadGallery();
@@ -6368,7 +6368,7 @@
         try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
         hideBootScreen();
         showLogin();
-        const msg = (e && e.message) ? e.message : 'Não foi possível restaurar a sessão.';
+        const msg = (e && e.message) ? e.message : 'NÃ£o foi possÃ­vel restaurar a sessÃ£o.';
         const sub = $('ks-login-sub');
         if (sub) sub.textContent = msg;
         const errEl = $('ks-login-err');

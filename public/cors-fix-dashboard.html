@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Correção CORS – Upload de banner</title>
+    <title>CorreÃ§Ã£o CORS â€“ Upload de banner</title>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
         h1 { font-size: 1.25rem; }
@@ -14,23 +14,23 @@
     </style>
 </head>
 <body>
-    <h1>Correção do erro “Failed to fetch” ao enviar imagens no banner</h1>
-    <p>Se o dashboard em <code>127.0.0.1:5500</code> mostra <strong>“Failed to fetch”</strong> ou <strong>CORS</strong> ao trocar a imagem do banner, é porque as chamadas estão a ir para <code>conectaking.com.br</code>, que redireciona e o browser bloqueia.</p>
-    <p class="ok"><strong>Solução:</strong> o dashboard deve usar sempre a URL da API abaixo (sem redirect):</p>
+    <h1>CorreÃ§Ã£o do erro â€œFailed to fetchâ€ ao enviar imagens no banner</h1>
+    <p>Se o dashboard em <code>127.0.0.1:5500</code> mostra <strong>â€œFailed to fetchâ€</strong> ou <strong>CORS</strong> ao trocar a imagem do banner, Ã© porque as chamadas estÃ£o a ir para <code>conectaking.com.br</code>, que redireciona e o browser bloqueia.</p>
+    <p class="ok"><strong>SoluÃ§Ã£o:</strong> o dashboard deve usar sempre a URL da API abaixo (sem redirect):</p>
     <p><strong>URL da API a usar no dashboard:</strong><br>
-       <span class="url" id="apiBaseUrl">https://conectaking-api.onrender.com</span></p>
-    <h2 class="ok">Solução rápida (sem alterar o código do dashboard)</h2>
-    <p>Inclua <strong>uma única linha</strong> no HTML do dashboard (no <code>&lt;head&gt;</code> ou no início do <code>&lt;body&gt;</code>, <strong>antes</strong> de qualquer outro script):</p>
-    <pre>&lt;script src="https://conectaking-api.onrender.com/api-config.js"&gt;&lt;/script&gt;</pre>
-    <p>Este script redireciona automaticamente todos os pedidos <code>fetch('/api/...')</code> e <code>fetch('...conectaking.com.br/api/...')</code> para a API no Render. Não é preciso alterar variáveis nem o <code>dashboard.js</code>.</p>
-    <h2>Alternativa: alterar a base da API no código</h2>
+       <span class="url" id="apiBaseUrl">https://www.conectaking.com.br</span></p>
+    <h2 class="ok">SoluÃ§Ã£o rÃ¡pida (sem alterar o cÃ³digo do dashboard)</h2>
+    <p>Inclua <strong>uma Ãºnica linha</strong> no HTML do dashboard (no <code>&lt;head&gt;</code> ou no inÃ­cio do <code>&lt;body&gt;</code>, <strong>antes</strong> de qualquer outro script):</p>
+    <pre>&lt;script src="https://www.conectaking.com.br/api-config.js"&gt;&lt;/script&gt;</pre>
+    <p>Este script redireciona automaticamente todos os pedidos <code>fetch('/api/...')</code> e <code>fetch('...conectaking.com.br/api/...')</code> para a API no Render. NÃ£o Ã© preciso alterar variÃ¡veis nem o <code>dashboard.js</code>.</p>
+    <h2>Alternativa: alterar a base da API no cÃ³digo</h2>
     <ol>
-        <li>Abrir o <strong>projeto do dashboard</strong> (onde está <code>dashboard.html</code> e <code>dashboard.js</code>) – tanto em localhost como em produção (conectaking.com.br).</li>
-        <li>Procurar onde está definida a base da API (<code>API_BASE</code>, <code>API_URL</code>, <code>apiUrl</code>, <code>baseURL</code> ou <code>conectaking.com.br</code> nas chamadas <code>fetch</code>).</li>
-        <li>Substituir por: <code id="apiBaseCode">https://conectaking-api.onrender.com</code></li>
+        <li>Abrir o <strong>projeto do dashboard</strong> (onde estÃ¡ <code>dashboard.html</code> e <code>dashboard.js</code>) â€“ tanto em localhost como em produÃ§Ã£o (conectaking.com.br).</li>
+        <li>Procurar onde estÃ¡ definida a base da API (<code>API_BASE</code>, <code>API_URL</code>, <code>apiUrl</code>, <code>baseURL</code> ou <code>conectaking.com.br</code> nas chamadas <code>fetch</code>).</li>
+        <li>Substituir por: <code id="apiBaseCode">https://www.conectaking.com.br</code></li>
     </ol>
-    <p><strong>Produção (www.conectaking.com.br):</strong> se o dashboard em produção também dá "Failed to fetch", é porque aí as chamadas usam o mesmo domínio (<code>/api/...</code>) e o site em conectaking.com.br não é a API. Configure a base da API para <code>https://conectaking-api.onrender.com</code> também na build/publicação do dashboard.</p>
-    <p><small>Esta página é servida pela API. Guarde a URL acima no seu projeto do dashboard.</small></p>
+    <p><strong>ProduÃ§Ã£o (www.conectaking.com.br):</strong> se o dashboard em produÃ§Ã£o tambÃ©m dÃ¡ "Failed to fetch", Ã© porque aÃ­ as chamadas usam o mesmo domÃ­nio (<code>/api/...</code>) e o site em conectaking.com.br nÃ£o Ã© a API. Configure a base da API para <code>https://www.conectaking.com.br</code> tambÃ©m na build/publicaÃ§Ã£o do dashboard.</p>
+    <p><small>Esta pÃ¡gina Ã© servida pela API. Guarde a URL acima no seu projeto do dashboard.</small></p>
     <script>
         (function() {
             fetch('/api/public-api-url').then(function(r) { return r.json(); }).then(function(d) {

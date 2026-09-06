@@ -1,8 +1,8 @@
+﻿================================================================================
+ANEXO HOMOLOGAÃ‡ÃƒO PAGBANK - ConectaKing / KingForms
+Requests e responses das APIs PagBank utilizadas na integraÃ§Ã£o
 ================================================================================
-ANEXO HOMOLOGAÇÃO PAGBANK - ConectaKing / KingForms
-Requests e responses das APIs PagBank utilizadas na integração
-================================================================================
-Documentação de referência: https://dev.pagbank.uol.com.br/reference/criar-pagar-pedido-com-cartao
+DocumentaÃ§Ã£o de referÃªncia: https://dev.pagbank.uol.com.br/reference/criar-pagar-pedido-com-cartao
 ================================================================================
 
 --- 1) API DE PEDIDOS - CRIAR PEDIDO COM PIX (POST /orders) ---
@@ -26,7 +26,7 @@ REQUEST:
   "items": [
     {
       "reference_id": "sub-12345",
-      "name": "Formulário KingForms",
+      "name": "FormulÃ¡rio KingForms",
       "quantity": 1,
       "unit_amount": 1000
     }
@@ -44,7 +44,7 @@ REQUEST:
       }
     }
   ],
-  "notification_urls": ["https://conectaking-api.onrender.com/api/checkout/webhook"]
+  "notification_urls": ["https://www.conectaking.com.br/api/checkout/webhook"]
 }
 
 RESPONSE (200 OK):
@@ -61,7 +61,7 @@ RESPONSE (200 OK):
   ]
 }
 
---- 2) API DE PEDIDOS - CRIAR E PAGAR PEDIDO COM CARTÃO (POST /orders) ---
+--- 2) API DE PEDIDOS - CRIAR E PAGAR PEDIDO COM CARTÃƒO (POST /orders) ---
 
 REQUEST:
   POST https://sandbox.api.pagseguro.com/orders
@@ -82,7 +82,7 @@ REQUEST:
   "items": [
     {
       "reference_id": "sub-12346",
-      "name": "Formulário KingForms",
+      "name": "FormulÃ¡rio KingForms",
       "quantity": 1,
       "unit_amount": 5000
     }
@@ -93,13 +93,13 @@ REQUEST:
       "number": "1384",
       "complement": "Sala 1",
       "locality": "Pinheiros",
-      "city": "São Paulo",
+      "city": "SÃ£o Paulo",
       "region_code": "SP",
       "country": "BRA",
       "postal_code": "01452002"
     }
   },
-  "notification_urls": ["https://conectaking-api.onrender.com/api/checkout/webhook"],
+  "notification_urls": ["https://www.conectaking.com.br/api/checkout/webhook"],
   "charges": [
     {
       "reference_id": "sub-12346",
@@ -145,5 +145,5 @@ RESPONSE (200 OK):
 
 ================================================================================
 APIs utilizadas: API de Pedidos e Pagamentos (Order), API PIX (via orders).
-Ambiente: Sandbox PagBank. Produção: api.pagseguro.com
+Ambiente: Sandbox PagBank. ProduÃ§Ã£o: api.pagseguro.com
 ================================================================================

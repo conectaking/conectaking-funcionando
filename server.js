@@ -1,7 +1,7 @@
-const { loadDotenv } = require('./utils/loadDotenv');
+﻿const { loadDotenv } = require('./utils/loadDotenv');
 loadDotenv(__dirname);
 
-// Logar erros não tratados para aparecer nos logs do Render (evita "Exited with status 1" sem causa visível)
+// Logar erros nÃ£o tratados para aparecer nos logs do Render (evita "Exited with status 1" sem causa visÃ­vel)
 process.on('uncaughtException', (err) => {
     console.error('[uncaughtException]', err?.message || err);
     if (err?.stack) console.error(err.stack);
@@ -87,13 +87,13 @@ const autoMigrate = require('./utils/auto-migrate');
 
 const app = express();
 
-// Configurar trust proxy para funcionar corretamente atrás do proxy do Render
+// Configurar trust proxy para funcionar corretamente atrÃ¡s do proxy do Render
 app.set('trust proxy', true);
 
-// CORS antes de /health: Live Server (5500) → API local (5000) precisa de Access-Control-Allow-Origin no warm-up
+// CORS antes de /health: Live Server (5500) â†’ API local (5000) precisa de Access-Control-Allow-Origin no warm-up
 app.use(cors(config.cors));
 
-// Health check na raiz (após CORS; mantém resposta simples para load balancers)
+// Health check na raiz (apÃ³s CORS; mantÃ©m resposta simples para load balancers)
 app.get('/health', (req, res, next) => Promise.resolve(healthHandler(req, res)).catch(next));
 
 app.use(helmet({
@@ -189,7 +189,7 @@ app.use(helmet({
                 "'self'",
                 "https://cdn.jsdelivr.net",
                 "https://cdnjs.cloudflare.com",
-                "https://conectaking-api.onrender.com",
+                "https://www.conectaking.com.br",
                 "https://bio.conectaking.com.br",
                 "https://www.instagram.com",
                 "https://*.instagram.com",
@@ -227,11 +227,11 @@ app.use(helmet({
                 "'self'",
                 "http://127.0.0.1:*",
                 "http://localhost:*",
-                /* Apex e www: *.conectaking.com.br não cobre o domínio raiz (cartão em iframe na home). */
+                /* Apex e www: *.conectaking.com.br nÃ£o cobre o domÃ­nio raiz (cartÃ£o em iframe na home). */
                 "https://conectaking.com.br",
                 "https://www.conectaking.com.br",
                 "https://*.conectaking.com.br",
-                "https://conectaking-api.onrender.com"
+                "https://www.conectaking.com.br"
             ]
         }
     },
@@ -242,15 +242,15 @@ app.use(helmet({
 }));
 
 // Rate limiters
-// Nota: trust proxy já está configurado acima, então express-rate-limit usará X-Forwarded-For corretamente
-// Validate trust proxy está desabilitado porque estamos no Render que gerencia o proxy corretamente
+// Nota: trust proxy jÃ¡ estÃ¡ configurado acima, entÃ£o express-rate-limit usarÃ¡ X-Forwarded-For corretamente
+// Validate trust proxy estÃ¡ desabilitado porque estamos no Render que gerencia o proxy corretamente
 
 // Skip OPTIONS requests (CORS preflight) no rate limit
 const skipOptions = (req) => {
     return req.method === 'OPTIONS';
 };
 
-/** Polling de estado de jobs longos (dev365 em segundo plano) não deve contar no limite admin (30/min), senão 1 pedido a cada 2s esgota o teto e o UI parava de actualizar. */
+/** Polling de estado de jobs longos (dev365 em segundo plano) nÃ£o deve contar no limite admin (30/min), senÃ£o 1 pedido a cada 2s esgota o teto e o UI parava de actualizar. */
 const skipAdminGenerationJobPoll = (req) => {
     if (skipOptions(req)) return true;
     const url = req.originalUrl || req.url || '';
@@ -279,15 +279,15 @@ const uploadLimiter = rateLimit({
     message: 'Muitos uploads realizados. Tente novamente mais tarde.'
 });
 
-// Rate limit diferenciado para check-in (120 requisições por minuto)
+// Rate limit diferenciado para check-in (120 requisiÃ§Ãµes por minuto)
 const checkinLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minuto
-    max: 120, // 120 requisições por minuto
+    max: 120, // 120 requisiÃ§Ãµes por minuto
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
     skip: skipOptions,
-    message: 'Muitas requisições de check-in. Aguarde um momento.',
+    message: 'Muitas requisiÃ§Ãµes de check-in. Aguarde um momento.',
     handler: (req, res) => {
         logger.warn('Rate limit de check-in excedido', {
             ip: req.ip,
@@ -296,21 +296,21 @@ const checkinLimiter = rateLimit({
         });
         res.status(429).json({
             success: false,
-            message: 'Muitas requisições de check-in. Aguarde um momento antes de tentar novamente.',
+            message: 'Muitas requisiÃ§Ãµes de check-in. Aguarde um momento antes de tentar novamente.',
             retryAfter: 60
         });
     }
 });
 
-// Rate limit diferenciado para admin (30 requisições por minuto)
+// Rate limit diferenciado para admin (30 requisiÃ§Ãµes por minuto)
 const adminLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minuto
-    max: 30, // 30 requisições por minuto
+    max: 30, // 30 requisiÃ§Ãµes por minuto
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
     skip: skipAdminGenerationJobPoll,
-    message: 'Muitas requisições administrativas. Aguarde um momento.',
+    message: 'Muitas requisiÃ§Ãµes administrativas. Aguarde um momento.',
     handler: (req, res) => {
         logger.warn('Rate limit administrativo excedido', {
             ip: req.ip,
@@ -319,7 +319,7 @@ const adminLimiter = rateLimit({
         });
         res.status(429).json({
             success: false,
-            message: 'Muitas requisições administrativas. Aguarde um momento.',
+            message: 'Muitas requisiÃ§Ãµes administrativas. Aguarde um momento.',
             retryAfter: 60
         });
     }
@@ -332,7 +332,7 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
     validate: { trustProxy: false },
     skip: skipOptions,
-    message: 'Muitas requisições. Tente novamente mais tarde.',
+    message: 'Muitas requisiÃ§Ãµes. Tente novamente mais tarde.',
     handler: (req, res) => {
         logger.warn('Rate limit excedido', {
             ip: req.ip,
@@ -344,22 +344,22 @@ const apiLimiter = rateLimit({
         res.set('Retry-After', retryAfter);
         res.status(429).json({
             success: false,
-            message: `Muitas requisições. Tente novamente em ${Math.ceil(retryAfter / 60)} minutos.`,
+            message: `Muitas requisiÃ§Ãµes. Tente novamente em ${Math.ceil(retryAfter / 60)} minutos.`,
             retryAfter: retryAfter
         });
     }
 });
 
 // KingSelection: upload em massa gera muitas chamadas (auth + salvar fotos).
-// Usamos um rate limit mais alto aqui para não travar o fluxo de upload do fotógrafo.
+// Usamos um rate limit mais alto aqui para nÃ£o travar o fluxo de upload do fotÃ³grafo.
 const kingSelectionLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 5000, // suficiente para 1000+ uploads + operações auxiliares
+    max: 5000, // suficiente para 1000+ uploads + operaÃ§Ãµes auxiliares
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
     skip: skipOptions,
-    message: 'Muitas requisições de galeria. Aguarde um momento.',
+    message: 'Muitas requisiÃ§Ãµes de galeria. Aguarde um momento.',
     handler: (req, res) => {
         logger.warn('Rate limit KingSelection excedido', {
             ip: req.ip,
@@ -370,20 +370,20 @@ const kingSelectionLimiter = rateLimit({
         res.set('Retry-After', retryAfter);
         res.status(429).json({
             success: false,
-            message: 'Muitas requisições de galeria. Aguarde 1 minuto e tente novamente.',
+            message: 'Muitas requisiÃ§Ãµes de galeria. Aguarde 1 minuto e tente novamente.',
             retryAfter: retryAfter
         });
     }
 });
 
 cron.schedule('0 8 * * *', async () => {
-    logger.info('Executando verificação diária de assinaturas...');
+    logger.info('Executando verificaÃ§Ã£o diÃ¡ria de assinaturas...');
     const client = await db.pool.connect();
     try {
         const expiringSoon = await client.query("SELECT email FROM users WHERE subscription_expires_at BETWEEN NOW() + interval '2 days' AND NOW() + interval '3 days' AND subscription_status = 'active'");
 
         if (expiringSoon.rows.length > 0) {
-            logger.info(`Encontrados ${expiringSoon.rows.length} usuários com assinaturas expirando em 3 dias.`);
+            logger.info(`Encontrados ${expiringSoon.rows.length} usuÃ¡rios com assinaturas expirando em 3 dias.`);
         }
 
         const expired = await client.query("UPDATE users SET account_type = 'free', subscription_status = 'expired' WHERE subscription_expires_at < NOW() AND (subscription_status = 'active' OR subscription_status = 'active_onetime') RETURNING email");
@@ -393,7 +393,7 @@ cron.schedule('0 8 * * *', async () => {
         }
 
     } catch (error) {
-        logger.error('Erro na tarefa agendada de verificação de assinaturas', error);
+        logger.error('Erro na tarefa agendada de verificaÃ§Ã£o de assinaturas', error);
     } finally {
         client.release();
     }
@@ -401,8 +401,8 @@ cron.schedule('0 8 * * *', async () => {
 
 app.use(compression());
 
-// URL pública da API (para o dashboard em localhost usar este domínio e evitar CORS por redirect em conectaking.com.br)
-const PUBLIC_API_BASE = (process.env.API_URL || 'https://conectaking-api.onrender.com').toString().trim().replace(/\/$/, '');
+// URL pÃºblica da API (para o dashboard em localhost usar este domÃ­nio e evitar CORS por redirect em conectaking.com.br)
+const PUBLIC_API_BASE = (process.env.API_URL || 'https://www.conectaking.com.br').toString().trim().replace(/\/$/, '');
 app.get('/api/public-api-url', (req, res) => {
     res.set('Cache-Control', 'public, max-age=300');
     res.json({ apiBaseUrl: PUBLIC_API_BASE });
@@ -423,12 +423,12 @@ app.get('/api/documentos/ocr-info', (req, res) => {
         res.status(500).json({ success: false, message: e.message || 'Erro' });
     }
 });
-// Script para o dashboard incluir: <script src="https://conectaking-api.onrender.com/api-config.js"></script>
+// Script para o dashboard incluir: <script src="https://www.conectaking.com.br/api-config.js"></script>
 // Define API_BASE e intercepta fetch() para enviar pedidos /api/* para a API no Render (evita CORS/404 em conectaking.com.br)
 app.get('/api-config.js', (req, res) => {
     res.set('Content-Type', 'application/javascript; charset=utf-8');
     res.set('Cache-Control', 'public, max-age=300');
-    // Base desta instância (ex.: http://127.0.0.1:5000) para o fetch patch não forçar Render em dev
+    // Base desta instÃ¢ncia (ex.: http://127.0.0.1:5000) para o fetch patch nÃ£o forÃ§ar Render em dev
     const proto = (req.get('x-forwarded-proto') || req.protocol || 'http').toString().split(',')[0].trim();
     const host = (req.get('x-forwarded-host') || req.get('host') || `localhost:${config.port}`).toString().split(',')[0].trim();
     const selfBase = `${proto}://${host}`.replace(/\/$/, '');
@@ -454,7 +454,7 @@ window.API_BASE = window.API_BASE || ${base};
     } else if (url && url.indexOf('conectaking.com.br') !== -1 && url.indexOf('/api/') !== -1) {
       finalUrl = url.replace(/^https?:\\/\\/[^\\/]+/, apiBase);
     }
-    var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking-api.onrender.com') !== -1)) || (url && url.indexOf('/api/') === 0);
+    var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking.com.br') !== -1)) || (url && url.indexOf('/api/') === 0);
     if (isApiUrl) {
       var headers = opts.headers || (opts.headers = {});
       if (!(headers.Authorization || (headers.get && headers.get('Authorization')))) {
@@ -475,8 +475,8 @@ window.API_BASE = window.API_BASE || ${base};
     );
 });
 
-app.use(securityHeaders); // Headers de segurança
-app.use(validateRequestSize(config.upload.maxFileSize)); // Valida tamanho de requisição
+app.use(securityHeaders); // Headers de seguranÃ§a
+app.use(validateRequestSize(config.upload.maxFileSize)); // Valida tamanho de requisiÃ§Ã£o
 app.use(express.json({ limit: `${config.upload.maxFileSize / 1024 / 1024}mb` }));
 app.use(requestLogger);
 
@@ -513,7 +513,7 @@ const KING_SELECTION_CLIENTE_RESERVED_SLUGS = new Set([
 
 let _ksClienteHtmlCache = { mtimeMs: 0, html: null };
 
-/** Recarrega o .html quando o ficheiro muda (evita template antigo em memória até reiniciar o Node). */
+/** Recarrega o .html quando o ficheiro muda (evita template antigo em memÃ³ria atÃ© reiniciar o Node). */
 function loadKingSelectionClienteHtmlTemplate() {
     if (!fs.existsSync(kingSelectionClienteHtml)) return null;
     let st;
@@ -528,7 +528,7 @@ function loadKingSelectionClienteHtmlTemplate() {
     return _ksClienteHtmlCache.html;
 }
 
-/** Versão do JS = mtime do ficheiro (força browser a buscar build novo após deploy). */
+/** VersÃ£o do JS = mtime do ficheiro (forÃ§a browser a buscar build novo apÃ³s deploy). */
 function resolveKingSelectionJsVersion(baseName) {
     const filePath = resolveKingSelectionClienteJsPath(baseName);
     if (filePath) {
@@ -592,15 +592,15 @@ function patchKingSelectionProjectHtml(html) {
             '<div class="flex flex-col gap-0 rounded-xl border border-slate-200 bg-white overflow-hidden" id="ks-access-mode-public-wrap">' +
             '<label class="flex items-start gap-3 p-4 cursor-pointer m-0">' +
             '<input type="radio" name="access_mode" value="public" class="mt-1" />' +
-            '<span class="block"><span class="font-extrabold block">Público</span>' +
+            '<span class="block"><span class="font-extrabold block">PÃºblico</span>' +
             '<span class="text-sm ks-muted block">Qualquer pessoa com o link pode acessar a galeria.</span></span></label>' +
             '<div id="ks-public-edit-request-wrap" class="border-t border-violet-200 bg-violet-50/90 px-4 py-3">' +
             '<label class="flex items-start gap-3 cursor-pointer m-0">' +
             '<input type="checkbox" id="ks-allow-client-edit-request" class="mt-1" />' +
-            '<span><span class="font-extrabold text-violet-950 block">Permitir envio para edição</span>' +
-            '<span class="text-sm text-violet-900/80 block">O cliente marca fotos e clica em «Enviar para edição». Você recebe os números e nomes em «Atividades do cliente».</span></span></label></div></div>';
+            '<span><span class="font-extrabold text-violet-950 block">Permitir envio para ediÃ§Ã£o</span>' +
+            '<span class="text-sm text-violet-900/80 block">O cliente marca fotos e clica em Â«Enviar para ediÃ§Ã£oÂ». VocÃª recebe os nÃºmeros e nomes em Â«Atividades do clienteÂ».</span></span></label></div></div>';
         out = out.replace(
-            /<label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">\s*<input type="radio" name="access_mode" value="public"[^>]*>\s*<div>\s*<div class="font-extrabold">Público<\/div>[\s\S]*?<\/label>/,
+            /<label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">\s*<input type="radio" name="access_mode" value="public"[^>]*>\s*<div>\s*<div class="font-extrabold">PÃºblico<\/div>[\s\S]*?<\/label>/,
             publicEditBlock
         );
         const editStyle =
@@ -683,9 +683,9 @@ async function serveKingSelectionClienteGallery(req, res, next) {
     if (!tpl) return next();
 
     const defaultOgImage = defaultOgImageUrl();
-    let pageTitle = 'King Selection — Galeria';
+    let pageTitle = 'King Selection â€” Galeria';
     let ogTitle = pageTitle;
-    let ogDesc = 'Aceda à sua galeria King Selection e selecione as suas fotografias.';
+    let ogDesc = 'Aceda Ã  sua galeria King Selection e selecione as suas fotografias.';
     let ogImage = defaultOgImage;
     let canonical = '';
     let og = null;
@@ -697,10 +697,10 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         const hostHdr = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
         const host = hostHdr.split(',')[0].trim();
         if (og) {
-            ogTitle = `${og.title} — King Selection`;
+            ogTitle = `${og.title} â€” King Selection`;
             pageTitle = ogTitle;
             ogDesc = buildKingSelectionOgDescription(og.title, og.access_mode, og.allow_self_signup);
-            // Mesmo host da página (WhatsApp ignora ou falha com og:image só no domínio externo da API).
+            // Mesmo host da pÃ¡gina (WhatsApp ignora ou falha com og:image sÃ³ no domÃ­nio externo da API).
             ogImage = host
                 ? `${proto}://${host}/api/king-selection/public/og-image?slug=${encodeURIComponent(og.slug)}`
                 : ogImageUrlForGallerySlug(og.slug) || ensureHttpsUrl(og.imageUrl) || defaultOgImage;
@@ -794,14 +794,14 @@ async function serveKingSelectionClienteGallery(req, res, next) {
 
 // ============================================
 // KingSelection (Laravel) - Proxy por caminho
-// Mantém o mesmo domínio: /kingselection/*
+// MantÃ©m o mesmo domÃ­nio: /kingselection/*
 // ============================================
 function proxyKingSelection(req, res, next) {
     const base = process.env.KINGSELECTION_BASE_URL;
     if (!base) {
         return res.status(503).json({
             success: false,
-            message: 'KingSelection indisponível (KINGSELECTION_BASE_URL não configurada).'
+            message: 'KingSelection indisponÃ­vel (KINGSELECTION_BASE_URL nÃ£o configurada).'
         });
     }
 
@@ -811,7 +811,7 @@ function proxyKingSelection(req, res, next) {
     } catch (e) {
         return res.status(500).json({
             success: false,
-            message: 'Config inválida: KINGSELECTION_BASE_URL não é uma URL válida.'
+            message: 'Config invÃ¡lida: KINGSELECTION_BASE_URL nÃ£o Ã© uma URL vÃ¡lida.'
         });
     }
 
@@ -848,14 +848,14 @@ function proxyKingSelection(req, res, next) {
     );
 
     proxyReq.on('error', (err) => {
-        // Não quebrar o servidor por falha no proxy
-        logger.error('❌ Erro no proxy do KingSelection', {
+        // NÃ£o quebrar o servidor por falha no proxy
+        logger.error('âŒ Erro no proxy do KingSelection', {
             message: err.message,
             target: String(targetUrl)
         });
         res.status(502).json({
             success: false,
-            message: 'Falha ao conectar ao serviço do KingSelection.'
+            message: 'Falha ao conectar ao serviÃ§o do KingSelection.'
         });
     });
 
@@ -867,7 +867,7 @@ function proxyKingSelection(req, res, next) {
     }
 }
 
-// /kingSelection sem slug → painel do fotógrafo (injeta CSS/JS mobile; /mr/ igual)
+// /kingSelection sem slug â†’ painel do fotÃ³grafo (injeta CSS/JS mobile; /mr/ igual)
 app.get(
     [
         '/kingSelection',
@@ -939,7 +939,7 @@ app.get([
 // Proxy Laravel: /kingselection/admin e demais rotas reservadas/subcaminhos
 app.use('/kingselection', proxyKingSelection);
 
-// /bible.html?itemId= → redirect para /:slug/biblia (experiência pública completa; não usa biblePanel com login).
+// /bible.html?itemId= â†’ redirect para /:slug/biblia (experiÃªncia pÃºblica completa; nÃ£o usa biblePanel com login).
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.get('/bible.html', asyncHandler(async (req, res) => {
@@ -956,13 +956,13 @@ app.get('/bible.html', asyncHandler(async (req, res) => {
         if (slug) {
             return res.redirect(302, `${selfBase}/${encodeURIComponent(slug)}/biblia`);
         }
-        // itemId na URL mas slug não encontrado — não mandar para a home (índice)
+        // itemId na URL mas slug nÃ£o encontrado â€” nÃ£o mandar para a home (Ã­ndice)
         return res.redirect(302, `${fallback}/dashboard.html?bible=sem_slug`);
     }
     if (defaultSlug) {
         return res.redirect(302, `${selfBase}/${encodeURIComponent(defaultSlug)}/biblia`);
     }
-    // Sem itemId: menu do painel, não a raiz do site
+    // Sem itemId: menu do painel, nÃ£o a raiz do site
     res.redirect(302, `${fallback}/dashboard.html`);
 }));
 app.get('/bibliaking.html', (req, res) => {
@@ -981,10 +981,10 @@ app.get('/public_html/bible.html', (req, res) => {
 });
 
 // ============================================
-// Frontend estático (Hostinger → Render/Node)
-// Serve public_html/ como origem do domínio
+// Frontend estÃ¡tico (Hostinger â†’ Render/Node)
+// Serve public_html/ como origem do domÃ­nio
 // ============================================
-// King Docs: versão canónica em public/ (public_html costuma ter cópia antiga; express.static(public_html) vem primeiro e escondia as atualizações)
+// King Docs: versÃ£o canÃ³nica em public/ (public_html costuma ter cÃ³pia antiga; express.static(public_html) vem primeiro e escondia as atualizaÃ§Ãµes)
 const kingDocsHtmlPath = path.join(__dirname, 'public', 'kingDocs.html');
 const kingDocsShareHtmlPath = path.join(__dirname, 'public', 'kingDocsShare.html');
 app.get('/kingDocs.html', (req, res) => {
@@ -1001,7 +1001,7 @@ app.get('/kingDocsShare.html', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.type('html').sendFile(kingDocsShareHtmlPath);
 });
-// Painel admin Devocionais 365: versão canónica em public/ (public_html pode ter cópia antiga sem os botões novos)
+// Painel admin Devocionais 365: versÃ£o canÃ³nica em public/ (public_html pode ter cÃ³pia antiga sem os botÃµes novos)
 const adminDev365HtmlPath = path.join(__dirname, 'public', 'admin-devocionais-365.html');
 app.get('/admin-devocionais-365.html', (req, res) => {
     if (!fs.existsSync(adminDev365HtmlPath)) {
@@ -1019,8 +1019,8 @@ app.get('/admin-prosperidade-31.html', (req, res) => {
     res.type('html').sendFile(adminProsperidadeHtmlPath);
 });
 
-// Painel admin Devocionais 365: versão canónica em public/ (public_html pode ter cópia antiga sem os botões novos)
-// na Hostinger usa o dashboard.html do public_html do cliente — não confundir.
+// Painel admin Devocionais 365: versÃ£o canÃ³nica em public/ (public_html pode ter cÃ³pia antiga sem os botÃµes novos)
+// na Hostinger usa o dashboard.html do public_html do cliente â€” nÃ£o confundir.
 const dashboardHtmlPath = path.join(__dirname, 'public', 'dashboard.html');
 app.get('/dashboard.html', (req, res) => {
     if (!fs.existsSync(dashboardHtmlPath)) {
@@ -1030,7 +1030,7 @@ app.get('/dashboard.html', (req, res) => {
     res.type('html').sendFile(dashboardHtmlPath);
 });
 
-/** JS do cliente King Selection: prioriza `public/` (versão nova) sobre `public_html/` (cópia antiga na Hostinger). */
+/** JS do cliente King Selection: prioriza `public/` (versÃ£o nova) sobre `public_html/` (cÃ³pia antiga na Hostinger). */
 function resolveKingSelectionClienteJsPath(baseName) {
     const candidates = [
         path.join(__dirname, 'public', baseName),
@@ -1075,7 +1075,7 @@ app.get([`/${KS_CLIENTE_EDIT_PATCH}`, `/mr/${KS_CLIENTE_EDIT_PATCH}`], (req, res
 });
 app.get(['/kingSelectionProject.html', '/mr/kingSelectionProject.html'], serveKingSelectionProjectHtmlPage);
 
-// Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
+// Rota explÃ­cita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {
     const ttsPath = path.join(publicHtmlDir, 'js', 'tts.js');
     if (fs.existsSync(ttsPath)) {
@@ -1091,7 +1091,7 @@ app.use(express.static(publicHtmlDir, {
     maxAge: 0,
     immutable: false,
     setHeaders: (res, filePath) => {
-        // Forçar atualização dos arquivos do painel/landing
+        // ForÃ§ar atualizaÃ§Ã£o dos arquivos do painel/landing
         if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html')) {
             res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.set('Pragma', 'no-cache');
@@ -1104,14 +1104,14 @@ app.use(express.static(publicHtmlDir, {
     }
 }));
 
-// Servir arquivos estáticos SEM cache (forçar atualização no host)
+// Servir arquivos estÃ¡ticos SEM cache (forÃ§ar atualizaÃ§Ã£o no host)
 app.use(express.static(path.join(__dirname, 'public'), {
     etag: false,
     lastModified: false,
     maxAge: 0,
     immutable: false,
     setHeaders: (res, path) => {
-        // Para arquivos JS, CSS e HTML, adicionar headers que forçam atualização
+        // Para arquivos JS, CSS e HTML, adicionar headers que forÃ§am atualizaÃ§Ã£o
         if (path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.html')) {
             res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.set('Pragma', 'no-cache');
@@ -1125,10 +1125,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
 }));
 
-// URL da logomarca (favicon em todas as páginas)
+// URL da logomarca (favicon em todas as pÃ¡ginas)
 const logoFaviconUrl = process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png';
 
-// Rota para favicon: usa logomarca quando public/favicon.ico não existe
+// Rota para favicon: usa logomarca quando public/favicon.ico nÃ£o existe
 app.get('/favicon.ico', (req, res) => {
     const faviconPath = path.join(__dirname, 'public', 'favicon.ico');
     res.sendFile(faviconPath, (err) => {
@@ -1154,10 +1154,10 @@ app.get('/logo.png', (req, res) => {
     }
 });
 
-// Favicon: logomarca em todas as páginas (usa mesma URL das rotas acima)
+// Favicon: logomarca em todas as pÃ¡ginas (usa mesma URL das rotas acima)
 app.locals.faviconUrl = logoFaviconUrl;
 
-// Cache-buster para assets estáticos em views EJS
+// Cache-buster para assets estÃ¡ticos em views EJS
 const appVersion =
     process.env.APP_VERSION ||
     process.env.BUILD_ID ||
@@ -1171,7 +1171,7 @@ app.use((req, res, next) => {
 
 // Middleware para desabilitar cache em todas as rotas de views EJS
 app.use((req, res, next) => {
-    // Aplicar headers no-cache apenas para rotas que renderizam views (não para APIs JSON)
+    // Aplicar headers no-cache apenas para rotas que renderizam views (nÃ£o para APIs JSON)
     if (req.path.includes('/produto/') || (!req.path.startsWith('/api') && !req.path.startsWith('/upload') && !req.path.endsWith('.json'))) {
         res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
         res.set('Pragma', 'no-cache');
@@ -1182,11 +1182,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rota raiz: página principal (domínio personalizado → site público; senão index.html ou JSON da API)
+// Rota raiz: pÃ¡gina principal (domÃ­nio personalizado â†’ site pÃºblico; senÃ£o index.html ou JSON da API)
 app.use('/', mainRoutes);
 
 // Bloquear bots e scanners - ANTES de qualquer rota e ANTES do requestLogger
-// Isso evita que requisições de bots sejam processadas ou logadas
+// Isso evita que requisiÃ§Ãµes de bots sejam processadas ou logadas
 app.use((req, res, next) => {
     const path = req.path.toLowerCase();
     // Nunca bloquear raiz nem path correto de API chamado sem prefixo (evita 403 em GET / e GET /plan-availability)
@@ -1195,49 +1195,49 @@ app.use((req, res, next) => {
     }
     const userAgent = (req.get('user-agent') || '').toLowerCase();
 
-    // Lista expandida de padrões de bots/scanners
-    // IMPORTANTE: Não incluir '/api' aqui pois bloqueia rotas válidas
+    // Lista expandida de padrÃµes de bots/scanners
+    // IMPORTANTE: NÃ£o incluir '/api' aqui pois bloqueia rotas vÃ¡lidas
     const botPatterns = [
         '/wordpress', '/wp-admin', '/wp-content', '/wp-includes', '/wp-login',
         '/setup-config.php', '/xmlrpc.php', '/readme.html', '/license.txt',
         '/phpmyadmin', '/phpinfo', '/administrator', '/.env', '/config.php',
         '/.git', '/backup', '/.sql', '/.bak', '/.old', '/test.php',
         '/shell.php', '/c99.php', '/r57.php', '/admin.php', '/login.php',
-        '/index.php' // Bloquear acesso direto a index.php (não é usado no sistema)
+        '/index.php' // Bloquear acesso direto a index.php (nÃ£o Ã© usado no sistema)
     ];
 
-    // Verificar se é acesso genérico a /api (sem rota específica) - apenas se for exatamente '/api'
-    // IMPORTANTE: Não bloquear rotas válidas como /api/profile, /api/pix, etc.
+    // Verificar se Ã© acesso genÃ©rico a /api (sem rota especÃ­fica) - apenas se for exatamente '/api'
+    // IMPORTANTE: NÃ£o bloquear rotas vÃ¡lidas como /api/profile, /api/pix, etc.
     const isGenericApiAccess = path === '/api' && !req.path.startsWith('/api/');
 
-    // Padrões de user-agent suspeitos (incluindo URLs como user-agent)
+    // PadrÃµes de user-agent suspeitos (incluindo URLs como user-agent)
     const suspiciousUserAgents = [
         'sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp', 'w3af',
         'dirbuster', 'gobuster', 'wfuzz', 'scanner', 'bot', 'crawler',
-        'spider', 'scraper', 'http://', 'https://', // User-agent que é uma URL é suspeito
-        'http://cnking.bio', 'https://cnking.bio', // User-agents que são URLs do próprio domínio
+        'spider', 'scraper', 'http://', 'https://', // User-agent que Ã© uma URL Ã© suspeito
+        'http://cnking.bio', 'https://cnking.bio', // User-agents que sÃ£o URLs do prÃ³prio domÃ­nio
         'http://tag.conectaking.com.br', 'https://tag.conectaking.com.br'
     ];
 
-    // Verificar se o path corresponde a padrões de bot
+    // Verificar se o path corresponde a padrÃµes de bot
     const isBotPath = botPatterns.some(pattern => path.includes(pattern));
 
-    // Verificar se o user-agent é suspeito (URL como user-agent é sempre suspeito)
+    // Verificar se o user-agent Ã© suspeito (URL como user-agent Ã© sempre suspeito)
     const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern)) ||
         userAgent.startsWith('http://') ||
         userAgent.startsWith('https://');
 
-    // IMPORTANTE: NUNCA bloquear rotas válidas da API (que começam com /api/)
-    // Apenas bloquear se NÃO for uma rota válida da API
+    // IMPORTANTE: NUNCA bloquear rotas vÃ¡lidas da API (que comeÃ§am com /api/)
+    // Apenas bloquear se NÃƒO for uma rota vÃ¡lida da API
     const isValidApiRoute = path.startsWith('/api/');
 
-    // Bloquear se for path de bot OU user-agent suspeito OU acesso genérico a /api
-    // MAS NUNCA bloquear rotas válidas da API
+    // Bloquear se for path de bot OU user-agent suspeito OU acesso genÃ©rico a /api
+    // MAS NUNCA bloquear rotas vÃ¡lidas da API
     if (!isValidApiRoute && (isBotPath || isSuspiciousUA || isGenericApiAccess)) {
-        // Marcar como bot para não ser logado
+        // Marcar como bot para nÃ£o ser logado
         req._isBotRequest = true;
 
-        // Não logar em produção para reduzir ruído (apenas em debug)
+        // NÃ£o logar em produÃ§Ã£o para reduzir ruÃ­do (apenas em debug)
         if (!config.isProduction) {
             logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
                 ip: req.ip,
@@ -1248,7 +1248,7 @@ app.use((req, res, next) => {
             });
         }
 
-        // Retornar resposta rápida sem processar
+        // Retornar resposta rÃ¡pida sem processar
         return res.status(403).json({
             success: false,
             message: 'Acesso negado'
@@ -1263,16 +1263,16 @@ app.get('/plan-availability', (req, res) => {
     res.redirect(302, '/api/modules/plan-availability');
 });
 
-// API: health também em /api/health (rota raiz /health já registrada no início do server)
+// API: health tambÃ©m em /api/health (rota raiz /health jÃ¡ registrada no inÃ­cio do server)
 app.use('/api', healthRoutes);
 
-// Aplicar rate limiting agressivo para rotas genéricas suspeitas
-// Nota: Isso deve vir DEPOIS do bloqueio de bots acima, mas ANTES das rotas válidas
+// Aplicar rate limiting agressivo para rotas genÃ©ricas suspeitas
+// Nota: Isso deve vir DEPOIS do bloqueio de bots acima, mas ANTES das rotas vÃ¡lidas
 app.use((req, res, next) => {
     const path = req.path.toLowerCase();
-    // Aplicar rate limit agressivo apenas para rotas genéricas suspeitas
-    // (rotas válidas da API já têm seus próprios rate limiters)
-    // IMPORTANTE: Não aplicar em rotas válidas da API como /api/profile, /api/pix, etc.
+    // Aplicar rate limit agressivo apenas para rotas genÃ©ricas suspeitas
+    // (rotas vÃ¡lidas da API jÃ¡ tÃªm seus prÃ³prios rate limiters)
+    // IMPORTANTE: NÃ£o aplicar em rotas vÃ¡lidas da API como /api/profile, /api/pix, etc.
     const isValidApiRoute = path.startsWith('/api/') && (
         path.startsWith('/api/profile') ||
         path.startsWith('/api/pix') ||
@@ -1310,16 +1310,16 @@ app.use((req, res, next) => {
 });
 
 // ============================================
-// ROTAS PÚBLICAS (SEM RATE LIMIT) - DEVEM VIR PRIMEIRO
-// A rota /api/subscription/plans-public está definida em routes/subscription.js
+// ROTAS PÃšBLICAS (SEM RATE LIMIT) - DEVEM VIR PRIMEIRO
+// A rota /api/subscription/plans-public estÃ¡ definida em routes/subscription.js
 // ============================================
 
-// GET /api/modules/plan-availability-public está em modules/moduleAvailability (montado em /api/modules)
+// GET /api/modules/plan-availability-public estÃ¡ em modules/moduleAvailability (montado em /api/modules)
 
 // ============================================
 // ROTAS PROTEGIDAS COM RATE LIMIT
 // ============================================
-// Rotas de recuperação de senha
+// Rotas de recuperaÃ§Ã£o de senha
 app.use('/api/password', passwordRoutes);
 
 // Rotas da API com rate limiting apropriado
@@ -1332,22 +1332,22 @@ app.use('/api/subscription', apiLimiter, subscriptionRoutes);
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
 app.use('/api/link-limits', apiLimiter, linkLimitsRoutes);
 app.use('/log', loggerRoutes);
-// Endpoint agregado de check-in (rate limit específico - 120/min)
+// Endpoint agregado de check-in (rate limit especÃ­fico - 120/min)
 app.use('/api/checkin', checkinLimiter, checkinRoutes);
 
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/admin', adminLimiter, adminBibleStudyRoutes); // Estudos por livro: upload Word/PDF (apenas ADM)
-app.use('/api/admin', adminLimiter, ogImageRoutes); // Rotas de personalização de link (apenas ADM)
+app.use('/api/admin', adminLimiter, ogImageRoutes); // Rotas de personalizaÃ§Ã£o de link (apenas ADM)
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/upload/pdf', uploadLimiter, pdfUploadRoutes);
 // Upload: libera /auth (muitas chamadas durante upload em massa).
 app.use('/api/upload', (req, res, next) => {
-    // req.path aqui já é relativo ao mount (/api/upload)
+    // req.path aqui jÃ¡ Ã© relativo ao mount (/api/upload)
     if (req.path === '/auth') return next();
     return uploadLimiter(req, res, next);
 }, uploadRoutes);
 
-// KingSelection: R2 inventário/limpeza (router dedicado — deploy independente)
+// KingSelection: R2 inventÃ¡rio/limpeza (router dedicado â€” deploy independente)
 app.use('/api/king-selection', kingSelectionLimiter, kingSelectionR2Routes);
 // KingSelection: rate limit mais alto para upload em massa
 app.use('/api/king-selection', kingSelectionLimiter, kingSelectionRoutes);
@@ -1367,40 +1367,40 @@ const orcamentosRoutes = require('./modules/orcamentos/orcamentos.routes');
 app.use('/api/orcamentos', apiLimiter, orcamentosRoutes);
 const documentosRoutes = require('./modules/documentos/documentos.routes');
 app.use('/api/documentos', apiLimiter, documentosRoutes);
-// IMPORTANTE: cadastroLinksRoutes deve vir ANTES de guestListRoutes para que rotas específicas como /:id/cadastro-links sejam processadas antes da rota genérica /:id
+// IMPORTANTE: cadastroLinksRoutes deve vir ANTES de guestListRoutes para que rotas especÃ­ficas como /:id/cadastro-links sejam processadas antes da rota genÃ©rica /:id
 app.use('/api/guest-lists', apiLimiter, cadastroLinksRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListRoutes);
 app.use('/guest-list', publicGuestListRoutes);
 app.use('/portaria', publicGuestListRoutes.portaria);
-app.use('/api/webhooks', checkoutWebhookRoutes); // POST /pagbank (módulo checkout)
+app.use('/api/webhooks', checkoutWebhookRoutes); // POST /pagbank (mÃ³dulo checkout)
 app.use('/api/webhooks', apiLimiter, webhooksRoutes);
 app.use('/api/checkout', apiLimiter, checkoutRoutes);
 app.use('/api/push', apiLimiter, pushNotificationsRoutes);
 
-// Histórico de confirmações (Melhoria 7)
+// HistÃ³rico de confirmaÃ§Ãµes (Melhoria 7)
 const confirmationHistoryRoutes = require('./routes/confirmationHistory.routes');
 app.use('/api/guest-lists', apiLimiter, confirmationHistoryRoutes);
 
 app.use('/vcard', vcardRoutes);
 
-// Recuperar senha e resetar senha – PRIMEIRO para não serem capturadas por /:slug
+// Recuperar senha e resetar senha â€“ PRIMEIRO para nÃ£o serem capturadas por /:slug
 const publicPasswordRoutes = require('./routes/publicPassword.routes');
 app.use('/', publicPasswordRoutes);
 
-// Rotas públicas legais (Política de Privacidade e Termos de Serviço)
+// Rotas pÃºblicas legais (PolÃ­tica de Privacidade e Termos de ServiÃ§o)
 const publicLegalRoutes = require('./routes/publicLegal.routes');
 app.use('/', publicLegalRoutes);
 
-// Rotas do módulo Sales Page
-// IMPORTANTE: Rotas específicas (analytics) devem vir ANTES das rotas genéricas (/:id)
+// Rotas do mÃ³dulo Sales Page
+// IMPORTANTE: Rotas especÃ­ficas (analytics) devem vir ANTES das rotas genÃ©ricas (/:id)
 app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);
 app.use('/api/v1/sales-pages', apiLimiter, productRoutes);
 app.use('/api/v1/sales-pages', apiLimiter, salesPageRoutes);
 
-// Middleware para redirecionar domínio cnking.bio para tag.conectaking.com.br
+// Middleware para redirecionar domÃ­nio cnking.bio para tag.conectaking.com.br
 app.use((req, res, next) => {
-    // Verificar se a requisição vem do domínio cnking.bio
+    // Verificar se a requisiÃ§Ã£o vem do domÃ­nio cnking.bio
     const host = req.get('host') || req.hostname;
     if (host && (host === 'cnking.bio' || host === 'www.cnking.bio')) {
         // Se for a raiz, redirecionar para tag.conectaking.com.br
@@ -1417,8 +1417,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rota de redirecionamento cnking/:slug -> /:slug (fallback para formato no mesmo domínio)
-// Deve vir ANTES de todas as outras rotas públicas
+// Rota de redirecionamento cnking/:slug -> /:slug (fallback para formato no mesmo domÃ­nio)
+// Deve vir ANTES de todas as outras rotas pÃºblicas
 app.get('/cnking/:slug', (req, res) => {
     const { slug } = req.params;
     // Redirecionar para tag.conectaking.com.br/:slug
@@ -1426,26 +1426,26 @@ app.get('/cnking/:slug', (req, res) => {
     res.redirect(301, redirectUrl);
 });
 
-// Rota pública de formulário digital (DEVE vir ANTES de sales page e perfil)
+// Rota pÃºblica de formulÃ¡rio digital (DEVE vir ANTES de sales page e perfil)
 // /form/:slug (ex: /form/lideresposicionados) seria capturado por /:slug/:storeSlug do sales page
 const publicDigitalFormAnalyticsRoutes = require('./routes/publicDigitalFormAnalytics.routes');
 const publicDigitalFormRoutes = require('./routes/publicDigitalForm.routes');
 app.use('/', publicDigitalFormAnalyticsRoutes);
 app.use('/', publicDigitalFormRoutes);
 
-// Rota pública de página de vendas (deve vir ANTES de produto para evitar conflitos)
-// Ela verifica se não é "produto" e passa para próxima rota se necessário
+// Rota pÃºblica de pÃ¡gina de vendas (deve vir ANTES de produto para evitar conflitos)
+// Ela verifica se nÃ£o Ã© "produto" e passa para prÃ³xima rota se necessÃ¡rio
 app.use('/', publicSalesPageRoutes);
 
-// Rota pública de produto individual (deve vir antes de publicProfileRoutes)
+// Rota pÃºblica de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
 app.use('/', publicProductRoutes);
 
-// Bíblia pública (/:slug/bible)
+// BÃ­blia pÃºblica (/:slug/bible)
 const publicBibleRoutes = require('./routes/publicBible.routes');
 app.use('/', publicBibleRoutes);
 
-// Perfis públicos (sem rate limiting)
+// Perfis pÃºblicos (sem rate limiting)
 app.use('/', publicProfileRoutes);
 
 // Proxy de imagem para processar PNGs com fundo preto
@@ -1455,7 +1455,7 @@ app.use('/api/image', imageProxyRoutes);
 app.use('/', ogImageRoutes);
 
 cron.schedule('0 0 * * *', async () => {
-    logger.info('Executando verificação diária de assinaturas e testes...');
+    logger.info('Executando verificaÃ§Ã£o diÃ¡ria de assinaturas e testes...');
     try {
         const trialResult = await db.query(
             `UPDATE users 
@@ -1463,7 +1463,7 @@ cron.schedule('0 0 * * *', async () => {
              WHERE subscription_expires_at < NOW() AND subscription_status = 'pre_sale_trial'`
         );
         if (trialResult.rowCount > 0) {
-            logger.info(`${trialResult.rowCount} teste(s) da pré-venda expirado(s) foram atualizados para 'free'.`);
+            logger.info(`${trialResult.rowCount} teste(s) da prÃ©-venda expirado(s) foram atualizados para 'free'.`);
         }
 
         const subscriptionResult = await db.query(
@@ -1476,11 +1476,11 @@ cron.schedule('0 0 * * *', async () => {
         }
 
     } catch (error) {
-        logger.error('Erro ao verificar expirações', error);
+        logger.error('Erro ao verificar expiraÃ§Ãµes', error);
     }
 });
 
-// Limpeza de dados expirados (diariamente às 2h)
+// Limpeza de dados expirados (diariamente Ã s 2h)
 const { runCleanup } = require('./utils/cleanup');
 cron.schedule('0 2 * * *', async () => {
     logger.info('Executando limpeza de dados expirados...');
@@ -1492,18 +1492,18 @@ cron.schedule('0 2 * * *', async () => {
 });
 
 // ============================================================
-// Limpeza diária de imagens órfãs no Cloudflare Images (opcional)
+// Limpeza diÃ¡ria de imagens Ã³rfÃ£s no Cloudflare Images (opcional)
 //
-// Por segurança, isso fica DESLIGADO por padrão.
+// Por seguranÃ§a, isso fica DESLIGADO por padrÃ£o.
 //
-// Para ligar em produção, configure env:
+// Para ligar em produÃ§Ã£o, configure env:
 // - CF_ORPHAN_CLEANUP_ENABLED=1
 // - CLOUDFLARE_ACCOUNT_ID (ou CF_IMAGES_ACCOUNT_ID)
-// - (recomendado) CLOUDFLARE_API_TOKEN com permissão Cloudflare Images (Read + Edit)
+// - (recomendado) CLOUDFLARE_API_TOKEN com permissÃ£o Cloudflare Images (Read + Edit)
 //   ou CLOUDFLARE_EMAIL + CLOUDFLARE_API_KEY
-// - DRY_RUN=0 e CONFIRM_DELETE=SIM (ou use variáveis CF_ORPHAN_* abaixo)
+// - DRY_RUN=0 e CONFIRM_DELETE=SIM (ou use variÃ¡veis CF_ORPHAN_* abaixo)
 //
-// Observação: o script em si tem um lock Postgres para evitar duplicidade.
+// ObservaÃ§Ã£o: o script em si tem um lock Postgres para evitar duplicidade.
 // ============================================================
 function isTruthy(v) {
     return ['1', 'true', 'yes', 'sim', 'on'].includes(String(v || '').trim().toLowerCase());
@@ -1514,32 +1514,32 @@ function scheduleCloudflareOrphanCleanup() {
     if (!enabled) return;
 
     const cronExpr = (process.env.CF_ORPHAN_CLEANUP_CRON || '30 5 * * *').toString().trim();
-    // Render costuma rodar em UTC; 05:30 UTC ≈ 02:30 (Brasil) dependendo de horário de verão.
+    // Render costuma rodar em UTC; 05:30 UTC â‰ˆ 02:30 (Brasil) dependendo de horÃ¡rio de verÃ£o.
 
     if (!cron.validate(cronExpr)) {
-        logger.error('CF_ORPHAN_CLEANUP_CRON inválido; desativando agendamento', { cronExpr });
+        logger.error('CF_ORPHAN_CLEANUP_CRON invÃ¡lido; desativando agendamento', { cronExpr });
         return;
     }
 
     cron.schedule(cronExpr, async () => {
         try {
-            logger.info('🧹 Iniciando limpeza diária de imagens órfãs (Cloudflare)...');
+            logger.info('ðŸ§¹ Iniciando limpeza diÃ¡ria de imagens Ã³rfÃ£s (Cloudflare)...');
 
-            // Defaults seguros (você pode sobrescrever no env do servidor)
+            // Defaults seguros (vocÃª pode sobrescrever no env do servidor)
             const env = {
                 ...process.env,
-                // Evita rodar em DRY por engano quando você quer limpar automaticamente:
+                // Evita rodar em DRY por engano quando vocÃª quer limpar automaticamente:
                 DRY_RUN: (process.env.CF_ORPHAN_CLEANUP_DRY_RUN ?? process.env.DRY_RUN ?? '1').toString(),
                 CONFIRM_DELETE: (process.env.CF_ORPHAN_CLEANUP_CONFIRM ?? process.env.CONFIRM_DELETE ?? '').toString(),
                 MAX_DELETE: (process.env.CF_ORPHAN_CLEANUP_MAX_DELETE ?? process.env.MAX_DELETE ?? '50').toString(),
                 SLEEP_MS: (process.env.CF_ORPHAN_CLEANUP_SLEEP_MS ?? process.env.SLEEP_MS ?? '200').toString(),
                 OUT_FILE: (process.env.CF_ORPHAN_CLEANUP_OUT_FILE ?? process.env.OUT_FILE ?? '').toString(),
                 MIN_AGE_DAYS: (process.env.CF_ORPHAN_CLEANUP_MIN_AGE_DAYS ?? process.env.MIN_AGE_DAYS ?? '0').toString(),
-                // lock customizável (opcional)
+                // lock customizÃ¡vel (opcional)
                 CF_ORPHAN_CLEANUP_LOCK_KEY: (process.env.CF_ORPHAN_CLEANUP_LOCK_KEY ?? '20260201').toString()
             };
 
-            // Executa em processo separado para não travar o servidor
+            // Executa em processo separado para nÃ£o travar o servidor
             const scriptPath = path.join(__dirname, 'scripts', 'cleanup-cloudflare-images.js');
             const child = spawn(process.execPath, [scriptPath], {
                 env,
@@ -1554,16 +1554,16 @@ function scheduleCloudflareOrphanCleanup() {
                 });
             });
 
-            logger.info('✅ Limpeza diária de órfãs (Cloudflare) finalizada.');
+            logger.info('âœ… Limpeza diÃ¡ria de Ã³rfÃ£s (Cloudflare) finalizada.');
         } catch (error) {
-            logger.error('❌ Erro na limpeza diária de órfãs (Cloudflare)', {
+            logger.error('âŒ Erro na limpeza diÃ¡ria de Ã³rfÃ£s (Cloudflare)', {
                 message: error?.message || String(error),
                 stack: error?.stack
             });
         }
     });
 
-    logger.info('✅ Agendamento de limpeza de órfãs (Cloudflare) ativado', { cronExpr });
+    logger.info('âœ… Agendamento de limpeza de Ã³rfÃ£s (Cloudflare) ativado', { cronExpr });
 }
 
 scheduleCloudflareOrphanCleanup();
@@ -1574,13 +1574,13 @@ function scheduleR2OrphanCleanup() {
 
     const cronExpr = (process.env.R2_ORPHAN_CLEANUP_CRON || '45 5 * * *').toString().trim();
     if (!cron.validate(cronExpr)) {
-        logger.error('R2_ORPHAN_CLEANUP_CRON inválido; desativando', { cronExpr });
+        logger.error('R2_ORPHAN_CLEANUP_CRON invÃ¡lido; desativando', { cronExpr });
         return;
     }
 
     cron.schedule(cronExpr, async () => {
         try {
-            logger.info('🧹 Iniciando limpeza diária de órfãos R2 (KingSelection)...');
+            logger.info('ðŸ§¹ Iniciando limpeza diÃ¡ria de Ã³rfÃ£os R2 (KingSelection)...');
             const env = {
                 ...process.env,
                 DRY_RUN: (process.env.R2_ORPHAN_CLEANUP_DRY_RUN ?? process.env.DRY_RUN ?? '1').toString(),
@@ -1595,40 +1595,40 @@ function scheduleR2OrphanCleanup() {
                 child.on('error', reject);
                 child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`cleanup-r2-orphans.js exit=${code}`))));
             });
-            logger.info('✅ Limpeza diária R2 finalizada.');
+            logger.info('âœ… Limpeza diÃ¡ria R2 finalizada.');
         } catch (error) {
-            logger.error('❌ Erro na limpeza de órfãos R2', { message: error?.message || String(error) });
+            logger.error('âŒ Erro na limpeza de Ã³rfÃ£os R2', { message: error?.message || String(error) });
         }
     });
 
-    logger.info('✅ Agendamento limpeza órfãos R2 ativado', { cronExpr });
+    logger.info('âœ… Agendamento limpeza Ã³rfÃ£os R2 ativado', { cronExpr });
 }
 
 scheduleR2OrphanCleanup();
 
-// Middleware de tratamento de erros (deve ser o último)
+// Middleware de tratamento de erros (deve ser o Ãºltimo)
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Executar migrations automaticamente antes de iniciar o servidor
 async function startServer() {
     try {
-        logger.info('🔄 Verificando e executando migrations pendentes...');
+        logger.info('ðŸ”„ Verificando e executando migrations pendentes...');
         await autoMigrate.runPendingMigrations();
-        logger.info('✅ Migrations verificadas. Iniciando servidor...\n');
+        logger.info('âœ… Migrations verificadas. Iniciando servidor...\n');
     } catch (error) {
-        logger.error('❌ Erro ao executar migrations automáticas:', error);
-        logger.warn('⚠️  Servidor será iniciado mesmo com erro nas migrations. Verifique manualmente.');
+        logger.error('âŒ Erro ao executar migrations automÃ¡ticas:', error);
+        logger.warn('âš ï¸  Servidor serÃ¡ iniciado mesmo com erro nas migrations. Verifique manualmente.');
     }
 
     const PORT = config.port;
     app.listen(PORT, () => {
-        logger.info(`👑 Servidor Conecta King rodando na porta ${PORT} (${config.nodeEnv})`);
+        logger.info(`ðŸ‘‘ Servidor Conecta King rodando na porta ${PORT} (${config.nodeEnv})`);
         setImmediate(() => {
             try {
                 const { warmUpOcr } = require('./utils/recibo-ocr');
                 warmUpOcr().then((ok) => {
-                    if (ok) logger.info('✅ OCR Tesseract pré-carregado.');
+                    if (ok) logger.info('âœ… OCR Tesseract prÃ©-carregado.');
                 }).catch(() => {});
             } catch (e) { /* ignore */ }
         });

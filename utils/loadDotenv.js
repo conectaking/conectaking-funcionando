@@ -31,6 +31,12 @@ function resolveEnvFilePath(projectRoot) {
 
 function loadDotenv(projectRoot) {
   const envPath = resolveEnvFilePath(projectRoot);
+  // Em Docker/Linux, ignorar ponteiro .env.path para caminhos Windows
+  if (/^[A-Za-z]:[\\/]/.test(envPath) || envPath.includes('\\Users\\') || envPath.includes('/Users/')) {
+    const fallback = path.join(projectRoot, '.env');
+    require('dotenv').config({ path: fallback });
+    return fallback;
+  }
   require('dotenv').config({ path: envPath });
   return envPath;
 }

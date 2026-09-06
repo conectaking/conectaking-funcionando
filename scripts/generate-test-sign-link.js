@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Script para gerar link de teste para assinatura de contrato
  * Uso: node scripts/generate-test-sign-link.js
  */
@@ -37,13 +37,13 @@ const pool = new Pool(poolConfig);
 
 async function generateTestLink() {
     console.log('='.repeat(60));
-    console.log('🔗 GERANDO LINK DE TESTE PARA ASSINATURA');
+    console.log('ðŸ”— GERANDO LINK DE TESTE PARA ASSINATURA');
     console.log('='.repeat(60));
     
     const client = await pool.connect();
     
     try {
-        // Buscar um signatário com token válido (não expirado e não assinado)
+        // Buscar um signatÃ¡rio com token vÃ¡lido (nÃ£o expirado e nÃ£o assinado)
         const result = await client.query(`
             SELECT 
                 s.id,
@@ -64,12 +64,12 @@ async function generateTestLink() {
         `);
         
         if (result.rows.length === 0) {
-            console.log('\n❌ Nenhum signatário pendente encontrado.');
-            console.log('\n💡 Opções:');
+            console.log('\nâŒ Nenhum signatÃ¡rio pendente encontrado.');
+            console.log('\nðŸ’¡ OpÃ§Ãµes:');
             console.log('   1. Criar um novo contrato e enviar para assinatura');
-            console.log('   2. Verificar se há contratos no sistema');
+            console.log('   2. Verificar se hÃ¡ contratos no sistema');
             
-            // Verificar se há contratos
+            // Verificar se hÃ¡ contratos
             const contractsResult = await client.query('SELECT COUNT(*) as count FROM ck_contracts');
             const contractsCount = parseInt(contractsResult.rows[0].count);
             console.log(`\n   Contratos no sistema: ${contractsCount}`);
@@ -81,7 +81,7 @@ async function generateTestLink() {
                     WHERE token_expires_at > NOW() AND signed_at IS NULL
                 `);
                 const signersCount = parseInt(signersResult.rows[0].count);
-                console.log(`   Signatários pendentes: ${signersCount}`);
+                console.log(`   SignatÃ¡rios pendentes: ${signersCount}`);
             }
             
             process.exit(0);
@@ -89,7 +89,7 @@ async function generateTestLink() {
         
         const signer = result.rows[0];
         
-        console.log('\n✅ Signatário encontrado:');
+        console.log('\nâœ… SignatÃ¡rio encontrado:');
         console.log(`   Nome: ${signer.name}`);
         console.log(`   Email: ${signer.email}`);
         console.log(`   Contrato: ${signer.contract_title}`);
@@ -98,35 +98,35 @@ async function generateTestLink() {
         console.log(`   Expira em: ${new Date(signer.token_expires_at).toLocaleString('pt-BR')}`);
         
         // Gerar URLs
-        // Priorizar URL de produção, depois Render, depois localhost
+        // Priorizar URL de produÃ§Ã£o, depois Render, depois localhost
         const baseUrl = process.env.FRONTEND_URL || 
                         process.env.APP_URL || 
                         'https://www.conectaking.com.br';
         const signUrl = `${baseUrl}/contract/sign/${signer.sign_token}`;
         
-        // Também gerar URL do Render se diferente
-        const renderUrl = 'https://conectaking-api.onrender.com';
+        // TambÃ©m gerar URL do Render se diferente
+        const renderUrl = 'https://www.conectaking.com.br';
         const signUrlRender = `${renderUrl}/contract/sign/${signer.sign_token}`;
         
         console.log('\n' + '='.repeat(60));
-        console.log('🔗 LINK DE TESTE (Produção):');
+        console.log('ðŸ”— LINK DE TESTE (ProduÃ§Ã£o):');
         console.log('='.repeat(60));
         console.log(signUrl);
         console.log('='.repeat(60));
         
         if (baseUrl !== renderUrl) {
-            console.log('\n🔗 LINK DE TESTE (Render):');
+            console.log('\nðŸ”— LINK DE TESTE (Render):');
             console.log('='.repeat(60));
             console.log(signUrlRender);
             console.log('='.repeat(60));
         }
         
-        console.log('\n📋 Informações adicionais:');
+        console.log('\nðŸ“‹ InformaÃ§Ãµes adicionais:');
         console.log(`   Base URL: ${baseUrl}`);
         console.log(`   Token length: ${signer.sign_token.length} caracteres`);
-        console.log(`   Token tem hífen: ${signer.sign_token.includes('-') ? 'SIM' : 'NÃO'}`);
+        console.log(`   Token tem hÃ­fen: ${signer.sign_token.includes('-') ? 'SIM' : 'NÃƒO'}`);
         
-        // Verificar se há outros signatários para o mesmo contrato
+        // Verificar se hÃ¡ outros signatÃ¡rios para o mesmo contrato
         const otherSignersResult = await client.query(`
             SELECT COUNT(*) as count 
             FROM ck_contracts_signers 
@@ -135,11 +135,11 @@ async function generateTestLink() {
         
         const otherSignersCount = parseInt(otherSignersResult.rows[0].count);
         if (otherSignersCount > 0) {
-            console.log(`\n   ⚠️  Este contrato tem ${otherSignersCount} outro(s) signatário(s)`);
+            console.log(`\n   âš ï¸  Este contrato tem ${otherSignersCount} outro(s) signatÃ¡rio(s)`);
         }
         
     } catch (error) {
-        console.error('❌ Erro ao gerar link de teste:', error.message);
+        console.error('âŒ Erro ao gerar link de teste:', error.message);
         console.error(error.stack);
         process.exit(1);
     } finally {

@@ -1,11 +1,11 @@
-# ==============================================================================
-# ARQUIVO DE CONFIGURAÇÃO CONECTA KING (v2 - com URLs Amigáveis)
+﻿# ==============================================================================
+# ARQUIVO DE CONFIGURAÃ‡ÃƒO CONECTA KING (v2 - com URLs AmigÃ¡veis)
 # ==============================================================================
 
-# Página inicial (espelho de public_html/.htaccess na Hostinger)
+# PÃ¡gina inicial (espelho de public_html/.htaccess na Hostinger)
 DirectoryIndex index.html index.php
 
-# FORÇAR CODIFICAÇÃO UTF-8
+# FORÃ‡AR CODIFICAÃ‡ÃƒO UTF-8
 # ------------------------------------------------------------------------------
 AddDefaultCharset UTF-8
 
@@ -14,10 +14,10 @@ AddDefaultCharset UTF-8
 RewriteEngine On
 RewriteBase /
 
-# Favicon: o browser pede /favicon.ico por defeito — redireciona para o logo já usado no site (evita 404 no console)
+# Favicon: o browser pede /favicon.ico por defeito â€” redireciona para o logo jÃ¡ usado no site (evita 404 no console)
 RewriteRule ^favicon\.ico$ https://i.ibb.co/60sW9k75/logo.png [R=302,L]
 
-# FORÇAR HTTPS (CONEXÃO SEGURA)
+# FORÃ‡AR HTTPS (CONEXÃƒO SEGURA)
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
@@ -25,21 +25,21 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 RewriteCond %{HTTP_HOST} ^conectaking.com.br [NC]
 RewriteRule ^(.*)$ https://www.conectaking.com.br/$1 [L,R=301,NC]
 
-# Painel Bíblia (módulo): a página real corre no Node (Render). Tem prioridade sobre as regras de
-# "URL limpa" abaixo — senão bible.html vira /bible e facilmente dá 404 se o ficheiro não existir no Hostinger.
-RewriteRule ^bible\.html$ https://conectaking-api.onrender.com/bible.html [R=302,L,QSA]
-RewriteRule ^bibliaking\.html$ https://conectaking-api.onrender.com/bibliaking.html [R=302,L,QSA]
-RewriteRule ^bible/?$ https://conectaking-api.onrender.com/bible.html [R=302,L,QSA]
-RewriteRule ^bibliaking/?$ https://conectaking-api.onrender.com/bibliaking.html [R=302,L,QSA]
+# Painel BÃ­blia (mÃ³dulo): a pÃ¡gina real corre no Node (Render). Tem prioridade sobre as regras de
+# "URL limpa" abaixo â€” senÃ£o bible.html vira /bible e facilmente dÃ¡ 404 se o ficheiro nÃ£o existir no Hostinger.
+RewriteRule ^bible\.html$ https://www.conectaking.com.br/bible.html [R=302,L,QSA]
+RewriteRule ^bibliaking\.html$ https://www.conectaking.com.br/bibliaking.html [R=302,L,QSA]
+RewriteRule ^bible/?$ https://www.conectaking.com.br/bible.html [R=302,L,QSA]
+RewriteRule ^bibliaking/?$ https://www.conectaking.com.br/bibliaking.html [R=302,L,QSA]
 
-# 1. Redireciona o usuário que acessa "pagina.html" para a versão limpa "pagina"
+# 1. Redireciona o usuÃ¡rio que acessa "pagina.html" para a versÃ£o limpa "pagina"
 RewriteCond %{THE_REQUEST} \s/+(.+?)\.html[\s?] [NC]
 RewriteRule ^ %1 [R=301,L]
 
-# 2. King Selection (evitar que /kingSelection vire kingSelection.html inexistente → 404)
+# 2. King Selection (evitar que /kingSelection vire kingSelection.html inexistente â†’ 404)
 #    Com slug: PHP injeta Open Graph (capa WhatsApp) e envia o mesmo HTML que kingSelectionCliente.html.
 #    Requer PHP. Sem PHP, volte a kingSelectionCliente.html
-#    Painel: /kingSelection/kingSelectionProject.html → ficheiro na raiz (não confundir com slug da galeria)
+#    Painel: /kingSelection/kingSelectionProject.html â†’ ficheiro na raiz (nÃ£o confundir com slug da galeria)
 RewriteRule ^kingSelection/kingSelectionProject\.html$ kingSelectionProject.html [L,QSA,NC]
 RewriteRule ^kingSelection/kingSelectionEdit\.html$ kingSelectionEdit.html [L,QSA,NC]
 RewriteRule ^kingSelection/kingSelectionCliente\.html$ kingSelectionCliente.html [L,QSA,NC]
@@ -52,7 +52,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/([^/]+)/?$ kingSelectionGallery.php?ks_slug=$1 [L,NC,QSA]
 # Compatibilidade: links antigos /kingSelectionEdit?itemId=... -> /kingSelection
 RewriteRule ^kingSelectionEdit(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
-# Compatibilidade: páginas legadas do projeto (layout antigo) -> painel oficial
+# Compatibilidade: pÃ¡ginas legadas do projeto (layout antigo) -> painel oficial
 RewriteRule ^(?:ring|rings|king)selectionproject(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
 # Compatibilidade com prefixo legado /mr/
 RewriteRule ^mr/kingSelectionEdit(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
@@ -63,14 +63,14 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/?$ kingSelectionEdit.html [L,QSA,NC]
 
-# 3. Pega uma URL limpa e entrega o arquivo .html correspondente (COM CORREÇÃO)
+# 3. Pega uma URL limpa e entrega o arquivo .html correspondente (COM CORREÃ‡ÃƒO)
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} !\.(?:css|js|jpe?g|gif|png|svg|ico)$ [NC]
 RewriteRule ^(.*)$ $1.html [L]
 
 
-# OTIMIZAÇÃO DE CACHE NO NAVEGADOR
+# OTIMIZAÃ‡ÃƒO DE CACHE NO NAVEGADOR
 # ------------------------------------------------------------------------------
 <IfModule mod_expires.c>
   ExpiresActive On
@@ -79,7 +79,7 @@ RewriteRule ^(.*)$ $1.html [L]
   ExpiresByType image/gif "access plus 1 year"
   ExpiresByType image/png "access plus 1 year"
   ExpiresByType image/svg+xml "access plus 1 year"
-  # CSS e JS com NO-CACHE para desenvolvimento (forçar atualização)
+  # CSS e JS com NO-CACHE para desenvolvimento (forÃ§ar atualizaÃ§Ã£o)
   ExpiresByType text/css "access plus 0 seconds"
   ExpiresByType application/javascript "access plus 0 seconds"
   ExpiresByType application/x-javascript "access plus 0 seconds"
@@ -87,31 +87,31 @@ RewriteRule ^(.*)$ $1.html [L]
   ExpiresByType image/x-icon "access plus 1 year"
 </IfModule>
 
-# FORÇAR NO-CACHE PARA ARQUIVOS DE DESENVOLVIMENTO
+# FORÃ‡AR NO-CACHE PARA ARQUIVOS DE DESENVOLVIMENTO
 # ------------------------------------------------------------------------------
 <IfModule mod_headers.c>
-    # Forçar no-cache para arquivos CSS (sempre buscar versão atualizada)
+    # ForÃ§ar no-cache para arquivos CSS (sempre buscar versÃ£o atualizada)
     <FilesMatch "\.(css)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
         Header set Pragma "no-cache"
         Header set Expires "0"
     </FilesMatch>
     
-    # Forçar no-cache para arquivos JavaScript (sempre buscar versão atualizada)
+    # ForÃ§ar no-cache para arquivos JavaScript (sempre buscar versÃ£o atualizada)
     <FilesMatch "\.(js)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
         Header set Pragma "no-cache"
         Header set Expires "0"
     </FilesMatch>
     
-    # Forçar no-cache para arquivos HTML (sempre buscar versão atualizada)
+    # ForÃ§ar no-cache para arquivos HTML (sempre buscar versÃ£o atualizada)
     <FilesMatch "\.(html|htm)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
         Header set Pragma "no-cache"
         Header set Expires "0"
     </FilesMatch>
     
-    # Desabilitar cache para arquivos específicos críticos
+    # Desabilitar cache para arquivos especÃ­ficos crÃ­ticos
     <FilesMatch "^(salesPageEdit\.html|dashboard\.html|dashboard\.products\.js|salesPageEdit\.js|salesPageEdit\.css|dashboard\.js|dashboard\.css)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
         Header set Pragma "no-cache"
@@ -126,7 +126,7 @@ RewriteRule ^(.*)$ $1.html [L]
     </FilesMatch>
 </IfModule>
 
-# COMPRESSÃO DE ARQUIVOS
+# COMPRESSÃƒO DE ARQUIVOS
 # ------------------------------------------------------------------------------
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE application/javascript

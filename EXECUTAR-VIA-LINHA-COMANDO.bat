@@ -1,11 +1,11 @@
-@echo off
+﻿@echo off
 REM ===========================================
 REM EXECUTAR MIGRATION VIA LINHA DE COMANDO
 REM ===========================================
 REM 
-REM INSTRUÇÕES:
+REM INSTRUÃ‡Ã•ES:
 REM 1. Abra o PowerShell ou CMD
-REM 2. Navegue até a pasta do projeto
+REM 2. Navegue atÃ© a pasta do projeto
 REM 3. Execute este arquivo .bat
 REM
 REM OU execute diretamente:
@@ -18,7 +18,7 @@ echo IMPORTANTE: Configure as variaveis abaixo com seus dados de conexao!
 echo.
 
 REM Configure estas variaveis com seus dados de conexao
-set PGHOST=virginia-postgres.render.com
+set PGHOST=127.0.0.1
 set PGPORT=5432
 set PGDATABASE=conecta_king_db
 set PGUSER=seu_usuario

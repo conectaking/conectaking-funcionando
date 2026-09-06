@@ -1,12 +1,12 @@
-# ============================================
+﻿# ============================================
 # TEMPLATE DO ARQUIVO .env
 # ============================================
-# Copie este conteúdo para o arquivo .env
-# Localização: C:\Users\playa\Desktop\CONECTA KING MVP DEZEMBRO\conecta-king-backend\.env
+# Copie este conteÃºdo para o arquivo .env
+# LocalizaÃ§Ã£o: C:\Users\playa\Desktop\CONECTA KING MVP DEZEMBRO\conecta-king-backend\.env
 # ============================================
 
 # ============================================
-# CONFIGURAÇÃO DO BANCO DE DADOS
+# CONFIGURAÃ‡ÃƒO DO BANCO DE DADOS
 # ============================================
 # Para ambiente LOCAL (sem SSL):
 DB_USER=seu_usuario_postgres
@@ -23,7 +23,7 @@ DB_PORT=5432
 # DB_PORT=5432
 
 # ============================================
-# SEGURANÇA (OBRIGATÓRIO)
+# SEGURANÃ‡A (OBRIGATÃ“RIO)
 # ============================================
 JWT_SECRET=seu_jwt_secret_aqui_gerar_um_token_seguro
 JWT_EXPIRES_IN=7d
@@ -76,7 +76,7 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # Obter em: https://makersuite.google.com/app/apikey
 # GEMINI_API_KEY=sua_chave_gemini_aqui
 
-# Groq API (Rápida e gratuita)
+# Groq API (RÃ¡pida e gratuita)
 # Obter em: https://console.groq.com/keys
 # GROQ_API_KEY=sua_chave_groq_aqui
 
@@ -94,8 +94,8 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # 4. Adicionar URLs de callback nas credenciais
 # GOOGLE_CLIENT_ID=seu_client_id.apps.googleusercontent.com
 # GOOGLE_CLIENT_SECRET=seu_client_secret
-# GOOGLE_REDIRECT_URI_OWNER=https://conectaking-api.onrender.com/api/oauth/agenda/google/owner/callback
-# GOOGLE_REDIRECT_URI_CLIENT=https://conectaking-api.onrender.com/api/oauth/agenda/google/client/callback
+# GOOGLE_REDIRECT_URI_OWNER=https://www.conectaking.com.br/api/oauth/agenda/google/owner/callback
+# GOOGLE_REDIRECT_URI_CLIENT=https://www.conectaking.com.br/api/oauth/agenda/google/client/callback
 
 # ============================================
 # CHECKOUT KINGFORMS (PagBank) - opcional
@@ -108,7 +108,7 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # CHECKOUT_ENCRYPTION_KEY=
 
 # ============================================
-# CONFIGURAÇÕES AVANÇADAS (opcional)
+# CONFIGURAÃ‡Ã•ES AVANÃ‡ADAS (opcional)
 # ============================================
 # DB_POOL_MAX=20
 # DB_POOL_MIN=5
@@ -121,10 +121,10 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # ============================================
 # REKOGNITION (King Selection) - PERFORMANCE
 # ============================================
-# Modo recomendado para busca rápida (estilo "pré-indexado")
+# Modo recomendado para busca rÃ¡pida (estilo "prÃ©-indexado")
 # REKOG_ON_DEMAND=false
 #
-# Concorrência do processamento em lote (process-all-faces e reprocess pós-enroll)
+# ConcorrÃªncia do processamento em lote (process-all-faces e reprocess pÃ³s-enroll)
 # REKOG_GALLERY_REPROCESS_CONCURRENCY=5
 #
 # Tenta novamente buscas na collection em caso de throttling/instabilidade AWS
@@ -140,14 +140,14 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # REKOG_FAST_AUTO_MIN_PHOTOS=1200
 # REKOG_ULTRA_AUTO_MIN_PHOTOS=3000
 #
-# No modo indexado, usar fallback CompareFaces quando não houver match no SQL (0/1)
+# No modo indexado, usar fallback CompareFaces quando nÃ£o houver match no SQL (0/1)
 # REKOG_INDEXED_COMPARE_FALLBACK=0
 #
 # Filtro final de qualidade no retorno (reduz falso positivo sem deixar lento)
 # REKOG_RESULT_MIN_SIMILARITY=72
 #
-# Reuso de sessão técnica (DESLIGADO por padrão para evitar mistura entre pessoas)
+# Reuso de sessÃ£o tÃ©cnica (DESLIGADO por padrÃ£o para evitar mistura entre pessoas)
 # REKOG_SESSION_AUTO_LINK=0
-# (se ligar auto-link, use corte bem alto para segurança)
+# (se ligar auto-link, use corte bem alto para seguranÃ§a)
 # REKOG_SESSION_LINK_SIMILARITY=98
 # REKOG_SESSION_LINK_MIN_PHOTOS=20

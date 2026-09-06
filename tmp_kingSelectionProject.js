@@ -1,5 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const API_URL = (window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
+﻿document.addEventListener('DOMContentLoaded', () => {
+  const API_URL = (window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || 'https://www.conectaking.com.br').replace(/\/$/, '');
   const KS_WORKER_URL = (window.KS_WORKER_URL || 'https://r2.conectaking.com.br').replace(/\/$/, '');
   const qs = new URLSearchParams(window.location.search || '');
   const itemId = qs.get('itemId');
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const HEADERS = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-  // <img> não envia Authorization header. Para previews protegidos (admin),
+  // <img> nÃ£o envia Authorization header. Para previews protegidos (admin),
   // precisamos buscar via fetch + blob e aplicar via ObjectURL.
   const _previewObjectUrls = new Map(); // cacheKey(url) -> objectURL
   function revokePreviewUrl(cacheKey) {
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const j = JSON.parse(text);
         parsedMsg = j && (j.message || j.error);
-      } catch (_) { /* não JSON */ }
+      } catch (_) { /* nÃ£o JSON */ }
       throw new Error(parsedMsg || (text && text.slice(0, 300)) || `Falha no preview (${res.status})`);
     }
     const ct = (res.headers.get('content-type') || '').toLowerCase();
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const j = JSON.parse(text);
         parsedMsg = j && (j.message || j.error);
       } catch (_) { /* */ }
-      throw new Error(parsedMsg || (text && text.slice(0, 200)) || 'O servidor não devolveu uma imagem.');
+      throw new Error(parsedMsg || (text && text.slice(0, 200)) || 'O servidor nÃ£o devolveu uma imagem.');
     }
     const blob = await res.blob();
     const objUrl = URL.createObjectURL(blob);
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let removed = 0;
       for (const k of _previewObjectUrls.keys()) {
         if (removed >= 200) break;
-        if (inUse.has(k)) continue; // não revogar imagens que estão na tela
+        if (inUse.has(k)) continue; // nÃ£o revogar imagens que estÃ£o na tela
         revokePreviewUrl(k);
         removed += 1;
       }
@@ -116,13 +116,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (e) {
-      // NÃO zerar a imagem: mantém a última prévia válida para evitar "tela preta"
+      // NÃƒO zerar a imagem: mantÃ©m a Ãºltima prÃ©via vÃ¡lida para evitar "tela preta"
       imgEl.setAttribute('data-preview-error', '1');
 
       const id = imgEl.getAttribute('id') || '';
       const msg = (e && e.message) ? e.message : 'Falha ao carregar imagem.';
 
-      // Pré-visualização principal da marca d'água (mostra placeholder no lugar da imagem)
+      // PrÃ©-visualizaÃ§Ã£o principal da marca d'Ã¡gua (mostra placeholder no lugar da imagem)
       if (id === 'wm-preview' || id === 'wm-preview-portrait' || id === 'wm-preview-landscape') {
         try {
           if (id === 'wm-preview-portrait' || id === 'wm-preview') {
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw e;
       }
 
-      // Miniatura da marca d'água enviada (não deixa virar "preto")
+      // Miniatura da marca d'Ã¡gua enviada (nÃ£o deixa virar "preto")
       if (id === 'wm-file-preview' || id === 'wm-file-preview-p' || id === 'wm-file-preview-l') {
         try {
           imgEl.classList.add('hidden');
@@ -333,29 +333,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const promoFreeHintPublic = document.getElementById('ks-promo-free-hint-public');
   const promoFreeLabel = document.getElementById('ks-promo-free-label');
 
-  /** Textos padrão para o botão WhatsApp da aba Fotos e vendas; editáveis em Capa do link. */
+  /** Textos padrÃ£o para o botÃ£o WhatsApp da aba Fotos e vendas; editÃ¡veis em Capa do link. */
   const DEFAULT_SALES_WA_TPL = {
     approved:
-      'Olá, {{nome}}!\n\n' +
-      'As *fotos do {{galeria}}* já foram *aprovadas e confirmadas*.\n\n' +
-      'Abra o link abaixo, entre na galeria com o mesmo *nome*, *e-mail* e *WhatsApp* do cadastro e *baixe* suas imagens por lá:\n\n' +
+      'OlÃ¡, {{nome}}!\n\n' +
+      'As *fotos do {{galeria}}* jÃ¡ foram *aprovadas e confirmadas*.\n\n' +
+      'Abra o link abaixo, entre na galeria com o mesmo *nome*, *e-mail* e *WhatsApp* do cadastro e *baixe* suas imagens por lÃ¡:\n\n' +
       '{{link}}\n\n' +
-      'Qualquer dúvida, é só chamar.',
+      'Qualquer dÃºvida, Ã© sÃ³ chamar.',
     pending:
-      'Olá, {{nome}}!\n\n' +
-      'Sobre as *fotos do {{galeria}}*: sua seleção foi recebida, mas o *pagamento (PIX) ainda está pendente*.\n\n' +
-      'Assim que for confirmado, libero os downloads. Você pode acompanhar e reenviar comprovante neste link:\n\n' +
+      'OlÃ¡, {{nome}}!\n\n' +
+      'Sobre as *fotos do {{galeria}}*: sua seleÃ§Ã£o foi recebida, mas o *pagamento (PIX) ainda estÃ¡ pendente*.\n\n' +
+      'Assim que for confirmado, libero os downloads. VocÃª pode acompanhar e reenviar comprovante neste link:\n\n' +
       '{{link}}',
     rejected:
-      'Olá, {{nome}}!\n\n' +
+      'OlÃ¡, {{nome}}!\n\n' +
       'O comprovante das *fotos do {{galeria}}* foi recusado; ainda falta confirmar o pagamento para liberar os downloads.\n\n' +
       'Reenvie o comprovante pela galeria:\n\n' +
       '{{link}}',
     awaiting:
-      'Olá, {{nome}}!\n\n' +
-      'Sobre as *fotos do {{galeria}}*: sua seleção e o pagamento estão ok. Estou *revisando as fotos*; em breve libero o download neste link:\n\n' +
+      'OlÃ¡, {{nome}}!\n\n' +
+      'Sobre as *fotos do {{galeria}}*: sua seleÃ§Ã£o e o pagamento estÃ£o ok. Estou *revisando as fotos*; em breve libero o download neste link:\n\n' +
       '{{link}}\n\n' +
-      'Obrigado pela paciência!'
+      'Obrigado pela paciÃªncia!'
   };
 
   const SALES_WA_TEMPLATE_KEY = {
@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     awaiting: 'sales_whatsapp_template_awaiting'
   };
 
-  /** Qual modelo usar no botão WhatsApp (aba Fotos e vendas). */
+  /** Qual modelo usar no botÃ£o WhatsApp (aba Fotos e vendas). */
   function resolveSalesWaTemplateKind({ approvedCount, needsPaymentReminder, awaitingReview, st }) {
     if (approvedCount > 0) return 'approved';
     if (needsPaymentReminder) return st === 'rejected' ? 'rejected' : 'pending';
@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let _activeClientId = null;
   let _activeClientEmail = null;
-  /** Cliente cujo painel de atividades / seleções está em foco (multi-cliente). */
+  /** Cliente cujo painel de atividades / seleÃ§Ãµes estÃ¡ em foco (multi-cliente). */
   let _activityFocusClientId = null;
 
   // download
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // photos
   const pFile = document.getElementById('p-file');
-  const addPhotoBtn = document.getElementById('btn-add-photo'); // pode não existir (agora usamos o botão do drop)
+  const addPhotoBtn = document.getElementById('btn-add-photo'); // pode nÃ£o existir (agora usamos o botÃ£o do drop)
   const _addPhotoBtnHtml = addPhotoBtn?.innerHTML || '';
   // Upload UI (bolinha)
   const bubble = document.getElementById('ks-bubble');
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const bubbleFile = document.getElementById('ks-bubble-file');
   const bubbleMeta = document.getElementById('ks-bubble-meta');
   const bubbleCancel = document.getElementById('ks-bubble-cancel');
-  // Upload UI (overlay estilo Alboom - cobre toda a área de Fotos)
+  // Upload UI (overlay estilo Alboom - cobre toda a Ã¡rea de Fotos)
   const uploadOv = document.getElementById('ks-upload-ov');
   const uploadBar = document.getElementById('ks-upload-bar');
   const uploadTitle = document.getElementById('ks-upload-title');
@@ -542,9 +542,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const pickBtn = document.getElementById('ks-pick');
   const pickFolderBtn = document.getElementById('ks-pick-folder');
   const pFolderFile = document.getElementById('p-folder-file');
-  const upListBox = document.getElementById('ks-uplist'); // pode não existir
-  const upListMeta = document.getElementById('ks-uplist-meta'); // pode não existir
-  const upListItems = document.getElementById('ks-uplist-items'); // pode não existir
+  const upListBox = document.getElementById('ks-uplist'); // pode nÃ£o existir
+  const upListMeta = document.getElementById('ks-uplist-meta'); // pode nÃ£o existir
+  const upListItems = document.getElementById('ks-uplist-items'); // pode nÃ£o existir
   const pGrid = document.getElementById('p-grid');
   const pSelectedBar = document.getElementById('p-selected-bar');
   const pSelectedCount = document.getElementById('p-selected-count');
@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let salesTopPendingPeriodValue = readStoredTopPendingPeriod();
   if (salesTopPendingPeriod) salesTopPendingPeriod.value = salesTopPendingPeriodValue;
   let salesClientsListFilter = 'all';
-  /** Último detalhe do dashboard para o modal (recebido / falta / cortesia). */
+  /** Ãšltimo detalhe do dashboard para o modal (recebido / falta / cortesia). */
   let salesDashDetailCache = { received: [], missing: [], courtesy: [] };
   const customShareMsgByGallery = {};
   let shareLinkSaveTimer = null;
@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return { pendingProof, pendingBalanceRounds, approvedPhotos };
   }
-  /** Preferência do filtro "Ver seleção" por galeria (`all` ou número da rodada) */
+  /** PreferÃªncia do filtro "Ver seleÃ§Ã£o" por galeria (`all` ou nÃºmero da rodada) */
   const activityBatchPrefByGallery = {};
   let exportPayload = { lightroom: '', finder: '', windows: '' };
   let wmMode = 'x';
@@ -658,13 +658,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let wmScaleLandscapePct = 120;
   let wmRotatePortraitDeg = 0;
   let wmRotateLandscapeDeg = 0;
-  /** Offset mosaico / marca — retrato (foto vertical) */
+  /** Offset mosaico / marca â€” retrato (foto vertical) */
   let wmLogoOffsetXPctPortrait = 0;
   let wmLogoOffsetYPctPortrait = 0;
-  /** Offset mosaico / marca — paisagem (foto horizontal) */
+  /** Offset mosaico / marca â€” paisagem (foto horizontal) */
   let wmLogoOffsetXPctLandscape = 0;
   let wmLogoOffsetYPctLandscape = 0;
-  /** Esticar ladrilho por orientação */
+  /** Esticar ladrilho por orientaÃ§Ã£o */
   let wmStretchWPctPortrait = 100;
   let wmStretchHPctPortrait = 100;
   let wmStretchWPctLandscape = 100;
@@ -784,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!p) return;
     viewerImg.setAttribute('data-photo-id', String(p.id));
     // Carregar via fetch com Authorization
-    // ADMIN: na aba Fotos, carregar SEM marca d'água (evita quebrar se a logo/CF estiverem com problema).
+    // ADMIN: na aba Fotos, carregar SEM marca d'Ã¡gua (evita quebrar se a logo/CF estiverem com problema).
     const m = encodeURIComponent(getRadio('wm_mode') || wmMode || 'tile_dense');
     setImgPreview(viewerImg, { url: `${API_URL}/api/king-selection/photos/${p.id}/preview?wm_mode=${m}`, photoId: p.id });
     viewerTitle.textContent = p.original_name || 'Foto';
@@ -793,18 +793,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (viewerNext) viewerNext.disabled = viewerIndex >= list.length - 1;
     if (viewerDownload) viewerDownload.onclick = () => downloadPhoto(p.id, p.original_name);
 
-    // Botão Selecionar: estado e ação
+    // BotÃ£o Selecionar: estado e aÃ§Ã£o
     const isSel = selectedPhotoIds.has(p.id);
     if (viewerSelect) {
       viewerSelect.setAttribute('data-selected', isSel ? '1' : '0');
-      viewerSelect.title = isSel ? 'Remover da seleção' : 'Selecionar foto';
+      viewerSelect.title = isSel ? 'Remover da seleÃ§Ã£o' : 'Selecionar foto';
       if (viewerSelectIcon) {
         viewerSelectIcon.className = isSel ? 'fas fa-check' : 'far fa-circle';
         viewerSelectIcon.style.display = isSel ? 'block' : 'block';
       }
     }
 
-    // Pontos removidos: paginação já existe nas miniaturas (ex.: 87 exibições)
+    // Pontos removidos: paginaÃ§Ã£o jÃ¡ existe nas miniaturas (ex.: 87 exibiÃ§Ãµes)
     if (viewerDots) viewerDots.innerHTML = '';
   }
 
@@ -862,13 +862,13 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify({ is_cover: true })
     });
     if (!res.ok) throw new Error('Erro ao definir capa');
-    // Conveniência: quando a foto pertence a uma pasta, sincroniza também a capa dessa pasta.
-    // Evita confusão entre "capa da galeria" e "capa da pasta" no front do cliente.
+    // ConveniÃªncia: quando a foto pertence a uma pasta, sincroniza tambÃ©m a capa dessa pasta.
+    // Evita confusÃ£o entre "capa da galeria" e "capa da pasta" no front do cliente.
     const folderId = parseInt(opts?.folderId, 10) || 0;
     if (folderId) {
       try {
         await setFolderCover(folderId, photoId);
-      } catch (_) { /* não bloquear capa geral por falha pontual da pasta */ }
+      } catch (_) { /* nÃ£o bloquear capa geral por falha pontual da pasta */ }
     }
     await loadGallery();
   }
@@ -890,7 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inp.onchange = async () => {
       const file = inp.files && inp.files[0];
       if (!file) return;
-      setUploadUi({ active: true, line: 'Substituindo…', file: file.name, pct: 0 });
+      setUploadUi({ active: true, line: 'Substituindoâ€¦', file: file.name, pct: 0 });
       try {
         let key, receipt;
         try {
@@ -903,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
           await loadGallery();
           return;
         }
-        if (!key || !receipt) throw new Error('Resposta inválida');
+        if (!key || !receipt) throw new Error('Resposta invÃ¡lida');
         const res = await fetchWithTimeout(`${API_URL}/api/king-selection/photos/${photoId}/replace-r2`, {
           method: 'POST', headers: HEADERS,
           body: JSON.stringify({ key, receipt, original_name: file.name || 'foto' })
@@ -936,10 +936,10 @@ document.addEventListener('DOMContentLoaded', () => {
     errEl?.classList.add('hidden');
   }
 
-  // Se acontecer erro inesperado (ex.: rate-limit estourando), não “derruba” a tela.
+  // Se acontecer erro inesperado (ex.: rate-limit estourando), nÃ£o â€œderrubaâ€ a tela.
   window.addEventListener('error', (ev) => {
     try {
-      const m = ev?.message || 'Erro inesperado na página.';
+      const m = ev?.message || 'Erro inesperado na pÃ¡gina.';
       showError(m);
       setUploadUi({ active: false });
       try { uploadState.running = false; } catch (_) { }
@@ -955,9 +955,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function setActiveTab(tab) {
-    // A navegação do topo (Meus projetos / Clientes / Configurações) usa `setActiveTab('clients')`,
-    // mas a aba "clients" não existe na lista lateral (sideLinks). Como a validação era só pelos links,
-    // o código caía no fallback "activity" e parecia que a aba Clientes não funcionava.
+    // A navegaÃ§Ã£o do topo (Meus projetos / Clientes / ConfiguraÃ§Ãµes) usa `setActiveTab('clients')`,
+    // mas a aba "clients" nÃ£o existe na lista lateral (sideLinks). Como a validaÃ§Ã£o era sÃ³ pelos links,
+    // o cÃ³digo caÃ­a no fallback "activity" e parecia que a aba Clientes nÃ£o funcionava.
     // Validar pelo conjunto real de panes existentes.
     const paneTabs = panes.map((p) => String(p.getAttribute('data-pane') || '').trim()).filter(Boolean);
     const sideTabs = sideLinks.map((a) => String(a.getAttribute('data-tab') || '').trim()).filter(Boolean);
@@ -1001,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, '&#039;');
   }
 
-  /** E-mail sintético (visitante / cadastro) — não exibir como contacto do cliente. */
+  /** E-mail sintÃ©tico (visitante / cadastro) â€” nÃ£o exibir como contacto do cliente. */
   function isPlaceholderClienteEmail(email) {
     const e = String(email || '').trim().toLowerCase();
     return !e || e === '-' || e.endsWith('@cadastro.kingselection.invalid') || e.endsWith('@internal.king');
@@ -1016,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // Toast (substitui alert): feedback bonito e não intrusivo
+  // Toast (substitui alert): feedback bonito e nÃ£o intrusivo
   // ============================================================
   const toastHost = document.getElementById('ks-toast-host');
   function toast(message, { title, kind = 'ok', ttlMs = 2600 } = {}) {
@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const msg = String(message || '').trim();
-    const t = String(title || (kind === 'err' ? 'Erro' : (kind === 'warn' ? 'Atenção' : 'Pronto'))).trim();
+    const t = String(title || (kind === 'err' ? 'Erro' : (kind === 'warn' ? 'AtenÃ§Ã£o' : 'Pronto'))).trim();
     const ic = (kind === 'err') ? 'fa-triangle-exclamation' : (kind === 'warn' ? 'fa-circle-info' : 'fa-circle-check');
     const el = document.createElement('div');
     el.className = `ks-toast ${kind}`;
@@ -1062,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /** Mesma regra da aba Cupom: vendas com promo, ou público com download permitido + promo. */
+  /** Mesma regra da aba Cupom: vendas com promo, ou pÃºblico com download permitido + promo. */
   function shareLinkShouldIncludePromoCupomParam() {
     const g = gallery;
     if (!g?.promo_enabled) return false;
@@ -1077,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!shareLinkShouldIncludePromoCupomParam()) return '';
     const code = String(gallery.promo_coupon_code || '').trim();
     return code
-      ? `Cupom para a pessoa digitar na galeria (não vai preenchido sozinho): «${code}». Peça para seguir as redes e validar o código manualmente.`
+      ? `Cupom para a pessoa digitar na galeria (nÃ£o vai preenchido sozinho): Â«${code}Â». PeÃ§a para seguir as redes e validar o cÃ³digo manualmente.`
       : '';
   }
 
@@ -1111,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resolveWhatsappDigits(rawPhone) {
     let digits = normalizeWhatsDigits(rawPhone || '');
-    // Convenção BR: se vier só DDD+número, prefixa 55.
+    // ConvenÃ§Ã£o BR: se vier sÃ³ DDD+nÃºmero, prefixa 55.
     if (digits && (digits.length === 10 || digits.length === 11)) {
       digits = `55${digits}`;
     }
@@ -1124,9 +1124,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const custom = String(linksCustomMsg?.value || customShareMsgByGallery[galleryId] || '').trim();
     const cupHint = promoShareAutoMessageHint();
     const base = [
-      `Olá!`,
+      `OlÃ¡!`,
       ``,
-      `As fotos de ${nome} estão disponíveis para seleção.`,
+      `As fotos de ${nome} estÃ£o disponÃ­veis para seleÃ§Ã£o.`,
       ``,
       ...(cupHint ? [cupHint, ``] : []),
       `Link:`,
@@ -1148,15 +1148,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return v != null && String(v).trim() !== '';
   }
 
-  /** Acesso privado (lista de clientes com e-mail/senha definidos pelo fotógrafo). Outros modos: autocadastro ou vendas → não enviar credenciais na mensagem genérica. */
+  /** Acesso privado (lista de clientes com e-mail/senha definidos pelo fotÃ³grafo). Outros modos: autocadastro ou vendas â†’ nÃ£o enviar credenciais na mensagem genÃ©rica. */
   function shareMessageShouldIncludeClientCredentials() {
     const am = String(gallery?.access_mode || 'private').toLowerCase();
     return am === 'private';
   }
 
   /**
-   * Texto automático para WhatsApp/cópia: em acesso privado com 1 cliente, inclui e-mail e senha.
-   * Vários clientes: orienta a usar "Copiar acesso" na aba Clientes.
+   * Texto automÃ¡tico para WhatsApp/cÃ³pia: em acesso privado com 1 cliente, inclui e-mail e senha.
+   * VÃ¡rios clientes: orienta a usar "Copiar acesso" na aba Clientes.
    */
   async function buildAutoShareMessageText() {
     const link = buildClientShareLink();
@@ -1166,9 +1166,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function baseSimple() {
       const cupHint = promoShareAutoMessageHint();
       const lines = [
-        `Olá!`,
+        `OlÃ¡!`,
         ``,
-        `As fotos de ${nome} estão disponíveis para seleção.`,
+        `As fotos de ${nome} estÃ£o disponÃ­veis para seleÃ§Ã£o.`,
         ``,
         ...(cupHint ? [cupHint, ``] : []),
         `Link:`,
@@ -1200,14 +1200,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let out = baseSimple();
     if (clients.length > 1) {
-      out += '\n\nEsta galeria tem mais de um cliente. Na aba "Clientes", use "Copiar acesso" em cada cartão para enviar o e-mail e a senha corretos.';
+      out += '\n\nEsta galeria tem mais de um cliente. Na aba "Clientes", use "Copiar acesso" em cada cartÃ£o para enviar o e-mail e a senha corretos.';
     } else if (clients.length === 0) {
-      out += '\n\nCadastre o cliente na aba "Clientes" para que a mensagem automática possa incluir e-mail e senha.';
+      out += '\n\nCadastre o cliente na aba "Clientes" para que a mensagem automÃ¡tica possa incluir e-mail e senha.';
     }
     return out;
   }
 
-  /** Modo automático: recalcula a partir do projeto + link + opcional. Com texto gravado em `share_link_full_message`, mantém o texto do utilizador. */
+  /** Modo automÃ¡tico: recalcula a partir do projeto + link + opcional. Com texto gravado em `share_link_full_message`, mantÃ©m o texto do utilizador. */
   async function refreshShareMessagePreview(opts = { forceAuto: false }) {
     const ta = linksFullMsg;
     if (!ta) return;
@@ -1226,7 +1226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(linksFullMsg?.value ?? buildWhatsMessage());
   }
 
-  /** Para enviar ao WhatsApp ou quando o texto automático precisa da senha (acesso privado). */
+  /** Para enviar ao WhatsApp ou quando o texto automÃ¡tico precisa da senha (acesso privado). */
   async function resolveShareFullMessageForSend() {
     if (shareLinkHasFullOverride()) {
       return String(linksFullMsg?.value || '');
@@ -1344,7 +1344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!linkCoverPicker || !linkCoverPhotoSel) return;
     const sorted = getSortedPhotosForLinkCover();
     if (!sorted.length) {
-      toast('Esta galeria ainda não tem fotos para usar como capa.', { kind: 'warn', title: 'Sem fotos' });
+      toast('Esta galeria ainda nÃ£o tem fotos para usar como capa.', { kind: 'warn', title: 'Sem fotos' });
       return;
     }
     const cur = parseInt(linkCoverPhotoSel.value || '0', 10) || (parseInt(sorted[0]?.id, 10) || 0);
@@ -1389,7 +1389,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pid = parseInt(p.id, 10) || 0;
       const nm = String(p.original_name || `Foto #${pid}`).trim();
       const ord = photoOrderVal(p);
-      const label = ord > 0 ? `${ord} — ${nm}` : nm;
+      const label = ord > 0 ? `${ord} â€” ${nm}` : nm;
       return `<option value="${pid}">${escapeHtml(label)}</option>`;
     }).join('');
     const coverId = parseInt(getCurrentCoverPhotoId() || '0', 10) || (parseInt(sorted[0]?.id, 10) || 0);
@@ -1422,7 +1422,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!gallery?.slug) return;
     try {
       await loadExport();
-    } catch (_) { /* senha pode falhar; link continua válido */
+    } catch (_) { /* senha pode falhar; link continua vÃ¡lido */
     }
 
     const prod = buildClientShareLink();
@@ -1461,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/\{\{galeria\}\}/gi, galeria);
   }
 
-  /** Monta a mensagem do botão WhatsApp na aba vendas (mesma lógica de `resolveSalesWaTemplateKind`). */
+  /** Monta a mensagem do botÃ£o WhatsApp na aba vendas (mesma lÃ³gica de `resolveSalesWaTemplateKind`). */
   function buildSalesClientWhatsMessage({ approvedCount, needsPaymentReminder, awaitingReview, st, nomeCli, link, nomeGaleria }) {
     const kind = resolveSalesWaTemplateKind({ approvedCount, needsPaymentReminder, awaitingReview, st });
     const key = SALES_WA_TEMPLATE_KEY[kind];
@@ -1570,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (promoFreeLabel) {
       promoFreeLabel.textContent = salesOn
         ? 'Fotos isentas pelo cupom (no valor estimado)'
-        : 'Quantas fotos liberar para baixar (cupom válido)';
+        : 'Quantas fotos liberar para baixar (cupom vÃ¡lido)';
     }
     if (promoEnabled) promoEnabled.checked = !!g.promo_enabled;
     if (promoCode) promoCode.value = String(g.promo_coupon_code || '').trim();
@@ -1588,8 +1588,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (promoValidHint) {
       const vu = g.promo_valid_until;
       promoValidHint.textContent = vu
-        ? `Válido até ${new Date(vu).toLocaleString('pt-BR')}. Informe dias acima para renovar a partir de agora.`
-        : 'Sem expiração (ou ainda não definida). Informe dias para criar/renovar prazo.';
+        ? `VÃ¡lido atÃ© ${new Date(vu).toLocaleString('pt-BR')}. Informe dias acima para renovar a partir de agora.`
+        : 'Sem expiraÃ§Ã£o (ou ainda nÃ£o definida). Informe dias para criar/renovar prazo.';
     }
   }
 
@@ -1653,9 +1653,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function getWmParams() {
     let mode = getRadio('wm_mode') || wmMode || 'x';
     const hasCustom = galleryHasCustomWmPath();
-    // Se não há marca personalizada enviada, não permitir modo "logo" (evita 500/422 no preview)
+    // Se nÃ£o hÃ¡ marca personalizada enviada, nÃ£o permitir modo "logo" (evita 500/422 no preview)
     if (mode === 'logo' && !hasCustom) mode = 'tile_dense';
-    // Se há marca personalizada enviada, não permitir modo "tile_dense" (Conecta King) para evitar conflito
+    // Se hÃ¡ marca personalizada enviada, nÃ£o permitir modo "tile_dense" (Conecta King) para evitar conflito
     if (mode === 'tile_dense' && hasCustom) mode = 'logo';
     const opPct = clamp(parseInt(wmOpacity?.value || String(wmOpacityPct), 10), 0, 100);
     const scPPct = clamp(parseInt(wmScaleP?.value || String(wmScalePortraitPct), 10), 10, 500);
@@ -1716,8 +1716,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setWmRotateLabels(rp, rl) {
-    if (wmRotatePVal) wmRotatePVal.textContent = `${rp || 0}°`;
-    if (wmRotateLVal) wmRotateLVal.textContent = `${rl || 0}°`;
+    if (wmRotatePVal) wmRotatePVal.textContent = `${rp || 0}Â°`;
+    if (wmRotateLVal) wmRotateLVal.textContent = `${rl || 0}Â°`;
   }
 
   function updateWmRotateButtonsP() {
@@ -1743,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setWmOffsetLabelsPortrait(x, y) {
-    if (wmLogoOffsetValP) wmLogoOffsetValP.textContent = `X ${fmtWmOffsetAxis(x)} · Y ${fmtWmOffsetAxis(y)}`;
+    if (wmLogoOffsetValP) wmLogoOffsetValP.textContent = `X ${fmtWmOffsetAxis(x)} Â· Y ${fmtWmOffsetAxis(y)}`;
     const sx = clamp(parseFloat(String(x)), -50, 50);
     const sy = clamp(parseFloat(String(y)), -50, 50);
     const near = (a, b, tol) => Math.abs(a - b) <= tol;
@@ -1758,7 +1758,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setWmOffsetLabelsLandscape(x, y) {
-    if (wmLogoOffsetValL) wmLogoOffsetValL.textContent = `X ${fmtWmOffsetAxis(x)} · Y ${fmtWmOffsetAxis(y)}`;
+    if (wmLogoOffsetValL) wmLogoOffsetValL.textContent = `X ${fmtWmOffsetAxis(x)} Â· Y ${fmtWmOffsetAxis(y)}`;
     const sx = clamp(parseFloat(String(x)), -50, 50);
     const sy = clamp(parseFloat(String(y)), -50, 50);
     const near = (a, b, tol) => Math.abs(a - b) <= tol;
@@ -1796,7 +1796,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasCustom) {
       wmFileCustomWrap?.classList.add('hidden');
       wmFileDefaults?.classList.remove('hidden');
-      if (wmFilePh) wmFilePh.textContent = 'Marca Conecta King (fixa — retrato e paisagem)';
+      if (wmFilePh) wmFilePh.textContent = 'Marca Conecta King (fixa â€” retrato e paisagem)';
       [wmFilePreviewP, wmFilePreviewL].forEach((img) => {
         if (!img) return;
         const prevKey = img.getAttribute('data-cache-key');
@@ -1810,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     wmFileDefaults?.classList.add('hidden');
     wmFileCustomWrap?.classList.remove('hidden');
-    if (wmFileCustomLabel) wmFileCustomLabel.textContent = 'Marca d’água personalizada (enviada)';
+    if (wmFileCustomLabel) wmFileCustomLabel.textContent = 'Marca dâ€™Ã¡gua personalizada (enviada)';
     wmFileFrameP?.classList.remove('hidden');
     wmFileFrameL?.classList.remove('hidden');
     wmFilePreviewP?.classList.toggle('hidden', false);
@@ -1836,8 +1836,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     setWmPlaceholders(true);
-    if (wmPhP) wmPhP.textContent = 'Carregando prévia...';
-    if (wmPhL) wmPhL.textContent = 'Carregando prévia...';
+    if (wmPhP) wmPhP.textContent = 'Carregando prÃ©via...';
+    if (wmPhL) wmPhL.textContent = 'Carregando prÃ©via...';
 
     const {
       mode,
@@ -1874,7 +1874,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (mode === 'logo') {
         wmCurrent.textContent = hasCustomPath
           ? 'Sua marca personalizada'
-          : 'Sua marca: (não enviada)';
+          : 'Sua marca: (nÃ£o enviada)';
       } else {
         wmCurrent.textContent = '';
       }
@@ -1945,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => {
       wmPhL?.classList.toggle('hidden', true);
       hideError();
     } catch (_) {
-      // setImgPreview já colocou o placeholder e mostrou a mensagem.
+      // setImgPreview jÃ¡ colocou o placeholder e mostrou a mensagem.
     } finally {
       wmPreviewInFlight = false;
       if (wmPreviewQueued) {
@@ -1983,11 +1983,11 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.innerHTML = `
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <button type="button" class="ks-btn" id="ks-only-photos-btn"><i class="fas fa-images"></i> Adicionar só fotos</button>
+          <button type="button" class="ks-btn" id="ks-only-photos-btn"><i class="fas fa-images"></i> Adicionar sÃ³ fotos</button>
           <button type="button" class="ks-btn" id="ks-folder-auto-face-btn"><i class="fas fa-user-group"></i> Separar por pasta (rosto)</button>
           <button type="button" class="ks-btn" id="ks-folder-auto-reprocess-btn"><i class="fas fa-rotate-right"></i> Reprocessar e separar</button>
           <button type="button" class="ks-btn" id="ks-folder-select-all-btn"><i class="far fa-check-square"></i> Selecionar todas as pastas</button>
-          <button type="button" class="ks-btn" id="ks-folder-select-none-btn"><i class="far fa-square"></i> Limpar seleção</button>
+          <button type="button" class="ks-btn" id="ks-folder-select-none-btn"><i class="far fa-square"></i> Limpar seleÃ§Ã£o</button>
           <button type="button" class="ks-btn" id="ks-folder-delete-selected-btn" style="color:#fca5a5;border-color:rgba(248,113,113,.45)">
             <i class="fas fa-trash"></i> Excluir selecionadas
           </button>
@@ -2000,9 +2000,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <option value="count">Pastas: mais fotos primeiro</option>
           </select>
           <select class="ks-input" id="ks-photo-sort" style="min-width:190px">
-            <option value="order">Fotos: sequência original</option>
+            <option value="order">Fotos: sequÃªncia original</option>
             <option value="name">Fotos: nome (A-Z / 1-2-3)</option>
-            <option value="id">Fotos: número (ID)</option>
+            <option value="id">Fotos: nÃºmero (ID)</option>
           </select>
           <select class="ks-input" id="ks-folder-filter" style="min-width:170px"></select>
         </div>
@@ -2011,7 +2011,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="ks-folder-auto-history" class="ks-muted" style="font-size:11px;margin-top:8px;line-height:1.35;"></div>
       <div id="ks-folder-selection-count" class="ks-muted" style="font-size:12px;margin-top:8px;line-height:1.35;"></div>
       <div class="ks-muted" style="font-size:11px;margin-top:8px;line-height:1.35;">
-        Importação com subpastas: use o botão <b>Pasta e subpastas</b> na área <b>Arraste e solte</b> acima (um único fluxo).
+        ImportaÃ§Ã£o com subpastas: use o botÃ£o <b>Pasta e subpastas</b> na Ã¡rea <b>Arraste e solte</b> acima (um Ãºnico fluxo).
       </div>
       <div id="ks-folder-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px;margin-top:10px;width:100%;min-width:0;"></div>
     `;
@@ -2048,7 +2048,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const baseFolders = normalizeFolders(gallery?.folders);
           if (baseFolders.length < 2) {
-            toast('Não há pastas suficientes para reordenar.', { kind: 'warn', title: 'Pastas' });
+            toast('NÃ£o hÃ¡ pastas suficientes para reordenar.', { kind: 'warn', title: 'Pastas' });
             return;
           }
           const ordered = baseFolders
@@ -2084,11 +2084,11 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ minSimilarity: 72, forceReprocess: false, concurrency: 5, speedMode: 'auto' })
           });
           const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data.message || 'Erro ao iniciar separação por pasta');
+          if (!res.ok) throw new Error(data.message || 'Erro ao iniciar separaÃ§Ã£o por pasta');
           autoFolderLastJobId = parseInt(data?.job?.id || 0, 10) || autoFolderLastJobId;
-          setAutoFolderStatusText('Separação por pasta iniciada em segundo plano...');
+          setAutoFolderStatusText('SeparaÃ§Ã£o por pasta iniciada em segundo plano...');
           startAutoFolderJobPolling();
-          toast('Separação por pasta iniciada em segundo plano.', { kind: 'ok', title: 'Pastas' });
+          toast('SeparaÃ§Ã£o por pasta iniciada em segundo plano.', { kind: 'ok', title: 'Pastas' });
         } catch (e) {
           showError(e?.message || 'Erro ao separar por pasta');
         }
@@ -2099,7 +2099,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (reprocessBtn) {
         const ok = window.confirm(
           'Reprocessar TODAS as fotos e separar por pasta?\n\n' +
-          'Use isso quando você quiser refazer a organização facial do zero.'
+          'Use isso quando vocÃª quiser refazer a organizaÃ§Ã£o facial do zero.'
         );
         if (!ok) return;
         try {
@@ -2111,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(data.message || 'Erro ao iniciar reprocessamento');
           autoFolderLastJobId = parseInt(data?.job?.id || 0, 10) || autoFolderLastJobId;
-          setAutoFolderStatusText('Reprocessamento + separação iniciado em segundo plano...');
+          setAutoFolderStatusText('Reprocessamento + separaÃ§Ã£o iniciado em segundo plano...');
           startAutoFolderJobPolling();
           renderAutoFolderHistory().catch(() => { });
           toast('Reprocessamento iniciado em segundo plano.', { kind: 'ok', title: 'Pastas' });
@@ -2174,7 +2174,7 @@ document.addEventListener('DOMContentLoaded', () => {
           toast('Selecione ao menos uma pasta.', { kind: 'warn', title: 'Pastas' });
           return;
         }
-        const ok = window.confirm(`Excluir ${ids.length} pasta(s)? As fotos continuarão na galeria, sem pasta.`);
+        const ok = window.confirm(`Excluir ${ids.length} pasta(s)? As fotos continuarÃ£o na galeria, sem pasta.`);
         if (!ok) return;
         let deleted = 0;
         let failed = 0;
@@ -2199,11 +2199,11 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFoldersAdminUi();
         renderPhotos();
         if (deleted > 0 && failed === 0) {
-          toast(`${deleted} pasta(s) excluída(s).`, { kind: 'ok', title: 'Pastas' });
+          toast(`${deleted} pasta(s) excluÃ­da(s).`, { kind: 'ok', title: 'Pastas' });
         } else if (deleted > 0 && failed > 0) {
-          toast(`${deleted} pasta(s) excluída(s) e ${failed} com erro.`, { kind: 'warn', title: 'Pastas' });
+          toast(`${deleted} pasta(s) excluÃ­da(s) e ${failed} com erro.`, { kind: 'warn', title: 'Pastas' });
         } else {
-          showError('Não foi possível excluir as pastas selecionadas.');
+          showError('NÃ£o foi possÃ­vel excluir as pastas selecionadas.');
         }
         return;
       }
@@ -2343,7 +2343,7 @@ document.addEventListener('DOMContentLoaded', () => {
       headers: HEADERS
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Erro ao consultar job de separação por pasta');
+    if (!res.ok) throw new Error(data.message || 'Erro ao consultar job de separaÃ§Ã£o por pasta');
     return data.job || null;
   }
 
@@ -2353,7 +2353,7 @@ document.addEventListener('DOMContentLoaded', () => {
       headers: HEADERS
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Erro ao consultar histórico de jobs');
+    if (!res.ok) throw new Error(data.message || 'Erro ao consultar histÃ³rico de jobs');
     return Array.isArray(data.jobs) ? data.jobs : [];
   }
 
@@ -2379,7 +2379,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const proc = `${parseInt(j.processed_photos || 0, 10) || 0}/${parseInt(j.total_photos || 0, 10) || 0}`;
         const assigned = parseInt(j.assigned_photos || 0, 10) || 0;
         const created = formatJobTime(j.created_at);
-        return `#${j.id} • ${st} • ${stage} • ${proc} • separadas ${assigned} • ${created}`;
+        return `#${j.id} â€¢ ${st} â€¢ ${stage} â€¢ ${proc} â€¢ separadas ${assigned} â€¢ ${created}`;
       }).join('<br/>');
     } catch (_) {
       // silencioso
@@ -2408,7 +2408,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const errors = parseInt(job.error_photos || 0, 10) || 0;
       const assigned = parseInt(job.assigned_photos || 0, 10) || 0;
       const msg = String(job.message || '').trim();
-      const line = `Separação por pasta: ${String(job.status || '').toUpperCase()} • etapa: ${job.stage || '-'} • processadas: ${processed}/${total} • erros: ${errors} • separadas: ${assigned}${msg ? ` • ${msg}` : ''}`;
+      const line = `SeparaÃ§Ã£o por pasta: ${String(job.status || '').toUpperCase()} â€¢ etapa: ${job.stage || '-'} â€¢ processadas: ${processed}/${total} â€¢ erros: ${errors} â€¢ separadas: ${assigned}${msg ? ` â€¢ ${msg}` : ''}`;
       setAutoFolderStatusText(line);
 
       const terminal = ['done', 'error', 'cancelled'].includes(String(job.status || '').toLowerCase());
@@ -2417,7 +2417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAutoFolderHistory().catch(() => { });
         if (String(job.status || '').toLowerCase() === 'done') {
           await loadGallery().catch(() => { });
-          toast('Separação automática por pasta finalizada.', { kind: 'ok', title: 'Pastas' });
+          toast('SeparaÃ§Ã£o automÃ¡tica por pasta finalizada.', { kind: 'ok', title: 'Pastas' });
         }
         return;
       }
@@ -2445,7 +2445,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const errors = parseInt(job.error_photos || 0, 10) || 0;
       const assigned = parseInt(job.assigned_photos || 0, 10) || 0;
       const msg = String(job.message || '').trim();
-      setAutoFolderStatusText(`Separação por pasta: ${String(job.status || '').toUpperCase()} • etapa: ${job.stage || '-'} • processadas: ${processed}/${total} • erros: ${errors} • separadas: ${assigned}${msg ? ` • ${msg}` : ''}`);
+      setAutoFolderStatusText(`SeparaÃ§Ã£o por pasta: ${String(job.status || '').toUpperCase()} â€¢ etapa: ${job.stage || '-'} â€¢ processadas: ${processed}/${total} â€¢ erros: ${errors} â€¢ separadas: ${assigned}${msg ? ` â€¢ ${msg}` : ''}`);
       renderAutoFolderHistory().catch(() => { });
       if (['processing', 'pending'].includes(String(job.status || '').toLowerCase())) {
         startAutoFolderJobPolling();
@@ -2548,7 +2548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (photoSortSel) photoSortSel.value = photoSortMode;
     if (uploadModeSel) uploadModeSel.value = uploadFolderMode;
     if (uploadTargetSel) {
-      uploadTargetSel.innerHTML = `<option value="">Pasta de upload…</option>${folders.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}`;
+      uploadTargetSel.innerHTML = `<option value="">Pasta de uploadâ€¦</option>${folders.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}`;
       uploadTargetSel.value = uploadFolderId ? String(uploadFolderId) : '';
       uploadTargetSel.disabled = uploadFolderMode !== 'folder';
     }
@@ -2556,7 +2556,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (folderSelectionCount) {
       const n = selectedFolderIds.size;
       folderSelectionCount.innerHTML = n > 0
-        ? `<i class="fas fa-check-square"></i> ${n} pasta(s) selecionada(s) para exclusão em lote.`
+        ? `<i class="fas fa-check-square"></i> ${n} pasta(s) selecionada(s) para exclusÃ£o em lote.`
         : '<i class="far fa-square"></i> Nenhuma pasta selecionada.';
     }
     if (!cards) return;
@@ -2632,17 +2632,17 @@ document.addEventListener('DOMContentLoaded', () => {
       pSelectedBar.classList.toggle('active', n > 0);
     }
 
-    // Paginação (evita página infinita com 1000+ fotos)
+    // PaginaÃ§Ã£o (evita pÃ¡gina infinita com 1000+ fotos)
     if (pPager) pPager.classList.toggle('hidden', filtered.length <= pageSize);
-    if (pPageLabel) pPageLabel.textContent = `Página ${photoPageIndex + 1}/${totalPages} • ${filtered.length} foto(s)`;
+    if (pPageLabel) pPageLabel.textContent = `PÃ¡gina ${photoPageIndex + 1}/${totalPages} â€¢ ${filtered.length} foto(s)`;
     if (pPagePrev) pPagePrev.disabled = photoPageIndex <= 0;
     if (pPageNext) pPageNext.disabled = photoPageIndex >= totalPages - 1;
     if (pPageNumbers) {
-      // Para 1..12 (caso típico), mostra tudo. Para muitos, usa janela com reticências.
+      // Para 1..12 (caso tÃ­pico), mostra tudo. Para muitos, usa janela com reticÃªncias.
       const maxAll = 20;
       const cur = photoPageIndex + 1;
       const mkBtn = (n, { current, ellipsis } = {}) => {
-        if (ellipsis) return `<span class="px-2 text-xs ks-muted select-none">…</span>`;
+        if (ellipsis) return `<span class="px-2 text-xs ks-muted select-none">â€¦</span>`;
         const cls = current ? 'ks-btn ks-btn-primary ks-pagebtn' : 'ks-btn ks-pagebtn';
         return `<button class="${cls}" type="button" data-page="${n}">${n}</button>`;
       };
@@ -2682,11 +2682,11 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="flex items-center gap-2">
               ${isCover ? `<span class="ks-chip" title="Capa"><i class="fas fa-image"></i><span>Capa</span></span>` : ``}
               ${isFolderCover ? `<span class="ks-chip" title="Capa da pasta"><i class="fas fa-folder-open"></i><span>Capa da pasta</span></span>` : ``}
-              <button class="ks-selbtn" data-action="select" data-selected="${isSel ? '1' : '0'}" title="${isSel ? 'Remover da seleção' : 'Selecionar'}" aria-label="Selecionar">
+              <button class="ks-selbtn" data-action="select" data-selected="${isSel ? '1' : '0'}" title="${isSel ? 'Remover da seleÃ§Ã£o' : 'Selecionar'}" aria-label="Selecionar">
                 ${isSel ? `<i class="fas fa-check"></i>` : ``}
               </button>
               <button class="ks-ico" data-action="open" title="Ampliar"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
-                <button class="ks-ico" data-action="menu" title="Opções"><i class="fas fa-ellipsis-v"></i></button>
+                <button class="ks-ico" data-action="menu" title="OpÃ§Ãµes"><i class="fas fa-ellipsis-v"></i></button>
               </div>
             </div>
 
@@ -2698,7 +2698,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="ks-cap"><span class="ks-cap-id">#${p.id}</span>${escapeHtml(p.original_name || '')}</div>
           </div>
 
-          <!-- Menu fora do recorte da foto (não fica cortado) -->
+          <!-- Menu fora do recorte da foto (nÃ£o fica cortado) -->
           <div class="ks-menu" data-menu>
             <button data-action="open"><i class="fas fa-up-right-and-down-left-from-center"></i> Ampliar foto</button>
             <button data-action="download"><i class="fas fa-download"></i> Baixar foto</button>
@@ -2764,7 +2764,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (action === 'folder-cover') {
           const fid = parseInt(photo.folder_id || 0, 10) || photoFolderFilterId || 0;
           if (!fid) {
-            toast('Esta foto não está em uma pasta.', { kind: 'warn', title: 'Pastas' });
+            toast('Esta foto nÃ£o estÃ¡ em uma pasta.', { kind: 'warn', title: 'Pastas' });
             return;
           }
           await setFolderCover(fid, photoId);
@@ -2786,7 +2786,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Hidratar previews: Intersection Observer para carregar só quando visível (mais rápido)
+    // Hidratar previews: Intersection Observer para carregar sÃ³ quando visÃ­vel (mais rÃ¡pido)
     if (uploadState && uploadState.running) return;
     const m = (getRadio('wm_mode') || wmMode || 'tile_dense');
     const wm = encodeURIComponent(m);
@@ -2831,7 +2831,7 @@ document.addEventListener('DOMContentLoaded', () => {
     projectTitle.textContent = gallery?.nome_projeto || 'Projeto';
     projectSub.textContent = `slug: ${gallery?.slug || '-'}`;
 
-    // Activity — lista por cliente; painel usa o cliente em foco (ou legado sem tabela de clientes)
+    // Activity â€” lista por cliente; painel usa o cliente em foco (ou legado sem tabela de clientes)
     const galleryStatus = gallery?.status || '-';
     const clientsList = Array.isArray(gallery?.clients) ? gallery.clients : [];
     const enabledClients = clientsList.filter(c => c && c.enabled !== false);
@@ -2877,7 +2877,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const payBadge = String(c.sales_payment_badge || '').trim();
       const isBlessed = payStatus === 'blessed'
         || !!c.sales_payment_is_blessed
-        || /cortesia|abençoada|aben/i.test(payBadge);
+        || /cortesia|abenÃ§oada|aben/i.test(payBadge);
       const isConfirmed = payStatus === 'confirmed';
       if (activityPayFilter === 'courtesy') return isBlessed;
       if (activityPayFilter === 'paid') return isConfirmed && !isBlessed;
@@ -2914,7 +2914,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!container) return;
       const vis = arr.filter(clientMatchesSearch);
       if (!vis.length) {
-        container.innerHTML = '<div class="ks-abo-item ks-muted" style="opacity:.75">—</div>';
+        container.innerHTML = '<div class="ks-abo-item ks-muted" style="opacity:.75">â€”</div>';
         return;
       }
       container.innerHTML = vis.map((c) => {
@@ -2922,7 +2922,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nm = escapeHtml(String(c.nome || '').trim() || (c.email || 'Cliente'));
         const em = escapeHtml(String(c.email || '').trim());
         const ph = escapeHtml(String(c.telefone || '').trim());
-        const sub = [em, ph].filter(Boolean).join(' · ') || em || '—';
+        const sub = [em, ph].filter(Boolean).join(' Â· ') || em || 'â€”';
         const payBadge = String(c.sales_payment_badge || '').trim();
         let badgeHtml = '';
         if (payBadge) {
@@ -2985,12 +2985,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (actBatchFilter && actBatchToolbar && rKeys.length >= 1) {
       actBatchToolbar.classList.remove('hidden');
       actBatchToolbar.classList.add('flex');
-      actBatchFilter.innerHTML = '<option value="all">Todas as sessões (acumulado)</option>';
+      actBatchFilter.innerHTML = '<option value="all">Todas as sessÃµes (acumulado)</option>';
       for (const k of rKeys.slice().sort((a, b) => a - b)) {
         const opt = document.createElement('option');
         opt.value = String(k);
         const n = rd[String(k)] ?? rd[k] ?? 0;
-        opt.textContent = `Seleção ${k} (${n} foto${n === 1 ? '' : 's'})`;
+        opt.textContent = `SeleÃ§Ã£o ${k} (${n} foto${n === 1 ? '' : 's'})`;
         actBatchFilter.appendChild(opt);
       }
       const pref = activityBatchPrefByGallery[galleryId];
@@ -3044,17 +3044,17 @@ document.addEventListener('DOMContentLoaded', () => {
     aSelected.textContent = String(displaySelectedCount);
     if (aSelectedSub) {
       if (rKeys.length > 1 && activityBatchUi !== 'all') {
-        aSelectedSub.textContent = `Total acumulado (todas as sessões): ${selectedCount} foto(s)`;
+        aSelectedSub.textContent = `Total acumulado (todas as sessÃµes): ${selectedCount} foto(s)`;
       } else if (rKeys.length > 1 && activityBatchUi === 'all') {
-        aSelectedSub.textContent = 'Soma de todas as seleções — use o menu acima para ver só uma rodada.';
+        aSelectedSub.textContent = 'Soma de todas as seleÃ§Ãµes â€” use o menu acima para ver sÃ³ uma rodada.';
       } else {
         aSelectedSub.textContent = '';
       }
     }
-    // No Alboom, o "início" é quando começou; aqui usamos updated_at/created_at (melhor do que vazio).
+    // No Alboom, o "inÃ­cio" Ã© quando comeÃ§ou; aqui usamos updated_at/created_at (melhor do que vazio).
     aUpdated.textContent = fmtDate(gallery?.created_at || gallery?.updated_at);
 
-    // bloco de mensagem (mantém id ks-feedback)
+    // bloco de mensagem (mantÃ©m id ks-feedback)
     const fb = gallery?.feedback_cliente ? String(gallery.feedback_cliente) : '';
     if (fb) {
       aFeedback.classList.remove('ks-abo-empty');
@@ -3064,7 +3064,7 @@ document.addEventListener('DOMContentLoaded', () => {
       aFeedback.textContent = 'Nenhuma mensagem enviada';
     }
 
-    // painel de cliente (estilo Alboom) — prioriza linha em foco na lista multi-cliente
+    // painel de cliente (estilo Alboom) â€” prioriza linha em foco na lista multi-cliente
     const rawEmail = contactRow ? String(contactRow.email || '').trim() : String(gallery?.cliente_email || '').trim();
     const rawPhone = contactRow ? String(contactRow.telefone || '').trim() : String(gallery?.cliente_telefone || '').trim();
     const nome = contactRow ? String(contactRow.nome || '').trim() : String(gallery?.cliente_nome || '').trim();
@@ -3080,21 +3080,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (rawEmail) {
         actEmail.textContent = isPlaceholderClienteEmail(rawEmail) ? `E-mail (acesso): ${rawEmail}` : rawEmail;
       } else {
-        actEmail.textContent = 'E-mail não cadastrado';
+        actEmail.textContent = 'E-mail nÃ£o cadastrado';
       }
       actEmail.style.display = '';
     }
     const sepEl = actContactLine?.querySelector('.ks-activity-contact-sep');
     if (sepEl) sepEl.style.display = rawEmail && showPhone ? '' : 'none';
     if (actPhone) {
-      actPhone.textContent = showPhone ? rawPhone : 'Telefone não cadastrado';
+      actPhone.textContent = showPhone ? rawPhone : 'Telefone nÃ£o cadastrado';
       actPhone.style.display = '';
     }
     if (actOpenWhatsappBtn) {
       const wd = resolveWhatsappDigits(rawPhone);
       const canOpen = wd.length >= 10;
       const clientLabel = clientName || 'cliente';
-      const msg = `Olá, ${clientLabel}! Aqui é o fotógrafo da galeria "${gallery?.nome_projeto || ''}".`;
+      const msg = `OlÃ¡, ${clientLabel}! Aqui Ã© o fotÃ³grafo da galeria "${gallery?.nome_projeto || ''}".`;
       if (canOpen) {
         actOpenWhatsappBtn.style.display = '';
         actOpenWhatsappBtn.disabled = false;
@@ -3104,7 +3104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actOpenWhatsappBtn.style.display = '';
         actOpenWhatsappBtn.disabled = true;
         actOpenWhatsappBtn.removeAttribute('data-whats-link');
-        actOpenWhatsappBtn.title = 'Cliente sem WhatsApp válido (com DDD)';
+        actOpenWhatsappBtn.title = 'Cliente sem WhatsApp vÃ¡lido (com DDD)';
       }
     }
     if (actPassRow && actPassSpan && actRevealPassBtn) {
@@ -3113,13 +3113,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const showPass = amPriv && cidPass > 0;
       actPassRow.style.display = showPass ? '' : 'none';
       actRevealPassBtn.setAttribute('data-ks-reveal-pass', String(cidPass || 0));
-      actPassSpan.textContent = '••••••';
+      actPassSpan.textContent = 'â€¢â€¢â€¢â€¢â€¢â€¢';
       actPassSpan.removeAttribute('data-revealed');
       actRevealPassBtn.textContent = 'Mostrar';
       actRevealPassBtn.disabled = false;
     }
     if (actBadge) {
-      const map = { preparacao: 'Preparação', andamento: 'Em andamento', revisao: 'Em revisão', finalizado: 'Finalizado' };
+      const map = { preparacao: 'PreparaÃ§Ã£o', andamento: 'Em andamento', revisao: 'Em revisÃ£o', finalizado: 'Finalizado' };
       actBadge.textContent = map[status] || status;
     }
     if (actSalesMini && actSalesPendingMini && actSalesApprovedMini) {
@@ -3133,7 +3133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const parts = [];
         if (stats.pendingProof > 0) parts.push(`${stats.pendingProof} comprov. pendente(s)`);
         if (stats.pendingBalanceRounds > 0) parts.push(`${stats.pendingBalanceRounds} com saldo`);
-        actSalesPendingMini.innerHTML = `<i class="fas fa-receipt" style="font-size:13px"></i> ${parts.join(' • ')}`;
+        actSalesPendingMini.innerHTML = `<i class="fas fa-receipt" style="font-size:13px"></i> ${parts.join(' â€¢ ')}`;
         actSalesPendingMini.style.color = '#fef08a';
         actSalesPendingMini.style.borderColor = 'rgba(250,204,21,.82)';
         actSalesPendingMini.style.background = 'rgba(234,179,8,.30)';
@@ -3151,10 +3151,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Ações (Finalizar/Reativar/Compartilhar)
+    // AÃ§Ãµes (Finalizar/Reativar/Compartilhar)
     // Regra desejada:
-    // - se está "revisao" (cliente já escolheu), o próximo passo é "Finalizar" (não "Reativar")
-    // - "Reativar" é ação principal somente quando já está "finalizado"
+    // - se estÃ¡ "revisao" (cliente jÃ¡ escolheu), o prÃ³ximo passo Ã© "Finalizar" (nÃ£o "Reativar")
+    // - "Reativar" Ã© aÃ§Ã£o principal somente quando jÃ¡ estÃ¡ "finalizado"
     const st = ksNormGalleryStatus(status) || galleryStatusNorm;
     const canReactivate = ['revisao', 'finalizado'].includes(st);
     const canFinalize = ['preparacao', 'andamento', 'revisao'].includes(st);
@@ -3196,8 +3196,8 @@ document.addEventListener('DOMContentLoaded', () => {
       actDeleteCurrentRoundBtn.style.opacity = actDeleteCurrentRoundBtn.disabled ? '0.5' : '';
       const tipBatch = rounds.length ? Math.max(...rounds) : null;
       actDeleteCurrentRoundBtn.title = tipBatch
-        ? `Apaga só a rodada atual (Seleção ${tipBatch}) e mantém o cadastro do cliente.`
-        : 'Não há rodada para excluir.';
+        ? `Apaga sÃ³ a rodada atual (SeleÃ§Ã£o ${tipBatch}) e mantÃ©m o cadastro do cliente.`
+        : 'NÃ£o hÃ¡ rodada para excluir.';
     }
     if (actDeleteRoundClientBtn) {
       const rounds = Object.keys(gallery?.selectionRoundsSummary || {})
@@ -3208,8 +3208,8 @@ document.addEventListener('DOMContentLoaded', () => {
       actDeleteRoundClientBtn.style.opacity = can ? '' : '0.5';
       const tipBatch = rounds.length ? Math.max(...rounds) : null;
       actDeleteRoundClientBtn.title = tipBatch
-        ? `Apaga a rodada atual (Seleção ${tipBatch}) e exclui o cadastro do cliente nesta galeria.`
-        : 'Não há rodada para excluir.';
+        ? `Apaga a rodada atual (SeleÃ§Ã£o ${tipBatch}) e exclui o cadastro do cliente nesta galeria.`
+        : 'NÃ£o hÃ¡ rodada para excluir.';
     }
 
     if (actRoundsDetail) {
@@ -3217,7 +3217,7 @@ document.addEventListener('DOMContentLoaded', () => {
       actRoundsDetail.classList.add('hidden');
     }
 
-    // fotos selecionadas (tabs estilo Alboom) — respeita filtro "Ver seleção"
+    // fotos selecionadas (tabs estilo Alboom) â€” respeita filtro "Ver seleÃ§Ã£o"
     if (actSelPhotos && actSelEmpty) {
       const set = new Set(selIdsNum);
       const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
@@ -3235,7 +3235,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       actSelPhotos.innerHTML = selectedPhotos.map(p => {
         const b = parseInt(bm[p.id] ?? bm[String(p.id)], 10) || 1;
-        const tag = showBatchTag ? ` <span class="opacity-50">· S${b}</span>` : '';
+        const tag = showBatchTag ? ` <span class="opacity-50">Â· S${b}</span>` : '';
         const salesAct = canInlineSalesApprove
           ? `<div class="mt-1 flex items-center gap-1 flex-wrap">
               <button type="button" class="ks-btn ks-btn-sm" data-act-sales-approve="${p.id}" title="Aprovar esta foto para download original"><i class="fas fa-check"></i> Aprovar</button>
@@ -3257,12 +3257,12 @@ document.addEventListener('DOMContentLoaded', () => {
       ).catch(() => { });
     }
 
-    // “Comentários” (por enquanto, usamos a mensagem do cliente como comentário)
+    // â€œComentÃ¡riosâ€ (por enquanto, usamos a mensagem do cliente como comentÃ¡rio)
     if (actCommentsBox) {
-      actCommentsBox.textContent = fb ? fb : 'Nenhum comentário';
+      actCommentsBox.textContent = fb ? fb : 'Nenhum comentÃ¡rio';
     }
 
-    // Details (categorias alinhadas ao modal «Nova galeria» em kingSelectionEdit.html)
+    // Details (categorias alinhadas ao modal Â«Nova galeriaÂ» em kingSelectionEdit.html)
     fNome.value = gallery?.nome_projeto || '';
     const cat = (gallery?.categoria || '').toString().trim();
     if (fCategoria) {
@@ -3323,21 +3323,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Watermark
     const hasCustom = galleryHasCustomWmPath();
     wmMode = gallery?.watermark_mode || 'x';
-    // UI simplificada: só usamos "tile_dense", "logo" e "none".
-    // Se não há marca personalizada enviada, força tile_dense (evita selecionar "logo" sem arquivo).
+    // UI simplificada: sÃ³ usamos "tile_dense", "logo" e "none".
+    // Se nÃ£o hÃ¡ marca personalizada enviada, forÃ§a tile_dense (evita selecionar "logo" sem arquivo).
     if (!['tile_dense', 'logo', 'none'].includes(wmMode)) wmMode = 'tile_dense';
     if (wmMode === 'logo' && !hasCustom) wmMode = 'tile_dense';
-    // Se existe marca personalizada enviada, força o modo "logo" (e desabilita Conecta King)
+    // Se existe marca personalizada enviada, forÃ§a o modo "logo" (e desabilita Conecta King)
     if (wmMode === 'tile_dense' && hasCustom) wmMode = 'logo';
     setRadio('wm_mode', wmMode);
-    // Habilitar/desabilitar a opção "Sua marca d'água personalizada"
+    // Habilitar/desabilitar a opÃ§Ã£o "Sua marca d'Ã¡gua personalizada"
     if (wmModeLogo) wmModeLogo.disabled = !hasCustom;
     if (wmModeLogoWrap) {
       wmModeLogoWrap.style.opacity = hasCustom ? '1' : '0.55';
       wmModeLogoWrap.style.cursor = hasCustom ? 'pointer' : 'not-allowed';
-      wmModeLogoWrap.title = hasCustom ? '' : 'Envie uma marca d’água para habilitar esta opção.';
+      wmModeLogoWrap.title = hasCustom ? '' : 'Envie uma marca dâ€™Ã¡gua para habilitar esta opÃ§Ã£o.';
     }
-    // Habilitar/desabilitar a opção "Marca d'água da Conecta King"
+    // Habilitar/desabilitar a opÃ§Ã£o "Marca d'Ã¡gua da Conecta King"
     if (wmModeCk) wmModeCk.disabled = !!hasCustom;
     if (wmModeCkWrap) {
       wmModeCkWrap.style.opacity = hasCustom ? '0.55' : '1';
@@ -3407,7 +3407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleWatermarkPreview();
     refreshWatermarkFilePreview().catch(() => { });
 
-    // Photos: só renderizar quando a aba "Fotos" estiver visível (evita lentidão ao trocar cliente em Atividades).
+    // Photos: sÃ³ renderizar quando a aba "Fotos" estiver visÃ­vel (evita lentidÃ£o ao trocar cliente em Atividades).
     const photosPane = document.querySelector('[data-pane="photos"]');
     const photosVisible = !!(photosPane && !photosPane.classList.contains('hidden'));
     if (photosVisible) renderPhotos();
@@ -3423,7 +3423,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadGallery() {
-    if (!galleryId) throw new Error('galleryId inválido na URL.');
+    if (!galleryId) throw new Error('galleryId invÃ¡lido na URL.');
     let url = `${API_URL}/api/king-selection/galleries/${galleryId}`;
     const fid = parseInt(_activityFocusClientId, 10);
     if (fid) url += `?focusClientId=${encodeURIComponent(fid)}`;
@@ -3475,8 +3475,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const lp = document.querySelector('[data-pane="links"]');
       if (lp && !lp.classList.contains('hidden')) refreshLinksPane().catch(() => {});
-      // loadGallery() chama revokeAllPreviewUrls(): se o utilizador está em "Capa do link",
-      // o painel "links" está oculto e refreshLinksPane() não corre — a prévia ficava inválida.
+      // loadGallery() chama revokeAllPreviewUrls(): se o utilizador estÃ¡ em "Capa do link",
+      // o painel "links" estÃ¡ oculto e refreshLinksPane() nÃ£o corre â€” a prÃ©via ficava invÃ¡lida.
       const lcp = document.querySelector('[data-pane="link-cover"]');
       if (lcp && !lcp.classList.contains('hidden')) refreshLinkCoverPane();
     } catch (_) {}
@@ -3526,8 +3526,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Reais em formato BR (admin / formulários): 1.600, 1.600,50, 200,50, 1600, 200.00.
-   * Devolve centavos ou null se inválido.
+   * Reais em formato BR (admin / formulÃ¡rios): 1.600, 1.600,50, 200,50, 1600, 200.00.
+   * Devolve centavos ou null se invÃ¡lido.
    */
   function parseBrMoneyStringToCents(raw) {
     const s = String(raw || '').trim();
@@ -3589,13 +3589,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const intVal = parseInt(digits, 10) || 0;
-    // Interpreta como valor em reais durante digitação (400 -> 400,00).
+    // Interpreta como valor em reais durante digitaÃ§Ã£o (400 -> 400,00).
     el.value = intVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function shouldSkipMoneyMaskOnThisInput(evt) {
     const t = String(evt?.inputType || '').toLowerCase();
-    // Durante Backspace/Delete a máscara "puxa" zeros de volta.
+    // Durante Backspace/Delete a mÃ¡scara "puxa" zeros de volta.
     // Deixamos o utilizador apagar livremente e normalizamos no blur.
     return t.startsWith('delete');
   }
@@ -3624,9 +3624,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function paymentStatusPt(pay) {
     const st = String(pay?.status || 'pending').toLowerCase();
-    if (isBlessedPayment(pay)) return 'ABENÇOADO (CORTESIA)';
+    if (isBlessedPayment(pay)) return 'ABENÃ‡OADO (CORTESIA)';
     if (st === 'confirmed') return 'PAGO';
-    if (st === 'partial') return 'PARCIAL (há saldo em aberto)';
+    if (st === 'partial') return 'PARCIAL (hÃ¡ saldo em aberto)';
     if (st === 'rejected') return 'COMPROVANTE RECUSADO';
     const hasProof = !!String(pay?.proof_file_path || '').trim();
     return hasProof ? 'PENDENTE (com comprovante)' : 'AGUARDANDO COMPROVANTE';
@@ -3636,9 +3636,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildSalesPaymentStatusInnerHtml(pay) {
     if (!pay) return '';
     const st = paymentStatusPt(pay);
-    const amt = pay?.amount_cents != null ? ` • comprovante ${formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents))}` : '';
+    const amt = pay?.amount_cents != null ? ` â€¢ comprovante ${formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents))}` : '';
     const hasProof = !!(pay && pay.proof_file_path);
-    const proofLabel = hasProof ? ' • comprovante enviado' : ' • sem comprovante';
+    const proofLabel = hasProof ? ' â€¢ comprovante enviado' : ' â€¢ sem comprovante';
     const rec = Math.max(0, parseInt(pay.amount_received_cumulative_cents, 10) || 0);
     const exp = pay.expected_total_cents != null ? Math.max(0, parseInt(pay.expected_total_cents, 10) || 0) : 0;
     const down = pay.down_payment_cents != null ? Math.max(0, parseInt(pay.down_payment_cents, 10) || 0) : null;
@@ -3651,7 +3651,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (remBal != null && remBal > 0 && nInst != null && nInst >= 1) {
       const perPart = perRaw != null && perRaw > 0 ? perRaw : Math.round(remBal / nInst);
       const daysPart = days != null ? ` <span class="text-slate-500">em ${days} dia(s)</span>` : '';
-      restHtml = `<div class="text-[13px]"><span class="text-slate-400">Restante:</span> <b>${nInst}×</b> de <b>${formatCentsBr(perPart)}</b>${daysPart}</div>`;
+      restHtml = `<div class="text-[13px]"><span class="text-slate-400">Restante:</span> <b>${nInst}Ã—</b> de <b>${formatCentsBr(perPart)}</b>${daysPart}</div>`;
     } else if (remBal != null && remBal > 0) {
       restHtml = `<div class="text-[13px]"><span class="text-slate-400">Restante:</span> <b>${formatCentsBr(remBal)}</b></div>`;
     }
@@ -3688,7 +3688,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const label = field.querySelector('label');
     const isPackagesOnly = mode === 'packages_only';
     if (label) {
-      label.textContent = isPackagesOnly ? 'Valor unitário (R$, desativado em "Somente pacotes")' : 'Valor unitário (R$)';
+      label.textContent = isPackagesOnly ? 'Valor unitÃ¡rio (R$, desativado em "Somente pacotes")' : 'Valor unitÃ¡rio (R$)';
     }
     salesUnitPrice.disabled = isPackagesOnly;
     field.style.opacity = isPackagesOnly ? '0.55' : '';
@@ -3701,15 +3701,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     salesProofPanel.classList.remove('hidden');
-    const amountTxt = pay?.amount_cents != null ? formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents)) : '—';
+    const amountTxt = pay?.amount_cents != null ? formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents)) : 'â€”';
     const noteClient = String(pay?.note_client || '').trim();
     const noteAdmin = String(pay?.note_admin || '').trim();
-    const cort = pay?.courtesy_cents != null ? formatCentsBr(pay.courtesy_cents) : '—';
-    const falta = pay?.balance_due_cents != null ? formatCentsBr(pay.balance_due_cents) : '—';
+    const cort = pay?.courtesy_cents != null ? formatCentsBr(pay.courtesy_cents) : 'â€”';
+    const falta = pay?.balance_due_cents != null ? formatCentsBr(pay.balance_due_cents) : 'â€”';
     const core = buildSalesPaymentStatusInnerHtml(pay);
     salesProofMeta.innerHTML =
       (core ? `<div class="space-y-0.5 mb-2">${core}</div>` : '') +
-      `<div class="text-[11px] text-slate-400"><b>Comprovante (valor anexado):</b> ${escapeHtml(amountTxt)} • <b>Cortesia:</b> ${escapeHtml(cort)} • <b>Falta:</b> ${escapeHtml(falta)}</div>` +
+      `<div class="text-[11px] text-slate-400"><b>Comprovante (valor anexado):</b> ${escapeHtml(amountTxt)} â€¢ <b>Cortesia:</b> ${escapeHtml(cort)} â€¢ <b>Falta:</b> ${escapeHtml(falta)}</div>` +
       `${noteClient ? `<div class="text-[11px] mt-1"><b>Obs. cliente:</b> ${escapeHtml(noteClient)}</div>` : ''}` +
       `${noteAdmin ? `<div class="text-[11px] mt-1"><b>Obs. ADM:</b> ${escapeHtml(noteAdmin)}</div>` : ''}`;
     const hasProof = !!String(pay?.proof_file_path || '').trim();
@@ -3731,10 +3731,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return [
       `Pagamento via PIX (${projeto})`,
       ``,
-      `1) Faça o PIX para: ${holder}`,
+      `1) FaÃ§a o PIX para: ${holder}`,
       `2) Chave PIX: ${key}`,
       `3) Envie o comprovante aqui nesta galeria`,
-      `4) Após validação do pagamento e aprovação do fotógrafo, as fotos liberadas aparecerão na aba "Fotos para baixar".`
+      `4) ApÃ³s validaÃ§Ã£o do pagamento e aprovaÃ§Ã£o do fotÃ³grafo, as fotos liberadas aparecerÃ£o na aba "Fotos para baixar".`
     ].join('\n');
   }
 
@@ -3780,11 +3780,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <input class="ks-input mt-1" type="number" min="1" step="1" data-pkg-field="photo_qty" value="${parseInt(p.photo_qty, 10) || 1}" />
           </div>
           <div class="ks-field">
-            <label class="text-slate-300">Preço (R$)</label>
+            <label class="text-slate-300">PreÃ§o (R$)</label>
             <input class="ks-input mt-1" type="text" inputmode="decimal" data-money="1" data-pkg-field="price_reais" placeholder="Ex.: 400,00" value="${escapeHtml(formatCentsForInputBr(normalizeLegacyMoneyCents(p.price_cents || 0)))}" />
           </div>
           <div class="ks-field">
-            <label class="text-slate-300">Ação</label>
+            <label class="text-slate-300">AÃ§Ã£o</label>
             <button type="button" class="ks-btn mt-1 w-full" data-pkg-remove="${idx}"><i class="fas fa-trash"></i> Remover</button>
           </div>
         </div>
@@ -3859,7 +3859,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isSalesRoundBlessedCourtesy(r)) return acc;
       return acc + (parseInt(r?.expected_total_cents, 10) || 0);
     }, 0);
-    /** Soma pelos pacotes em todas as rodadas (referência “como no app”), inclusive cortesias — lista de clientes. */
+    /** Soma pelos pacotes em todas as rodadas (referÃªncia â€œcomo no appâ€), inclusive cortesias â€” lista de clientes. */
     const totalCalculatedFromPhotosCents = rounds.reduce((acc, r) => {
       return acc + (parseInt(r?.computed_package_gross_cents, 10) || 0);
     }, 0);
@@ -3893,7 +3893,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (Number.isFinite(rb) && rb > 0 && Number.isFinite(ic) && ic >= 1) {
         const per = Math.round(rb / ic);
         restPlanShort =
-          `${ic}× ${formatCentsBr(per)}` + (Number.isFinite(id) && id > 0 ? ` / ${id}d` : '');
+          `${ic}Ã— ${formatCentsBr(per)}` + (Number.isFinite(id) && id > 0 ? ` / ${id}d` : '');
         break;
       }
     }
@@ -3928,8 +3928,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const cents = fallbackPkgCents != null ? Math.max(0, parseInt(fallbackPkgCents, 10) || 0) : null;
       salesTermsPhotoRef.innerHTML =
         cents != null && n > 0
-          ? `${n} foto(s) — soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(cents)}</b>`
-          : (cents != null ? `Soma pelos pacotes: <b>${formatCentsBr(cents)}</b>` : '—');
+          ? `${n} foto(s) â€” soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(cents)}</b>`
+          : (cents != null ? `Soma pelos pacotes: <b>${formatCentsBr(cents)}</b>` : 'â€”');
       if (salesTermsNegotiated) salesTermsNegotiated.value = '';
       if (salesTermsDown) salesTermsDown.value = '';
       if (salesTermsRemaining) salesTermsRemaining.value = '';
@@ -3938,7 +3938,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (salesTermsHint) {
         salesTermsHint.textContent =
           cents != null
-            ? 'Ainda não há linha de pagamento nesta rodada — o valor acima é a soma pelos pacotes. Salve o total acordado e o plano do restante se precisar.'
+            ? 'Ainda nÃ£o hÃ¡ linha de pagamento nesta rodada â€” o valor acima Ã© a soma pelos pacotes. Salve o total acordado e o plano do restante se precisar.'
             : '';
       }
       return;
@@ -3950,7 +3950,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const negC = hasNeg ? Math.max(0, parseInt(pay.negotiated_total_cents, 10) || 0) : null;
     const grossLine =
       nShow > 0
-        ? `${nShow} foto(s) — soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(gross)}</b>`
+        ? `${nShow} foto(s) â€” soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(gross)}</b>`
         : `Soma pelos pacotes: <b>${formatCentsBr(gross)}</b>`;
     if (hasNeg && negC != null) {
       salesTermsPhotoRef.innerHTML = `${grossLine}<div class="text-emerald-200/95 text-[13px] mt-1 font-bold">Total negociado: ${formatCentsBr(negC)}</div>`;
@@ -3963,7 +3963,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       salesTermsPhotoRef.innerHTML = grossLine;
       if (salesTermsCupomNote && pay.pricing_promo_applied && gross !== pkg) {
-        salesTermsCupomNote.textContent = `Cupom ativo: no app pode aparecer ${formatCentsBr(pkg)}; aqui a referência usa ${formatCentsBr(gross)} pelas fotos até definir total acordado.`;
+        salesTermsCupomNote.textContent = `Cupom ativo: no app pode aparecer ${formatCentsBr(pkg)}; aqui a referÃªncia usa ${formatCentsBr(gross)} pelas fotos atÃ© definir total acordado.`;
         salesTermsCupomNote.classList.remove('hidden');
       }
     }
@@ -3991,7 +3991,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const exp = pay.expected_total_cents != null ? Math.max(0, parseInt(pay.expected_total_cents, 10) || 0) : 0;
       const rec = pay.amount_received_cumulative_cents != null ? Math.max(0, parseInt(pay.amount_received_cumulative_cents, 10) || 0) : 0;
       const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
-      salesTermsHint.textContent = `Resumo: total ${formatCentsBr(exp)} • recebido ${formatCentsBr(rec)} • falta ${formatCentsBr(bal)}`;
+      salesTermsHint.textContent = `Resumo: total ${formatCentsBr(exp)} â€¢ recebido ${formatCentsBr(rec)} â€¢ falta ${formatCentsBr(bal)}`;
     }
   }
 
@@ -4033,7 +4033,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function periodLabelPt(p) {
     const x = String(p || 'week').toLowerCase();
     if (x === 'today') return 'Hoje';
-    if (x === 'month') return 'Mês';
+    if (x === 'month') return 'MÃªs';
     return 'Semana';
   }
 
@@ -4182,7 +4182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (salesDashCourtesy) salesDashCourtesy.textContent = formatCentsBr(courtesySum);
     if (salesDashMissingPeriod) {
       salesDashMissingPeriod.textContent =
-        `No período: ${periodLabelPt(period)} (mesmo filtro do “Top pendências”)`;
+        `No perÃ­odo: ${periodLabelPt(period)} (mesmo filtro do â€œTop pendÃªnciasâ€)`;
     }
     if (salesDashClientsPending) salesDashClientsPending.textContent = String(clientsPending);
     if (salesDashRoundsPending) salesDashRoundsPending.textContent = String(roundsPending);
@@ -4191,7 +4191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .sort((a, b) => b.missingByClient - a.missingByClient)
         .slice(0, 6);
       if (!top.length) {
-        salesTopPending.innerHTML = '<div class="text-xs text-slate-300">Nenhuma pendência no momento.</div>';
+        salesTopPending.innerHTML = '<div class="text-xs text-slate-300">Nenhuma pendÃªncia no momento.</div>';
       } else {
         salesTopPending.innerHTML = top.map((row) => `
           <div class="rounded-lg border border-amber-300/35 bg-slate-900/55 px-3 py-2">
@@ -4207,7 +4207,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
             </div>
             <div class="text-xs text-amber-100 mt-1">Falta receber: <b>${formatCentsBr(row.missingByClient)}</b></div>
-            <div class="text-[11px] text-slate-300">${row.pendingBatches} sessão(ões) pendente(s)</div>
+            <div class="text-[11px] text-slate-300">${row.pendingBatches} sessÃ£o(Ãµes) pendente(s)</div>
           </div>
         `).join('');
       }
@@ -4218,29 +4218,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!salesDashDetailModal || !salesDashDetailTitle || !salesDashDetailBody || !salesDashDetailTotal) return;
     const rows = salesDashDetailCache[kind] || [];
     const titles = {
-      received: 'Recebido (dinheiro) — por cliente e rodada',
-      missing: 'Falta receber (estimado) — por cliente e rodada',
-      courtesy: 'Cortesias (abonos) — por cliente e rodada'
+      received: 'Recebido (dinheiro) â€” por cliente e rodada',
+      missing: 'Falta receber (estimado) â€” por cliente e rodada',
+      courtesy: 'Cortesias (abonos) â€” por cliente e rodada'
     };
     salesDashDetailTitle.textContent = titles[kind] || 'Detalhe';
     const sum = rows.reduce((a, r) => a + (parseInt(r.cents, 10) || 0), 0);
     const moneyClass =
       kind === 'missing' ? 'text-amber-700' : (kind === 'courtesy' ? 'text-fuchsia-700' : 'text-emerald-700');
     if (!rows.length) {
-      salesDashDetailBody.innerHTML = '<p class="text-sm text-slate-500">Nenhum lançamento nesta categoria.</p>';
+      salesDashDetailBody.innerHTML = '<p class="text-sm text-slate-500">Nenhum lanÃ§amento nesta categoria.</p>';
     } else {
       salesDashDetailBody.innerHTML = rows.map((row) => `
         <div class="flex justify-between gap-3 py-2.5 border-b border-slate-100 text-sm">
           <div>
             <span class="font-semibold text-slate-900">${escapeHtml(row.nome)}</span>
-            <span class="text-slate-500"> • Rodada ${row.batch}</span>
+            <span class="text-slate-500"> â€¢ Rodada ${row.batch}</span>
             <button type="button" class="ml-1.5 text-[11px] text-indigo-600 hover:underline font-semibold" data-sales-detail-open-client="${row.clientId}">Abrir cliente</button>
           </div>
           <div class="font-extrabold ${moneyClass} whitespace-nowrap">${formatCentsBr(row.cents)}</div>
         </div>
       `).join('');
     }
-    salesDashDetailTotal.textContent = rows.length ? `Total: ${formatCentsBr(sum)}` : 'Total: —';
+    salesDashDetailTotal.textContent = rows.length ? `Total: ${formatCentsBr(sum)}` : 'Total: â€”';
     salesDashDetailModal.classList.remove('hidden');
     salesDashDetailModal.classList.add('flex');
     salesDashDetailModal.setAttribute('aria-hidden', 'false');
@@ -4316,7 +4316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!filtered.length) {
       salesClientsList.innerHTML = term
         ? '<div class="text-xs ks-muted">Nenhum cliente encontrado para esta busca.</div>'
-        : '<div class="text-xs ks-muted">Nenhum cliente com seleção nesta galeria.</div>';
+        : '<div class="text-xs ks-muted">Nenhum cliente com seleÃ§Ã£o nesta galeria.</div>';
       return;
     }
     const f = String(salesClientsListFilter || 'all').toLowerCase();
@@ -4336,7 +4336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!listToShow.length) {
       salesClientsList.innerHTML =
-        '<div class="text-xs ks-muted">Nenhum cliente neste filtro. Escolha “Tudo” ou ajuste a busca.</div>';
+        '<div class="text-xs ks-muted">Nenhum cliente neste filtro. Escolha â€œTudoâ€ ou ajuste a busca.</div>';
       return;
     }
     salesClientsList.innerHTML = listToShow.map((c) => {
@@ -4399,7 +4399,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bits.push(`total negociado: ${formatCentsBr(expectedTotalSum)}`);
         }
         if (restPlanShort) bits.push(`plano restante: ${restPlanShort}`);
-        return bits.join(' • ');
+        return bits.join(' â€¢ ');
       })();
       return `
         <button type="button" class="w-full text-left rounded-xl border ${activeCls} p-3 transition" data-sales-client-card="${cid}">
@@ -4408,9 +4408,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="flex items-center gap-1.5">${focusBadge}${priorityBadge}</div>
           </div>
           <div class="text-xs text-slate-300 mt-1">
-            ${selectedCount} foto(s) • ${approvedCount} aprovada(s) • ${rounds.length} sessão(ões) • ${financeBits}
-            ${maxInstallmentCount != null ? ` • até ${maxInstallmentCount}x no restante` : ''}
-            ${blessedRounds > 0 ? ` • ${blessedRounds} abençoada(s)` : ''}
+            ${selectedCount} foto(s) â€¢ ${approvedCount} aprovada(s) â€¢ ${rounds.length} sessÃ£o(Ãµes) â€¢ ${financeBits}
+            ${maxInstallmentCount != null ? ` â€¢ atÃ© ${maxInstallmentCount}x no restante` : ''}
+            ${blessedRounds > 0 ? ` â€¢ ${blessedRounds} abenÃ§oada(s)` : ''}
           </div>
         </button>
       `;
@@ -4442,7 +4442,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadSalesConfig() {
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/sales-config`, { headers: HEADERS });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Erro ao carregar configuração comercial');
+    if (!res.ok) throw new Error(data.message || 'Erro ao carregar configuraÃ§Ã£o comercial');
     salesConfigCache = data.salesConfig || {};
     salesPackagesCache = Array.isArray(data.packages) ? data.packages.slice() : [];
     if (salesPixEnabled) salesPixEnabled.checked = !!salesConfigCache.pix_enabled;
@@ -4475,8 +4475,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }).length;
           const approved = rounds.reduce((acc, r) => acc + (parseInt(r?.approved_count, 10) || 0), 0);
           const tag = proofs > 0
-            ? ` • ${proofs} comprov. pendente(s)${saldo > 0 ? ` • ${saldo} saldo` : ''}`
-            : (saldo > 0 ? ` • ${saldo} com saldo` : (approved > 0 ? ` • ${approved} aprovada(s)` : ''));
+            ? ` â€¢ ${proofs} comprov. pendente(s)${saldo > 0 ? ` â€¢ ${saldo} saldo` : ''}`
+            : (saldo > 0 ? ` â€¢ ${saldo} com saldo` : (approved > 0 ? ` â€¢ ${approved} aprovada(s)` : ''));
           return `<option value="${c.id}">${escapeHtml(c.nome || c.email || `Cliente #${c.id}`)}${escapeHtml(tag)}</option>`;
         }).join('')
         : '<option value="">Sem clientes</option>';
@@ -4503,12 +4503,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const balOk = Number.isFinite(bal) && bal > 0;
         const blessed = st === 'confirmed' && (amount === 0 || note.includes('aben'));
         const payLabel = blessed
-          ? ' • abençoado'
+          ? ' â€¢ abenÃ§oado'
           : (st === 'confirmed'
-            ? ` • pago${amount != null ? ` (${formatCentsBr(amount)})` : ''}`
+            ? ` â€¢ pago${amount != null ? ` (${formatCentsBr(amount)})` : ''}`
             : (st === 'partial' || balOk
-              ? ` • parcial${balOk ? ` • falta ${formatCentsBr(bal)}` : ''}`
-              : (st === 'rejected' ? ' • comprovante recusado' : ' • aguardando')));
+              ? ` â€¢ parcial${balOk ? ` â€¢ falta ${formatCentsBr(bal)}` : ''}`
+              : (st === 'rejected' ? ' â€¢ comprovante recusado' : ' â€¢ aguardando')));
         return `<option value="${r.selection_batch}">Rodada ${r.selection_batch} (${r.selected_count} foto(s))${payLabel}</option>`;
       }).join('')
       : '<option value="1">Rodada 1</option>';
@@ -4533,7 +4533,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const round = Math.max(1, parseInt(salesRoundSel.value || '1', 10) || 1);
     if (!cid) {
       salesDetailCache = null;
-      if (salesPaymentStatus) salesPaymentStatus.innerHTML = '—';
+      if (salesPaymentStatus) salesPaymentStatus.innerHTML = 'â€”';
       hydrateSalesPaymentTerms(null, null, 0);
       if (salesApprovalsWrap) salesApprovalsWrap.innerHTML = '';
       if (salesProofPanel) salesProofPanel.classList.add('hidden');
@@ -4558,7 +4558,7 @@ document.addEventListener('DOMContentLoaded', () => {
         salesPaymentStatus.innerHTML = buildSalesPaymentStatusInnerHtml(pay);
       } else {
         const hasProof = false;
-        const proofLabel = hasProof ? ' • comprovante enviado' : ' • sem comprovante';
+        const proofLabel = hasProof ? ' â€¢ comprovante enviado' : ' â€¢ sem comprovante';
         salesPaymentStatus.innerHTML =
           `<div class="text-[11px] font-extrabold uppercase tracking-wide text-slate-300">${escapeHtml(paymentStatusPt(null))}${escapeHtml(proofLabel)}</div>` +
           `<div class="text-[12px] text-slate-400 mt-1">Nenhum pagamento registrado nesta rodada.</div>`;
@@ -4604,13 +4604,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="rounded-lg overflow-hidden border border-slate-700 bg-black/70">
               <img data-sales-photo-preview="${p.photo_id}" alt="${escapeHtml(p.original_name || '')}" style="width:100%;height:190px;object-fit:contain;display:block;background:#0b0b0b" />
             </div>
-            <div class="font-semibold text-sm mt-2">#${p.photo_id} — ${escapeHtml(p.original_name || '')}</div>
-            <div class="text-xs mt-1">${statusBadge} <span class="ks-muted">• Entrega: <b>${delivery === 'edited' ? 'EDITADA' : 'ORIGINAL'}</b>${hasEdited ? ' • arquivo editado enviado' : ''}</span></div>
+            <div class="font-semibold text-sm mt-2">#${p.photo_id} â€” ${escapeHtml(p.original_name || '')}</div>
+            <div class="text-xs mt-1">${statusBadge} <span class="ks-muted">â€¢ Entrega: <b>${delivery === 'edited' ? 'EDITADA' : 'ORIGINAL'}</b>${hasEdited ? ' â€¢ arquivo editado enviado' : ''}</span></div>
             <div class="mt-2 flex items-center gap-2 flex-wrap">
               <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="approve-original" style="${approveDoneStyle}"><i class="fas fa-check"></i> Aprovar original</button>
               <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="upload-edited"><i class="fas fa-upload"></i> Substituir por editada</button>
-              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="bless" style="background:rgba(139,92,246,.22);border-color:rgba(167,139,250,.82);color:#ede9fe;font-weight:900"><i class="fas fa-gift"></i> Foto abençoada</button>
-              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="pending" style="${pendingBtnStyle}"><i class="fas fa-hourglass-half"></i> Aguardando liberação</button>
+              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="bless" style="background:rgba(139,92,246,.22);border-color:rgba(167,139,250,.82);color:#ede9fe;font-weight:900"><i class="fas fa-gift"></i> Foto abenÃ§oada</button>
+              <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="pending" style="${pendingBtnStyle}"><i class="fas fa-hourglass-half"></i> Aguardando liberaÃ§Ã£o</button>
               <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="reject"><i class="fas fa-xmark"></i> Rejeitar</button>
             </div>
           </div>
@@ -4623,7 +4623,7 @@ document.addEventListener('DOMContentLoaded', () => {
       salesOpenProofBtn.disabled = !canOpen;
       salesOpenProofBtn.title = canOpen
         ? 'Ver detalhes do pagamento e comprovante'
-        : 'Ainda não há pagamento cadastrado para esta rodada';
+        : 'Ainda nÃ£o hÃ¡ pagamento cadastrado para esta rodada';
     }
     if (salesOpenClientWhatsBtn) {
       const cli = (Array.isArray(salesClientsCache) ? salesClientsCache : []).find((c) => (parseInt(c?.id, 10) || 0) === cid);
@@ -4657,15 +4657,15 @@ document.addEventListener('DOMContentLoaded', () => {
         salesOpenClientWhatsBtn.setAttribute('data-whats-link', `https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(msg)}`);
         const waKind = resolveSalesWaTemplateKind({ approvedCount, needsPaymentReminder, awaitingReview, st });
         const waTitles = {
-          approved: 'Avisar no WhatsApp: fotos aprovadas — cliente pode baixar pela galeria',
-          pending: 'Avisar no WhatsApp: falta pagamento (PIX / saldo) para liberação',
-          rejected: 'Avisar no WhatsApp: comprovante recusado — pedir novo envio',
-          awaiting: 'Avisar no WhatsApp: pagamento ok — você ainda está aprovando as fotos'
+          approved: 'Avisar no WhatsApp: fotos aprovadas â€” cliente pode baixar pela galeria',
+          pending: 'Avisar no WhatsApp: falta pagamento (PIX / saldo) para liberaÃ§Ã£o',
+          rejected: 'Avisar no WhatsApp: comprovante recusado â€” pedir novo envio',
+          awaiting: 'Avisar no WhatsApp: pagamento ok â€” vocÃª ainda estÃ¡ aprovando as fotos'
         };
         salesOpenClientWhatsBtn.title = waTitles[waKind] || waTitles.approved;
       } else {
         salesOpenClientWhatsBtn.removeAttribute('data-whats-link');
-        salesOpenClientWhatsBtn.title = 'Cliente sem WhatsApp válido (com DDD)';
+        salesOpenClientWhatsBtn.title = 'Cliente sem WhatsApp vÃ¡lido (com DDD)';
       }
     }
     renderSalesDashboard();
@@ -4705,7 +4705,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try { renderAll(); } catch (_) { }
   }
 
-  /** Alterar status da galeria (e de todos os clientes) — usa endpoint dedicado para Reativar/Finalizar funcionarem corretamente */
+  /** Alterar status da galeria (e de todos os clientes) â€” usa endpoint dedicado para Reativar/Finalizar funcionarem corretamente */
   async function setStatusViaApi(nextStatus) {
     const list = (Array.isArray(gallery?.clients) ? gallery.clients : []).filter((c) => c && c.enabled !== false);
     const body = { status: nextStatus };
@@ -4727,7 +4727,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadExport() {
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/export`, { headers: HEADERS });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Erro ao carregar exportação');
+    if (!res.ok) throw new Error(data.message || 'Erro ao carregar exportaÃ§Ã£o');
     exportPayload = {
       lightroom: data.lightroom || '',
       finder: data.finder || '',
@@ -4762,9 +4762,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Token só com dígitos (ex.: 1642): deve bater com ADR1642, ADR01642, _ADR001642, etc.
-   * — valor numérico igual à série de dígitos do ficheiro, ou (para tokens “longos”) a série contém o que digitou.
-   * Tokens curtos (1–2 dígitos, n < 100) não usam .includes() dentro de um número grande (evita “4” em “1642”).
+   * Token sÃ³ com dÃ­gitos (ex.: 1642): deve bater com ADR1642, ADR01642, _ADR001642, etc.
+   * â€” valor numÃ©rico igual Ã  sÃ©rie de dÃ­gitos do ficheiro, ou (para tokens â€œlongosâ€) a sÃ©rie contÃ©m o que digitou.
+   * Tokens curtos (1â€“2 dÃ­gitos, n < 100) nÃ£o usam .includes() dentro de um nÃºmero grande (evita â€œ4â€ em â€œ1642â€).
    */
   function digitTokenMatchesBase(base, digitToken) {
     const tok = String(digitToken);
@@ -4817,8 +4817,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Foto bate com o token: (1) ID numérico do sistema (king_photos.id), ou (2) nome/código no ficheiro.
-   * Muitos fotógrafos copiam o ID da galeria (ex.: 1642) em vez do ADR0003 do nome.
+   * Foto bate com o token: (1) ID numÃ©rico do sistema (king_photos.id), ou (2) nome/cÃ³digo no ficheiro.
+   * Muitos fotÃ³grafos copiam o ID da galeria (ex.: 1642) em vez do ADR0003 do nome.
    */
   function photoMatchesExportToken(p, token) {
     const raw = String(token).trim();
@@ -4871,12 +4871,12 @@ document.addEventListener('DOMContentLoaded', () => {
       .map(k => parseInt(k, 10))
       .filter(n => Number.isFinite(n) && n > 0)
       .sort((a, b) => a - b);
-    expBatchSel.innerHTML = '<option value="all">Todas as seleções</option>';
+    expBatchSel.innerHTML = '<option value="all">Todas as seleÃ§Ãµes</option>';
     for (const k of keys) {
       const opt = document.createElement('option');
       opt.value = String(k);
       const n = m[String(k)] ?? m[k] ?? 0;
-      opt.textContent = `Seleção ${k} (${n} foto${n === 1 ? '' : 's'})`;
+      opt.textContent = `SeleÃ§Ã£o ${k} (${n} foto${n === 1 ? '' : 's'})`;
       expBatchSel.appendChild(opt);
     }
     const ok = Array.from(expBatchSel.options).some(o => o.value === prev);
@@ -4951,16 +4951,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!expFilterHint) return;
     const tokens = parseExportFilterTokens(expFilterInput?.value);
     if (!tokens.length) {
-      expFilterHint.textContent = 'Use o ID da foto no sistema (número interno), ou o código no nome (ex.: 3, ADR0003). Separe por vírgula. Clique na lupa para atualizar.';
+      expFilterHint.textContent = 'Use o ID da foto no sistema (nÃºmero interno), ou o cÃ³digo no nome (ex.: 3, ADR0003). Separe por vÃ­rgula. Clique na lupa para atualizar.';
       return;
     }
     if (!names.length) {
-      expFilterHint.textContent = `Nenhuma correspondência nas ${total} selecionada(s). Tente o ID da foto (painel Fotos), ou o trecho ADR… do nome do ficheiro.`;
+      expFilterHint.textContent = `Nenhuma correspondÃªncia nas ${total} selecionada(s). Tente o ID da foto (painel Fotos), ou o trecho ADRâ€¦ do nome do ficheiro.`;
       return;
     }
     const missing = tokens.length > names.length ? tokens.length - names.length : 0;
     expFilterHint.textContent = missing
-      ? `${names.length} foto(s) encontrada(s); ${missing} item(ns) da sua lista não corresponderam a nenhuma selecionada.`
+      ? `${names.length} foto(s) encontrada(s); ${missing} item(ns) da sua lista nÃ£o corresponderam a nenhuma selecionada.`
       : `${names.length} foto(s) na lista (filtro aplicado).`;
   }
 
@@ -5025,10 +5025,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Cloudflare pode rate-limitar o direct_upload (429).
-  // Estratégia:
-  // - manter serialização do /api/upload/auth
-  // - usar um gap dinâmico (agressivo por padrão)
-  // - se vier 429, aumentar gap e reduzir concorrência automaticamente
+  // EstratÃ©gia:
+  // - manter serializaÃ§Ã£o do /api/upload/auth
+  // - usar um gap dinÃ¢mico (agressivo por padrÃ£o)
+  // - se vier 429, aumentar gap e reduzir concorrÃªncia automaticamente
   let _authQueue = Promise.resolve();
   let _lastAuthAt = 0;
   async function authUpload({ retries = 6 } = {}) {
@@ -5036,7 +5036,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dynGap = (typeof uploadState !== 'undefined' && uploadState && Number.isFinite(uploadState.authMinGapMs))
         ? uploadState.authMinGapMs
         : 60;
-      const minGapMs = Math.max(0, Math.min(1500, dynGap)); // espaço mínimo entre autorizações (dinâmico)
+      const minGapMs = Math.max(0, Math.min(1500, dynGap)); // espaÃ§o mÃ­nimo entre autorizaÃ§Ãµes (dinÃ¢mico)
       const since = Date.now() - _lastAuthAt;
       if (since < minGapMs) await sleep(minGapMs - since);
 
@@ -5051,7 +5051,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try { auth = JSON.parse(text || '{}'); } catch (_) { auth = {}; }
         if (authRes.ok && auth.uploadURL && auth.imageId) {
           _lastAuthAt = Date.now();
-          // Ajuste automático: se está estável (sem 429), fica mais agressivo aos poucos
+          // Ajuste automÃ¡tico: se estÃ¡ estÃ¡vel (sem 429), fica mais agressivo aos poucos
           if (typeof uploadState !== 'undefined' && uploadState) {
             const curGap = Number.isFinite(uploadState.authMinGapMs) ? uploadState.authMinGapMs : 60;
             uploadState.authMinGapMs = Math.max(80, Math.round(curGap * 0.92)); // desce devagar, mas nunca zera
@@ -5064,11 +5064,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return auth;
         }
-        const msg = auth.message || text || 'Falha ao obter autorização de upload';
+        const msg = auth.message || text || 'Falha ao obter autorizaÃ§Ã£o de upload';
         const ra = parseInt(auth.retry_after_seconds || '0', 10) || 0;
         if ((authRes.status === 429 || authRes.status >= 500) && attempt < retries) {
           const extra = ra > 0 ? Math.min(ra * 1000, 65000) : wait;
-          // Ajuste automático: 429 => aumenta gap e reduz concorrência para evitar “engarrafar”
+          // Ajuste automÃ¡tico: 429 => aumenta gap e reduz concorrÃªncia para evitar â€œengarrafarâ€
           if (authRes.status === 429 && typeof uploadState !== 'undefined' && uploadState) {
             uploadState.last429At = Date.now();
             const cur = Number.isFinite(uploadState.authMinGapMs) ? uploadState.authMinGapMs : 60;
@@ -5083,7 +5083,7 @@ document.addEventListener('DOMContentLoaded', () => {
           attempt += 1;
           continue;
         }
-        // Sucesso parcial não ocorreu; se não foi 429/5xx, não ajusta.
+        // Sucesso parcial nÃ£o ocorreu; se nÃ£o foi 429/5xx, nÃ£o ajusta.
         throw new Error(msg);
       }
     };
@@ -5114,7 +5114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (useOverlay) {
         uploadOv.classList.remove('hidden');
         uploadOv.setAttribute('aria-hidden', 'false');
-        if (uploadTitle) uploadTitle.textContent = line || 'Enviando…';
+        if (uploadTitle) uploadTitle.textContent = line || 'Enviandoâ€¦';
         if (uploadFile) uploadFile.textContent = file ? file : '';
         if (uploadMeta) uploadMeta.textContent = meta || `${p.toFixed(0)}%`;
         if (uploadBar) uploadBar.style.strokeDashoffset = String(off);
@@ -5126,7 +5126,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (bubble) {
       bubble.classList.toggle('hidden', !active || useOverlay);
-      if (bubbleTitle) bubbleTitle.textContent = line || 'Enviando…';
+      if (bubbleTitle) bubbleTitle.textContent = line || 'Enviandoâ€¦';
       if (bubbleFile) bubbleFile.textContent = file ? file : '';
       if (bubbleMeta) bubbleMeta.textContent = meta || `${p.toFixed(0)}%`;
       if (bubbleBar) bubbleBar.style.strokeDashoffset = String(off);
@@ -5135,14 +5135,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setBubbleDone() {
     if (uploadOv) {
-      if (uploadTitle) uploadTitle.textContent = 'Concluído';
+      if (uploadTitle) uploadTitle.textContent = 'ConcluÃ­do';
       if (uploadMeta) uploadMeta.textContent = '100%';
       if (uploadBar) uploadBar.style.strokeDashoffset = '0';
       setTimeout(() => { try { uploadOv.classList.add('hidden'); uploadOv.setAttribute('aria-hidden', 'true'); } catch (_) { } }, 900);
     }
     if (bubble && bubbleCard) {
       bubbleCard.classList.add('ks-bubble-ok');
-      if (bubbleTitle) bubbleTitle.textContent = 'Concluído';
+      if (bubbleTitle) bubbleTitle.textContent = 'ConcluÃ­do';
       if (bubbleMeta) bubbleMeta.textContent = '100%';
       if (bubbleBar) bubbleBar.style.strokeDashoffset = '0';
       setTimeout(() => {
@@ -5152,7 +5152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Evita “travada” por re-render a cada foto em lote grande
+  // Evita â€œtravadaâ€ por re-render a cada foto em lote grande
   let _renderPhotosTimer = null;
   function scheduleRenderPhotos() {
     if (_renderPhotosTimer) return;
@@ -5209,7 +5209,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function markRowDone(rowEl) {
     if (!rowEl) return;
     const st = rowEl.querySelector('[data-up-status]');
-    if (st) { st.textContent = 'Concluído'; st.classList.add('ks-upok'); }
+    if (st) { st.textContent = 'ConcluÃ­do'; st.classList.add('ks-upok'); }
     const btn = rowEl.querySelector('button[data-up-cancel]');
     if (btn) btn.remove();
   }
@@ -5227,7 +5227,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', uploadURL, true);
       xhr.responseType = 'text';
-      // Timeout total alto + detecção de "travou sem progresso"
+      // Timeout total alto + detecÃ§Ã£o de "travou sem progresso"
       xhr.timeout = 180000; // 3 min
       let lastProgressAt = Date.now();
       let abortedByStall = false;
@@ -5277,7 +5277,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       xhr.onabort = () => {
         try { clearInterval(stallTimer); } catch (_) { }
-        const err = new Error(abortedByStall ? 'Conexão travou (sem progresso). Tentando novamente...' : 'Upload cancelado');
+        const err = new Error(abortedByStall ? 'ConexÃ£o travou (sem progresso). Tentando novamente...' : 'Upload cancelado');
         err.status = xhr.status || 0;
         reject(err);
       };
@@ -5310,15 +5310,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const timeout = /Tempo esgotado/i.test(msg);
         const retryable = rateLimited || timeout || (st >= 500) || (st === 0);
         if (retryable && attempt < retries) {
-          // Ajuste automático quando o problema é o Cloudflare (não só o /auth)
+          // Ajuste automÃ¡tico quando o problema Ã© o Cloudflare (nÃ£o sÃ³ o /auth)
           try {
             uploadState.last429At = Date.now();
             uploadState.authMinGapMs = Math.min(uploadState.authMaxGapMs || 1500, Math.round((uploadState.authMinGapMs || 80) * 1.4 + 80));
             uploadState.concurrency = Math.max(uploadState.minConcurrency || 2, Math.floor((uploadState.concurrency || 6) * 0.75));
           } catch (_) { }
-          // feedback para o usuário (não parecer travado)
+          // feedback para o usuÃ¡rio (nÃ£o parecer travado)
           try {
-            updateOverallUi(`Reconectando… (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto');
+            updateOverallUi(`Reconectandoâ€¦ (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto');
           } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
@@ -5397,7 +5397,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       xhr.onabort = () => {
         try { clearInterval(stallTimer); } catch (_) { }
-        const err = new Error(abortedByStall ? 'Conexão travou (sem progresso). Tentando novamente...' : 'Upload cancelado');
+        const err = new Error(abortedByStall ? 'ConexÃ£o travou (sem progresso). Tentando novamente...' : 'Upload cancelado');
         err.status = xhr.status || 0;
         err.elapsedMs = Date.now() - startedAt;
         err.hadProgress = hadProgress;
@@ -5431,7 +5431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const timeout = /Tempo esgotado/i.test(msg) || /travou/i.test(msg);
         const retryable = rateLimited || timeout || (st >= 500) || (st === 0);
         if (retryable && attempt < retries) {
-          try { updateOverallUi(`Reconectando… (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
+          try { updateOverallUi(`Reconectandoâ€¦ (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
           wait = Math.min(wait * 2, 6000);
@@ -5490,7 +5490,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const j = JSON.parse(text || '{}');
             return resolve(j);
           } catch (e) {
-            return reject(new Error('Resposta inválida do servidor (proxy)'));
+            return reject(new Error('Resposta invÃ¡lida do servidor (proxy)'));
           }
         }
         let msg = text || `Falha no upload (proxy) (${xhr.status})`;
@@ -5513,7 +5513,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       xhr.onabort = () => {
         try { clearInterval(stallTimer); } catch (_) { }
-        const err = new Error(abortedByStall ? 'Conexão travou (proxy, sem progresso). Tentando novamente...' : 'Upload cancelado');
+        const err = new Error(abortedByStall ? 'ConexÃ£o travou (proxy, sem progresso). Tentando novamente...' : 'Upload cancelado');
         err.status = xhr.status || 0;
         reject(err);
       };
@@ -5566,7 +5566,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg = (e && e.message) ? String(e.message) : 'Erro no upload';
         const retryable = (st === 429) || (st >= 500) || (st === 0) || /Tempo esgotado|travou/i.test(msg);
         if (retryable && attempt < retries) {
-          try { updateOverallUi(`Reconectando… (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
+          try { updateOverallUi(`Reconectandoâ€¦ (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
           wait = Math.min(wait * 2, 7000);
@@ -5595,7 +5595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Falha ao obter token do Worker');
     const token = String(data.token || '').trim();
-    if (!token) throw new Error('Token do Worker inválido');
+    if (!token) throw new Error('Token do Worker invÃ¡lido');
     const exp = now + (parseInt(data.expiresInSeconds || 0, 10) || 600);
     _ksWorkerToken = token;
     _ksWorkerTokenExp = exp;
@@ -5639,11 +5639,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try { clearInterval(stallTimer); } catch (_) { }
         const text = xhr.responseText || '';
         if (xhr.status >= 200 && xhr.status < 300) {
-          try { return resolve(JSON.parse(text || '{}')); } catch (_) { return reject(new Error('Resposta inválida do Worker')); }
+          try { return resolve(JSON.parse(text || '{}')); } catch (_) { return reject(new Error('Resposta invÃ¡lida do Worker')); }
         }
         let msg = text || `Falha no upload (Worker) (${xhr.status})`;
         try { const j = JSON.parse(text || '{}'); msg = j?.message || msg; } catch (_) { }
-        if (xhr.status === 401) msg = 'Não autorizado: KINGSELECTION_WORKER_SECRET (Render) deve ser igual a KS_WORKER_SECRET (Cloudflare).';
+        if (xhr.status === 401) msg = 'NÃ£o autorizado: KINGSELECTION_WORKER_SECRET (Render) deve ser igual a KS_WORKER_SECRET (Cloudflare).';
         const err = new Error(msg);
         err.status = xhr.status || 0;
         reject(err);
@@ -5652,7 +5652,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try { clearInterval(stallTimer); } catch (_) { }
         const st = xhr.status || 0;
         const msg = (st === 0)
-          ? 'Falha no upload (Worker): verifique CORS ou se r2.conectaking.com.br está acessível.'
+          ? 'Falha no upload (Worker): verifique CORS ou se r2.conectaking.com.br estÃ¡ acessÃ­vel.'
           : `Falha no upload (Worker) (${st})`;
         const err = new Error(msg);
         err.status = st;
@@ -5666,7 +5666,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       xhr.onabort = () => {
         try { clearInterval(stallTimer); } catch (_) { }
-        const err = new Error(abortedByStall ? 'Conexão travou (Worker, sem progresso). Tentando novamente...' : 'Upload cancelado');
+        const err = new Error(abortedByStall ? 'ConexÃ£o travou (Worker, sem progresso). Tentando novamente...' : 'Upload cancelado');
         err.status = xhr.status || 0;
         reject(err);
       };
@@ -5696,7 +5696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg = (e && e.message) ? String(e.message) : 'Erro no upload';
         const retryable = (st === 429) || (st >= 500) || (st === 0) || /Tempo esgotado|travou/i.test(msg);
         if (retryable && attempt < retries) {
-          try { updateOverallUi(`Reconectando… (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
+          try { updateOverallUi(`Reconectandoâ€¦ (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
           wait = Math.min(wait * 2, 7000);
@@ -5726,7 +5726,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'POST',
       headers: HEADERS,
       body: JSON.stringify({
-        // Bucket já é "kingselection" no backend. Não duplicar no key.
+        // Bucket jÃ¡ Ã© "kingselection" no backend. NÃ£o duplicar no key.
         prefix: `galleries/${galleryId}`,
         files: filesWithIds.map(f => ({ id: f.id, name: f.file?.name || 'foto', type: f.file?.type || 'application/octet-stream' }))
       })
@@ -5754,14 +5754,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function uploadToCloudflareFetch(uploadURL, file, { retries = 6 } = {}) {
-    if (!uploadURL) throw new Error('uploadURL inválida');
-    if (!file) throw new Error('Arquivo inválido');
+    if (!uploadURL) throw new Error('uploadURL invÃ¡lida');
+    if (!file) throw new Error('Arquivo invÃ¡lido');
     const maxBytes = 10 * 1024 * 1024; // 10MB
     if ((file.size || 0) > maxBytes) {
-      throw new Error('A marca d’água é muito grande. Envie um PNG menor (até 10MB).');
+      throw new Error('A marca dâ€™Ã¡gua Ã© muito grande. Envie um PNG menor (atÃ© 10MB).');
     }
     if (file.type && !String(file.type).toLowerCase().startsWith('image/')) {
-      throw new Error('Arquivo inválido. Envie uma imagem (PNG/JPG).');
+      throw new Error('Arquivo invÃ¡lido. Envie uma imagem (PNG/JPG).');
     }
 
     let attempt = 0;
@@ -5815,7 +5815,7 @@ document.addEventListener('DOMContentLoaded', () => {
       body: form
     }, 30000);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Falha ao enviar marca d\'água');
+    if (!res.ok) throw new Error(data.message || 'Falha ao enviar marca d\'Ã¡gua');
     wmMode = 'logo';
     setRadio('wm_mode', 'logo');
     scheduleWatermarkPreview();
@@ -5829,7 +5829,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ks-nav-projects')?.classList.add('active');
   }));
 
-  // Link "Página de finalização" — abre a tela de config da mensagem de obrigado (Node)
+  // Link "PÃ¡gina de finalizaÃ§Ã£o" â€” abre a tela de config da mensagem de obrigado (Node)
   const linkConfigFinalizacao = document.getElementById('ks-link-config-finalizacao');
   if (linkConfigFinalizacao && galleryId) {
     linkConfigFinalizacao.addEventListener('click', (e) => {
@@ -5841,7 +5841,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Tabs da área de Atividades (Alboom)
+  // Tabs da Ã¡rea de Atividades (Alboom)
   Array.from(document.querySelectorAll('[data-abo-tab]')).forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.getAttribute('data-abo-tab');
@@ -5863,9 +5863,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openActContactModal(c) {
     if (!actContactModal || !c) return;
-    const nome = String(c.nome || '').trim() || '—';
-    const email = String(c.email || '').trim() || '—';
-    const phone = String(c.telefone || '').trim() || '—';
+    const nome = String(c.nome || '').trim() || 'â€”';
+    const email = String(c.email || '').trim() || 'â€”';
+    const phone = String(c.telefone || '').trim() || 'â€”';
     if (actContactNome) actContactNome.textContent = nome;
     if (actContactEmail) actContactEmail.textContent = email;
     if (actContactPhone) actContactPhone.textContent = phone;
@@ -5902,13 +5902,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const base = resolveCurrentActivityClientAndBatch();
       const batch = base.batch;
       if (!Number.isFinite(batch) || batch < 1) {
-        toast('Selecione a rodada atual no filtro "Ver seleção".', { kind: 'warn', title: 'Excluir cadastro' });
+        toast('Selecione a rodada atual no filtro "Ver seleÃ§Ã£o".', { kind: 'warn', title: 'Excluir cadastro' });
         return;
       }
-      if (!confirm(`Excluir a rodada atual (Seleção ${batch}) e excluir este cadastro?`)) return;
+      if (!confirm(`Excluir a rodada atual (SeleÃ§Ã£o ${batch}) e excluir este cadastro?`)) return;
       deleteRoundAndClient(id)
         .then(async (out) => {
-          toast(`Cadastro excluído e rodada ${out.batch} removida (${out.deletedRound} foto(s)).`, { kind: 'ok', title: 'Cliente' });
+          toast(`Cadastro excluÃ­do e rodada ${out.batch} removida (${out.deletedRound} foto(s)).`, { kind: 'ok', title: 'Cliente' });
           if (parseInt(_activityFocusClientId, 10) === id) _activityFocusClientId = null;
           await loadGallery();
         })
@@ -5941,12 +5941,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (k === 'nome') t = (actContactNome?.textContent || '').trim();
     if (k === 'email') t = (actContactEmail?.textContent || '').trim();
     if (k === 'phone') t = (actContactPhone?.textContent || '').trim();
-    if (!t || t === '—') return;
+    if (!t || t === 'â€”') return;
     try {
       await navigator.clipboard.writeText(t);
       toast('Copiado.', { kind: 'ok', title: 'OK' });
     } catch (_) {
-      showError('Não foi possível copiar. Tente outro navegador ou copie manualmente.');
+      showError('NÃ£o foi possÃ­vel copiar. Tente outro navegador ou copie manualmente.');
     }
   });
   actContactCopyAll?.addEventListener('click', async () => {
@@ -5958,7 +5958,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await navigator.clipboard.writeText(text);
       toast('Copiado.', { kind: 'ok', title: 'OK' });
     } catch (_) {
-      showError('Não foi possível copiar. Tente selecionar o texto manualmente.');
+      showError('NÃ£o foi possÃ­vel copiar. Tente selecionar o texto manualmente.');
     }
   });
 
@@ -5986,7 +5986,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })();
     const batch = parseInt(actBatchFilter?.value, 10);
     if (!cid || !batch || !Number.isFinite(batch) || batch < 1) return;
-    if (!confirm(`Remover todas as fotos da “Seleção ${batch}” deste cliente? (Outras rodadas e o projeto permanecem.)`)) return;
+    if (!confirm(`Remover todas as fotos da â€œSeleÃ§Ã£o ${batch}â€ deste cliente? (Outras rodadas e o projeto permanecem.)`)) return;
     try {
       actDeleteBatch.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/delete-selection-batch`, {
@@ -6008,10 +6008,10 @@ document.addEventListener('DOMContentLoaded', () => {
   actReactivateBatch?.addEventListener('click', async () => {
     const { cid, batch, hasRounds } = resolveCurrentActivityClientAndBatch();
     if (!cid || !hasRounds || !Number.isFinite(batch) || batch < 1) {
-      toast('Selecione uma rodada válida para reativar.', { kind: 'warn', title: 'Rodada' });
+      toast('Selecione uma rodada vÃ¡lida para reativar.', { kind: 'warn', title: 'Rodada' });
       return;
     }
-    if (!confirm(`Reativar a Seleção ${batch} para este cliente escolher mais fotos na mesma rodada?`)) return;
+    if (!confirm(`Reativar a SeleÃ§Ã£o ${batch} para este cliente escolher mais fotos na mesma rodada?`)) return;
     try {
       actReactivateBatch.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/reactivate-selection-batch`, {
@@ -6021,7 +6021,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao reativar rodada');
-      toast(`Seleção ${batch} reativada para o cliente.`, { kind: 'ok', title: 'Rodada' });
+      toast(`SeleÃ§Ã£o ${batch} reativada para o cliente.`, { kind: 'ok', title: 'Rodada' });
       await loadGallery();
     } catch (err) {
       showError(err?.message || 'Erro ao reativar rodada');
@@ -6033,10 +6033,10 @@ document.addEventListener('DOMContentLoaded', () => {
   actOpenNextRound?.addEventListener('click', async () => {
     const { cid, batch } = resolveCurrentActivityClientAndBatch();
     if (!cid) {
-      toast('Selecione um cliente em revisão.', { kind: 'warn', title: 'Nova seleção' });
+      toast('Selecione um cliente em revisÃ£o.', { kind: 'warn', title: 'Nova seleÃ§Ã£o' });
       return;
     }
-    if (!confirm(`Abrir uma NOVA seleção para este cliente? (A Seleção ${batch || 1} permanece salva.)`)) return;
+    if (!confirm(`Abrir uma NOVA seleÃ§Ã£o para este cliente? (A SeleÃ§Ã£o ${batch || 1} permanece salva.)`)) return;
     try {
       actOpenNextRound.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/open-selection-round`, {
@@ -6045,11 +6045,11 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ clientId: cid })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Erro ao abrir nova seleção');
-      toast('Nova seleção aberta para o cliente.', { kind: 'ok', title: 'Rodada' });
+      if (!res.ok) throw new Error(data.message || 'Erro ao abrir nova seleÃ§Ã£o');
+      toast('Nova seleÃ§Ã£o aberta para o cliente.', { kind: 'ok', title: 'Rodada' });
       await loadGallery();
     } catch (err) {
-      showError(err?.message || 'Erro ao abrir nova seleção');
+      showError(err?.message || 'Erro ao abrir nova seleÃ§Ã£o');
     } finally {
       actOpenNextRound.disabled = false;
     }
@@ -6058,18 +6058,18 @@ document.addEventListener('DOMContentLoaded', () => {
   actDeleteCurrentRoundBtn?.addEventListener('click', async () => {
     const { cid, batch, hasRounds } = resolveCurrentActivityClientAndBatch();
     if (!cid) {
-      toast('Selecione um cliente em revisão.', { kind: 'warn', title: 'Rodada' });
+      toast('Selecione um cliente em revisÃ£o.', { kind: 'warn', title: 'Rodada' });
       return;
     }
     if (!hasRounds) {
-      toast('Não há rodada para excluir.', { kind: 'warn', title: 'Rodada' });
+      toast('NÃ£o hÃ¡ rodada para excluir.', { kind: 'warn', title: 'Rodada' });
       return;
     }
     if (!Number.isFinite(batch) || batch < 1) {
-      toast('Não foi possível identificar a rodada atual.', { kind: 'warn', title: 'Rodada' });
+      toast('NÃ£o foi possÃ­vel identificar a rodada atual.', { kind: 'warn', title: 'Rodada' });
       return;
     }
-    if (!confirm(`Excluir a rodada atual (Seleção ${batch}) deste cliente?`)) return;
+    if (!confirm(`Excluir a rodada atual (SeleÃ§Ã£o ${batch}) deste cliente?`)) return;
     try {
       actDeleteCurrentRoundBtn.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/delete-selection-batch`, {
@@ -6079,7 +6079,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao excluir rodada atual');
-      toast(`Rodada ${batch} excluída (${data.deleted || 0} foto(s)).`, { kind: 'ok', title: 'Rodada' });
+      toast(`Rodada ${batch} excluÃ­da (${data.deleted || 0} foto(s)).`, { kind: 'ok', title: 'Rodada' });
       await loadGallery();
     } catch (err) {
       showError(err?.message || 'Erro ao excluir rodada atual');
@@ -6093,7 +6093,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cid = parseInt(clientIdOverride, 10) || base.cid;
     const batch = base.batch;
     if (!cid) throw new Error('Selecione um cliente.');
-    if (!Number.isFinite(batch) || batch < 1) throw new Error('Rodada atual inválida.');
+    if (!Number.isFinite(batch) || batch < 1) throw new Error('Rodada atual invÃ¡lida.');
     const resDelRound = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/delete-selection-batch`, {
       method: 'POST',
       headers: HEADERS,
@@ -6117,11 +6117,11 @@ document.addEventListener('DOMContentLoaded', () => {
       toast('Selecione um cliente e uma rodada.', { kind: 'warn', title: 'Excluir cadastro' });
       return;
     }
-    if (!confirm(`Excluir a rodada atual (Seleção ${batch}) e também o cadastro deste cliente?`)) return;
+    if (!confirm(`Excluir a rodada atual (SeleÃ§Ã£o ${batch}) e tambÃ©m o cadastro deste cliente?`)) return;
     try {
       actDeleteRoundClientBtn.disabled = true;
       const out = await deleteRoundAndClient(cid);
-      toast(`Rodada ${out.batch} removida (${out.deletedRound} foto(s)) e cadastro excluído.`, { kind: 'ok', title: 'Cliente' });
+      toast(`Rodada ${out.batch} removida (${out.deletedRound} foto(s)) e cadastro excluÃ­do.`, { kind: 'ok', title: 'Cliente' });
       _activityFocusClientId = null;
       await loadGallery();
     } catch (err) {
@@ -6131,7 +6131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Dropdown de ações (estilo Alboom)
+  // Dropdown de aÃ§Ãµes (estilo Alboom)
   function closeActMenu() { actMenu?.classList.remove('open'); }
   actMoreBtn?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -6166,10 +6166,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ? clientSt
         : stG;
       if (eff !== 'revisao') {
-        toast('Só é possível após o cliente enviar a seleção (em revisão).', { kind: 'warn', title: 'Nova seleção' });
+        toast('SÃ³ Ã© possÃ­vel apÃ³s o cliente enviar a seleÃ§Ã£o (em revisÃ£o).', { kind: 'warn', title: 'Nova seleÃ§Ã£o' });
         return;
       }
-      if (!confirm('Abrir nova seleção? As fotos já escolhidas permanecem selecionadas; o cliente só poderá desmarcar o que escolher nesta nova seleção.')) return;
+      if (!confirm('Abrir nova seleÃ§Ã£o? As fotos jÃ¡ escolhidas permanecem selecionadas; o cliente sÃ³ poderÃ¡ desmarcar o que escolher nesta nova seleÃ§Ã£o.')) return;
       const clientId = resolveClientIdForRoundApi();
       try {
         const body = {};
@@ -6180,9 +6180,9 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify(body)
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || 'Erro ao abrir nova seleção');
+        if (!res.ok) throw new Error(data.message || 'Erro ao abrir nova seleÃ§Ã£o');
         await loadGallery();
-        toast(`Nova seleção aberta (nº ${data.selection_round != null ? data.selection_round : '—'}). O cliente pode acrescentar fotos.`, { kind: 'ok', title: 'Nova seleção' });
+        toast(`Nova seleÃ§Ã£o aberta (nÂº ${data.selection_round != null ? data.selection_round : 'â€”'}). O cliente pode acrescentar fotos.`, { kind: 'ok', title: 'Nova seleÃ§Ã£o' });
       } catch (err) {
         showError(err?.message || 'Erro');
       }
@@ -6200,15 +6200,15 @@ document.addEventListener('DOMContentLoaded', () => {
       ? clientSt
       : stG;
     if (eff !== 'revisao') {
-      toast('Esta ação é para cliente em revisão.', { kind: 'warn', title: 'Excluir revisão' });
+      toast('Esta aÃ§Ã£o Ã© para cliente em revisÃ£o.', { kind: 'warn', title: 'Excluir revisÃ£o' });
       return;
     }
     if (!cid) {
-      toast('Selecione um cliente em revisão.', { kind: 'warn', title: 'Excluir revisão' });
+      toast('Selecione um cliente em revisÃ£o.', { kind: 'warn', title: 'Excluir revisÃ£o' });
       return;
     }
     const who = String(row?.nome || row?.email || `#${cid}`);
-    if (!window.confirm(`Excluir as fotos em revisão de ${who}? (O projeto não será apagado.)`)) return;
+    if (!window.confirm(`Excluir as fotos em revisÃ£o de ${who}? (O projeto nÃ£o serÃ¡ apagado.)`)) return;
     try {
       if (actClearReviewBtn) actClearReviewBtn.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/clear-review`, {
@@ -6216,11 +6216,11 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: HEADERS
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Erro ao excluir revisão');
-      toast(`Revisão excluída (${data.deleted || 0} foto(s)).`, { kind: 'ok', title: 'Excluir revisão' });
+      if (!res.ok) throw new Error(data.message || 'Erro ao excluir revisÃ£o');
+      toast(`RevisÃ£o excluÃ­da (${data.deleted || 0} foto(s)).`, { kind: 'ok', title: 'Excluir revisÃ£o' });
       await loadGallery();
     } catch (e) {
-      showError(e?.message || 'Erro ao excluir revisão');
+      showError(e?.message || 'Erro ao excluir revisÃ£o');
     } finally {
       if (actClearReviewBtn) actClearReviewBtn.disabled = false;
     }
@@ -6242,8 +6242,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const row = cid ? enabled.find((c) => parseInt(c.id, 10) === cid) : null;
     const who = row ? String(row.nome || row.email || 'este cliente').trim() : '';
     const msg = enabled.length > 1 && who
-      ? `Finalizar o acesso de ${who}? (Os outros visitantes desta galeria não são afetados.)`
-      : 'Finalizar esta galeria? (o cliente não conseguirá selecionar novamente)';
+      ? `Finalizar o acesso de ${who}? (Os outros visitantes desta galeria nÃ£o sÃ£o afetados.)`
+      : 'Finalizar esta galeria? (o cliente nÃ£o conseguirÃ¡ selecionar novamente)';
     if (!confirm(msg)) return;
     try {
       await setStatus('finalizado');
@@ -6260,8 +6260,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const row = cid ? enabled.find((c) => parseInt(c.id, 10) === cid) : null;
     const who = row ? String(row.nome || row.email || 'este cliente').trim() : '';
     const msg = enabled.length > 1 && who
-      ? `Reativar o acesso de ${who}? (Os outros visitantes não são afetados.)`
-      : 'Reativar esta galeria? (o cliente poderá selecionar novamente)';
+      ? `Reativar o acesso de ${who}? (Os outros visitantes nÃ£o sÃ£o afetados.)`
+      : 'Reativar esta galeria? (o cliente poderÃ¡ selecionar novamente)';
     if (!confirm(msg)) return;
     try {
       await setStatus('andamento');
@@ -6277,7 +6277,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.ks-nav a').forEach(n => n.classList.remove('active'));
       document.getElementById('ks-nav-projects')?.classList.add('active');
       setActiveTab('links');
-      toast('Aba “Link e compartilhamento”: copie o link ou a mensagem.', { kind: 'ok', title: 'Compartilhar' });
+      toast('Aba â€œLink e compartilhamentoâ€: copie o link ou a mensagem.', { kind: 'ok', title: 'Compartilhar' });
     } catch (err) {
       showError(err?.message || 'Erro ao compartilhar');
     }
@@ -6291,7 +6291,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const email = _activeClientEmail || document.getElementById('ks-activity-email')?.textContent || 'este cliente';
-    if (!confirm(`Excluir o cadastro de ${email}?\n\nIsso apaga o cadastro e também remove seleções, liberações e comprovantes vinculados a este cliente nesta galeria.`)) return;
+    if (!confirm(`Excluir o cadastro de ${email}?\n\nIsso apaga o cadastro e tambÃ©m remove seleÃ§Ãµes, liberaÃ§Ãµes e comprovantes vinculados a este cliente nesta galeria.`)) return;
     try {
       actDeleteClient.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${delCid}`, {
@@ -6300,7 +6300,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao excluir cliente');
-      toast('Cadastro do cliente excluído.', { kind: 'ok', title: 'Excluir cliente' });
+      toast('Cadastro do cliente excluÃ­do.', { kind: 'ok', title: 'Excluir cliente' });
       _activeClientId = null;
       _activeClientEmail = null;
       if (delCid === parseInt(_activityFocusClientId, 10)) _activityFocusClientId = null;
@@ -6314,7 +6314,7 @@ document.addEventListener('DOMContentLoaded', () => {
   actOpenWhatsappBtn?.addEventListener('click', () => {
     const url = String(actOpenWhatsappBtn.getAttribute('data-whats-link') || '').trim();
     if (!url) {
-      toast('Este cliente não tem WhatsApp válido cadastrado.', { kind: 'warn', title: 'WhatsApp cliente' });
+      toast('Este cliente nÃ£o tem WhatsApp vÃ¡lido cadastrado.', { kind: 'warn', title: 'WhatsApp cliente' });
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -6322,8 +6322,8 @@ document.addEventListener('DOMContentLoaded', () => {
   actMainBtn?.addEventListener('click', async (e) => {
     e.preventDefault();
     const st = String(gallery?._panelClientStatus || gallery?.status || '').toLowerCase();
-    // "Reativar" como ação principal só quando já está finalizado.
-    // Em "revisao" (cliente já escolheu), o botão principal deve permitir Finalizar.
+    // "Reativar" como aÃ§Ã£o principal sÃ³ quando jÃ¡ estÃ¡ finalizado.
+    // Em "revisao" (cliente jÃ¡ escolheu), o botÃ£o principal deve permitir Finalizar.
     if (st === 'finalizado') {
       await actReactivate?.click();
       return;
@@ -6348,7 +6348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ks-nav-settings')?.classList.add('active');
   });
 
-  // Botão "Voltar" (página anterior). Se não houver histórico, volta para "Meus projetos".
+  // BotÃ£o "Voltar" (pÃ¡gina anterior). Se nÃ£o houver histÃ³rico, volta para "Meus projetos".
   btnBack?.addEventListener('click', (e) => {
     e.preventDefault();
     try {
@@ -6360,18 +6360,18 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = kingSelectionPainelUrl();
   });
 
-  // Botão "Painel" (dashboard principal)
+  // BotÃ£o "Painel" (dashboard principal)
   btnPanel?.addEventListener('click', (e) => {
     e.preventDefault();
     window.location.href = '/dashboard.html';
   });
 
-  // Botão "Excluir projeto" (remove galeria + todas as fotos do R2)
+  // BotÃ£o "Excluir projeto" (remove galeria + todas as fotos do R2)
   btnDeleteProject?.addEventListener('click', async (e) => {
     e.preventDefault();
     if (!galleryId) return;
     const nome = document.getElementById('ks-project-title')?.textContent || 'Projeto';
-    if (!confirm(`Excluir o projeto "${nome}" e todas as fotos?\n\nEsta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Excluir o projeto "${nome}" e todas as fotos?\n\nEsta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return;
     try {
       btnDeleteProject.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}`, { method: 'DELETE', headers: HEADERS });
@@ -6411,7 +6411,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (minSel !== undefined) payload.min_selections = Math.max(0, minSel);
       await savePatch(payload);
       await loadGallery();
-      toast('Alterações salvas.', { kind: 'ok', title: 'Salvo' });
+      toast('AlteraÃ§Ãµes salvas.', { kind: 'ok', title: 'Salvo' });
     } catch (e) {
       showError(e.message || 'Erro ao salvar');
     } finally {
@@ -6430,7 +6430,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (accessModeVal === 'signup' || accessModeVal === 'paid_event_photos') patch.allow_self_signup = true;
       await savePatch(patch);
       await loadGallery();
-      toast('Alterações salvas.', { kind: 'ok', title: 'Salvo' });
+      toast('AlteraÃ§Ãµes salvas.', { kind: 'ok', title: 'Salvo' });
     } catch (e) {
       showError(e.message || 'Erro ao salvar');
     } finally {
@@ -6481,7 +6481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const money = e.target?.closest?.('[data-money="1"]');
     if (!money) return;
     // Evita "saltos" de valor enquanto digita (ex.: ao adicionar 0).
-    // A normalização final continua no blur.
+    // A normalizaÃ§Ã£o final continua no blur.
     if (shouldSkipMoneyMaskOnThisInput(e)) return;
   });
 
@@ -6579,11 +6579,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const cli = (Array.isArray(salesClientsCache) ? salesClientsCache : []).find((c) => (parseInt(c?.id, 10) || 0) === cid);
       const wd = resolveWhatsappDigits(cli?.telefone || '');
       if (!wd || wd.length < 10) {
-        showError('Cliente sem WhatsApp válido (com DDD).');
+        showError('Cliente sem WhatsApp vÃ¡lido (com DDD).');
         return;
       }
       const nome = String(cli?.nome || cli?.email || 'cliente');
-      const msg = `Olá, ${nome}! Tudo bem? Aqui é o fotógrafo da galeria "${gallery?.nome_projeto || ''}". Vi uma pendência e estou te chamando para alinharmos.`;
+      const msg = `OlÃ¡, ${nome}! Tudo bem? Aqui Ã© o fotÃ³grafo da galeria "${gallery?.nome_projeto || ''}". Vi uma pendÃªncia e estou te chamando para alinharmos.`;
       window.open(`https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     }
   });
@@ -6666,11 +6666,11 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(payload)
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Erro ao salvar configuração comercial');
+      if (!res.ok) throw new Error(data.message || 'Erro ao salvar configuraÃ§Ã£o comercial');
       await refreshSalesUi();
-      toast('Configuração comercial salva.', { kind: 'ok', title: 'Vendas' });
+      toast('ConfiguraÃ§Ã£o comercial salva.', { kind: 'ok', title: 'Vendas' });
     } catch (e) {
-      showError(e?.message || 'Erro ao salvar configuração comercial');
+      showError(e?.message || 'Erro ao salvar configuraÃ§Ã£o comercial');
     } finally {
       salesSaveBtn.disabled = false;
     }
@@ -6691,13 +6691,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (negRaw === '') body.negotiated_total_cents = null;
       else {
         const c = parseBrMoneyStringToCents(negRaw);
-        if (c == null) throw new Error('Total acordado inválido.');
+        if (c == null) throw new Error('Total acordado invÃ¡lido.');
         body.negotiated_total_cents = c;
       }
       if (downRaw === '') body.down_payment_cents = null;
       else {
         const c = parseBrMoneyStringToCents(downRaw);
-        if (c == null) throw new Error('Entrada declarada inválida.');
+        if (c == null) throw new Error('Entrada declarada invÃ¡lida.');
         body.down_payment_cents = c;
       }
       if (remRaw === '') {
@@ -6706,19 +6706,19 @@ document.addEventListener('DOMContentLoaded', () => {
         body.installment_interval_days = null;
       } else {
         const c = parseBrMoneyStringToCents(remRaw);
-        if (c == null) throw new Error('Valor restante inválido.');
+        if (c == null) throw new Error('Valor restante invÃ¡lido.');
         body.remaining_balance_cents = c;
         if (instRaw === '') {
           body.installment_count = 1;
         } else {
           const n = parseInt(instRaw, 10);
-          if (!Number.isFinite(n) || n < 1 || n > 240) throw new Error('Parcelas do restante inválidas (1–240).');
+          if (!Number.isFinite(n) || n < 1 || n > 240) throw new Error('Parcelas do restante invÃ¡lidas (1â€“240).');
           body.installment_count = n;
         }
         if (daysRaw === '') body.installment_interval_days = null;
         else {
           const nd = parseInt(daysRaw, 10);
-          if (!Number.isFinite(nd) || nd < 1 || nd > 730) throw new Error('Dias para pagar inválidos (1–730).');
+          if (!Number.isFinite(nd) || nd < 1 || nd > 730) throw new Error('Dias para pagar invÃ¡lidos (1â€“730).');
           body.installment_interval_days = nd;
         }
       }
@@ -6755,7 +6755,7 @@ document.addEventListener('DOMContentLoaded', () => {
       out = await salesApproveAll({ cid, round, status: 'approved', delivery_mode: 'original' });
     } catch (approveErr) {
       await loadSalesDetail().catch(() => { });
-      throw new Error(`Pagamento atualizado, mas não foi possível aprovar todas as fotos automaticamente: ${approveErr?.message || 'erro desconhecido'}`);
+      throw new Error(`Pagamento atualizado, mas nÃ£o foi possÃ­vel aprovar todas as fotos automaticamente: ${approveErr?.message || 'erro desconhecido'}`);
     }
     await loadSalesDetail();
     await loadSalesClients();
@@ -6766,16 +6766,16 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
       if (!cid) throw new Error('Selecione um cliente.');
-      const amountRaw = window.prompt('Valor confirmado neste passo (R$). Ex.: 1000 ou 1000,00 — pode ser entrada parcial.', '');
+      const amountRaw = window.prompt('Valor confirmado neste passo (R$). Ex.: 1000 ou 1000,00 â€” pode ser entrada parcial.', '');
       if (amountRaw == null) return;
       const amount = parseAdminAmountInputToCents(amountRaw);
-      if (amount == null) throw new Error('Valor inválido. Use formato em reais, ex.: 200 ou 200,00.');
+      if (amount == null) throw new Error('Valor invÃ¡lido. Use formato em reais, ex.: 200 ou 200,00.');
       const increment = window.confirm(
-        'Como registrar?\n\nOK = ENTRADA/PARCELA (somar ao que já foi registrado)\nCancelar = TOTAL já recebido em dinheiro nesta conta (substitui o acumulado)'
+        'Como registrar?\n\nOK = ENTRADA/PARCELA (somar ao que jÃ¡ foi registrado)\nCancelar = TOTAL jÃ¡ recebido em dinheiro nesta conta (substitui o acumulado)'
       );
       const courtesyRest = window.confirm('Marcar o RESTANTE do pacote como CORTESIA e encerrar como quitado?');
-      const note = (window.prompt('Observação interna (opcional):', '') || '').trim();
-      const finalNote = note || (amount === 0 ? 'Abençoado (cortesia)' : null);
+      const note = (window.prompt('ObservaÃ§Ã£o interna (opcional):', '') || '').trim();
+      const finalNote = note || (amount === 0 ? 'AbenÃ§oado (cortesia)' : null);
       const out = await salesSubmitPaymentReviewAndApproveAll({
         status: 'confirmed',
         photographer_confirmed_cents: amount,
@@ -6794,13 +6794,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
       if (!cid) throw new Error('Selecione um cliente.');
       const amountRaw = window.prompt(
-        'Valor do adiantamento recebido agora (R$).\n\nSerá somado ao recebido nesta rodada. Use de novo até quitar o combinado.',
+        'Valor do adiantamento recebido agora (R$).\n\nSerÃ¡ somado ao recebido nesta rodada. Use de novo atÃ© quitar o combinado.',
         ''
       );
       if (amountRaw == null) return;
       const amount = parseAdminAmountInputToCents(amountRaw);
       if (amount == null || amount <= 0) throw new Error('Informe um valor maior que zero.');
-      const noteExtra = (window.prompt('Observação interna (opcional):', '') || '').trim();
+      const noteExtra = (window.prompt('ObservaÃ§Ã£o interna (opcional):', '') || '').trim();
       const baseNote = `Adiantamento ${formatCentsBr(amount)}`;
       const noteAdmin = noteExtra ? `${baseNote}. ${noteExtra}` : baseNote;
       const out = await salesSubmitPaymentReviewAndApproveAll({
@@ -6822,12 +6822,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!cid) throw new Error('Selecione um cliente.');
       if (
         !window.confirm(
-          'Abonar o valor RESTANTE do pacote como cortesia e encerrar como pagamento quitado?\n\nUse depois de registrar o que o cliente pagou em dinheiro; o sistema preenche a cortesia até fechar o total estimado.'
+          'Abonar o valor RESTANTE do pacote como cortesia e encerrar como pagamento quitado?\n\nUse depois de registrar o que o cliente pagou em dinheiro; o sistema preenche a cortesia atÃ© fechar o total estimado.'
         )
       ) {
         return;
       }
-      const note = (window.prompt('Observação interna (opcional):', 'Cortesia do restante') || '').trim();
+      const note = (window.prompt('ObservaÃ§Ã£o interna (opcional):', 'Cortesia do restante') || '').trim();
       const out = await salesSubmitPaymentReviewAndApproveAll({
         status: 'confirmed',
         photographer_confirmed_cents: 0,
@@ -6852,7 +6852,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const amountRaw = window.prompt('Corrigir valor pago (R$). Ex.: 200 ou 200,00', current);
       if (amountRaw == null) return;
       const amount = parseAdminAmountInputToCents(amountRaw);
-      if (amount == null) throw new Error('Valor inválido.');
+      if (amount == null) throw new Error('Valor invÃ¡lido.');
       const note = (window.prompt('Obs. ADM (opcional):', String(salesDetailCache?.payment?.note_admin || '').trim()) || '').trim();
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/sales/clients/${cid}/round/${round}/payment-review`, {
         method: 'POST',
@@ -6879,15 +6879,15 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
       if (!cid) throw new Error('Selecione um cliente.');
-      const note = (window.prompt('Observação (opcional). Ex.: cliente abençoado / cortesia', 'Abençoado (cortesia)') || '').trim();
+      const note = (window.prompt('ObservaÃ§Ã£o (opcional). Ex.: cliente abenÃ§oado / cortesia', 'AbenÃ§oado (cortesia)') || '').trim();
       const out = await salesSubmitPaymentReviewAndApproveAll({
         status: 'confirmed',
         amount_cents: 0,
-        note_admin: note || 'Abençoado (cortesia)'
+        note_admin: note || 'AbenÃ§oado (cortesia)'
       });
-      toast(`Cliente marcado como abençoado e ${out.updated || 0} foto(s) liberadas automaticamente.`, { kind: 'ok', title: 'Vendas' });
+      toast(`Cliente marcado como abenÃ§oado e ${out.updated || 0} foto(s) liberadas automaticamente.`, { kind: 'ok', title: 'Vendas' });
     } catch (e) {
-      showError(e?.message || 'Erro ao marcar como abençoado');
+      showError(e?.message || 'Erro ao marcar como abenÃ§oado');
     }
   });
 
@@ -6916,7 +6916,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
       const round = Math.max(1, parseInt(salesRoundSel?.value || '1', 10) || 1);
       if (!cid) throw new Error('Selecione um cliente.');
-      const note = (window.prompt('Observação interna (opcional):', '') || '').trim();
+      const note = (window.prompt('ObservaÃ§Ã£o interna (opcional):', '') || '').trim();
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/sales/clients/${cid}/round/${round}/payment-review`, {
         method: 'POST',
         headers: HEADERS,
@@ -6939,12 +6939,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!cid) throw new Error('Selecione um cliente.');
       if (
         !window.confirm(
-          'Desfazer a confirmação desta rodada?\n\nSerá zerado o valor recebido/cortesia e o status volta a aguardar comprovante. O total acordado (se salvou em "Valores combinados") é mantido.'
+          'Desfazer a confirmaÃ§Ã£o desta rodada?\n\nSerÃ¡ zerado o valor recebido/cortesia e o status volta a aguardar comprovante. O total acordado (se salvou em "Valores combinados") Ã© mantido.'
         )
       ) {
         return;
       }
-      const note = (window.prompt('Observação interna (opcional):', 'Desfeito — aguardando novo comprovante') || '').trim();
+      const note = (window.prompt('ObservaÃ§Ã£o interna (opcional):', 'Desfeito â€” aguardando novo comprovante') || '').trim();
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/sales/clients/${cid}/round/${round}/payment-review`, {
         method: 'POST',
         headers: HEADERS,
@@ -6955,12 +6955,12 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Erro ao desfazer confirmação');
+      if (!res.ok) throw new Error(data.message || 'Erro ao desfazer confirmaÃ§Ã£o');
       await loadSalesDetail();
       await loadSalesClients();
       toast('Pagamento voltou a aguardar comprovante (valores recebidos zerados).', { kind: 'ok', title: 'Vendas' });
     } catch (e) {
-      showError(e?.message || 'Erro ao desfazer confirmação');
+      showError(e?.message || 'Erro ao desfazer confirmaÃ§Ã£o');
     }
   });
 
@@ -6972,14 +6972,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     renderSalesProofPanel(pay);
     if (!String(pay?.proof_file_path || '').trim()) {
-      toast('Esta rodada ainda está sem comprovante anexado.', { kind: 'warn', title: 'Comprovante' });
+      toast('Esta rodada ainda estÃ¡ sem comprovante anexado.', { kind: 'warn', title: 'Comprovante' });
     }
   });
 
   salesOpenClientWhatsBtn?.addEventListener('click', () => {
     const url = String(salesOpenClientWhatsBtn.getAttribute('data-whats-link') || '').trim();
     if (!url) {
-      showError('WhatsApp indisponível para este cliente/sessão.');
+      showError('WhatsApp indisponÃ­vel para este cliente/sessÃ£o.');
       return;
     }
     window.open(url, '_blank', 'noopener');
@@ -6990,7 +6990,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
       const round = Math.max(1, parseInt(salesRoundSel?.value || '1', 10) || 1);
       if (!cid) throw new Error('Selecione um cliente.');
-      if (!confirm(`Aprovar TODAS as fotos da seleção ${round} deste cliente para download original?`)) return;
+      if (!confirm(`Aprovar TODAS as fotos da seleÃ§Ã£o ${round} deste cliente para download original?`)) return;
       const out = await salesApproveAll({ cid, round, status: 'approved', delivery_mode: 'original' });
       await loadSalesDetail();
       toast(`Todas aprovadas (${out.updated || 0} foto(s)).`, { kind: 'ok', title: 'Vendas' });
@@ -7006,14 +7006,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!cid) throw new Error('Selecione um cliente.');
       if (
         !confirm(
-          `Marcar TODAS as fotos da rodada ${round} como AGUARDANDO LIBERAÇÃO?\n\n(Igual ao botão por foto: volta para análise antes de liberar download.)`
+          `Marcar TODAS as fotos da rodada ${round} como AGUARDANDO LIBERAÃ‡ÃƒO?\n\n(Igual ao botÃ£o por foto: volta para anÃ¡lise antes de liberar download.)`
         )
       ) {
         return;
       }
       const out = await salesApproveAll({ cid, round, status: 'pending', delivery_mode: 'original' });
       await loadSalesDetail();
-      toast(`${out.updated || 0} foto(s) em aguardando liberação.`, { kind: 'ok', title: 'Vendas' });
+      toast(`${out.updated || 0} foto(s) em aguardando liberaÃ§Ã£o.`, { kind: 'ok', title: 'Vendas' });
     } catch (e) {
       showError(e?.message || 'Erro ao marcar todas como aguardando');
     }
@@ -7028,7 +7028,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const photoId = parseInt(card.getAttribute('data-sales-photo') || '0', 10) || 0;
       const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
       const round = Math.max(1, parseInt(salesRoundSel?.value || '1', 10) || 1);
-      if (!photoId || !cid) throw new Error('Cliente/foto inválidos');
+      if (!photoId || !cid) throw new Error('Cliente/foto invÃ¡lidos');
       if (action === 'upload-edited') {
         salesEditedPendingPhotoId = photoId;
         if (salesEditedFileInput) {
@@ -7045,9 +7045,9 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (action === 'reject') { status = 'rejected'; delivery_mode = 'original'; }
       await salesApprovePhoto({ cid, round, photoId, status, delivery_mode });
       await loadSalesDetail();
-      toast(action === 'bless' ? 'Foto abençoada e liberada para download.' : 'Aprovação atualizada.', { kind: 'ok', title: 'Vendas' });
+      toast(action === 'bless' ? 'Foto abenÃ§oada e liberada para download.' : 'AprovaÃ§Ã£o atualizada.', { kind: 'ok', title: 'Vendas' });
     } catch (err) {
-      showError(err?.message || 'Erro ao atualizar aprovação');
+      showError(err?.message || 'Erro ao atualizar aprovaÃ§Ã£o');
     }
   });
 
@@ -7058,12 +7058,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!cid || !round || String(actBatchFilter?.value || 'all') === 'all') {
         throw new Error('Selecione cliente e rodada na aba Atividades.');
       }
-      if (!confirm(`Aprovar TODAS as fotos da Seleção ${round} deste cliente?`)) return;
+      if (!confirm(`Aprovar TODAS as fotos da SeleÃ§Ã£o ${round} deste cliente?`)) return;
       const out = await salesApproveAll({ cid, round, status: 'approved', delivery_mode: 'original' });
       await loadGallery();
-      toast(`Aprovadas ${out.updated || 0} foto(s) na revisão.`, { kind: 'ok', title: 'Atividades' });
+      toast(`Aprovadas ${out.updated || 0} foto(s) na revisÃ£o.`, { kind: 'ok', title: 'Atividades' });
     } catch (e) {
-      showError(e?.message || 'Erro ao aprovar todas na revisão');
+      showError(e?.message || 'Erro ao aprovar todas na revisÃ£o');
     }
   });
 
@@ -7075,14 +7075,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const cid = parseInt(_activityFocusClientId || '0', 10) || parseInt(_activeClientId || '0', 10) || 0;
       const round = Math.max(1, parseInt(actBatchFilter?.value || '1', 10) || 1);
       if (!photoId || !cid || !round || String(actBatchFilter?.value || 'all') === 'all') {
-        throw new Error('Selecione uma rodada específica para aprovar fotos.');
+        throw new Error('Selecione uma rodada especÃ­fica para aprovar fotos.');
       }
       btn.disabled = true;
       await salesApprovePhoto({ cid, round, photoId, status: 'approved', delivery_mode: 'original' });
-      toast('Foto aprovada na revisão.', { kind: 'ok', title: 'Atividades' });
+      toast('Foto aprovada na revisÃ£o.', { kind: 'ok', title: 'Atividades' });
       await loadGallery();
     } catch (err) {
-      showError(err?.message || 'Erro ao aprovar foto na revisão');
+      showError(err?.message || 'Erro ao aprovar foto na revisÃ£o');
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -7132,15 +7132,15 @@ document.addEventListener('DOMContentLoaded', () => {
     normalizeMoneyInput(salesUnitPrice);
   });
   salesUnitPrice?.addEventListener('input', (e) => {
-    // Mesmo comportamento dos pacotes: não remascarar no input.
-    // Formata no blur para não distorcer o número durante a digitação.
+    // Mesmo comportamento dos pacotes: nÃ£o remascarar no input.
+    // Formata no blur para nÃ£o distorcer o nÃºmero durante a digitaÃ§Ã£o.
     if (shouldSkipMoneyMaskOnThisInput(e)) return;
   });
 
   salesPixGenerateBtn?.addEventListener('click', () => {
     if (!salesPixInstructions) return;
     salesPixInstructions.value = buildAutoPixInstructions();
-    toast('Instrução automática preenchida. Clique em "Salvar configuração comercial".', { kind: 'ok', title: 'PIX' });
+    toast('InstruÃ§Ã£o automÃ¡tica preenchida. Clique em "Salvar configuraÃ§Ã£o comercial".', { kind: 'ok', title: 'PIX' });
   });
 
   // ===== Clientes (multi-client) =====
@@ -7183,7 +7183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchClientPassword(clientId) {
     const id = parseInt(clientId || 0, 10);
-    if (!id) throw new Error('clientId inválido');
+    if (!id) throw new Error('clientId invÃ¡lido');
     if (_clientPwCache.has(id)) return _clientPwCache.get(id);
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${id}/password`, { headers: HEADERS });
     const data = await res.json().catch(() => ({}));
@@ -7194,7 +7194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return pw;
   }
 
-  /** Resumo em «Dados da galeria»: e-mail(s) e senha(s) dos clientes (acesso privado). */
+  /** Resumo em Â«Dados da galeriaÂ»: e-mail(s) e senha(s) dos clientes (acesso privado). */
   function syncDetailsClientSummary() {
     const wrap = document.getElementById('ks-details-client-summary');
     if (!wrap || !gallery) return;
@@ -7214,10 +7214,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const emHtml =
         em && !isPlaceholderClienteEmail(em)
           ? `<span class="select-all">${escapeHtml(em)}</span>`
-          : '<span class="text-slate-400">(e-mail não informado)</span>';
+          : '<span class="text-slate-400">(e-mail nÃ£o informado)</span>';
       let pwdBlock = '';
       if (showCred && cid) {
-        pwdBlock = `<div class="mt-2 flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500">Senha:</span><span class="ks-pass-mask font-mono text-sm" data-cid="${cid}">••••••</span><button type="button" class="ks-btn ks-btn-sm" data-ks-reveal-pass="${cid}">Mostrar</button></div>`;
+        pwdBlock = `<div class="mt-2 flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500">Senha:</span><span class="ks-pass-mask font-mono text-sm" data-cid="${cid}">â€¢â€¢â€¢â€¢â€¢â€¢</span><button type="button" class="ks-btn ks-btn-sm" data-ks-reveal-pass="${cid}">Mostrar</button></div>`;
       }
       parts.push(
         `<div class="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"><div class="font-extrabold text-slate-900">${nm}</div><div class="mt-1"><span class="text-xs text-slate-500">E-mail:</span> ${emHtml}</div>${pwdBlock}</div>`
@@ -7225,7 +7225,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (clients.length > 1) {
       parts.push(
-        '<p class="text-xs text-slate-500 mt-1">Vários clientes: cada um tem login próprio. Use <b>Mostrar</b> só quando precisar ver a senha.</p>'
+        '<p class="text-xs text-slate-500 mt-1">VÃ¡rios clientes: cada um tem login prÃ³prio. Use <b>Mostrar</b> sÃ³ quando precisar ver a senha.</p>'
       );
     }
     wrap.innerHTML = parts.join('');
@@ -7239,7 +7239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const span = btn.previousElementSibling;
     if (!span || !span.classList.contains('ks-pass-mask')) return;
     if (span.getAttribute('data-revealed') === '1') {
-      span.textContent = '••••••';
+      span.textContent = 'â€¢â€¢â€¢â€¢â€¢â€¢';
       span.removeAttribute('data-revealed');
       btn.textContent = 'Mostrar';
       return;
@@ -7261,11 +7261,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const link = buildClientShareLink();
     const nome = gallery?.nome_projeto || 'sua galeria';
     return [
-      `Olá!`,
+      `OlÃ¡!`,
       ``,
-      `As fotos de ${nome} estão disponíveis para seleção.`,
+      `As fotos de ${nome} estÃ£o disponÃ­veis para seleÃ§Ã£o.`,
       ``,
-      `Para realizar a seleção, utilize os seguintes dados:`,
+      `Para realizar a seleÃ§Ã£o, utilize os seguintes dados:`,
       ``,
       `Link:`,
       link,
@@ -7295,7 +7295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const nm = escapeHtml(c.nome || 'Cliente');
       const em = escapeHtml(c.email || '-');
       const ph = escapeHtml(c.telefone || '');
-      const passShown = _clientPwCache.has(cid) ? escapeHtml(_clientPwCache.get(cid)) : '••••••';
+      const passShown = _clientPwCache.has(cid) ? escapeHtml(_clientPwCache.get(cid)) : 'â€¢â€¢â€¢â€¢â€¢â€¢';
       const menuOpen = (_openClientMenuFor === cid) ? 'open' : '';
       return `
         <div class="rounded-2xl border border-white/10 bg-black/30 p-4 relative" data-client-id="${cid}">
@@ -7309,7 +7309,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="ks-btn" data-action="eye" title="Ver senha"><i class="fas fa-eye"></i></button>
               <button class="ks-btn" data-action="share" title="Compartilhar"><i class="fas fa-share"></i></button>
               <div class="relative">
-                <button class="ks-btn" data-action="more" title="Mais ações"><i class="fas fa-ellipsis-vertical"></i></button>
+                <button class="ks-btn" data-action="more" title="Mais aÃ§Ãµes"><i class="fas fa-ellipsis-vertical"></i></button>
                 <div class="ks-menu ${menuOpen}" data-menu style="top:48px;right:0;z-index:90">
                   <button data-action="edit"><i class="fas fa-pen"></i> Editar</button>
                   <button data-action="share"><i class="fas fa-share"></i> Compartilhar</button>
@@ -7417,7 +7417,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (cfEmail) cfEmail.value = c.email || '';
       if (cfPhone) cfPhone.value = c.telefone || '';
       if (cfNote) cfNote.value = c.note || '';
-      if (cfPass) cfPass.value = ''; // opcional: só muda se preencher
+      if (cfPass) cfPass.value = ''; // opcional: sÃ³ muda se preencher
       openClientModal({ title: 'Editar cliente' });
       renderClients();
       return;
@@ -7426,11 +7426,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (action === 'remove') {
       e.preventDefault();
       _openClientMenuFor = null;
-      if (!confirm('Excluir este cadastro? Isso remove também seleções e liberações vinculadas na galeria atual.')) return;
+      if (!confirm('Excluir este cadastro? Isso remove tambÃ©m seleÃ§Ãµes e liberaÃ§Ãµes vinculadas na galeria atual.')) return;
       try {
         await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${clientId}`, { method: 'DELETE', headers: HEADERS });
         await loadGallery();
-        toast('Cadastro excluído.', { kind: 'ok', title: 'OK' });
+        toast('Cadastro excluÃ­do.', { kind: 'ok', title: 'OK' });
       } catch (err) {
         showError(err.message || 'Erro');
       }
@@ -7456,7 +7456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const link = buildClientLink();
         if (shareLink) shareLink.textContent = link;
         if (shareEmail) shareEmail.textContent = c.email || '-';
-        if (sharePass) sharePass.textContent = '••••••';
+        if (sharePass) sharePass.textContent = 'â€¢â€¢â€¢â€¢â€¢â€¢';
         openShareModal();
         const pw = await fetchClientPassword(clientId);
         if (sharePass) sharePass.textContent = pw;
@@ -7594,7 +7594,7 @@ document.addEventListener('DOMContentLoaded', () => {
         client_entry_splash_enabled: !!(clientEntrySplash && clientEntrySplash.checked)
       });
       await loadGallery();
-      toast('Alterações salvas.', { kind: 'ok', title: 'Salvo' });
+      toast('AlteraÃ§Ãµes salvas.', { kind: 'ok', title: 'Salvo' });
     } catch (e) {
       showError(e.message || 'Erro');
     } finally {
@@ -7612,7 +7612,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadGallery();
       refreshWatermarkFilePreview().catch(() => { });
       scheduleWatermarkPreview(true);
-      toast('Marca d’água (retrato) enviada.', { kind: 'ok', title: 'OK' });
+      toast('Marca dâ€™Ã¡gua (retrato) enviada.', { kind: 'ok', title: 'OK' });
     } catch (e) {
       showError(e.message || 'Erro');
     } finally {
@@ -7630,7 +7630,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadGallery();
       refreshWatermarkFilePreview().catch(() => { });
       scheduleWatermarkPreview(true);
-      toast('Marca d’água (paisagem) enviada.', { kind: 'ok', title: 'OK' });
+      toast('Marca dâ€™Ã¡gua (paisagem) enviada.', { kind: 'ok', title: 'OK' });
     } catch (e) {
       showError(e.message || 'Erro');
     } finally {
@@ -7659,8 +7659,8 @@ document.addEventListener('DOMContentLoaded', () => {
         stretchWPctLandscape,
         stretchHPctLandscape
       } = getWmParams();
-      // Todos os modos funcionam com a marca d’água padrão.
-      // Colunas legado (offset/esticar únicos) espelham retrato — compatível com código antigo.
+      // Todos os modos funcionam com a marca dâ€™Ã¡gua padrÃ£o.
+      // Colunas legado (offset/esticar Ãºnicos) espelham retrato â€” compatÃ­vel com cÃ³digo antigo.
       await savePatch({
         watermark_mode: mode,
         watermark_opacity: opacity,
@@ -7688,7 +7688,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       await loadGallery();
       scheduleWatermarkPreview(true);
-      toast('Configurações salvas.', { kind: 'ok', title: 'Salvo' });
+      toast('ConfiguraÃ§Ãµes salvas.', { kind: 'ok', title: 'Salvo' });
     } catch (e) {
       showError(e.message || 'Erro');
     } finally {
@@ -7698,9 +7698,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   removeWmLogoBtn?.addEventListener('click', async () => {
     try {
-      if (!confirm('Remover a marca d’água personalizada desta galeria?')) return;
+      if (!confirm('Remover a marca dâ€™Ã¡gua personalizada desta galeria?')) return;
       removeWmLogoBtn.disabled = true;
-      // remove arquivo e volta para o padrão completo
+      // remove arquivo e volta para o padrÃ£o completo
       const out = await savePatch({
         watermark_path: null,
         watermark_path_portrait: null,
@@ -7712,9 +7712,9 @@ document.addEventListener('DOMContentLoaded', () => {
       await refreshWatermarkFilePreview();
       const cf = out && out.cloudflare_watermark;
       if (cf && cf.attempted) {
-        toast(cf.deleted ? 'Marca d’água removida (Cloudflare: ok).' : 'Marca d’água removida (Cloudflare: não foi possível deletar).', { kind: cf.deleted ? 'ok' : 'warn', title: 'Marca d’água' });
+        toast(cf.deleted ? 'Marca dâ€™Ã¡gua removida (Cloudflare: ok).' : 'Marca dâ€™Ã¡gua removida (Cloudflare: nÃ£o foi possÃ­vel deletar).', { kind: cf.deleted ? 'ok' : 'warn', title: 'Marca dâ€™Ã¡gua' });
       } else {
-        toast('Marca d’água removida.', { kind: 'ok', title: 'Marca d’água' });
+        toast('Marca dâ€™Ã¡gua removida.', { kind: 'ok', title: 'Marca dâ€™Ã¡gua' });
       }
       scheduleWatermarkPreview(true);
     } catch (e) {
@@ -7741,17 +7741,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function r2StatusLabel(status) {
     if (status === 'ok') return 'OK';
-    if (status === 'com_orfaos') return 'Com órfãos';
+    if (status === 'com_orfaos') return 'Com Ã³rfÃ£os';
     if (status === 'sem_arquivos_r2') return 'Sem arquivos no R2';
-    return status || '—';
+    return status || 'â€”';
   }
 
   function renderR2SubfoldersList(subfolders) {
-    if (!Array.isArray(subfolders) || !subfolders.length) return '—';
+    if (!Array.isArray(subfolders) || !subfolders.length) return 'â€”';
     return subfolders
       .slice(0, 8)
       .map((s) => {
-        const orphan = s.orphanFiles > 0 ? ` · ${s.orphanFiles} órf.` : '';
+        const orphan = s.orphanFiles > 0 ? ` Â· ${s.orphanFiles} Ã³rf.` : '';
         return `${escapeHtml(s.name)} (${s.files} arq., ${fmtBytes(s.bytes)}${orphan})`;
       })
       .join('<br>');
@@ -7763,15 +7763,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
     };
-    set('ks-r2-stat-total', String(s.r2TotalFiles ?? '—'));
+    set('ks-r2-stat-total', String(s.r2TotalFiles ?? 'â€”'));
     set('ks-r2-stat-size', fmtBytes(s.r2TotalBytes));
-    set('ks-r2-stat-ref', String(s.referencedInDb ?? '—'));
+    set('ks-r2-stat-ref', String(s.referencedInDb ?? 'â€”'));
     set('ks-r2-stat-orphans', `${s.orphanFiles ?? 0} (${fmtBytes(s.orphanBytes)})`);
     set('ks-r2-stat-projects', `${s.userProjectsWithR2 ?? 0} / ${s.userProjects ?? 0}`);
     set('ks-r2-stat-deleted', String(s.orphanProjectFolders ?? 0));
     const genEl = document.getElementById('ks-r2-generated');
     if (genEl && data?.generatedAt) {
-      genEl.textContent = `Inventário gerado em ${fmtDate(data.generatedAt)}. Pastas no formato galleries/ID/subpasta/arquivo.`;
+      genEl.textContent = `InventÃ¡rio gerado em ${fmtDate(data.generatedAt)}. Pastas no formato galleries/ID/subpasta/arquivo.`;
     }
 
     const projBody = document.getElementById('ks-r2-projects-tbody');
@@ -7788,7 +7788,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${p.r2Files ?? 0}</td>
             <td>${p.orphanFiles > 0 ? `<span class="text-amber-700 font-bold">${p.orphanFiles}</span>` : '0'}</td>
             <td>${fmtBytes(p.r2Bytes)}</td>
-            <td>${p.lastUploaded ? fmtDate(p.lastUploaded) : '—'}</td>
+            <td>${p.lastUploaded ? fmtDate(p.lastUploaded) : 'â€”'}</td>
             <td class="ks-r2-subfolders">${renderR2SubfoldersList(p.subfolders)}</td>
             <td>${escapeHtml(r2StatusLabel(p.status))}</td>
           </tr>
@@ -7800,14 +7800,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (orphanFoldBody) {
       const folders = Array.isArray(data?.orphanFolders) ? data.orphanFolders : [];
       if (!folders.length) {
-        orphanFoldBody.innerHTML = '<tr><td colspan="5" class="ks-muted p-4 text-center">Nenhuma pasta de projeto excluído encontrada no R2.</td></tr>';
+        orphanFoldBody.innerHTML = '<tr><td colspan="5" class="ks-muted p-4 text-center">Nenhuma pasta de projeto excluÃ­do encontrada no R2.</td></tr>';
       } else {
         orphanFoldBody.innerHTML = folders.map((f) => `
           <tr>
             <td><code>galleries/${f.galleryId}/</code></td>
             <td>${f.r2Files ?? 0}</td>
             <td>${fmtBytes(f.r2Bytes)}</td>
-            <td>${f.lastUploaded ? fmtDate(f.lastUploaded) : '—'}</td>
+            <td>${f.lastUploaded ? fmtDate(f.lastUploaded) : 'â€”'}</td>
             <td class="ks-r2-subfolders">${renderR2SubfoldersList(f.subfolders)}</td>
           </tr>
         `).join('');
@@ -7818,16 +7818,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (orphanFilesBody) {
       const files = Array.isArray(data?.orphanSamples) ? data.orphanSamples : [];
       if (!files.length) {
-        orphanFilesBody.innerHTML = '<tr><td colspan="5" class="ks-muted p-4 text-center">Nenhum arquivo órfão na amostra.</td></tr>';
+        orphanFilesBody.innerHTML = '<tr><td colspan="5" class="ks-muted p-4 text-center">Nenhum arquivo Ã³rfÃ£o na amostra.</td></tr>';
       } else {
-        const more = data.orphanSamplesTruncated ? '<tr><td colspan="5" class="ks-muted p-2 text-center text-xs">… e mais arquivos órfãos (use Limpar R2 para todos).</td></tr>' : '';
+        const more = data.orphanSamplesTruncated ? '<tr><td colspan="5" class="ks-muted p-2 text-center text-xs">â€¦ e mais arquivos Ã³rfÃ£os (use Limpar R2 para todos).</td></tr>' : '';
         orphanFilesBody.innerHTML = files.map((f) => `
           <tr>
             <td class="text-xs break-all">${escapeHtml(f.fileName || f.key || '')}</td>
             <td><code>galleries/${f.galleryId}/</code></td>
-            <td>${escapeHtml(f.subfolder || '—')}</td>
+            <td>${escapeHtml(f.subfolder || 'â€”')}</td>
             <td>${fmtBytes(f.size)}</td>
-            <td>${f.uploaded ? fmtDate(f.uploaded) : '—'}</td>
+            <td>${f.uploaded ? fmtDate(f.uploaded) : 'â€”'}</td>
           </tr>
         `).join('') + more;
       }
@@ -7847,15 +7847,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json().catch(() => ({}));
       if (res.status === 404) {
         throw new Error(
-          'A API no Render ainda não tem a rota r2-inventory. Faça deploy do backend (server.js + routes/kingSelectionR2.routes.js) e confira GET /api/king-selection/r2-ping'
+          'A API no Render ainda nÃ£o tem a rota r2-inventory. FaÃ§a deploy do backend (server.js + routes/kingSelectionR2.routes.js) e confira GET /api/king-selection/r2-ping'
         );
       }
-      if (!res.ok) throw new Error(data.message || 'Erro ao carregar inventário R2');
+      if (!res.ok) throw new Error(data.message || 'Erro ao carregar inventÃ¡rio R2');
       renderR2Inventory(data);
       r2InventoryLoaded = true;
     } catch (e) {
       showError(e?.message || 'Erro');
-      toast(e?.message || 'Erro', { kind: 'err', title: 'Inventário R2' });
+      toast(e?.message || 'Erro', { kind: 'err', title: 'InventÃ¡rio R2' });
     } finally {
       r2InventoryLoading = false;
       if (r2LoadingEl) r2LoadingEl.classList.add('hidden');
@@ -7878,11 +7878,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data.message || 'Erro');
       if (dryRun) {
         toast(
-          `Órfãos no R2: ${data.orphans || 0} de ${data.total || 0} arquivo(s) (referenciados nos projetos ativos: ${data.referenced || 0}). Use «Limpar R2» para apagar só os órfãos.`,
-          { kind: 'ok', title: 'Verificação R2' }
+          `Ã“rfÃ£os no R2: ${data.orphans || 0} de ${data.total || 0} arquivo(s) (referenciados nos projetos ativos: ${data.referenced || 0}). Use Â«Limpar R2Â» para apagar sÃ³ os Ã³rfÃ£os.`,
+          { kind: 'ok', title: 'VerificaÃ§Ã£o R2' }
         );
       } else {
-        toast(`${data.deleted || 0} arquivo(s) órfão(s) removido(s) do R2.`, { kind: 'ok', title: 'Limpeza R2' });
+        toast(`${data.deleted || 0} arquivo(s) Ã³rfÃ£o(s) removido(s) do R2.`, { kind: 'ok', title: 'Limpeza R2' });
         r2InventoryLoaded = false;
         await loadR2InventoryPane(true);
       }
@@ -7898,7 +7898,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnCleanupR2?.addEventListener('click', async () => {
     if (
       !confirm(
-        'Remover do R2 APENAS os arquivos órfãos (de projetos já excluídos ou fotos que não existem mais no banco)?\n\nAs fotos dos seus projetos atuais NÃO serão apagadas.\n\nEsta ação não pode ser desfeita.'
+        'Remover do R2 APENAS os arquivos Ã³rfÃ£os (de projetos jÃ¡ excluÃ­dos ou fotos que nÃ£o existem mais no banco)?\n\nAs fotos dos seus projetos atuais NÃƒO serÃ£o apagadas.\n\nEsta aÃ§Ã£o nÃ£o pode ser desfeita.'
       )
     ) {
       return;
@@ -8061,14 +8061,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (wmScaleL) wmScaleL.value = String(n);
   }, 'scaleL');
 
-  /** Preencher: esticar forte para “cobrir” a área (largura+altura do ladrilho). Ajustar: proporção neutra. */
+  /** Preencher: esticar forte para â€œcobrirâ€ a Ã¡rea (largura+altura do ladrilho). Ajustar: proporÃ§Ã£o neutra. */
   const WM_FILL_STRETCH_PCT = 380;
 
   async function applyWmSuggestFit(column, mode) {
     const m = mode === 'fit' ? 'fit' : 'fill';
     const col = column === 'landscape' ? 'landscape' : 'portrait';
     try {
-      if (!galleryId) throw new Error('URL sem galleryId. Abra o projeto com ?galleryId=…');
+      if (!galleryId) throw new Error('URL sem galleryId. Abra o projeto com ?galleryId=â€¦');
       const res = await fetch(
         `${API_URL}/api/king-selection/galleries/${galleryId}/watermark-suggest-scales?mode=${encodeURIComponent(m)}`,
         { headers: HEADERS }
@@ -8130,7 +8130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         m === 'fill'
           ? ' (escala + esticar + centro)'
           : ' (escala + ajuste proporcional + centro)';
-      toast(`${modePt} no ${col === 'portrait' ? 'retrato' : 'paisagem'}${extra}. Salve para persistir.`, { kind: 'ok', title: 'Marca d’água' });
+      toast(`${modePt} no ${col === 'portrait' ? 'retrato' : 'paisagem'}${extra}. Salve para persistir.`, { kind: 'ok', title: 'Marca dâ€™Ã¡gua' });
     } catch (e) {
       showError(e?.message || 'Erro');
     }
@@ -8147,15 +8147,15 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelled: false,
     minConcurrency: 6,
     maxConcurrency: 20,
-    // Começa “turbo” e ajusta sozinho (desce se der 429/timeout, sobe quando estabilizar).
+    // ComeÃ§a â€œturboâ€ e ajusta sozinho (desce se der 429/timeout, sobe quando estabilizar).
     concurrency: 20,
-    // Gap dinâmico do /api/upload/auth (ms). Começa agressivo e ajusta sozinho se vier 429.
-    // (turbo, mas com piso no authUpload para não zerar)
+    // Gap dinÃ¢mico do /api/upload/auth (ms). ComeÃ§a agressivo e ajusta sozinho se vier 429.
+    // (turbo, mas com piso no authUpload para nÃ£o zerar)
     authMinGapMs: 120,
     authMaxGapMs: 1500,
     last429At: 0,
-    // Upload em LOTES (evita travar a UI e reduz “tempestade” de ações)
-    // Ex.: selecionou 1000 fotos → processa 100 por vez.
+    // Upload em LOTES (evita travar a UI e reduz â€œtempestadeâ€ de aÃ§Ãµes)
+    // Ex.: selecionou 1000 fotos â†’ processa 100 por vez.
     batchSize: 100,
     pendingBatches: [], // File[][]
     batchIndex: 0,
@@ -8165,14 +8165,14 @@ document.addEventListener('DOMContentLoaded', () => {
     totalBytes: 0,
     doneBytes: 0,
     startAt: 0,
-    // Amostras para calcular velocidade real (janela móvel) e evitar “média baixa” após travar.
+    // Amostras para calcular velocidade real (janela mÃ³vel) e evitar â€œmÃ©dia baixaâ€ apÃ³s travar.
     speedSamples: [], // [{ t, bytes }]
     ok: 0,
     errors: []
   };
 
   // ============================================================
-  // Duplicatas (por nome/base do arquivo) - escolha do usuário
+  // Duplicatas (por nome/base do arquivo) - escolha do usuÃ¡rio
   // ============================================================
   let _pendingFiles = null; // { list, duplicates, mapExisting, total }
   function normalizeFileKey(name) {
@@ -8233,7 +8233,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : 0;
     if (upListMeta) {
       upListMeta.textContent = pending
-        ? `${inNow} agora • ${pending} pendente(s)`
+        ? `${inNow} agora â€¢ ${pending} pendente(s)`
         : `${inNow} arquivo(s) na fila`;
     }
   }
@@ -8252,10 +8252,10 @@ document.addEventListener('DOMContentLoaded', () => {
     _lastUpdateOverall = now;
     const total = uploadState.totalBytes || 1;
     const done = overallLoadedBytes();
-    // Velocidade por janela móvel (últimos ~10s), para não ficar “baixa” se travou no começo.
+    // Velocidade por janela mÃ³vel (Ãºltimos ~10s), para nÃ£o ficar â€œbaixaâ€ se travou no comeÃ§o.
     uploadState.speedSamples = Array.isArray(uploadState.speedSamples) ? uploadState.speedSamples : [];
     uploadState.speedSamples.push({ t: now, bytes: done });
-    // manter só últimos 12s
+    // manter sÃ³ Ãºltimos 12s
     uploadState.speedSamples = uploadState.speedSamples.filter(s => (now - s.t) <= 12000);
     const first = uploadState.speedSamples[0] || { t: now, bytes: done };
     const last = uploadState.speedSamples[uploadState.speedSamples.length - 1] || { t: now, bytes: done };
@@ -8268,15 +8268,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const eta = (total - done) / Math.max(1, speed);
     const bTotal = uploadState.batchTotal || 0;
     const bIndex = uploadState.batchIndex || 0;
-    const batchInfo = bTotal > 1 ? `  •  Lote ${Math.min(bIndex + 1, bTotal)}/${bTotal}` : '';
+    const batchInfo = bTotal > 1 ? `  â€¢  Lote ${Math.min(bIndex + 1, bTotal)}/${bTotal}` : '';
     const etaTxt = (done > 256 * 1024 && speed > 8192 && winSec >= 2) ? formatEta(eta) : '--:--';
-    const meta = `${pct.toFixed(0)}%  •  ${formatMbPerSec(speed)}  •  ETA ${etaTxt}${batchInfo}`;
+    const meta = `${pct.toFixed(0)}%  â€¢  ${formatMbPerSec(speed)}  â€¢  ETA ${etaTxt}${batchInfo}`;
     const pending = Array.isArray(uploadState.pendingBatches)
       ? uploadState.pendingBatches.reduce((acc, b) => acc + (Array.isArray(b) ? b.length : 0), 0)
       : 0;
     const totalCount = Math.max(1, uploadState.ok + uploadState.errors.length + uploadState.active.size + uploadState.queue.length + pending);
     const completed = uploadState.ok + uploadState.errors.length;
-    const line = overrideLine || `Enviadas ${completed} de ${totalCount}${uploadState.active.size > 0 ? `  •  ${uploadState.active.size} em andamento` : ''}`;
+    const line = overrideLine || `Enviadas ${completed} de ${totalCount}${uploadState.active.size > 0 ? `  â€¢  ${uploadState.active.size} em andamento` : ''}`;
     setUploadUi({ active: uploadState.running, line, file: undefined, pct, meta });
   }
 
@@ -8317,10 +8317,10 @@ document.addEventListener('DOMContentLoaded', () => {
       toQueue.push({ id, file, folderId, rowEl, controller, loaded: 0 });
     });
 
-    // 1) Presign (mais rápido: PUT direto do navegador pro R2). 2) Worker. 3) Proxy.
+    // 1) Presign (mais rÃ¡pido: PUT direto do navegador pro R2). 2) Worker. 3) Proxy.
     let mode = 'worker';
     try {
-      updateOverallUi('Preparando uploads (R2)…', batch[0]?.name || 'foto');
+      updateOverallUi('Preparando uploads (R2)â€¦', batch[0]?.name || 'foto');
       const map = await presignBatchForR2(toQueue.map(x => ({ id: x.id, file: x.file })));
       toQueue.forEach(x => { x.presigned = map.get(String(x.id)) || null; });
       if (toQueue.some(x => x.presigned?.uploadUrl)) mode = 'presign';
@@ -8329,7 +8329,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await getKsWorkerToken();
       } catch (e) {
-        const msg = (e && e.message) ? String(e.message) : 'Não foi possível conectar ao R2.';
+        const msg = (e && e.message) ? String(e.message) : 'NÃ£o foi possÃ­vel conectar ao R2.';
         showError(msg);
         uploadState.running = false;
         setUploadUi({ active: false });
@@ -8342,7 +8342,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toQueue.forEach(x => uploadState.queue.push(x));
 
     updateUploadMeta();
-    updateOverallUi(`Enviando • ${baseTotal + 1}/${baseTotal + batch.length}`, batch[0]?.name || 'foto');
+    updateOverallUi(`Enviando â€¢ ${baseTotal + 1}/${baseTotal + batch.length}`, batch[0]?.name || 'foto');
     pumpUploads();
   }
 
@@ -8385,7 +8385,7 @@ document.addEventListener('DOMContentLoaded', () => {
     _dupeSelectedIdx = Math.max(0, idx);
 
     // nomes
-    if (dupeOldName) dupeOldName.textContent = it.photoId ? (it.key || it.name || '-') : '(não existe na galeria)';
+    if (dupeOldName) dupeOldName.textContent = it.photoId ? (it.key || it.name || '-') : '(nÃ£o existe na galeria)';
     if (dupeNewName) dupeNewName.textContent = it.name || '-';
 
     // preview da nova (File)
@@ -8426,7 +8426,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openDupeModal({ duplicates, total }) {
     if (!dupeOv) return;
     const dups = Array.isArray(duplicates) ? duplicates : [];
-    if (dupeHint) dupeHint.textContent = `Encontramos ${dups.length} foto(s) repetida(s) de ${total} selecionada(s). O que você quer fazer?`;
+    if (dupeHint) dupeHint.textContent = `Encontramos ${dups.length} foto(s) repetida(s) de ${total} selecionada(s). O que vocÃª quer fazer?`;
     if (dupeList) {
       const cap = Math.min(dups.length, KS_DUPE_LIST_MAX);
       const rest = dups.length - cap;
@@ -8436,7 +8436,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `).join('');
       const more = rest > 0
-        ? `<div class="ks-dupe-list-more" style="padding:10px 12px;font-size:11px;color:rgba(255,255,255,.45);border-top:1px solid rgba(255,255,255,.08)">… e mais ${rest} (lista limitada a ${KS_DUPE_LIST_MAX} para o painel ficar rápido; total ${dups.length})</div>`
+        ? `<div class="ks-dupe-list-more" style="padding:10px 12px;font-size:11px;color:rgba(255,255,255,.45);border-top:1px solid rgba(255,255,255,.08)">â€¦ e mais ${rest} (lista limitada a ${KS_DUPE_LIST_MAX} para o painel ficar rÃ¡pido; total ${dups.length})</div>`
         : '';
       dupeList.innerHTML = (rows || '<div>(sem detalhes)</div>') + more;
     }
@@ -8466,7 +8466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const f = v.file;
     const folderIdForUpload = toPosInt(v.folderId) || getUploadFolderId();
 
-    // 1) Presign (PUT direto pro R2 — mais rápido). 2) Worker. 3) Proxy.
+    // 1) Presign (PUT direto pro R2 â€” mais rÃ¡pido). 2) Worker. 3) Proxy.
     if (uploadState._uploadMode === 'presign' && v.presigned?.uploadUrl && v.presigned?.key) {
       try {
         setRowProgress(v.rowEl, 0, 'Enviando direto pro R2...');
@@ -8507,7 +8507,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const key = out && out.key ? String(out.key) : '';
       const receipt = out && out.receipt ? String(out.receipt) : '';
-      if (!key || !receipt) throw new Error('Falha no upload (Worker R2): resposta inválida');
+      if (!key || !receipt) throw new Error('Falha no upload (Worker R2): resposta invÃ¡lida');
       setRowProgress(v.rowEl, 100, 'Salvando na galeria...');
       const photo = await commitWorkerUpload({ key, receipt, originalName: f.name || 'foto', folderId: folderIdForUpload || null });
       if (photo && gallery && Array.isArray(gallery.photos)) {
@@ -8517,7 +8517,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     } catch (_) { }
 
-    // Fallback: proxy via servidor (também grava no R2)
+    // Fallback: proxy via servidor (tambÃ©m grava no R2)
     setRowProgress(v.rowEl, 0, 'Enviando via servidor (R2)...');
     const proxyOut = await uploadToR2ProxyWithRetry(f, {
       signal: v.controller.signal,
@@ -8566,19 +8566,19 @@ document.addEventListener('DOMContentLoaded', () => {
           uploadState.active.delete(id);
           updateOverallUi();
           // eslint-disable-next-line no-await-in-loop
-          await sleep(40); // respiro leve (mais rápido)
+          await sleep(40); // respiro leve (mais rÃ¡pido)
           pumpUploads();
         }
       })();
     }
 
     if (!uploadState.queue.length && uploadState.active.size === 0) {
-      // Se ainda há lotes pendentes, sincroniza e inicia o próximo lote
+      // Se ainda hÃ¡ lotes pendentes, sincroniza e inicia o prÃ³ximo lote
       if (Array.isArray(uploadState.pendingBatches) && uploadState.pendingBatches.length) {
         uploadState.batchIndex = (uploadState.batchIndex || 0) + 1;
-        updateOverallUi(`Preparando próximo lote...`, '');
-        // Não recarregar a galeria entre lotes (economiza requests e deixa o upload mais rápido).
-        // A sincronização final ainda acontece ao terminar tudo.
+        updateOverallUi(`Preparando prÃ³ximo lote...`, '');
+        // NÃ£o recarregar a galeria entre lotes (economiza requests e deixa o upload mais rÃ¡pido).
+        // A sincronizaÃ§Ã£o final ainda acontece ao terminar tudo.
         // eslint-disable-next-line no-await-in-loop
         await sleep(120);
         // eslint-disable-next-line no-void
@@ -8595,9 +8595,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // sincronizar com servidor no final
       try {
         await loadGallery();
-        // [AUTO] Se reconhecimento facial estiver habilitado, disparar processamento automático das novas fotos
+        // [AUTO] Se reconhecimento facial estiver habilitado, disparar processamento automÃ¡tico das novas fotos
         if (fFaceEnabled && fFaceEnabled.checked) {
-          console.log('[AUTO-FACIAL] Disparando processamento automático...');
+          console.log('[AUTO-FACIAL] Disparando processamento automÃ¡tico...');
           processFacialAll({ silent: true }).catch(err => console.error('[AUTO-FACIAL] Erro:', err));
         }
       } catch (_) { }
@@ -8615,7 +8615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!entries.length) return;
     hideError();
 
-    // Detectar repetidas (por nome/base) vs fotos já existentes e vs a própria seleção
+    // Detectar repetidas (por nome/base) vs fotos jÃ¡ existentes e vs a prÃ³pria seleÃ§Ã£o
     if (!skipDupeCheck) {
       const existingMap = buildExistingMap();
       const seenInBatch = new Set();
@@ -8657,7 +8657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const allPending = (uploadState.pendingBatches || []).reduce((a, b) => a + (Array.isArray(b) ? b.length : 0), 0) + entries.length;
     uploadState._useOverlay = allPending >= 30;
 
-    // Divide em lotes (não cria 1000 linhas no DOM de uma vez)
+    // Divide em lotes (nÃ£o cria 1000 linhas no DOM de uma vez)
     const bs = Math.max(1, parseInt(uploadState.batchSize || 100, 10) || 100);
     const batches = splitIntoBatches(entries, bs);
     uploadState.pendingBatches = Array.isArray(uploadState.pendingBatches) ? uploadState.pendingBatches : [];
@@ -8665,7 +8665,7 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadState.batchTotal = (uploadState.batchTotal || 0) + batches.length;
     uploadState.batchIndex = uploadState.batchIndex || 0;
 
-    // Inicia imediatamente o lote atual se estiver “vazio”
+    // Inicia imediatamente o lote atual se estiver â€œvazioâ€
     // eslint-disable-next-line no-void
     void startNextBatchIfNeeded();
   }
@@ -8742,8 +8742,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const createdCount = Array.from(folderNames).length;
     toast(
       createdCount
-        ? `Importação iniciada: ${entries.length} foto(s), pastas automáticas (${createdCount}).`
-        : `Importação iniciada: ${entries.length} foto(s) (sem subpastas).`,
+        ? `ImportaÃ§Ã£o iniciada: ${entries.length} foto(s), pastas automÃ¡ticas (${createdCount}).`
+        : `ImportaÃ§Ã£o iniciada: ${entries.length} foto(s) (sem subpastas).`,
       { kind: 'ok', title: 'Importar pasta' }
     );
   }
@@ -8832,25 +8832,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1) Enviar mesmo assim: manda tudo
     if (mode === 'keep') {
-      // Enviar mesmo assim: não reabrir modal de repetidas
+      // Enviar mesmo assim: nÃ£o reabrir modal de repetidas
       enqueueFiles(all, { skipDupeCheck: true });
       return;
     }
 
-    // 2) Ignorar repetidas: manda só as não repetidas
+    // 2) Ignorar repetidas: manda sÃ³ as nÃ£o repetidas
     if (mode === 'skip') {
       if (!uniqueList.length) {
-        showError('Todas as fotos selecionadas já existem nesta galeria (repetidas).');
+        showError('Todas as fotos selecionadas jÃ¡ existem nesta galeria (repetidas).');
         return;
       }
       enqueueFiles(uniqueList, { skipDupeCheck: true });
       return;
     }
 
-    // 3) Substituir: substitui as que já existem + envia as novas
+    // 3) Substituir: substitui as que jÃ¡ existem + envia as novas
     if (mode === 'replace') {
       try {
-        // substitui primeiro (as que têm photoId)
+        // substitui primeiro (as que tÃªm photoId)
         const toReplace = dups.filter(x => x.photoId && x.file);
         const toNew = uniqueList;
 
@@ -8858,7 +8858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadState.startAt = uploadState.startAt || Date.now();
         uploadState.running = true;
 
-        // Substituições em série (mais seguro)
+        // SubstituiÃ§Ãµes em sÃ©rie (mais seguro)
         let i = 0;
         for (const d of toReplace) {
           i += 1;
@@ -8873,7 +8873,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // Se só substituiu, recarrega e fecha overlay
+        // Se sÃ³ substituiu, recarrega e fecha overlay
         setBubbleDone();
         await loadGallery();
       } catch (e) {
@@ -8894,7 +8894,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   addPhotoBtn?.addEventListener('click', () => openImportChooser());
   pickBtn?.addEventListener('click', () => openImportChooser());
-  /** Mesmo fluxo que «Pasta e subpastas»: uma pasta no disco com webkitRelativePath (subpastas). */
+  /** Mesmo fluxo que Â«Pasta e subpastasÂ»: uma pasta no disco com webkitRelativePath (subpastas). */
   pickFolderBtn?.addEventListener('click', () => {
     if (!pFolderFile) return;
     try { pFolderFile.value = ''; } catch (_) { }
@@ -8958,7 +8958,7 @@ document.addEventListener('DOMContentLoaded', () => {
   pFilterFav?.addEventListener('click', () => { photoFilter = 'fav'; photoPageIndex = 0; renderPhotos(); });
   pSearch?.addEventListener('input', () => { photoSearch = pSearch.value || ''; photoPageIndex = 0; renderPhotos(); });
 
-  // paginação
+  // paginaÃ§Ã£o
   pPagePrev?.addEventListener('click', () => { photoPageIndex = Math.max(0, (photoPageIndex || 0) - 1); renderPhotos(); });
   pPageNext?.addEventListener('click', () => { photoPageIndex = (photoPageIndex || 0) + 1; renderPhotos(); });
   pPageNumbers?.addEventListener('click', (e) => {
@@ -8970,7 +8970,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPhotos();
   });
 
-  // seleção em lote (igual Alboom)
+  // seleÃ§Ã£o em lote (igual Alboom)
   pSelectAll?.addEventListener('click', () => {
     const visible = getVisiblePhotos();
     if (!visible.length) return;
@@ -8983,10 +8983,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm(`Excluir ${selectedPhotoIds.size} foto(s) selecionada(s)?`)) return;
     const ids = Array.from(selectedPhotoIds);
     try {
-      // overlay de progresso (não “pisca” a tela durante reloads)
+      // overlay de progresso (nÃ£o â€œpiscaâ€ a tela durante reloads)
       if (uploadCancel) uploadCancel.classList.add('hidden');
       closeViewer();
-      setUploadUi({ active: true, line: `Excluindo ${ids.length} foto(s)…`, file: undefined, pct: 0, meta: '0%' });
+      setUploadUi({ active: true, line: `Excluindo ${ids.length} foto(s)â€¦`, file: undefined, pct: 0, meta: '0%' });
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/photos/delete-batch`, {
         method: 'POST',
         headers: HEADERS,
@@ -8995,9 +8995,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao excluir fotos');
       selectedPhotoIds = new Set();
-      setUploadUi({ active: true, line: 'Atualizando…', file: undefined, pct: 98, meta: '98%' });
+      setUploadUi({ active: true, line: 'Atualizandoâ€¦', file: undefined, pct: 98, meta: '98%' });
       await loadGallery();
-      toast('Fotos excluídas.', { kind: 'ok', title: 'Exclusão' });
+      toast('Fotos excluÃ­das.', { kind: 'ok', title: 'ExclusÃ£o' });
     } catch (e) {
       showError(e?.message || 'Erro ao excluir fotos');
       toast(e?.message || 'Erro ao excluir fotos', { kind: 'err', title: 'Erro' });
@@ -9022,7 +9022,7 @@ document.addEventListener('DOMContentLoaded', () => {
   viewerPrev?.addEventListener('click', () => { viewerIndex = Math.max(0, viewerIndex - 1); renderViewer(); });
   viewerNext?.addEventListener('click', () => { viewerIndex = viewerIndex + 1; renderViewer(); });
 
-  // Botão Selecionar no viewer (funciona quando a foto está ampliada)
+  // BotÃ£o Selecionar no viewer (funciona quando a foto estÃ¡ ampliada)
   viewerSelect?.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -9113,7 +9113,7 @@ document.addEventListener('DOMContentLoaded', () => {
   expCopy?.addEventListener('click', async () => {
     const names = getExportNamesForModal();
     if (!names.length) {
-      toast('Nada para copiar. Escolha “todas” ou ajuste números/códigos no filtro.', { kind: 'warn', title: 'Lista vazia' });
+      toast('Nada para copiar. Escolha â€œtodasâ€ ou ajuste nÃºmeros/cÃ³digos no filtro.', { kind: 'warn', title: 'Lista vazia' });
       return;
     }
     await copyToClipboard(expTa.value || '');
@@ -9130,14 +9130,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Compartilhar: abre a aba com link visível + opções de cópia (não copia às cegas)
+  // Compartilhar: abre a aba com link visÃ­vel + opÃ§Ãµes de cÃ³pia (nÃ£o copia Ã s cegas)
   document.getElementById('ks-share')?.addEventListener('click', (e) => {
     e.preventDefault();
     try {
       document.querySelectorAll('.ks-nav a').forEach(n => n.classList.remove('active'));
       document.getElementById('ks-nav-projects')?.classList.add('active');
       setActiveTab('links');
-      toast('Veja o link, abra para testar e use os botões para copiar só o link ou a mensagem inteira.', { kind: 'ok', title: 'Link e compartilhamento' });
+      toast('Veja o link, abra para testar e use os botÃµes para copiar sÃ³ o link ou a mensagem inteira.', { kind: 'ok', title: 'Link e compartilhamento' });
     } catch (err) {
       showError(err?.message || 'Erro');
     }
@@ -9146,7 +9146,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ks-links-copy-prod')?.addEventListener('click', async () => {
     const v = document.getElementById('ks-links-prod-url')?.value || buildClientShareLink();
     await copyToClipboard(v);
-    toast('Link de produção copiado.', { kind: 'ok', title: 'Copiado' });
+    toast('Link de produÃ§Ã£o copiado.', { kind: 'ok', title: 'Copiado' });
   });
   document.getElementById('ks-links-open-prod')?.addEventListener('click', () => {
     const v = document.getElementById('ks-links-prod-url')?.value || buildClientShareLink();
@@ -9196,7 +9196,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await savePatch({ share_link_full_message: null });
       if (gallery && typeof gallery === 'object') gallery.share_link_full_message = null;
       await refreshShareMessagePreview({ forceAuto: true });
-      toast('Modelo automático aplicado à mensagem completa.', { kind: 'ok', title: 'Partilha' });
+      toast('Modelo automÃ¡tico aplicado Ã  mensagem completa.', { kind: 'ok', title: 'Partilha' });
     } catch (e) {
       showError(e?.message || 'Erro ao restaurar modelo');
     } finally {
@@ -9206,7 +9206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function callShareTextAi(kind) {
     const hintRaw = window.prompt(
-      'Instruções opcionais para a IA (tom, detalhes, ou deixe em branco):',
+      'InstruÃ§Ãµes opcionais para a IA (tom, detalhes, ou deixe em branco):',
       ''
     );
     if (hintRaw === null) return null;
@@ -9230,7 +9230,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function callSalesWaTemplateAi(kind) {
     const hintRaw = window.prompt(
-      'Instruções opcionais para a IA (tom, detalhes, ou deixe em branco):',
+      'InstruÃ§Ãµes opcionais para a IA (tom, detalhes, ou deixe em branco):',
       ''
     );
     if (hintRaw === null) return null;
@@ -9260,7 +9260,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById(btnId)?.addEventListener('click', async () => {
       const btn = document.getElementById(btnId);
       try {
-        if (!galleryId) throw new Error('ID da galeria inválido.');
+        if (!galleryId) throw new Error('ID da galeria invÃ¡lido.');
         if (btn) btn.disabled = true;
         const text = await callSalesWaTemplateAi(kind);
         if (text == null) return;
@@ -9420,7 +9420,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = buildSupportPayload(linksSupportWhats?.value, linksSupportLabel?.value, linksSupportMsg?.value);
       await savePatch(payload);
       await loadGallery();
-      toast('Botão de suporte salvo.', { kind: 'ok', title: 'WhatsApp' });
+      toast('BotÃ£o de suporte salvo.', { kind: 'ok', title: 'WhatsApp' });
     } catch (e) {
       showError(e?.message || 'Erro ao salvar WhatsApp de suporte');
     } finally {
@@ -9443,10 +9443,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ks-support-ai')?.addEventListener('click', async () => {
     const btn = document.getElementById('ks-support-ai');
     try {
-      if (!galleryId) throw new Error('ID da galeria inválido.');
+      if (!galleryId) throw new Error('ID da galeria invÃ¡lido.');
       if (btn) btn.disabled = true;
       const hintRaw = window.prompt(
-        'Instruções opcionais para a IA (tom, detalhes, ou deixe em branco):',
+        'InstruÃ§Ãµes opcionais para a IA (tom, detalhes, ou deixe em branco):',
         ''
       );
       if (hintRaw === null) return;
@@ -9465,7 +9465,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = String(data.text || '').trim();
       if (!text) throw new Error('A IA devolveu texto vazio.');
       if (supportMsg) supportMsg.value = text;
-      toast('Mensagem gerada pela IA. Revise e clique em «Salvar suporte WhatsApp».', { kind: 'ok', title: 'IA' });
+      toast('Mensagem gerada pela IA. Revise e clique em Â«Salvar suporte WhatsAppÂ».', { kind: 'ok', title: 'IA' });
     } catch (e) {
       showError(e?.message || 'Erro na IA');
     } finally {
@@ -9494,9 +9494,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sales_whatsapp_template_awaiting: null
       });
       await loadGallery();
-      toast('Modelos padrão aplicados.', { kind: 'ok', title: 'Fotos e vendas' });
+      toast('Modelos padrÃ£o aplicados.', { kind: 'ok', title: 'Fotos e vendas' });
     } catch (e) {
-      showError(e?.message || 'Erro ao aplicar padrões');
+      showError(e?.message || 'Erro ao aplicar padrÃµes');
     } finally {
       salesWaTplReset.disabled = false;
     }
@@ -9516,34 +9516,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const n = Math.max(1, Math.min(maxFree, parseInt(promoFreePhotos?.value || '1', 10) || 1));
     const links = collectPromoSocialLinks();
     const handles = links.map((l) => String(l.handle || '').trim()).filter(Boolean);
-    const codeDisp = code || '(defina o código do cupom acima)';
+    const codeDisp = code || '(defina o cÃ³digo do cupom acima)';
     let lines;
     if (salesOn) {
       lines = [
-        `1) Siga o(s) perfil(is) do fotógrafo indicado(s) abaixo e marque a confirmação.`,
-        `2) Digite o cupom «${codeDisp}» no campo e toque em «Validar cupom».`,
+        `1) Siga o(s) perfil(is) do fotÃ³grafo indicado(s) abaixo e marque a confirmaÃ§Ã£o.`,
+        `2) Digite o cupom Â«${codeDisp}Â» no campo e toque em Â«Validar cupomÂ».`,
         n === 1
-          ? `3) Benefício: ${n} foto fica de fora do valor estimado (o total no topo usa as demais fotos para calcular pacotes/preço).`
-          : `3) Benefício: até ${n} fotos ficam de fora do valor estimado (o total no topo usa só as que entram na cobrança).`,
-        `4) Depois de enviar a seleção, o fotógrafo aprova cada foto normalmente (cortesia, pago, etc.) — o cupom não substitui essa etapa.`,
+          ? `3) BenefÃ­cio: ${n} foto fica de fora do valor estimado (o total no topo usa as demais fotos para calcular pacotes/preÃ§o).`
+          : `3) BenefÃ­cio: atÃ© ${n} fotos ficam de fora do valor estimado (o total no topo usa sÃ³ as que entram na cobranÃ§a).`,
+        `4) Depois de enviar a seleÃ§Ã£o, o fotÃ³grafo aprova cada foto normalmente (cortesia, pago, etc.) â€” o cupom nÃ£o substitui essa etapa.`,
         handles.length
           ? `Perfis: ${handles.map((h) => (h.startsWith('@') ? h : `@${h}`)).join(', ')}.`
-          : `Dica: adicione ao menos um perfil (Instagram etc.) na lista abaixo — o cliente precisa seguir antes de validar o cupom.`
+          : `Dica: adicione ao menos um perfil (Instagram etc.) na lista abaixo â€” o cliente precisa seguir antes de validar o cupom.`
       ];
     } else {
       lines = [
-        `1) Abra cada rede abaixo, siga o perfil do fotógrafo e volte marcando a confirmação nesta página.`,
-        `2) Digite o cupom «${codeDisp}» e toque em «Validar cupom».`,
+        `1) Abra cada rede abaixo, siga o perfil do fotÃ³grafo e volte marcando a confirmaÃ§Ã£o nesta pÃ¡gina.`,
+        `2) Digite o cupom Â«${codeDisp}Â» e toque em Â«Validar cupomÂ».`,
         n === 1
-          ? `3) Benefício: pode baixar até ${n} foto selecionada (entre as liberadas pelo retratista).`
-          : `3) Benefício: pode baixar até ${n} foto(s) selecionada(s) (entre as liberadas pelo retratista).`,
+          ? `3) BenefÃ­cio: pode baixar atÃ© ${n} foto selecionada (entre as liberadas pelo retratista).`
+          : `3) BenefÃ­cio: pode baixar atÃ© ${n} foto(s) selecionada(s) (entre as liberadas pelo retratista).`,
         handles.length
           ? `Perfis: ${handles.map((h) => (h.startsWith('@') ? h : `@${h}`)).join(', ')}.`
           : `Dica: adicione ao menos um perfil com URL (ex.: Instagram) na lista abaixo.`
       ];
     }
     promoInstructions.value = lines.join('\n');
-    toast('Texto sugerido colado nas instruções. Revise, salve o cupom e atualize o link de partilha.', { kind: 'ok', title: 'Cupom' });
+    toast('Texto sugerido colado nas instruÃ§Ãµes. Revise, salve o cupom e atualize o link de partilha.', { kind: 'ok', title: 'Cupom' });
   });
 
   promoSave?.addEventListener('click', async () => {
@@ -9588,7 +9588,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await savePatch({ client_image_quality: val });
     await loadGallery();
     loadImageQualityFromGallery();
-    toast('Resolução salva para a galeria.', { kind: 'ok', title: 'OK' });
+    toast('ResoluÃ§Ã£o salva para a galeria.', { kind: 'ok', title: 'OK' });
   }
 
   document.getElementById('btn-save-image-quality')?.addEventListener('click', async () => {
@@ -9626,13 +9626,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json();
       if (res.ok) {
-        toast('Configuração facial salva!', { kind: 'ok', title: 'Sucesso' });
+        toast('ConfiguraÃ§Ã£o facial salva!', { kind: 'ok', title: 'Sucesso' });
         await loadGallery();
       } else {
-        toast(data.message || 'Erro ao salvar configuração.', { kind: 'err', title: 'Erro' });
+        toast(data.message || 'Erro ao salvar configuraÃ§Ã£o.', { kind: 'err', title: 'Erro' });
       }
     } catch (e) {
-      toast('Erro de conexão.', { kind: 'err', title: 'Erro' });
+      toast('Erro de conexÃ£o.', { kind: 'err', title: 'Erro' });
     } finally {
       if (btnSaveFacial) btnSaveFacial.disabled = false;
     }
@@ -9657,7 +9657,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isSilent) toast(data.message || 'Erro ao iniciar processamento.', { kind: 'err', title: 'Erro' });
       }
     } catch (e) {
-      if (!isSilent) toast('Erro de conexão.', { kind: 'err', title: 'Erro' });
+      if (!isSilent) toast('Erro de conexÃ£o.', { kind: 'err', title: 'Erro' });
     } finally {
       if (btnProcessFacial) btnProcessFacial.disabled = false;
     }
@@ -9678,7 +9678,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (facialProgressBar) facialProgressBar.style.width = '100%';
           if (facialProgressText) {
             facialProgressText.textContent =
-              'Não é obrigatório processar todas: o visitante compara o rosto na hora; resultados repetidos usam cache (sem cobrar de novo).';
+              'NÃ£o Ã© obrigatÃ³rio processar todas: o visitante compara o rosto na hora; resultados repetidos usam cache (sem cobrar de novo).';
           }
         } else {
           const total = parseInt(data.totalPhotos || 0, 10);
@@ -9687,7 +9687,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const isProcessing = total > 0 && processed < total;
 
           if (facialStatusLabel) {
-            facialStatusLabel.textContent = isProcessing ? 'Processando...' : (processed >= total && total > 0 ? 'Concluído' : 'Aguardando');
+            facialStatusLabel.textContent = isProcessing ? 'Processando...' : (processed >= total && total > 0 ? 'ConcluÃ­do' : 'Aguardando');
           }
           if (facialSpinner) facialSpinner.classList.toggle('hidden', !isProcessing);
 
@@ -9712,7 +9712,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const startTab = savedTab || 'activity';
       setActiveTab(startTab);
       await loadGallery();
-      // Após carregar, reforça a mesma aba salva para evitar reset visual.
+      // ApÃ³s carregar, reforÃ§a a mesma aba salva para evitar reset visual.
       setActiveTab(startTab);
     } catch (e) {
       showError(e.message || 'Erro ao carregar');

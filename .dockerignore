@@ -1,6 +1,9 @@
 node_modules
 .git
 .env
+.env.path
+.env.prod
+.env.docker
 *.log
 .DS_Store
 .cursor

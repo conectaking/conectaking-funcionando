@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Script para testar a API de analytics e ver o que ela retorna
  */
 
@@ -6,7 +6,7 @@ const { Pool } = require('pg');
 
 const pool = new Pool({
     user: 'conecta_king_db_user',
-    host: 'virginia-postgres.render.com',
+    host: process.env.DB_HOST || '127.0.0.1',
     database: 'conecta_king_db',
     password: 'LGiJv1hsYj7VujzIePXzWDKQnZDBHMJg',
     port: 5432,
@@ -16,7 +16,7 @@ const pool = new Pool({
 });
 
 async function testarQueries() {
-    console.log('🧪 TESTANDO QUERIES DA API DE ANALYTICS\n');
+    console.log('ðŸ§ª TESTANDO QUERIES DA API DE ANALYTICS\n');
     console.log('='.repeat(60));
     
     const client = await pool.connect();
@@ -25,7 +25,7 @@ async function testarQueries() {
     
     try {
         // 1. Testar query de cliques por link (clicksQuery)
-        console.log('\n1️⃣ Testando query de cliques por link...');
+        console.log('\n1ï¸âƒ£ Testando query de cliques por link...');
         const clicksQuery = `
             SELECT 
                 pi.id,
@@ -43,17 +43,17 @@ async function testarQueries() {
         `;
         
         const { rows: clicksRows } = await client.query(clicksQuery, [userId]);
-        console.log(`   ✅ Retornou ${clicksRows.length} links`);
+        console.log(`   âœ… Retornou ${clicksRows.length} links`);
         
         if (clicksRows.length > 0) {
-            console.log('   📋 Primeiros 3 links:');
+            console.log('   ðŸ“‹ Primeiros 3 links:');
             clicksRows.slice(0, 3).forEach((link, i) => {
-                console.log(`      ${i + 1}. ${link.title || 'Sem título'} - Cliques: ${link.click_count}, Último: ${link.last_click_date ? new Date(link.last_click_date).toLocaleString('pt-BR') : 'Nunca'}`);
+                console.log(`      ${i + 1}. ${link.title || 'Sem tÃ­tulo'} - Cliques: ${link.click_count}, Ãšltimo: ${link.last_click_date ? new Date(link.last_click_date).toLocaleString('pt-BR') : 'Nunca'}`);
             });
         }
         
-        // 2. Testar query de estatísticas gerais
-        console.log('\n2️⃣ Testando query de estatísticas gerais...');
+        // 2. Testar query de estatÃ­sticas gerais
+        console.log('\n2ï¸âƒ£ Testando query de estatÃ­sticas gerais...');
         const statsQuery = `
             SELECT 
                 COALESCE((SELECT COUNT(*) FROM analytics_events WHERE user_id = $1 AND event_type = 'view'), 0)::INTEGER AS total_views,
@@ -66,14 +66,14 @@ async function testarQueries() {
         
         const { rows: statsRows } = await client.query(statsQuery, [userId]);
         const stats = statsRows[0];
-        console.log('   ✅ Estatísticas:');
+        console.log('   âœ… EstatÃ­sticas:');
         console.log(`      - Total Views: ${stats.total_views}`);
         console.log(`      - Total Clicks: ${stats.total_clicks}`);
         console.log(`      - Total vCards: ${stats.total_vcard_downloads}`);
-        console.log(`      - Último Clique: ${stats.last_click_date ? new Date(stats.last_click_date).toLocaleString('pt-BR') : 'Nunca'}`);
+        console.log(`      - Ãšltimo Clique: ${stats.last_click_date ? new Date(stats.last_click_date).toLocaleString('pt-BR') : 'Nunca'}`);
         
-        // 3. Testar query de período
-        console.log(`\n3️⃣ Testando query de período (${period} dias)...`);
+        // 3. Testar query de perÃ­odo
+        console.log(`\n3ï¸âƒ£ Testando query de perÃ­odo (${period} dias)...`);
         const periodStatsQuery = `
             SELECT 
                 COALESCE((SELECT COUNT(*) FROM analytics_events WHERE user_id = $1 AND event_type = 'view' AND created_at >= NOW() - (INTERVAL '1 day' * $2) AND created_at <= NOW()), 0)::INTEGER AS views_period,
@@ -82,12 +82,12 @@ async function testarQueries() {
         
         const { rows: periodStatsRows } = await client.query(periodStatsQuery, [userId, period]);
         const periodStats = periodStatsRows[0];
-        console.log('   ✅ Estatísticas do período:');
-        console.log(`      - Views no período: ${periodStats.views_period}`);
-        console.log(`      - Clicks no período: ${periodStats.clicks_period}`);
+        console.log('   âœ… EstatÃ­sticas do perÃ­odo:');
+        console.log(`      - Views no perÃ­odo: ${periodStats.views_period}`);
+        console.log(`      - Clicks no perÃ­odo: ${periodStats.clicks_period}`);
         
         // 4. Testar query de performance
-        console.log(`\n4️⃣ Testando query de performance (${period} dias)...`);
+        console.log(`\n4ï¸âƒ£ Testando query de performance (${period} dias)...`);
         const performanceQuery = `
             SELECT 
                 DATE(created_at) AS date,
@@ -102,16 +102,16 @@ async function testarQueries() {
         `;
         
         const { rows: performanceRows } = await client.query(performanceQuery, [userId, period]);
-        console.log(`   ✅ Retornou ${performanceRows.length} dias de performance`);
+        console.log(`   âœ… Retornou ${performanceRows.length} dias de performance`);
         if (performanceRows.length > 0) {
-            console.log('   📋 Últimos 3 dias:');
+            console.log('   ðŸ“‹ Ãšltimos 3 dias:');
             performanceRows.slice(-3).forEach((p, i) => {
                 console.log(`      ${i + 1}. ${p.date}: ${p.views} views, ${p.clicks} clicks`);
             });
         }
         
-        // 5. Testar query de cliques por link no período
-        console.log(`\n5️⃣ Testando query de cliques por link no período...`);
+        // 5. Testar query de cliques por link no perÃ­odo
+        console.log(`\n5ï¸âƒ£ Testando query de cliques por link no perÃ­odo...`);
         const linksPeriodQuery = `
             SELECT 
                 pi.id,
@@ -128,20 +128,20 @@ async function testarQueries() {
         `;
         
         const { rows: linksPeriodRows } = await client.query(linksPeriodQuery, [userId, period]);
-        console.log(`   ✅ Retornou ${linksPeriodRows.length} links com estatísticas de período`);
+        console.log(`   âœ… Retornou ${linksPeriodRows.length} links com estatÃ­sticas de perÃ­odo`);
         
         const linksWithClicks = linksPeriodRows.filter(l => parseInt(l.click_count_period) > 0);
         if (linksWithClicks.length > 0) {
-            console.log('   📋 Links com cliques no período:');
+            console.log('   ðŸ“‹ Links com cliques no perÃ­odo:');
             linksWithClicks.forEach(link => {
-                console.log(`      - ${link.title || 'Sem título'} (ID: ${link.id}): ${link.click_count_period} cliques`);
+                console.log(`      - ${link.title || 'Sem tÃ­tulo'} (ID: ${link.id}): ${link.click_count_period} cliques`);
             });
         } else {
-            console.log('   ⚠️ Nenhum link com cliques no período');
+            console.log('   âš ï¸ Nenhum link com cliques no perÃ­odo');
         }
         
         // 6. Simular resposta completa da API
-        console.log('\n6️⃣ Simulando resposta completa da API...');
+        console.log('\n6ï¸âƒ£ Simulando resposta completa da API...');
         const linksWithPeriod = clicksRows.map(link => {
             const periodData = linksPeriodRows.find(l => l.id === link.id);
             return {
@@ -169,33 +169,33 @@ async function testarQueries() {
             recent_clicks: [] // Simplificado para o teste
         };
         
-        console.log('   ✅ Resposta simulada:');
+        console.log('   âœ… Resposta simulada:');
         console.log(`      - Links: ${responseData.links.length}`);
         console.log(`      - Total Clicks: ${responseData.stats.total_clicks}`);
-        console.log(`      - Clicks no período: ${responseData.period_stats.clicks_period}`);
+        console.log(`      - Clicks no perÃ­odo: ${responseData.period_stats.clicks_period}`);
         console.log(`      - Links com cliques: ${responseData.links.filter(l => l.click_count > 0).length}`);
         
         const linksComCliques = responseData.links.filter(l => l.click_count > 0);
         if (linksComCliques.length > 0) {
-            console.log('\n   📋 Links que DEVEM aparecer no dashboard:');
+            console.log('\n   ðŸ“‹ Links que DEVEM aparecer no dashboard:');
             linksComCliques.forEach((link, i) => {
-                console.log(`      ${i + 1}. ${link.title || 'Sem título'}:`);
+                console.log(`      ${i + 1}. ${link.title || 'Sem tÃ­tulo'}:`);
                 console.log(`         - Cliques totais: ${link.click_count}`);
-                console.log(`         - Cliques no período: ${link.click_count_period}`);
-                console.log(`         - Último clique: ${link.last_click_date ? new Date(link.last_click_date).toLocaleString('pt-BR') : 'Nunca'}`);
+                console.log(`         - Cliques no perÃ­odo: ${link.click_count_period}`);
+                console.log(`         - Ãšltimo clique: ${link.last_click_date ? new Date(link.last_click_date).toLocaleString('pt-BR') : 'Nunca'}`);
             });
         }
         
         console.log('\n' + '='.repeat(60));
-        console.log('✅ TESTE CONCLUÍDO!');
-        console.log('\n💡 CONCLUSÃO:');
-        console.log('   Se os dados aparecem aqui mas não no dashboard,');
-        console.log('   o problema está no FRONTEND (admin.js) que não está');
+        console.log('âœ… TESTE CONCLUÃDO!');
+        console.log('\nðŸ’¡ CONCLUSÃƒO:');
+        console.log('   Se os dados aparecem aqui mas nÃ£o no dashboard,');
+        console.log('   o problema estÃ¡ no FRONTEND (admin.js) que nÃ£o estÃ¡');
         console.log('   processando ou exibindo os dados corretamente.');
         
     } catch (error) {
-        console.error('\n❌ Erro ao testar queries:', error.message);
-        console.error('Código:', error.code);
+        console.error('\nâŒ Erro ao testar queries:', error.message);
+        console.error('CÃ³digo:', error.code);
         if (error.detail) {
             console.error('Detalhes:', error.detail);
         }
@@ -206,6 +206,6 @@ async function testarQueries() {
 }
 
 testarQueries().catch(error => {
-    console.error('\n❌ Erro fatal:', error);
+    console.error('\nâŒ Erro fatal:', error);
     process.exit(1);
 });

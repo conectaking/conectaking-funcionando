@@ -1,57 +1,57 @@
-# 📝 Variáveis de Ambiente para o Render
+﻿# ðŸ“ VariÃ¡veis de Ambiente para o Render
 
-## Copie e cole estas variáveis no painel do Render:
+## Copie e cole estas variÃ¡veis no painel do Render:
 
 ### Email SMTP - Gmail
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=(seu email)
-SMTP_PASS=(senha de app ou senha do email - não coloque no repositório)
+SMTP_PASS=(senha de app ou senha do email - nÃ£o coloque no repositÃ³rio)
 SMTP_FROM=noreply@conectaking.com.br
 
 ### URL do Frontend
 FRONTEND_URL=https://conectaking.com.br
 
-### Google OAuth - Agenda Inteligente (OBRIGATÓRIO para usar Agenda)
-# ✅ Obtenha no Google Cloud Console (APIs & Services > Credentials) e adicione no Render:
+### Google OAuth - Agenda Inteligente (OBRIGATÃ“RIO para usar Agenda)
+# âœ… Obtenha no Google Cloud Console (APIs & Services > Credentials) e adicione no Render:
 GOOGLE_CLIENT_ID=(cole aqui o seu Client ID)
 GOOGLE_CLIENT_SECRET=(cole aqui o seu Client Secret)
-# URLs de callback (opcional, usa padrão se não configurado):
-# GOOGLE_REDIRECT_URI_OWNER=https://conectaking-api.onrender.com/api/oauth/agenda/google/owner/callback
-# GOOGLE_REDIRECT_URI_CLIENT=https://conectaking-api.onrender.com/api/oauth/agenda/google/client/callback
+# URLs de callback (opcional, usa padrÃ£o se nÃ£o configurado):
+# GOOGLE_REDIRECT_URI_OWNER=https://www.conectaking.com.br/api/oauth/agenda/google/owner/callback
+# GOOGLE_REDIRECT_URI_CLIENT=https://www.conectaking.com.br/api/oauth/agenda/google/client/callback
 
 ---
 
-## ⚠️ IMPORTANTE:
+## âš ï¸ IMPORTANTE:
 
-1. No Render, cada variável deve ser adicionada separadamente
-2. Nome da variável à esquerda, valor à direita
-3. NÃO inclua espaços antes ou depois do "="
+1. No Render, cada variÃ¡vel deve ser adicionada separadamente
+2. Nome da variÃ¡vel Ã  esquerda, valor Ã  direita
+3. NÃƒO inclua espaÃ§os antes ou depois do "="
 4. Salve e aguarde o servidor reiniciar
 
 ---
 
-## 📋 Passo a Passo no Render:
+## ðŸ“‹ Passo a Passo no Render:
 
 1. Acesse: https://dashboard.render.com
-2. Vá no seu serviço da API
+2. VÃ¡ no seu serviÃ§o da API
 3. Clique em "Environment" no menu
 4. Clique em "Add Environment Variable"
-5. Para cada variável acima:
+5. Para cada variÃ¡vel acima:
    - Key: SMTP_HOST
    - Value: smtp.gmail.com
    - Clique em "Save"
-6. Repita para todas as outras variáveis
-7. O servidor reiniciará automaticamente
+6. Repita para todas as outras variÃ¡veis
+7. O servidor reiniciarÃ¡ automaticamente
 
 ---
 
-## ✅ Verificação:
+## âœ… VerificaÃ§Ã£o:
 
-Após adicionar, verifique os logs. Não deve aparecer:
-- "Email transporter não configurado"
-- "SMTP_USER não configurado"
+ApÃ³s adicionar, verifique os logs. NÃ£o deve aparecer:
+- "Email transporter nÃ£o configurado"
+- "SMTP_USER nÃ£o configurado"
 
-Se não aparecerem esses erros, está tudo certo! ✅
+Se nÃ£o aparecerem esses erros, estÃ¡ tudo certo! âœ…
 

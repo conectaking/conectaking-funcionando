@@ -1,4 +1,4 @@
-# Script de Push Automatico do Backend
+﻿# Script de Push Automatico do Backend
 # Este script adiciona, commita e faz push automaticamente para o Bitbucket
 
 Write-Host "Push Automatico do Backend" -ForegroundColor Cyan
@@ -8,7 +8,7 @@ Write-Host ("=" * 50) -ForegroundColor Cyan
 $repoPath = "C:\Users\playa\Desktop\CONECTA KING MVP DEZEMBRO\conecta-king-backend"
 Set-Location $repoPath
 
-# Verificar se estamos em um repositório Git
+# Verificar se estamos em um repositÃ³rio Git
 if (-not (Test-Path ".git")) {
     Write-Host "ERRO: Esta pasta nao e um repositorio Git!" -ForegroundColor Red
     exit 1
@@ -21,7 +21,7 @@ $status = git status --short
 if (-not $status) {
     Write-Host "OK: Nenhuma alteracao para commitar!" -ForegroundColor Green
     
-    # Verificar se há commits para push
+    # Verificar se hÃ¡ commits para push
     $commitsAhead = git rev-list --count origin/main..HEAD 2>$null
     if ($commitsAhead -gt 0) {
         Write-Host "Encontrados $commitsAhead commit(s) para enviar..." -ForegroundColor Yellow
@@ -40,7 +40,7 @@ if (-not $status) {
     exit 0
 }
 
-# Mostrar alterações
+# Mostrar alteraÃ§Ãµes
 Write-Host "`nAlteracoes encontradas:" -ForegroundColor Cyan
 git status --short
 
@@ -67,9 +67,9 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "`nOK: Push realizado com sucesso!" -ForegroundColor Green
     Write-Host "O Render deve detectar as mudancas e fazer deploy automaticamente." -ForegroundColor Cyan
     Write-Host "`nProximos passos:" -ForegroundColor Yellow
-    Write-Host "   - Verifique o dashboard do Render: https://dashboard.render.com" -ForegroundColor White
+    Write-Host "   - Verifique o dashboard do Render: https://console.hetzner.com" -ForegroundColor White
     Write-Host "   - Aguarde 2-5 minutos para o deploy completar" -ForegroundColor White
-    Write-Host "   - Teste a API: https://conectaking-api.onrender.com/api/health" -ForegroundColor White
+    Write-Host "   - Teste a API: https://www.conectaking.com.br/health" -ForegroundColor White
 } else {
     Write-Host "`nERRO: Erro ao fazer push!" -ForegroundColor Red
     Write-Host "`nPossiveis solucoes:" -ForegroundColor Yellow

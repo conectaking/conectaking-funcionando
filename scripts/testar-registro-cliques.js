@@ -1,5 +1,5 @@
-/**
- * Script para testar se o registro de cliques está funcionando
+﻿/**
+ * Script para testar se o registro de cliques estÃ¡ funcionando
  * Uso: node scripts/testar-registro-cliques.js
  */
 
@@ -8,7 +8,7 @@ const fetch = require('node-fetch');
 
 const pool = new Pool({
     user: 'conecta_king_db_user',
-    host: 'virginia-postgres.render.com',
+    host: process.env.DB_HOST || '127.0.0.1',
     database: 'conecta_king_db',
     password: 'LGiJv1hsYj7VujzIePXzWDKQnZDBHMJg',
     port: 5432,
@@ -18,14 +18,14 @@ const pool = new Pool({
 });
 
 async function testarRegistroCliques() {
-    console.log('🧪 TESTE DE REGISTRO DE CLIQUES\n');
+    console.log('ðŸ§ª TESTE DE REGISTRO DE CLIQUES\n');
     console.log('='.repeat(60));
     
     const client = await pool.connect();
     
     try {
         // 1. Buscar links do ADRIANO-KING para testar
-        console.log('\n1️⃣ Buscando links do ADRIANO-KING...');
+        console.log('\n1ï¸âƒ£ Buscando links do ADRIANO-KING...');
         const linksRes = await client.query(`
             SELECT id, title, item_type, destination_url
             FROM profile_items
@@ -35,17 +35,17 @@ async function testarRegistroCliques() {
         `);
         
         if (linksRes.rows.length === 0) {
-            console.log('❌ Nenhum link encontrado para ADRIANO-KING');
+            console.log('âŒ Nenhum link encontrado para ADRIANO-KING');
             return;
         }
         
-        console.log(`✅ Encontrados ${linksRes.rows.length} links para testar:\n`);
+        console.log(`âœ… Encontrados ${linksRes.rows.length} links para testar:\n`);
         linksRes.rows.forEach((link, index) => {
-            console.log(`   ${index + 1}. ID: ${link.id} - ${link.title || 'Sem título'} (${link.item_type})`);
+            console.log(`   ${index + 1}. ID: ${link.id} - ${link.title || 'Sem tÃ­tulo'} (${link.item_type})`);
         });
         
         // 2. Verificar cliques antes do teste
-        console.log('\n2️⃣ Verificando cliques ANTES do teste...');
+        console.log('\n2ï¸âƒ£ Verificando cliques ANTES do teste...');
         const antes = await client.query(`
             SELECT COUNT(*) as total
             FROM analytics_events
@@ -56,8 +56,8 @@ async function testarRegistroCliques() {
         console.log(`   Cliques antes: ${totalAntes}`);
         
         // 3. Simular cliques via API
-        console.log('\n3️⃣ Simulando cliques via API...');
-        const API_URL = 'https://conectaking-api.onrender.com';
+        console.log('\n3ï¸âƒ£ Simulando cliques via API...');
+        const API_URL = 'https://www.conectaking.com.br';
         
         for (const link of linksRes.rows.slice(0, 3)) { // Testar apenas 3 primeiros
             try {
@@ -69,12 +69,12 @@ async function testarRegistroCliques() {
                 });
                 
                 if (response.status === 204 || response.status === 200) {
-                    console.log(`   ✅ Clique registrado para link ID ${link.id} (${link.title || 'Sem título'})`);
+                    console.log(`   âœ… Clique registrado para link ID ${link.id} (${link.title || 'Sem tÃ­tulo'})`);
                 } else {
-                    console.log(`   ❌ Erro ao registrar clique para link ID ${link.id}: Status ${response.status}`);
+                    console.log(`   âŒ Erro ao registrar clique para link ID ${link.id}: Status ${response.status}`);
                 }
             } catch (error) {
-                console.log(`   ❌ Erro ao chamar API para link ID ${link.id}: ${error.message}`);
+                console.log(`   âŒ Erro ao chamar API para link ID ${link.id}: ${error.message}`);
             }
         }
         
@@ -82,7 +82,7 @@ async function testarRegistroCliques() {
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         // 4. Verificar cliques depois do teste
-        console.log('\n4️⃣ Verificando cliques DEPOIS do teste...');
+        console.log('\n4ï¸âƒ£ Verificando cliques DEPOIS do teste...');
         const depois = await client.query(`
             SELECT COUNT(*) as total
             FROM analytics_events
@@ -93,17 +93,17 @@ async function testarRegistroCliques() {
         console.log(`   Cliques depois: ${totalDepois}`);
         
         if (totalDepois > totalAntes) {
-            console.log(`\n✅ SUCESSO! Foram registrados ${totalDepois - totalAntes} novos cliques!`);
+            console.log(`\nâœ… SUCESSO! Foram registrados ${totalDepois - totalAntes} novos cliques!`);
         } else {
-            console.log(`\n❌ PROBLEMA! Nenhum clique foi registrado.`);
-            console.log('   Possíveis causas:');
-            console.log('   1. O endpoint /log/click/item/:itemId não está funcionando');
-            console.log('   2. O código JavaScript não está chamando a API');
-            console.log('   3. Há algum erro no servidor ao salvar');
+            console.log(`\nâŒ PROBLEMA! Nenhum clique foi registrado.`);
+            console.log('   PossÃ­veis causas:');
+            console.log('   1. O endpoint /log/click/item/:itemId nÃ£o estÃ¡ funcionando');
+            console.log('   2. O cÃ³digo JavaScript nÃ£o estÃ¡ chamando a API');
+            console.log('   3. HÃ¡ algum erro no servidor ao salvar');
         }
         
         // 5. Verificar os cliques mais recentes
-        console.log('\n5️⃣ Verificando cliques mais recentes...');
+        console.log('\n5ï¸âƒ£ Verificando cliques mais recentes...');
         const recentes = await client.query(`
             SELECT 
                 id,
@@ -118,36 +118,36 @@ async function testarRegistroCliques() {
         `);
         
         if (recentes.rows.length > 0) {
-            console.log('   📋 Últimos cliques registrados:');
+            console.log('   ðŸ“‹ Ãšltimos cliques registrados:');
             recentes.rows.forEach(click => {
                 console.log(`   - ID: ${click.item_id} | ${click.created_at.toLocaleString('pt-BR')}`);
             });
         } else {
-            console.log('   ⚠️ Nenhum clique encontrado ainda');
+            console.log('   âš ï¸ Nenhum clique encontrado ainda');
         }
         
-        // 6. Verificar se o endpoint está respondendo
-        console.log('\n6️⃣ Testando endpoint /log/click/item/...');
+        // 6. Verificar se o endpoint estÃ¡ respondendo
+        console.log('\n6ï¸âƒ£ Testando endpoint /log/click/item/...');
         try {
             const testResponse = await fetch(`${API_URL}/log/click/item/999999`, {
                 method: 'POST'
             });
             console.log(`   Status do endpoint: ${testResponse.status}`);
             if (testResponse.status === 204 || testResponse.status === 500) {
-                console.log('   ✅ Endpoint está acessível (mesmo com item_id inválido)');
+                console.log('   âœ… Endpoint estÃ¡ acessÃ­vel (mesmo com item_id invÃ¡lido)');
             } else {
-                console.log(`   ⚠️ Endpoint retornou status inesperado: ${testResponse.status}`);
+                console.log(`   âš ï¸ Endpoint retornou status inesperado: ${testResponse.status}`);
             }
         } catch (error) {
-            console.log(`   ❌ Erro ao testar endpoint: ${error.message}`);
+            console.log(`   âŒ Erro ao testar endpoint: ${error.message}`);
         }
         
         console.log('\n' + '='.repeat(60));
-        console.log('✅ TESTE CONCLUÍDO!');
+        console.log('âœ… TESTE CONCLUÃDO!');
         
     } catch (error) {
-        console.error('\n❌ Erro durante o teste:', error.message);
-        console.error('Código:', error.code);
+        console.error('\nâŒ Erro durante o teste:', error.message);
+        console.error('CÃ³digo:', error.code);
         if (error.detail) {
             console.error('Detalhes:', error.detail);
         }
@@ -158,6 +158,6 @@ async function testarRegistroCliques() {
 }
 
 testarRegistroCliques().catch(error => {
-    console.error('\n❌ Erro fatal:', error);
+    console.error('\nâŒ Erro fatal:', error);
     process.exit(1);
 });

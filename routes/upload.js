@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const fetch = require('node-fetch');
 const multer = require('multer');
 const FormData = require('form-data');
@@ -13,8 +13,8 @@ require('dotenv').config();
 
 const router = express.Router();
 
-// CORS explícito para upload: evita "Failed to fetch" quando o front está em 127.0.0.1:5500 ou outro origin.
-// Se o dashboard chamar a API noutro domínio que redireciona, o redirect pode não ter CORS; aqui garantimos.
+// CORS explÃ­cito para upload: evita "Failed to fetch" quando o front estÃ¡ em 127.0.0.1:5500 ou outro origin.
+// Se o dashboard chamar a API noutro domÃ­nio que redireciona, o redirect pode nÃ£o ter CORS; aqui garantimos.
 const UPLOAD_CORS_ORIGINS = new Set([
     'http://127.0.0.1:5500', 'http://127.0.0.1:5000', 'http://127.0.0.1:3000',
     'http://localhost:5500', 'http://localhost:5000', 'http://localhost:3000', 'http://localhost',
@@ -35,18 +35,18 @@ router.use((req, res, next) => {
 });
 
 // Cloudflare Images /direct_upload tem rate-limit agressivo.
-// Se várias pessoas (ou o uploader em paralelo) chamarem /api/upload/auth, isso estoura 429.
-// Aqui nós SERIALIZAMOS as chamadas ao Cloudflare e colocamos um intervalo mínimo entre elas.
+// Se vÃ¡rias pessoas (ou o uploader em paralelo) chamarem /api/upload/auth, isso estoura 429.
+// Aqui nÃ³s SERIALIZAMOS as chamadas ao Cloudflare e colocamos um intervalo mÃ­nimo entre elas.
 let _cfAuthQueue = Promise.resolve();
 let _cfLastAuthAt = 0;
 let _cfCooldownUntil = 0;
-// Gap dinâmico (em vez de fixo 5.5s). Começa mais conservador para evitar 429 no banner/upload único.
+// Gap dinÃ¢mico (em vez de fixo 5.5s). ComeÃ§a mais conservador para evitar 429 no banner/upload Ãºnico.
 let _cfMinGapMs = 900;
 const _cfMinGapFloorMs = 200;
 const _cfMinGapCeilMs = 8000;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-/** Retorna { accountId, headers } para Cloudflare Images ou null se não configurado. */
+/** Retorna { accountId, headers } para Cloudflare Images ou null se nÃ£o configurado. */
 function getCloudflareCreds() {
     const accountId =
         process.env.CF_IMAGES_ACCOUNT_ID ||
@@ -69,7 +69,7 @@ function getCloudflareCreds() {
     return { accountId, headers };
 }
 
-// Limite máximo por arquivo (15 MB) — exibir mensagem amigável no cliente quando exceder
+// Limite mÃ¡ximo por arquivo (15 MB) â€” exibir mensagem amigÃ¡vel no cliente quando exceder
 const UPLOAD_MAX_MB = 15;
 const UPLOAD_MAX_BYTES = UPLOAD_MAX_MB * 1024 * 1024;
 
@@ -80,13 +80,13 @@ const upload = multer({
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Apenas imagens são permitidas'), false);
+            cb(new Error('Apenas imagens sÃ£o permitidas'), false);
         }
     }
 });
 
-// /api/upload/auth é chamado muitas vezes no upload em massa.
-// Limitamos por USUÁRIO autenticado (não por IP) e com teto alto.
+// /api/upload/auth Ã© chamado muitas vezes no upload em massa.
+// Limitamos por USUÃRIO autenticado (nÃ£o por IP) e com teto alto.
 const skipOptions = (req) => req.method === 'OPTIONS';
 const uploadAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
@@ -110,13 +110,13 @@ const uploadAuthLimiter = rateLimit({
         res.set('Retry-After', String(retryAfter));
         res.status(429).json({
             success: false,
-            message: 'Falha ao obter autorização para upload. Muitas tentativas; aguarde 1 minuto e clique em Trocar imagem novamente.',
+            message: 'Falha ao obter autorizaÃ§Ã£o para upload. Muitas tentativas; aguarde 1 minuto e clique em Trocar imagem novamente.',
             retry_after_seconds: retryAfter
         });
     }
 });
 
-/** Obtém URL de upload do Cloudflare (com fila e retry). Usado por /auth e /image. */
+/** ObtÃ©m URL de upload do Cloudflare (com fila e retry). Usado por /auth e /image. */
 async function runThrottledAuth(accountId, headers) {
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`;
     async function tryOnce() {
@@ -129,7 +129,7 @@ async function runThrottledAuth(accountId, headers) {
 
     if (_cfCooldownUntil && Date.now() < _cfCooldownUntil) {
         const secs = Math.max(1, Math.ceil((_cfCooldownUntil - Date.now()) / 1000));
-        return { ok: false, status: 429, message: `Falha ao obter autorização para upload. Aguarde ${secs}s e tente novamente (Trocar imagem).`, retry_after_seconds: secs };
+        return { ok: false, status: 429, message: `Falha ao obter autorizaÃ§Ã£o para upload. Aguarde ${secs}s e tente novamente (Trocar imagem).`, retry_after_seconds: secs };
     }
 
     const minGapMs = Math.max(_cfMinGapFloorMs, Math.min(_cfMinGapCeilMs, _cfMinGapMs || 0));
@@ -191,7 +191,7 @@ async function runThrottledAuth(accountId, headers) {
                 _cfMinGapMs = Math.min(_cfMinGapCeilMs, Math.round((_cfMinGapMs || minGapMs) * 1.8 + 200));
                 const secs = Math.max(5, Math.min(25, Math.ceil((_cfMinGapMs * 2) / 1000)));
                 _cfCooldownUntil = Date.now() + secs * 1000;
-                return { ok: false, status: 429, message: `Falha ao obter autorização para upload. Aguarde ${secs}s e clique em Trocar imagem novamente.`, retry_after_seconds: secs };
+                return { ok: false, status: 429, message: `Falha ao obter autorizaÃ§Ã£o para upload. Aguarde ${secs}s e clique em Trocar imagem novamente.`, retry_after_seconds: secs };
             }
             return { ok: false, status: response.status || 502, message: cfMsg };
         } catch (error) {
@@ -214,14 +214,14 @@ async function enqueueThrottledAuth(accountId, headers) {
     return p;
 }
 
-/** Base URL da API (para devolver uploadURL quando usamos R2 em /auth). Usar sempre a URL pública da API (Render) para evitar CORS quando o dashboard está em 127.0.0.1:5500 ou em conectaking.com.br. */
+/** Base URL da API (para devolver uploadURL quando usamos R2 em /auth). Usar sempre a URL pÃºblica da API (Render) para evitar CORS quando o dashboard estÃ¡ em 127.0.0.1:5500 ou em conectaking.com.br. */
 function getApiBaseUrl(req) {
-    // Preferir explicitamente a URL da API (Render); nunca devolver FRONTEND_URL (conectaking.com.br) para uploadURL, senão o browser bloqueia por CORS.
-    const apiUrl = (process.env.API_URL || process.env.API_PUBLIC_URL || 'https://conectaking-api.onrender.com').toString().trim().replace(/\/$/, '');
+    // Preferir explicitamente a URL da API (Render); nunca devolver FRONTEND_URL (conectaking.com.br) para uploadURL, senÃ£o o browser bloqueia por CORS.
+    const apiUrl = (process.env.API_URL || process.env.API_PUBLIC_URL || 'https://www.conectaking.com.br').toString().trim().replace(/\/$/, '');
     if (apiUrl && (apiUrl.startsWith('http://') || apiUrl.startsWith('https://'))) return apiUrl;
     const proto = (req && req.get && req.get('x-forwarded-proto')) || (req && req.protocol) || 'https';
     const host = (req && req.get && req.get('x-forwarded-host')) || (req && req.get && req.get('host')) || null;
-    if (host && /\.onrender\.com$/.test(host)) {
+    if (host && /(^|\.)conectaking\.com\.br$/.test(String(host).split(':')[0])) {
         const base = `${proto}://${host}`;
         return base.replace(/^http:\/\//, 'https://');
     }
@@ -248,10 +248,10 @@ router.post('/auth', protectUser, uploadAuthLimiter, asyncHandler(async (req, re
 
     const creds = getCloudflareCreds();
     if (!creds) {
-        logger.error('Credenciais do Cloudflare não encontradas');
+        logger.error('Credenciais do Cloudflare nÃ£o encontradas');
         return res.status(500).json({
             success: false,
-            message: 'Cloudflare não configurado. Configure R2 (R2_ACCOUNT_ID, R2_BUCKET, R2_PUBLIC_BASE_URL) ou Cloudflare Images.'
+            message: 'Cloudflare nÃ£o configurado. Configure R2 (R2_ACCOUNT_ID, R2_BUCKET, R2_PUBLIC_BASE_URL) ou Cloudflare Images.'
         });
     }
     const out = await enqueueThrottledAuth(creds.accountId, creds.headers);
@@ -261,7 +261,7 @@ router.post('/auth', protectUser, uploadAuthLimiter, asyncHandler(async (req, re
     if (retrySec) res.set('Retry-After', String(retrySec));
     return res.status(status).json({
         success: false,
-        message: out.message || 'Falha ao obter autorização para upload. Aguarde e tente novamente.',
+        message: out.message || 'Falha ao obter autorizaÃ§Ã£o para upload. Aguarde e tente novamente.',
         retry_after_seconds: retrySec
     });
 }));
@@ -282,18 +282,18 @@ router.post('/receive-one', protectUser, receiveOneFields, asyncHandler(async (r
     }
     const r2Url = await uploadImageToR2(file.buffer, file.mimetype, file.originalname || 'image.jpg');
     if (r2Url) {
-        logger.info('✅ [UPLOAD] Imagem receive-one enviada via R2', { userId: req.user.userId });
+        logger.info('âœ… [UPLOAD] Imagem receive-one enviada via R2', { userId: req.user.userId });
         return res.json({ success: true, url: r2Url, imageUrl: r2Url });
     }
     return res.status(503).json({
         success: false,
-        message: 'Upload temporariamente indisponível. Tente novamente em instantes.'
+        message: 'Upload temporariamente indisponÃ­vel. Tente novamente em instantes.'
     });
 }));
 
 /**
- * POST /api/upload/image - Upload direto de imagem (banner, personalização, etc.)
- * Preferência: R2 (mais rápido). Fallback: Cloudflare Images (fila de auth).
+ * POST /api/upload/image - Upload direto de imagem (banner, personalizaÃ§Ã£o, etc.)
+ * PreferÃªncia: R2 (mais rÃ¡pido). Fallback: Cloudflare Images (fila de auth).
  */
 router.post('/image', protectUser, upload.single('image'), asyncHandler(async (req, res) => {
     if (!req.file) {
@@ -305,13 +305,13 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
 
     const r2Url = await uploadImageToR2(req.file.buffer, req.file.mimetype, req.file.originalname || 'image.jpg');
     if (r2Url) {
-        logger.info('✅ [UPLOAD] Imagem enviada via R2', { userId: req.user.userId });
+        logger.info('âœ… [UPLOAD] Imagem enviada via R2', { userId: req.user.userId });
         return res.json({ success: true, url: r2Url, imageUrl: r2Url });
     }
 
     const creds = getCloudflareCreds();
     if (!creds) {
-        logger.error('Credenciais do Cloudflare não encontradas');
+        logger.error('Credenciais do Cloudflare nÃ£o encontradas');
         return res.status(500).json({
             success: false,
             message: 'Configure R2 (R2_ACCOUNT_ID, R2_BUCKET, R2_PUBLIC_BASE_URL) ou Cloudflare Images para upload de imagens.'
@@ -325,7 +325,7 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
         if (retrySec) res.set('Retry-After', String(retrySec));
         return res.status(status).json({
             success: false,
-            message: out.message || 'Falha ao obter autorização para upload. Aguarde e tente novamente.',
+            message: out.message || 'Falha ao obter autorizaÃ§Ã£o para upload. Aguarde e tente novamente.',
             retry_after_seconds: retrySec
         });
     }
@@ -365,7 +365,7 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
             logger.error('Resposta receive-one sem url/imageUrl', data);
             return res.status(502).json({
                 success: false,
-                message: 'Resposta do servidor de upload inválida. Tente novamente.'
+                message: 'Resposta do servidor de upload invÃ¡lida. Tente novamente.'
             });
         }
     } else {
@@ -373,7 +373,7 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
         imageUrl = `https://imagedelivery.net/${hash}/${imageId}/public`;
     }
 
-    logger.info('✅ [UPLOAD] Imagem enviada com sucesso', { imageId, userId: req.user.userId, imageUrl });
+    logger.info('âœ… [UPLOAD] Imagem enviada com sucesso', { imageId, userId: req.user.userId, imageUrl });
 
     res.json({
         success: true,
@@ -383,8 +383,8 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
 }));
 
 /**
- * POST /api/upload/images - Upload de múltiplas imagens (carrossel, etc.)
- * Preferência: R2 (mais rápido, sem fila). Fallback: Cloudflare Images por ficheiro.
+ * POST /api/upload/images - Upload de mÃºltiplas imagens (carrossel, etc.)
+ * PreferÃªncia: R2 (mais rÃ¡pido, sem fila). Fallback: Cloudflare Images por ficheiro.
  */
 const maxCarouselImages = 20;
 router.post('/images', protectUser, upload.array('images', maxCarouselImages), asyncHandler(async (req, res) => {
@@ -441,7 +441,7 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
         });
         if (!uploadResponse.ok) {
             const errText = await uploadResponse.text();
-            logger.error('Erro no upload para Cloudflare (múltiplas)', { index: i, body: errText?.slice(0, 200) });
+            logger.error('Erro no upload para Cloudflare (mÃºltiplas)', { index: i, body: errText?.slice(0, 200) });
             return res.status(502).json({
                 success: false,
                 message: `Falha ao enviar a imagem ${i + 1}. Tente novamente.`,
@@ -453,10 +453,10 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
             const u = data.url || data.imageUrl;
             if (u) urls.push(u);
             else {
-                logger.error('Resposta receive-one sem url/imageUrl (múltiplas)', data);
+                logger.error('Resposta receive-one sem url/imageUrl (mÃºltiplas)', data);
                 return res.status(502).json({
                     success: false,
-                    message: `Resposta inválida na imagem ${i + 1}. Tente novamente.`,
+                    message: `Resposta invÃ¡lida na imagem ${i + 1}. Tente novamente.`,
                     uploaded_so_far: urls
                 });
             }
@@ -466,16 +466,16 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
         }
     }
 
-    logger.info('✅ [UPLOAD] Múltiplas imagens enviadas', { count: urls.length, userId: req.user.userId });
+    logger.info('âœ… [UPLOAD] MÃºltiplas imagens enviadas', { count: urls.length, userId: req.user.userId });
     res.json({ success: true, urls, imageUrl: urls[0] });
 }));
 
 /**
  * POST /api/upload/crop - Enquadramento: recorta a imagem e faz upload.
- * Body (multipart): image = ficheiro; cropX, cropY, cropWidth, cropHeight = números (em pixels).
- * Ou em ratios 0–1: cropX, cropY, cropWidth, cropHeight (opcional useRatios=1).
- * Uso: KingForms (Imagem do Banner, Logo do Formulário), troca de foto de perfil, etc.
- * Medidas recomendadas: Banner 16:9 (ex. 1200×400); Logo 1:1 (ex. 400×400).
+ * Body (multipart): image = ficheiro; cropX, cropY, cropWidth, cropHeight = nÃºmeros (em pixels).
+ * Ou em ratios 0â€“1: cropX, cropY, cropWidth, cropHeight (opcional useRatios=1).
+ * Uso: KingForms (Imagem do Banner, Logo do FormulÃ¡rio), troca de foto de perfil, etc.
+ * Medidas recomendadas: Banner 16:9 (ex. 1200Ã—400); Logo 1:1 (ex. 400Ã—400).
  */
 const cropFields = upload.fields([
     { name: 'image', maxCount: 1 },
@@ -520,26 +520,26 @@ router.post('/crop', protectUser, cropFields, asyncHandler(async (req, res) => {
     if (!r2Url) {
         return res.status(503).json({
             success: false,
-            message: 'Upload temporariamente indisponível. Tente novamente em instantes.'
+            message: 'Upload temporariamente indisponÃ­vel. Tente novamente em instantes.'
         });
     }
-    logger.info('✅ [UPLOAD] Imagem recortada e enviada', { userId: req.user.userId });
+    logger.info('âœ… [UPLOAD] Imagem recortada e enviada', { userId: req.user.userId });
     res.json({ success: true, url: r2Url, imageUrl: r2Url });
 }));
 
-// Endpoint para obter URL completa da imagem após upload
+// Endpoint para obter URL completa da imagem apÃ³s upload
 router.get('/get-url/:imageId', protectUser, asyncHandler(async (req, res) => {
     const { imageId } = req.params;
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     const apiToken = process.env.CLOUDFLARE_API_TOKEN || config.cloudflare.apiToken;
 
     if (!accountId || !apiToken) {
-        logger.error('Credenciais do Cloudflare não encontradas');
-        throw new Error('Erro de configuração do servidor.');
+        logger.error('Credenciais do Cloudflare nÃ£o encontradas');
+        throw new Error('Erro de configuraÃ§Ã£o do servidor.');
     }
 
     try {
-        // Buscar informações da imagem no Cloudflare
+        // Buscar informaÃ§Ãµes da imagem no Cloudflare
         const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`;
         const response = await fetch(url, {
             method: 'GET',
@@ -551,11 +551,11 @@ router.get('/get-url/:imageId', protectUser, asyncHandler(async (req, res) => {
         const data = await response.json();
         
         if (data.success && data.result) {
-            // Cloudflare retorna a imagem em variants - usar a primeira variante pública
+            // Cloudflare retorna a imagem em variants - usar a primeira variante pÃºblica
             let imageUrl = data.result.variants?.[0] || data.result.filename || null;
             
             if (imageUrl) {
-                logger.debug('✅ [UPLOAD] URL da imagem obtida do Cloudflare variants', { 
+                logger.debug('âœ… [UPLOAD] URL da imagem obtida do Cloudflare variants', { 
                     imageId, 
                     userId: req.user.userId,
                     imageUrl 
@@ -566,12 +566,12 @@ router.get('/get-url/:imageId', protectUser, asyncHandler(async (req, res) => {
                     imageUrl: imageUrl
                 });
             } else {
-                // Se não tiver variant, construir URL baseada no account hash
+                // Se nÃ£o tiver variant, construir URL baseada no account hash
                 const accountHash = config.cloudflare.accountHash || accountId;
                 // Cloudflare Images usa o formato: https://imagedelivery.net/{account_hash}/{image_id}/{variant_name}
                 imageUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
                 
-                logger.debug('⚠️ [UPLOAD] Construindo URL baseada em accountHash e imageId', { 
+                logger.debug('âš ï¸ [UPLOAD] Construindo URL baseada em accountHash e imageId', { 
                     imageId,
                     accountHash,
                     imageUrl,
@@ -585,7 +585,7 @@ router.get('/get-url/:imageId', protectUser, asyncHandler(async (req, res) => {
                 });
             }
         } else {
-            logger.error('❌ [UPLOAD] Erro ao buscar imagem no Cloudflare', { 
+            logger.error('âŒ [UPLOAD] Erro ao buscar imagem no Cloudflare', { 
                 errors: data.errors,
                 imageId,
                 userId: req.user.userId 

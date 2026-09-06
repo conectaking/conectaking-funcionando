@@ -1,28 +1,28 @@
-# 🚀 Comandos para Fazer Push no Bitbucket
+﻿# ðŸš€ Comandos para Fazer Push no Bitbucket
 
-## ✅ Repositório já conectado!
+## âœ… RepositÃ³rio jÃ¡ conectado!
 
-O repositório já está configurado para o Bitbucket:
+O repositÃ³rio jÃ¡ estÃ¡ configurado para o Bitbucket:
 https://conectaking@bitbucket.org/conecta-king-backend/conecta-king-backend.git
 
 ---
 
-## 📤 Fazer Push das Alterações
+## ðŸ“¤ Fazer Push das AlteraÃ§Ãµes
 
-### Opção 1: Push Normal (se já houver commits no Bitbucket)
+### OpÃ§Ã£o 1: Push Normal (se jÃ¡ houver commits no Bitbucket)
 
 ```bash
 cd "C:\Users\playa\Desktop\CONECTA KING MVP DEZEMBRO\backend-conecta-king"
 git push -u origin main
 ```
 
-### Opção 2: Se a branch for "master"
+### OpÃ§Ã£o 2: Se a branch for "master"
 
 ```bash
 git push -u origin master
 ```
 
-### Opção 3: Force Push (use apenas se necessário e souber o que está fazendo)
+### OpÃ§Ã£o 3: Force Push (use apenas se necessÃ¡rio e souber o que estÃ¡ fazendo)
 
 ```bash
 git push -u origin main --force
@@ -30,43 +30,43 @@ git push -u origin main --force
 
 ---
 
-## 🔐 Autenticação
+## ðŸ” AutenticaÃ§Ã£o
 
 O Bitbucket vai pedir suas credenciais:
-- **Usuário:** conectaking
-- **Senha:** Use uma App Password (não sua senha normal)
+- **UsuÃ¡rio:** conectaking
+- **Senha:** Use uma App Password (nÃ£o sua senha normal)
 
 **Como criar App Password:**
 1. Acesse: https://bitbucket.org/account/settings/app-passwords/
 2. Clique em "Create app password"
-3. Dê um nome (ex: "Render Deploy")
-4. Selecione permissões: "Repositories: Write"
+3. DÃª um nome (ex: "Render Deploy")
+4. Selecione permissÃµes: "Repositories: Write"
 5. Copie a senha gerada
 6. Use essa senha quando o Git pedir
 
 ---
 
-## ⚠️ Se Der Erro
+## âš ï¸ Se Der Erro
 
 ### Erro: "Permission denied"
-- Verifique se você tem permissão no repositório
-- Use App Password ao invés de senha normal
+- Verifique se vocÃª tem permissÃ£o no repositÃ³rio
+- Use App Password ao invÃ©s de senha normal
 
 ### Erro: "Branch diverged"
 - Tente: `git pull origin main --rebase` primeiro
 - Depois: `git push origin main`
 
 ### Erro: "Repository not found"
-- Verifique se a URL está correta
-- Verifique se você tem acesso ao repositório
+- Verifique se a URL estÃ¡ correta
+- Verifique se vocÃª tem acesso ao repositÃ³rio
 
 ---
 
-## ✅ Depois do Push
+## âœ… Depois do Push
 
-1. O Render (se configurado) fará deploy automaticamente
-2. Ou faça deploy manual no painel do Render
-3. Configure as variáveis SMTP no Render:
+1. O Render (se configurado) farÃ¡ deploy automaticamente
+2. Ou faÃ§a deploy manual no painel do Render
+3. Configure as variÃ¡veis SMTP no Render:
    - SMTP_HOST=smtp.gmail.com
    - SMTP_PORT=587
    - SMTP_SECURE=false
@@ -76,9 +76,9 @@ O Bitbucket vai pedir suas credenciais:
 
 ---
 
-## 🧪 Testar
+## ðŸ§ª Testar
 
-Após o deploy no Render, teste:
-- https://conectaking-api.onrender.com/api/health
-- Página de recuperação de senha
+ApÃ³s o deploy no Render, teste:
+- https://www.conectaking.com.br/api/health
+- PÃ¡gina de recuperaÃ§Ã£o de senha
 

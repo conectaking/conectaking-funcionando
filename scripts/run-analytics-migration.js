@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Script para executar a migration de analytics_events
  * Uso: node scripts/run-analytics-migration.js
  */
@@ -10,7 +10,7 @@ const path = require('path');
 // Credenciais do banco do Render
 const pool = new Pool({
     user: 'conecta_king_db_user',
-    host: 'virginia-postgres.render.com',
+    host: process.env.DB_HOST || '127.0.0.1',
     database: 'conecta_king_db',
     password: 'LGiJv1hsYj7VujzIePXzWDKQnZDBHMJg',
     port: 5432,
@@ -20,7 +20,7 @@ const pool = new Pool({
 });
 
 async function runMigration() {
-    console.log('🔄 Conectando ao banco de dados...\n');
+    console.log('ðŸ”„ Conectando ao banco de dados...\n');
     
     const client = await pool.connect();
     
@@ -29,10 +29,10 @@ async function runMigration() {
         const sqlFilePath = path.join(__dirname, '..', 'migrations', '004_create_analytics_events_table.sql');
         const sql = fs.readFileSync(sqlFilePath, 'utf8');
         
-        console.log('📦 Executando migration: 004_create_analytics_events_table.sql\n');
-        console.log('⏳ Aguarde, isso pode levar alguns segundos...\n');
+        console.log('ðŸ“¦ Executando migration: 004_create_analytics_events_table.sql\n');
+        console.log('â³ Aguarde, isso pode levar alguns segundos...\n');
         
-        // Separar comandos SQL (dividir por ; mas manter comentários)
+        // Separar comandos SQL (dividir por ; mas manter comentÃ¡rios)
         const commands = sql
             .split(';')
             .map(cmd => cmd.trim())
@@ -47,21 +47,21 @@ async function runMigration() {
             
             try {
                 await client.query(command + ';');
-                console.log(`✅ Comando ${i + 1}/${commands.length} executado`);
+                console.log(`âœ… Comando ${i + 1}/${commands.length} executado`);
             } catch (error) {
-                // Se erro for de tabela/índice já existe, ignora
+                // Se erro for de tabela/Ã­ndice jÃ¡ existe, ignora
                 if (error.code === '42P07' || error.code === '42710') {
-                    console.log(`⚠️  Comando ${i + 1}: já existe (ignorando)`);
+                    console.log(`âš ï¸  Comando ${i + 1}: jÃ¡ existe (ignorando)`);
                 } else {
                     throw error;
                 }
             }
         }
         
-        // Executar também a migration de índices
+        // Executar tambÃ©m a migration de Ã­ndices
         const indexesFilePath = path.join(__dirname, '..', 'migrations', '005_add_analytics_indexes.sql');
         if (fs.existsSync(indexesFilePath)) {
-            console.log('\n📦 Executando migration: 005_add_analytics_indexes.sql\n');
+            console.log('\nðŸ“¦ Executando migration: 005_add_analytics_indexes.sql\n');
             const indexesSql = fs.readFileSync(indexesFilePath, 'utf8');
             const indexCommands = indexesSql
                 .split(';')
@@ -74,10 +74,10 @@ async function runMigration() {
                 
                 try {
                     await client.query(command + ';');
-                    console.log(`✅ Índice ${i + 1}/${indexCommands.length} criado`);
+                    console.log(`âœ… Ãndice ${i + 1}/${indexCommands.length} criado`);
                 } catch (error) {
                     if (error.code === '42P07' || error.code === '42710') {
-                        console.log(`⚠️  Índice ${i + 1}: já existe (ignorando)`);
+                        console.log(`âš ï¸  Ãndice ${i + 1}: jÃ¡ existe (ignorando)`);
                     } else {
                         throw error;
                     }
@@ -87,10 +87,10 @@ async function runMigration() {
         
         await client.query('COMMIT');
         
-        console.log('\n✅ Migration executada com sucesso!');
+        console.log('\nâœ… Migration executada com sucesso!');
         
         // Verificar se a tabela foi criada
-        console.log('\n🔍 Verificando criação da tabela...');
+        console.log('\nðŸ” Verificando criaÃ§Ã£o da tabela...');
         const checkResult = await client.query(`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
@@ -99,9 +99,9 @@ async function runMigration() {
         `);
         
         if (checkResult.rows[0].tabela_existe) {
-            console.log('✅ Tabela analytics_events existe no banco!');
+            console.log('âœ… Tabela analytics_events existe no banco!');
         } else {
-            console.log('❌ ERRO: Tabela analytics_events NÃO foi criada!');
+            console.log('âŒ ERRO: Tabela analytics_events NÃƒO foi criada!');
         }
         
         // Verificar estrutura
@@ -112,15 +112,15 @@ async function runMigration() {
             ORDER BY ordinal_position
         `);
         
-        console.log('\n📋 Estrutura da tabela:');
+        console.log('\nðŸ“‹ Estrutura da tabela:');
         structureResult.rows.forEach(col => {
             console.log(`   - ${col.column_name}: ${col.data_type} (${col.is_nullable === 'YES' ? 'NULL' : 'NOT NULL'})`);
         });
         
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('\n❌ Erro ao executar migration:', error.message);
-        console.error('Código do erro:', error.code);
+        console.error('\nâŒ Erro ao executar migration:', error.message);
+        console.error('CÃ³digo do erro:', error.code);
         if (error.detail) {
             console.error('Detalhes:', error.detail);
         }
@@ -132,6 +132,6 @@ async function runMigration() {
 }
 
 runMigration().catch(error => {
-    console.error('\n❌ Erro fatal:', error);
+    console.error('\nâŒ Erro fatal:', error);
     process.exit(1);
 });

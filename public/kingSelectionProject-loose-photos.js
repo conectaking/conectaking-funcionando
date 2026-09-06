@@ -1,5 +1,5 @@
-/**
- * Botão «Excluir fotos soltas» — funciona mesmo com kingSelectionProject.js antigo em cache.
+﻿/**
+ * BotÃ£o Â«Excluir fotos soltasÂ» â€” funciona mesmo com kingSelectionProject.js antigo em cache.
  */
 (function () {
   function galleryIdFromUrl() {
@@ -8,7 +8,7 @@
   }
 
   function apiBase() {
-    return String(window.API_URL || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
+    return String(window.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
   }
 
   function authHeaders() {
@@ -55,7 +55,7 @@
       btn.disabled = looseLen === 0;
       btn.title = looseLen > 0
         ? `Apagar ${looseLen} foto(s) sem pasta`
-        : 'Não há fotos soltas nesta galeria';
+        : 'NÃ£o hÃ¡ fotos soltas nesta galeria';
     }
   }
 
@@ -88,12 +88,12 @@
     if (!res.ok) throw new Error(data.message || 'Erro ao carregar galeria');
     const loose = countLoose(data.gallery?.photos, data.gallery?.folders);
     if (!loose.length) {
-      window.alert('Não há fotos soltas nesta galeria.');
+      window.alert('NÃ£o hÃ¡ fotos soltas nesta galeria.');
       updateLooseButtonLabel(0);
       return;
     }
     const ok = window.confirm(
-      `Excluir ${loose.length} foto(s) solta(s) (sem pasta)?\n\nEsta ação não pode ser desfeita.`
+      `Excluir ${loose.length} foto(s) solta(s) (sem pasta)?\n\nEsta aÃ§Ã£o nÃ£o pode ser desfeita.`
     );
     if (!ok) return;
     const ids = loose.map((p) => parseInt(p.id, 10)).filter((n) => n > 0);
@@ -108,7 +108,7 @@
       const delData = await del.json().catch(() => ({}));
       if (!del.ok) throw new Error(delData.message || 'Erro ao excluir fotos soltas');
     }
-    window.alert(`${ids.length} foto(s) solta(s) excluída(s). A página vai recarregar.`);
+    window.alert(`${ids.length} foto(s) solta(s) excluÃ­da(s). A pÃ¡gina vai recarregar.`);
     window.location.reload();
   }
 
@@ -140,7 +140,7 @@
 })();
 
 /**
- * Pedidos de edição (modo público) — embutido em loose-photos.js para Hostinger sem HTML novo.
+ * Pedidos de ediÃ§Ã£o (modo pÃºblico) â€” embutido em loose-photos.js para Hostinger sem HTML novo.
  */
 (function () {
   'use strict';
@@ -153,7 +153,7 @@
   }
 
   function apiBase() {
-    return String(window.API_URL || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
+    return String(window.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
   }
 
   function authHeaders(json) {
@@ -210,8 +210,8 @@
         '<label class="flex items-start gap-3 cursor-pointer m-0" style="display:flex;align-items:flex-start;gap:12px">' +
         '<input type="checkbox" id="ks-allow-client-edit-request" class="mt-1" style="margin-top:4px" />' +
         '<span>' +
-        '<span class="ks-er-title">Permitir envio para edição</span>' +
-        '<span class="ks-er-sub">O cliente marca fotos e clica em «Enviar para edição». Você vê os pedidos em «Atividades do cliente».</span>' +
+        '<span class="ks-er-title">Permitir envio para ediÃ§Ã£o</span>' +
+        '<span class="ks-er-sub">O cliente marca fotos e clica em Â«Enviar para ediÃ§Ã£oÂ». VocÃª vÃª os pedidos em Â«Atividades do clienteÂ».</span>' +
         '</span></label>';
       host.appendChild(editBlock);
     }
