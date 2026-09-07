@@ -15741,6 +15741,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Mapear módulos importantes (inclui Modo Empresa - separação de pacotes)
+        // Só módulos ainda ativos (Agenda/Contratos/Bolão/Briefing/Recibos removidos do produto)
         const moduleLabels = {
             'carousel': 'Carrossel',
             'sales_page': 'Loja Virtual',
@@ -15748,14 +15749,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'portfolio': 'Portfólio',
             'banner': 'Banner',
             'finance': 'Gestão Financeira',
-            'contract': 'Contratos',
-            'agenda': 'Agenda Inteligente',
             'modo_empresa': 'Modo Empresa',
             'branding': 'Personalização da Marca',
-            'recibos_orcamentos': 'Recibos e Orçamentos',
-            'kingbrief': 'KingBrief',
-            'king_bolao': 'King Bolão',
-            'location': 'Localização'
+            'location': 'Localização',
+            'king_selection': 'King Selection',
+            'king_docs': 'King Docs'
         };
 
         formContainer.innerHTML = plans.map(plan => {
@@ -15936,8 +15934,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Portfólio': 'portfolio',
                 'Banner': 'banner',
                 'Gestão Financeira': 'finance',
-                'Contratos': 'contract',
-                'Agenda Inteligente': 'agenda'
+                'King Selection': 'king_selection',
+                'King Docs': 'king_docs'
             };
 
             // Buscar plan_code do plano atual (com cache busting)
@@ -16286,14 +16284,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Filtrar módulos pelo texto (nome exibido ou module_type)
-        const modulesToShow = filterValue
+        // Filtrar módulos removidos do produto + texto de busca
+        const REMOVED_SEP_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1, recibos_orcamentos: 1 };
+        const modulesToShow = (filterValue
             ? moduleAvailabilityData.filter(m => {
                 const label = (ITEM_TYPE_LABELS_FOR_VCARD[m.module_type] || m.module_type || '').toLowerCase();
                 const code = (m.module_type || '').toLowerCase();
                 return label.indexOf(filterValue) !== -1 || code.indexOf(filterValue) !== -1;
             })
-            : moduleAvailabilityData;
+            : moduleAvailabilityData
+        ).filter(m => !REMOVED_SEP_MODULES[m.module_type]);
 
         if (modulesToShow.length === 0) {
             container.innerHTML = '<p style="color: var(--text-secondary, #888888);">Nenhum módulo encontrado para &quot;' + (filterInput ? filterInput.value.trim() : '') + '&quot;.</p>';
@@ -25281,10 +25281,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!uploadResponse.ok) throw new Error('Falha no envio da imagem');
 
                 const uploadData = await uploadResponse.json();
-                const imageId = uploadData.result && uploadData.result.id;
-                if (!imageId) throw new Error('Resposta do upload inválida');
-
-                const imageUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+                // R2 devolve url/imageUrl; Cloudflare Images devolve result.id
+                const imageUrl = (uploadData.url || uploadData.imageUrl)
+                    || (uploadData.result && uploadData.result.variants && uploadData.result.variants[0])
+                    || (uploadData.result && uploadData.result.id
+                        ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public`
+                        : '');
+                if (!imageUrl) throw new Error('Resposta do upload inválida');
 
                 document.getElementById('branding-logo-url').value = imageUrl;
 

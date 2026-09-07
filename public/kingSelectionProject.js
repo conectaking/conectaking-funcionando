@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (e) {
-      // N�fO zerar a imagem: mantém a última prévia válida para evitar "tela preta"
+      // NÃO zerar a imagem: mantém a última prévia válida para evitar "tela preta"
       imgEl.setAttribute('data-preview-error', '1');
 
       const id = imgEl.getAttribute('id') || '';
@@ -875,7 +875,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let salesTopPendingPeriodValue = readStoredTopPendingPeriod();
   if (salesTopPendingPeriod) salesTopPendingPeriod.value = salesTopPendingPeriodValue;
   let salesClientsListFilter = 'all';
-  /** �sltimo detalhe do dashboard para o modal (recebido / falta / cortesia). */
+  /** Último detalhe do dashboard para o modal (recebido / falta / cortesia). */
   let salesDashDetailCache = { received: [], missing: [], courtesy: [] };
   const customShareMsgByGallery = {};
   let shareLinkSaveTimer = null;
@@ -9096,7 +9096,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnCleanupR2?.addEventListener('click', async () => {
     if (
       !confirm(
-        'Remover do R2 APENAS os arquivos órfãos (de projetos já excluídos ou fotos que não existem mais no banco)?\n\nAs fotos dos seus projetos atuais N�fO serão apagadas.\n\nEsta ação não pode ser desfeita.'
+        'Remover do R2 APENAS os arquivos órfãos (de projetos já excluídos ou fotos que não existem mais no banco)?\n\nAs fotos dos seus projetos atuais NÃO serão apagadas.\n\nEsta ação não pode ser desfeita.'
       )
     ) {
       return;
