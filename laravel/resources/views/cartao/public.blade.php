@@ -29,7 +29,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/css/profile.css?v=laravel-card-4">
+    <link rel="stylesheet" href="/css/profile.css?v=laravel-card-5">
+    <link rel="stylesheet" href="/css/profile-wifi.css?v=laravel-card-5" id="ck-wifi-css" disabled>
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <meta property="og:title" content="{{ $d['display_name'] ?? 'Conecta King' }}">
     <meta property="og:description" content="{{ $ogDescription }}">
@@ -84,7 +85,11 @@
         .profile-banner-container { width: 100%; margin: 10px 0; background: transparent !important; }
         .profile-banner-container img { width: 100%; height: auto; display: block; border-radius: 12px; }
         .ck-footer-logo { text-align: center; margin: 28px 0 10px; }
-        .ck-footer-logo img { max-height: {{ max(24, min($logoSize, 90)) }}px; }
+        .ck-footer-logo img, .branding-logo-custom { max-height: {{ max(24, min($logoSize, 90)) }}px; }
+        .share-button-corner {
+            background-color: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity)) !important;
+            color: {{ $btnText }} !important;
+        }
         .texto-bloco {
             width: 100%; margin: 12px 0; padding: 16px; border-radius: 14px;
             background: rgba(20, 60, 40, 0.85); color: #fff; text-align: left; font-size: 0.95rem; line-height: 1.45;
@@ -93,7 +98,7 @@
 </head>
 <body>
 @if(!empty($laravel_preview))
-    <div class="ck-laravel-banner">Prévia Laravel · compare com <a href="/{{ $profile_slug }}" style="color:#ffd700">/{{ $profile_slug }}</a></div>
+    <div class="ck-laravel-banner">Prévia Laravel · compare com <a href="/{{ $profile_slug }}" style="color:#ffd700">/{{ $profile_slug }}</a> · teste público: <a href="/{{ $profile_slug }}?laravel=1" style="color:#7dd3fc">?laravel=1</a></div>
 @endif
 
 @if($hasBgImage)
@@ -223,6 +228,36 @@
                         <span>{{ $title !== '' ? $title : 'PIX' }}</span>
                     </button>
 
+                @elseif($type === 'wifi')
+                    @php
+                        $wifi = [];
+                        if ($url !== '' && str_starts_with($url, '{')) {
+                            $wifi = json_decode($url, true) ?: [];
+                        }
+                        $ssid = trim((string)($wifi['ssid'] ?? ''));
+                        $pass = (string)($wifi['password'] ?? '');
+                        $sec = (string)($wifi['security'] ?? 'WPA');
+                        $hiddenWifi = !empty($wifi['hidden']);
+                        $wifiPayload = rawurlencode(json_encode([
+                            'ssid' => $ssid,
+                            'password' => $pass,
+                            'security' => $sec,
+                            'hidden' => $hiddenWifi,
+                        ], JSON_UNESCAPED_UNICODE));
+                    @endphp
+                    <button type="button" class="profile-link wifi-profile-button" data-item-id="{{ $item['id'] ?? '' }}" data-wifi-config="{{ $wifiPayload }}">
+                        <i class="{{ $item['icon_class'] ?? 'fas fa-wifi' }}"></i>
+                        <span>{{ $title !== '' ? $title : 'Wi‑Fi' }}</span>
+                    </button>
+
+                @elseif($type === 'pdf')
+                    @if($url !== '' && $url !== '#')
+                        <a href="{{ $url }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                            <i class="{{ $item['icon_class'] ?? 'fas fa-file-pdf' }}"></i>
+                            <span>{{ $title !== '' ? $title : 'PDF' }}</span>
+                        </a>
+                    @endif
+
                 @elseif($type === 'texto_com_botao')
                     @php
                         $cfg = [];
@@ -294,16 +329,32 @@
         @endif
 
         @if(!empty($d['company_logo_url']))
-            <div class="ck-footer-logo">
+            <div class="branding-logo ck-footer-logo">
                 @if(!empty($d['company_logo_link']))
                     <a href="{{ $d['company_logo_link'] }}" target="_blank" rel="noopener noreferrer">
-                        <img src="{{ $d['company_logo_url'] }}" alt="Logo">
+                        <img class="branding-logo-custom" src="{{ $d['company_logo_url'] }}" alt="Logo" data-logo-size="{{ $logoSize }}">
                     </a>
                 @else
-                    <img src="{{ $d['company_logo_url'] }}" alt="Logo">
+                    <img class="branding-logo-custom" src="{{ $d['company_logo_url'] }}" alt="Logo" data-logo-size="{{ $logoSize }}">
                 @endif
             </div>
         @endif
+    </div>
+</div>
+
+{{-- Modal Wi‑Fi --}}
+<div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true" style="display:none;">
+    <div class="wifi-modal-content" style="background:#111;color:#fff;max-width:360px;margin:10vh auto;padding:20px;border-radius:16px;position:relative;">
+        <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar" style="position:absolute;right:12px;top:8px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;">&times;</button>
+        <h4 id="wifi-modal-title">Conectar ao Wi‑Fi</h4>
+        <div class="wifi-ssid-block" style="margin:12px 0;">
+            <span class="wifi-ssid-label">Nome da rede</span>
+            <strong id="wifi-ssid-visible" class="wifi-ssid-value" style="display:block;"></strong>
+        </div>
+        <p class="wifi-modal-hint">Escaneie o QR Code ou copie a senha.</p>
+        <div id="wifi-qrcode-image" style="display:flex;justify-content:center;margin:12px 0;background:#fff;padding:12px;border-radius:8px;"></div>
+        <div class="wifi-password-row">Senha: <strong id="wifi-password-visible"></strong></div>
+        <button type="button" id="wifi-copy-password-btn" class="profile-link" style="margin-top:12px;width:100%;">Copiar senha</button>
     </div>
 </div>
 
@@ -442,6 +493,74 @@
                     alert('Não foi possível copiar o link.');
                 }
             }
+        });
+    }
+
+    // Wi‑Fi
+    var wifiModal = document.getElementById('wifi-qrcode-modal');
+    var wifiClose = document.getElementById('wifi-modal-close-btn');
+    var wifiQr = document.getElementById('wifi-qrcode-image');
+    var wifiSsidEl = document.getElementById('wifi-ssid-visible');
+    var wifiPassEl = document.getElementById('wifi-password-visible');
+    var wifiCopyBtn = document.getElementById('wifi-copy-password-btn');
+    var wifiCss = document.getElementById('ck-wifi-css');
+    var wifiQrInst = null;
+    var lastWifiPass = '';
+
+    function wifiEscape(s) {
+        return String(s || '').replace(/([\\;,:"])/g, '\\$1');
+    }
+    function buildWifiQr(cfg) {
+        var t = (cfg.security || 'WPA').toUpperCase();
+        if (t === 'NONE' || t === 'NOPASS') t = 'nopass';
+        var hidden = cfg.hidden ? 'H:true' : '';
+        return 'WIFI:T:' + t + ';S:' + wifiEscape(cfg.ssid || '') + ';P:' + wifiEscape(cfg.password || '') + ';' + (hidden ? hidden + ';' : '') + ';';
+    }
+    function openWifiModal(cfg) {
+        if (!wifiModal) return;
+        if (wifiCss) wifiCss.disabled = false;
+        wifiModal.style.display = 'block';
+        wifiModal.setAttribute('aria-hidden', 'false');
+        if (wifiSsidEl) wifiSsidEl.textContent = cfg.ssid || '';
+        if (wifiPassEl) wifiPassEl.textContent = cfg.password || '(sem senha)';
+        lastWifiPass = cfg.password || '';
+        if (wifiQr) {
+            wifiQr.innerHTML = '';
+            if (typeof QRCode !== 'undefined') {
+                wifiQrInst = new QRCode(wifiQr, {
+                    text: buildWifiQr(cfg),
+                    width: 180,
+                    height: 180,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        }
+    }
+    function closeWifiModal() {
+        if (!wifiModal) return;
+        wifiModal.style.display = 'none';
+        wifiModal.setAttribute('aria-hidden', 'true');
+    }
+    document.querySelectorAll('.wifi-profile-button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            try {
+                var raw = decodeURIComponent(btn.getAttribute('data-wifi-config') || '{}');
+                openWifiModal(JSON.parse(raw));
+            } catch (e) {
+                alert('Não foi possível abrir o Wi‑Fi.');
+            }
+        });
+    });
+    if (wifiClose) wifiClose.addEventListener('click', closeWifiModal);
+    if (wifiModal) wifiModal.addEventListener('click', function (e) { if (e.target === wifiModal) closeWifiModal(); });
+    if (wifiCopyBtn) {
+        wifiCopyBtn.addEventListener('click', function () {
+            if (!lastWifiPass) return alert('Sem senha configurada.');
+            navigator.clipboard.writeText(lastWifiPass).then(function () {
+                var o = wifiCopyBtn.textContent;
+                wifiCopyBtn.textContent = 'Copiado!';
+                setTimeout(function () { wifiCopyBtn.textContent = o; }, 1500);
+            });
         });
     }
 })();

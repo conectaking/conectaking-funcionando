@@ -16,16 +16,32 @@ Stack: Docker (`api` + `postgres`) em `/opt/conectaking`
 
 ## Laravel (migração gradual)
 
-Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node só em `/l/*`.  
-Código em `/opt/conectaking/laravel`. Variável `LARAVEL_APP_KEY` no `.env.prod`.
+Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
+
+| Variável | Default | Função |
+|---|---|---|
+| `LARAVEL_CARD_ENABLED` | `true` | Liga proxy `/l/*` |
+| `LARAVEL_CARD_PUBLIC` | `false` | Se `true`, `/:slug` passa a Laravel |
+| `LARAVEL_CARD_SLUGS` | vazio | Canário: lista `slug1,slug2` (vazio = todos quando PUBLIC=true) |
+
+**Teste sem mudar produção:** `https://www.conectaking.com.br/adrianokingg?laravel=1`  
+**Prévia:** `/l/card/adrianokingg` (banner de prévia)  
+**Canário (exemplo no `.env.prod`):**
+```bash
+LARAVEL_CARD_PUBLIC=true
+LARAVEL_CARD_SLUGS=adrianokingg
+```
 
 ```bash
 # Rebuild só o Laravel
 cd /opt/conectaking
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build laravel
+# Após mudar flags, recreate da API:
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps api
 ```
 
-O cartão público em produção **continua no Node** até a Blade ficar completa.
+O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=true` (ou `?laravel=1`).
+
 
 ## Login inicial (banco novo)
 

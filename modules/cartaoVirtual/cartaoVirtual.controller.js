@@ -1,6 +1,10 @@
 const db = require('../../db');
 const cartaoVirtualService = require('./cartaoVirtual.service');
 const logger = require('../../utils/logger');
+const {
+    shouldServePublicCardWithLaravel,
+    proxyPublicCardToLaravel
+} = require('../../middleware/laravelProxy');
 
 async function getPage(req, res) {
     const rawIdentifier = req.params.identifier;
@@ -10,6 +14,16 @@ async function getPage(req, res) {
     const reserved = ['privacidade', 'termos', 'recuperar-senha', 'resetar-senha', 'esqueci-senha', 'forgot'];
     if (!identifier || reserved.includes(identifierLower)) {
         return res.status(404).send('404 - Página não encontrada');
+    }
+
+    // Flag / canário / ?laravel=1 → Laravel (paridade)
+    if (shouldServePublicCardWithLaravel(req, identifier)) {
+        logger.info('Cartão público via Laravel', {
+            slug: identifier,
+            query: req.query || {},
+            publicFlag: process.env.LARAVEL_CARD_PUBLIC
+        });
+        return proxyPublicCardToLaravel(req, res, identifier);
     }
 
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');

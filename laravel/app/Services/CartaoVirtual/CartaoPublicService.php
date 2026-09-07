@@ -20,7 +20,7 @@ class CartaoPublicService
     /**
      * @return array{type:string, message?:string, statusCode?:int, url?:string, data?:array}
      */
-    public function getPageData(string $identifier, string $origin, string $queryString = ''): array
+    public function getPageData(string $identifier, string $origin, string $queryString = '', bool $publicMode = false): array
     {
         $raw = trim($identifier);
         if ($raw === '' || in_array(strtolower($raw), self::RESERVED, true)) {
@@ -33,11 +33,12 @@ class CartaoPublicService
         }
 
         $slug = (string) ($user->profile_slug ?? '');
+        $redirectBase = $publicMode ? '/' : '/l/card/';
         if ($slug !== '' && strtolower($raw) === strtolower($slug) && $raw !== $slug) {
             return [
                 'type' => 'redirect',
                 'statusCode' => 301,
-                'url' => '/l/card/'.$slug.$queryString,
+                'url' => $redirectBase.ltrim($slug, '/').$queryString,
             ];
         }
 

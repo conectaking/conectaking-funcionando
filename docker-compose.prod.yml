@@ -40,6 +40,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-conectaking}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-conectaking}
       DATABASE_SSL: "false"
       LARAVEL_CARD_ENABLED: "${LARAVEL_CARD_ENABLED:-true}"
+      LARAVEL_CARD_PUBLIC: "${LARAVEL_CARD_PUBLIC:-false}"
+      LARAVEL_CARD_SLUGS: "${LARAVEL_CARD_SLUGS:-}"
       LARAVEL_HOST: laravel
       LARAVEL_PORT: "8080"
     ports:
