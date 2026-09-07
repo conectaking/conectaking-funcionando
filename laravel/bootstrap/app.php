@@ -13,6 +13,18 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Atrás do Caddy/Node (proxy /l)
         $middleware->trustProxies(at: '*');
+        // sendBeacon do cartão público (sem CSRF token)
+        $middleware->validateCsrfTokens(except: [
+            'log/*',
+            'l/log/*',
+            'api/profile',
+            'api/profile/*',
+            'l/api/profile',
+            'l/api/profile/*',
+        ]);
+        $middleware->alias([
+            'jwt' => \App\Http\Middleware\AuthenticateJwt::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -4,7 +4,7 @@
  * - /l/* sempre (se LARAVEL_CARD_ENABLED)
  * - /:slug só com flag LARAVEL_CARD_PUBLIC ou ?laravel=1
  * - Canário: LARAVEL_CARD_SLUGS=slug1,slug2 (vazio = todos quando PUBLIC=true)
- * - APIs read do cartão: /api/pix/qrcode/*, /api/bible/verse-of-day (LARAVEL_CARD_APIS)
+ * - APIs read do cartão: PIX, verse-of-day, log/*, vcard, download/pdf (LARAVEL_CARD_APIS)
  */
 const http = require('http');
 
@@ -13,6 +13,7 @@ const LARAVEL_HOST = process.env.LARAVEL_HOST || '127.0.0.1';
 const LARAVEL_PORT = Number(process.env.LARAVEL_PORT || 8080);
 const LARAVEL_CARD_PUBLIC = String(process.env.LARAVEL_CARD_PUBLIC || 'false').toLowerCase() === 'true';
 const LARAVEL_CARD_APIS = String(process.env.LARAVEL_CARD_APIS || 'true').toLowerCase() !== 'false';
+const LARAVEL_PROFILE_API = String(process.env.LARAVEL_PROFILE_API || 'false').toLowerCase() === 'true';
 const LARAVEL_CARD_SLUGS = new Set(
     String(process.env.LARAVEL_CARD_SLUGS || '')
         .split(',')
@@ -35,11 +36,29 @@ function shouldServePublicCardWithLaravel(req, slug) {
 function isLaravelCardApiPath(urlPath) {
     if (!urlPath) return false;
     const pathOnly = urlPath.split('?')[0];
-    if (/^\/api\/pix\/qrcode\/\d+$/i.test(pathOnly)) return true;
-    if (/^\/api\/bible\/verse-of-day$/i.test(pathOnly)) return true;
-    if (/^\/l\/api\/pix\/qrcode\/\d+$/i.test(pathOnly)) return true;
-    if (/^\/l\/api\/bible\/verse-of-day$/i.test(pathOnly)) return true;
-    return false;
+    const patterns = [
+        /^\/api\/pix\/qrcode\/\d+$/i,
+        /^\/api\/bible\/verse-of-day$/i,
+        /^\/l\/api\/pix\/qrcode\/\d+$/i,
+        /^\/l\/api\/bible\/verse-of-day$/i,
+        /^\/log\/view\/[^/]+$/i,
+        /^\/log\/click\/item\/\d+$/i,
+        /^\/log\/vcard\/[^/]+$/i,
+        /^\/l\/log\/view\/[^/]+$/i,
+        /^\/l\/log\/click\/item\/\d+$/i,
+        /^\/l\/log\/vcard\/[^/]+$/i,
+        /^\/vcard\/[^/]+$/i,
+        /^\/l\/vcard\/[^/]+$/i,
+        /^\/download\/pdf\/\d+$/i,
+        /^\/l\/download\/pdf\/\d+$/i,
+    ];
+    return patterns.some((re) => re.test(pathOnly));
+}
+
+function isLaravelProfileGetPath(urlPath) {
+    if (!urlPath) return false;
+    const pathOnly = urlPath.split('?')[0];
+    return pathOnly === '/api/profile' || pathOnly === '/l/api/profile';
 }
 
 function buildForwardHeaders(req, { publicMode } = {}) {
@@ -130,6 +149,10 @@ function laravelProxyMiddleware(req, res, next) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 
+    if (LARAVEL_PROFILE_API && req.method === 'GET' && isLaravelProfileGetPath(url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
     if (!url.startsWith('/l/') && url !== '/l') return next();
     return proxyToLaravel(req, res, url, { publicMode: false });
 }
@@ -151,6 +174,7 @@ module.exports = {
     LARAVEL_ENABLED,
     LARAVEL_CARD_PUBLIC,
     LARAVEL_CARD_APIS,
+    LARAVEL_PROFILE_API,
     LARAVEL_CARD_SLUGS,
     LARAVEL_HOST,
     LARAVEL_PORT

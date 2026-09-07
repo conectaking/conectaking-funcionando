@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Services\Auth;
+
+use UnexpectedValueException;
+
+/**
+ * Verificação JWT HS256 compatível com o Node (jsonwebtoken + JWT_SECRET).
+ */
+class JwtService
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function decode(string $token): array
+    {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            throw new UnexpectedValueException('Token JWT malformado.');
+        }
+
+        [$h64, $p64, $s64] = $parts;
+        $secret = (string) env('JWT_SECRET', '');
+        if ($secret === '') {
+            throw new UnexpectedValueException('JWT_SECRET não configurado.');
+        }
+
+        $expected = $this->base64UrlEncode(hash_hmac('sha256', $h64.'.'.$p64, $secret, true));
+        if (!hash_equals($expected, $s64)) {
+            throw new UnexpectedValueException('Assinatura JWT inválida.');
+        }
+
+        $payloadJson = $this->base64UrlDecode($p64);
+        $payload = json_decode($payloadJson, true);
+        if (!is_array($payload)) {
+            throw new UnexpectedValueException('Payload JWT inválido.');
+        }
+
+        if (isset($payload['exp']) && is_numeric($payload['exp']) && time() >= (int) $payload['exp']) {
+            throw new UnexpectedValueException('Token expirado.');
+        }
+
+        return $payload;
+    }
+
+    private function base64UrlDecode(string $data): string
+    {
+        $remainder = strlen($data) % 4;
+        if ($remainder) {
+            $data .= str_repeat('=', 4 - $remainder);
+        }
+
+        return (string) base64_decode(strtr($data, '-_', '+/'), true);
+    }
+
+    private function base64UrlEncode(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+}
