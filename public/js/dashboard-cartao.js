@@ -1353,10 +1353,10 @@ function reconcileModulesListWithProfileData(profileData) {
         console.warn('Re-render completo - ainda faltam:', stillMissing.map(function (m) {
             return (m.item_type || '?') + '#' + m.id;
         }).join(', '));
-        if (typeof global.renderEditor === 'function') {
+        if (global.DashboardEditor && typeof global.DashboardEditor.renderEditor === 'function') {
+            global.DashboardEditor.renderEditor(profileData);
+        } else if (typeof global.renderEditor === 'function') {
             global.renderEditor(profileData);
-        } else if (typeof window !== 'undefined' && typeof window.renderEditor === 'function') {
-            window.renderEditor(profileData);
         } else {
             console.warn('[DashboardCartao] renderEditor indisponível para re-render completo');
         }
