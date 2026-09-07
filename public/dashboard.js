@@ -534,12 +534,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Disponibiliza a funf§f£o de teste globalmente
+    // Disponibiliza a função de teste globalmente
     window.testPDFEndpoint = testPDFEndpoint;
 
     // --- FUNf—f—ES PARA QR CODE PIX VfLIDO ---
 
-    // Funf§f£o para calcular CRC16 (necessário para PIX)
+    // Função para calcular CRC16 (necessário para PIX)
     function calculateCRC16(data) {
         const polynomial = 0x1021;
         let crc = 0xFFFF;
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return crc.toString(16).toUpperCase().padStart(4, '0');
     }
 
-    // Funf§f£o para formatar chave PIX
+    // Função para formatar chave PIX
     function formatPixKey(pixKey) {
         const cleanKey = pixKey.trim().replace(/\D/g, ''); // Remove tudo que nf£o f© nfºmero
 
@@ -582,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return pixKey;
     }
 
-    // Funf§f£o para gerar cf³digo PIX EMV vf¡lido
+    // Função para gerar cf³digo PIX EMV vf¡lido
     function generatePixEMVCode(pixKey, recipientName, amount = null, description = '') {
         if (!pixKey || !recipientName) {
             throw new Error('Chave PIX e nome do recebedor sf£o obrigatf³rios');
@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return emvString;
     }
 
-    // Funf§f£o para criar QR Code PIX visual
+    // Função para criar QR Code PIX visual
     function createPixQRCode(pixKey, recipientName, amount = null, description = '') {
         try {
             const pixCode = generatePixEMVCode(pixKey, recipientName, amount, description);
@@ -691,7 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Funf§f£o para abrir modal com QR Code PIX
+    // Função para abrir modal com QR Code PIX
     function openPixQRModal(pixKey, recipientName, amount = null, description = '') {
         const modal = document.createElement('div');
         modal.className = 'pix-qr-modal';
@@ -750,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Disponibiliza as funf§fµes globalmente
+    // disponibiliza as funções globalmente
     window.openPixQRModal = openPixQRModal;
     window.generatePixEMVCode = generatePixEMVCode;
 
@@ -956,18 +956,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Funf§f£o para testar com dados reais do cliente
+    // Função para testar com dados reais do cliente
     function testClientPix() {
         console.log(' Testando com dados reais do cliente...');
         return testPixCode(
             '1119478723275204000053039865802BR',
             'ASSEMBLEIA DE DEUS CHAMA',
             null,
-            'Doaf§f£o'
+            'Doação'
         );
     }
 
-    // Funf§f£o para testar celular
+    // Função para testar celular
     function testCelularPix(celular) {
         console.log('?o± Testando PIX com celular:', celular);
         return testPixCode(
@@ -978,7 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
-    // Disponibiliza funf§fµes de teste
+    // Disponibiliza funções de teste
     window.testPixCode = testPixCode;
     window.testClientPix = testClientPix;
     window.testCelularPix = testCelularPix;
@@ -1384,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.querySelector(`.duplicate-item-btn[data-item-id="${itemId}"], .module-action-btn.duplicate[data-item-id="${itemId}"]`);
         const origTitle = btn?.getAttribute?.('title');
         const url = `${typeof API_URL !== 'undefined' ? API_URL : window.API_URL || ''}/api/profile/items/${itemId}/duplicate`;
-        console.log('Y"" Duplicando módulo:', itemId, '', url);
+        console.log(' Duplicando módulo:', itemId, '', url);
         try {
             if (btn) {
                 btn.disabled = true;
@@ -1587,7 +1587,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
             console.log(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
         } catch (error) {
-            console.error('O Erro ao deletar item:', error);
+            console.error('Erro ao deletar item:', error);
             console.error('Stack trace:', error.stack);
 
             let errorMessage = error.message || 'Erro desconhecido ao deletar módulo';
@@ -1617,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // IMPORTANTE: sales_page salva DIRETAMENTE no servidor (não espera "Publicar alterações")
             if (itemType === 'sales_page') {
-                console.log(`Y"" [TOGGLE] Sales_page ${itemId} - salvando diretamente no servidor: ${isActive ? 'ativado' : 'desativado'}`);
+                console.log(` [TOGGLE] Sales_page ${itemId} - salvando diretamente no servidor: ${isActive ? 'ativado' : 'desativado'}`);
 
                 // Salvar diretamente no servidor
                 const response = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
@@ -1651,7 +1651,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Para outros módulos: salvar APENAS localmente (frontend)
             // O botão "Publicar alterações" é que salva no servidor
-            console.log(`Y"" [TOGGLE] Atualizando status do módulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
+            console.log(` [TOGGLE] Atualizando status do módulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
             console.log(`Y' Nota: Clique em "Publicar alterações" para salvar esta mudança no servidor`);
 
             // Atualizar visualmente apenas localmente
@@ -1680,7 +1680,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // NÃO fazer requisição ao servidor aqui - isso será feito quando o usuário clicar em "Publicar alterações"
             return;
         } catch (error) {
-            console.error('O Erro ao atualizar status do item localmente:', error);
+            console.error('Erro ao atualizar status do item localmente:', error);
             alert(`Erro ao atualizar status do módulo: ${error.message}`);
         }
     }
@@ -1720,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        console.log(`Y"" Atualizando item ${itemId} (${itemType}) na interface usando dados da API...`);
+        console.log(` Atualizando item ${itemId} (${itemType}) na interface usando dados da API...`);
 
         // Preparar timestamp para evitar cache de imagens
         const imageUrlWithTimestamp = apiResult.image_url ? `${apiResult.image_url}?t=${Date.now()}` : '';
@@ -1964,7 +1964,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itemType = itemEl.dataset.itemType;
 
-        console.log(`Y"" Sincronizando dados do modal para item ${itemId} (${itemType}) antes de salvar`);
+        console.log(` Sincronizando dados do modal para item ${itemId} (${itemType}) antes de salvar`);
 
         // Aplicar as mesmas atualizações que o botão "Salvar Alterações" do modal faz
         // IMPORTANTE: Usar querySelector com data-editing-id para pegar apenas o valor do modal deste item específico
@@ -2113,7 +2113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newMsg = msgInputModal?.value?.trim() || '';
             const newImg = imageInputModal?.value?.trim() || '';
 
-            console.log(`Y"" [BANNER] Sincronizando imagem do modal para item ${itemId}:`, newImg);
+            console.log(` [BANNER] Sincronizando imagem do modal para item ${itemId}:`, newImg);
 
             if (nameInputList) nameInputList.value = newName;
             if (destInputList) destInputList.value = newDest;
@@ -2538,7 +2538,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`Banner ${realItemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`O Erro ao salvar banner ${realItemId} via rota específica:`, error);
+            console.error(`Erro ao salvar banner ${realItemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -2599,7 +2599,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`Link ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`O Erro ao salvar link ${itemId} via rota específica:`, error);
+            console.error(`Erro ao salvar link ${itemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -2658,7 +2658,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`Carousel ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`O Erro ao salvar carousel ${itemId} via rota específica:`, error);
+            console.error(`Erro ao salvar carousel ${itemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -2721,7 +2721,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`PIX ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`O Erro ao salvar PIX ${itemId} via rota específica:`, error);
+            console.error(`Erro ao salvar PIX ${itemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -2778,7 +2778,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`PDF ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`O Erro ao salvar PDF ${itemId} via rota específica:`, error);
+            console.error(`Erro ao salvar PDF ${itemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -2866,7 +2866,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`Formulário King ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`O Erro ao salvar Formulário King ${itemId} via rota específica:`, error);
+            console.error(`Erro ao salvar Formulário King ${itemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -2975,7 +2975,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.DashboardCore) window.DashboardCore.getDefaultIcon = getDefaultIcon;
 
-    // Funf§f£o para obter nome amigf¡vel do tipo de item
+    // Função para obter nome amigf¡vel do tipo de item
     function getItemTypeName(itemType) {
         const names = {
             'link': 'Link Personalizado',
@@ -3027,7 +3027,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.DashboardCore) window.DashboardCore.moduleListDisplayTitle = moduleListDisplayTitle;
 
-    // Funf§f£o para abrir modal de edif§f£o para novo item
+    // Função para abrir modal de edição para novo item
 
     // Listeners: js/dashboard-listeners.js
     function setupEventListeners() {
@@ -3038,7 +3038,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.setupEventListeners = setupEventListeners;
 
 
-    // Funf§f£o para renderizar lista de imagens do carrossel
+    // Função para renderizar lista de imagens do carrossel
     // Função específica para o novo módulo Carrossel (não banner)
     // ===== NOVO CARROSSEL - FUN—.ES LIMPAS =====
 
@@ -3153,7 +3153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!authResponse.ok) {
                 const errorText = await authResponse.text();
-                console.error('O Erro na autorização:', errorText);
+                console.error('Erro na autorização:', errorText);
                 throw new Error('Falha na autorização para upload.');
             }
 
@@ -3176,7 +3176,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!uploadResponse.ok) {
                 const errorText = await uploadResponse.text();
-                console.error('O Erro no upload para Cloudflare:', errorText);
+                console.error('Erro no upload para Cloudflare:', errorText);
                 throw new Error('Falha no upload para o Cloudflare.');
             }
 
@@ -3203,7 +3203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!saveResponse.ok) {
                 const errorData = await saveResponse.json().catch(() => ({ message: 'Erro desconhecido' }));
-                console.error('O Erro ao salvar no servidor:', errorData);
+                console.error('Erro ao salvar no servidor:', errorData);
 
                 // Verificar se é erro de migration
                 if (errorData.error === 'MIGRATION_REQUIRED') {
@@ -3228,7 +3228,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error('O Erro completo no upload da imagem de compartilhamento:', error);
+            console.error('Erro completo no upload da imagem de compartilhamento:', error);
             console.error('O Stack trace:', error.stack);
 
             // Tratamento específico de erros de rede
@@ -3332,7 +3332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Se forceRefresh for true, SEMPRE forçar atualização imediata
             if (forceRefresh) {
-                console.log('Y"" FOR?ANDO atualização imediata (ignorando cooldown e requisições em andamento)...');
+                console.log(' FOR?ANDO atualização imediata (ignorando cooldown e requisições em andamento)...');
                 // Limpar promise anterior se existir para forçar nova requisição
                 profileFetchPromise = null;
                 lastProfileFetch = 0; // Resetar cooldown completamente
@@ -3506,7 +3506,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 reconcileModulesListWithProfileData(profileData);
             } catch (renderError) {
-                console.error('O Erro ao renderizar editor:', renderError);
+                console.error('Erro ao renderizar editor:', renderError);
                 console.error('O Stack trace:', renderError.stack);
                 throw new Error(`Erro ao renderizar interface: ${renderError.message}`);
             }
@@ -3524,7 +3524,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 300);
             }
         } catch (error) {
-            console.error('O Erro ao carregar perfil:', error);
+            console.error('Erro ao carregar perfil:', error);
             console.error('Stack trace:', error.stack);
 
             // Se for erro de autenticação, redireciona para login
@@ -3931,7 +3931,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (e) {
                         errorMessage = `Erro ${response.status}: ${errorText || response.statusText}`;
                     }
-                    console.error('O Erro ao salvar produto:', errorMessage);
+                    console.error('Erro ao salvar produto:', errorMessage);
                     throw new Error(errorMessage);
                 }
                 
@@ -3949,11 +3949,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Aguardar um pouco antes de recarregar para garantir que o backend processou
                 setTimeout(async () => {
                     try {
-                        console.log(`Y"" Recarregando produtos após salvar produto para catálogo ${itemId}...`);
+                        console.log(` Recarregando produtos após salvar produto para catálogo ${itemId}...`);
                         await loadProductsForCatalog(itemId);
                         console.log('Produtos recarregados com sucesso');
                     } catch (err) {
-                        console.error('O Erro ao recarregar produtos após salvar:', err);
+                        console.error('Erro ao recarregar produtos após salvar:', err);
                     }
                 }, 500);
                 
@@ -3975,7 +3975,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 500);
                 }
             } catch (error) {
-                console.error('O Erro ao salvar produto:', error);
+                console.error('Erro ao salvar produto:', error);
                 alert(`Erro ao salvar produto: ${error.message}`);
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalBtnText;
@@ -4024,7 +4024,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.__dashboardMain = null;
 
     async function main() {
-        console.log('Ys? Iniciando função main()...');
+        console.log(' Iniciando função main()...');
         setupEventListeners();
 
         // Aplicar visibilidade da aba Empresa e outros controles (ADM, logo) em um único lugar
@@ -4078,7 +4078,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const profilePromise = fetchProfileData().then(function () {
             console.log('fetchProfileData() concluído com sucesso');
         }).catch(function (error) {
-            console.error('O Erro ao carregar dados do perfil:', error);
+            console.error('Erro ao carregar dados do perfil:', error);
             if (error && error.status !== 429) {
                 console.warn('Erro ao carregar perfil, continuando com interface básica:', error);
             } else if (error && error.status === 429) {
@@ -4366,736 +4366,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    // Separação de Pacotes: js/dashboard-separacao.js
+    // King Forms editor: js/dashboard-forms-editor.js
 
-    // Event listener para upload de foto de perfil já foi configurado anteriormente
-    // Não duplicar aqui para evitar conflitos
-
-    // ============================================
-    // FUNCIONALIDADE DE ASSINATURA
-    // ============================================
-
-    async function checkAdminAndShowLink() {
-        try {
-            const response = await safeFetch(`${API_URL}/api/account/status`, {
-                method: 'GET',
-                headers: HEADERS_AUTH
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.isAdmin) {
-                    const separacaoLink = document.getElementById('separacao-pacotes-link');
-                    if (separacaoLink) {
-                        separacaoLink.style.display = 'block';
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Erro ao verificar admin:', error);
-        }
-    }
-
-    // Carregar disponibilidade de módulos
-    async function loadModuleAvailability() {
-        try {
-            const response = await safeFetch(`${API_URL}/api/modules/plan-availability`, {
-                method: 'GET',
-                headers: HEADERS_AUTH
-            });
-
-            if (!response.ok) {
-                if (response.status === 403) {
-                    document.getElementById('module-availability-list').innerHTML = `
-                        <p style="color: #ff4444;">Acesso negado. Apenas administradores podem acessar esta página.</p>
-                    `;
-                    return;
-                }
-                throw new Error('Erro ao carregar disponibilidade de módulos');
-            }
-
-            const data = await response.json();
-            moduleAvailabilityData = data.modules;
-            window.activePlans = data.plans || []; // Armazenar planos ativos globalmente
-            renderModuleAvailability();
-            // Filtro: ao digitar, re-renderizar (só registra uma vez)
-            const filterInput = document.getElementById('module-filter-input');
-            if (filterInput && !filterInput.dataset.filterBound) {
-                filterInput.dataset.filterBound = '1';
-                filterInput.addEventListener('input', () => renderModuleAvailability());
-                filterInput.addEventListener('change', () => renderModuleAvailability());
-            }
-        } catch (error) {
-            console.error('Erro ao carregar disponibilidade de módulos:', error);
-            document.getElementById('module-availability-list').innerHTML = `
-                <p style="color: #ff4444;">Erro ao carregar dados. Tente novamente.</p>
-            `;
-        }
-    }
-
-    // Renderizar interface de disponibilidade (com filtro por nome do módulo)
-    function renderModuleAvailability() {
-        const container = document.getElementById('module-availability-list');
-        const saveBtn = document.getElementById('save-module-availability-btn');
-        const filterInput = document.getElementById('module-filter-input');
-        const filterValue = (filterInput && filterInput.value.trim()) ? filterInput.value.trim().toLowerCase() : '';
-
-        if (!moduleAvailabilityData || moduleAvailabilityData.length === 0) {
-            container.innerHTML = '<p>Nenhum módulo encontrado.</p>';
-            return;
-        }
-
-        // Buscar planos ativos (vindos da API ou usar fallback)
-        const activePlans = window.activePlans || [];
-
-        // Se não houver planos da API, não renderizar
-        if (activePlans.length === 0) {
-            container.innerHTML = '<p style="color: var(--text-secondary, #888888);">Carregando planos...</p>';
-            return;
-        }
-
-        // Filtrar módulos removidos do produto + texto de busca
-        // Recibos e Orçamentos permanece no produto — não filtrar aqui
-        const REMOVED_SEP_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1 };
-        const modulesToShow = (filterValue
-            ? moduleAvailabilityData.filter(m => {
-                const label = (ITEM_TYPE_LABELS_FOR_VCARD[m.module_type] || m.module_type || '').toLowerCase();
-                const code = (m.module_type || '').toLowerCase();
-                return label.indexOf(filterValue) !== -1 || code.indexOf(filterValue) !== -1;
-            })
-            : moduleAvailabilityData
-        ).filter(m => !REMOVED_SEP_MODULES[m.module_type]);
-
-        if (modulesToShow.length === 0) {
-            container.innerHTML = '<p style="color: var(--text-secondary, #888888);">Nenhum módulo encontrado para &quot;' + (filterInput ? filterInput.value.trim() : '') + '&quot;.</p>';
-            if (saveBtn) saveBtn.style.display = 'block';
-            return;
-        }
-
-        // Criar mapa de planos para acesso rápido
-        const planMap = {};
-        activePlans.forEach(plan => {
-            planMap[plan.plan_code] = plan.plan_name;
-        });
-
-        // Ordenar planos por preço (já vem ordenado da API)
-        const planOrder = activePlans.map(p => p.plan_code);
-
-        container.innerHTML = modulesToShow.map(module => {
-            const moduleName = ITEM_TYPE_LABELS_FOR_VCARD[module.module_type] || module.module_type;
-            const plans = module.plans || {}; // Garantir que plans exista (ex: photographer_site)
-
-            const planCheckboxes = planOrder.map(planCode => {
-                const isAvailable = plans[planCode]?.is_available === true; // Default false
-                const planName = planMap[planCode] || planCode;
-
-                return `
-                    <div class="plan-checkbox-item">
-                        <label class="checkbox-label">
-                            <input 
-                                type="checkbox" 
-                                class="module-plan-checkbox" 
-                                data-module="${module.module_type}" 
-                                data-plan="${planCode}"
-                                ${isAvailable ? 'checked' : ''}
-                                onchange="handleModuleAvailabilityChange('${module.module_type}', '${planCode}', this.checked)"
-                            >
-                            <span>${planName}</span>
-                        </label>
-                    </div>
-                `;
-            }).join('');
-
-            return `
-                <div class="module-availability-card">
-                    <div class="module-availability-header-card">
-                        <h3>${moduleName}</h3>
-                        <span class="module-type-badge">${module.module_type}</span>
-                    </div>
-                    <div class="module-plans-grid">
-                        ${planCheckboxes}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        if (saveBtn) {
-            saveBtn.style.display = 'block';
-        }
-    }
-
-    // Handler para mudanças - Salva automaticamente
-    window.handleModuleAvailabilityChange = async function (moduleType, planCode, isAvailable) {
-        const key = `${moduleType}_${planCode}`;
-        moduleAvailabilityChanges[key] = {
-            module_type: moduleType,
-            plan_code: planCode,
-            is_available: isAvailable
-        };
-
-        // Salvar automaticamente
-        try {
-            const updates = [{
-                module_type: moduleType,
-                plan_code: planCode,
-                is_available: isAvailable
-            }];
-
-            const response = await safeFetch(`${API_URL}/api/modules/plan-availability`, {
-                method: 'PUT',
-                headers: {
-                    ...HEADERS_AUTH,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ updates })
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao salvar alteração');
-            }
-
-            // Remover da lista de mudanças pendentes já que foi salvo
-            delete moduleAvailabilityChanges[key];
-
-            // Atualizar visualmente - esconder botão se não houver mais mudanças
-            const saveBtn = document.getElementById('save-module-availability-btn');
-            if (saveBtn) {
-                if (Object.keys(moduleAvailabilityChanges).length === 0) {
-                    saveBtn.style.display = 'none';
-                    saveBtn.classList.remove('btn-warning');
-                }
-            }
-
-            // Feedback visual opcional (pode remover se não quiser)
-            console.log(`Módulo ${moduleType} para plano ${planCode} salvo automaticamente`);
-            // Atualizar visibilidade dos botões do menu (Gestão Financeira, Contratos, Agenda) sem recarregar a página
-            try {
-                const statusRes = await safeFetch(`${API_URL}/api/account/status`, { headers: HEADERS_AUTH });
-                if (statusRes && statusRes.ok) {
-                    const user = await statusRes.json();
-                    if (typeof window.applyModulesVisibility === 'function') window.applyModulesVisibility(user);
-                }
-            } catch (e) { console.warn('Atualizar visibilidade do menu:', e); }
-        } catch (error) {
-            console.error('Erro ao salvar automaticamente:', error);
-            // Manter o botão de salvar visível em caso de erro
-            const saveBtn = document.getElementById('save-module-availability-btn');
-            if (saveBtn) {
-                saveBtn.style.display = 'block';
-                saveBtn.classList.add('btn-warning');
-            }
-            alert('Erro ao salvar automaticamente. Use o botão "Salvar Alterações" para tentar novamente.');
-        }
-    };
-
-    // Salvar alterações
-    const saveModuleAvailabilityBtn = document.getElementById('save-module-availability-btn');
-    if (saveModuleAvailabilityBtn) {
-        saveModuleAvailabilityBtn.addEventListener('click', async () => {
-            try {
-                const updates = Object.values(moduleAvailabilityChanges);
-
-                if (updates.length === 0) {
-                    alert('Nenhuma alteração para salvar.');
-                    return;
-                }
-
-                saveModuleAvailabilityBtn.disabled = true;
-                saveModuleAvailabilityBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-
-                const response = await safeFetch(`${API_URL}/api/modules/plan-availability`, {
-                    method: 'PUT',
-                    headers: {
-                        ...HEADERS_AUTH,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ updates })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Erro ao salvar alterações');
-                }
-
-                alert('Alterações salvas com sucesso!');
-                moduleAvailabilityChanges = {};
-                saveModuleAvailabilityBtn.style.display = 'none';
-                saveModuleAvailabilityBtn.classList.remove('btn-warning');
-                await loadModuleAvailability(); // Recarregar
-                // Atualizar visibilidade dos botões do menu (Gestão Financeira, Contratos, Agenda) sem recarregar a página
-                try {
-                    const statusRes = await safeFetch(`${API_URL}/api/account/status`, { headers: HEADERS_AUTH });
-                    if (statusRes && statusRes.ok) {
-                        const user = await statusRes.json();
-                        if (typeof window.applyModulesVisibility === 'function') window.applyModulesVisibility(user);
-                    }
-                } catch (e) { console.warn('Atualizar visibilidade do menu:', e); }
-            } catch (error) {
-                console.error('Erro ao salvar:', error);
-                alert('Erro ao salvar alterações. Tente novamente.');
-            } finally {
-                saveModuleAvailabilityBtn.disabled = false;
-                saveModuleAvailabilityBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
-            }
-        });
-    }
-
-    // Função para alternar entre abas na seção Separação de Pacotes
-    window.switchSeparationTab = function (tab) {
-        // Atualizar botões das abas
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('active');
-            btn.style.borderBottomColor = 'transparent';
-            btn.style.color = 'var(--text-secondary, #888888)';
-        });
-
-        const activeBtn = document.getElementById(`tab-${tab}`);
-        if (activeBtn) {
-            activeBtn.classList.add('active');
-            activeBtn.style.borderBottomColor = 'var(--dourado-principal, #FFD700)';
-            activeBtn.style.color = 'var(--dourado-principal, #FFD700)';
-        }
-
-        // Mostrar/ocultar conteúdo das abas
-        document.querySelectorAll('.tab-content-separation').forEach(content => {
-            content.style.display = 'none';
-        });
-
-        const activeContent = document.getElementById(`tab-content-${tab}`);
-        if (activeContent) {
-            activeContent.style.display = 'block';
-        }
-
-        // Carregar dados da aba ativa
-        if (tab === 'modules') {
-            loadModuleAvailability();
-        } else if (tab === 'individual') {
-            loadIndividualPlans();
-        } else if (tab === 'link-limits') {
-            if (window.moduleLinkLimits) {
-                // Carregar dados e renderizar grid
-                window.moduleLinkLimits.loadData().then(() => {
-                    window.moduleLinkLimits.renderGrid();
-                });
-            }
-        }
-    };
-
-    // Carregar planos individuais
-    async function loadIndividualPlans() {
-        try {
-            const response = await safeFetch(`${API_URL}/api/modules/individual-plans`, {
-                method: 'GET',
-                headers: HEADERS_AUTH
-            });
-
-            if (!response.ok) {
-                if (response.status === 403) {
-                    document.getElementById('individual-plans-list').innerHTML = `
-                        <p style="color: #ff4444;">Acesso negado. Apenas administradores podem acessar esta página.</p>
-                    `;
-                    return;
-                }
-                throw new Error('Erro ao carregar planos individuais');
-            }
-
-            const data = await response.json();
-            renderIndividualPlans(data.plans || []);
-        } catch (error) {
-            console.error('Erro ao carregar planos individuais:', error);
-            document.getElementById('individual-plans-list').innerHTML = `
-                <p style="color: #ff4444;">Erro ao carregar dados. Tente novamente.</p>
-            `;
-        }
-    }
-
-    // Renderizar lista de planos individuais
-    function renderIndividualPlans(plans) {
-        const container = document.getElementById('individual-plans-list');
-
-        // Agrupar por usuário
-        const plansByUser = {};
-        plans.forEach(plan => {
-            if (!plansByUser[plan.user_id]) {
-                plansByUser[plan.user_id] = {
-                    user_id: plan.user_id,
-                    user_name: plan.user_name || plan.user_email || 'Usuário #' + plan.user_id,
-                    user_email: plan.user_email,
-                    modules: []
-                };
-            }
-            plansByUser[plan.user_id].modules.push(plan);
-        });
-
-        if (Object.keys(plansByUser).length === 0) {
-            container.innerHTML = '<p style="color: var(--text-secondary, #888888);">Nenhum plano individual configurado ainda.</p>';
-            return;
-        }
-
-        container.innerHTML = Object.values(plansByUser).map(userPlan => `
-            <div class="individual-plan-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border-color, #333);">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                    <div style="flex: 1;">
-                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 4px;">${userPlan.user_name}</h3>
-                        <p style="color: var(--text-secondary, #888888); font-size: 0.875rem;">${userPlan.user_email}</p>
-                        <p style="color: var(--text-secondary, #888888); font-size: 0.875rem; margin-top: 8px;">
-                            Módulos extras: ${userPlan.modules.map(m => ITEM_TYPE_LABELS_FOR_VCARD[m.module_type] || m.module_type).join(', ') || 'Nenhum'}
-                        </p>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button onclick="editIndividualPlan('${userPlan.user_id}')" style="padding: 6px 12px; background: var(--dourado-principal, #FFD700); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button onclick="deleteAllIndividualPlans('${userPlan.user_id}')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
-                            <i class="fas fa-trash"></i> Remover
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // Mostrar modal para adicionar plano individual
-    window.showAddIndividualPlanModal = async function () {
-        try {
-            // Buscar lista de usuários
-            const usersResponse = await safeFetch(`${API_URL}/api/modules/users-list`, {
-                headers: HEADERS_AUTH
-            });
-
-            if (!usersResponse.ok) {
-                throw new Error('Erro ao carregar lista de usuários');
-            }
-
-            const usersData = await usersResponse.json();
-            const users = usersData.users || [];
-
-            const modal = document.createElement('div');
-            modal.id = 'add-individual-plan-modal';
-            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10007; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); overflow-y: auto;';
-
-            modal.innerHTML = `
-                <div style="background: var(--card-bg, #1F1F1F); border-radius: 24px; padding: 40px; max-width: 800px; width: 100%; border: 1px solid var(--border-color, #333); max-height: 90vh; overflow-y: auto;">
-                    <h2 style="color: var(--text-primary, #F5F5F5); font-size: 1.5rem; font-weight: 700; margin-bottom: 24px;">
-                        Selecionar Usuário
-                    </h2>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <input type="text" id="user-search-input" 
-                               placeholder="Buscar usuário por nome ou email..."
-                               onkeyup="filterUserList()"
-                               style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: rgba(0,0,0,0.3); color: var(--text-primary, #F5F5F5); font-size: 0.95rem;">
-                    </div>
-                    
-                    <div id="users-list-container" style="max-height: 400px; overflow-y: auto;">
-                        ${users.map(user => {
-                const isActive = user.is_active !== false;
-                const isExpired = user.subscription_expires_at && new Date(user.subscription_expires_at) < new Date();
-                const statusColor = isActive && !isExpired ? '#22c55e' : '#ef4444';
-                const statusText = isActive && !isExpired ? 'Ativo' : 'Vencido';
-                const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'N/A';
-                const expiresDate = user.subscription_expires_at ? new Date(user.subscription_expires_at).toLocaleDateString('pt-BR') : 'N/A';
-
-                return `
-                            <div class="user-item" data-user-id="${user.id}" data-user-name="${(user.name || user.email).toLowerCase()}" data-user-email="${user.email.toLowerCase()}"
-                                 onclick="selectUserForIndividualPlan('${user.id}', '${(user.name || user.email).replace(/'/g, "\\'")}', '${user.email.replace(/'/g, "\\'")}')"
-                                 style="padding: 16px; border-radius: 8px; border: 2px solid ${statusColor}; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; background: ${isActive && !isExpired ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'};"
-                                 onmouseover="this.style.background='${isActive && !isExpired ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}'; this.style.borderColor='${statusColor}'; this.style.transform='translateX(4px)'"
-                                 onmouseout="this.style.background='${isActive && !isExpired ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}'; this.style.borderColor='${statusColor}'; this.style.transform='translateX(0)'">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div style="flex: 1;">
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                            <h3 style="color: var(--text-primary, #F5F5F5); margin: 0; font-size: 1rem; font-weight: 600;">${user.name || user.email}</h3>
-                                            <span style="background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">
-                                                ${statusText}
-                                            </span>
-                                        </div>
-                                        <p style="color: var(--text-secondary, #888888); margin: 0 0 4px 0; font-size: 0.875rem;">${user.email}</p>
-                                        <p style="color: var(--text-secondary, #888888); margin: 0 0 4px 0; font-size: 0.75rem;">Plano: ${user.account_type || 'free'}</p>
-                                        <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 8px;">
-                                            <p style="color: var(--text-secondary, #888888); margin: 0; font-size: 0.7rem;">
-                                                <i class="fas fa-calendar-plus" style="margin-right: 4px;"></i>
-                                                Criado em: ${createdDate}
-                                            </p>
-                                            ${user.subscription_expires_at ? `
-                                            <p style="color: ${isExpired ? '#ef4444' : 'var(--text-secondary, #888888)'}; margin: 0; font-size: 0.7rem;">
-                                                <i class="fas fa-calendar-check" style="margin-right: 4px;"></i>
-                                                Renovação: ${expiresDate}
-                                            </p>
-                                            ` : `
-                                            <p style="color: var(--text-secondary, #888888); margin: 0; font-size: 0.7rem;">
-                                                <i class="fas fa-calendar-check" style="margin-right: 4px;"></i>
-                                                Renovação: Não definida
-                                            </p>
-                                            `}
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-chevron-right" style="color: var(--text-secondary, #888888); margin-left: 12px;"></i>
-                                </div>
-                            </div>
-                        `;
-            }).join('')}
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px; margin-top: 24px;">
-                        <button type="button" onclick="document.getElementById('add-individual-plan-modal').remove()" 
-                                style="flex: 1; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: transparent; color: var(--text-secondary, #888888); cursor: pointer; font-weight: 600;">
-                            Cancelar
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-
-            // Fechar ao clicar fora
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.remove();
-                }
-            });
-
-        } catch (error) {
-            console.error('Erro ao carregar lista de usuários:', error);
-            alert('Erro ao carregar lista de usuários: ' + error.message);
-        }
-    };
-
-    // Filtrar lista de usuários
-    window.filterUserList = function () {
-        const searchTerm = document.getElementById('user-search-input').value.toLowerCase();
-        const userItems = document.querySelectorAll('.user-item');
-
-        userItems.forEach(item => {
-            const userName = item.dataset.userName;
-            const userEmail = item.dataset.userEmail;
-
-            if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    };
-
-    // Selecionar usuário e mostrar interface de módulos
-    window.selectUserForIndividualPlan = async function (userId, userName, userEmail) {
-        try {
-            // Fechar modal de seleção
-            const selectModal = document.getElementById('add-individual-plan-modal');
-            if (selectModal) selectModal.remove();
-
-            // Buscar módulos do usuário
-            const response = await safeFetch(`${API_URL}/api/modules/individual-plans/${userId}`, {
-                headers: HEADERS_AUTH
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao carregar módulos do usuário');
-            }
-
-            const data = await response.json();
-
-            // Mostrar modal de configuração de módulos (com quantidade de perfis GF se existir)
-            showUserModulesModal(data.user, data.modules, data.max_finance_profiles);
-
-        } catch (error) {
-            console.error('Erro ao carregar módulos do usuário:', error);
-            alert('Erro ao carregar módulos: ' + error.message);
-        }
-    };
-
-    // Mostrar modal de configuração de módulos para um usuário
-    function showUserModulesModal(user, modules, maxFinanceProfiles) {
-        const modal = document.createElement('div');
-        modal.id = 'user-modules-modal';
-        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10008; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); overflow-y: auto;';
-
-        const currentMaxProfiles = (typeof maxFinanceProfiles === 'number' && maxFinanceProfiles >= 1 && maxFinanceProfiles <= 20)
-            ? maxFinanceProfiles
-            : (parseInt(maxFinanceProfiles, 10) || 1);
-
-        // Buscar planos ativos (vindos da API ou usar fallback)
-        const activePlans = window.activePlans || [];
-        const planLabels = {};
-        activePlans.forEach(plan => {
-            planLabels[plan.plan_code] = plan.plan_name;
-        });
-
-        modal.innerHTML = `
-            <div style="background: var(--card-bg, #1F1F1F); border-radius: 24px; padding: 40px; max-width: 900px; width: 100%; border: 1px solid var(--border-color, #333); max-height: 90vh; overflow-y: auto;">
-                <h2 style="color: var(--text-primary, #F5F5F5); font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;">
-                    Configurar Módulos para ${user.name || user.email}
-                </h2>
-                <p style="color: var(--text-secondary, #888888); margin-bottom: 24px; font-size: 0.875rem;">
-                    Plano base: ${planLabels[user.account_type] || user.account_type || 'Não definido'}
-                </p>
-                <p style="color: var(--text-secondary, #888888); margin-bottom: 24px; font-size: 0.875rem;">
-                    Marque os módulos que este usuário deve ter. Desmarque para <strong>tirar do plano</strong> (incluindo os que já estão no plano base). Para <strong>Gestão Financeira</strong>, defina quantos perfis o usuário pode ter (1 a 20).
-                </p>
-                
-                <div id="user-modules-list" style="margin-bottom: 24px;">
-                    ${modules.map(module => {
-            const moduleName = ITEM_TYPE_LABELS_FOR_VCARD[module.module_type] || module.module_type;
-            const isInBasePlan = module.in_base_plan;
-            const isActive = module.is_active; // Usar is_active ao invés de is_individual
-            const isFinance = module.module_type === 'finance';
-            const profileCounts = Array.from({ length: 20 }, (_, i) => i + 1);
-            const profileOptions = profileCounts.map(n => `<option value="${n}" ${n === currentMaxProfiles ? 'selected' : ''}>${n} perfil${n > 1 ? 'eis' : ''}</option>`).join('');
-            return `
-                            <div class="module-availability-card" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border-color, #333);">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <h3 style="color: var(--text-primary, #F5F5F5); font-size: 1rem; font-weight: 600; margin-bottom: 4px;">${moduleName}</h3>
-                                        <span class="module-type-badge" style="background: rgba(255,215,0,0.2); color: var(--dourado-principal, #FFD700); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">${module.module_type}</span>
-                                        ${isInBasePlan ? '<p style="color: #4ade80; font-size: 0.75rem; margin-top: 8px;">o" Já no plano (pode desmarcar para tirar)</p>' : '<p style="color: #60a5fa; font-size: 0.75rem; margin-top: 8px;">+ Adicionar</p>'}
-                                        ${isFinance ? `
-                                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
-                                            <label style="color: var(--text-secondary, #888888); font-size: 0.8rem;">Quantidade de perfis:</label>
-                                            <select id="user-modules-finance-profiles" style="margin-left: 8px; padding: 6px 10px; border-radius: 8px; background: var(--card-bg, #1F1F1F); border: 1px solid var(--border-color, #333); color: var(--text-primary, #F5F5F5); font-size: 0.875rem; cursor: pointer;">
-                                                ${profileOptions}
-                                            </select>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                    <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
-                                        <input 
-                                            type="checkbox" 
-                                            class="user-module-checkbox" 
-                                            data-module="${module.module_type}"
-                                            data-in-base-plan="${isInBasePlan}"
-                                            ${isActive ? 'checked' : ''}
-                                            style="width: 20px; height: 20px; cursor: pointer;"
-                                        >
-                                        <span style="margin-left: 8px; color: var(--text-primary, #F5F5F5);">Ativo</span>
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-        }).join('')}
-                </div>
-                
-                <div style="display: flex; gap: 12px; margin-top: 32px;">
-                    <button type="button" onclick="document.getElementById('user-modules-modal').remove()" 
-                            style="flex: 1; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: transparent; color: var(--text-secondary, #888888); cursor: pointer; font-weight: 600;">
-                        Cancelar
-                    </button>
-                    <button type="button" onclick="saveUserIndividualModules('${user.id}')" 
-                            style="flex: 2; padding: 14px; border-radius: 8px; border: none; background: var(--dourado-principal, #FFD700); color: #000; cursor: pointer; font-weight: 700;">
-                        <i class="fas fa-save"></i> Salvar Módulos
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Fechar ao clicar fora
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-            }
-        });
-    }
-
-    // Salvar módulos individuais do usuário
-    window.saveUserIndividualModules = async function (userId) {
-        try {
-            // Buscar TODOS os checkboxes (incluindo os que estão no plano base)
-            const checkboxes = document.querySelectorAll('#user-modules-modal .user-module-checkbox');
-            const selectedModules = Array.from(checkboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.dataset.module);
-
-            console.log('[saveUserIndividualModules] Módulos selecionados:', selectedModules);
-            console.log('[saveUserIndividualModules] Total de checkboxes:', checkboxes.length);
-
-            let maxFinanceProfiles = 1;
-            const financeProfilesEl = document.getElementById('user-modules-finance-profiles');
-            if (financeProfilesEl) {
-                const v = parseInt(financeProfilesEl.value, 10);
-                if (v >= 1 && v <= 20) maxFinanceProfiles = v;
-            }
-
-            const response = await safeFetch(`${API_URL}/api/modules/individual-plans/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    ...HEADERS_AUTH,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    modules: selectedModules,
-                    max_finance_profiles: maxFinanceProfiles
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Erro ao salvar módulos' }));
-                throw new Error(errorData.message || 'Erro ao salvar módulos');
-            }
-
-            const result = await response.json();
-            alert(result.message || 'Módulos atualizados com sucesso! Alterações em "Já no plano", "Adicionar" e quantidade de perfis de Gestão Financeira foram salvas.');
-
-            // Fechar modal e recarregar lista
-            document.getElementById('user-modules-modal').remove();
-            await loadIndividualPlans();
-
-        } catch (error) {
-            console.error('Erro ao salvar módulos:', error);
-            alert('Erro ao salvar módulos: ' + error.message);
-        }
-    };
-
-    // Editar plano individual de um usuário
-    window.editIndividualPlan = async function (userId) {
-        await selectUserForIndividualPlan(userId, '', '');
-    };
-
-    // Deletar todos os planos individuais de um usuário
-    window.deleteAllIndividualPlans = async function (userId) {
-        if (!confirm('Tem certeza que deseja remover todos os módulos extras deste usuário?')) {
-            return;
-        }
-
-        try {
-            const response = await safeFetch(`${API_URL}/api/modules/individual-plans/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    ...HEADERS_AUTH,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    modules: []
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao remover módulos');
-            }
-
-            alert('Módulos removidos com sucesso!');
-            await loadIndividualPlans();
-
-        } catch (error) {
-            console.error('Erro ao remover módulos:', error);
-            alert('Erro ao remover módulos: ' + error.message);
-        }
-    };
-
-
-    // Carregar quando a página de separação de pacotes for aberta
-    const separacaoLink = document.getElementById('separacao-pacotes-link');
-    if (separacaoLink) {
-        separacaoLink.addEventListener('click', () => {
-            setTimeout(() => {
-                loadModuleAvailability();
-            }, 100);
-        });
-    }
-
-    // Verificar admin ao carregar página (já aplicado em applyEmpresaTabAndControls via /api/account/status)
-
-    // ============================================
-    // FILTRO DE M"DULOS POR PLANO
+    // FILTRO DE MÓDULOS POR PLANO
     // ============================================
 
     let userAvailableModules = null;
@@ -5214,512 +4488,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Carregar módulos disponíveis ao carregar página
     loadUserAvailableModules();
-
-    // ============================================
-    // FUN—.ES DO FORMULÁRIO KING - EDITOR DE PERGUNTAS
-    // ============================================
-
-    // Renderizar perguntas do formulário (tornar acessível globalmente)
-    window.renderFormQuestions = function renderFormQuestions(itemId, formFields) {
-        const container = document.getElementById(`form-questions-container-${itemId}`);
-        if (!container) return;
-
-        if (!formFields || formFields.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: var(--text-dark, #A1A1A1);">
-                    <i class="fas fa-question-circle" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                    <p>Nenhuma pergunta adicionada ainda.</p>
-                    <p style="font-size: 0.9rem; margin-top: 10px;">Clique em "Adicionar Pergunta" para começar.</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = formFields.map((field, index) => {
-            const fieldTypes = {
-                'short_text': 'Resposta Curta',
-                'paragraph': 'Parágrafo',
-                'multiple_choice': 'Escolha Múltipla',
-                'checkbox': 'Caixa de Verificação',
-                'dropdown': 'Lista Suspensa',
-                'file_upload': 'Carregar Ficheiro',
-                'linear_scale': 'Escala Linear',
-                'rating': 'Classificação',
-                'multiple_choice_grid': 'Grelha de Escolhas Múltiplas',
-                'checkbox_grid': 'Grelha de Caixa de Verificação',
-                'date': 'Data',
-                'time': 'Hora',
-                'datetime': 'Data e Hora',
-                'yes_no': 'Sim/Não'
-            };
-
-            return `
-                <div class="form-question-item" data-question-index="${index}" style="margin-bottom: 20px; padding: 20px; background: var(--card-background-color, #1C1C21); border-radius: 8px; border: 1px solid var(--border-color, #2C2C2F);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <div>
-                            <strong style="color: var(--text, #ECECEC);">${field.label || 'Pergunta sem título'}</strong>
-                            <span style="margin-left: 10px; font-size: 0.85rem; color: var(--text-dark, #A1A1A1);">(${fieldTypes[field.type] || field.type})</span>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="button" class="edit-question-btn" data-index="${index}" style="padding: 5px 10px; background: var(--dourado-principal, #FFC700); color: #000; border: none; border-radius: 4px; cursor: pointer;">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="delete-question-btn" data-index="${index}" style="padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    ${field.required ? '<span style="color: #ff4444; font-size: 0.85rem;">* Obrigatório</span>' : ''}
-                </div>
-            `;
-        }).join('');
-
-        // Adicionar event listeners
-        container.querySelectorAll('.edit-question-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const index = parseInt(btn.dataset.index);
-                editQuestion(itemId, index, formFields[index]);
-            });
-        });
-
-        container.querySelectorAll('.delete-question-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const index = parseInt(btn.dataset.index);
-                deleteQuestion(itemId, index);
-            });
-        });
-    }
-
-    // Adicionar nova pergunta
-    function addQuestion(itemId) {
-        const fieldTypes = [
-            { value: 'short_text', label: 'Resposta Curta' },
-            { value: 'paragraph', label: 'Parágrafo' },
-            { value: 'multiple_choice', label: 'Escolha Múltipla' },
-            { value: 'checkbox', label: 'Caixa de Verificação' },
-            { value: 'dropdown', label: 'Lista Suspensa' },
-            { value: 'file_upload', label: 'Carregar Ficheiro' },
-            { value: 'linear_scale', label: 'Escala Linear' },
-            { value: 'rating', label: 'Classificação' },
-            { value: 'multiple_choice_grid', label: 'Grelha de Escolhas Múltiplas' },
-            { value: 'checkbox_grid', label: 'Grelha de Caixa de Verificação' },
-            { value: 'date', label: 'Data' },
-            { value: 'time', label: 'Hora' },
-            { value: 'datetime', label: 'Data e Hora' },
-            { value: 'yes_no', label: 'Sim/Não' }
-        ];
-
-        const modal = document.createElement('div');
-        modal.className = 'question-modal';
-        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
-        modal.innerHTML = `
-            <div style="background: var(--card-background-color, #1C1C21); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                <h3 style="margin-bottom: 20px; color: var(--text, #ECECEC);">Adicionar Pergunta</h3>
-                <div class="input-group" style="margin-bottom: 15px;">
-                    <label>Tipo de Campo</label>
-                    <select id="new-question-type" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC);">
-                        ${fieldTypes.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="input-group" style="margin-bottom: 15px;">
-                    <label>Pergunta/Label</label>
-                    <input type="text" id="new-question-label" placeholder="Digite a pergunta..." style="width: 100%; padding: 10px; border-radius: 8px; background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC);">
-                </div>
-                <div class="input-group" style="margin-bottom: 15px;">
-                    <label>
-                        <input type="checkbox" id="new-question-required"> Obrigatório
-                    </label>
-                </div>
-                <div id="new-question-options-container" style="display: none; margin-bottom: 15px;">
-                    <label>Opções (uma por linha)</label>
-                    <textarea id="new-question-options" rows="5" placeholder="Opção 1&#10;Opção 2&#10;Opção 3" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC);"></textarea>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="cancel-question-btn" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 8px; cursor: pointer;">Cancelar</button>
-                    <button type="button" class="save-question-btn" style="padding: 10px 20px; background: var(--dourado-principal, #FFC700); color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Salvar</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Mostrar/esconder opções baseado no tipo
-        const typeSelect = modal.querySelector('#new-question-type');
-        const optionsContainer = modal.querySelector('#new-question-options-container');
-        const needsOptions = ['multiple_choice', 'checkbox', 'dropdown', 'multiple_choice_grid', 'checkbox_grid'];
-
-        typeSelect.addEventListener('change', () => {
-            optionsContainer.style.display = needsOptions.includes(typeSelect.value) ? 'block' : 'none';
-        });
-
-        // Salvar pergunta
-        modal.querySelector('.save-question-btn').addEventListener('click', () => {
-            const type = typeSelect.value;
-            const label = modal.querySelector('#new-question-label').value.trim();
-            const required = modal.querySelector('#new-question-required').checked;
-            const optionsText = modal.querySelector('#new-question-options').value.trim();
-
-            if (!label) {
-                alert('Por favor, digite a pergunta.');
-                return;
-            }
-
-            const newField = {
-                type: type,
-                label: label,
-                required: required,
-                id: 'field_' + Date.now()
-            };
-
-            if (needsOptions.includes(type) && optionsText) {
-                newField.options = optionsText.split('\n').filter(o => o.trim()).map(o => o.trim());
-            }
-
-            // Adicionar ao array de campos
-            const fieldsInput = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-digital-form-fields`);
-            let fields = [];
-            if (fieldsInput && fieldsInput.value) {
-                try {
-                    fields = JSON.parse(fieldsInput.value);
-                } catch (e) {
-                    fields = [];
-                }
-            }
-            fields.push(newField);
-            fieldsInput.value = JSON.stringify(fields);
-
-            // Re-renderizar
-            renderFormQuestions(itemId, fields);
-
-            // Fechar modal
-            document.body.removeChild(modal);
-        });
-
-        // Cancelar
-        modal.querySelector('.cancel-question-btn').addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-
-        // Fechar ao clicar fora
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
-    }
-
-    // Editar pergunta
-    function editQuestion(itemId, index, field) {
-        // Similar ao addQuestion, mas preenchendo os campos
-        console.log('Editar pergunta:', index, field);
-        // Implementação similar ao addQuestion, mas com dados pré-preenchidos
-    }
-
-    // Deletar pergunta
-    function deleteQuestion(itemId, index) {
-        if (!confirm('Tem certeza que deseja remover esta pergunta?')) return;
-
-        const fieldsInput = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-digital-form-fields`);
-        let fields = [];
-        if (fieldsInput && fieldsInput.value) {
-            try {
-                fields = JSON.parse(fieldsInput.value);
-            } catch (e) {
-                fields = [];
-            }
-        }
-
-        fields.splice(index, 1);
-        fieldsInput.value = JSON.stringify(fields);
-        renderFormQuestions(itemId, fields);
-    }
-
-    // Carregar respostas do formulário (tornar acessível globalmente)
-    window.loadFormResponses = async function loadFormResponses(itemId) {
-        const dashboard = document.getElementById(`form-responses-dashboard-${itemId}`);
-        if (!dashboard) return;
-
-        try {
-            HEADERS = getHeaders();
-            const response = await fetch(`${API_URL}/api/profile/digital-forms/${itemId}/responses`, {
-                headers: HEADERS
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao carregar respostas');
-            }
-
-            const data = await response.json();
-
-            if (!data.success || !data.responses || data.responses.length === 0) {
-                dashboard.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: var(--text-dark, #A1A1A1);">
-                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                        <p>Nenhuma resposta ainda.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const stats = data.statistics || {};
-            dashboard.innerHTML = `
-                <div style="margin-bottom: 30px;">
-                    <h3 style="color: var(--text, #ECECEC); margin-bottom: 20px;">Estatísticas</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-                        <div style="padding: 20px; background: var(--card-background-color, #1C1C21); border-radius: 8px; border: 1px solid var(--border-color, #2C2C2F);">
-                            <div style="font-size: 2rem; font-weight: 600; color: var(--dourado-principal, #FFC700);">${stats.total_responses || 0}</div>
-                            <div style="color: var(--text-dark, #A1A1A1); margin-top: 5px;">Total de Respostas</div>
-                        </div>
-                        <div style="padding: 20px; background: var(--card-background-color, #1C1C21); border-radius: 8px; border: 1px solid var(--border-color, #2C2C2F);">
-                            <div style="font-size: 2rem; font-weight: 600; color: var(--dourado-principal, #FFC700);">${stats.unique_responders || 0}</div>
-                            <div style="color: var(--text-dark, #A1A1A1); margin-top: 5px;">Respondentes nicos</div>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <h3 style="color: var(--text, #ECECEC); margin-bottom: 20px;">Respostas Recebidas</h3>
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        ${data.responses.map((resp, idx) => {
-                const responseData = typeof resp.response_data === 'string' ? JSON.parse(resp.response_data) : resp.response_data;
-                return `
-                                <div style="padding: 20px; background: var(--card-background-color, #1C1C21); border-radius: 8px; border: 1px solid var(--border-color, #2C2C2F);">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                        <strong style="color: var(--text, #ECECEC);">Resposta #${idx + 1}</strong>
-                                        <span style="font-size: 0.85rem; color: var(--text-dark, #A1A1A1);">${new Date(resp.submitted_at).toLocaleString('pt-BR')}</span>
-                                    </div>
-                                    ${resp.responder_name ? `<div style="margin-bottom: 5px;"><strong>Nome:</strong> ${resp.responder_name}</div>` : ''}
-                                    ${resp.responder_phone ? `<div style="margin-bottom: 5px;"><strong>Telefone:</strong> ${resp.responder_phone}</div>` : ''}
-                                    ${resp.responder_email ? `<div style="margin-bottom: 5px;"><strong>Email:</strong> ${resp.responder_email}</div>` : ''}
-                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                                        <strong style="color: var(--text, #ECECEC); display: block; margin-bottom: 10px;">Respostas:</strong>
-                                        ${Object.entries(responseData).map(([key, value]) => `
-                                            <div style="margin-bottom: 8px;">
-                                                <strong style="color: var(--text-dark, #A1A1A1);">${key}:</strong>
-                                                <span style="color: var(--text, #ECECEC); margin-left: 10px;">${Array.isArray(value) ? value.join(', ') : value}</span>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            `;
-            }).join('')}
-                    </div>
-                </div>
-            `;
-        } catch (error) {
-            console.error('Erro ao carregar respostas:', error);
-            dashboard.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #ff4444;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i>
-                    <p>Erro ao carregar respostas: ${error.message}</p>
-                </div>
-            `;
-        }
-    }
-
-    // Event listener para botão "Adicionar Pergunta"
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('.add-question-btn')) {
-            const btn = e.target.closest('.add-question-btn');
-            const itemId = btn.dataset.itemId;
-            if (itemId) {
-                addQuestion(parseInt(itemId));
-            }
-        }
-
-        // Event listener para botão "Abrir Página de Edição" do Formulário King
-        if (e.target.closest('.btn-edit-form-page')) {
-            const btn = e.target.closest('.btn-edit-form-page');
-            const itemId = btn.dataset.itemId || btn.dataset.id;
-
-            console.log('[DASHBOARD] Botão "Abrir Página de Edição Completa" clicado:', {
-                itemId,
-                dataset: btn.dataset
-            });
-
-            if (itemId) {
-                console.log('[DASHBOARD] Redirecionando para formPageEdit.html com itemId:', itemId);
-                window.location.href = `formPageEdit.html?itemId=${itemId}`;
-            } else {
-                console.error('[DASHBOARD] itemId não encontrado no botão btn-edit-form-page');
-                alert('Erro: ID do formulário não encontrado. Por favor, recarregue a página e tente novamente.');
-            }
-        }
-    });
-
-    // === FUN—.ES PARA LISTA DE CONVIDADOS ===
-
-    // Carregar todas as listas de convidados
-    async function loadGuestLists() {
-        const container = document.getElementById('guest-lists-container');
-        const statsContainer = document.getElementById('guest-list-stats');
-
-        if (!container) return;
-
-        try {
-            const response = await safeFetch(`${API_URL}/api/guest-lists`, {
-                method: 'GET',
-                headers: HEADERS_AUTH
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao carregar listas de convidados');
-            }
-
-            const lists = await response.json();
-
-            // Mapear os dados da API para o formato esperado
-            const listsWithStats = lists.map(list => {
-                // A API já retorna registered_count, confirmed_count, checked_in_count
-                // pi.* retorna o id da profile_items como 'id'
-                // gli.* retorna o id da guest_list_items e profile_item_id
-                const total = parseInt(list.registered_count || 0) + parseInt(list.confirmed_count || 0) + parseInt(list.checked_in_count || 0);
-                list.stats = {
-                    total: total,
-                    registered: parseInt(list.registered_count || 0),
-                    confirmed: parseInt(list.confirmed_count || 0),
-                    checked_in: parseInt(list.checked_in_count || 0)
-                };
-                // O 'id' de pi.* é o profile_item_id que precisamos para editar
-                // profile_item_id é da tabela guest_list_items (referência para profile_items)
-                list.profile_item_id = list.id; // pi.id é o profile_item_id
-                return list;
-            });
-
-            // Calcular estatísticas gerais
-            const generalStats = listsWithStats.reduce((acc, list) => {
-                const stats = list.stats || { total: 0, registered: 0, confirmed: 0, checked_in: 0 };
-                acc.total += stats.total || 0;
-                acc.registered += stats.registered || 0;
-                acc.confirmed += stats.confirmed || 0;
-                acc.checked_in += stats.checked_in || 0;
-                return acc;
-            }, { total: 0, registered: 0, confirmed: 0, checked_in: 0 });
-
-            // Renderizar estatísticas gerais
-            if (statsContainer) {
-                statsContainer.innerHTML = `
-                    <div class="stat-card" style="background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; padding: 20px; text-align: center;">
-                        <div class="stat-value" style="font-size: 32px; font-weight: 800; color: var(--dourado-principal, #FFC700); margin: 8px 0;">${lists.length}</div>
-                        <div class="stat-label" style="color: var(--text-dark, #A1A1A1); font-size: 14px;">Listas Criadas</div>
-                    </div>
-                    <div class="stat-card" style="background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; padding: 20px; text-align: center;">
-                        <div class="stat-value" style="font-size: 32px; font-weight: 800; color: var(--dourado-principal, #FFC700); margin: 8px 0;">${generalStats.total}</div>
-                        <div class="stat-label" style="color: var(--text-dark, #A1A1A1); font-size: 14px;">Total de Convidados</div>
-                    </div>
-                    <div class="stat-card" style="background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; padding: 20px; text-align: center;">
-                        <div class="stat-value" style="font-size: 32px; font-weight: 800; color: #4CAF50; margin: 8px 0;">${generalStats.confirmed}</div>
-                        <div class="stat-label" style="color: var(--text-dark, #A1A1A1); font-size: 14px;">Confirmados</div>
-                    </div>
-                    <div class="stat-card" style="background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; padding: 20px; text-align: center;">
-                        <div class="stat-value" style="font-size: 32px; font-weight: 800; color: #2196F3; margin: 8px 0;">${generalStats.checked_in}</div>
-                        <div class="stat-label" style="color: var(--text-dark, #A1A1A1); font-size: 14px;">Conferidos</div>
-                    </div>
-                `;
-            }
-
-            // Renderizar listas
-            if (listsWithStats.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state" style="text-align: center; padding: 60px 20px; color: var(--text-dark, #A1A1A1);">
-                        <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                        <p style="font-size: 16px; margin-bottom: 8px;">Nenhuma lista de convidados criada ainda</p>
-                        <p style="font-size: 14px; opacity: 0.7;">Clique em "Nova Lista" para começar</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = listsWithStats.map(list => {
-                const stats = list.stats || { total: 0, registered: 0, confirmed: 0, checked_in: 0 };
-                const eventDate = list.event_date ? new Date(list.event_date).toLocaleDateString('pt-BR') : 'Não definido';
-
-                return `
-                    <div class="module-item" data-id="${list.profile_item_id || list.id}" data-item-type="guest_list" style="background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                            <div style="flex: 1;">
-                                <h4 style="color: var(--text, #ECECEC); margin: 0 0 8px 0; font-size: 18px;">
-                                    <i class="fas fa-users" style="color: var(--dourado-principal, #FFC700); margin-right: 8px;"></i>
-                                    ${list.event_title || list.title || 'Lista de Convidados'}
-                                </h4>
-                                <p style="color: var(--text-dark, #A1A1A1); margin: 0; font-size: 14px;">
-                                    <i class="fas fa-calendar" style="margin-right: 6px;"></i>
-                                    ${eventDate}
-                                </p>
-                                ${list.event_location ? `
-                                    <p style="color: var(--text-dark, #A1A1A1); margin: 4px 0 0 0; font-size: 14px;">
-                                        <i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i>
-                                        ${list.event_location}
-                                    </p>
-                                ` : ''}
-                            </div>
-                            <button class="btn-icon" onclick="openGuestListEditor(${list.profile_item_id || list.id})" style="background: var(--dourado-principal, #FFC700); color: #000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                                <i class="fas fa-edit"></i> Gerenciar
-                            </button>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <div style="text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800; color: var(--dourado-principal, #FFC700);">${stats.total}</div>
-                                <div style="font-size: 12px; color: var(--text-dark, #A1A1A1);">Total</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800; color: #4CAF50;">${stats.confirmed}</div>
-                                <div style="font-size: 12px; color: var(--text-dark, #A1A1A1);">Confirmados</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800; color: #2196F3;">${stats.checked_in}</div>
-                                <div style="font-size: 12px; color: var(--text-dark, #A1A1A1);">Conferidos</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 24px; font-weight: 800; color: #FF9800;">${stats.registered - stats.confirmed}</div>
-                                <div style="font-size: 12px; color: var(--text-dark, #A1A1A1);">Pendentes</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-        } catch (error) {
-            console.error('Erro ao carregar listas de convidados:', error);
-            if (container) {
-                container.innerHTML = `
-                    <div class="empty-state" style="text-align: center; padding: 60px 20px; color: var(--text-dark, #A1A1A1);">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #FF9800;"></i>
-                        <p style="font-size: 16px; margin-bottom: 8px;">Erro ao carregar listas de convidados</p>
-                        <p style="font-size: 14px; opacity: 0.7;">Tente recarregar a página</p>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    // Abrir editor de lista de convidados
-    function openGuestListEditor(profileItemId) {
-        // O profileItemId é o ID da profile_items, que é o que precisamos para a página de edição
-        window.location.href = `guestListEdit.html?itemId=${profileItemId}`;
-    }
-
-    // Listener para botão "Nova Lista"
-    const addGuestListBtn = document.getElementById('add-guest-list-btn');
-    if (addGuestListBtn) {
-        addGuestListBtn.addEventListener('click', async () => {
-            // Abrir modal de adicionar item e selecionar "Lista de Convidados"
-            SELECTORS.addItemModal.classList.add('active');
-            await filterModulesByPlan();
-
-            // Scroll para o card de Lista de Convidados
-            setTimeout(() => {
-                const guestListCard = document.querySelector('[data-item-type="guest_list"]');
-                if (guestListCard) {
-                    guestListCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    guestListCard.style.border = '2px solid var(--dourado-principal, #FFC700)';
-                    setTimeout(() => {
-                        guestListCard.style.border = '';
-                    }, 2000);
-                }
-            }, 300);
-        });
-    }
 
     // ============================================
     // PERSONALIZAR LINK DO SITE (APENAS ADM)
@@ -5865,15 +4633,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             alert('Configuração salva com sucesso! A preview será atualizada em alguns segundos.');
                             updatePreview();
                         } else {
-                            alert('O Erro ao salvar configuração. Tente novamente.');
+                            alert('Erro ao salvar configuração. Tente novamente.');
                         }
                     } else {
                         const error = await response.json();
-                        alert(`O Erro: ${error.message || 'Erro ao salvar configuração'}`);
+                        alert(`Erro: ${error.message || 'Erro ao salvar configuração'}`);
                     }
                 } catch (error) {
                     console.error('Erro ao salvar configuração:', error);
-                    alert('O Erro ao salvar configuração. Verifique sua conexão e tente novamente.');
+                    alert('Erro ao salvar configuração. Verifique sua conexão e tente novamente.');
                 } finally {
                     linkPreviewSaveBtn.disabled = false;
                     linkPreviewSaveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Configuração';

@@ -43,7 +43,7 @@
     });
 
 function hexToRgba(hex, alpha = 1) {
-    if (!hex) return `rgba(20, 20, 23, ${alpha})`; // Cor padrf£o escura
+    if (!hex) return `rgba(20, 20, 23, ${alpha})`; // Cor padrão escura
     let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (!result) return `rgba(20, 20, 23, ${alpha})`;
     const r = parseInt(result[1], 16);
@@ -210,7 +210,7 @@ function extractEmailAddress(rawValue) {
     return value.toLowerCase();
 }
 
-// Funf§f£o para extrair o ID do vf­deo do YouTube de diferentes formatos de URL
+// Função para extrair o ID do vf­deo do YouTube de diferentes formatos de URL
 function extractYouTubeVideoId(url) {
     if (!url) return null;
 
@@ -230,14 +230,14 @@ function extractYouTubeVideoId(url) {
     return null;
 }
 
-// Funf§f£o para converter URL do YouTube para formato de embed
+// Função para converter URL do YouTube para formato de embed
 function convertYouTubeUrlToEmbed(url) {
     if (!url) return '';
 
     const videoId = extractYouTubeVideoId(url);
     if (!videoId) return url; // Retorna a URL original se nf£o conseguir extrair o ID
 
-    // Remove parf¢metros de timestamp e outros da URL
+    // Remove parâmetros de timestamp e outros da URL
     const cleanVideoId = videoId.split('&')[0].split('?')[0];
 
     return `https://www.youtube.com/embed/${cleanVideoId}`;
@@ -722,7 +722,7 @@ function updateLivePreviewFromForm() {
     // IMPORTANTE: Forçar leitura dos elementos atualizados do DOM
     // Usar querySelectorAll novamente para garantir que pegamos os elementos mais recentes
     const allItems = document.querySelectorAll('#items-container .item, #items-container .module-item');
-    console.log(`Y"" Atualizando preview com ${allItems.length} itens do DOM`);
+    console.log(` Atualizando preview com ${allItems.length} itens do DOM`);
 
     allItems.forEach(itemEl => {
         const itemType = itemEl.dataset.itemType;
@@ -899,7 +899,7 @@ function updateLivePreviewFromForm() {
             const bannerPrimary = bannerDestParsed.primary_url || '#';
             previewEl = document.createElement('div');
             previewEl.className = 'preview-banner-wrap';
-            // Funf§f£o para sanitizar URL de imagem do banner
+            // Função para sanitizar URL de imagem do banner
             function sanitizeBannerImageUrl(url) {
                 const defaultBannerPlaceholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDYwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjMwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiPkJhbm5lcjwvdGV4dD4KPC9zdmc+Cg==';
                 if (!url || typeof url !== 'string') {
@@ -1006,7 +1006,7 @@ function updateLivePreviewFromForm() {
     SELECTORS.buttonFontSizeValue.textContent = fontSize;
 }
 
-// Funf§f£o para preservar o estado local dos itens antes de recarregar
+// Função para preservar o estado local dos itens antes de recarregar
 function preserveLocalItemStates() {
     const preservedStates = {};
     const itemElements = document.querySelectorAll('#items-container .item, #items-container .module-item');
@@ -1113,7 +1113,7 @@ function preserveLocalItemStates() {
     return preservedStates;
 }
 
-// Funf§f£o para restaurar o estado local dos itens apf³s recarregar
+// Função para restaurar o estado local dos itens apf³s recarregar
 function restoreLocalItemStates(preservedStates) {
     if (!preservedStates || Object.keys(preservedStates).length === 0) return;
 

@@ -332,7 +332,7 @@ function setupEventListeners() {
                     setTimeout(() => { env.renderEditor(window.currentProfileData); }, 100);
                     return;
                 } catch (error) {
-                    console.error(`O Erro ao criar ${itemType}:`, error);
+                    console.error(`Erro ao criar ${itemType}:`, error);
                     let moduleName = 'módulo';
                     if (itemType === 'sales_page') moduleName = 'página de vendas';
                     else if (itemType === 'digital_form') moduleName = 'formulário digital';
@@ -395,7 +395,7 @@ function setupEventListeners() {
                             }, 100);
                         }
                     } catch (renderError) {
-                        console.error('O Erro ao renderizar:', renderError);
+                        console.error('Erro ao renderizar:', renderError);
                         alert(`Erro ao adicionar módulo: ${renderError.message}`);
                     }
                 } else {
@@ -1756,7 +1756,7 @@ function setupEventListeners() {
             env.updateLivePreviewFromForm();
             console.log('Alterações salvas com sucesso via modal');
         } catch (error) {
-            console.error('O Erro ao salvar via modal:', error);
+            console.error('Erro ao salvar via modal:', error);
             alert(`Erro ao salvar: ${error.message}`);
             // Não fechar o modal se houver erro
         }
@@ -2022,7 +2022,7 @@ function setupEventListeners() {
     document.addEventListener('change', async function carouselUploadHandler(e) {
         if (!e.target.classList.contains('carousel-file-input-new')) return;
 
-        console.log('Y"" [CARROSSEL] Upload iniciado');
+        console.log(' [CARROSSEL] Upload iniciado');
         const fileInput = e.target;
         const itemId = fileInput.dataset.itemId || fileInput.getAttribute('data-item-id') || fileInput.id.replace('carousel-file-new-', '');
 
@@ -2394,7 +2394,7 @@ function setupEventListeners() {
                     console.warn('Nenhuma imagem foi enviada com sucesso');
                 }
             } catch (error) {
-                console.error('O Erro no upload do carrossel:', error);
+                console.error('Erro no upload do carrossel:', error);
                 alert(`Erro ao fazer upload: ${error.message}`);
             } finally {
                 if (loader) loader.style.display = 'none';
@@ -2673,14 +2673,14 @@ function setupEventListeners() {
             document.body.removeChild(link);
         } catch (err) {
             console.error('Erro ao baixar arte do QR:', err);
-            alert('Não foi possível baixar a arte (a logomarca pode bloquear o download). Desmarque ?oIncluir logomarca— e tente de novo.');
+            alert('Não foi possível baixar a arte (a logomarca pode bloquear o download). Desmarque "Incluir logomarca" e tente de novo.');
         }
     };
 
     if (downloadQrBtn) downloadQrBtn.addEventListener('click', downloadFunction);
     if (downloadQrBtnAlt) downloadQrBtnAlt.addEventListener('click', downloadFunction);
 
-    // --- Nova Lf³gica de UI para Adicionar Item ---
+    // --- Nova Lógica de UI para Adicionar Item ---
     if (SELECTORS.addItemBtn) {
         SELECTORS.addItemBtn.addEventListener('click', () => {
             if (SELECTORS.addItemModal) SELECTORS.addItemModal.classList.add('active');
@@ -2739,11 +2739,11 @@ function setupEventListeners() {
         radiusPresetRadios.forEach(r => {
             r.addEventListener('change', () => {
                 const val = r.value;
-                // Valores padrf£o
+                // Valores padrão
                 let tl = 12, tr = 12, br = 12, bl = 12;
                 switch (val) {
                     case 'all':
-                        // Para "Uniforme", usa o valor atual do primeiro input ou 12 como padrf£o
+                        // Para "Uniforme", usa o valor atual do primeiro input ou 12 como padrão
                         const currentValue = parseInt(SELECTORS.radiusTL?.value || 12, 10);
                         tl = tr = br = bl = currentValue;
                         break;
@@ -2773,7 +2773,7 @@ function setupEventListeners() {
         });
     }
 
-    // Funf§f£o para detectar qual preset estf¡ ativo baseado nos valores atuais
+    // Função para detectar qual preset estf¡ ativo baseado nos valores atuais
     function detectActivePreset() {
         const tl = parseInt(SELECTORS.radiusTL?.value || 12, 10);
         const tr = parseInt(SELECTORS.radiusTR?.value || 12, 10);
@@ -2796,7 +2796,7 @@ function setupEventListeners() {
         return null; // Valores customizados
     }
 
-    // Funf§f£o para atualizar o preset selecionado
+    // Função para atualizar o preset selecionado
     function updatePresetSelection() {
         const activePreset = detectActivePreset();
         const presetRadios = document.querySelectorAll('input[name="radius-preset"]');
@@ -2832,7 +2832,7 @@ function setupEventListeners() {
         });
     }
 
-    // Botf£o "Aplicar como padrf£o"
+    // Botf£o "Aplicar como padrão"
     const saveRadiusDefaultBtn = document.getElementById('save-radius-default-btn');
     if (saveRadiusDefaultBtn) {
         saveRadiusDefaultBtn.addEventListener('click', () => {
@@ -2841,7 +2841,7 @@ function setupEventListeners() {
             const br = parseInt(SELECTORS.radiusBR?.value || 12, 10);
             const bl = parseInt(SELECTORS.radiusBL?.value || 12, 10);
 
-            // Salva os valores no localStorage para usar como padrf£o
+            // Salva os valores no localStorage para usar como padrão
             localStorage.setItem('defaultBorderRadius', JSON.stringify({ tl, tr, br, bl }));
 
             // Feedback visual
@@ -2903,7 +2903,7 @@ function setupEventListeners() {
                             env.renderEditor(window.currentProfileData);
                         }, 100);
                     } catch (error) {
-                        console.error(`O Erro ao criar ${itemType}:`, error);
+                        console.error(`Erro ao criar ${itemType}:`, error);
                         const moduleName = itemType === 'sales_page' ? 'página de vendas' : 'formulário digital';
                         alert(`Não foi possível criar o ${moduleName}: ${error.message}`);
                     }
@@ -2935,7 +2935,7 @@ function setupEventListeners() {
                         env.renderEditor(window.currentProfileData);
                     }, 100);
                 } catch (error) {
-                    console.error("O Erro ao criar item:", error);
+                    console.error("Erro ao criar item:", error);
                     alert(`Não foi possível criar o item: ${error.message}`);
                 }
             }
@@ -3011,7 +3011,7 @@ function setupEventListeners() {
     // crop-and-upload-btn: DashboardUpload.confirmCropAndUpload
     renderIcons();
 
-    // Event listeners para carrossel - usar delegaf§f£o de eventos
+    // Event listeners para carrossel - usar delegação de eventos
     document.addEventListener('click', async (e) => {
         // Botão de adicionar foto
         if (e.target.closest('.add-carousel-image-btn')) {

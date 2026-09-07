@@ -344,7 +344,7 @@ function renderEditor(profileData) {
             // Se houver um item temporário com este ID, removê-lo primeiro
             const tempItem = itemsContainer.querySelector(`[data-id="${item.id}"][data-is-temporary="true"]`);
             if (tempItem) {
-                console.log(`Y"" Substituindo item temporário ${item.id} pelo item real do servidor`);
+                console.log(` Substituindo item temporário ${item.id} pelo item real do servidor`);
                 tempItem.remove();
             }
 
@@ -755,7 +755,7 @@ function renderEditor(profileData) {
         <label>Nome da rede Wi-Fi (SSID)</label>
         <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">? o nome que aparece na lista de redes do celular - obrigatório para gerar o QR Code.</small>
         <input type="text" class="wifi-ssid-input" value="${wifiSsid.replace(/"/g, '&quot;')}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
-        <label>Seguranf§a</label>
+        <label>Segurança</label>
         <select class="wifi-security-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
             <option value="WPA" ${wifiSecurity === 'WPA' || wifiSecurity === 'WPA2' || wifiSecurity === 'WPA3' ? 'selected' : ''}>WPA/WPA2/WPA3</option>
             <option value="WEP" ${wifiSecurity === 'WEP' ? 'selected' : ''}>WEP</option>
@@ -1358,7 +1358,7 @@ function renderEditor(profileData) {
                     console.log(`Item ${item.id} (${item.item_type}) adicionado ao container`);
                 }
             } catch (appendError) {
-                console.error(`O Erro ao adicionar item ${item.id} ao container:`, appendError);
+                console.error(`Erro ao adicionar item ${item.id} ao container:`, appendError);
                 console.error('Stack trace:', appendError.stack);
             }
             } catch (itemRenderError) {
@@ -1418,7 +1418,7 @@ function renderEditor(profileData) {
             }, 100);
         }
     } catch (error) {
-        console.error('O Erro em renderEditor:', error);
+        console.error('Erro em renderEditor:', error);
         console.error('profileData recebido:', profileData);
         console.error('Stack trace:', error.stack);
 
@@ -1437,7 +1437,7 @@ function renderEditor(profileData) {
                 SELECTORS.profileSlugInput.value = profileData.details.profile_slug;
             }
         } catch (fallbackError) {
-            console.error('O Erro também no fallback de renderização:', fallbackError);
+            console.error('Erro também no fallback de renderização:', fallbackError);
         }
 
         // Propagar o erro para que fetchProfileData possa tratá-lo

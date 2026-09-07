@@ -485,7 +485,7 @@ window.copyPixKey = function (pixKey) {
 // Carregar planos para edição (ADM)
 async function loadPlansForEdit() {
     try {
-        console.log('Y"" Carregando planos para edição...');
+        console.log(' Carregando planos para edição...');
 
         // Adicionar timestamp para evitar cache
         const response = await env.safeFetch(`${env.API_URL}/api/subscription/plans?t=${Date.now()}`, {
@@ -498,7 +498,7 @@ async function loadPlansForEdit() {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('O Erro ao carregar planos:', response.status, errorText);
+            console.error('Erro ao carregar planos:', response.status, errorText);
             throw new Error(`Erro ao carregar planos para edição: ${response.status}`);
         }
 
@@ -514,7 +514,7 @@ async function loadPlansForEdit() {
         await renderPlansEditForm(data.plans);
         console.log('Formulário de edição renderizado');
     } catch (error) {
-        console.error('O Erro ao carregar planos para edição:', error);
+        console.error('Erro ao carregar planos para edição:', error);
         const formContainer = document.getElementById('plans-edit-form');
         if (formContainer) {
             formContainer.innerHTML = `<p style="color: #ff4444;">Erro ao carregar planos: ${error.message}</p>`;
@@ -530,13 +530,13 @@ async function renderPlansEditForm(plans) {
         return;
     }
 
-    console.log(`Y"" Renderizando formulário para ${plans.length} planos...`);
+    console.log(` Renderizando formulário para ${plans.length} planos...`);
 
     // Buscar disponibilidade de módulos (com cache busting agressivo)
     let moduleAvailability = [];
     try {
         const cacheBuster = `t=${Date.now()}&_=${Math.random()}`;
-        console.log('Y"" Buscando disponibilidade de módulos (sem cache)...');
+        console.log(' Buscando disponibilidade de módulos (sem cache)...');
         const moduleResponse = await env.safeFetch(`${env.API_URL}/api/modules/plan-availability?${cacheBuster}`, {
             method: 'GET',
             headers: {
@@ -569,7 +569,7 @@ async function renderPlansEditForm(plans) {
             console.warn('Erro ao carregar módulos:', moduleResponse.status, errorText);
         }
     } catch (error) {
-        console.error('O Erro ao carregar disponibilidade de módulos:', error);
+        console.error('Erro ao carregar disponibilidade de módulos:', error);
         console.error('Stack:', error.stack);
     }
 
@@ -719,7 +719,7 @@ async function renderPlansEditForm(plans) {
 // Salvar plano (ADM)
 window.savePlan = async function (planId) {
     try {
-        console.log(`Y"" Iniciando salvamento do plano ID: ${planId}`);
+        console.log(` Iniciando salvamento do plano ID: ${planId}`);
 
         const planName = document.getElementById(`plan-name-${planId}`).value.trim();
         const priceInput = document.getElementById(`plan-price-${planId}`).value.trim();
@@ -847,7 +847,7 @@ window.savePlan = async function (planId) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('O Erro na resposta:', errorText);
+            console.error('Erro na resposta:', errorText);
             throw new Error(`Erro ao salvar plano: ${response.status} - ${errorText}`);
         }
 
@@ -890,7 +890,7 @@ window.savePlan = async function (planId) {
                     });
 
                     if (moduleUpdates.length > 0) {
-                        console.log('Y"" Tentando atualizar módulos via endpoint separado (fallback)...');
+                        console.log(' Tentando atualizar módulos via endpoint separado (fallback)...');
                         const moduleResponse = await env.safeFetch(`${env.API_URL}/api/modules/plan-availability`, {
                             method: 'PUT',
                             headers: {
@@ -920,7 +920,7 @@ window.savePlan = async function (planId) {
 
         alert('Plano atualizado com sucesso!');
 
-        console.log('Y"" Recarregando formulário de edição...');
+        console.log(' Recarregando formulário de edição...');
         // IMPORTANTE: Preservar valores dos campos de módulos antes de recarregar
         const includedFieldBefore = document.getElementById(`plan-included-modules-${planId}`);
         const excludedFieldBefore = document.getElementById(`plan-excluded-modules-${planId}`);
@@ -936,7 +936,7 @@ window.savePlan = async function (planId) {
             // Limpar qualquer cache e forçar busca fresca
             // Adicionar timestamp único e parâmetros de cache busting
             const timestamp = Date.now();
-            console.log(`Y"" Forçando recarregamento sem cache (timestamp: ${timestamp})...`);
+            console.log(` Forçando recarregamento sem cache (timestamp: ${timestamp})...`);
 
             // Limpar cache do módulo de disponibilidade também
             if (window.moduleAvailabilityCache) {
@@ -989,12 +989,12 @@ window.savePlan = async function (planId) {
                 console.warn('Campos de módulos não encontrados após recarregar!');
             }
         } catch (reloadError) {
-            console.error('O Erro ao recarregar formulário:', reloadError);
+            console.error('Erro ao recarregar formulário:', reloadError);
             console.error('Stack:', reloadError.stack);
             alert('Plano salvo, mas houve erro ao recarregar. Atualize a página manualmente (F5).');
         }
 
-        console.log('Y"" Recarregando informações de assinatura...');
+        console.log(' Recarregando informações de assinatura...');
         // Depois recarregar informações de assinatura (pode falhar silenciosamente se planRenderer der erro)
         try {
             await loadSubscriptionInfo();
@@ -1004,7 +1004,7 @@ window.savePlan = async function (planId) {
 
         console.log('Processo de salvamento concluído!');
     } catch (error) {
-        console.error('O Erro completo ao salvar plano:', error);
+        console.error('Erro completo ao salvar plano:', error);
         console.error('Stack:', error.stack);
         alert(`Erro ao salvar plano: ${error.message}\n\nVerifique o console para mais detalhes.`);
     }

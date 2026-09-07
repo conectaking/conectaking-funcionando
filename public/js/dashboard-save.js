@@ -341,7 +341,7 @@ async function saveAllChanges(event) {
                     if (itemEl.dataset.isTemporary) {
                         delete itemEl.dataset.isTemporary;
                     }
-                    console.log(`Y"" ID atualizado de ${oldId} para ${itemEl.dataset.id} no elemento DOM`);
+                    console.log(` ID atualizado de ${oldId} para ${itemEl.dataset.id} no elemento DOM`);
 
                     // Atualizar também no currentProfileData
                     if (window.currentProfileData && window.currentProfileData.items) {
@@ -351,7 +351,7 @@ async function saveAllChanges(event) {
                         }
                     }
                 } catch (createError) {
-                    console.error(`O Erro ao criar item temporário ${tempId}:`, createError);
+                    console.error(`Erro ao criar item temporário ${tempId}:`, createError);
                     throw new Error(`Erro ao criar módulo "${getItemTypeName(itemType)}": ${createError.message}`);
                 }
             }
@@ -1107,14 +1107,14 @@ async function saveAllChanges(event) {
             }
             result = JSON.parse(responseText);
         } catch (parseError) {
-            console.error('O Erro ao parsear resposta:', parseError);
+            console.error('Erro ao parsear resposta:', parseError);
             console.error('O Response status:', response.status);
             console.error('O Response headers:', Object.fromEntries(response.headers.entries()));
             throw new Error('Erro ao processar resposta do servidor. Tente novamente.');
         }
 
         if (!response.ok) {
-            console.error('O Erro ao salvar:', {
+            console.error('Erro ao salvar:', {
                 status: response.status,
                 statusText: response.statusText,
                 result: result
@@ -1174,7 +1174,7 @@ async function saveAllChanges(event) {
 
         // Atualizar os itens na lista usando os dados retornados pela API (em tempo real)
         if (result.items && Array.isArray(result.items)) {
-            console.log(`Y"" Atualizando ${result.items.length} itens na interface usando dados da API...`);
+            console.log(` Atualizando ${result.items.length} itens na interface usando dados da API...`);
             for (const itemData of result.items) {
                 // Pular sales_page - eles são atualizados separadamente
                 if (itemData.item_type === 'sales_page') {
@@ -1360,7 +1360,7 @@ async function saveAllChanges(event) {
                             console.warn(`Não foi possível buscar dados atualizados do sales_page ${itemId}`);
                         }
                     } catch (error) {
-                        console.error(`O Erro ao buscar dados atualizados do sales_page ${itemId}:`, error);
+                        console.error(`Erro ao buscar dados atualizados do sales_page ${itemId}:`, error);
                     }
                 }
             }
@@ -1369,7 +1369,7 @@ async function saveAllChanges(event) {
             // Mas apenas se houver dados e ordem visual capturada
             if (window.currentProfileData && window.currentProfileData.items) {
                 if (visualOrderMap.size > 0) {
-                    console.log('Y"" Aplicando ordem visual preservada aos dados antes de renderizar...');
+                    console.log(' Aplicando ordem visual preservada aos dados antes de renderizar...');
                     window.currentProfileData.items.forEach(item => {
                         const itemId = String(item.id);
                         const visualOrder = visualOrderMap.get(itemId);
@@ -1377,7 +1377,7 @@ async function saveAllChanges(event) {
                             const oldOrder = item.display_order;
                             item.display_order = visualOrder;
                             if (oldOrder !== visualOrder) {
-                                console.log(`Y"" Item ${itemId}: display_order ${oldOrder} -> ${visualOrder}`);
+                                console.log(` Item ${itemId}: display_order ${oldOrder} -> ${visualOrder}`);
                             }
                         }
                     });
@@ -1422,7 +1422,7 @@ async function saveAllChanges(event) {
                     });
 
                     if (needsReorder) {
-                        console.log('Y"" Reordenando elementos no DOM para manter ordem visual (caminho sales_page)...');
+                        console.log(' Reordenando elementos no DOM para manter ordem visual (caminho sales_page)...');
 
                         // Criar array ordenado baseado na ordem visual
                         const sortedItems = itemsInDOM.slice().sort((a, b) => {
@@ -1509,7 +1509,7 @@ async function saveAllChanges(event) {
 
         // Recarregar dados do servidor para garantir sincronização
         // Isso é necessário para garantir que novos módulos apareçam no cartão público
-        console.log('Y"" Recarregando dados do servidor após salvar...');
+        console.log(' Recarregando dados do servidor após salvar...');
         try {
             await env.fetchProfileData(true); // Forçar atualização imediata
 
@@ -1573,7 +1573,7 @@ async function saveAllChanges(event) {
                         const oldOrder = item.display_order;
                         item.display_order = visualOrder;
                         if (oldOrder !== visualOrder) {
-                            console.log(`Y"" Aplicando ordem visual ao item ${itemId}: ${oldOrder} -> ${visualOrder}`);
+                            console.log(` Aplicando ordem visual ao item ${itemId}: ${oldOrder} -> ${visualOrder}`);
                             orderUpdated = true;
                         }
                     }
@@ -1598,7 +1598,7 @@ async function saveAllChanges(event) {
                 }
 
                 // Re-renderizar lista de módulos (Wi-Fi e outros que estavam no servidor mas não no DOM)
-                console.log('Y"" Renderizando lista de módulos após publicar...');
+                console.log(' Renderizando lista de módulos após publicar...');
                 if (window.currentProfileData) {
                     env.renderEditor(window.currentProfileData);
                     reconcileModulesListWithProfileData(window.currentProfileData);
@@ -1609,7 +1609,7 @@ async function saveAllChanges(event) {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         setTimeout(() => {
-                            console.log('Y"" Forçando atualização do preview após renderEditor...');
+                            console.log(' Forçando atualização do preview após renderEditor...');
                             env.updateLivePreviewFromForm();
                             console.log('Preview atualizado após recarregar dados');
                         }, 500);
@@ -1635,7 +1635,7 @@ async function saveAllChanges(event) {
                         });
 
                         if (needsReorder) {
-                            console.log('Y"" Reordenando elementos no DOM para manter ordem visual...');
+                            console.log(' Reordenando elementos no DOM para manter ordem visual...');
 
                             // Criar array ordenado baseado na ordem visual
                             const sortedItems = itemsInDOM.slice().sort((a, b) => {
@@ -1686,7 +1686,7 @@ async function saveAllChanges(event) {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         setTimeout(() => {
-                            console.log('Y"" Forçando atualização do preview após recarregar (sem reordenar)...');
+                            console.log(' Forçando atualização do preview após recarregar (sem reordenar)...');
                             env.updateLivePreviewFromForm();
                             console.log('Preview atualizado após recarregar (sem reordenar)');
                         }, 500);
@@ -1705,9 +1705,9 @@ async function saveAllChanges(event) {
         }
 
     } catch (error) {
-        console.error("O Erro em saveAllChanges:", error);
+        console.error("Erro em saveAllChanges:", error);
         console.error("O Stack trace:", error.stack);
-        console.error("O Error details:", {
+        console.error("Error details:", {
             name: error.name,
             message: error.message,
             cause: error.cause

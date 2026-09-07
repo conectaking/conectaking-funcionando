@@ -108,7 +108,7 @@ async function saveItemOrder(itemsOrder) {
         await Promise.all(updatePromises);
         console.log('Ordem dos módulos atualizada com sucesso');
     } catch (error) {
-        console.error('O Erro ao salvar ordem dos módulos:', error);
+        console.error('Erro ao salvar ordem dos módulos:', error);
     }
 }
 
@@ -141,7 +141,7 @@ function initSortable() {
         return;
     }
 
-    console.log(`Y"" Inicializando Sortable (mobile: ${window.innerWidth <= 768}, ${items.length} itens, ${handles.length} handles)`);
+    console.log(` Inicializando Sortable (mobile: ${window.innerWidth <= 768}, ${items.length} itens, ${handles.length} handles)`);
 
     // Destruir instância anterior se existir
     if (SELECTORS.itemsContainer.sortable) {
@@ -231,7 +231,7 @@ function initSortable() {
                     }
                 }
             } catch (error) {
-                console.error('O Erro no onStart do Sortable:', error);
+                console.error('Erro no onStart do Sortable:', error);
             }
         },
         // Callback durante o drag - permitir movimento livre
@@ -240,7 +240,7 @@ function initSortable() {
                 // Permitir movimento livre sem interferências
                 return true; // Sempre permitir movimento
             } catch (error) {
-                console.error('O Erro no onMove do Sortable:', error);
+                console.error('Erro no onMove do Sortable:', error);
                 return true; // Permitir movimento mesmo com erro
             }
         },
@@ -297,7 +297,7 @@ function initSortable() {
                 if (newOrder.length > 0 && evt.oldIndex !== evt.newIndex) {
                     console.log(`Y' Salvando nova ordem (${newOrder.length} itens)`);
                     saveItemOrder(newOrder).catch(err => {
-                        console.error('O Erro ao salvar ordem:', err);
+                        console.error('Erro ao salvar ordem:', err);
                     });
                 }
 
@@ -316,7 +316,7 @@ function initSortable() {
                 }
 
             } catch (error) {
-                console.error('O Erro no onEnd do Sortable:', error);
+                console.error('Erro no onEnd do Sortable:', error);
                 // Tentar restaurar estado mesmo com erro
                 if (evt.item) {
                     evt.item.classList.remove('sortable-dragging', 'sortable-dragging-mobile');

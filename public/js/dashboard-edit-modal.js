@@ -192,7 +192,7 @@ async function openEditModal(itemEl) {
 
     let formHTML = '';
 
-    // Funf§f£o auxiliar para sanitizar URLs de imagem
+    // Função auxiliar para sanitizar URLs de imagem
     function sanitizeImageUrl(url) {
         const defaultPlaceholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9Ijc1IiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIj5JbWFnZW08L3RleHQ+Cjwvc3ZnPgo=';
         if (!url || typeof url !== 'string') {
@@ -1158,7 +1158,7 @@ async function openEditModal(itemEl) {
 
                             console.log('Logo do formulário digital enviado:', finalUrl);
                         } catch (error) {
-                            console.error('O Erro ao fazer upload do logo:', error);
+                            console.error('Erro ao fazer upload do logo:', error);
                             alert(`Erro ao fazer upload: ${error.message}`);
                         } finally {
                             if (loader) loader.style.display = 'none';
@@ -1243,7 +1243,7 @@ async function openEditModal(itemEl) {
 
                             console.log('Banner do formulário digital enviado:', finalUrl);
                         } catch (error) {
-                            console.error('O Erro ao fazer upload do banner:', error);
+                            console.error('Erro ao fazer upload do banner:', error);
                             alert(`Erro ao fazer upload: ${error.message}`);
                         } finally {
                             if (loader) loader.style.display = 'none';

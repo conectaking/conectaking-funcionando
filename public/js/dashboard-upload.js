@@ -740,7 +740,7 @@ function closeCropper() {
     }
 }
 
-// Funf§f£o para obter f­cone padrf£o baseado no tipo de item
+// Função para obter ícone padrão baseado no tipo de item
 
     function confirmCropAndUpload() {
         if (!cropper) return;
