@@ -9,6 +9,7 @@ Scripts que devem ser carregados pelo `dashboard.html` para manter o front organ
 | `dashboard-finance.js` | **Finanças** (isolado). Namespace via `window.initFinancePane` etc. Depende de `DashboardCore`. |
 | `dashboard-empresa.js` | **Personalização da Marca**. `DashboardEmpresa.loadBrandingData` / `saveBranding` / `clearBranding`. |
 | `dashboard-relatorios.js` | **Relatórios**. `window.loadReportsData` / `DashboardRelatorios.init()`. |
+| `dashboard-cartao.js` | **Cartão/Preview**. `DashboardCartao.updateLivePreviewFromForm` etc. |
 | `dashboard-info.js` | Aba **Informações** — namespace `DashboardInfo.init()`. |
 | `dashboard-personalizar.js` | Aba **Personalizar** + `reloadPreview()` após Publicar. |
 | `dashboard-ocultar-modulos-por-plano.js` | Oculta itens do menu conforme plano. |
@@ -25,6 +26,7 @@ Incluir **depois** do `dashboard.js`:
 <script src="js/dashboard-finance.js?v=…" defer></script>
 <script src="js/dashboard-empresa.js?v=…" defer></script>
 <script src="js/dashboard-relatorios.js?v=…" defer></script>
+<script src="js/dashboard-cartao.js?v=…" defer></script>
 <script src="js/dashboard-info.js?v=…" defer></script>
 <script src="js/dashboard-personalizar.js?v=…" defer></script>
 <script src="js/dashboard-vitrine.js?v=…" defer></script>

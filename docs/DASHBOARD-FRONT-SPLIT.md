@@ -10,6 +10,7 @@ O `dashboard.js` é o **orquestrador** (auth, sidebar, cartão, itens). Módulos
 | `js/dashboard-finance.js` | Gestão financeira (`window.initFinancePane`, gráficos, lançamentos…) |
 | `js/dashboard-empresa.js` | Personalização da marca (logo upload/save) — `DashboardEmpresa` / `loadBrandingData` |
 | `js/dashboard-relatorios.js` | Relatórios / analytics (`window.loadReportsData`, `DashboardRelatorios`) |
+| `js/dashboard-cartao.js` | Preview ao vivo, vCard, estado dos módulos (`DashboardCartao`) |
 | `js/dashboard-info.js` | Stub/namespace aba Informações (`DashboardInfo.init`) |
 | `js/dashboard-personalizar.js` | Preview após publicar (`DashboardPersonalizar.reloadPreview`) |
 | `js/dashboard-vitrine.js` | Vitrine |
