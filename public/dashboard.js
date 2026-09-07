@@ -10253,8 +10253,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'sales_page': 'fas fa-store',
             'digital_form': 'fas fa-file-signature',
             'convite': 'fas fa-envelope-open-text',
-            'agenda': 'fas fa-calendar-check',
-            'contract': 'fas fa-file-contract',
+
             'king_selection': 'fas fa-images',
             'bible': 'fas fa-bible',
             'location': 'fas fa-map-marker-alt'
@@ -11587,23 +11586,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, false);
                     return;
                 }
-                if (link.id === 'king-bolao-sidebar-link') {
-                    return;
-                }
-                if (link.id === 'meusite-sidebar-link') {
-                    link.addEventListener('click', function (e) {
-                        setTimeout(function () { window.loadMeuSitePane && window.loadMeuSitePane(); }, 100);
-                    }, false);
-                }
                 if (link.id === 'recibos-orcamentos-sidebar-link') {
                     return;
                 }
-                if (link.id === 'contratos-link') {
-                    return;
-                }
-                if (link.id === 'kingbrief-sidebar-link') {
-                    return;
-                }
+
                 if (link.id === 'bible-sidebar-link') {
                     link.addEventListener('click', async (e) => {
                         e.preventDefault();
@@ -11679,15 +11665,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (targetPane) {
                             targetPane.classList.add('active');
                             targetPane.style.display = 'flex';
-                            if (targetId === 'meu-site-pane' && window.loadMeuSitePane) setTimeout(function () { window.loadMeuSitePane(); }, 50);
                             if (targetId === 'king-forms-pane') {
                                 var kfIframe = document.getElementById('king-forms-iframe');
                                 if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = 'kingForms.html';
                             }
-                            if (targetId === 'contratos-pane') {
-                                var contratosIframe = document.getElementById('contratos-iframe');
-                                if (contratosIframe && (!contratosIframe.src || contratosIframe.src === 'about:blank' || contratosIframe.src.endsWith('about:blank'))) contratosIframe.src = 'contracts.html';
-                            }
+                            // contratos/agenda/meu-site descontinuados — ignorar
                         }
                         // Atualizar URL com o hash do painel para que, ao atualizar a página, permaneça na mesma seção
                         const basePath = window.location.pathname || 'dashboard.html';
@@ -13119,8 +13101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'relatorios': 'relatorios-pane',
             'editar': 'editar-pane',
             'compartilhar': 'compartilhar-pane',
-            'contratos': 'contratos-pane',
-            'agenda': 'agenda-pane',
+
             'branding': 'branding-pane',
             'separacao-pacotes': 'separacao-pacotes-pane',
             'assinatura': 'assinatura-pane',
@@ -13171,7 +13152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (targetId === 'finance-pane' && window.initFinancePane) window.initFinancePane();
                     else if (targetId === 'relatorios-pane' && typeof window.loadReportsData === 'function') window.loadReportsData();
                     else if (targetId === 'compartilhar-pane' && typeof window.generateQRCode === 'function') window.generateQRCode();
-                    else if (targetId === 'contratos-pane' && typeof window.initContractsPane === 'function') window.initContractsPane();
+
                     else if (targetId === 'meu-site-pane' && window.loadMeuSitePane) window.loadMeuSitePane();
                     else if (targetId === 'king-forms-pane') {
                         var kfIframe = document.getElementById('king-forms-iframe');
@@ -13353,69 +13334,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 window.initFinancePane();
                             }
                         }
-                        if (targetId === 'contratos-pane') {
-                            var contratosIframe = document.getElementById('contratos-iframe');
-                            if (contratosIframe && (!contratosIframe.src || contratosIframe.src === 'about:blank' || contratosIframe.src.endsWith('about:blank'))) contratosIframe.src = 'contracts.html';
-                            if (typeof window.initContractsPane === 'function') window.initContractsPane();
-                        }
-                        if (targetId === 'agenda-pane') {
-                            // Inicializar módulo de agenda se disponível
-                            if (window.agendaModule && typeof window.agendaModule.init === 'function') {
-                                window.agendaModule.init();
-                            }
-
-                            // Verificar se voltou da conexão OAuth
-                            const urlParams = new URLSearchParams(window.location.search);
-                            if (urlParams.get('agenda') === 'connected') {
-                                // Mostrar mensagem de sucesso
-                                const successMsg = document.createElement('div');
-                                successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #22c55e; color: white; padding: 15px 25px; border-radius: 12px; z-index: 10003; box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3); animation: slideInRight 0.3s ease-out;';
-                                successMsg.innerHTML = '<i class="fas fa-check-circle"></i> Google Calendar conectado com sucesso!';
-                                document.body.appendChild(successMsg);
-
-                                // Remover após 5 segundos
-                                setTimeout(() => {
-                                    successMsg.style.animation = 'slideOutRight 0.3s ease-out';
-                                    setTimeout(() => successMsg.remove(), 300);
-                                }, 5000);
-
-                                // Limpar parâmetro da URL
-                                window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-
-                                // Recarregar agenda após 1 segundo
-                                setTimeout(() => {
-                                    if (window.agendaModule && typeof window.agendaModule.init === 'function') {
-                                        window.agendaModule.init();
-                                    }
-                                }, 1000);
-                            } else if (urlParams.get('agenda') === 'error') {
-                                // Mostrar mensagem de erro
-                                const errorMessage = urlParams.get('message') || 'Erro ao conectar Google Calendar';
-                                const errorMsg = document.createElement('div');
-                                errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 15px 25px; border-radius: 12px; z-index: 10003; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3); max-width: 500px;';
-                                errorMsg.innerHTML = `
-                                    <div style="display: flex; align-items: start; gap: 12px;">
-                                        <i class="fas fa-exclamation-circle" style="font-size: 1.2rem; margin-top: 2px;"></i>
-                                        <div style="flex: 1;">
-                                            <strong style="display: block; margin-bottom: 5px;">Erro ao Conectar Google Calendar</strong>
-                                            <div style="font-size: 0.9rem; opacity: 0.95;">${decodeURIComponent(errorMessage)}</div>
-                                        </div>
-                                        <button onclick="this.parentElement.parentElement.remove()" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">&times;</button>
-                                    </div>
-                                `;
-                                document.body.appendChild(errorMsg);
-
-                                // Remover após 10 segundos
-                                setTimeout(() => {
-                                    errorMsg.style.opacity = '0';
-                                    errorMsg.style.transition = 'opacity 0.3s';
-                                    setTimeout(() => errorMsg.remove(), 300);
-                                }, 10000);
-
-                                // Limpar parâmetro da URL
-                                window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-                            }
-                        }
+                        if (targetId === 'contratos-pane') { return; }
+                        if (targetId === 'agenda-pane') { return; }
                         if (targetId === 'branding-pane') {
                             loadBrandingData();
                         }
