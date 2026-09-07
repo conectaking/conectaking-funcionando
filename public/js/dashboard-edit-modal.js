@@ -203,7 +203,7 @@ async function openEditModal(itemEl) {
         if (trimmedUrl.includes('placeholder.com') || trimmedUrl.includes('via.placeholder')) {
             return defaultPlaceholder;
         }
-        // Aceitar apenas URLs vf¡lidas: data URIs ou http/https
+        // Aceitar apenas URLs válidas: data URIs ou http/https
         if (trimmedUrl.startsWith('data:image/') ||
             trimmedUrl.startsWith('http://') ||
             trimmedUrl.startsWith('https://')) {
@@ -253,7 +253,7 @@ async function openEditModal(itemEl) {
         }
     }
 
-    // Verificar se f© carrossel pela classe ou pelo destination_url
+    // Verificar se é carrossel pela classe ou pelo destination_url
     const isCarouselItem = itemEl.classList.contains('banner-carousel') ||
         (itemType === 'banner' && currentDestUrl && (currentDestUrl.startsWith('[') || currentDestUrl === '[]'));
     const rawImageUrl = itemEl.querySelector('.item-image-url-input')?.value || '';
@@ -551,12 +551,12 @@ async function openEditModal(itemEl) {
                 <input type="text" id="edit-recipient-name" value="${itemEl.querySelector('.item-recipient-name-input')?.value || ''}" placeholder="Seu nome completo">
             </div>
             <div class="input-group">
-                <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                <label>Chave PIX (Aleatória, CPF/CNPJ, E-mail ou Telefone)</label>
                 <div class="pix-key-examples">
-                    <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                    <small><strong>?ož Celular:</strong> Apenas números (ex: +5511999999999)</small>
                     <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
-                    <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
-                    <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                    <small><strong> CPF:</strong> Apenas números (ex: 12345678901)</small>
+                    <small><strong>?~ Chave Aleatória:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                 </div>
                 <input type="text" id="edit-pix-key" value="${currentPixKey}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
             </div>
@@ -565,8 +565,8 @@ async function openEditModal(itemEl) {
                 <input type="number" id="edit-pix-amount" value="${itemEl.querySelector('.item-pix-amount-input')?.value || ''}" placeholder="Valor em reais" step="0.01">
             </div>
             <div class="input-group">
-                <label>Descrif§f£o (opcional)</label>
-                <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descrif§f£o do pagamento">
+                <label>Descrição (opcional)</label>
+                <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descrição do pagamento">
             </div>
         `;
             break;
@@ -581,12 +581,12 @@ async function openEditModal(itemEl) {
                 <input type="text" id="edit-recipient-name" value="${itemEl.querySelector('.item-recipient-name-input')?.value || ''}" placeholder="Seu nome completo">
             </div>
             <div class="input-group">
-                <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                <label>Chave PIX (Aleatória, CPF/CNPJ, E-mail ou Telefone)</label>
                 <div class="pix-key-examples">
-                    <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                    <small><strong>?ož Celular:</strong> Apenas números (ex: +5511999999999)</small>
                     <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
-                    <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
-                    <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                    <small><strong> CPF:</strong> Apenas números (ex: 12345678901)</small>
+                    <small><strong>?~ Chave Aleatória:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                 </div>
                 <input type="text" id="edit-pix-key" value="${currentPixKey}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
             </div>
@@ -595,8 +595,8 @@ async function openEditModal(itemEl) {
                 <input type="number" id="edit-pix-amount" value="${itemEl.querySelector('.item-pix-amount-input')?.value || ''}" placeholder="Valor em reais" step="0.01">
             </div>
             <div class="input-group">
-                <label>Descrif§f£o (opcional)</label>
-                <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descrif§f£o do pagamento">
+                <label>Descrição (opcional)</label>
+                <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descrição do pagamento">
             </div>
         `;
             break;
@@ -1560,7 +1560,7 @@ function openEditModalForNewItem(tempItem) {
     const itemType = tempItem.item_type;
     let formHTML = '';
 
-    // Usar a mesma lf³gica do openEditModal mas para item novo
+    // Usar a mesma lógica do openEditModal mas para item novo
     switch (itemType) {
         case 'whatsapp':
         case 'telegram':
@@ -1614,12 +1614,12 @@ function openEditModalForNewItem(tempItem) {
                     <input type="text" id="edit-recipient-name" value="${tempItem.recipient_name || ''}" placeholder="Seu nome completo">
                 </div>
                 <div class="input-group">
-                    <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                    <label>Chave PIX (Aleatória, CPF/CNPJ, E-mail ou Telefone)</label>
                     <div class="pix-key-examples">
-                        <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                        <small><strong>?ož Celular:</strong> Apenas números (ex: +5511999999999)</small>
                         <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
-                        <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
-                        <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                        <small><strong> CPF:</strong> Apenas números (ex: 12345678901)</small>
+                        <small><strong>?~ Chave Aleatória:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                     </div>
                     <input type="text" id="edit-pix-key" value="${tempItem.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
                 </div>
@@ -1628,8 +1628,8 @@ function openEditModalForNewItem(tempItem) {
                     <input type="number" id="edit-pix-amount" value="${tempItem.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
                 </div>
                 <div class="input-group">
-                    <label>Descrif§f£o (opcional)</label>
-                    <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
+                    <label>Descrição (opcional)</label>
+                    <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descrição do pagamento">
                 </div>
             `;
             break;
@@ -1644,12 +1644,12 @@ function openEditModalForNewItem(tempItem) {
                     <input type="text" id="edit-recipient-name" value="${tempItem.recipient_name || ''}" placeholder="Seu nome completo">
                 </div>
                 <div class="input-group">
-                    <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                    <label>Chave PIX (Aleatória, CPF/CNPJ, E-mail ou Telefone)</label>
                     <div class="pix-key-examples">
-                        <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                        <small><strong>?ož Celular:</strong> Apenas números (ex: +5511999999999)</small>
                         <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
-                        <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
-                        <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                        <small><strong> CPF:</strong> Apenas números (ex: 12345678901)</small>
+                        <small><strong>?~ Chave Aleatória:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                     </div>
                     <input type="text" id="edit-pix-key" value="${tempItem.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
                 </div>
@@ -1658,8 +1658,8 @@ function openEditModalForNewItem(tempItem) {
                     <input type="number" id="edit-pix-amount" value="${tempItem.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
                 </div>
                 <div class="input-group">
-                    <label>Descrif§f£o (opcional)</label>
-                    <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
+                    <label>Descrição (opcional)</label>
+                    <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descrição do pagamento">
                 </div>
             `;
             break;
@@ -1978,7 +1978,7 @@ function openEditModalForNewItem(tempItem) {
     SELECTORS.editItemModal.dataset.isNewItem = 'true';
     SELECTORS.editItemModal.dataset.itemType = itemType;
 
-    // Atualizar contefºdo do modal
+    // Atualizar conteúdo do modal
     const modalTitle = SELECTORS.editItemModal.querySelector('.modal-header h4');
     modalTitle.textContent = `Configurar ${getItemTypeName(itemType)}`;
 

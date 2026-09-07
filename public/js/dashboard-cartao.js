@@ -210,7 +210,7 @@ function extractEmailAddress(rawValue) {
     return value.toLowerCase();
 }
 
-// Função para extrair o ID do vf­deo do YouTube de diferentes formatos de URL
+// Função para extrair o ID do vídeo do YouTube de diferentes formatos de URL
 function extractYouTubeVideoId(url) {
     if (!url) return null;
 
@@ -235,7 +235,7 @@ function convertYouTubeUrlToEmbed(url) {
     if (!url) return '';
 
     const videoId = extractYouTubeVideoId(url);
-    if (!videoId) return url; // Retorna a URL original se nf£o conseguir extrair o ID
+    if (!videoId) return url; // Retorna a URL original se não conseguir extrair o ID
 
     // Remove parâmetros de timestamp e outros da URL
     const cleanVideoId = videoId.split('&')[0].split('?')[0];
@@ -382,13 +382,13 @@ function updateVcardPreviewButton(buttonEl) {
 
     const publicLinkUrl = normalizeUrlForVcard('generic', SELECTORS.publicLink?.href || '');
     if (publicLinkUrl) {
-        addUrlEntry(publicLinkUrl, 'Cartf£o Digital', 'WORK');
+        addUrlEntry(publicLinkUrl, 'Cartão Digital', 'WORK');
     }
 
     if (slugCandidate) {
         const slugUrl = normalizeUrlForVcard('generic', `https://tag.conectaking.com.br/${slugCandidate.replace(/^\/+/, '')}`);
         if (slugUrl) {
-            addUrlEntry(slugUrl, 'Cartf£o Digital', 'PROFILE');
+            addUrlEntry(slugUrl, 'Cartão Digital', 'PROFILE');
         }
     }
 
@@ -910,7 +910,7 @@ function updateLivePreviewFromForm() {
                 if (trimmedUrl.includes('placeholder.com') || trimmedUrl.includes('via.placeholder')) {
                     return defaultBannerPlaceholder;
                 }
-                // Aceitar apenas URLs vf¡lidas: data URIs ou http/https
+                // Aceitar apenas URLs válidas: data URIs ou http/https
                 if (trimmedUrl.startsWith('data:image/') ||
                     trimmedUrl.startsWith('http://') ||
                     trimmedUrl.startsWith('https://')) {
@@ -971,7 +971,7 @@ function updateLivePreviewFromForm() {
             const embedUrl = convertYouTubeUrlToEmbed(youtubeUrl);
 
             if (embedUrl && embedUrl !== youtubeUrl) {
-                // URL vf¡lida convertida para embed
+                // URL válida convertida para embed
                 previewEl = document.createElement('div');
                 previewEl.className = 'preview-embed-container';
                 previewEl.innerHTML = `
@@ -984,7 +984,7 @@ function updateLivePreviewFromForm() {
                 ></iframe>
             `;
             } else {
-                // Placeholder se nf£o houver URL vf¡lida
+                // Placeholder se não houver URL válida
                 previewEl = document.createElement('div');
                 previewEl.className = 'preview-embed-placeholder';
                 const iconClass = itemEl.querySelector('.item-icon-picker')?.className.replace(' item-icon-picker', '').trim();
@@ -1029,7 +1029,7 @@ function preserveLocalItemStates() {
                 if (bannerImageInput) preservedStates[itemId].image_url = bannerImageInput.value;
                 if (bannerDestInput) preservedStates[itemId].destination_url = bannerDestInput.value;
                 if (bannerPreview) preservedStates[itemId].preview_src = bannerPreview.src;
-                // Verificar se f© carrossel
+                // Verificar se é carrossel
                 if (itemEl.classList.contains('banner-carousel')) {
                     preservedStates[itemId].isCarousel = true;
                 }
@@ -1113,7 +1113,7 @@ function preserveLocalItemStates() {
     return preservedStates;
 }
 
-// Função para restaurar o estado local dos itens apf³s recarregar
+// Função para restaurar o estado local dos itens após recarregar
 function restoreLocalItemStates(preservedStates) {
     if (!preservedStates || Object.keys(preservedStates).length === 0) return;
 

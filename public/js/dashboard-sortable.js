@@ -295,13 +295,13 @@ function initSortable() {
 
                 // Salvar a nova ordem apenas se realmente mudou
                 if (newOrder.length > 0 && evt.oldIndex !== evt.newIndex) {
-                    console.log(`Y' Salvando nova ordem (${newOrder.length} itens)`);
+                    console.log(`Salvando nova ordem (${newOrder.length} itens)`);
                     saveItemOrder(newOrder).catch(err => {
                         console.error('Erro ao salvar ordem:', err);
                     });
                 }
 
-                updateLivePreviewFromForm();
+                env.updateLivePreviewFromForm();
 
                 // CRÍTICO: Garantir que o Sortable continue habilitado e funcionando
                 if (SELECTORS.itemsContainer && SELECTORS.itemsContainer.sortable) {
@@ -422,7 +422,7 @@ function setupMoveButtons() {
             saveItemOrder(newOrder);
         }
 
-        updateLivePreviewFromForm();
+        env.updateLivePreviewFromForm();
     };
 
     // Adicionar listener único usando event delegation

@@ -39,7 +39,7 @@
         }
     };
 
-// M"DULO DE FINAN?AS (Estilo Mobills)
+// MÓDULO DE FINANÇAS (Estilo Mobills)
 // ==========================================================
 window.initFinancePane = async function () {
     const financeContent = document.getElementById('finance-content');
@@ -5194,11 +5194,11 @@ window.filterByPaidExpense = function () {
     renderFinanceTransactions(filtered, 'expense');
 };
 
-// FUN—fO REMOVIDA: updateFinanceCardsFromTransactions
+// FUNÇÃO REMOVIDA: updateFinanceCardsFromTransactions
 // Os cards de resumo devem permanecer FIXOS e não serem alterados pelos filtros
 // Os filtros apenas mostram/ocultam transações abaixo, sem alterar os cards
 
-// FUN—fO REMOVIDA: updateFinanceTotals
+// FUNÇÃO REMOVIDA: updateFinanceTotals
 // Os cards de resumo devem permanecer FIXOS e não serem alterados pelos filtros
 // Os filtros apenas mostram/ocultam transações abaixo, sem alterar os cards
 
@@ -5869,18 +5869,18 @@ window.openAddTransactionModal = async function (type, transactionData = null) {
         });
     }
 
-    // PREVENIR SUBMIT PADRfO E CHAMAR FUN—fO DE SALVAR
+    // PREVENIR SUBMIT PADRÃO E CHAMAR FUNÇÃO DE SALVAR
     if (form) {
         console.log('[FINANCE] Adicionando listeners para prevenir submit padrão e chamar saveFinanceTransaction');
 
-        // Adicionar listener para submit - CHAMAR A FUN—fO DE SALVAR AQUI
+        // Adicionar listener para submit - CHAMAR A FUNÇÃO DE SALVAR AQUI
         form.addEventListener('submit', async (e) => {
             console.log('[FINANCE] Form submit capturado, prevenindo padrão e chamando saveFinanceTransaction');
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
 
-            // CHAMAR A FUN—fO DE SALVAR
+            // CHAMAR A FUNÇÃO DE SALVAR
             try {
                 console.log('[FINANCE] Chamando saveFinanceTransaction com type:', type);
                 await saveFinanceTransaction(e, type);
@@ -5900,7 +5900,7 @@ window.openAddTransactionModal = async function (type, transactionData = null) {
                 e.stopImmediatePropagation();
             }
 
-            // CHAMAR A FUN—fO DE SALVAR
+            // CHAMAR A FUNÇÃO DE SALVAR
             try {
                 console.log('[FINANCE] Chamando saveFinanceTransaction (onsubmit) com type:', type);
                 await saveFinanceTransaction(e, type);
@@ -6527,7 +6527,7 @@ async function updateFinanceTransaction(event, id, type) {
 
 
 // ============================================
-// FUN—.ES DE GERENCIAMENTO DE PERFIS FINANCEIROS
+// FUNÇÕES DE GERENCIAMENTO DE PERFIS FINANCEIROS
 // ============================================
 
 window.showFinanceProfilesModal = async function () {

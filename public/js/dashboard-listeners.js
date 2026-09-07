@@ -2773,7 +2773,7 @@ function setupEventListeners() {
         });
     }
 
-    // Função para detectar qual preset estf¡ ativo baseado nos valores atuais
+    // Função para detectar qual preset está ativo baseado nos valores atuais
     function detectActivePreset() {
         const tl = parseInt(SELECTORS.radiusTL?.value || 12, 10);
         const tr = parseInt(SELECTORS.radiusTR?.value || 12, 10);
@@ -2806,7 +2806,7 @@ function setupEventListeners() {
         });
     }
 
-    // Inputs individuais de raio com sincronizaf§f£o
+    // Inputs individuais de raio com sincronização
     if (SELECTORS.radiusTL) {
         SELECTORS.radiusTL.addEventListener('input', () => {
             env.updateLivePreviewFromForm();
@@ -2832,7 +2832,7 @@ function setupEventListeners() {
         });
     }
 
-    // Botf£o "Aplicar como padrão"
+    // Botão "Aplicar como padrão"
     const saveRadiusDefaultBtn = document.getElementById('save-radius-default-btn');
     if (saveRadiusDefaultBtn) {
         saveRadiusDefaultBtn.addEventListener('click', () => {

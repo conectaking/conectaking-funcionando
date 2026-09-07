@@ -252,7 +252,7 @@ async function handleImageUpload(imageFile, itemElement) {
         return;
     }
 
-    // Verificar se f© carrossel ou banner (banner pode virar carrossel)
+    // Verificar se é carrossel ou banner (banner pode virar carrossel)
     const isBanner = itemElement && itemElement.dataset.itemType === 'banner';
     const isCarousel = itemElement && (itemElement.classList.contains('banner-carousel') || window.currentCarouselItemId);
     const itemId = (isCarousel || isBanner) ? (window.currentCarouselItemId || itemElement?.dataset?.id) : null;

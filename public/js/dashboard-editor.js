@@ -666,18 +666,18 @@ function renderEditor(profileData) {
         <input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título (ex: PIX Celular)">
         <label>Nome do Recebedor</label>
         <input type="text" class="item-recipient-name-input" value="${item.recipient_name || ''}" placeholder="Seu nome completo">
-        <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+        <label>Chave PIX (Aleatória, CPF/CNPJ, E-mail ou Telefone)</label>
         <div class="pix-key-examples">
-            <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: 11999999999)</small>
+            <small><strong>?ož Celular:</strong> Apenas números (ex: 11999999999)</small>
             <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
-            <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
-            <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+            <small><strong> CPF:</strong> Apenas números (ex: 12345678901)</small>
+            <small><strong>?~ Chave Aleatória:</strong> Copie e cole (ex: 12345678-1234-...)</small>
         </div>
         <input type="text" class="item-pix-key-input" value="${item.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
         <label>Valor (opcional)</label>
         <input type="number" class="item-pix-amount-input" value="${item.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
-        <label>Descrif§f£o (opcional)</label>
-        <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
+        <label>Descrição (opcional)</label>
+        <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descrição do pagamento">
     `;
                     break;
                 case 'pix_qrcode':
@@ -689,18 +689,18 @@ function renderEditor(profileData) {
         <input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título (ex: Faça um PIX)">
         <label>Nome do Recebedor</label>
         <input type="text" class="item-recipient-name-input" value="${item.recipient_name || ''}" placeholder="Seu nome completo">
-        <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+        <label>Chave PIX (Aleatória, CPF/CNPJ, E-mail ou Telefone)</label>
         <div class="pix-key-examples">
-            <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: 11999999999)</small>
+            <small><strong>?ož Celular:</strong> Apenas números (ex: 11999999999)</small>
             <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
-            <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
-            <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+            <small><strong> CPF:</strong> Apenas números (ex: 12345678901)</small>
+            <small><strong>?~ Chave Aleatória:</strong> Copie e cole (ex: 12345678-1234-...)</small>
         </div>
         <input type="text" class="item-pix-key-input" value="${item.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
         <label>Valor (opcional)</label>
         <input type="number" class="item-pix-amount-input" value="${item.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
-        <label>Descrif§f£o (opcional)</label>
-        <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
+        <label>Descrição (opcional)</label>
+        <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descrição do pagamento">
     `;
                     break;
                 case 'wifi': {
@@ -941,7 +941,7 @@ function renderEditor(profileData) {
                     itemEl.classList.add('link-item');
                     iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-briefcase'} item-icon-picker" title="Alterar fcone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Meu Portfólio'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
-                    editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Portfólio</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do seu site ou portff³lio">`;
+                    editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Portfólio</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do seu site ou portfólio">`;
                     break;
                 case 'product_catalog':
                     itemEl.classList.add('link-item');
@@ -974,7 +974,7 @@ function renderEditor(profileData) {
                 case 'youtube_embed':
                     itemEl.classList.add('link-item');
                     iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-youtube'} item-icon-picker" title="Alterar fcone"></i>`;
-                    displayHTML = `<div class="item-display-title">${item.title || 'YouTube Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do vf­deo'}</div>`;
+                    displayHTML = `<div class="item-display-title">${item.title || 'YouTube Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do vídeo'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Vídeo do YouTube</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://www.youtube.com/watch?v=...">`;
                     break;
                 case 'tiktok_embed':

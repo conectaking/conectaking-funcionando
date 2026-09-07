@@ -411,13 +411,13 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error('Nenhum arquivo selecionado');
         }
 
-        // Validaf§f£o do arquivo
+        // Validação do arquivo
         if (file.type !== 'application/pdf') {
-            throw new Error('Por favor, selecione um arquivo PDF vf¡lido');
+            throw new Error('Por favor, selecione um arquivo PDF válido');
         }
 
         if (file.size > 10 * 1024 * 1024) { // 10MB
-            throw new Error('O arquivo deve ter no mf¡ximo 10MB');
+            throw new Error('O arquivo deve ter no máximo 10MB');
         }
 
         console.log(`?o Iniciando upload do PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
@@ -438,25 +438,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`?o¡ Resposta do servidor: ${response.status} ${response.statusText}`);
 
-            // Verifica se a resposta f© JSON vf¡lida
+            // Verifica se a resposta é JSON válida
             const contentType = response.headers.get('content-type');
             console.log(`?o— Content-Type da resposta: ${contentType}`);
 
             if (!contentType || !contentType.includes('application/json')) {
                 const responseText = await response.text();
-                console.error('Resposta nf£o f© JSON:', responseText.substring(0, 500));
+                console.error('Resposta não é JSON:', responseText.substring(0, 500));
 
-                // Mensagens especf­ficas para diferentes tipos de erro
+                // Mensagens específicas para diferentes tipos de erro
                 if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf nf£o estf¡ funcionando. Verifique o arquivo SERVER-FIXES.md para corref§fµes necessf¡rias.');
+                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf não está funcionando. Verifique o arquivo SERVER-FIXES.md para correções necessárias.');
                 } else if (response.status === 404) {
-                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf nf£o existe no servidor. Implemente conforme SERVER-FIXES.md');
+                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf não existe no servidor. Implemente conforme SERVER-FIXES.md');
                 } else if (response.status === 401) {
-                    throw new Error('NAO AUTORIZADO: Token invf¡lido ou expirado. Faf§a login novamente.');
+                    throw new Error('NAO AUTORIZADO: Token inválido ou expirado. Faça login novamente.');
                 } else if (response.status === 500) {
-                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as corref§fµes do SERVER-FIXES.md');
+                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as correções do SERVER-FIXES.md');
                 } else {
-                    throw new Error(` ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para corref§fµes.`);
+                    throw new Error(` ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para correções.`);
                 }
             }
 
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(result.message || `Erro do servidor: ${response.status}`);
             }
 
-            console.log(`â"— Upload do PDF bem-sucedido:`, result);
+            console.log(`✓ Upload do PDF bem-sucedido:`, result);
 
             if (progressCallback) {
                 progressCallback('Arquivo Carregado!');
@@ -481,11 +481,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressCallback('Erro no envio');
             }
 
-            // Re-lanf§a o erro com informaf§fµes especf­ficas
+            // Re-lança o erro com informações específicas
             if (error.message.includes('Failed to fetch')) {
-                throw new Error('ERRO DE CONEXAO: Nf£o foi possf­vel conectar ao servidor. Verifique sua internet e se o servidor estf¡ funcionando.');
+                throw new Error('ERRO DE CONEXAO: Não foi possível conectar ao servidor. Verifique sua internet e se o servidor está funcionando.');
             } else if (error.message.includes('Unexpected token')) {
-                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados invf¡lidos. Implemente as corref§fµes do SERVER-FIXES.md');
+                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados inválidos. Implemente as correções do SERVER-FIXES.md');
             } else {
                 throw error;
             }
@@ -509,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(` Teste de conectividade: ${testResponse.status} ${testResponse.statusText}`);
 
             if (testResponse.ok) {
-                console.log('â"— Servidor estf¡ funcionando');
+                console.log('✓ Servidor está funcionando');
                 return {
                     server: true,
                     status: testResponse.status,
@@ -525,11 +525,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error('Servidor nf£o acessf­vel:', error);
+            console.error('Servidor não acessível:', error);
             return {
                 server: false,
                 error: error.message,
-                message: 'Servidor nf£o acessf­vel, usando modo offline'
+                message: 'Servidor não acessível, usando modo offline'
             };
         }
     }
@@ -561,31 +561,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para formatar chave PIX
     function formatPixKey(pixKey) {
-        const cleanKey = pixKey.trim().replace(/\D/g, ''); // Remove tudo que nf£o f© nfºmero
+        const cleanKey = pixKey.trim().replace(/\D/g, ''); // Remove tudo que não é número
 
-        // Se for celular (11 df­gitos), adiciona +55
+        // Se for celular (11 dígitos), adiciona +55
         if (cleanKey.length === 11) {
             return '+55' + cleanKey;
         }
 
-        // Se for celular com DDD (13 df­gitos), adiciona +
+        // Se for celular com DDD (13 dígitos), adiciona +
         if (cleanKey.length === 13 && cleanKey.startsWith('55')) {
             return '+' + cleanKey;
         }
 
-        // Se jf¡ tem +, mantf©m como estf¡
+        // Se já tem +, mantém como está
         if (pixKey.startsWith('+')) {
             return pixKey;
         }
 
-        // Para outros tipos (CPF, email, chave aleatf³ria), mantf©m como estf¡
+        // Para outros tipos (CPF, email, chave aleatória), mantém como está
         return pixKey;
     }
 
-    // Função para gerar cf³digo PIX EMV vf¡lido
+    // Função para gerar código PIX EMV válido
     function generatePixEMVCode(pixKey, recipientName, amount = null, description = '') {
         if (!pixKey || !recipientName) {
-            throw new Error('Chave PIX e nome do recebedor sf£o obrigatf³rios');
+            throw new Error('Chave PIX e nome do recebedor são obrigatórios');
         }
 
         // Limpar e validar dados
@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanDescription = description.trim().substring(0, 25);
         const cleanAmount = amount ? parseFloat(amount).toFixed(2) : '0.00';
 
-        console.log(' Gerando cf³digo PIX com dados:', {
+        console.log(' Gerando código PIX com dados:', {
             pixKeyOriginal: pixKey,
             pixKeyFormatted: cleanPixKey,
             name: cleanName,
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
             description: cleanDescription
         });
 
-        // Construir cf³digo EMV manualmente para garantir formato correto
+        // Construir código EMV manualmente para garantir formato correto
         let emvString = '';
 
         // Payload Format Indicator
@@ -633,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Merchant City
         emvString += '6006CIDADE';
 
-        // Additional Data Field Template (se houver descrif§f£o)
+        // Additional Data Field Template (se houver descrição)
         if (cleanDescription) {
             const additionalData = '05' + cleanDescription.length.toString().padStart(2, '0') + cleanDescription;
             emvString += '62' + additionalData.length.toString().padStart(2, '0') + additionalData;
@@ -643,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const crc = calculateCRC16(emvString + '6304');
         emvString += '6304' + crc;
 
-        console.log('?o Cf³digo EMV final:', emvString);
+        console.log('?o Código EMV final:', emvString);
         console.log('?o Tamanho:', emvString.length);
 
         return emvString;
@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 correctLevel: QRCode.CorrectLevel.M
             });
 
-            // Adicionar informaf§fµes abaixo do QR Code
+            // Adicionar informações abaixo do QR Code
             const info = document.createElement('div');
             info.style.marginTop = '10px';
             info.style.fontSize = '14px';
@@ -678,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div><strong>${recipientName}</strong></div>
                 <div>Chave: ${pixKey}</div>
                 ${amount ? `<div>Valor: R$ ${parseFloat(amount).toFixed(2)}</div>` : ''}
-                ${description ? `<div>Descrif§f£o: ${description}</div>` : ''}
+                ${description ? `<div>Descrição: ${description}</div>` : ''}
             `;
 
             container.appendChild(info);
@@ -912,46 +912,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNf—AO DE TESTE E DEBUG PARA PIX ---
     function testPixCode(pixKey, recipientName, amount = null, description = '') {
-        console.log(' Testando cf³digo PIX...');
+        console.log(' Testando código PIX...');
         console.log('?o— Dados de entrada:');
         console.log('- Chave PIX:', pixKey);
         console.log('- Nome:', recipientName);
         console.log('- Valor:', amount);
-        console.log('- Descrif§f£o:', description);
+        console.log('- Descrição:', description);
 
         try {
             const pixCode = generatePixEMVCode(pixKey, recipientName, amount, description);
-            console.log('â"— Cf³digo EMV gerado:', pixCode);
-            console.log('?o Tamanho do cf³digo:', pixCode.length);
+            console.log('✓ Código EMV gerado:', pixCode);
+            console.log('?o Tamanho do código:', pixCode.length);
 
-            // Verificar se comef§a com 000201
+            // Verificar se começa com 000201
             if (pixCode.startsWith('000201')) {
-                console.log('â"— Cf³digo comef§a corretamente com 000201');
+                console.log('✓ Código começa corretamente com 000201');
             } else {
-                console.log('ERRO: Cf³digo nf£o comef§a com 000201');
+                console.log('ERRO: Código não começa com 000201');
             }
 
-            // Verificar se termina com CRC vf¡lido
+            // Verificar se termina com CRC válido
             const crc = pixCode.slice(-4);
             console.log(' CRC calculado:', crc);
 
-            // Verificar estrutura bf¡sica
+            // Verificar estrutura básica
             if (pixCode.includes('BR.GOV.BCB.PIX')) {
-                console.log('â"— Contf©m identificador BR.GOV.BCB.PIX');
+                console.log('✓ Contém identificador BR.GOV.BCB.PIX');
             } else {
-                console.log('ERRO: Nf£o contf©m BR.GOV.BCB.PIX');
+                console.log('ERRO: Não contém BR.GOV.BCB.PIX');
             }
 
             if (pixCode.includes(pixKey)) {
-                console.log('â"— Contf©m chave PIX');
+                console.log('✓ Contém chave PIX');
             } else {
-                console.log('ERRO: Nf£o contf©m chave PIX');
+                console.log('ERRO: Não contém chave PIX');
             }
 
             return pixCode;
 
         } catch (error) {
-            console.error('Erro ao gerar cf³digo PIX:', error);
+            console.error('Erro ao gerar código PIX:', error);
             return null;
         }
     }
@@ -1847,7 +1847,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // ATUALIZAR CAMPOS ESPECÍFICOS POR TIPO DE M"DULO
+        // ATUALIZAR CAMPOS ESPECÍFICOS POR TIPO DE MÓDULO
         if (itemType === 'banner') {
             // Atualizar whatsapp_message (mensagem do banner)
             if (apiResult.whatsapp_message !== undefined) {
@@ -2329,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================================
-    // FUN—.ES ESPECÍFICAS PARA CADA TIPO DE M"DULO
+    // FUNÇÕES ESPECÍFICAS PARA CADA TIPO DE MÓDULO
     // ============================================
 
     // Salvar banner usando rota específica
@@ -2975,7 +2975,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.DashboardCore) window.DashboardCore.getDefaultIcon = getDefaultIcon;
 
-    // Função para obter nome amigf¡vel do tipo de item
+    // Função para obter nome amigável do tipo de item
     function getItemTypeName(itemType) {
         const names = {
             'link': 'Link Personalizado',
@@ -3040,7 +3040,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para renderizar lista de imagens do carrossel
     // Função específica para o novo módulo Carrossel (não banner)
-    // ===== NOVO CARROSSEL - FUN—.ES LIMPAS =====
+    // ===== NOVO CARROSSEL - FUNÇÕES LIMPAS =====
 
     // Função para renderizar imagens do carrossel
     if (window.DashboardCore) window.DashboardCore.renderCarouselImagesNew = function () { return renderCarouselImagesNew.apply(null, arguments); };
@@ -3555,7 +3555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ========== FUN—.ES PARA GERENCIAR PRODUTOS DO CATÁLOGO ==========
+    // ========== FUNÇÕES PARA GERENCIAR PRODUTOS DO CATÁLOGO ==========
     // REMOVIDO COMPLETAMENTE
     /*
     if (window.DashboardCore) window.DashboardCore.loadProductsForCatalog = function () { return loadProductsForCatalog.apply(null, arguments); };
