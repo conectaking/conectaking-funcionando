@@ -3,6 +3,7 @@
 namespace App\Services\CartaoVirtual;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -67,6 +68,31 @@ class CartaoPublicService
             }
         }
 
+        // Bíblia: versículo do dia (não aparece como botão na lista)
+        $verseOfDay = null;
+        $verseDisplay = ['position' => 'top', 'size' => 'normal'];
+        $bibleMeta = null;
+        foreach ($items as $it) {
+            if (($it['item_type'] ?? '') === 'bible') {
+                $bibleMeta = $it['bible_data'] ?? null;
+                break;
+            }
+        }
+        if (is_array($bibleMeta) && ($bibleMeta['is_visible'] ?? true) !== false) {
+            $pos = (string) ($bibleMeta['verse_position'] ?? 'top');
+            $size = (string) ($bibleMeta['verse_size'] ?? 'normal');
+            $verseDisplay = [
+                'position' => $pos === 'bottom' ? 'bottom' : 'top',
+                'size' => in_array($size, ['small', 'xsmall'], true) ? $size : 'normal',
+            ];
+            $verseOfDay = $this->fetchVerseOfDay((string) ($bibleMeta['translation_code'] ?? 'nvi'));
+        }
+
+        $itemsForLinks = array_values(array_filter(
+            $items,
+            static fn ($it) => ($it['item_type'] ?? '') !== 'bible'
+        ));
+
         if (empty($details['company_logo_url']) || trim((string) $details['company_logo_url']) === '') {
             $details = array_merge($details, $this->defaultBranding());
         }
@@ -94,7 +120,9 @@ class CartaoPublicService
             'type' => 'render',
             'data' => [
                 'details' => $details,
-                'items' => $items,
+                'items' => $itemsForLinks,
+                'verseOfDay' => $verseOfDay,
+                'verseDisplay' => $verseDisplay,
                 'origin' => $origin,
                 'ogImageUrl' => $ogImage,
                 'ogPageUrl' => rtrim($origin, '/').'/'.$profileSlug,
@@ -215,17 +243,31 @@ class CartaoPublicService
             $item = (array) $row;
             $type = (string) ($item['item_type'] ?? '');
 
-            // Node profile.ejs também não renderiza estes como botão solto
-            if (in_array($type, ['banner_carousel', 'bible', 'agenda', 'contract', 'king_selection'], true)) {
+            // Tipos removidos do produto
+            if (in_array($type, ['banner_carousel', 'agenda', 'contract'], true)) {
+                continue;
+            }
+
+            if ($type === 'bible') {
+                $item['bible_data'] = $this->enrichBible($item);
+                $out[] = $item;
+                continue;
+            }
+
+            if ($type === 'king_selection') {
+                $item = array_merge($item, $this->enrichKingSelection($item));
+                if (empty($item['ks_public_url']) || $item['ks_public_url'] === '#') {
+                    continue;
+                }
+                if (empty($item['title'])) {
+                    $item['title'] = 'King Selection';
+                }
+                $out[] = $item;
                 continue;
             }
 
             if ($type === 'location') {
                 $item = array_merge($item, $this->enrichLocation($item));
-                // Botão de mapa vai para profile-actions, não na lista
-                if (!empty($item['map_url'])) {
-                    // keep in list as profile-link fallback too
-                }
             }
 
             if ($type === 'banner') {
@@ -250,7 +292,7 @@ class CartaoPublicService
 
             if ($type === 'pix_qrcode' || $type === 'pix') {
                 if (empty($item['title'])) {
-                    $item['title'] = 'PIX QR Code';
+                    $item['title'] = $type === 'pix' ? 'PIX' : 'PIX QR Code';
                 }
             }
 
@@ -258,6 +300,97 @@ class CartaoPublicService
         }
 
         return $out;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function fetchVerseOfDay(string $translation = 'nvi'): ?array
+    {
+        try {
+            $base = rtrim((string) env('NODE_INTERNAL_URL', 'http://api:5000'), '/');
+            $res = Http::timeout(4)->get($base.'/api/bible/verse-of-day', [
+                'translation' => $translation ?: 'nvi',
+            ]);
+            if (!$res->ok()) {
+                return null;
+            }
+            $json = $res->json();
+            $data = is_array($json) ? ($json['data'] ?? null) : null;
+            if (!is_array($data) || empty($data['texto'])) {
+                return null;
+            }
+
+            return [
+                'ref' => $data['ref'] ?? 'Versículo do Dia',
+                'texto' => $data['texto'] ?? '',
+                'reflexao' => $data['reflexao'] ?? null,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('cartao.verse_of_day', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichBible(array $item): array
+    {
+        try {
+            $row = DB::selectOne('SELECT * FROM bible_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
+            if ($row) {
+                $data = (array) $row;
+                // Postgres bool pode vir como string
+                if (array_key_exists('is_visible', $data)) {
+                    $data['is_visible'] = filter_var($data['is_visible'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+                }
+
+                return $data;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return [
+            'translation_code' => 'nvi',
+            'is_visible' => true,
+            'verse_position' => 'top',
+            'verse_size' => 'normal',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichKingSelection(array $item): array
+    {
+        try {
+            $g = DB::selectOne(
+                'SELECT slug, is_published, status, nome_projeto
+                 FROM king_galleries
+                 WHERE profile_item_id = ?
+                 ORDER BY updated_at DESC NULLS LAST, id DESC
+                 LIMIT 1',
+                [$item['id'] ?? null]
+            );
+            if (!$g || empty($g->slug)) {
+                return ['ks_public_url' => '#', 'title' => ($item['title'] ?? null) ?: 'King Selection'];
+            }
+            $published = filter_var($g->is_published, FILTER_VALIDATE_BOOLEAN);
+            $url = $published ? '/kingSelection/'.$g->slug : '#';
+
+            return [
+                'ks_public_url' => $url,
+                'ks_gallery_slug' => $g->slug,
+                'title' => ($item['title'] ?? null) ?: ($g->nome_projeto ?: 'King Selection'),
+            ];
+        } catch (\Throwable $e) {
+            return ['ks_public_url' => '#'];
+        }
     }
 
     /**

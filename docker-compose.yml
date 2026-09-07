@@ -80,6 +80,7 @@ services:
       SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
+      NODE_INTERNAL_URL: http://api:5000
     ports:
       - "${LARAVEL_PORT:-8080}:8080"
 

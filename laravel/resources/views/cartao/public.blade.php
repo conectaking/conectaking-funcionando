@@ -29,7 +29,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/css/profile.css?v=laravel-card-2">
+    <link rel="stylesheet" href="/css/profile.css?v=laravel-card-4">
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <meta property="og:title" content="{{ $d['display_name'] ?? 'Conecta King' }}">
     <meta property="og:description" content="{{ $ogDescription }}">
     <meta property="og:image" content="{{ $ogImageUrl }}">
@@ -101,6 +102,10 @@
 
 <div class="profile-page-wrapper profile-layout-{{ $cardLayout }}">
     <div class="profile-card">
+        <button type="button" class="share-button-corner" id="share-btn" title="Compartilhar">
+            <i class="fas fa-share-alt"></i>
+        </button>
+
         <header class="profile-header">
             <div style="position: relative; display: inline-block;">
                 @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
@@ -118,6 +123,23 @@
             <h1 class="profile-name">{{ $d['display_name'] ?? 'Nome do Usuário' }}</h1>
             <p class="profile-bio">{{ ($d['bio'] ?? '') !== '' ? $d['bio'] : 'Biografia do usuário.' }}</p>
         </header>
+
+        @php
+            $vd = $verseDisplay ?? ['position' => 'top', 'size' => 'normal'];
+            $versePos = ($vd['position'] ?? 'top') === 'bottom' ? 'bottom' : 'top';
+            $verseSize = in_array(($vd['size'] ?? 'normal'), ['small', 'xsmall'], true) ? $vd['size'] : 'normal';
+            $hasVerse = !empty($verseOfDay['texto']);
+        @endphp
+
+        @if($hasVerse && $versePos === 'top')
+            <div class="verse-of-day-box verse-size-{{ $verseSize }}">
+                <div class="verse-of-day-ref">{{ $verseOfDay['ref'] ?? 'Versículo do Dia' }}</div>
+                <div class="verse-of-day-text">"{{ $verseOfDay['texto'] }}"</div>
+                @if(!empty($verseOfDay['reflexao']))
+                    <div class="verse-of-day-reflexao">{{ $verseOfDay['reflexao'] }}</div>
+                @endif
+            </div>
+        @endif
 
         @if($showVcard || $mapUrl !== '')
             <div class="profile-actions">
@@ -146,7 +168,13 @@
                     $img = trim((string)($item['image_url'] ?? ''));
                 @endphp
 
-                @if($type === 'banner')
+                @if($type === 'king_selection')
+                    <a href="{{ $item['ks_public_url'] ?? '#' }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                        <i class="{{ $item['icon_class'] ?? 'fas fa-images' }}"></i>
+                        <span>{{ $title !== '' ? $title : 'King Selection' }}</span>
+                    </a>
+
+                @elseif($type === 'banner')
                     @php $primary = $item['primary_url'] ?? $url; @endphp
                     <div class="profile-banner-container">
                         @if($primary && $primary !== '#')
@@ -183,11 +211,17 @@
                 @elseif($type === 'location')
                     {{-- renderizado em profile-actions via map_url --}}
 
-                @elseif($type === 'pix_qrcode' || $type === 'pix')
-                    <a href="/{{ $profile_slug }}#pix-{{ $item['id'] ?? '' }}" class="profile-link profile-button-pix-qrcode" data-item-id="{{ $item['id'] ?? '' }}">
+                @elseif($type === 'pix_qrcode')
+                    <button type="button" class="profile-link profile-button-pix-qrcode" data-item-id="{{ $item['id'] ?? '' }}">
                         <i class="{{ $item['icon_class'] ?? 'fas fa-qrcode' }}"></i>
                         <span>{{ $title !== '' ? $title : 'PIX QR Code' }}</span>
-                    </a>
+                    </button>
+
+                @elseif($type === 'pix')
+                    <button type="button" class="profile-link profile-button-pix" data-item-id="{{ $item['id'] ?? '' }}" data-pix-key="{{ $item['pix_key'] ?? '' }}">
+                        <i class="{{ $item['icon_class'] ?? 'fas fa-pix' }}"></i>
+                        <span>{{ $title !== '' ? $title : 'PIX' }}</span>
+                    </button>
 
                 @elseif($type === 'texto_com_botao')
                     @php
@@ -249,6 +283,16 @@
             @endforeach
         </section>
 
+        @if($hasVerse && $versePos === 'bottom')
+            <div class="verse-of-day-box verse-of-day-box--bottom verse-size-{{ $verseSize }}">
+                <div class="verse-of-day-ref">{{ $verseOfDay['ref'] ?? 'Versículo do Dia' }}</div>
+                <div class="verse-of-day-text">"{{ $verseOfDay['texto'] }}"</div>
+                @if(!empty($verseOfDay['reflexao']))
+                    <div class="verse-of-day-reflexao">{{ $verseOfDay['reflexao'] }}</div>
+                @endif
+            </div>
+        @endif
+
         @if(!empty($d['company_logo_url']))
             <div class="ck-footer-logo">
                 @if(!empty($d['company_logo_link']))
@@ -262,5 +306,145 @@
         @endif
     </div>
 </div>
+
+{{-- Modal PIX (mesma API Node: /api/pix/qrcode/:id) --}}
+<div id="pix-qrcode-modal" class="pix-modal-overlay">
+    <div class="pix-modal-content">
+        <button type="button" id="pix-modal-close-btn" class="pix-modal-close">&times;</button>
+        <h4>Escaneie para pagar com PIX</h4>
+        <div id="pix-qrcode-container">
+            <div id="pix-qrcode-image"></div>
+            <div id="pix-qrcode-loader"></div>
+        </div>
+        <h5>Ou use o Copia e Cola:</h5>
+        <div class="pix-brcode-area">
+            <textarea id="pix-brcode-text" readonly></textarea>
+            <button type="button" id="pix-copy-brcode-btn">Copiar Código</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var pixModal = document.getElementById('pix-qrcode-modal');
+    var pixCloseBtn = document.getElementById('pix-modal-close-btn');
+    var pixQrContainer = document.getElementById('pix-qrcode-image');
+    var pixQrLoader = document.getElementById('pix-qrcode-loader');
+    var pixBrCodeText = document.getElementById('pix-brcode-text');
+    var pixCopyBrCodeBtn = document.getElementById('pix-copy-brcode-btn');
+    var qrInstance = null;
+
+    function openPixModal(itemId) {
+        if (!pixModal || !itemId) return;
+        pixModal.classList.add('active');
+        if (pixQrLoader) pixQrLoader.style.display = 'block';
+        if (pixQrContainer) pixQrContainer.innerHTML = '';
+        if (qrInstance && typeof qrInstance.clear === 'function') {
+            try { qrInstance.clear(); } catch (e) {}
+        }
+        if (pixBrCodeText) pixBrCodeText.value = 'Gerando código...';
+
+        fetch('/api/pix/qrcode/' + encodeURIComponent(itemId))
+            .then(function (res) {
+                return res.json().then(function (data) {
+                    if (!res.ok) throw new Error((data && data.message) || 'Erro ao gerar PIX');
+                    return data;
+                });
+            })
+            .then(function (data) {
+                if (pixBrCodeText) pixBrCodeText.value = data.brcode || '';
+                if (pixQrContainer && typeof QRCode !== 'undefined' && data.brcode) {
+                    qrInstance = new QRCode(pixQrContainer, {
+                        text: data.brcode,
+                        width: 200,
+                        height: 200,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+            })
+            .catch(function (err) {
+                if (pixBrCodeText) pixBrCodeText.value = 'Erro: ' + (err.message || 'falha');
+            })
+            .finally(function () {
+                if (pixQrLoader) pixQrLoader.style.display = 'none';
+            });
+    }
+
+    function closePixModal() {
+        if (pixModal) pixModal.classList.remove('active');
+    }
+
+    document.querySelectorAll('.profile-button-pix-qrcode').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var itemId = button.getAttribute('data-item-id');
+            if (itemId) {
+                try { navigator.sendBeacon('/log/click/item/' + itemId); } catch (e) {}
+            }
+            openPixModal(itemId);
+        });
+    });
+
+    document.querySelectorAll('.profile-button-pix').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var pixKey = button.getAttribute('data-pix-key') || '';
+            var span = button.querySelector('span');
+            if (!pixKey || pixKey === 'SuaChavePIXAqui') {
+                alert('Nenhuma chave PIX configurada.');
+                return;
+            }
+            navigator.clipboard.writeText(pixKey).then(function () {
+                if (!span) return;
+                var original = span.textContent;
+                span.textContent = 'Copiado!';
+                setTimeout(function () { span.textContent = original; }, 2000);
+            }).catch(function () {
+                alert('Não foi possível copiar a chave PIX.');
+            });
+        });
+    });
+
+    if (pixCloseBtn) pixCloseBtn.addEventListener('click', closePixModal);
+    if (pixModal) {
+        pixModal.addEventListener('click', function (e) {
+            if (e.target === pixModal) closePixModal();
+        });
+    }
+    if (pixCopyBrCodeBtn && pixBrCodeText) {
+        pixCopyBrCodeBtn.addEventListener('click', function () {
+            pixBrCodeText.select();
+            try {
+                document.execCommand('copy');
+                navigator.clipboard.writeText(pixBrCodeText.value);
+            } catch (e) {}
+            var original = pixCopyBrCodeBtn.textContent;
+            pixCopyBrCodeBtn.textContent = 'Copiado!';
+            setTimeout(function () { pixCopyBrCodeBtn.textContent = original; }, 2000);
+        });
+    }
+
+    var shareButton = document.getElementById('share-btn');
+    if (shareButton) {
+        shareButton.addEventListener('click', async function () {
+            var shareData = {
+                title: document.title,
+                text: 'Confira meu cartão de visita digital Conecta King!',
+                url: window.location.origin + '/{{ $profile_slug }}'
+            };
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (e) {}
+            } else {
+                try {
+                    await navigator.clipboard.writeText(shareData.url);
+                    alert('Link do perfil copiado!');
+                } catch (e) {
+                    alert('Não foi possível copiar o link.');
+                }
+            }
+        });
+    }
+})();
+</script>
 </body>
 </html>
