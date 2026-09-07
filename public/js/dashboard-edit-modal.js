@@ -1555,14 +1555,6 @@ async function openEditModal(itemEl) {
     }
 }
 
-const QR_ART_THEMES = {
-    rei: { name: 'Rei', swatch: 'linear-gradient(135deg,#FFC700,#1a1408)', bg: ['#070709', '#1c1506'], card: '#12100c', accent: '#FFC700', qrDark: '#FFC700', qrLight: '#16130c', text: '#F8E7B0', muted: '#C4B07A' },
-    classico: { name: 'Clássico', swatch: 'linear-gradient(135deg,#fff,#C9A227)', bg: ['#f4efe2', '#ddd2b4'], card: '#ffffff', accent: '#C9A227', qrDark: '#111111', qrLight: '#ffffff', text: '#1a1a1a', muted: '#6d6248' },
-    noite: { name: 'Noite', swatch: 'linear-gradient(135deg,#0ea5e9,#0b1220)', bg: ['#07111d', '#0e1f33'], card: '#0b1726', accent: '#38bdf8', qrDark: '#e0f2fe', qrLight: '#0b1726', text: '#e0f2fe', muted: '#7dd3fc' },
-    ouro: { name: 'Ouro', swatch: 'linear-gradient(135deg,#fde68a,#92400e)', bg: ['#3b2508', '#111111'], card: '#1a1208', accent: '#fbbf24', qrDark: '#111111', qrLight: '#fde68a', text: '#fff7d6', muted: '#fcd34d' },
-    vinho: { name: 'Vinho', swatch: 'linear-gradient(135deg,#7f1d1d,#f59e0b)', bg: ['#1c0a0d', '#3b0d16'], card: '#2a1016', accent: '#fbbf24', qrDark: '#fde68a', qrLight: '#2a1016', text: '#fde68a', muted: '#e8b86d' },
-    minimal: { name: 'Minimal', swatch: 'linear-gradient(135deg,#111,#888)', bg: ['#f3f4f6', '#e5e7eb'], card: '#ffffff', accent: '#111111', qrDark: '#111111', qrLight: '#ffffff', text: '#111111', muted: '#6b7280' }
-};
 
 function openEditModalForNewItem(tempItem) {
     const itemType = tempItem.item_type;

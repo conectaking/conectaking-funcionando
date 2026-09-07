@@ -16,6 +16,8 @@ O `dashboard.js` é o **orquestrador** (auth, sidebar, cartão, itens). Módulos
 | `js/dashboard-save.js` | **Publicar alterações** (`DashboardSave.saveAllChanges`) |
 | `js/dashboard-upload.js` | Cropper + upload de imagens (`DashboardUpload`) |
 | `js/dashboard-edit-modal.js` | Modal editar módulo (`DashboardEditModal.openEditModal`) |
+| `js/dashboard-qr.js` | QR Code / Compartilhar (`DashboardQR`) |
+| `js/dashboard-assinatura.js` | Assinatura e planos (`DashboardAssinatura`) |
 | `js/dashboard-info.js` | Stub/namespace aba Informações (`DashboardInfo.init`) |
 | `js/dashboard-personalizar.js` | Preview após publicar (`DashboardPersonalizar.reloadPreview`) |
 | `js/dashboard-vitrine.js` | Vitrine |
