@@ -55,10 +55,19 @@ function isLaravelCardApiPath(urlPath) {
     return patterns.some((re) => re.test(pathOnly));
 }
 
-function isLaravelProfileGetPath(urlPath) {
+function isLaravelProfileApiPath(reqMethod, urlPath) {
     if (!urlPath) return false;
     const pathOnly = urlPath.split('?')[0];
-    return pathOnly === '/api/profile' || pathOnly === '/l/api/profile';
+    const method = String(reqMethod || 'GET').toUpperCase();
+    if (method === 'GET' && (pathOnly === '/api/profile' || pathOnly === '/l/api/profile')) return true;
+    if (method === 'PUT' && (pathOnly === '/api/profile/save-all' || pathOnly === '/l/api/profile/save-all')) return true;
+
+    // CRUD genérico de itens (não tipados: banner/pix/digital_form/...)
+    const itemsRoot = /^\/(?:l\/)?api\/profile\/items$/i;
+    const itemsId = /^\/(?:l\/)?api\/profile\/items\/\d+$/i;
+    if (itemsRoot.test(pathOnly) && (method === 'GET' || method === 'POST')) return true;
+    if (itemsId.test(pathOnly) && (method === 'GET' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) return true;
+    return false;
 }
 
 function buildForwardHeaders(req, { publicMode } = {}) {
@@ -149,7 +158,7 @@ function laravelProxyMiddleware(req, res, next) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 
-    if (LARAVEL_PROFILE_API && req.method === 'GET' && isLaravelProfileGetPath(url)) {
+    if (LARAVEL_PROFILE_API && isLaravelProfileApiPath(req.method, url)) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 

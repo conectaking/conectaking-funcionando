@@ -23,9 +23,7 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 | `LARAVEL_CARD_ENABLED` | `true` | Liga proxy `/l/*` |
 | `LARAVEL_CARD_PUBLIC` | `false` | Se `true`, `/:slug` passa a Laravel |
 | `LARAVEL_CARD_SLUGS` | vazio | Canário: lista `slug1,slug2` (vazio = todos quando PUBLIC=true) |
-| `LARAVEL_PROFILE_API` | `false` | Se `true`, `GET /api/profile` (editor) → Laravel (JWT) |
-
-**Editor (fase 4):** `GET /api/profile` já existe no Laravel; ligue com `LARAVEL_PROFILE_API=true` após smoke.
+| `LARAVEL_PROFILE_API` | `false` | Se `true`, `GET /api/profile` e `PUT /api/profile/save-all` → Laravel (JWT) |
 
 **Teste sem mudar produção:** `https://www.conectaking.com.br/adrianokingg?laravel=1`  
 **Prévia:** `/l/card/adrianokingg` (banner de prévia)  
@@ -52,7 +50,7 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 1. Página pública (Blade) | canário `adrianokingg` | Render `/:slug` + tipos principais |
 | 2. Canário `LARAVEL_CARD_PUBLIC` | ligado (slug) | `LARAVEL_CARD_SLUGS=adrianokingg` |
 | 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
-| 4. Editor `/api/profile` | GET pronto (flag off) | `LARAVEL_PROFILE_API`; falta save-all + CRUD |
+| 4. Editor `/api/profile` | GET + save-all + CRUD itens | tipados (banner/pix/form…) ainda Node |
 | 5. Páginas satélite | depois | form, sales, bible, king selection |
 
 **Ainda Node (necessário para “cartão 100% PHP”):** dashboard/editor, uploads, analytics CRUD, e páginas `/form`, `/biblia`, loja, King Selection.
