@@ -49,7 +49,7 @@ class CartaoPublicService
             return ['type' => 'notFound', 'message' => '404 - Perfil não configurado'];
         }
 
-        $items = $this->loadItems((string) $user->id);
+        $items = $this->loadItems((string) $user->id, $slug !== '' ? $slug : $raw);
         $details = (array) $profile;
         $details['logo_spacing'] = $this->normalizeLogoSpacing($details['logo_spacing'] ?? 'center');
         $details['button_content_align'] = $this->normalizeAlign($details['button_content_align'] ?? 'center');
@@ -57,6 +57,14 @@ class CartaoPublicService
         $details['card_color_rgb'] = $this->hexToRgb($details['card_background_color'] ?? null);
         if (empty($details['profile_slug'])) {
             $details['profile_slug'] = $slug !== '' ? $slug : $raw;
+        }
+
+        // Mapa a partir do item location (como no cartão Node)
+        foreach ($items as $it) {
+            if (($it['item_type'] ?? '') === 'location' && !empty($it['map_url'])) {
+                $details['map_url'] = $it['map_url'];
+                break;
+            }
         }
 
         if (empty($details['company_logo_url']) || trim((string) $details['company_logo_url']) === '') {
@@ -70,6 +78,18 @@ class CartaoPublicService
             ? mb_substr(trim((string) $details['bio']), 0, 200)
             : 'Confira meu cartão de visita digital Conecta King!';
 
+        $logoAlign = $details['logo_spacing'];
+        $buttonAlign = $details['button_content_align'];
+        if ($logoAlign === 'center') {
+            $alignValue = 'center';
+        } elseif ($buttonAlign === 'left') {
+            $alignValue = 'flex-start';
+        } elseif ($buttonAlign === 'right') {
+            $alignValue = 'flex-end';
+        } else {
+            $alignValue = 'center';
+        }
+
         return [
             'type' => 'render',
             'data' => [
@@ -82,13 +102,14 @@ class CartaoPublicService
                 'profile_slug' => $profileSlug,
                 'identifier' => $raw,
                 'laravel_preview' => true,
+                'alignValue' => $alignValue,
+                'buttonAlign' => $buttonAlign,
+                'logoAlign' => $logoAlign,
             ],
         ];
     }
 
     /**
-     * Paridade com Node getProfileApi (JSON enxuto).
-     *
      * @return array{type:string, message?:string, data?:array}
      */
     public function getApiData(string $identifier, string $origin): array
@@ -168,7 +189,7 @@ class CartaoPublicService
     /**
      * @return list<array<string, mixed>>
      */
-    private function loadItems(string $userId): array
+    private function loadItems(string $userId, string $profileSlug): array
     {
         try {
             $rows = DB::select(
@@ -193,16 +214,176 @@ class CartaoPublicService
         foreach ($rows as $row) {
             $item = (array) $row;
             $type = (string) ($item['item_type'] ?? '');
-            if ($type === 'banner_carousel' || $type === 'bible') {
+
+            // Node profile.ejs também não renderiza estes como botão solto
+            if (in_array($type, ['banner_carousel', 'bible', 'agenda', 'contract', 'king_selection'], true)) {
                 continue;
             }
-            if ($type === 'banner' && empty($item['image_url'])) {
-                continue;
+
+            if ($type === 'location') {
+                $item = array_merge($item, $this->enrichLocation($item));
+                // Botão de mapa vai para profile-actions, não na lista
+                if (!empty($item['map_url'])) {
+                    // keep in list as profile-link fallback too
+                }
             }
+
+            if ($type === 'banner') {
+                $img = trim((string) ($item['image_url'] ?? ''));
+                if ($img === '' || str_contains($img, 'placeholder') || str_starts_with($img, 'data:image/svg')) {
+                    continue;
+                }
+                $dest = trim((string) ($item['destination_url'] ?? ''));
+                if (str_starts_with($dest, '[')) {
+                    continue;
+                }
+                $item['primary_url'] = $this->resolveBannerUrl($dest, (string) ($item['whatsapp_message'] ?? ''));
+            }
+
+            if ($type === 'sales_page') {
+                $item = array_merge($item, $this->enrichSalesPage($item, $profileSlug));
+            }
+
+            if ($type === 'digital_form') {
+                $item = array_merge($item, $this->enrichDigitalForm($item, $profileSlug));
+            }
+
+            if ($type === 'pix_qrcode' || $type === 'pix') {
+                if (empty($item['title'])) {
+                    $item['title'] = 'PIX QR Code';
+                }
+            }
+
             $out[] = $item;
         }
 
         return $out;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichSalesPage(array $item, string $profileSlug): array
+    {
+        try {
+            $sp = DB::selectOne('SELECT * FROM sales_pages WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
+            if (!$sp) {
+                return [
+                    'sales_page_slug' => null,
+                    'sales_page_status' => null,
+                    'sales_page_display_format' => 'button',
+                    'sales_page_url' => '#',
+                    'title' => $item['title'] ?: 'Página de Vendas',
+                ];
+            }
+            $status = (string) ($sp->status ?? '');
+            $slug = ($status === 'PUBLISHED') ? ($sp->slug ?? null) : null;
+            $fmt = strtolower(trim((string) ($sp->display_format ?? 'button')));
+            $url = ($slug && $profileSlug) ? '/'.$profileSlug.'/'.$slug : '#';
+
+            return [
+                'sales_page_slug' => $slug,
+                'sales_page_status' => $status,
+                'sales_page_display_format' => $fmt === 'banner' ? 'banner' : 'button',
+                'sales_page_banner_image_url' => $sp->card_banner_image_url ?? null,
+                'sales_page_url' => $url,
+                'title' => ($item['title'] ?? null) ?: 'Página de Vendas',
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'sales_page_url' => '#',
+                'title' => ($item['title'] ?? null) ?: 'Página de Vendas',
+            ];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichLocation(array $item): array
+    {
+        try {
+            $loc = DB::selectOne(
+                'SELECT address, address_formatted, latitude, longitude, place_name
+                 FROM location_items WHERE profile_item_id = ? LIMIT 1',
+                [$item['id'] ?? null]
+            );
+            if (!$loc) {
+                return ['map_url' => null, 'title' => ($item['title'] ?? null) ?: 'Ver no Mapa'];
+            }
+            $lat = $loc->latitude ?? null;
+            $lng = $loc->longitude ?? null;
+            $addr = trim((string) ($loc->address_formatted ?? $loc->address ?? $loc->place_name ?? ''));
+            $mapUrl = null;
+            if ($lat !== null && $lng !== null && $lat !== '' && $lng !== '') {
+                $mapUrl = 'https://www.google.com/maps?q='.rawurlencode($lat.','.$lng);
+            } elseif ($addr !== '') {
+                $mapUrl = 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($addr);
+            }
+
+            return [
+                'map_url' => $mapUrl,
+                'location_data' => (array) $loc,
+                'title' => ($item['title'] ?? null) ?: 'Ver no Mapa',
+            ];
+        } catch (\Throwable $e) {
+            return ['map_url' => null];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichDigitalForm(array $item, string $profileSlug): array
+    {
+        $title = trim((string) ($item['title'] ?? ''));
+        if ($title === '') {
+            $title = 'Formulário';
+        }
+        $url = '#';
+        try {
+            $df = DB::selectOne('SELECT form_title FROM digital_form_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
+            if ($profileSlug && !empty($item['id'])) {
+                $url = '/'.$profileSlug.'/form/'.$item['id'];
+            }
+            if ($title === 'Formulário' && !empty($df->form_title)) {
+                $title = (string) $df->form_title;
+            }
+        } catch (\Throwable $e) {
+            if ($profileSlug && !empty($item['id'])) {
+                $url = '/'.$profileSlug.'/form/'.$item['id'];
+            }
+        }
+
+        return [
+            'title' => $title,
+            'form_public_url' => $url,
+        ];
+    }
+
+    private function resolveBannerUrl(string $rawDest, string $whatsappMessage = ''): string
+    {
+        $primary = $rawDest;
+        if (str_starts_with($rawDest, '{')) {
+            try {
+                $o = json_decode($rawDest, true);
+                $primary = trim((string) ($o['primary_url'] ?? $o['link'] ?? ''));
+            } catch (\Throwable $e) {
+                $primary = $rawDest;
+            }
+        }
+        if ($primary && $whatsappMessage !== '') {
+            if (str_contains($primary, 'wa.me') && !str_contains($primary, '?text=')) {
+                if (preg_match('#wa\.me/([^/?]+)#', $primary, $m) && preg_match('/^\d+$/', explode('?', $m[1])[0])) {
+                    $primary = 'https://wa.me/'.explode('?', $m[1])[0].'?text='.rawurlencode($whatsappMessage);
+                }
+            }
+        }
+
+        return $primary;
     }
 
     /**
