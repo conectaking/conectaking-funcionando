@@ -8476,8 +8476,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = `salesPageEdit.html?itemId=${itemId}`;
             } else if (itemType === 'guest_list') {
                 window.location.href = `guestListEdit.html?itemId=${itemId}`;
-            } else if (itemType === 'contract') {
-                window.location.href = `contractEdit.html?itemId=${itemId}`;
+            } else if (itemType === 'contract' || itemType === 'agenda' || itemType === 'kingbrief' || itemType === 'king_bolao') {
+                alert('Este módulo foi descontinuado e já não está disponível.');
+                return;
             } else if (itemType === 'king_selection') {
                 window.location.href = kingSelectionAdminUrl();
             } else if (itemType === 'convite') {
@@ -10621,37 +10622,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 break;
             case 'agenda':
-                // Para agenda, criar formulário básico
-                formHTML = `
-                    <div class="input-group">
-                        <label>Título do Módulo</label>
-                        <input type="text" id="edit-agenda-title" value="${tempItem.title || 'Agenda Inteligente'}" placeholder="Agenda Inteligente">
-                    </div>
-                    <p style="color: #999; font-size: 0.9rem; margin-top: 10px;">
-                        <i class="fas fa-info-circle"></i> Configure slots e agendamentos no painel dedicado após salvar.
-                    </p>
-                `;
-                break;
             case 'contract':
-                // Para contract, criar formulário básico
+            case 'kingbrief':
+            case 'king_bolao':
+            case 'photographer_site':
                 formHTML = `
                     <div class="input-group">
-                        <label>Título do Contrato</label>
-                        <input type="text" id="edit-contract-title" value="${tempItem.title || 'Contrato Digital'}" placeholder="Contrato Digital">
+                        <p style="color:#f87171;font-size:0.95rem;margin:0;">
+                            <i class="fas fa-ban"></i> Este módulo foi descontinuado e já não está disponível no Conecta King.
+                        </p>
                     </div>
-                    <div class="input-group">
-                        <label>Tipo de Contrato</label>
-                        <select id="edit-contract-type">
-                            <option value="general">Geral</option>
-                            <option value="service">Prestação de Serviços</option>
-                            <option value="rental">Locação</option>
-                            <option value="sale">Compra e Venda</option>
-                            <option value="partnership">Parceria</option>
-                        </select>
-                    </div>
-                    <p style="color: #999; font-size: 0.9rem; margin-top: 10px;">
-                        <i class="fas fa-info-circle"></i> Configure o conteúdo e assinaturas após salvar.
-                    </p>
                 `;
                 break;
             case 'convite':
@@ -15740,8 +15720,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Stack:', error.stack);
         }
 
-        // Mapear módulos importantes (inclui Modo Empresa - separação de pacotes)
-        // Só módulos ainda ativos (Agenda/Contratos/Bolão/Briefing/Recibos removidos do produto)
+        // Módulos ativos na Separação de Pacotes (Agenda/Contratos/Bolão/Briefing removidos; Recibos fica)
         const moduleLabels = {
             'carousel': 'Carrossel',
             'sales_page': 'Loja Virtual',
@@ -15753,7 +15732,8 @@ document.addEventListener('DOMContentLoaded', () => {
             'branding': 'Personalização da Marca',
             'location': 'Localização',
             'king_selection': 'King Selection',
-            'king_docs': 'King Docs'
+            'king_docs': 'King Docs',
+            'recibos_orcamentos': 'Recibos e Orçamentos'
         };
 
         formContainer.innerHTML = plans.map(plan => {
@@ -15935,7 +15915,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Banner': 'banner',
                 'Gestão Financeira': 'finance',
                 'King Selection': 'king_selection',
-                'King Docs': 'king_docs'
+                'King Docs': 'king_docs',
+                'Recibos e Orçamentos': 'recibos_orcamentos',
+                'Personalização da Marca': 'branding',
+                'Modo Empresa': 'modo_empresa',
+                'Localização': 'location'
             };
 
             // Buscar plan_code do plano atual (com cache busting)
@@ -16285,7 +16269,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Filtrar módulos removidos do produto + texto de busca
-        const REMOVED_SEP_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1, recibos_orcamentos: 1 };
+        // Recibos e Orçamentos permanece no produto — não filtrar aqui
+        const REMOVED_SEP_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1 };
         const modulesToShow = (filterValue
             ? moduleAvailabilityData.filter(m => {
                 const label = (ITEM_TYPE_LABELS_FOR_VCARD[m.module_type] || m.module_type || '').toLowerCase();
@@ -17017,8 +17002,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (_) { }
         allModuleCards.forEach(card => {
             const moduleType = card.dataset.itemType;
-            // Agenda Inteligente e Contratos: apenas ADM principal (em desenvolvimento)
-            if (!isAdmin && (moduleType === 'agenda' || moduleType === 'contract')) {
+            // Módulos descontinuados: nunca mostrar no modal
+            if (moduleType === 'agenda' || moduleType === 'contract' || moduleType === 'kingbrief' || moduleType === 'king_bolao' || moduleType === 'photographer_site') {
                 card.style.display = 'none';
                 return;
             }
