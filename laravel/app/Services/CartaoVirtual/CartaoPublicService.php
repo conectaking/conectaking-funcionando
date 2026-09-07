@@ -99,8 +99,11 @@ class CartaoPublicService
         }
 
         $profileSlug = $details['profile_slug'];
-        $ogImage = trim((string) ($details['share_image_url'] ?? $details['profile_image_url'] ?? ''))
+        $ogSource = trim((string) ($details['share_image_url'] ?? $details['profile_image_url'] ?? ''))
             ?: 'https://i.ibb.co/60sW9k75/logo.png';
+        $ogBuster = substr(md5($ogSource.(string) ($details['updated_at'] ?? '')), 0, 12);
+        $ogImage = rtrim($origin, '/').'/api/image/profile-image?url='.rawurlencode($ogSource)
+            .'&v='.rawurlencode($ogBuster).'&frm=sq1';
         $ogDescription = trim((string) ($details['bio'] ?? '')) !== ''
             ? mb_substr(trim((string) $details['bio']), 0, 200)
             : 'Confira meu cartão de visita digital Conecta King!';
@@ -130,6 +133,7 @@ class CartaoPublicService
                 'ogDescription' => $ogDescription,
                 'profile_slug' => $profileSlug,
                 'identifier' => $raw,
+                'user_id' => (string) $user->id,
                 'laravel_preview' => true,
                 'alignValue' => $alignValue,
                 'buttonAlign' => $buttonAlign,
@@ -287,14 +291,47 @@ class CartaoPublicService
                 $item = array_merge($item, $this->enrichSalesPage($item, $profileSlug));
             }
 
-            if ($type === 'digital_form') {
+            if ($type === 'digital_form' || $type === 'guest_list') {
                 $item = array_merge($item, $this->enrichDigitalForm($item, $profileSlug));
+            }
+
+            if ($type === 'guest_list') {
+                $item = array_merge($item, $this->enrichGuestList($item));
+                // Preferir formulário digital convertido quando existir
+                if (!empty($item['digital_form_data']) && !empty($item['active_cadastro_link_slug'])) {
+                    $item['item_type'] = 'digital_form';
+                    $type = 'digital_form';
+                }
+            }
+
+            if ($type === 'product_catalog') {
+                $item = array_merge($item, $this->enrichProductCatalog($item));
+            }
+
+            if ($type === 'carousel') {
+                $item['carousel_images'] = $this->parseCarouselImages($item);
+                if (empty($item['carousel_images'])) {
+                    continue;
+                }
+            }
+
+            if ($type === 'instagram_embed') {
+                $item = array_merge($item, $this->enrichInstagramEmbed($item));
+            }
+
+            if ($type === 'youtube_embed') {
+                $item = array_merge($item, $this->enrichYoutubeEmbed($item));
             }
 
             if ($type === 'pix_qrcode' || $type === 'pix') {
                 if (empty($item['title'])) {
                     $item['title'] = $type === 'pix' ? 'PIX' : 'PIX QR Code';
                 }
+            }
+
+            // Formulário sem URL pública não aparece
+            if ($type === 'digital_form' && empty($item['form_public_url'])) {
+                continue;
             }
 
             $out[] = $item;
@@ -477,25 +514,214 @@ class CartaoPublicService
         if ($title === '') {
             $title = 'Formulário';
         }
-        $url = '#';
+        $formData = null;
+        $activeSlug = null;
+
         try {
-            $df = DB::selectOne('SELECT form_title FROM digital_form_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
-            if ($profileSlug && !empty($item['id'])) {
-                $url = '/'.$profileSlug.'/form/'.$item['id'];
-            }
-            if ($title === 'Formulário' && !empty($df->form_title)) {
-                $title = (string) $df->form_title;
+            $df = DB::selectOne(
+                'SELECT * FROM digital_form_items
+                 WHERE profile_item_id = ?
+                 ORDER BY COALESCE(updated_at, \'1970-01-01\'::timestamp) DESC, id DESC
+                 LIMIT 1',
+                [$item['id'] ?? null]
+            );
+            if ($df) {
+                $formData = (array) $df;
+                if ($title === 'Formulário' && !empty($formData['form_title'])) {
+                    $title = (string) $formData['form_title'];
+                }
             }
         } catch (\Throwable $e) {
-            if ($profileSlug && !empty($item['id'])) {
-                $url = '/'.$profileSlug.'/form/'.$item['id'];
+            // ignore
+        }
+
+        try {
+            $gli = DB::selectOne(
+                'SELECT id FROM guest_list_items WHERE profile_item_id = ? LIMIT 1',
+                [$item['id'] ?? null]
+            );
+            if ($gli && !empty($gli->id)) {
+                $link = DB::selectOne(
+                    'SELECT slug FROM cadastro_links
+                     WHERE guest_list_item_id = ?
+                       AND is_active_for_profile = TRUE
+                       AND (expires_at IS NULL OR expires_at > NOW())
+                       AND (max_uses = 999999 OR current_uses < max_uses)
+                     LIMIT 1',
+                    [$gli->id]
+                );
+                if ($link && !empty($link->slug)) {
+                    $activeSlug = (string) $link->slug;
+                }
             }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        // Preferir link curto; fallback para rota pública Node /:slug/form/:itemId
+        $url = '';
+        if ($activeSlug) {
+            $url = '/form/'.$activeSlug;
+        } elseif ($profileSlug !== '' && !empty($item['id'])) {
+            $url = '/'.$profileSlug.'/form/'.$item['id'];
         }
 
         return [
             'title' => $title,
             'form_public_url' => $url,
+            'active_cadastro_link_slug' => $activeSlug,
+            'digital_form_data' => $formData,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichGuestList(array $item): array
+    {
+        try {
+            $gl = DB::selectOne('SELECT * FROM guest_list_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
+            if (!$gl) {
+                return ['guest_list_data' => null];
+            }
+            $data = (array) $gl;
+            try {
+                $stats = DB::selectOne(
+                    'SELECT COUNT(*)::int AS total_count,
+                            COUNT(*) FILTER (WHERE status = \'registered\')::int AS registered_count,
+                            COUNT(*) FILTER (WHERE status = \'confirmed\')::int AS confirmed_count,
+                            COUNT(*) FILTER (WHERE status = \'checked_in\')::int AS checked_in_count
+                     FROM guests WHERE guest_list_id = ?',
+                    [$gl->id]
+                );
+                $data['stats'] = $stats ? (array) $stats : [
+                    'total_count' => 0, 'registered_count' => 0, 'confirmed_count' => 0, 'checked_in_count' => 0,
+                ];
+            } catch (\Throwable $e) {
+                $data['stats'] = [
+                    'total_count' => 0, 'registered_count' => 0, 'confirmed_count' => 0, 'checked_in_count' => 0,
+                ];
+            }
+            $token = (string) ($data['registration_token'] ?? '');
+            $data['registration_url'] = $token !== '' ? '/guest-list/register/'.$token : '#';
+
+            return [
+                'guest_list_data' => $data,
+                'title' => ($item['title'] ?? null) ?: ($data['event_title'] ?? 'Lista de Convidados'),
+            ];
+        } catch (\Throwable $e) {
+            return ['guest_list_data' => null];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichProductCatalog(array $item): array
+    {
+        try {
+            $rows = DB::select(
+                'SELECT * FROM product_catalog_items
+                 WHERE profile_item_id = ?
+                 ORDER BY display_order ASC, created_at ASC',
+                [$item['id'] ?? null]
+            );
+
+            return [
+                'products' => array_map(static fn ($r) => (array) $r, $rows),
+                'title' => ($item['title'] ?? null) ?: 'Minha Loja',
+            ];
+        } catch (\Throwable $e) {
+            return ['products' => [], 'title' => ($item['title'] ?? null) ?: 'Minha Loja'];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return list<string>
+     */
+    private function parseCarouselImages(array $item): array
+    {
+        $images = [];
+        $raw = trim((string) ($item['destination_url'] ?? ''));
+        if ($raw !== '' && (str_starts_with($raw, '[') || str_starts_with($raw, '{'))) {
+            try {
+                $parsed = json_decode($raw, true);
+                if (is_array($parsed)) {
+                    if (isset($parsed['images']) && is_array($parsed['images'])) {
+                        $parsed = $parsed['images'];
+                    }
+                    foreach ($parsed as $img) {
+                        $url = is_array($img) ? trim((string) ($img['url'] ?? $img['image_url'] ?? '')) : trim((string) $img);
+                        if ($url !== '' && !str_contains($url, 'placeholder')) {
+                            $images[] = $url;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+        $fallback = trim((string) ($item['image_url'] ?? ''));
+        if ($images === [] && $fallback !== '' && !str_contains($fallback, 'placeholder')) {
+            $images[] = $fallback;
+        }
+
+        return array_values(array_unique($images));
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichInstagramEmbed(array $item): array
+    {
+        $url = trim((string) ($item['destination_url'] ?? ''));
+        if ($url === '') {
+            return [];
+        }
+        $normalized = rtrim($url, '/');
+        $isProfile = (bool) preg_match('#instagram\.com/([A-Za-z0-9._]+)/?$#i', $normalized, $m)
+            && !preg_match('#/(p|reel|tv)/#i', $normalized);
+        $username = $isProfile ? strtolower($m[1]) : null;
+
+        return [
+            'instagram_is_profile' => $isProfile,
+            'instagram_username' => $username,
+            'instagram_embed_url' => $isProfile ? null : ($normalized.'/embed/'),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function enrichYoutubeEmbed(array $item): array
+    {
+        $raw = trim((string) ($item['embed_url'] ?? $item['destination_url'] ?? ''));
+        if ($raw === '') {
+            return ['youtube_embed_src' => null];
+        }
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', $raw)) {
+            return ['youtube_embed_src' => 'https://www.youtube.com/embed/'.$raw];
+        }
+        $patterns = [
+            '/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/live\/([a-zA-Z0-9_-]{11})/',
+        ];
+        foreach ($patterns as $p) {
+            if (preg_match($p, $raw, $m)) {
+                return ['youtube_embed_src' => 'https://www.youtube.com/embed/'.$m[1]];
+            }
+        }
+        if (str_contains($raw, 'live_stream') || str_contains($raw, 'channel=')) {
+            return ['youtube_embed_src' => $raw];
+        }
+
+        return ['youtube_embed_src' => null, 'embed_url' => $raw];
     }
 
     private function resolveBannerUrl(string $rawDest, string $whatsappMessage = ''): string

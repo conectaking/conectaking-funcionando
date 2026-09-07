@@ -42,6 +42,18 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-rec
 
 O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=true` (ou `?laravel=1`).
 
+## Roadmap migração cartão → Laravel
+
+| Fase | Status | Escopo |
+|---|---|---|
+| 1. Página pública (Blade) | em andamento | Render `/:slug` + tipos principais; APIs satélite ainda Node |
+| 2. Canário `LARAVEL_CARD_PUBLIC` | pronto (off) | Ligar slug a slug |
+| 3. APIs read do cartão | pendente | PIX QR, verse-of-day, vcard, PDF, logs |
+| 4. Editor `/api/profile` | pendente | GET/save-all + CRUD itens |
+| 5. Páginas satélite | depois | form, sales, bible, king selection |
+
+**Ainda Node (necessário para “cartão 100% PHP”):** dashboard/editor, uploads, analytics CRUD, e páginas `/form`, `/biblia`, loja, King Selection.
+
 
 ## Login inicial (banco novo)
 

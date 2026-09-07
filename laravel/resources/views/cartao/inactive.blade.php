@@ -3,17 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cartão inativo</title>
+    <title>Perfil Indisponível</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Inter, system-ui, sans-serif; background:#0D0D0F; color:#ECECEC;
-               display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
-        .box { text-align:center; padding:24px; max-width:420px; }
+        :root { --bg-color: #0D0D0F; --text-primary: #FFF3E0; --highlight-primary: #FFC700; }
+        body {
+            background-color: var(--bg-color); color: var(--text-primary);
+            font-family: 'Satoshi', sans-serif; display: flex; align-items: center;
+            justify-content: center; min-height: 100vh; text-align: center; padding: 2rem; margin: 0;
+        }
+        .container { max-width: 500px; }
+        h1 { font-size: 2rem; margin-bottom: 1rem; }
+        p { font-size: 1.1rem; line-height: 1.6; opacity: 0.8; }
+        a { color: var(--highlight-primary); text-decoration: none; font-weight: 700; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>Cartão indisponível</h1>
-        <p>Este perfil não está ativo no momento.</p>
+    <div class="container">
+        <h1>Este perfil Conecta King está temporariamente indisponível.</h1>
+        <p>A assinatura deste perfil pode ter expirado.</p>
+        <br>
+        <p>Se este perfil é seu, <a href="https://www.conectaking.com.br/#planos">clique aqui para reativar sua assinatura</a> e restaurar o acesso à sua Tag imediatamente.</p>
     </div>
 </body>
 </html>

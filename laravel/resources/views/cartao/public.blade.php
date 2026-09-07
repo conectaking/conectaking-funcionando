@@ -29,8 +29,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/css/profile.css?v=laravel-card-5">
-    <link rel="stylesheet" href="/css/profile-wifi.css?v=laravel-card-5" id="ck-wifi-css" disabled>
+    <link rel="stylesheet" href="/css/profile.css?v=laravel-card-6">
+    <link rel="stylesheet" href="/css/profile-wifi.css?v=laravel-card-6" id="ck-wifi-css" disabled>
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <meta property="og:title" content="{{ $d['display_name'] ?? 'Conecta King' }}">
     <meta property="og:description" content="{{ $ogDescription }}">
@@ -94,6 +94,26 @@
             width: 100%; margin: 12px 0; padding: 16px; border-radius: 14px;
             background: rgba(20, 60, 40, 0.85); color: #fff; text-align: left; font-size: 0.95rem; line-height: 1.45;
         }
+        .profile-embed-item { width: 100%; margin: 12px 0; border-radius: 12px; overflow: hidden; }
+        .youtube-embed-container { position: relative; padding-bottom: 56.25%; height: 0; background: #000; }
+        .youtube-embed-container iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .instagram-embed-container iframe { width: 100%; min-height: 480px; border: 0; border-radius: 12px; }
+        .carousel-container-public { width: 100%; border-radius: 12px; overflow: hidden; position: relative; margin: 10px 0; }
+        .carousel-wrapper-public { display: flex; transition: transform .45s ease; }
+        .carousel-slide-public { flex-shrink: 0; }
+        .carousel-slide-public img { width: 100%; display: block; }
+        .carousel-indicators-public { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 2; }
+        .carousel-indicator-public { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.45); border: 0; padding: 0; cursor: pointer; }
+        .carousel-indicator-public.active { background: #fff; }
+        .guest-list-stats-mini { font-size: 11px; opacity: .7; margin-top: 2px; width: 100%; text-align: inherit; }
+        .ck-catalog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 9999; overflow: auto; display: none; }
+        .ck-catalog-overlay.active { display: block; }
+        .ck-catalog-panel { max-width: 960px; margin: 4vh auto; background: #141417; border-radius: 16px; padding: 20px; }
+        .ck-catalog-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 16px; }
+        .ck-catalog-card { background: #1c1c21; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+        .ck-catalog-card img { width: 100%; height: 160px; object-fit: contain; background: #0d0d0f; }
+        .ck-catalog-card .body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .ck-catalog-card .price { color: #ffc700; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -191,27 +211,152 @@
                         @endif
                     </div>
 
+                @elseif($type === 'carousel')
+                    @php
+                        $slides = $item['carousel_images'] ?? [];
+                        $carouselId = 'carousel-'.($item['id'] ?? uniqid());
+                        $n = max(count($slides), 1);
+                    @endphp
+                    @if(count($slides) > 0)
+                        <div class="carousel-container-public" id="{{ $carouselId }}" data-slides="{{ count($slides) }}">
+                            <div class="carousel-wrapper-public" style="width: {{ $n * 100 }}%;">
+                                @foreach($slides as $slide)
+                                    <div class="carousel-slide-public" style="width: {{ 100 / $n }}%;">
+                                        <img src="{{ $slide }}" alt="{{ $title !== '' ? $title : 'Carrossel' }}" loading="lazy">
+                                    </div>
+                                @endforeach
+                            </div>
+                            @if(count($slides) > 1)
+                                <div class="carousel-indicators-public">
+                                    @foreach($slides as $idx => $_)
+                                        <button type="button" class="carousel-indicator-public {{ $idx === 0 ? 'active' : '' }}" data-index="{{ $idx }}" aria-label="Slide {{ $idx + 1 }}"></button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
                 @elseif($type === 'sales_page')
                     @php
                         $spUrl = $item['sales_page_url'] ?? '#';
                         $spTitle = $title !== '' ? $title : 'Página de Vendas';
+                        $spHasLogo = $img !== '' && !str_contains($img, 'placeholder');
+                        $spLogoSize = (int)($item['logo_size'] ?? 24);
                     @endphp
                     @if(($item['sales_page_display_format'] ?? 'button') === 'banner' && !empty($item['sales_page_banner_image_url']))
-                        <a href="{{ $spUrl }}" class="banner-link" @if($spUrl !== '#') target="_blank" rel="noopener noreferrer" @endif>
+                        <a href="{{ $spUrl }}" class="banner-link" @if($spUrl !== '#') target="_blank" rel="noopener noreferrer" @endif data-item-id="{{ $item['id'] ?? '' }}">
                             <img src="{{ $item['sales_page_banner_image_url'] }}" alt="{{ $spTitle }}" style="width:100%;border-radius:16px;">
                         </a>
                     @else
                         <a href="{{ $spUrl }}" class="profile-link" @if($spUrl !== '#') target="_blank" rel="noopener noreferrer" @endif data-item-id="{{ $item['id'] ?? '' }}">
-                            <i class="{{ $item['icon_class'] ?? 'fas fa-store' }}"></i>
+                            @if($spHasLogo)
+                                <img src="{{ $img }}" alt="" class="profile-link-logo" style="width:{{ $spLogoSize }}px;height:{{ $spLogoSize }}px;object-fit:contain;">
+                            @else
+                                <i class="{{ $item['icon_class'] ?? 'fas fa-store' }}"></i>
+                            @endif
                             <span>{{ $spTitle }}</span>
                         </a>
                     @endif
 
                 @elseif($type === 'digital_form')
-                    <a href="{{ $item['form_public_url'] ?? '#' }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
-                        <i class="{{ $item['icon_class'] ?? 'fas fa-wpforms' }}"></i>
-                        <span>{{ $title !== '' ? $title : 'Formulário' }}</span>
-                    </a>
+                    @php
+                        $fd = is_array($item['digital_form_data'] ?? null) ? $item['digital_form_data'] : [];
+                        $fmt = strtolower((string)($fd['display_format'] ?? 'button'));
+                        $formUrl = $item['form_public_url'] ?? '';
+                        $formTitle = $title !== '' ? $title : 'Formulário';
+                        $btnLogo = trim((string)($fd['button_logo_url'] ?? $fd['form_logo_url'] ?? $img));
+                        $btnLogoSize = (int)($fd['button_logo_size'] ?? 40);
+                        if ($btnLogoSize < 20 || $btnLogoSize > 300) $btnLogoSize = 40;
+                        $hasBtnLogo = $btnLogo !== '' && !str_contains($btnLogo, 'placeholder');
+                    @endphp
+                    @if($formUrl !== '')
+                        @if($fmt === 'banner')
+                            <a href="{{ $formUrl }}" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                                @if(!empty($fd['banner_image_url']))
+                                    <img src="{{ $fd['banner_image_url'] }}" alt="{{ $formTitle }}" style="width:100%;border-radius:16px;">
+                                @else
+                                    <div style="min-height:160px;border-radius:16px;background:#1c1c21;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.35);">
+                                        <i class="fas fa-image" style="font-size:2rem;"></i>
+                                    </div>
+                                @endif
+                            </a>
+                        @else
+                            <a href="{{ $formUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                                @if($hasBtnLogo)
+                                    <img src="{{ $btnLogo }}" alt="" class="profile-link-logo" style="width:{{ $btnLogoSize }}px;height:{{ $btnLogoSize }}px;object-fit:contain;border-radius:8px;">
+                                @else
+                                    <i class="{{ $item['icon_class'] ?? 'fas fa-wpforms' }}"></i>
+                                @endif
+                                <span>{{ $formTitle }}</span>
+                            </a>
+                        @endif
+                    @endif
+
+                @elseif($type === 'guest_list')
+                    @php
+                        $gl = is_array($item['guest_list_data'] ?? null) ? $item['guest_list_data'] : [];
+                        $reg = $gl['registration_url'] ?? '#';
+                        $stats = is_array($gl['stats'] ?? null) ? $gl['stats'] : [];
+                        $glTitle = $title !== '' ? $title : ($gl['event_title'] ?? 'Lista de Convidados');
+                        $glLogo = $img !== '' && !str_contains($img, 'placeholder');
+                    @endphp
+                    @if($reg !== '#' && $reg !== '')
+                        <a href="{{ $reg }}" class="profile-link guest-list-item" data-item-id="{{ $item['id'] ?? '' }}" target="_blank" rel="noopener noreferrer" style="flex-wrap:wrap;">
+                            @if($glLogo)
+                                <img src="{{ $img }}" alt="" class="profile-link-logo" style="max-width:24px;max-height:24px;border-radius:8px;">
+                            @else
+                                <i class="fas fa-users"></i>
+                            @endif
+                            <span>{{ $glTitle }}</span>
+                            <div class="guest-list-stats-mini">
+                                {{ (int)($stats['total_count'] ?? 0) }} convidados · {{ (int)($stats['confirmed_count'] ?? 0) }} confirmados
+                            </div>
+                        </a>
+                    @endif
+
+                @elseif($type === 'product_catalog')
+                    @php
+                        $catLogo = $img !== '' && !str_contains($img, 'placeholder');
+                        $catSize = (int)($item['logo_size'] ?? 24);
+                    @endphp
+                    <button type="button" class="profile-link product-catalog-btn"
+                            data-item-id="{{ $item['id'] ?? '' }}"
+                            data-whatsapp="{{ $url }}"
+                            data-profile-slug="{{ $profile_slug }}"
+                            data-products='@json($item['products'] ?? [])'>
+                        @if($catLogo)
+                            <img src="{{ $img }}" alt="" class="profile-link-logo" style="width:{{ $catSize }}px;height:{{ $catSize }}px;object-fit:contain;">
+                        @else
+                            <i class="{{ $item['icon_class'] ?? 'fas fa-store' }}"></i>
+                        @endif
+                        <span>{{ $title !== '' ? $title : 'Minha Loja' }}</span>
+                    </button>
+
+                @elseif($type === 'youtube_embed')
+                    @if(!empty($item['youtube_embed_src']))
+                        <div class="profile-embed-item youtube-embed-container" data-item-id="{{ $item['id'] ?? '' }}">
+                            <iframe src="{{ $item['youtube_embed_src'] }}" title="YouTube" allowfullscreen loading="lazy"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                        </div>
+                    @endif
+
+                @elseif($type === 'instagram_embed')
+                    @if(!empty($item['instagram_is_profile']) && !empty($item['instagram_username']))
+                        <a href="{{ $url }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                            <i class="fab fa-instagram"></i>
+                            <span>@{{ $item['instagram_username'] }}</span>
+                        </a>
+                    @elseif(!empty($item['instagram_embed_url']))
+                        <div class="profile-embed-item instagram-embed-container" data-item-id="{{ $item['id'] ?? '' }}">
+                            <iframe src="{{ $item['instagram_embed_url'] }}" loading="lazy" title="Instagram"></iframe>
+                        </div>
+                    @elseif($url !== '')
+                        <a href="{{ $url }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                            <i class="fab fa-instagram"></i>
+                            <span>{{ $title !== '' ? $title : 'Instagram' }}</span>
+                        </a>
+                    @endif
 
                 @elseif($type === 'location')
                     {{-- renderizado em profile-actions via map_url --}}
@@ -251,12 +396,10 @@
                     </button>
 
                 @elseif($type === 'pdf')
-                    @if($url !== '' && $url !== '#')
-                        <a href="{{ $url }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
-                            <i class="{{ $item['icon_class'] ?? 'fas fa-file-pdf' }}"></i>
-                            <span>{{ $title !== '' ? $title : 'PDF' }}</span>
-                        </a>
-                    @endif
+                    <a href="/download/pdf/{{ $item['id'] ?? '' }}" class="profile-link" data-item-id="{{ $item['id'] ?? '' }}">
+                        <i class="{{ $item['icon_class'] ?? 'fas fa-file-pdf' }}"></i>
+                        <span>{{ $title !== '' ? $title : 'PDF' }}</span>
+                    </a>
 
                 @elseif($type === 'texto_com_botao')
                     @php
@@ -285,7 +428,7 @@
                         </div>
                     @endif
 
-                @elseif(in_array($type, ['whatsapp','telegram','email','instagram','facebook','tiktok','twitter','youtube','linkedin','portfolio','pinterest','reddit','twitch','spotify','link','wifi'], true))
+                @elseif(in_array($type, ['whatsapp','telegram','email','instagram','facebook','tiktok','twitter','youtube','linkedin','portfolio','pinterest','reddit','twitch','spotify','link'], true))
                     @php
                         $href = $url !== '' ? $url : '#';
                         if ($type === 'whatsapp' && $url !== '' && !str_starts_with($url, 'http')) {
@@ -300,7 +443,7 @@
                             'whatsapp' => 'fab fa-whatsapp', 'instagram' => 'fab fa-instagram', 'facebook' => 'fab fa-facebook',
                             'tiktok' => 'fab fa-tiktok', 'youtube' => 'fab fa-youtube', 'email' => 'fas fa-envelope',
                             'telegram' => 'fab fa-telegram', 'linkedin' => 'fab fa-linkedin', 'spotify' => 'fab fa-spotify',
-                            'wifi' => 'fas fa-wifi', 'link' => 'fas fa-link',
+                            'link' => 'fas fa-link',
                         ];
                         $icon = $item['icon_class'] ?? ($defaultIcons[$type] ?? 'fas fa-link');
                     @endphp
@@ -314,6 +457,12 @@
                             <span>{{ $label }}</span>
                         </a>
                     @endif
+
+                @elseif($url !== '' && $url !== '#')
+                    <a href="{{ $url }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                        <i class="{{ $icon }}"></i>
+                        <span>{{ $title !== '' ? $title : 'Link' }}</span>
+                    </a>
                 @endif
             @endforeach
         </section>
@@ -563,6 +712,88 @@
             });
         });
     }
+
+    // Analytics (APIs Node)
+    var userId = @json($user_id ?? null);
+    function logBeacon(path) {
+        try { navigator.sendBeacon(path); } catch (e) {
+            try { fetch(path, { method: 'POST', keepalive: true }); } catch (e2) {}
+        }
+    }
+    if (userId) logBeacon('/log/view/' + userId);
+    var saveContact = document.getElementById('save-contact-btn');
+    if (saveContact && userId) {
+        saveContact.addEventListener('click', function () { logBeacon('/log/vcard/' + userId); });
+    }
+    document.addEventListener('click', function (e) {
+        var el = e.target.closest('[data-item-id]');
+        if (!el) return;
+        var id = el.getAttribute('data-item-id');
+        if (id) logBeacon('/log/click/item/' + id);
+    });
+
+    // Carrossel simples
+    document.querySelectorAll('.carousel-container-public').forEach(function (el) {
+        var total = parseInt(el.getAttribute('data-slides') || '0', 10);
+        if (total < 2) return;
+        var wrapper = el.querySelector('.carousel-wrapper-public');
+        var indicators = el.querySelectorAll('.carousel-indicator-public');
+        var idx = 0;
+        function go(i) {
+            idx = (i + total) % total;
+            wrapper.style.transform = 'translateX(-' + (idx * (100 / total)) + '%)';
+            indicators.forEach(function (dot, di) {
+                dot.classList.toggle('active', di === idx);
+            });
+        }
+        indicators.forEach(function (dot) {
+            dot.addEventListener('click', function () {
+                go(parseInt(dot.getAttribute('data-index') || '0', 10));
+            });
+        });
+        setInterval(function () { go(idx + 1); }, 4500);
+    });
+
+    // Catálogo de produtos (modal simplificado)
+    var catalogOverlay = document.createElement('div');
+    catalogOverlay.className = 'ck-catalog-overlay';
+    catalogOverlay.innerHTML = '<div class="ck-catalog-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h3 style="margin:0;color:#ececec;">Loja</h3><button type="button" class="ck-catalog-close" style="background:none;border:0;color:#fff;font-size:28px;cursor:pointer;">&times;</button></div><div class="ck-catalog-grid"></div></div>';
+    document.body.appendChild(catalogOverlay);
+    catalogOverlay.querySelector('.ck-catalog-close').addEventListener('click', function () {
+        catalogOverlay.classList.remove('active');
+    });
+    catalogOverlay.addEventListener('click', function (e) {
+        if (e.target === catalogOverlay) catalogOverlay.classList.remove('active');
+    });
+    function money(v) {
+        var n = Number(v);
+        if (!isFinite(n)) n = 0;
+        return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    document.querySelectorAll('.product-catalog-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var products = [];
+            try { products = JSON.parse(btn.getAttribute('data-products') || '[]'); } catch (e) {}
+            var slug = btn.getAttribute('data-profile-slug') || '';
+            var grid = catalogOverlay.querySelector('.ck-catalog-grid');
+            if (!products.length) {
+                grid.innerHTML = '<p style="color:#999;grid-column:1/-1;text-align:center;">Nenhum produto disponível.</p>';
+            } else {
+                grid.innerHTML = products.map(function (p) {
+                    var href = '/' + slug + '/produto/' + (p.id || '');
+                    var img = p.image_url
+                        ? '<img src="' + String(p.image_url).replace(/"/g, '&quot;') + '" alt="">'
+                        : '<div style="height:160px;display:flex;align-items:center;justify-content:center;color:#666;"><i class="fas fa-image"></i></div>';
+                    return '<div class="ck-catalog-card">' + img +
+                        '<div class="body"><strong style="color:#ececec;">' + String(p.name || 'Produto').replace(/</g, '&lt;') + '</strong>' +
+                        (p.description ? '<span style="color:#999;font-size:.85rem;">' + String(p.description).replace(/</g, '&lt;').slice(0, 120) + '</span>' : '') +
+                        '<span class="price">R$ ' + money(p.price) + '</span>' +
+                        '<a href="' + href + '" target="_blank" rel="noopener" class="profile-link" style="margin:0;justify-content:center;">Ver detalhes</a></div></div>';
+                }).join('');
+            }
+            catalogOverlay.classList.add('active');
+        });
+    });
 })();
 </script>
 </body>
