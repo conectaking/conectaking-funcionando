@@ -50,7 +50,7 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 1. Página pública (Blade) | canário `adrianokingg` | Render `/:slug` + tipos principais |
 | 2. Canário `LARAVEL_CARD_PUBLIC` | ligado (slug) | `LARAVEL_CARD_SLUGS=adrianokingg` |
 | 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
-| 4. Editor `/api/profile` | GET + save-all + CRUD itens | tipados (banner/pix/form…) ainda Node |
+| 4. Editor `/api/profile` | GET + save-all + CRUD + tipados (banner/link/carousel/pix/pdf/digital_form) + duplicate + avatar-format + share-image | responses/dashboard form, uploads, repair-sales ainda Node |
 | 5. Páginas satélite | depois | form, sales, bible, king selection |
 
 **Ainda Node (necessário para “cartão 100% PHP”):** dashboard/editor, uploads, analytics CRUD, e páginas `/form`, `/biblia`, loja, King Selection.

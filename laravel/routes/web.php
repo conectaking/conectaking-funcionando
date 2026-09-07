@@ -7,6 +7,7 @@ use App\Http\Controllers\CartaoVirtual\PdfDownloadController;
 use App\Http\Controllers\CartaoVirtual\PixQrCodeController;
 use App\Http\Controllers\CartaoVirtual\ProfileEditorController;
 use App\Http\Controllers\CartaoVirtual\ProfileItemsController;
+use App\Http\Controllers\CartaoVirtual\ProfileTypedItemsController;
 use App\Http\Controllers\CartaoVirtual\VcardController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,8 +39,17 @@ Route::get('/l/download/pdf/{itemId}', [PdfDownloadController::class, 'show'])->
 Route::get('/l/api/profile', [ProfileEditorController::class, 'show'])->middleware('jwt');
 Route::put('/l/api/profile/save-all', [ProfileEditorController::class, 'saveAll'])->middleware('jwt');
 Route::middleware('jwt')->group(function () {
+    Route::put('/l/api/profile/avatar-format', [ProfileEditorController::class, 'avatarFormat']);
+    Route::put('/l/api/profile/share-image', [ProfileEditorController::class, 'shareImage']);
     Route::get('/l/api/profile/items', [ProfileItemsController::class, 'index']);
     Route::post('/l/api/profile/items', [ProfileItemsController::class, 'store']);
+    Route::put('/l/api/profile/items/banner/{id}', [ProfileTypedItemsController::class, 'updateBanner'])->where('id', '[0-9]+');
+    Route::put('/l/api/profile/items/link/{id}', [ProfileTypedItemsController::class, 'updateLink'])->where('id', '[0-9]+');
+    Route::put('/l/api/profile/items/carousel/{id}', [ProfileTypedItemsController::class, 'updateCarousel'])->where('id', '[0-9]+');
+    Route::put('/l/api/profile/items/pix/{id}', [ProfileTypedItemsController::class, 'updatePix'])->where('id', '[0-9]+');
+    Route::put('/l/api/profile/items/pdf/{id}', [ProfileTypedItemsController::class, 'updatePdf'])->where('id', '[0-9]+');
+    Route::put('/l/api/profile/items/digital_form/{id}', [ProfileTypedItemsController::class, 'updateDigitalForm'])->where('id', '[0-9]+');
+    Route::post('/l/api/profile/items/{id}/duplicate', [ProfileTypedItemsController::class, 'duplicate'])->where('id', '[0-9]+');
     Route::get('/l/api/profile/items/{id}', [ProfileItemsController::class, 'show'])->where('id', '[0-9]+');
     Route::put('/l/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
     Route::patch('/l/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
@@ -59,8 +69,17 @@ Route::get('/download/pdf/{itemId}', [PdfDownloadController::class, 'show'])->wh
 Route::get('/api/profile', [ProfileEditorController::class, 'show'])->middleware('jwt');
 Route::put('/api/profile/save-all', [ProfileEditorController::class, 'saveAll'])->middleware('jwt');
 Route::middleware('jwt')->group(function () {
+    Route::put('/api/profile/avatar-format', [ProfileEditorController::class, 'avatarFormat']);
+    Route::put('/api/profile/share-image', [ProfileEditorController::class, 'shareImage']);
     Route::get('/api/profile/items', [ProfileItemsController::class, 'index']);
     Route::post('/api/profile/items', [ProfileItemsController::class, 'store']);
+    Route::put('/api/profile/items/banner/{id}', [ProfileTypedItemsController::class, 'updateBanner'])->where('id', '[0-9]+');
+    Route::put('/api/profile/items/link/{id}', [ProfileTypedItemsController::class, 'updateLink'])->where('id', '[0-9]+');
+    Route::put('/api/profile/items/carousel/{id}', [ProfileTypedItemsController::class, 'updateCarousel'])->where('id', '[0-9]+');
+    Route::put('/api/profile/items/pix/{id}', [ProfileTypedItemsController::class, 'updatePix'])->where('id', '[0-9]+');
+    Route::put('/api/profile/items/pdf/{id}', [ProfileTypedItemsController::class, 'updatePdf'])->where('id', '[0-9]+');
+    Route::put('/api/profile/items/digital_form/{id}', [ProfileTypedItemsController::class, 'updateDigitalForm'])->where('id', '[0-9]+');
+    Route::post('/api/profile/items/{id}/duplicate', [ProfileTypedItemsController::class, 'duplicate'])->where('id', '[0-9]+');
     Route::get('/api/profile/items/{id}', [ProfileItemsController::class, 'show'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
     Route::patch('/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');

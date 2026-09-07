@@ -61,12 +61,18 @@ function isLaravelProfileApiPath(reqMethod, urlPath) {
     const method = String(reqMethod || 'GET').toUpperCase();
     if (method === 'GET' && (pathOnly === '/api/profile' || pathOnly === '/l/api/profile')) return true;
     if (method === 'PUT' && (pathOnly === '/api/profile/save-all' || pathOnly === '/l/api/profile/save-all')) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/profile\/(?:avatar-format|share-image)$/i.test(pathOnly)) return true;
 
-    // CRUD genérico de itens (não tipados: banner/pix/digital_form/...)
+    // CRUD genérico de itens
     const itemsRoot = /^\/(?:l\/)?api\/profile\/items$/i;
     const itemsId = /^\/(?:l\/)?api\/profile\/items\/\d+$/i;
     if (itemsRoot.test(pathOnly) && (method === 'GET' || method === 'POST')) return true;
     if (itemsId.test(pathOnly) && (method === 'GET' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) return true;
+
+    // Tipados + duplicate
+    const typed = /^\/(?:l\/)?api\/profile\/items\/(banner|link|carousel|pix|pdf|digital_form)\/\d+$/i;
+    if (method === 'PUT' && typed.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/profile\/items\/\d+\/duplicate$/i.test(pathOnly)) return true;
     return false;
 }
 
