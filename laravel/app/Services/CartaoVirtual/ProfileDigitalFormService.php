@@ -13,6 +13,10 @@ class ProfileDigitalFormService
     /** @var array<string, list<string>> */
     private static array $colCache = [];
 
+    public function __construct(private readonly ProfileTypedItemsService $typed)
+    {
+    }
+
     /**
      * @param  array<string, mixed>  $body
      * @return array{status:int, body:array<string, mixed>}
@@ -429,6 +433,189 @@ class ProfileDigitalFormService
             }
         } catch (\Throwable $e) {
             Log::warning('profile.digital_form.ensureGuestList', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * @return array{status:int, body:array<string, mixed>}
+     */
+    public function createImportLink(string $userId, string $itemId): array
+    {
+        if (!ctype_digit($itemId) || (int) $itemId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'ID do formulário inválido.']];
+        }
+        $id = (int) $itemId;
+        $check = DB::selectOne(
+            'SELECT id, item_type FROM profile_items WHERE id = ? AND user_id = ? LIMIT 1',
+            [$id, $userId]
+        );
+        if (!$check) {
+            return ['status' => 404, 'body' => ['message' => 'Formulário não encontrado ou não é seu.']];
+        }
+        if ((string) $check->item_type !== 'digital_form') {
+            return ['status' => 400, 'body' => ['message' => 'Este item não é um formulário.']];
+        }
+
+        $token = bin2hex(random_bytes(24));
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $code = 'KING-';
+        for ($i = 0; $i < 5; $i++) {
+            $code .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+
+        $cols = $this->columns('profile_items');
+        if (in_array('import_code', $cols, true)) {
+            DB::update(
+                'UPDATE profile_items SET import_token = ?, import_code = ? WHERE id = ? AND user_id = ?',
+                [$token, $code, $id, $userId]
+            );
+        } else {
+            DB::update(
+                'UPDATE profile_items SET import_token = ? WHERE id = ? AND user_id = ?',
+                [$token, $id, $userId]
+            );
+            $code = null;
+        }
+
+        return [
+            'status' => 200,
+            'body' => [
+                'token' => $token,
+                'code' => $code ?: substr($token, 0, 10),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{status:int, body:array<string, mixed>}
+     */
+    public function importFormInfo(string $tokenOrCode): array
+    {
+        $token = trim($tokenOrCode);
+        if ($token === '') {
+            return ['status' => 400, 'body' => ['message' => 'Token ou código não informado.']];
+        }
+        $cols = $this->columns('profile_items');
+        $hasCode = in_array('import_code', $cols, true);
+        $where = $hasCode
+            ? '(pi.import_token = ? OR pi.import_code = ?)'
+            : 'pi.import_token = ?';
+        $vals = $hasCode ? [$token, $token] : [$token];
+        $row = DB::selectOne(
+            "SELECT pi.id, pi.title, p.display_name
+             FROM profile_items pi
+             LEFT JOIN user_profiles p ON p.user_id = pi.user_id
+             WHERE pi.item_type = 'digital_form' AND $where
+             LIMIT 1",
+            $vals
+        );
+        if (!$row) {
+            return ['status' => 404, 'body' => ['message' => 'Link ou código inválido.']];
+        }
+
+        return [
+            'status' => 200,
+            'body' => [
+                'formTitle' => $row->title ?: 'Formulário King',
+                'ownerName' => $row->display_name ?: 'Um usuário',
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     * @return array{status:int, body:array<string, mixed>}
+     */
+    public function importForm(string $userId, array $body): array
+    {
+        $tokenOrCode = trim((string) ($body['token'] ?? $body['code'] ?? ''));
+        if ($tokenOrCode === '') {
+            return ['status' => 400, 'body' => ['message' => 'Token ou código não informado.']];
+        }
+        $intoRaw = $body['intoItemId'] ?? $body['into_item_id'] ?? null;
+        $intoItemId = ($intoRaw !== null && is_numeric($intoRaw)) ? (int) $intoRaw : null;
+
+        try {
+            $cols = $this->columns('profile_items');
+            $hasCode = in_array('import_code', $cols, true);
+            $where = $hasCode
+                ? "(import_token = ? OR import_code = ?) AND item_type = 'digital_form'"
+                : "import_token = ? AND item_type = 'digital_form'";
+            $vals = $hasCode ? [$tokenOrCode, $tokenOrCode] : [$tokenOrCode];
+            $src = DB::selectOne("SELECT id, user_id, item_type, title FROM profile_items WHERE $where LIMIT 1", $vals);
+            if (!$src) {
+                return ['status' => 404, 'body' => ['message' => 'Link ou código inválido.']];
+            }
+            $sourceId = (int) $src->id;
+
+            if ($intoItemId && $intoItemId > 0) {
+                $target = DB::selectOne(
+                    'SELECT id, item_type FROM profile_items WHERE id = ? AND user_id = ? LIMIT 1',
+                    [$intoItemId, $userId]
+                );
+                if (!$target) {
+                    return ['status' => 404, 'body' => ['message' => 'Formulário de destino não encontrado ou sem permissão.']];
+                }
+                $targetType = (string) $target->item_type;
+                if ($targetType !== 'digital_form' && $targetType !== 'guest_list') {
+                    return ['status' => 400, 'body' => ['message' => 'Só é possível importar em um formulário digital ou lista de convidados.']];
+                }
+                DB::delete('DELETE FROM digital_form_items WHERE profile_item_id = ?', [$intoItemId]);
+                $this->typed->copyDigitalFormTo($sourceId, $intoItemId, '');
+                $hasGl = DB::selectOne('SELECT 1 AS ok FROM guest_list_items WHERE profile_item_id = ? LIMIT 1', [$sourceId]);
+                DB::delete('DELETE FROM guest_list_items WHERE profile_item_id = ?', [$intoItemId]);
+                if ($hasGl) {
+                    $this->typed->copyGuestListTo($sourceId, $intoItemId, '');
+                }
+
+                return ['status' => 200, 'body' => ['id' => $intoItemId, 'itemId' => $intoItemId, 'into' => true]];
+            }
+
+            $next = DB::selectOne(
+                'SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM profile_items WHERE user_id = ?',
+                [$userId]
+            );
+            $displayOrder = (int) ($next->next_order ?? 0);
+            $itemRow = DB::selectOne('SELECT * FROM profile_items WHERE id = ? LIMIT 1', [$sourceId]);
+            $item = (array) $itemRow;
+            $copyCandidates = [
+                'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'is_active',
+                'logo_size', 'pix_key', 'recipient_name', 'pix_amount', 'pix_description', 'pdf_url',
+                'whatsapp_message', 'aspect_ratio',
+            ];
+            $colNames = ['user_id', 'display_order'];
+            $insertVals = [$userId, $displayOrder];
+            foreach ($copyCandidates as $c) {
+                if (in_array($c, $cols, true)) {
+                    $colNames[] = $c;
+                    $insertVals[] = $item[$c] ?? null;
+                }
+            }
+            $ph = implode(',', array_fill(0, count($insertVals), '?'));
+            $new = DB::selectOne(
+                'INSERT INTO profile_items ('.implode(',', $colNames).") VALUES ($ph) RETURNING *",
+                $insertVals
+            );
+            $newItem = (array) $new;
+            $newId = (int) $newItem['id'];
+            $this->typed->copyDigitalFormTo($sourceId, $newId, ' (cópia)');
+            $hasGl = DB::selectOne('SELECT 1 AS ok FROM guest_list_items WHERE profile_item_id = ? LIMIT 1', [$sourceId]);
+            if ($hasGl) {
+                $this->typed->copyGuestListTo($sourceId, $newId, ' (cópia)');
+            }
+
+            return [
+                'status' => 201,
+                'body' => array_merge($newItem, [
+                    'id' => $newId,
+                    'itemId' => $newId,
+                    'title' => $newItem['title'] ?? null,
+                ]),
+            ];
+        } catch (\Throwable $e) {
+            Log::error('profile.importForm', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => ['message' => $e->getMessage() ?: 'Erro ao importar.']];
         }
     }
 

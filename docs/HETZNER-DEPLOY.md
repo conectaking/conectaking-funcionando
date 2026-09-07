@@ -23,7 +23,9 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 | `LARAVEL_CARD_ENABLED` | `true` | Liga proxy `/l/*` |
 | `LARAVEL_CARD_PUBLIC` | `false` | Se `true`, `/:slug` passa a Laravel |
 | `LARAVEL_CARD_SLUGS` | vazio | Canário: lista `slug1,slug2` (vazio = todos quando PUBLIC=true) |
-| `LARAVEL_PROFILE_API` | `false` | Se `true`, `GET /api/profile` e `PUT /api/profile/save-all` → Laravel (JWT) |
+| `LARAVEL_PROFILE_API` | `false` | Editor `/api/profile*` → Laravel (JWT) |
+| `LARAVEL_UPLOAD_API` | `false` | `/api/upload/*` e `/api/upload/pdf` → Laravel |
+| `LARAVEL_SATELLITES` | `false` | Form `/form`, `/:slug/form`, `/:slug/biblia`, loja `/:slug/:store` (respeita `LARAVEL_CARD_SLUGS`) |
 
 **Teste sem mudar produção:** `https://www.conectaking.com.br/adrianokingg?laravel=1`  
 **Prévia:** `/l/card/adrianokingg` (banner de prévia)  
@@ -31,6 +33,9 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 ```bash
 LARAVEL_CARD_PUBLIC=true
 LARAVEL_CARD_SLUGS=adrianokingg
+LARAVEL_PROFILE_API=true
+LARAVEL_UPLOAD_API=true
+LARAVEL_SATELLITES=true
 ```
 
 ```bash
@@ -50,10 +55,12 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 1. Página pública (Blade) | canário `adrianokingg` | Render `/:slug` + tipos principais |
 | 2. Canário `LARAVEL_CARD_PUBLIC` | ligado (slug) | `LARAVEL_CARD_SLUGS=adrianokingg` |
 | 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
-| 4. Editor `/api/profile` | GET + save-all + CRUD + tipados (banner/link/carousel/pix/pdf/digital_form) + duplicate + avatar-format + share-image | responses/dashboard form, uploads, repair-sales ainda Node |
-| 5. Páginas satélite | depois | form, sales, bible, king selection |
+| 4. Editor `/api/profile` | feito | CRUD + tipados + form extras |
+| 5. Uploads | feito (flag) | `/api/upload/*` + PDF |
+| 6. Satélites | feito (flag, canário) | form, bíblia hub, loja |
+| 7. King Selection | depois | permanece Node |
 
-**Ainda Node (necessário para “cartão 100% PHP”):** dashboard/editor, uploads, analytics CRUD, e páginas `/form`, `/biblia`, loja, King Selection.
+**Ainda Node:** King Selection completo; bíblia leitor/capítulo; form EJS rico (checkout/portaria); upload crop só com GD.
 
 
 ## Login inicial (banco novo)

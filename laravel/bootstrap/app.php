@@ -21,6 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/profile/*',
             'l/api/profile',
             'l/api/profile/*',
+            'api/upload',
+            'api/upload/*',
+            'l/api/upload',
+            'l/api/upload/*',
+            '*/form/*/submit',
+            'l/*/form/*/submit',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,

@@ -3,8 +3,8 @@
  *
  * - /l/* sempre (se LARAVEL_CARD_ENABLED)
  * - /:slug só com flag LARAVEL_CARD_PUBLIC ou ?laravel=1
- * - Canário: LARAVEL_CARD_SLUGS=slug1,slug2 (vazio = todos quando PUBLIC=true)
- * - APIs read do cartão: PIX, verse-of-day, log/*, vcard, download/pdf (LARAVEL_CARD_APIS)
+ * - Canário: LARAVEL_CARD_SLUGS=slug1,slug2
+ * - APIs cartão / profile / upload / satélites (flags)
  */
 const http = require('http');
 
@@ -14,6 +14,8 @@ const LARAVEL_PORT = Number(process.env.LARAVEL_PORT || 8080);
 const LARAVEL_CARD_PUBLIC = String(process.env.LARAVEL_CARD_PUBLIC || 'false').toLowerCase() === 'true';
 const LARAVEL_CARD_APIS = String(process.env.LARAVEL_CARD_APIS || 'true').toLowerCase() !== 'false';
 const LARAVEL_PROFILE_API = String(process.env.LARAVEL_PROFILE_API || 'false').toLowerCase() === 'true';
+const LARAVEL_UPLOAD_API = String(process.env.LARAVEL_UPLOAD_API || 'false').toLowerCase() === 'true';
+const LARAVEL_SATELLITES = String(process.env.LARAVEL_SATELLITES || 'false').toLowerCase() === 'true';
 const LARAVEL_CARD_SLUGS = new Set(
     String(process.env.LARAVEL_CARD_SLUGS || '')
         .split(',')
@@ -21,12 +23,25 @@ const LARAVEL_CARD_SLUGS = new Set(
         .filter(Boolean)
 );
 
+const RESERVED_STORE_SEGMENTS = new Set([
+    'form', 'forms', 'biblia', 'bible', 'produto', 'product', 'king-selection', 'kingselection',
+    'api', 'l', 'dashboard', 'login', 'admin', 'upload', 'uploads', 'vcard', 'log', 'card',
+    'download', 'health', 'static', 'js', 'css', 'img', 'assets', 'public', 'loja'
+]);
+
 function shouldServePublicCardWithLaravel(req, slug) {
     if (!LARAVEL_ENABLED) return false;
     const q = req.query || {};
     const force = String(q.laravel || q.engine || '').toLowerCase();
     if (force === '1' || force === 'true' || force === 'laravel') return true;
     if (!LARAVEL_CARD_PUBLIC) return false;
+    const s = String(slug || '').toLowerCase();
+    if (!s) return false;
+    if (LARAVEL_CARD_SLUGS.size === 0) return true;
+    return LARAVEL_CARD_SLUGS.has(s);
+}
+
+function slugAllowedForSatellite(slug) {
     const s = String(slug || '').toLowerCase();
     if (!s) return false;
     if (LARAVEL_CARD_SLUGS.size === 0) return true;
@@ -62,17 +77,66 @@ function isLaravelProfileApiPath(reqMethod, urlPath) {
     if (method === 'GET' && (pathOnly === '/api/profile' || pathOnly === '/l/api/profile')) return true;
     if (method === 'PUT' && (pathOnly === '/api/profile/save-all' || pathOnly === '/l/api/profile/save-all')) return true;
     if (method === 'PUT' && /^\/(?:l\/)?api\/profile\/(?:avatar-format|share-image)$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/profile\/import-form-info$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/profile\/import-form$/i.test(pathOnly)) return true;
 
-    // CRUD genérico de itens
     const itemsRoot = /^\/(?:l\/)?api\/profile\/items$/i;
     const itemsId = /^\/(?:l\/)?api\/profile\/items\/\d+$/i;
     if (itemsRoot.test(pathOnly) && (method === 'GET' || method === 'POST')) return true;
     if (itemsId.test(pathOnly) && (method === 'GET' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) return true;
 
-    // Tipados + duplicate
     const typed = /^\/(?:l\/)?api\/profile\/items\/(banner|link|carousel|pix|pdf|digital_form)\/\d+$/i;
     if (method === 'PUT' && typed.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/profile\/items\/\d+\/duplicate$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/profile\/items\/repair-sales-pages$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/profile\/items\/digital_form\/\d+\/(responses|dashboard)$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/profile\/items\/digital_form\/\d+\/responses\/delete-bulk$/i.test(pathOnly)) return true;
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/profile\/items\/digital_form\/\d+\/responses\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/profile\/items\/digital_form\/\d+\/create-import-link$/i.test(pathOnly)) return true;
+    return false;
+}
+
+function isLaravelUploadPath(reqMethod, urlPath) {
+    if (!urlPath) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    if (method === 'POST' && /^\/(?:l\/)?api\/upload\/(auth|receive-one|image|images|crop|pdf)$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/upload\/get-url\/[^/]+$/i.test(pathOnly)) return true;
+    return false;
+}
+
+function isLaravelSatellitePath(reqMethod, urlPath) {
+    if (!urlPath) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
+    const force = /[?&](laravel|engine)=(1|true|laravel)/i.test(q);
+
+    if (method === 'GET' && /^\/(?:l\/)?form\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/l\/loja\/[^/]+\/[^/]+$/i.test(pathOnly)) return true;
+
+    const formItem = pathOnly.match(/^\/([^/]+)\/form\/(\d+)(\/submit)?$/i);
+    if (formItem) {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        if (!force && !slugAllowedForSatellite(formItem[1])) return false;
+        if (formItem[3]) return method === 'POST';
+        return method === 'GET';
+    }
+
+    const bible = pathOnly.match(/^\/([^/]+)\/biblia\/?$/i);
+    if (bible && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bible[1]);
+    }
+
+    const store = pathOnly.match(/^\/([^/]+)\/([^/]+)\/?$/i);
+    if (store && method === 'GET') {
+        const profileSlug = store[1];
+        const storeSlug = store[2];
+        if (RESERVED_STORE_SEGMENTS.has(String(storeSlug).toLowerCase())) return false;
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(profileSlug);
+    }
     return false;
 }
 
@@ -90,7 +154,7 @@ function buildForwardHeaders(req, { publicMode } = {}) {
     return headers;
 }
 
-function proxyToLaravel(req, res, targetPath, { publicMode = false } = {}) {
+function proxyToLaravel(req, res, targetPath, { publicMode = false, timeoutMs = 20000 } = {}) {
     if (!LARAVEL_ENABLED) {
         if (!res.headersSent) {
             res.status(503).json({ error: 'Laravel desabilitado (LARAVEL_CARD_ENABLED=false)' });
@@ -105,7 +169,7 @@ function proxyToLaravel(req, res, targetPath, { publicMode = false } = {}) {
         path: targetPath,
         method: req.method,
         headers,
-        timeout: 20000
+        timeout: timeoutMs
     };
 
     const proxyReq = http.request(opts, (proxyRes) => {
@@ -130,7 +194,7 @@ function proxyToLaravel(req, res, targetPath, { publicMode = false } = {}) {
                 });
             } else {
                 res.status(502).send(
-                    '<h1>Cartão temporariamente indisponível</h1><p>Motor Laravel offline. Tente novamente.</p>'
+                    '<h1>Temporariamente indisponível</h1><p>Motor Laravel offline. Tente novamente.</p>'
                 );
             }
         }
@@ -160,7 +224,6 @@ function laravelProxyMiddleware(req, res, next) {
     const url = req.originalUrl || req.url || '';
 
     if (LARAVEL_CARD_APIS && isLaravelCardApiPath(url)) {
-        // Encaminhar path original (Laravel tem /api/... e /l/api/...)
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 
@@ -168,13 +231,18 @@ function laravelProxyMiddleware(req, res, next) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 
+    if (LARAVEL_UPLOAD_API && isLaravelUploadPath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: 120000 });
+    }
+
+    if ((LARAVEL_SATELLITES || /[?&](laravel|engine)=(1|true|laravel)/i.test(url)) && isLaravelSatellitePath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
     if (!url.startsWith('/l/') && url !== '/l') return next();
     return proxyToLaravel(req, res, url, { publicMode: false });
 }
 
-/**
- * Proxy do cartão público /:slug → /l/card/:slug (modo público, sem banner de prévia).
- */
 function proxyPublicCardToLaravel(req, res, slug) {
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
     const targetPath = `/l/card/${encodeURIComponent(slug)}${qs}`;
@@ -190,6 +258,8 @@ module.exports = {
     LARAVEL_CARD_PUBLIC,
     LARAVEL_CARD_APIS,
     LARAVEL_PROFILE_API,
+    LARAVEL_UPLOAD_API,
+    LARAVEL_SATELLITES,
     LARAVEL_CARD_SLUGS,
     LARAVEL_HOST,
     LARAVEL_PORT

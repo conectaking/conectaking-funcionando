@@ -6,8 +6,11 @@ use App\Http\Controllers\CartaoVirtual\CardPublicController;
 use App\Http\Controllers\CartaoVirtual\PdfDownloadController;
 use App\Http\Controllers\CartaoVirtual\PixQrCodeController;
 use App\Http\Controllers\CartaoVirtual\ProfileEditorController;
+use App\Http\Controllers\CartaoVirtual\ProfileFormExtrasController;
 use App\Http\Controllers\CartaoVirtual\ProfileItemsController;
 use App\Http\Controllers\CartaoVirtual\ProfileTypedItemsController;
+use App\Http\Controllers\CartaoVirtual\SatellitePublicController;
+use App\Http\Controllers\CartaoVirtual\UploadController;
 use App\Http\Controllers\CartaoVirtual\VcardController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,17 +41,27 @@ Route::get('/l/vcard/{identifier}', [VcardController::class, 'show'])->where('id
 Route::get('/l/download/pdf/{itemId}', [PdfDownloadController::class, 'show'])->where('itemId', '[0-9]+');
 Route::get('/l/api/profile', [ProfileEditorController::class, 'show'])->middleware('jwt');
 Route::put('/l/api/profile/save-all', [ProfileEditorController::class, 'saveAll'])->middleware('jwt');
+Route::get('/l/api/profile/import-form-info', [ProfileFormExtrasController::class, 'importFormInfo']);
+Route::get('/api/profile/import-form-info', [ProfileFormExtrasController::class, 'importFormInfo']);
+
 Route::middleware('jwt')->group(function () {
     Route::put('/l/api/profile/avatar-format', [ProfileEditorController::class, 'avatarFormat']);
     Route::put('/l/api/profile/share-image', [ProfileEditorController::class, 'shareImage']);
+    Route::post('/l/api/profile/import-form', [ProfileFormExtrasController::class, 'importForm']);
     Route::get('/l/api/profile/items', [ProfileItemsController::class, 'index']);
     Route::post('/l/api/profile/items', [ProfileItemsController::class, 'store']);
+    Route::post('/l/api/profile/items/repair-sales-pages', [ProfileFormExtrasController::class, 'repairSalesPages']);
     Route::put('/l/api/profile/items/banner/{id}', [ProfileTypedItemsController::class, 'updateBanner'])->where('id', '[0-9]+');
     Route::put('/l/api/profile/items/link/{id}', [ProfileTypedItemsController::class, 'updateLink'])->where('id', '[0-9]+');
     Route::put('/l/api/profile/items/carousel/{id}', [ProfileTypedItemsController::class, 'updateCarousel'])->where('id', '[0-9]+');
     Route::put('/l/api/profile/items/pix/{id}', [ProfileTypedItemsController::class, 'updatePix'])->where('id', '[0-9]+');
     Route::put('/l/api/profile/items/pdf/{id}', [ProfileTypedItemsController::class, 'updatePdf'])->where('id', '[0-9]+');
     Route::put('/l/api/profile/items/digital_form/{id}', [ProfileTypedItemsController::class, 'updateDigitalForm'])->where('id', '[0-9]+');
+    Route::get('/l/api/profile/items/digital_form/{id}/responses', [ProfileFormExtrasController::class, 'listResponses'])->where('id', '[0-9]+');
+    Route::post('/l/api/profile/items/digital_form/{id}/responses/delete-bulk', [ProfileFormExtrasController::class, 'deleteResponsesBulk'])->where('id', '[0-9]+');
+    Route::delete('/l/api/profile/items/digital_form/{id}/responses/{responseId}', [ProfileFormExtrasController::class, 'deleteResponse'])->where(['id' => '[0-9]+', 'responseId' => '[0-9]+']);
+    Route::get('/l/api/profile/items/digital_form/{id}/dashboard', [ProfileFormExtrasController::class, 'dashboard'])->where('id', '[0-9]+');
+    Route::post('/l/api/profile/items/digital_form/{id}/create-import-link', [ProfileFormExtrasController::class, 'createImportLink'])->where('id', '[0-9]+');
     Route::post('/l/api/profile/items/{id}/duplicate', [ProfileTypedItemsController::class, 'duplicate'])->where('id', '[0-9]+');
     Route::get('/l/api/profile/items/{id}', [ProfileItemsController::class, 'show'])->where('id', '[0-9]+');
     Route::put('/l/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
@@ -71,17 +84,54 @@ Route::put('/api/profile/save-all', [ProfileEditorController::class, 'saveAll'])
 Route::middleware('jwt')->group(function () {
     Route::put('/api/profile/avatar-format', [ProfileEditorController::class, 'avatarFormat']);
     Route::put('/api/profile/share-image', [ProfileEditorController::class, 'shareImage']);
+    Route::post('/api/profile/import-form', [ProfileFormExtrasController::class, 'importForm']);
     Route::get('/api/profile/items', [ProfileItemsController::class, 'index']);
     Route::post('/api/profile/items', [ProfileItemsController::class, 'store']);
+    Route::post('/api/profile/items/repair-sales-pages', [ProfileFormExtrasController::class, 'repairSalesPages']);
     Route::put('/api/profile/items/banner/{id}', [ProfileTypedItemsController::class, 'updateBanner'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/link/{id}', [ProfileTypedItemsController::class, 'updateLink'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/carousel/{id}', [ProfileTypedItemsController::class, 'updateCarousel'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/pix/{id}', [ProfileTypedItemsController::class, 'updatePix'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/pdf/{id}', [ProfileTypedItemsController::class, 'updatePdf'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/digital_form/{id}', [ProfileTypedItemsController::class, 'updateDigitalForm'])->where('id', '[0-9]+');
+    Route::get('/api/profile/items/digital_form/{id}/responses', [ProfileFormExtrasController::class, 'listResponses'])->where('id', '[0-9]+');
+    Route::post('/api/profile/items/digital_form/{id}/responses/delete-bulk', [ProfileFormExtrasController::class, 'deleteResponsesBulk'])->where('id', '[0-9]+');
+    Route::delete('/api/profile/items/digital_form/{id}/responses/{responseId}', [ProfileFormExtrasController::class, 'deleteResponse'])->where(['id' => '[0-9]+', 'responseId' => '[0-9]+']);
+    Route::get('/api/profile/items/digital_form/{id}/dashboard', [ProfileFormExtrasController::class, 'dashboard'])->where('id', '[0-9]+');
+    Route::post('/api/profile/items/digital_form/{id}/create-import-link', [ProfileFormExtrasController::class, 'createImportLink'])->where('id', '[0-9]+');
     Route::post('/api/profile/items/{id}/duplicate', [ProfileTypedItemsController::class, 'duplicate'])->where('id', '[0-9]+');
     Route::get('/api/profile/items/{id}', [ProfileItemsController::class, 'show'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
     Route::patch('/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/api/profile/items/{id}', [ProfileItemsController::class, 'destroy'])->where('id', '[0-9]+');
 });
+
+// Uploads (JWT)
+Route::middleware('jwt')->group(function () {
+    Route::post('/api/upload/auth', [UploadController::class, 'auth']);
+    Route::post('/api/upload/receive-one', [UploadController::class, 'receiveOne']);
+    Route::post('/api/upload/image', [UploadController::class, 'image']);
+    Route::post('/api/upload/images', [UploadController::class, 'images']);
+    Route::post('/api/upload/crop', [UploadController::class, 'crop']);
+    Route::get('/api/upload/get-url/{imageId}', [UploadController::class, 'getUrl']);
+    Route::post('/api/upload/pdf', [UploadController::class, 'pdf']);
+    Route::post('/l/api/upload/auth', [UploadController::class, 'auth']);
+    Route::post('/l/api/upload/receive-one', [UploadController::class, 'receiveOne']);
+    Route::post('/l/api/upload/image', [UploadController::class, 'image']);
+    Route::post('/l/api/upload/images', [UploadController::class, 'images']);
+    Route::post('/l/api/upload/crop', [UploadController::class, 'crop']);
+    Route::get('/l/api/upload/get-url/{imageId}', [UploadController::class, 'getUrl']);
+    Route::post('/l/api/upload/pdf', [UploadController::class, 'pdf']);
+});
+
+// Satélites públicos (form / bíblia / loja)
+Route::get('/form/{slug}', [SatellitePublicController::class, 'formByToken'])->where('slug', $cardSlug);
+Route::get('/l/form/{slug}', [SatellitePublicController::class, 'formByToken'])->where('slug', $cardSlug);
+Route::get('/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::post('/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::get('/l/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::post('/l/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::get('/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
+Route::get('/l/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
+Route::get('/l/loja/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
+Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);

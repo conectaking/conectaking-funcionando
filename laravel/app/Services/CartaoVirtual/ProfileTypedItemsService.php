@@ -300,7 +300,17 @@ class ProfileTypedItemsService
         }
     }
 
-    private function duplicateDigitalForm(int $sourceId, int $newId): void
+    public function copyDigitalFormTo(int $sourceId, int $newId, string $titleSuffix = ' (cópia)'): void
+    {
+        $this->duplicateDigitalForm($sourceId, $newId, $titleSuffix);
+    }
+
+    public function copyGuestListTo(int $sourceId, int $newId, string $titleSuffix = ' (cópia)'): void
+    {
+        $this->duplicateGuestList($sourceId, $newId, $titleSuffix);
+    }
+
+    private function duplicateDigitalForm(int $sourceId, int $newId, string $titleSuffix = ' (cópia)'): void
     {
         $df = DB::selectOne(
             'SELECT * FROM digital_form_items WHERE profile_item_id = ?
@@ -321,8 +331,8 @@ class ProfileTypedItemsService
             }
             $cols[] = $c;
             $v = $src[$c] ?? null;
-            if ($c === 'form_title' && is_string($v)) {
-                $v = $v.' (cópia)';
+            if ($c === 'form_title' && is_string($v) && $titleSuffix !== '') {
+                $v = $v.$titleSuffix;
             }
             if ($c === 'form_fields' && (is_array($v) || is_object($v))) {
                 $v = json_encode($v, JSON_UNESCAPED_UNICODE);
@@ -339,7 +349,7 @@ class ProfileTypedItemsService
         );
     }
 
-    private function duplicateGuestList(int $sourceId, int $newId): void
+    private function duplicateGuestList(int $sourceId, int $newId, string $titleSuffix = ' (cópia)'): void
     {
         $gl = DB::selectOne(
             'SELECT * FROM guest_list_items WHERE profile_item_id = ?
@@ -363,8 +373,8 @@ class ProfileTypedItemsService
             if (in_array($c, ['registration_token', 'confirmation_token', 'public_view_token'], true)) {
                 $v = bin2hex(random_bytes(16));
             }
-            if ($c === 'event_title' && is_string($v)) {
-                $v = $v.' (cópia)';
+            if ($c === 'event_title' && is_string($v) && $titleSuffix !== '') {
+                $v = $v.$titleSuffix;
             }
             if (str_contains($c, 'fields') || str_contains($c, 'json')) {
                 if (is_array($v) || is_object($v)) {
@@ -384,11 +394,93 @@ class ProfileTypedItemsService
                  VALUES (?, ?, true, true, ?, ?)',
                 [
                     $newId,
-                    ($src['event_title'] ?? 'Lista').' (cópia)',
+                    ($src['event_title'] ?? 'Lista').$titleSuffix,
                     bin2hex(random_bytes(16)),
                     bin2hex(random_bytes(16)),
                 ]
             );
+        }
+    }
+
+    /**
+     * @return array{status:int, body:array<string, mixed>}
+     */
+    public function repairSalesPages(string $userId): array
+    {
+        try {
+            $orphans = DB::select(
+                'SELECT pi.id, pi.title, pi.image_url
+                 FROM profile_items pi
+                 LEFT JOIN sales_pages sp ON pi.id = sp.profile_item_id
+                 WHERE pi.user_id = ? AND pi.item_type = \'sales_page\' AND sp.id IS NULL',
+                [$userId]
+            );
+            if ($orphans === []) {
+                return [
+                    'status' => 200,
+                    'body' => [
+                        'success' => true,
+                        'message' => 'Todos os itens sales_page já têm sales_page associada',
+                        'created' => 0,
+                        'total' => 0,
+                    ],
+                ];
+            }
+            $created = 0;
+            $errors = [];
+            foreach ($orphans as $item) {
+                try {
+                    $base = Str::slug((string) ($item->title ?: 'loja')) ?: 'loja';
+                    $slug = $base;
+                    $n = 0;
+                    while (DB::selectOne('SELECT id FROM sales_pages WHERE slug = ? LIMIT 1', [$slug])) {
+                        $n++;
+                        $slug = $base.'-'.$n;
+                    }
+                    DB::insert(
+                        'INSERT INTO sales_pages
+                            (profile_item_id, store_title, button_text, button_logo_url, whatsapp_number,
+                             theme, status, preview_token, slug)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        [
+                            $item->id,
+                            $item->title ?: 'Minha Loja',
+                            $item->title ?: 'Minha Loja',
+                            $item->image_url ?: null,
+                            '',
+                            'dark',
+                            'DRAFT',
+                            bin2hex(random_bytes(32)),
+                            $slug,
+                        ]
+                    );
+                    $created++;
+                } catch (\Throwable $e) {
+                    $errors[] = ['itemId' => $item->id, 'error' => $e->getMessage()];
+                }
+            }
+
+            return [
+                'status' => 200,
+                'body' => [
+                    'success' => true,
+                    'message' => "Reparo concluído. {$created} sales_page(s) criada(s)",
+                    'created' => $created,
+                    'total' => count($orphans),
+                    'errors' => $errors !== [] ? $errors : null,
+                ],
+            ];
+        } catch (\Throwable $e) {
+            Log::error('profile.repairSalesPages', ['error' => $e->getMessage()]);
+
+            return [
+                'status' => 500,
+                'body' => [
+                    'success' => false,
+                    'error' => 'Erro ao reparar sales_pages',
+                    'message' => $e->getMessage(),
+                ],
+            ];
         }
     }
 
