@@ -1,9 +1,9 @@
 /**
- * Dashboard - Aba Informa��es (Editar Conecta King)
- * L�gica da aba #info-editor: nome, WhatsApp, @, bio, avatar, etc.
- * Incluir no dashboard.html ap�s dashboard.js:
+ * Dashboard - Aba Informações (Editar Conecta King)
+ * Lgica da aba #info-editor: nome, WhatsApp, @, bio, avatar, etc.
+ * Incluir no dashboard.html apdashboard.js:
  *   <script src="js/dashboard-info.js" defer></script>
- * No dashboard.js, ao exibir a aba Informa��es, chamar:
+ * No dashboard.js, ao exibir a aba Informações, chamar:
  *   if (window.DashboardInfo && typeof DashboardInfo.init === 'function') DashboardInfo.init();
  */
 (function (global) {
@@ -13,8 +13,8 @@
         _initialized: false,
 
         /**
-         * Inicializa a aba Informa��es (formul�rio, handlers, valida��o).
-         * Chamado quando o usu�rio abre a aba Editar Conecta King ? Informa��es.
+         * Inicializa a aba Informações (formulrio, handlers, validação).
+         * Chamado quando o usuário abre a aba Editar Conecta King ? Informações.
          */
         init: function () {
             if (this._initialized) return;
@@ -25,14 +25,14 @@
         },
 
         /**
-         * Associa eventos ao formul�rio de informa��es (nome, WhatsApp, bio, avatar, etc.).
-         * Migrar aqui a l�gica que hoje est� no dashboard.js para a aba Informa��es.
+         * Associa eventos ao formulrio de informaes (nome, WhatsApp, bio, avatar, etc.).
+         * Migrar aqui a lgica que hoje est no dashboard.js para a aba Informações.
          */
         _bindForm: function (container) {
             var form = container.querySelector('form') || container.querySelector('[id*="info-form"], [class*="info-form"]');
             if (!form) return;
             // Ex.: form.addEventListener('submit', this._onSubmit.bind(this));
-            // Ex.: inputs para m�scara, preview de avatar, etc.
+            // Ex.: inputs para mcara, preview de avatar, etc.
         },
 
         /**

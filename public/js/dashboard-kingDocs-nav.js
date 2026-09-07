@@ -1,6 +1,6 @@
 /**
- * Insere o item �King Docs� no sidebar logo abaixo de �B�blia�.
- * Compat�vel com menu montado tarde (dashboard.js) e com <div>/<li> sem data-module.
+ * Insere o item King Docs no sidebar logo abaixo de Bíblia.
+ * Compatvel com menu montado tarde (dashboard.js) e com <div>/<li> sem data-module.
  */
 (function (global) {
     'use strict';
@@ -65,7 +65,7 @@
         return null;
     }
 
-    /** Se n�o achar B�blia, insere antes de �Recibos� (fica entre B�blia e Recibos). */
+    /** Se não achar Bíblia, insere antes de Recibos (fica entre Bíblia e Recibos). */
     function findRecibosAnchor() {
         var roots = document.querySelectorAll('.sidebar, aside, #sidebar, [class*="Sidebar"]');
         var r;

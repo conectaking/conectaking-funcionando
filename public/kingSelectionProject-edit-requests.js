@@ -1,5 +1,5 @@
 /**
- * Pedidos de edição (modo público) �?" funciona na Hostinger com HTML/JS antigos em cache.
+ * Pedidos de edição (modo público) — funciona na Hostinger com HTML/JS antigos em cache.
  * Injeta «Permitir envio para edição» e envia allow_client_edit_request no PUT da privacidade.
  */
 (function () {

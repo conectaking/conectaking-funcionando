@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Recibos e Orçamentos �?" ConectaKing</title>
+    <title>Recibos e Orçamentos — ConectaKing</title>
     <script>
         (function () {
             var prod = 'https://www.conectaking.com.br';
@@ -144,11 +144,11 @@
             <span class="material-icons-outlined">dashboard</span>
             <span class="text-[10px] font-semibold uppercase">Painel</span>
         </a>
-        <a href="dashboard-recibos-orcamentos.html?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Recibos �?" escolher novo ou continuar">
+        <a href="dashboard-recibos-orcamentos.html?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Recibos — escolher novo ou continuar">
             <span class="material-icons-outlined">receipt_long</span>
             <span class="text-[10px] font-semibold uppercase">Recibos</span>
         </a>
-        <a href="dashboard-recibos-orcamentos.html?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos �?" escolher novo ou continuar">
+        <a href="dashboard-recibos-orcamentos.html?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos — escolher novo ou continuar">
             <span class="material-icons-outlined">request_quote</span>
             <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
         </a>
@@ -256,7 +256,7 @@
                             <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Endereço</label>
                             <input name="emitente_endereco" lang="pt-BR" spellcheck="true" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Rua, número, bairro, cidade" type="text"/>
                         </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">A logomarca do PDF é definida só em <a href="configuracoes-recibos-orcamentos.html" class="text-primary hover:underline">Configurações</a> �?" não é exibida nesta tela.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">A logomarca do PDF é definida só em <a href="configuracoes-recibos-orcamentos.html" class="text-primary hover:underline">Configurações</a> — não é exibida nesta tela.</p>
                         <input type="hidden" name="emitente_logo_url" id="input-logo-url" value=""/>
                     </div>
                 </section>
@@ -323,8 +323,8 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap" id="itens-ordenacao" title="Ordena a tabela e as notas fiscais abaixo">
                         <span class="text-[10px] uppercase font-bold text-slate-500">Ordenar</span>
-                        <button type="button" id="btn-ordenar-data-desc" class="btn-ordenar-item is-active" title="Data decrescente �?" mais recente em cima">Data �?"</button>
-                        <button type="button" id="btn-ordenar-data-asc" class="btn-ordenar-item" title="Data crescente �?" mais antiga em cima">Data �?'</button>
+                        <button type="button" id="btn-ordenar-data-desc" class="btn-ordenar-item is-active" title="Data decrescente — mais recente em cima">Data —</button>
+                        <button type="button" id="btn-ordenar-data-asc" class="btn-ordenar-item" title="Data crescente — mais antiga em cima">Data —</button>
                         <button type="button" id="btn-ordenar-nome" class="btn-ordenar-item" title="Ordem alfabética pelo nome">Nome</button>
                     </div>
                 </div>
@@ -370,7 +370,7 @@
                     </div>
                 </div>
                 <div id="recibo-tirar-configurar" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark" style="display: none;">
-                    <p class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Extrato do cartão �?" ler valores</p>
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Extrato do cartão — ler valores</p>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Foto do print do cartão com várias compras. O sistema preenche a tabela acima; <strong>não entra no PDF</strong> como nota fiscal.</p>
                     <div id="comprovante-sem-id" class="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs" style="display: none;">
                         Se o recibo ainda não foi salvo, ele será criado ao enviar a primeira foto/arquivo.
@@ -390,10 +390,10 @@
                         <input type="checkbox" id="ocr-usar-ia" checked class="mt-1 rounded border-slate-300 text-primary focus:ring-primary"/>
                         <span class="text-sm text-slate-600 dark:text-slate-300">
                             <strong>Usar IA OpenAI</strong> para ler extrato
-                            <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Recomendado �?" lê prints escuros e listas longas com mais precisão.</span>
+                            <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Recomendado — lê prints escuros e listas longas com mais precisão.</span>
                         </span>
                     </label>
-                    <p id="ocr-ia-status" class="text-xs text-slate-500 dark:text-slate-400 mb-3">Verificando IA no servidor�?�</p>
+                    <p id="ocr-ia-status" class="text-xs text-slate-500 dark:text-slate-400 mb-3">Verificando IA no servidor—</p>
                     <div id="comprovante-upload-area" class="comprovante-btns-mobile flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
                         <input type="file" id="file-comprovante-camera" accept="image/*" capture="environment" class="hidden"/>
                         <input type="file" id="file-comprovante-arquivo" accept="image/*" multiple class="hidden"/>
@@ -403,7 +403,7 @@
                         </button>
                         <button type="button" id="btn-enviar-arquivo" class="btn-mobile-full flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors">
                             <span class="material-icons-outlined">upload_file</span>
-                            Enviar foto(s) �?" pode escolher várias
+                            Enviar foto(s) — pode escolher várias
                         </button>
                         <button type="button" id="btn-configurar" class="btn-mobile-full flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:border-primary/50 transition-colors">
                             <span class="material-icons-outlined">tune</span>
@@ -417,7 +417,7 @@
                         <span class="material-icons-outlined">receipt_long</span>
                         <h3 class="uppercase tracking-widest text-xs font-bold">Notas fiscais (uma foto por item)</h3>
                     </div>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Na mesma ordem da tabela: tire ou envie a foto da nota de cada lugar (ex.: BBQ Brunão, Ponto das variedades). <strong>Não altera valores</strong> �?" só aparece no PDF para o cliente.</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Na mesma ordem da tabela: tire ou envie a foto da nota de cada lugar (ex.: BBQ Brunão, Ponto das variedades). <strong>Não altera valores</strong> — só aparece no PDF para o cliente.</p>
                     <div id="notas-fiscais-list" class="space-y-3"></div>
                 </div>
             </section>
@@ -807,7 +807,7 @@
                 } else if (scanResumo.openAiError) {
                     linhas.push('Erro na IA: ' + scanResumo.openAiError);
                 } else if (scanResumo.iaIndisponivel) {
-                    linhas.push('IA OpenAI não configurada no servidor �?" peça para ativar OPENAI_API_KEY no Render.');
+                    linhas.push('IA OpenAI não configurada no servidor — peça para ativar OPENAI_API_KEY no Render.');
                 } else {
                     linhas.push('Nenhum item identificado. Marque "Usar IA OpenAI" e tente outra foto.');
                 }
@@ -889,7 +889,7 @@
                     el.textContent = 'IA OpenAI ativa no servidor (' + (info.model || 'gpt-4o-mini') + ').';
                     el.className = 'text-xs text-emerald-600 dark:text-emerald-400 mb-3';
                 } else {
-                    el.textContent = 'OPENAI_API_KEY ausente no Render �?" digitalização usará só OCR local.';
+                    el.textContent = 'OPENAI_API_KEY ausente no Render — digitalização usará só OCR local.';
                     el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
                 }
             })
@@ -1198,7 +1198,7 @@
         try { var s = localStorage.getItem('recibosOrcamentosCatalogo'); if (s) list = JSON.parse(s); } catch (e) {}
         if (!list.length) { alert('Nenhum item no catálogo. Adicione em Configurações.'); return; }
         catalogoDrop.innerHTML = list.map(function(item) {
-            return '<button type="button" class="catalogo-item w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-black/60" data-desc="' + escapeHtmlAttr(item.descricao) + '" data-val="' + escapeHtmlAttr(String(item.valor || 0)) + '">' + escapeHtml(item.descricao) + ' �?" R$ ' + Number(item.valor || 0).toFixed(2).replace('.', ',') + '</button>';
+            return '<button type="button" class="catalogo-item w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-black/60" data-desc="' + escapeHtmlAttr(item.descricao) + '" data-val="' + escapeHtmlAttr(String(item.valor || 0)) + '">' + escapeHtml(item.descricao) + ' — R$ ' + Number(item.valor || 0).toFixed(2).replace('.', ',') + '</button>';
         }).join('');
         catalogoDrop.classList.toggle('hidden');
         catalogoDrop.querySelectorAll('.catalogo-item').forEach(function(btn) {

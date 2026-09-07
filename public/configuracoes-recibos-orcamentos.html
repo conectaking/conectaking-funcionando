@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Configurações �?" Recibos e Orçamentos | ConectaKing</title>
+    <title>Configurações — Recibos e Orçamentos | ConectaKing</title>
     <script src="https://www.conectaking.com.br/api-config.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -144,7 +144,7 @@
                     <span class="material-icons-outlined text-primary">qr_code_2</span>
                     PIX (pagamento)
                 </h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Configure sua chave PIX para aparecer nos documentos. O cliente poderá pagar via QR Code ou copiando a chave. Apenas PIX �?" sem cartão ou boleto.</p>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Configure sua chave PIX para aparecer nos documentos. O cliente poderá pagar via QR Code ou copiando a chave. Apenas PIX — sem cartão ou boleto.</p>
                 <div class="space-y-4 max-w-md">
                     <div>
                         <label class="block text-sm font-medium dark:text-slate-300 mb-1">Chave PIX</label>
@@ -167,7 +167,7 @@
                 </h2>
                 <label class="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" id="escurecer-documentos" class="rounded border-slate-300 text-primary focus:ring-primary"/>
-                    <span class="text-sm text-slate-600 dark:text-slate-300">Escurecer documentos (recibos e orçamentos) �?" fundo escuro no preview e PDF</span>
+                    <span class="text-sm text-slate-600 dark:text-slate-300">Escurecer documentos (recibos e orçamentos) — fundo escuro no preview e PDF</span>
                 </label>
             </section>
             <p class="text-slate-500 text-sm">As opções de perfil e módulos do ConectaKing ficam no painel principal. Para alterar dados da empresa (emitente), use o painel principal.</p>
@@ -319,7 +319,7 @@
                         applyCoresToUI(cab, des, bg, esc);
                         try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cabecalho: cab, destaque: des, fundo: bg })); localStorage.setItem(ESCURIR_KEY, esc ? '1' : '0'); } catch (e) {}
                     }
-                    /* Só a logo fixa do módulo (default_logo_url). Não usar companyLogoUrl do perfil �?" era isso que �?otrazia a logo de volta�?� após remover. */
+                    /* Só a logo fixa do módulo (default_logo_url). Não usar companyLogoUrl do perfil — era isso que ?otrazia a logo de volta— após remover. */
                     if (d.defaultLogoUrl && String(d.defaultLogoUrl).trim()) {
                         applyLogoToUI(String(d.defaultLogoUrl).trim());
                     } else {
@@ -354,7 +354,7 @@
         var ul = document.getElementById('lista-catalogo');
         if (!ul) return;
         ul.innerHTML = list.map(function(item, i) {
-            return '<li class="flex justify-between items-center py-2 px-3 rounded bg-slate-50 dark:bg-black/40"><span class="text-sm">' + escapeHtml(item.descricao) + ' �?" R$ ' + (item.valor != null ? Number(item.valor).toFixed(2).replace('.', ',') : '0,00') + '</span><button type="button" class="catalogo-rm text-red-500 hover:underline text-xs" data-i="' + i + '">Remover</button></li>';
+            return '<li class="flex justify-between items-center py-2 px-3 rounded bg-slate-50 dark:bg-black/40"><span class="text-sm">' + escapeHtml(item.descricao) + ' — R$ ' + (item.valor != null ? Number(item.valor).toFixed(2).replace('.', ',') : '0,00') + '</span><button type="button" class="catalogo-rm text-red-500 hover:underline text-xs" data-i="' + i + '">Remover</button></li>';
         }).join('');
         ul.querySelectorAll('.catalogo-rm').forEach(function(btn) {
             btn.onclick = function() {

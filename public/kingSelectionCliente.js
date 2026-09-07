@@ -6,7 +6,7 @@
 
   const KS_FALLBACK_API_ORIGIN = 'https://www.conectaking.com.br';
 
-  /** Evita API_URL apontando para conectaking.com.br (img /api/... �?' 404 sem marca d'água). */
+  /** Evita API_URL apontando para conectaking.com.br (img /api/... — 404 sem marca d\'água). */
   function resolveKsApiBase() {
     const fallback = KS_FALLBACK_API_ORIGIN;
     const tryList = [
@@ -28,7 +28,7 @@
 
   const API = resolveKsApiBase();
 
-  /** Pedidos ao arranque: sem timeout o Safari/rede móvel pode ficar em "A carregar�?�" para sempre. */
+  /** Pedidos ao arranque: sem timeout o Safari/rede móvel pode ficar em "A carregar—" para sempre. */
   const KS_FETCH_BOOT_MS = 35000;
   /** Corpo JSON: se o servidor enviar bytes sem fim, `json()` pode bloquear após o fetch terminar. */
   const KS_JSON_BOOT_MS = 18000;
@@ -104,7 +104,7 @@
   }
 
   function getSlug() {
-    // Não tratar ficheiros .html do painel como slug (ex.: /kingSelection/kingSelectionProject.html �?' 404 na API)
+    // Não tratar ficheiros .html do painel como slug (ex.: /kingSelection/kingSelectionProject.html — 404 na API)
     var RESERVED = {
       'kingselectioncliente.html': 1,
       'kingselectionproject.html': 1,
@@ -255,7 +255,7 @@
     faceRecognitionUsable: false,
     /** Subconjunto de IDs após filtro por rosto; null = sem filtro. */
     faceFilterIds: null,
-    /** Painel: permitir download com marca d'água (API gallery.allow_download). */
+    /** Painel: permitir download com marca d\'água (API gallery.allow_download). */
     allowDownload: false,
     /** Fotógrafos: download ativado nas definições (antes do filtro público/anónimo). */
     photographerAllowsDownload: false,
@@ -270,13 +270,13 @@
     clientAuthenticated: false,
     /** Modo público: >0 quando o JWT está associado a um registo (king_gallery_clients). */
     resolvedClientId: 0,
-    /** pastas | flat �?" vem da API (painel). */
+    /** pastas | flat — vem da API (painel). */
     clientFolderLayout: 'folders',
     downloadsSelected: new Set(),
     downloadsTouched: false,
     /** Modo público: painel «Fotos para baixar» só visível após o cliente abrir (não ao cadastrar). */
     publicDownloadsPanelOpen: false,
-    /** Pré-preenchimento (modo público) quando já existe cadastro real �?" não usar ficha técnica de sessão/rosto. */
+    /** Pré-preenchimento (modo público) quando já existe cadastro real — não usar ficha técnica de sessão/rosto. */
     clientContactPrefill: null,
     /** Modo público: pedido de edição ativado pelo fotógrafo. */
     allowClientEditRequest: false,
@@ -480,7 +480,7 @@
     return filterClientVisibleFolders(normalized);
   }
 
-  /** ID de foto vindo da API (int/string/bigint) �?' número inteiro > 0 ou 0. */
+  /** ID de foto vindo da API (int/string/bigint) — número inteiro > 0 ou 0. */
   function normalizePhotoId(v) {
     if (v == null || v === '') return 0;
     const n =
@@ -490,7 +490,7 @@
     return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
-  /** Garante `id` e `folder_id` numéricos �?" evita falha em `Set.has` e filtros de pasta. */
+  /** Garante `id` e `folder_id` numéricos — evita falha em `Set.has` e filtros de pasta. */
   function normalizeGalleryPhotosForState(gallery) {
     if (!gallery) return gallery;
     const photos = Array.isArray(gallery.photos)
@@ -702,13 +702,13 @@
       if (mode === 'public_download') {
         const n = Math.max(0, parseInt(p.free_photo_count, 10) || 0);
         el.innerHTML = `<div style="font-weight:800"><i class="fas fa-ticket"></i> Cupom aplicado</div>
-          <div style="font-size:12px;margin-top:6px;line-height:1.45">Pode baixar até <b>${n}</b> foto(s) selecionada(s) (por ordem da galeria), com marca d�?Tágua, conforme definido pelo fotógrafo.</div>${codeBlock}`;
+          <div style="font-size:12px;margin-top:6px;line-height:1.45">Pode baixar até <b>${n}</b> foto(s) selecionada(s) (por ordem da galeria), com marca d\'água, conforme definido pelo fotógrafo.</div>${codeBlock}`;
         return;
       }
       const free = p.promo_photos_applied != null ? p.promo_photos_applied : 0;
       const bill = p.billable_photo_count != null ? p.billable_photo_count : 0;
       el.innerHTML = `<div style="font-weight:800"><i class="fas fa-ticket"></i> Cupom aplicado</div>
-        <div style="font-size:12px;margin-top:6px;line-height:1.45">No <strong>valor estimado</strong> (total no topo), até <b>${free}</b> foto(s) contam como cortesia deste cupom; a cobrança considera <b>${bill}</b> foto(s). Isso só ajusta o preço mostrado �?" o fotógrafo continua a aprovar cada foto (cortesia, pago, etc.) como de costume.</div>${codeBlock}`;
+        <div style="font-size:12px;margin-top:6px;line-height:1.45">No <strong>valor estimado</strong> (total no topo), até <b>${free}</b> foto(s) contam como cortesia deste cupom; a cobrança considera <b>${bill}</b> foto(s). Isso só ajusta o preço mostrado — o fotógrafo continua a aprovar cada foto (cortesia, pago, etc.) como de costume.</div>${codeBlock}`;
       return;
     }
     const links = Array.isArray(p.social_links) ? p.social_links : [];
@@ -725,7 +725,7 @@
       : '';
     const lead =
       mode === 'public_download'
-        ? `<p style="font-size:12px;margin:0 0 8px;line-height:1.45;opacity:.95"><strong>Siga os perfis</strong>, confirme com verdade abaixo e <strong>digite o cupom à mão</strong> no campo (não preenchemos pelo link) �?" assim liberamos o número de fotos combinado para download com marca d�?Tágua.</p>`
+        ? `<p style="font-size:12px;margin:0 0 8px;line-height:1.45;opacity:.95"><strong>Siga os perfis</strong>, confirme com verdade abaixo e <strong>digite o cupom à mão</strong> no campo (não preenchemos pelo link) — assim liberamos o número de fotos combinado para download com marca d\'água.</p>`
         : `<p style="font-size:12px;margin:0 0 8px;line-height:1.45;opacity:.95">Ao validar, as fotos gratuitas do cupom <strong>saem do cálculo do total estimado</strong>. A aprovação final continua com o fotógrafo.</p>`;
     el.innerHTML = `
       <div style="font-weight:800;margin-bottom:6px"><i class="fas fa-gift"></i> Cupom promocional</div>
@@ -734,7 +734,7 @@
       <div style="margin-top:8px">${linkHtml}</div>
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;font-size:12px;line-height:1.45">
         <input type="checkbox" id="ks-promo-social-ok" style="margin-top:2px;flex-shrink:0" />
-        <span>Declaro com sinceridade que segui os perfis indicados acima (Instagram / outras redes). <strong>Se marcar sem ter seguido de verdade, está a mentir</strong> �?" Deus vê e vigia; o fotógrafo também pode conferir.</span>
+        <span>Declaro com sinceridade que segui os perfis indicados acima (Instagram / outras redes). <strong>Se marcar sem ter seguido de verdade, está a mentir</strong> — Deus vê e vigia; o fotógrafo também pode conferir.</span>
       </label>
       <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
         <input type="text" id="ks-promo-code-input" class="ks-input" placeholder="Código do cupom" style="max-width:240px" autocomplete="off" />
@@ -886,7 +886,7 @@
       }).join('')
       : '<div style="color:#64748b;font-size:12px">Pacotes ainda não configurados.</div>';
     const warn = overLimitLive || pricing?.over_limit_warn
-      ? ' �?� Você ultrapassou a faixa dos pacotes: valor final pode ser negociado com o fotógrafo.'
+      ? ' — Você ultrapassou a faixa dos pacotes: valor final pode ser negociado com o fotógrafo.'
       : '';
     banner.style.background = '#f8fafc';
     banner.style.borderColor = '#c7d2fe';
@@ -928,7 +928,7 @@
         payBalEl.classList.remove('ks-hidden');
         payBalEl.innerHTML = `
           <div style="font-weight:900;margin-bottom:4px"><i class="fas fa-scale-balanced"></i> Situação do pagamento</div>
-          <div>Total do pacote (estimado): <b>${escapeHtml(formatCentsBr(ps.expected_total_cents || 0))}</b> �?� Confirmado pelo fotógrafo: <b>${escapeHtml(formatCentsBr(ps.amount_received_cumulative_cents || 0))}</b> �?� Cortesia: <b>${escapeHtml(formatCentsBr(ps.courtesy_cents || 0))}</b></div>
+          <div>Total do pacote (estimado): <b>${escapeHtml(formatCentsBr(ps.expected_total_cents || 0))}</b> — Confirmado pelo fotógrafo: <b>${escapeHtml(formatCentsBr(ps.amount_received_cumulative_cents || 0))}</b> — Cortesia: <b>${escapeHtml(formatCentsBr(ps.courtesy_cents || 0))}</b></div>
           <div style="margin-top:6px;font-weight:900;color:#0369a1">Falta pagar: ${escapeHtml(formatCentsBr(bal))}</div>
           <div style="margin-top:6px;font-size:12px;opacity:.95">Envie o comprovante de cada pagamento parcial pelo fluxo do fotógrafo (comprovante na galeria).</div>`;
       } else {
@@ -1154,7 +1154,7 @@
     });
 
     setDlMsg(
-      'Galeria pública: baixe com marca d�?Tágua. Use os botões para várias fotos ou ZIP. As fotos seguem a qualidade definida pelo fotógrafo.'
+      'Galeria pública: baixe com marca d\'água. Use os botões para várias fotos ou ZIP. As fotos seguem a qualidade definida pelo fotógrafo.'
     );
     downloadsGrid.innerHTML = cards.join('');
     downloadsGrid.querySelectorAll('input[data-dl-pick]').forEach((inp) => {
@@ -1196,8 +1196,8 @@
     if (isPublicFreeDownloadGallery()) {
       el.classList.remove('ks-hidden');
       const wmNote = galleryWatermarkEnabled()
-        ? ' (com marca d�?Tágua na visualização e no download)'
-        : ' (sem marca d�?Tágua)';
+        ? ' (com marca d\'água na visualização e no download)'
+        : ' (sem marca d\'água)';
       el.innerHTML = `
       <div style="border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.1);color:#dcfce7;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:10px">
         <strong>Todas as fotos liberadas</strong>${wmNote}. Use a <strong>seta</strong> em cada foto ou os botões <strong>Baixar selecionadas</strong> / <strong>Baixar todas</strong> / <strong>ZIP</strong> no topo.
@@ -1220,7 +1220,7 @@
     el.classList.remove('ks-hidden');
     el.innerHTML = `
       <div style="border:1px solid rgba(250,204,21,.45);background:rgba(234,179,8,.12);color:#fef3c7;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:10px">
-        <strong>Download com marca d�?Tágua.</strong> Escolha as fotos; ao clicar em <strong>Baixar</strong> ou em <strong>Fotos para baixar</strong>, pedimos um cadastro rápido (nome, e-mail, WhatsApp) e liberamos na hora.
+        <strong>Download com marca d\'água.</strong> Escolha as fotos; ao clicar em <strong>Baixar</strong> ou em <strong>Fotos para baixar</strong>, pedimos um cadastro rápido (nome, e-mail, WhatsApp) e liberamos na hora.
       </div>`;
   }
 
@@ -1251,8 +1251,8 @@
     const pixKey = String(cfg.pix_key || '').trim();
     const pixHolder = String(cfg.pix_holder_name || '').trim();
     if (block) block.classList.toggle('ks-hidden', !pixKey);
-    if (holder) holder.textContent = pixHolder || '�?"';
-    if (keyEl) keyEl.textContent = pixKey || '�?"';
+    if (holder) holder.textContent = pixHolder || '—';
+    if (keyEl) keyEl.textContent = pixKey || '—';
     if (copyBtn) copyBtn.setAttribute('data-pix-key', pixKey || '');
   }
 
@@ -1350,7 +1350,7 @@
     $('ks-step-gallery')?.classList.toggle('ks-public-dl-minimal', publicLockedDownloadPhaseActive());
   }
 
-  /** Modo vendas após envio: só painel de download (marca d'água) �?" sem grelha de seleção. */
+  /** Modo vendas após envio: só painel de download (marca d\'água) — sem grelha de seleção. */
   function salesPostSubmitPhaseActive() {
     return !!(state.salesModeActive && state.locked);
   }
@@ -1380,7 +1380,7 @@
   }
 
   const KS_DL_ZIP_AUTO_BYTES = 500 * 1024 * 1024;
-  /** 2+ fotos �?' ZIP (1 popup de salvar). Só 1 foto baixa o arquivo direto. */
+  /** 2+ fotos — ZIP (1 popup de salvar). Só 1 foto baixa o arquivo direto. */
   const KS_DL_ZIP_MIN_COUNT = 2;
   const KS_DL_ZIP_FALLBACK_CHUNK = 35;
   const KS_DL_ZIP_FETCH_MS = 15 * 60 * 1000;
@@ -1400,7 +1400,7 @@
     const ok = confirm(
       `Você vai baixar ${n} foto(s).\n\n` +
       'Clique OK e escolha UMA PASTA no computador.\n' +
-      'Todas as fotos serão salvas lá automaticamente �?" sem clicar Salvar dezenas de vezes.'
+      'Todas as fotos serão salvas lá automaticamente — sem clicar Salvar dezenas de vezes.'
     );
     if (!ok) return null;
     try {
@@ -1502,7 +1502,7 @@
       if (partCount > 1 && typeof window.showDirectoryPicker === 'function') {
         const pick = confirm(
           `Serão ${partCount} arquivos ZIP (${ids.length} fotos).\n\n` +
-          'Clique OK e escolha UMA PASTA �?" todos os ZIPs serão salvos lá automaticamente.'
+          'Clique OK e escolha UMA PASTA — todos os ZIPs serão salvos lá automaticamente.'
         );
         if (pick) {
           try {
@@ -1904,7 +1904,7 @@
     return effectiveSelectionBatch(photoId) < state.currentRound;
   }
 
-  /** Fotos escolhidas nesta rodada (ainda não �?ocongeladas�?�). */
+  /** Fotos escolhidas nesta rodada (ainda não ?ocongeladas—). */
   function countSelectedThisRound() {
     let n = 0;
     for (const id of state.selected) {
@@ -2137,7 +2137,7 @@
       state.photographerAllowsDownload && jwt
         ? state.allowDownload
           ? `<a class="ks-ph-dl r" href="${previewDownloadUrl(p.id)}" download target="_blank" rel="noopener" title="Descarregar" aria-label="Descarregar"><i class="fas fa-download"></i></a>`
-          : `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar �?" cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
+          : `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar — cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
         : '';
     return `
         <div class="ks-ph ${sel ? 'selected' : ''} ${fr ? 'frozen' : ''}" data-pid="${p.id}">
@@ -2164,7 +2164,7 @@
       return;
     }
     const shown = Math.min(state.gridVirtualShown, list.length);
-    el.textContent = `A mostrar ${shown} de ${list.length} fotos �?" continue a rolar para carregar mais`;
+    el.textContent = `A mostrar ${shown} de ${list.length} fotos — continue a rolar para carregar mais`;
     el.classList.remove('ks-hidden');
   }
 
@@ -2377,7 +2377,7 @@
         st === 'in_progress'
           ? 'O fotógrafo está editando suas fotos.'
           : st === 'done'
-            ? 'Concluído �?" fotos liberadas para baixar (abra «Fotos para baixar»).'
+            ? 'Concluído — fotos liberadas para baixar (abra «Fotos para baixar»).'
             : 'Aguardando o fotógrafo.';
       parts.push(
         `<div class="ks-edit-req-row">` +
@@ -2477,7 +2477,7 @@
       return;
     }
     const note = window.prompt(
-      'Observação para o fotógrafo (opcional):\nEx.: remover fundo, ajustar cor, recorte�?�',
+      'Observação para o fotógrafo (opcional):\nEx.: remover fundo, ajustar cor, recorte—',
       ''
     );
     if (note === null) return;
@@ -2513,7 +2513,7 @@
   }
 
   /**
-   * Nível exibido ao cliente: próxima rodada �?ohumana�?� após o maior lote congelado.
+   * Nível exibido ao cliente: próxima rodada ?ohumana— após o maior lote congelado.
    * Evita mostrar 4 no topo quando na grelha só existem S1, S2 (buraco no contador do servidor).
    */
   function clientVisibleRoundLevel() {
@@ -2555,7 +2555,7 @@
   /**
    * Modo público: sempre pedir nome/e-mail/WhatsApp no Confirmar.
    * O JWT pode ter `resolvedClientId` por sessão/rosto/cupom (e-mail técnico __ks_face_sess_...), mas o finalize
-   * ainda exige dados reais no body �?" sem isto o utilizador via toast sem campos visíveis.
+   * ainda exige dados reais no body — sem isto o utilizador via toast sem campos visíveis.
    */
   function confirmStepNeedsContactFields() {
     if (state.salesModeActive) return true;
@@ -2579,7 +2579,7 @@
     return !!state.locked;
   }
 
-  /** Público gratuito (sem cupom/vendas): uma só galeria �?" tudo liberado para baixar, sem painel «Fotos para baixar». */
+  /** Público gratuito (sem cupom/vendas): uma só galeria — tudo liberado para baixar, sem painel «Fotos para baixar». */
   function isPublicFreeDownloadGallery() {
     if (normKsAccessModeFromMeta() !== 'public') return false;
     if (state.salesModeActive) return false;
@@ -2800,9 +2800,9 @@
   }
 
   /**
-   * paid_event_photos �?' nome + e-mail + WhatsApp (API login-by-details).
-   * private �?' e-mail + senha (API client/login).
-   * signup �?' e-mail + senha para voltar (primeira visita costuma usar sessão anónima via signup-enter).
+   * paid_event_photos — nome + e-mail + WhatsApp (API login-by-details).
+   * private — e-mail + senha (API client/login).
+   * signup — e-mail + senha para voltar (primeira visita costuma usar sessão anónima via signup-enter).
    */
   function configureLoginUI() {
     const body = $('ks-login-body');
@@ -2833,12 +2833,12 @@
           'Modo <strong>público</strong>: informe <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> (sem senha). Na primeira vez criamos seu cadastro; depois use os mesmos dados para voltar.';
       }
       $('ks-login-sub').textContent = galleryMeta.nome_projeto
-        ? `${galleryMeta.nome_projeto} �?" acesso à galeria`
+        ? `${galleryMeta.nome_projeto} — acesso à galeria`
         : 'Informe seus dados para continuar';
       if (foot) {
         foot.style.display = '';
         foot.textContent =
-          'Use sempre o mesmo nome, e-mail e WhatsApp. Se trocar de aparelho, basta preencher de novo �?" não precisa lembrar senha.';
+          'Use sempre o mesmo nome, e-mail e WhatsApp. Se trocar de aparelho, basta preencher de novo — não precisa lembrar senha.';
       }
       return;
     }
@@ -2942,7 +2942,7 @@
     const shouldShow = !!pixKey;
     if (wrap) wrap.classList.toggle('ks-hidden', !shouldShow);
     if (holder) holder.textContent = pixHolder || 'Não informado';
-    if (keyEl) keyEl.textContent = pixKey || '�?"';
+    if (keyEl) keyEl.textContent = pixKey || '—';
     if (copyBtn) copyBtn.setAttribute('data-pix-key', pixKey || '');
     if (waBtn) {
       const waPaidMsg = `Olá! Acabei de enviar minha seleção na galeria "${state.gallery?.nome_projeto || ''}" e já fiz o pagamento via PIX. Pode confirmar, por favor?`;
@@ -3491,7 +3491,7 @@
         foot.innerHTML =         publicFree
           ? (galleryWatermarkEnabled()
             ? 'Todas as fotos estão liberadas. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>. Marcar fotos é opcional (só para <strong>Baixar selecionadas</strong>).'
-            : 'Todas as fotos estão liberadas <strong>sem marca d�?Tágua</strong>. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>.')
+            : 'Todas as fotos estão liberadas <strong>sem marca d\'água</strong>. Baixe com a <strong>seta</strong> em cada uma ou use <strong>Baixar todas</strong> / <strong>ZIP</strong>.')
           : simpleSalesFlow
             ? 'Revise as fotos acima e clique em <strong>Confirmar</strong> para seguir direto ao cadastro e envio da seleção.'
             : publicNoCompare
@@ -3540,7 +3540,7 @@
     return sortPhotos(filtered, state.sortMode);
   }
 
-  /** Fotos do escopo atual da pasta (ou galeria inteira), sem busca nem filtro facial �?" para �?oselecionar todas�?�. */
+  /** Fotos do escopo atual da pasta (ou galeria inteira), sem busca nem filtro facial — para ?oselecionar todas—. */
   function getPhotosInCurrentFolderScopeOnly() {
     const all = Array.isArray(state.gallery?.photos) ? state.gallery.photos : [];
     let filtered = all.slice();
@@ -3666,7 +3666,7 @@
 
   /**
    * Fotos selecionadas em ordem da galeria.
-   * @param {{ currentRoundOnly?: boolean }} [opts] �?" se true, só a rodada atual (exclui bloqueadas de rodadas anteriores); usar em Comparar / Confirmar.
+   * @param {{ currentRoundOnly?: boolean }} [opts] — se true, só a rodada atual (exclui bloqueadas de rodadas anteriores); usar em Comparar / Confirmar.
    */
   function getSelectedPhotosOrderedForReview(opts) {
     const currentOnly = !!(opts && opts.currentRoundOnly);
@@ -3730,7 +3730,7 @@
       if (tokens.length) {
         bits.push(list.length
           ? `Busca por código: ${list.length} foto(s). Limpe o campo para ampliar.`
-          : 'Nenhuma foto encontrada para estes códigos/números. Tente o ID da foto ou o trecho ADR�?� do nome.');
+          : 'Nenhuma foto encontrada para estes códigos/números. Tente o ID da foto ou o trecho ADR— do nome.');
       }
       hint.textContent = bits.join(' ');
       hint.classList.remove('ks-hidden');
@@ -3936,15 +3936,15 @@
     const n = list.length;
     if (title) {
       const base = n === 1
-        ? `1 foto nesta rodada �?" ajuste A e B (use a mesma em ambos se quiser)`
-        : `${n} foto(s) nesta rodada �?" ajuste A e B juntas`;
+        ? `1 foto nesta rodada — ajuste A e B (use a mesma em ambos se quiser)`
+        : `${n} foto(s) nesta rodada — ajuste A e B juntas`;
       let modeHint = '';
       if (compareState.thumbTargetMode === 'pinA') {
         modeHint = ' · só Foto A (toque de novo na foto ou no rótulo para alternar A/B)';
       } else if (compareState.thumbTargetMode === 'pinB') {
         modeHint = ' · só Foto B (toque de novo na foto ou no rótulo para alternar A/B)';
       } else {
-        modeHint = ` · miniaturas: alternância (próximo �?' Foto ${compareState.nextThumbSlot})`;
+        modeHint = ` · miniaturas: alternância (próximo — Foto ${compareState.nextThumbSlot})`;
       }
       title.textContent = base + modeHint;
     }
@@ -4078,12 +4078,12 @@
     const nTotal = state.selected.size;
     if (state.deferredSignupActive) {
       const extra = nTotal > er ? ` Há ${nTotal} foto(s) no total acumulado; abaixo só esta rodada (${er}).` : '';
-      lead.textContent = `Revise as ${er} foto(s) desta rodada.${extra} Ao enviar, preencha nome, e-mail e WhatsApp com DDD �?" não precisa criar senha antes.`;
+      lead.textContent = `Revise as ${er} foto(s) desta rodada.${extra} Ao enviar, preencha nome, e-mail e WhatsApp com DDD — não precisa criar senha antes.`;
       return;
     }
     if (normKsAccessModeFromMeta() === 'public' && !publicJwtHasRegisteredClient()) {
-      const extra = nTotal > er ? ` (${nTotal} no total acumulado; abaixo só esta rodada �?" ${er}).` : '';
-      lead.textContent = `Revise as ${er} foto(s) selecionada(s).${extra} Para enviar ao fotógrafo, preencha nome, e-mail e WhatsApp (com DDD) abaixo �?" cadastro rápido, sem senha neste passo.`;
+      const extra = nTotal > er ? ` (${nTotal} no total acumulado; abaixo só esta rodada — ${er}).` : '';
+      lead.textContent = `Revise as ${er} foto(s) selecionada(s).${extra} Para enviar ao fotógrafo, preencha nome, e-mail e WhatsApp (com DDD) abaixo — cadastro rápido, sem senha neste passo.`;
       return;
     }
     if (nTotal > er) {
@@ -4181,7 +4181,7 @@
             <div style="font-size:19px;color:#0369a1;font-weight:900">${selectedCount}</div>
           </div>
           <div style="border:1px solid #bae6fd;background:#ecfeff;border-radius:10px;padding:8px;min-width:0">
-            <div style="font-size:11px;color:#0e7490;font-weight:800">NESTA SESS�fO</div>
+            <div style="font-size:11px;color:#0e7490;font-weight:800">NESTA SESSfO</div>
             <div style="font-size:19px;color:#0369a1;font-weight:900">${thisRound}</div>
           </div>
           <div style="border:1px solid #86efac;background:#ecfdf5;border-radius:10px;padding:8px;min-width:0">
@@ -4338,7 +4338,7 @@
       return discardPublicEditDraft();
     }
     const msg = isPublicFreeDownloadGallery()
-      ? 'Limpar a marcação das fotos? A galeria continua igual �?" você pode baixar qualquer foto depois.'
+      ? 'Limpar a marcação das fotos? A galeria continua igual — você pode baixar qualquer foto depois.'
       : 'Limpar todas as fotos desta seleção atual? (Seleções anteriores permanecem.)';
     if (!confirm(msg)) return;
     try {
@@ -4518,7 +4518,7 @@
             },
             { once: true }
           );
-          toast('Seleção enviada! Abaixo você pode baixar suas fotos com marca d�?Tágua.', 'ok');
+          toast('Seleção enviada! Abaixo você pode baixar suas fotos com marca d\'água.', 'ok');
         } else {
           showLockedScreen(ty.title || 'Obrigado!', msg, tagHtml, data.paymentPix || null);
         }
@@ -5405,7 +5405,7 @@
         let page = 2;
         while (merged.length < totalHi) {
           if (msgEl && (!o.fromEnroll || page > 2)) {
-            msgEl.textContent = `A carregar resultado guardado�?� ${merged.length} / ${totalHi}`;
+            msgEl.textContent = `A carregar resultado guardado— ${merged.length} / ${totalHi}`;
           }
           const r2o = await fetchJsonWithRetry(`${base}?page=${page}&limit=${limitPg}&speedMode=${encodeURIComponent(speedMode)}${ncu()}`, 'Página cache facial', 3);
           if (!r2o.ok) throw new Error((r2o.data && r2o.data.message) || 'Erro ao carregar cache facial');
@@ -5432,8 +5432,8 @@
 
       /**
        * Modo indexado (REKOG_ON_DEMAND=false): API lê matches no Postgres.
-       * Não usar chunked=1 aqui �?" o servidor ignora esse parâmetro e devolve outro JSON; o loop antigo
-       * interpretava photoBatchReturned em falta como 40 e saía com anyHasMore=false �?' zero fotos sempre.
+       * Não usar chunked=1 aqui — o servidor ignora esse parâmetro e devolve outro JSON; o loop antigo
+       * interpretava photoBatchReturned em falta como 40 e saía com anyHasMore=false — zero fotos sempre.
        */
       if (resProbe.ok && !d0.fromCache && d0.code !== 'FACE_USE_CHUNKED' && d0.faceChunk !== true) {
         let merged = (d0.photoIds || []).map((x) => parseInt(x, 10)).filter(Boolean);
@@ -5443,7 +5443,7 @@
         let page = 2;
         while (merged.length < totalHi) {
           if (msgEl && (!o.fromEnroll || page > 2)) {
-            msgEl.textContent = `A carregar resultado�?� ${merged.length} / ${totalHi}`;
+            msgEl.textContent = `A carregar resultado— ${merged.length} / ${totalHi}`;
           }
           const r2o = await fetchJsonWithRetry(`${base}?page=${page}&limit=${limitPg}&speedMode=${encodeURIComponent(speedMode)}${ncu()}`, 'Página face-results', 3);
           if (!r2o.ok) throw new Error((r2o.data && r2o.data.message) || 'Erro ao filtrar por rosto');
@@ -5494,10 +5494,10 @@
       for (;;) {
         if (msgEl && skip === 0 && galleryTotal == null) {
           msgEl.textContent = o.fromEnroll
-            ? 'A comparar o seu rosto com a galeria em blocos no servidor�?� Não feche.'
+            ? 'A comparar o seu rosto com a galeria em blocos no servidor— Não feche.'
             : o.cacheClick
-              ? 'A analisar em blocos no servidor�?�'
-              : 'A analisar a galeria em blocos�?�';
+              ? 'A analisar em blocos no servidor—'
+              : 'A analisar a galeria em blocos—';
         }
         const waveSkips = [];
         for (let i = 0; i < FACE_PARALLEL; i++) {
@@ -5573,8 +5573,8 @@
           if (now - lastFaceUiAt >= 2000 || !anyHasMore || processedEnd >= galleryTotal) {
             lastFaceUiAt = now;
             msgEl.textContent = o.fromEnroll
-              ? `A procurar o seu rosto�?� ${pctDone}%`
-              : `A analisar a galeria�?� ${pctDone}%`;
+              ? `A procurar o seu rosto— ${pctDone}%`
+              : `A analisar a galeria— ${pctDone}%`;
           }
         }
 
@@ -5666,7 +5666,7 @@
       state.faceFilterIds = null;
       resetGridVirtualPaging();
       renderGrid();
-    if (msg) msg.textContent = 'Enviando foto do rosto�?�';
+    if (msg) msg.textContent = 'Enviando foto do rosto—';
     setFaceActionsDisabled(true);
     try {
       const fd = new FormData();
@@ -5681,7 +5681,7 @@
       if (!enrollRes.ok) throw new Error(enrollData.message || 'Erro ao registar o rosto');
       if (msg) {
         msg.textContent =
-          'A procurar as suas fotos�?� A análise corre em blocos no servidor (costuma ser bem mais rápida do que �?ofoto a foto�?�). Não feche.';
+          'A procurar as suas fotos— A análise corre em blocos no servidor (costuma ser bem mais rápida do que ?ofoto a foto—). Não feche.';
       }
       const scan = await runFaceScanAllPages(msg, { fromEnroll: true });
       const ids = scan.photoIds || [];
@@ -5872,7 +5872,7 @@
         }
       });
       if (out?.mode === 'zip') {
-        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) �?" ${picks.length} foto(s).`;
+        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) — ${picks.length} foto(s).`;
         toast(`Download em ${out.parts} ZIP(s) (${picks.length} foto(s)).`, 'ok');
       } else {
         setDownloadsProgress(picks.length, picks.length, true, 'selected');
@@ -5911,7 +5911,7 @@
         }
       });
       if (out?.mode === 'zip') {
-        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) �?" ${all.length} foto(s).`;
+        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) — ${all.length} foto(s).`;
         toast(`Download em ${out.parts} ZIP(s) (${all.length} foto(s)).`, 'ok');
       } else {
         setDownloadsProgress(all.length, all.length, true, 'all');
@@ -5939,7 +5939,7 @@
         onStart: (parts, total, mode) => {
           if (msgEl) {
             msgEl.textContent = mode === 'folder'
-              ? `Escolha a pasta e aguarde �?" ${total} foto(s)...`
+              ? `Escolha a pasta e aguarde — ${total} foto(s)...`
               : (parts > 1 ? `Gerando ${parts} ZIP(s) com ${total} foto(s)...` : `Gerando ZIP com ${total} foto(s)...`);
           }
         },

@@ -338,7 +338,7 @@
         }
         if (row.file) {
           const fm = esc(row.file.mime || '');
-          html += '<div class="kd-preview-slot kd-preview-slot--inline" data-file-id="' + row.file.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização�?�</p></div>';
+          html += '<div class="kd-preview-slot kd-preview-slot--inline" data-file-id="' + row.file.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização—</p></div>';
           const url = api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + row.file.id);
           html += '<div class="actions"><a class="btn kd-dl" href="' + esc(url) + '">Baixar ficheiro</a></div>';
         }
@@ -355,7 +355,7 @@
       if (shouldHideExtraForProfile(ed, profileFid)) return;
       html += '<div class="sec"><h2>' + esc(ed.label || 'Documento') + '</h2>';
       const fm = esc(ed.mime || '');
-      html += '<div class="kd-preview-slot" data-file-id="' + ed.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização�?�</p></div>';
+      html += '<div class="kd-preview-slot" data-file-id="' + ed.id + '" data-mime="' + fm + '"><p class="kd-preview-loading">A carregar pré-visualização—</p></div>';
       const url = api('/api/king-docs/public/' + encodeURIComponent(token) + '/file/' + ed.id);
       html += '<div class="actions" style="margin-top:.5rem"><a class="btn primary kd-dl" href="' + esc(url) + '">Baixar</a></div></div>';
     });

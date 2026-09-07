@@ -663,7 +663,7 @@
             authToken = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
         }
         
-        console.log('ðŸ”‘ Token obtido:', {
+        console.log(' Token obtido:', {
             fromUrl: !!urlParams.get('token'),
             fromLocalStorage: !!localStorage.getItem('conectaKingToken') || !!localStorage.getItem('token'),
             hasToken: !!authToken,
@@ -928,7 +928,7 @@
                     credentials: 'same-origin'
                 });
                 
-                console.log('ðŸ“¥ Resposta do upload:', { status: response.status, ok: response.ok });
+                console.log(' Resposta do upload:', { status: response.status, ok: response.ok });
                 
                 var contentType = response.headers.get('content-type');
                 var data;
@@ -946,7 +946,7 @@
                 var imageUrl = (data && (data.url || data.imageUrl || (data.data && (data.data.url || data.data.imageUrl)))) 
                     ? (data.url || data.imageUrl || (data.data && (data.data.url || data.data.imageUrl))) 
                     : null;
-                console.log('ðŸ“¥ URL da imagem no response:', imageUrl, 'data:', data);
+                console.log(' URL da imagem no response:', imageUrl, 'data:', data);
                 
                 if (response.ok && imageUrl) {
                     setUploadState(false, null);
@@ -1029,7 +1029,7 @@
                     return;
                 }
                 
-                console.log('ðŸ’¾ Salvando personalização...', {
+                console.log(' Salvando personalização...', {
                     profileItemId: profileItemId,
                     hasToken: !!authToken,
                     tokenLength: authToken.length
@@ -1041,7 +1041,7 @@
                     : '';
                 
                 const url = `${apiBaseUrl}/api/guest-lists/${profileItemId}/customize-portaria`;
-                console.log('ðŸ“¤ Enviando requisição PUT para:', url);
+                console.log(' Enviando requisição PUT para:', url);
                 
                 const response = await fetch(url, {
                     method: 'PUT',
@@ -1052,7 +1052,7 @@
                     body: JSON.stringify(formData)
                 });
                 
-                console.log('ðŸ“¥ Resposta recebida:', {
+                console.log(' Resposta recebida:', {
                     status: response.status,
                     statusText: response.statusText,
                     ok: response.ok,

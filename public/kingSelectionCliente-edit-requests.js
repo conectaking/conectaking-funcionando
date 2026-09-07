@@ -1,5 +1,5 @@
 /**
- * Botão «Enviar para edição» no cliente �?" só quando o fotógrafo ativou na galeria pública.
+ * Botão «Enviar para edição» no cliente — só quando o fotógrafo ativou na galeria pública.
  * Funciona na Hostinger com kingSelectionCliente.js antigo em cache.
  */
 (function () {
@@ -129,7 +129,7 @@
       return;
     }
     const note = window.prompt(
-      'Observação para o fotógrafo (opcional):\nEx.: remover fundo, ajustar cor, recorte�?�',
+      'Observação para o fotógrafo (opcional):\nEx.: remover fundo, ajustar cor, recorte—',
       ''
     );
     if (note === null) return;

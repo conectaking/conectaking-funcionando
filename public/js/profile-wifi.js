@@ -67,7 +67,7 @@
 
         var ssid = (cfg && cfg.ssid != null) ? String(cfg.ssid).trim() : '';
         if (!ssid) {
-            window.alert('Nome da rede (SSID) n�o configurado. Informe o nome da rede no m�dulo Wi-Fi.');
+            window.alert('Nome da rede (SSID) não configurado. Informe o nome da rede no módulo Wi-Fi.');
             return;
         }
 
@@ -82,7 +82,7 @@
 
         var qrText = buildWifiQrPayload(cfg);
         try {
-            if (typeof QRCode === 'undefined') throw new Error('QRCode indispon�vel');
+            if (typeof QRCode === 'undefined') throw new Error('QRCode indisponível');
             // eslint-disable-next-line no-new
             new QRCode(qrHost, {
                 text: qrText,
@@ -105,7 +105,7 @@
         function copyHandler() {
             if (!copyBtn) return;
             if (!pwd) {
-                window.alert('Esta rede est� configurada como aberta (sem senha).');
+                window.alert('Esta rede est configurada como aberta (sem senha).');
                 return;
             }
             if (navigator.clipboard && navigator.clipboard.writeText) {

@@ -5,7 +5,7 @@
  *   2. Inclua este script: <script src="/js/image-crop-modal.js"></script>
  *   3. ImageCropModal.open(file, { aspectRatio: 16/9 }, callback(url, errMsg));
  *
- * Mostra medidas do corte (px), propor��o aproximada e faixa central (refer�ncia telem�vel).
+ * Mostra medidas do corte (px), proporo aproximada e faixa central (referncia telemvel).
  */
 (function (global) {
     'use strict';
@@ -48,7 +48,7 @@
         if (!d || !sz || !ar) return;
         var w = Math.max(0, Math.round(Number(d.width) || 0));
         var h = Math.max(0, Math.round(Number(d.height) || 0));
-        sz.textContent = w + ' � ' + h + ' px';
+        sz.textContent = w + '  ' + h + ' px';
         ar.textContent = fmtRatio(w, h);
     }
 
@@ -65,19 +65,19 @@
         if (!box || box.querySelector('.ick-crop-mobile-strip')) return;
         var strip = document.createElement('div');
         strip.className = 'ick-crop-mobile-strip';
-        strip.setAttribute('title', 'Zona central aproximada em ecr� estreito');
+        strip.setAttribute('title', 'Zona central aproximada em ecr estreito');
         box.appendChild(strip);
     }
 
     function tipHtml(opts) {
         var ar = opts && opts.aspectRatio;
         if (ar != null && !isNaN(ar) && Math.abs(ar - 16 / 9) < 0.06) {
-            return 'Sugest�o <strong>16:9</strong> (ex.: <strong>1920�1080</strong> ou <strong>1200�675</strong>). Em telem�vel o fundo cobre o ecr� (centrado); a faixa tracejada indica a zona central aproximada.';
+            return 'Sugestão <strong>16:9</strong> (ex.: <strong>19201080</strong> ou <strong>1200675</strong>). Em telemvel o fundo cobre o ecr (centrado); a faixa tracejada indica a zona central aproximada.';
         }
         if (ar != null && !isNaN(ar) && Math.abs(ar - 1) < 0.06) {
-            return 'Sugest�o <strong>1:1</strong> (ex.: <strong>400�400</strong> ou <strong>800�800</strong> px).';
+            return 'Sugestão <strong>1:1</strong> (ex.: <strong>400400</strong> ou <strong>800800</strong> px).';
         }
-        return 'A imagem final corresponde ao recorte em <strong>pix�is</strong> indicado acima. Em ecr�s estreitos, imagens largas mostram sobretudo o centro.';
+        return 'A imagem final corresponde ao recorte em <strong>pixis</strong> indicado acima. Em ecrestreitos, imagens largas mostram sobretudo o centro.';
     }
 
     function getModal() {
@@ -92,11 +92,11 @@
             '      <h3 style="color:#FFC700; margin:0; font-size:1.25rem;">Ajuste sua Imagem</h3>' +
             '      <button type="button" id="image-crop-modal-close" style="background:transparent; border:none; color:#888; font-size:1.5rem; cursor:pointer; padding:0 8px;">&times;</button>' +
             '    </div>' +
-            '    <p style="color:#A1A1A1; font-size:0.9rem; margin:0 0 10px;">Ajuste a �rea e clique em Cortar e Enviar.</p>' +
+            '    <p style="color:#A1A1A1; font-size:0.9rem; margin:0 0 10px;">Ajuste a rea e clique em Cortar e Enviar.</p>' +
             '    <div class="image-crop-meta" id="image-crop-meta-bar">' +
-            '      <div><strong>Medidas do corte (imagem final):</strong> <span id="image-crop-size-readout">-</span> � <strong>Propor��o:</strong> <span id="image-crop-aspect-readout">-</span></div>' +
+            '      <div><strong>Medidas do corte (imagem final):</strong> <span id="image-crop-size-readout">-</span>  <strong>Proporo:</strong> <span id="image-crop-aspect-readout">-</span></div>' +
             '      <p class="image-crop-tip" id="image-crop-tip"></p>' +
-            '      <label><input type="checkbox" id="image-crop-mobile-preview-toggle" checked> Mostrar faixa central (refer�ncia telem�vel)</label>' +
+            '      <label><input type="checkbox" id="image-crop-mobile-preview-toggle" checked> Mostrar faixa central (referncia telemvel)</label>' +
             '    </div>' +
             '    <div style="max-height:60vh; max-width:90vw; min-height:200px; background:#0D0D0F; position:relative;">' +
             '      <img id="image-crop-source" style="max-width:100%; max-height:60vh; display:block;">' +
@@ -176,7 +176,7 @@
             .catch(function (err) {
                 close();
                 if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Cortar e Enviar'; }
-                currentCallback(null, err && err.message ? err.message : 'Erro de conex�o.');
+                currentCallback(null, err && err.message ? err.message : 'Erro de conex');
             });
     }
 
@@ -224,7 +224,7 @@
             return;
         }
         if (typeof Cropper === 'undefined') {
-            if (callback) callback(null, 'Biblioteca Cropper.js n�o carregada. Inclua o script e o CSS do Cropper.js.');
+            if (callback) callback(null, 'Biblioteca Cropper.js não carregada. Inclua o script e o CSS do Cropper.js.');
             return;
         }
         currentFile = file;

@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = imgEl.getAttribute('id') || '';
       const msg = (e && e.message) ? e.message : 'Falha ao carregar imagem.';
 
-      // Pré-visualização principal da marca d'água (mostra placeholder no lugar da imagem)
+      // Pré-visualização principal da marca d\'água (mostra placeholder no lugar da imagem)
       if (id === 'wm-preview' || id === 'wm-preview-portrait' || id === 'wm-preview-landscape') {
         try {
           if (id === 'wm-preview-portrait' || id === 'wm-preview') {
@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw e;
       }
 
-      // Miniatura da marca d'água enviada (não deixa virar "preto")
+      // Miniatura da marca d\'água enviada (não deixa virar "preto")
       if (id === 'wm-file-preview' || id === 'wm-file-preview-p' || id === 'wm-file-preview-l') {
         try {
           imgEl.classList.add('hidden');
@@ -906,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /** Preferência do filtro "Ver seleção" por galeria (`all` ou número da rodada) */
   const activityBatchPrefByGallery = {};
   let exportPayload = { lightroom: '', finder: '', windows: '' };
-  /** Padrão oficial Conecta King (tile_dense) �?" igual para todos os projetos novos. */
+  /** Padrão oficial Conecta King (tile_dense) — igual para todos os projetos novos. */
   const KS_WM_OFFICIAL_PORTRAIT_PCT = 150;
   const KS_WM_OFFICIAL_LANDSCAPE_PCT = 98;
   const KS_WM_OFFICIAL_ROTATE_LANDSCAPE = 90;
@@ -916,10 +916,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let wmScaleLandscapePct = KS_WM_OFFICIAL_LANDSCAPE_PCT;
   let wmRotatePortraitDeg = 0;
   let wmRotateLandscapeDeg = KS_WM_OFFICIAL_ROTATE_LANDSCAPE;
-  /** Offset mosaico / marca �?" retrato (foto vertical) */
+  /** Offset mosaico / marca — retrato (foto vertical) */
   let wmLogoOffsetXPctPortrait = 0;
   let wmLogoOffsetYPctPortrait = 0;
-  /** Offset mosaico / marca �?" paisagem (foto horizontal) */
+  /** Offset mosaico / marca — paisagem (foto horizontal) */
   let wmLogoOffsetXPctLandscape = 0;
   let wmLogoOffsetYPctLandscape = 0;
   /** Esticar ladrilho por orientação */
@@ -1055,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const p = list[viewerIndex];
     if (!p) return;
     viewerImg.setAttribute('data-photo-id', String(p.id));
-    // ADMIN: ampliar sem marca d'água (rápido e não quebra se a logo/CF estiverem com problema).
+    // ADMIN: ampliar sem marca d\'água (rápido e não quebra se a logo/CF estiverem com problema).
     setImgPreview(viewerImg, {
       url: `${API_URL}/api/king-selection/photos/${p.id}/preview?wm_mode=none&max=1600`,
       photoId: p.id
@@ -1163,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inp.onchange = async () => {
       const file = inp.files && inp.files[0];
       if (!file) return;
-      setUploadUi({ active: true, line: 'Substituindo�?�', file: file.name, pct: 0 });
+      setUploadUi({ active: true, line: 'Substituindo—', file: file.name, pct: 0 });
       try {
         let key, receipt;
         try {
@@ -1209,7 +1209,7 @@ document.addEventListener('DOMContentLoaded', () => {
     errEl?.classList.add('hidden');
   }
 
-  // Se acontecer erro inesperado (ex.: rate-limit estourando), não �?oderruba�?� a tela.
+  // Se acontecer erro inesperado (ex.: rate-limit estourando), não ?oderruba— a tela.
   window.addEventListener('error', (ev) => {
     try {
       const m = ev?.message || 'Erro inesperado na página.';
@@ -1282,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, '&#039;');
   }
 
-  /** E-mail sintético (visitante / cadastro) �?" não exibir como contacto do cliente. */
+  /** E-mail sintético (visitante / cadastro) — não exibir como contacto do cliente. */
   function isPlaceholderClienteEmail(email) {
     const e = String(email || '').trim().toLowerCase();
     return !e || e === '-' || e.endsWith('@cadastro.kingselection.invalid') || e.endsWith('@internal.king');
@@ -1400,7 +1400,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return link;
   }
 
-  /** Link pessoal com login automático (JWT na URL) �?" um por cliente cadastrado. */
+  /** Link pessoal com login automático (JWT na URL) — um por cliente cadastrado. */
   async function buildClientAccessLink(clientId) {
     const cid = parseInt(clientId, 10) || 0;
     if (!cid || !galleryId) return buildClientShareLink();
@@ -1463,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return v != null && String(v).trim() !== '';
   }
 
-  /** Acesso privado (lista de clientes com e-mail/senha definidos pelo fotógrafo). Outros modos: autocadastro ou vendas �?' não enviar credenciais na mensagem genérica. */
+  /** Acesso privado (lista de clientes com e-mail/senha definidos pelo fotógrafo). Outros modos: autocadastro ou vendas — não enviar credenciais na mensagem genérica. */
   function shareMessageShouldIncludeClientCredentials() {
     const am = String(gallery?.access_mode || 'private').toLowerCase();
     return am === 'private';
@@ -1597,7 +1597,7 @@ document.addEventListener('DOMContentLoaded', () => {
     linkCoverPreview.setAttribute('data-external-pending', '1');
     linkCoverPreview.src = linkCoverPendingExternalPreviewUrl;
     if (linkCoverCurrentSource) {
-      linkCoverCurrentSource.textContent = 'Pré-visualização do arquivo �?" clique em «Salvar capa do link» para confirmar';
+      linkCoverCurrentSource.textContent = 'Pré-visualização do arquivo — clique em «Salvar capa do link» para confirmar';
     }
   }
 
@@ -1857,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pid = parseInt(p.id, 10) || 0;
       const nm = String(p.original_name || `Foto #${pid}`).trim();
       const ord = photoOrderVal(p);
-      const label = ord > 0 ? `${ord} �?" ${nm}` : nm;
+      const label = ord > 0 ? `${ord} — ${nm}` : nm;
       return `<option value="${pid}">${escapeHtml(label)}</option>`;
     }).join('');
     if (preferredId) linkCoverPhotoSel.value = String(preferredId);
@@ -1871,9 +1871,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (savedCoverId > 0) {
         linkCoverCurrentSource.textContent = 'Origem atual: foto da galeria atual';
       } else if (preferredId > 0) {
-        linkCoverCurrentSource.textContent = 'Pré-visualização �?" clique em «Salvar capa do link» para confirmar';
+        linkCoverCurrentSource.textContent = 'Pré-visualização — clique em «Salvar capa do link» para confirmar';
       } else {
-        linkCoverCurrentSource.textContent = 'Nenhuma capa salva �?" escolha uma foto e salve';
+        linkCoverCurrentSource.textContent = 'Nenhuma capa salva — escolha uma foto e salve';
       }
     }
   }
@@ -2256,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasCustom) {
       wmFileCustomWrap?.classList.add('hidden');
       wmFileDefaults?.classList.remove('hidden');
-      if (wmFilePh) wmFilePh.textContent = 'Marca Conecta King (fixa �?" retrato e paisagem)';
+      if (wmFilePh) wmFilePh.textContent = 'Marca Conecta King (fixa — retrato e paisagem)';
       [wmFilePreviewP, wmFilePreviewL].forEach((img) => {
         if (!img) return;
         const prevKey = img.getAttribute('data-cache-key');
@@ -2270,7 +2270,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     wmFileDefaults?.classList.add('hidden');
     wmFileCustomWrap?.classList.remove('hidden');
-    if (wmFileCustomLabel) wmFileCustomLabel.textContent = 'Marca d�?Tágua personalizada (enviada)';
+    if (wmFileCustomLabel) wmFileCustomLabel.textContent = 'Marca d\'água personalizada (enviada)';
     wmFileFrameP?.classList.remove('hidden');
     wmFileFrameL?.classList.remove('hidden');
     wmFilePreviewP?.classList.toggle('hidden', false);
@@ -2713,7 +2713,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
         if (!ids.length) {
-          toast('Para apagar fotos: marque o círculo nas miniaturas �?' «Excluir fotos selecionadas». Para apagar pasta: marque o quadrado no card da pasta.', { kind: 'warn', title: 'Fotos' });
+          toast('Para apagar fotos: marque o círculo nas miniaturas — «Excluir fotos selecionadas». Para apagar pasta: marque o quadrado no card da pasta.', { kind: 'warn', title: 'Fotos' });
           return;
         }
         const ok = window.confirm(`Excluir ${ids.length} pasta(s)? As fotos continuarão na galeria, sem pasta.`);
@@ -2924,7 +2924,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const proc = `${parseInt(j.processed_photos || 0, 10) || 0}/${parseInt(j.total_photos || 0, 10) || 0}`;
         const assigned = parseInt(j.assigned_photos || 0, 10) || 0;
         const created = formatJobTime(j.created_at);
-        return `#${j.id} �?� ${st} �?� ${stage} �?� ${proc} �?� separadas ${assigned} �?� ${created}`;
+        return `#${j.id} — ${st} — ${stage} — ${proc} — separadas ${assigned} — ${created}`;
       }).join('<br/>');
     } catch (_) {
       // silencioso
@@ -2953,7 +2953,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const errors = parseInt(job.error_photos || 0, 10) || 0;
       const assigned = parseInt(job.assigned_photos || 0, 10) || 0;
       const msg = String(job.message || '').trim();
-      const line = `Separação por pasta: ${String(job.status || '').toUpperCase()} �?� etapa: ${job.stage || '-'} �?� processadas: ${processed}/${total} �?� erros: ${errors} �?� separadas: ${assigned}${msg ? ` �?� ${msg}` : ''}`;
+      const line = `Separação por pasta: ${String(job.status || '').toUpperCase()} — etapa: ${job.stage || '-'} — processadas: ${processed}/${total} — erros: ${errors} — separadas: ${assigned}${msg ? ` — ${msg}` : ''}`;
       setAutoFolderStatusText(line);
 
       const terminal = ['done', 'error', 'cancelled'].includes(String(job.status || '').toLowerCase());
@@ -2990,7 +2990,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const errors = parseInt(job.error_photos || 0, 10) || 0;
       const assigned = parseInt(job.assigned_photos || 0, 10) || 0;
       const msg = String(job.message || '').trim();
-      setAutoFolderStatusText(`Separação por pasta: ${String(job.status || '').toUpperCase()} �?� etapa: ${job.stage || '-'} �?� processadas: ${processed}/${total} �?� erros: ${errors} �?� separadas: ${assigned}${msg ? ` �?� ${msg}` : ''}`);
+      setAutoFolderStatusText(`Separação por pasta: ${String(job.status || '').toUpperCase()} — etapa: ${job.stage || '-'} — processadas: ${processed}/${total} — erros: ${errors} — separadas: ${assigned}${msg ? ` — ${msg}` : ''}`);
       renderAutoFolderHistory().catch(() => { });
       if (['processing', 'pending'].includes(String(job.status || '').toLowerCase())) {
         startAutoFolderJobPolling();
@@ -3107,7 +3107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (photoSortSel) photoSortSel.value = photoSortMode;
     if (uploadModeSel) uploadModeSel.value = uploadFolderMode;
     if (uploadTargetSel) {
-      uploadTargetSel.innerHTML = `<option value="">Pasta de upload�?�</option>${folders.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}`;
+      uploadTargetSel.innerHTML = `<option value="">Pasta de upload—</option>${folders.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}`;
       uploadTargetSel.value = uploadFolderId ? String(uploadFolderId) : '';
       uploadTargetSel.disabled = uploadFolderMode !== 'folder';
     }
@@ -3115,14 +3115,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (folderSelectionCount) {
       const n = selectedFolderIds.size;
       folderSelectionCount.innerHTML = n > 0
-        ? `<i class="fas fa-check-square"></i> ${n} pasta(s) marcada(s) �?" use «Excluir pastas selecionadas».`
+        ? `<i class="fas fa-check-square"></i> ${n} pasta(s) marcada(s) — use «Excluir pastas selecionadas».`
         : '<i class="far fa-square"></i> Pastas: marque o quadrado no card para excluir a pasta (as fotos ficam sem pasta).';
     }
     const photoSelectionCount = wrap.querySelector('#ks-photo-selection-count');
     if (photoSelectionCount) {
       const n = selectedPhotoIds.size;
       photoSelectionCount.innerHTML = n > 0
-        ? `<i class="fas fa-images"></i> <b>${n}</b> foto(s) selecionada(s) �?" use «Excluir fotos selecionadas» ou a barra abaixo da grelha.`
+        ? `<i class="fas fa-images"></i> <b>${n}</b> foto(s) selecionada(s) — use «Excluir fotos selecionadas» ou a barra abaixo da grelha.`
         : '<i class="far fa-image"></i> Fotos: clique no círculo no canto de cada miniatura ou «Selecionar todas as fotos».';
     }
     if (!cards) return;
@@ -3209,7 +3209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pct = Math.round(((i + chunk.length) / ids.length) * 92);
         setUploadUi({
           active: true,
-          line: `Excluindo ${Math.min(i + chunk.length, ids.length)}/${ids.length} foto(s)�?�`,
+          line: `Excluindo ${Math.min(i + chunk.length, ids.length)}/${ids.length} foto(s)—`,
           file: undefined,
           pct,
           meta: `${pct}%`
@@ -3229,7 +3229,7 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedPhotoIds = new Set();
       photoPageIndex = 0;
       photoFolderFilterId = null;
-      setUploadUi({ active: true, line: 'Atualizando�?�', file: undefined, pct: 98, meta: '98%' });
+      setUploadUi({ active: true, line: 'Atualizando—', file: undefined, pct: 98, meta: '98%' });
       await loadGallery();
       syncSelectedPhotoIdsWithGallery();
       renderPhotos();
@@ -3239,7 +3239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toast(
           left > 0
             ? `${deletedTotal} foto(s) excluída(s). Restam ${left} na galeria.`
-            : `${deletedTotal} foto(s) excluída(s). Galeria vazia �?" pode adicionar novas fotos.`,
+            : `${deletedTotal} foto(s) excluída(s). Galeria vazia — pode adicionar novas fotos.`,
           { kind: 'ok', title: 'Exclusão' }
         );
       }
@@ -3298,7 +3298,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Paginação (evita página infinita com 1000+ fotos)
     if (pPager) pPager.classList.toggle('hidden', filtered.length <= pageSize);
-    if (pPageLabel) pPageLabel.textContent = `Página ${photoPageIndex + 1}/${totalPages} �?� ${filtered.length} foto(s)`;
+    if (pPageLabel) pPageLabel.textContent = `Página ${photoPageIndex + 1}/${totalPages} — ${filtered.length} foto(s)`;
     if (pPagePrev) pPagePrev.disabled = photoPageIndex <= 0;
     if (pPageNext) pPageNext.disabled = photoPageIndex >= totalPages - 1;
     if (pPageNumbers) {
@@ -3306,7 +3306,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const maxAll = 20;
       const cur = photoPageIndex + 1;
       const mkBtn = (n, { current, ellipsis } = {}) => {
-        if (ellipsis) return `<span class="px-2 text-xs ks-muted select-none">�?�</span>`;
+        if (ellipsis) return `<span class="px-2 text-xs ks-muted select-none">—</span>`;
         const cls = current ? 'ks-btn ks-btn-primary ks-pagebtn' : 'ks-btn ks-pagebtn';
         return `<button class="${cls}" type="button" data-page="${n}">${n}</button>`;
       };
@@ -3703,7 +3703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="ks-abo-badge">${escapeHtml(editRequestStatusLabel(st))}</span>
           </div>
           ${note}
-          <ul class="mt-2 text-sm text-slate-900 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto ks-edit-req-photos">${photoLines || '<li>�?"</li>'}</ul>
+          <ul class="mt-2 text-sm text-slate-900 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto ks-edit-req-photos">${photoLines || '<li>—</li>'}</ul>
           <div class="flex flex-wrap gap-2 mt-3">${actions.join('')}</div>
         </div>`;
     }).join('');
@@ -3773,7 +3773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     projectSub.textContent = `slug: ${gallery?.slug || '-'}`;
     syncPublicEditRequestPrivacyUi();
 
-    // Activity �?" lista por cliente; painel usa o cliente em foco (ou legado sem tabela de clientes)
+    // Activity — lista por cliente; painel usa o cliente em foco (ou legado sem tabela de clientes)
     const galleryStatus = gallery?.status || '-';
     const clientsList = Array.isArray(gallery?.clients) ? gallery.clients : [];
     const enabledClients = clientsList.filter(c => c && c.enabled !== false);
@@ -3856,7 +3856,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!container) return;
       const vis = arr.filter(clientMatchesSearch);
       if (!vis.length) {
-        container.innerHTML = '<div class="ks-abo-item ks-muted" style="opacity:.75">�?"</div>';
+        container.innerHTML = '<div class="ks-abo-item ks-muted" style="opacity:.75">—</div>';
         return;
       }
       container.innerHTML = vis.map((c) => {
@@ -3864,7 +3864,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nm = escapeHtml(String(c.nome || '').trim() || (c.email || 'Cliente'));
         const em = escapeHtml(String(c.email || '').trim());
         const ph = escapeHtml(String(c.telefone || '').trim());
-        const sub = [em, ph].filter(Boolean).join(' · ') || em || '�?"';
+        const sub = [em, ph].filter(Boolean).join(' · ') || em || '—';
         const payBadge = String(c.sales_payment_badge || '').trim();
         let badgeHtml = '';
         if (payBadge) {
@@ -3988,7 +3988,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (rKeys.length > 1 && activityBatchUi !== 'all') {
         aSelectedSub.textContent = `Total acumulado (todas as sessões): ${selectedCount} foto(s)`;
       } else if (rKeys.length > 1 && activityBatchUi === 'all') {
-        aSelectedSub.textContent = 'Soma de todas as seleções �?" use o menu acima para ver só uma rodada.';
+        aSelectedSub.textContent = 'Soma de todas as seleções — use o menu acima para ver só uma rodada.';
       } else {
         aSelectedSub.textContent = '';
       }
@@ -4006,7 +4006,7 @@ document.addEventListener('DOMContentLoaded', () => {
       aFeedback.textContent = 'Nenhuma mensagem enviada';
     }
 
-    // painel de cliente (estilo Alboom) �?" prioriza linha em foco na lista multi-cliente
+    // painel de cliente (estilo Alboom) — prioriza linha em foco na lista multi-cliente
     const rawEmail = contactRow ? String(contactRow.email || '').trim() : String(gallery?.cliente_email || '').trim();
     const rawPhone = contactRow ? String(contactRow.telefone || '').trim() : String(gallery?.cliente_telefone || '').trim();
     const nome = contactRow ? String(contactRow.nome || '').trim() : String(gallery?.cliente_nome || '').trim();
@@ -4063,7 +4063,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const showPass = amPriv && cidPass > 0;
       actPassRow.style.display = showPass ? '' : 'none';
       actRevealPassBtn.setAttribute('data-ks-reveal-pass', String(cidPass || 0));
-      actPassSpan.textContent = '�?��?��?��?��?��?�';
+      actPassSpan.textContent = '——————';
       actPassSpan.removeAttribute('data-revealed');
       actRevealPassBtn.textContent = 'Mostrar';
       actRevealPassBtn.disabled = false;
@@ -4083,7 +4083,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const parts = [];
         if (stats.pendingProof > 0) parts.push(`${stats.pendingProof} comprov. pendente(s)`);
         if (stats.pendingBalanceRounds > 0) parts.push(`${stats.pendingBalanceRounds} com saldo`);
-        actSalesPendingMini.innerHTML = `<i class="fas fa-receipt" style="font-size:13px"></i> ${parts.join(' �?� ')}`;
+        actSalesPendingMini.innerHTML = `<i class="fas fa-receipt" style="font-size:13px"></i> ${parts.join(' — ')}`;
         actSalesPendingMini.style.color = '#fef08a';
         actSalesPendingMini.style.borderColor = 'rgba(250,204,21,.82)';
         actSalesPendingMini.style.background = 'rgba(234,179,8,.30)';
@@ -4165,7 +4165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       actRoundsDetail.classList.add('hidden');
     }
 
-    // fotos selecionadas (tabs estilo Alboom) �?" respeita filtro "Ver seleção"
+    // fotos selecionadas (tabs estilo Alboom) — respeita filtro "Ver seleção"
     if (actSelPhotos && actSelEmpty) {
       const set = new Set(selIdsNum);
       const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
@@ -4205,7 +4205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ).catch(() => { });
     }
 
-    // �?oComentários�?� (por enquanto, usamos a mensagem do cliente como comentário)
+    // ?oComentários— (por enquanto, usamos a mensagem do cliente como comentário)
     if (actCommentsBox) {
       actCommentsBox.textContent = fb ? fb : 'Nenhum comentário';
     }
@@ -4286,14 +4286,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Se existe marca personalizada enviada, força o modo "logo" (e desabilita Conecta King)
     if (wmMode === 'tile_dense' && hasCustom) wmMode = 'logo';
     setRadio('wm_mode', wmMode);
-    // Habilitar/desabilitar a opção "Sua marca d'água personalizada"
+    // Habilitar/desabilitar a opção "Sua marca d\'água personalizada"
     if (wmModeLogo) wmModeLogo.disabled = !hasCustom;
     if (wmModeLogoWrap) {
       wmModeLogoWrap.style.opacity = hasCustom ? '1' : '0.55';
       wmModeLogoWrap.style.cursor = hasCustom ? 'pointer' : 'not-allowed';
-      wmModeLogoWrap.title = hasCustom ? '' : 'Envie uma marca d�?Tágua para habilitar esta opção.';
+      wmModeLogoWrap.title = hasCustom ? '' : 'Envie uma marca d\'água para habilitar esta opção.';
     }
-    // Habilitar/desabilitar a opção "Marca d'água da Conecta King"
+    // Habilitar/desabilitar a opção "Marca d\'água da Conecta King"
     if (wmModeCk) wmModeCk.disabled = !!hasCustom;
     if (wmModeCkWrap) {
       wmModeCkWrap.style.opacity = hasCustom ? '0.55' : '1';
@@ -4434,7 +4434,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lp = document.querySelector('[data-pane="links"]');
       if (lp && !lp.classList.contains('hidden')) refreshLinksPane().catch(() => {});
       // loadGallery() chama revokeAllPreviewUrls(): se o utilizador está em "Capa do link",
-      // o painel "links" está oculto e refreshLinksPane() não corre �?" a prévia ficava inválida.
+      // o painel "links" está oculto e refreshLinksPane() não corre — a prévia ficava inválida.
       const lcp = document.querySelector('[data-pane="link-cover"]');
       if (lcp && !lcp.classList.contains('hidden')) {
         const pickerOpen = linkCoverPicker && !linkCoverPicker.classList.contains('hidden');
@@ -4585,7 +4585,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function paymentStatusPt(pay) {
     const st = String(pay?.status || 'pending').toLowerCase();
-    if (isBlessedPayment(pay)) return 'ABEN�?OADO (CORTESIA)';
+    if (isBlessedPayment(pay)) return 'ABEN?OADO (CORTESIA)';
     if (st === 'confirmed') return 'PAGO';
     if (st === 'partial') return 'PARCIAL (há saldo em aberto)';
     if (st === 'rejected') return 'COMPROVANTE RECUSADO';
@@ -4597,9 +4597,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildSalesPaymentStatusInnerHtml(pay) {
     if (!pay) return '';
     const st = paymentStatusPt(pay);
-    const amt = pay?.amount_cents != null ? ` �?� comprovante ${formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents))}` : '';
+    const amt = pay?.amount_cents != null ? ` — comprovante ${formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents))}` : '';
     const hasProof = !!(pay && pay.proof_file_path);
-    const proofLabel = hasProof ? ' �?� comprovante enviado' : ' �?� sem comprovante';
+    const proofLabel = hasProof ? ' — comprovante enviado' : ' — sem comprovante';
     const rec = Math.max(0, parseInt(pay.amount_received_cumulative_cents, 10) || 0);
     const exp = pay.expected_total_cents != null ? Math.max(0, parseInt(pay.expected_total_cents, 10) || 0) : 0;
     const down = pay.down_payment_cents != null ? Math.max(0, parseInt(pay.down_payment_cents, 10) || 0) : null;
@@ -4612,7 +4612,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (remBal != null && remBal > 0 && nInst != null && nInst >= 1) {
       const perPart = perRaw != null && perRaw > 0 ? perRaw : Math.round(remBal / nInst);
       const daysPart = days != null ? ` <span class="text-slate-500">em ${days} dia(s)</span>` : '';
-      restHtml = `<div class="text-[13px]"><span class="text-slate-400">Restante:</span> <b>${nInst}�-</b> de <b>${formatCentsBr(perPart)}</b>${daysPart}</div>`;
+      restHtml = `<div class="text-[13px]"><span class="text-slate-400">Restante:</span> <b>${nInst}</b> de <b>${formatCentsBr(perPart)}</b>${daysPart}</div>`;
     } else if (remBal != null && remBal > 0) {
       restHtml = `<div class="text-[13px]"><span class="text-slate-400">Restante:</span> <b>${formatCentsBr(remBal)}</b></div>`;
     }
@@ -4662,15 +4662,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     salesProofPanel.classList.remove('hidden');
-    const amountTxt = pay?.amount_cents != null ? formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents)) : '�?"';
+    const amountTxt = pay?.amount_cents != null ? formatCentsBr(normalizeLegacyMoneyCents(pay.amount_cents)) : '—';
     const noteClient = String(pay?.note_client || '').trim();
     const noteAdmin = String(pay?.note_admin || '').trim();
-    const cort = pay?.courtesy_cents != null ? formatCentsBr(pay.courtesy_cents) : '�?"';
-    const falta = pay?.balance_due_cents != null ? formatCentsBr(pay.balance_due_cents) : '�?"';
+    const cort = pay?.courtesy_cents != null ? formatCentsBr(pay.courtesy_cents) : '—';
+    const falta = pay?.balance_due_cents != null ? formatCentsBr(pay.balance_due_cents) : '—';
     const core = buildSalesPaymentStatusInnerHtml(pay);
     salesProofMeta.innerHTML =
       (core ? `<div class="space-y-0.5 mb-2">${core}</div>` : '') +
-      `<div class="text-[11px] text-slate-400"><b>Comprovante (valor anexado):</b> ${escapeHtml(amountTxt)} �?� <b>Cortesia:</b> ${escapeHtml(cort)} �?� <b>Falta:</b> ${escapeHtml(falta)}</div>` +
+      `<div class="text-[11px] text-slate-400"><b>Comprovante (valor anexado):</b> ${escapeHtml(amountTxt)} — <b>Cortesia:</b> ${escapeHtml(cort)} — <b>Falta:</b> ${escapeHtml(falta)}</div>` +
       `${noteClient ? `<div class="text-[11px] mt-1"><b>Obs. cliente:</b> ${escapeHtml(noteClient)}</div>` : ''}` +
       `${noteAdmin ? `<div class="text-[11px] mt-1"><b>Obs. ADM:</b> ${escapeHtml(noteAdmin)}</div>` : ''}`;
     const hasProof = !!String(pay?.proof_file_path || '').trim();
@@ -4820,7 +4820,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isSalesRoundBlessedCourtesy(r)) return acc;
       return acc + (parseInt(r?.expected_total_cents, 10) || 0);
     }, 0);
-    /** Soma pelos pacotes em todas as rodadas (referência �?ocomo no app�?�), inclusive cortesias �?" lista de clientes. */
+    /** Soma pelos pacotes em todas as rodadas (referência ?ocomo no app—), inclusive cortesias — lista de clientes. */
     const totalCalculatedFromPhotosCents = rounds.reduce((acc, r) => {
       return acc + (parseInt(r?.computed_package_gross_cents, 10) || 0);
     }, 0);
@@ -4854,7 +4854,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (Number.isFinite(rb) && rb > 0 && Number.isFinite(ic) && ic >= 1) {
         const per = Math.round(rb / ic);
         restPlanShort =
-          `${ic}�- ${formatCentsBr(per)}` + (Number.isFinite(id) && id > 0 ? ` / ${id}d` : '');
+          `${ic}${formatCentsBr(per)}` + (Number.isFinite(id) && id > 0 ? ` / ${id}d` : '');
         break;
       }
     }
@@ -4889,8 +4889,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const cents = fallbackPkgCents != null ? Math.max(0, parseInt(fallbackPkgCents, 10) || 0) : null;
       salesTermsPhotoRef.innerHTML =
         cents != null && n > 0
-          ? `${n} foto(s) �?" soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(cents)}</b>`
-          : (cents != null ? `Soma pelos pacotes: <b>${formatCentsBr(cents)}</b>` : '�?"');
+          ? `${n} foto(s) — soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(cents)}</b>`
+          : (cents != null ? `Soma pelos pacotes: <b>${formatCentsBr(cents)}</b>` : '—');
       if (salesTermsNegotiated) salesTermsNegotiated.value = '';
       if (salesTermsDown) salesTermsDown.value = '';
       if (salesTermsRemaining) salesTermsRemaining.value = '';
@@ -4899,7 +4899,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (salesTermsHint) {
         salesTermsHint.textContent =
           cents != null
-            ? 'Ainda não há linha de pagamento nesta rodada �?" o valor acima é a soma pelos pacotes. Salve o total acordado e o plano do restante se precisar.'
+            ? 'Ainda não há linha de pagamento nesta rodada — o valor acima é a soma pelos pacotes. Salve o total acordado e o plano do restante se precisar.'
             : '';
       }
       return;
@@ -4911,7 +4911,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const negC = hasNeg ? Math.max(0, parseInt(pay.negotiated_total_cents, 10) || 0) : null;
     const grossLine =
       nShow > 0
-        ? `${nShow} foto(s) �?" soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(gross)}</b>`
+        ? `${nShow} foto(s) — soma pelos pacotes (como no app do cliente): <b>${formatCentsBr(gross)}</b>`
         : `Soma pelos pacotes: <b>${formatCentsBr(gross)}</b>`;
     if (hasNeg && negC != null) {
       salesTermsPhotoRef.innerHTML = `${grossLine}<div class="text-emerald-200/95 text-[13px] mt-1 font-bold">Total negociado: ${formatCentsBr(negC)}</div>`;
@@ -4952,7 +4952,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const exp = pay.expected_total_cents != null ? Math.max(0, parseInt(pay.expected_total_cents, 10) || 0) : 0;
       const rec = pay.amount_received_cumulative_cents != null ? Math.max(0, parseInt(pay.amount_received_cumulative_cents, 10) || 0) : 0;
       const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
-      salesTermsHint.textContent = `Resumo: total ${formatCentsBr(exp)} �?� recebido ${formatCentsBr(rec)} �?� falta ${formatCentsBr(bal)}`;
+      salesTermsHint.textContent = `Resumo: total ${formatCentsBr(exp)} — recebido ${formatCentsBr(rec)} — falta ${formatCentsBr(bal)}`;
     }
   }
 
@@ -5143,7 +5143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (salesDashCourtesy) salesDashCourtesy.textContent = formatCentsBr(courtesySum);
     if (salesDashMissingPeriod) {
       salesDashMissingPeriod.textContent =
-        `No período: ${periodLabelPt(period)} (mesmo filtro do �?oTop pendências�?�)`;
+        `No período: ${periodLabelPt(period)} (mesmo filtro do ?oTop pendências—)`;
     }
     if (salesDashClientsPending) salesDashClientsPending.textContent = String(clientsPending);
     if (salesDashRoundsPending) salesDashRoundsPending.textContent = String(roundsPending);
@@ -5179,9 +5179,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!salesDashDetailModal || !salesDashDetailTitle || !salesDashDetailBody || !salesDashDetailTotal) return;
     const rows = salesDashDetailCache[kind] || [];
     const titles = {
-      received: 'Recebido (dinheiro) �?" por cliente e rodada',
-      missing: 'Falta receber (estimado) �?" por cliente e rodada',
-      courtesy: 'Cortesias (abonos) �?" por cliente e rodada'
+      received: 'Recebido (dinheiro) — por cliente e rodada',
+      missing: 'Falta receber (estimado) — por cliente e rodada',
+      courtesy: 'Cortesias (abonos) — por cliente e rodada'
     };
     salesDashDetailTitle.textContent = titles[kind] || 'Detalhe';
     const sum = rows.reduce((a, r) => a + (parseInt(r.cents, 10) || 0), 0);
@@ -5194,14 +5194,14 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="flex justify-between gap-3 py-2.5 border-b border-slate-100 text-sm">
           <div>
             <span class="font-semibold text-slate-900">${escapeHtml(row.nome)}</span>
-            <span class="text-slate-500"> �?� Rodada ${row.batch}</span>
+            <span class="text-slate-500"> — Rodada ${row.batch}</span>
             <button type="button" class="ml-1.5 text-[11px] text-indigo-600 hover:underline font-semibold" data-sales-detail-open-client="${row.clientId}">Abrir cliente</button>
           </div>
           <div class="font-extrabold ${moneyClass} whitespace-nowrap">${formatCentsBr(row.cents)}</div>
         </div>
       `).join('');
     }
-    salesDashDetailTotal.textContent = rows.length ? `Total: ${formatCentsBr(sum)}` : 'Total: �?"';
+    salesDashDetailTotal.textContent = rows.length ? `Total: ${formatCentsBr(sum)}` : 'Total: —';
     salesDashDetailModal.classList.remove('hidden');
     salesDashDetailModal.classList.add('flex');
     salesDashDetailModal.setAttribute('aria-hidden', 'false');
@@ -5297,7 +5297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!listToShow.length) {
       salesClientsList.innerHTML =
-        '<div class="text-xs ks-muted">Nenhum cliente neste filtro. Escolha �?oTudo�?� ou ajuste a busca.</div>';
+        '<div class="text-xs ks-muted">Nenhum cliente neste filtro. Escolha ?oTudo— ou ajuste a busca.</div>';
       return;
     }
     salesClientsList.innerHTML = listToShow.map((c) => {
@@ -5360,7 +5360,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bits.push(`total negociado: ${formatCentsBr(expectedTotalSum)}`);
         }
         if (restPlanShort) bits.push(`plano restante: ${restPlanShort}`);
-        return bits.join(' �?� ');
+        return bits.join(' — ');
       })();
       return `
         <div class="w-full text-left rounded-xl border ${activeCls} p-3 transition cursor-pointer" data-sales-client-card="${cid}" role="button" tabindex="0">
@@ -5372,9 +5372,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           <div class="text-xs text-slate-300 mt-1">
-            ${selectedCount} foto(s) �?� ${approvedCount} aprovada(s) �?� ${rounds.length} sessão(ões) �?� ${financeBits}
-            ${maxInstallmentCount != null ? ` �?� até ${maxInstallmentCount}x no restante` : ''}
-            ${blessedRounds > 0 ? ` �?� ${blessedRounds} abençoada(s)` : ''}
+            ${selectedCount} foto(s) — ${approvedCount} aprovada(s) — ${rounds.length} sessão(ões) — ${financeBits}
+            ${maxInstallmentCount != null ? ` — até ${maxInstallmentCount}x no restante` : ''}
+            ${blessedRounds > 0 ? ` — ${blessedRounds} abençoada(s)` : ''}
           </div>
         </div>
       `;
@@ -5439,8 +5439,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }).length;
           const approved = rounds.reduce((acc, r) => acc + (parseInt(r?.approved_count, 10) || 0), 0);
           const tag = proofs > 0
-            ? ` �?� ${proofs} comprov. pendente(s)${saldo > 0 ? ` �?� ${saldo} saldo` : ''}`
-            : (saldo > 0 ? ` �?� ${saldo} com saldo` : (approved > 0 ? ` �?� ${approved} aprovada(s)` : ''));
+            ? ` — ${proofs} comprov. pendente(s)${saldo > 0 ? ` — ${saldo} saldo` : ''}`
+            : (saldo > 0 ? ` — ${saldo} com saldo` : (approved > 0 ? ` — ${approved} aprovada(s)` : ''));
           return `<option value="${c.id}">${escapeHtml(c.nome || c.email || `Cliente #${c.id}`)}${escapeHtml(tag)}</option>`;
         }).join('')
         : '<option value="">Sem clientes</option>';
@@ -5467,12 +5467,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const balOk = Number.isFinite(bal) && bal > 0;
         const blessed = st === 'confirmed' && (amount === 0 || note.includes('aben'));
         const payLabel = blessed
-          ? ' �?� abençoado'
+          ? ' — abençoado'
           : (st === 'confirmed'
-            ? ` �?� pago${amount != null ? ` (${formatCentsBr(amount)})` : ''}`
+            ? ` — pago${amount != null ? ` (${formatCentsBr(amount)})` : ''}`
             : (st === 'partial' || balOk
-              ? ` �?� parcial${balOk ? ` �?� falta ${formatCentsBr(bal)}` : ''}`
-              : (st === 'rejected' ? ' �?� comprovante recusado' : ' �?� aguardando')));
+              ? ` — parcial${balOk ? ` — falta ${formatCentsBr(bal)}` : ''}`
+              : (st === 'rejected' ? ' — comprovante recusado' : ' — aguardando')));
         return `<option value="${r.selection_batch}">Rodada ${r.selection_batch} (${r.selected_count} foto(s))${payLabel}</option>`;
       }).join('')
       : '<option value="1">Rodada 1</option>';
@@ -5497,7 +5497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const round = Math.max(1, parseInt(salesRoundSel.value || '1', 10) || 1);
     if (!cid) {
       salesDetailCache = null;
-      if (salesPaymentStatus) salesPaymentStatus.innerHTML = '�?"';
+      if (salesPaymentStatus) salesPaymentStatus.innerHTML = '—';
       hydrateSalesPaymentTerms(null, null, 0);
       if (salesApprovalsWrap) salesApprovalsWrap.innerHTML = '';
       if (salesProofPanel) salesProofPanel.classList.add('hidden');
@@ -5523,7 +5523,7 @@ document.addEventListener('DOMContentLoaded', () => {
         salesPaymentStatus.innerHTML = buildSalesPaymentStatusInnerHtml(pay);
       } else {
         const hasProof = false;
-        const proofLabel = hasProof ? ' �?� comprovante enviado' : ' �?� sem comprovante';
+        const proofLabel = hasProof ? ' — comprovante enviado' : ' — sem comprovante';
         salesPaymentStatus.innerHTML =
           `<div class="text-[11px] font-extrabold uppercase tracking-wide text-slate-300">${escapeHtml(paymentStatusPt(null))}${escapeHtml(proofLabel)}</div>` +
           `<div class="text-[12px] text-slate-400 mt-1">Nenhum pagamento registrado nesta rodada.</div>`;
@@ -5569,8 +5569,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="rounded-lg overflow-hidden border border-slate-700 bg-black/70">
               <img data-sales-photo-preview="${p.photo_id}" alt="${escapeHtml(p.original_name || '')}" style="width:100%;height:190px;object-fit:contain;display:block;background:#0b0b0b" />
             </div>
-            <div class="font-semibold text-sm mt-2">#${p.photo_id} �?" ${escapeHtml(p.original_name || '')}</div>
-            <div class="text-xs mt-1">${statusBadge} <span class="ks-muted">�?� Entrega: <b>${delivery === 'edited' ? 'EDITADA' : 'ORIGINAL'}</b>${hasEdited ? ' �?� arquivo editado enviado' : ''}</span></div>
+            <div class="font-semibold text-sm mt-2">#${p.photo_id} — ${escapeHtml(p.original_name || '')}</div>
+            <div class="text-xs mt-1">${statusBadge} <span class="ks-muted">— Entrega: <b>${delivery === 'edited' ? 'EDITADA' : 'ORIGINAL'}</b>${hasEdited ? ' — arquivo editado enviado' : ''}</span></div>
             <div class="mt-2 flex items-center gap-2 flex-wrap">
               <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="approve-original" style="${approveDoneStyle}"><i class="fas fa-check"></i> Aprovar original</button>
               <button type="button" class="ks-btn ks-btn-sm" data-sales-photo-action="upload-edited"><i class="fas fa-upload"></i> Substituir por editada</button>
@@ -5625,10 +5625,10 @@ document.addEventListener('DOMContentLoaded', () => {
         salesOpenClientWhatsBtn.setAttribute('data-whats-link', `https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(msg)}`);
         const waKind = resolveSalesWaTemplateKind({ approvedCount, needsPaymentReminder, awaitingReview, st });
         const waTitles = {
-          approved: 'Avisar no WhatsApp: fotos aprovadas �?" cliente pode baixar pela galeria',
+          approved: 'Avisar no WhatsApp: fotos aprovadas — cliente pode baixar pela galeria',
           pending: 'Avisar no WhatsApp: falta pagamento (PIX / saldo) para liberação',
-          rejected: 'Avisar no WhatsApp: comprovante recusado �?" pedir novo envio',
-          awaiting: 'Avisar no WhatsApp: pagamento ok �?" você ainda está aprovando as fotos'
+          rejected: 'Avisar no WhatsApp: comprovante recusado — pedir novo envio',
+          awaiting: 'Avisar no WhatsApp: pagamento ok — você ainda está aprovando as fotos'
         };
         salesOpenClientWhatsBtn.title = waTitles[waKind] || waTitles.approved;
       } else {
@@ -5679,7 +5679,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try { renderAll(); } catch (_) { }
   }
 
-  /** Alterar status da galeria (e de todos os clientes) �?" usa endpoint dedicado para Reativar/Finalizar funcionarem corretamente */
+  /** Alterar status da galeria (e de todos os clientes) — usa endpoint dedicado para Reativar/Finalizar funcionarem corretamente */
   async function setStatusViaApi(nextStatus) {
     const list = (Array.isArray(gallery?.clients) ? gallery.clients : []).filter((c) => c && c.enabled !== false);
     const body = { status: nextStatus };
@@ -5737,8 +5737,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /**
    * Token só com dígitos (ex.: 1642): deve bater com ADR1642, ADR01642, _ADR001642, etc.
-   * �?" valor numérico igual à série de dígitos do ficheiro, ou (para tokens �?olongos�?�) a série contém o que digitou.
-   * Tokens curtos (1�?"2 dígitos, n < 100) não usam .includes() dentro de um número grande (evita �?o4�?� em �?o1642�?�).
+   * — valor numérico igual à série de dígitos do ficheiro, ou (para tokens ?olongos—) a série contém o que digitou.
+   * Tokens curtos (1—2 dígitos, n < 100) não usam .includes() dentro de um número grande (evita ?o4— em ?o1642—).
    */
   function digitTokenMatchesBase(base, digitToken) {
     const tok = String(digitToken);
@@ -5929,7 +5929,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (!names.length) {
-      expFilterHint.textContent = `Nenhuma correspondência nas ${total} selecionada(s). Tente o ID da foto (painel Fotos), ou o trecho ADR�?� do nome do ficheiro.`;
+      expFilterHint.textContent = `Nenhuma correspondência nas ${total} selecionada(s). Tente o ID da foto (painel Fotos), ou o trecho ADR— do nome do ficheiro.`;
       return;
     }
     const missing = tokens.length > names.length ? tokens.length - names.length : 0;
@@ -6042,7 +6042,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ra = parseInt(auth.retry_after_seconds || '0', 10) || 0;
         if ((authRes.status === 429 || authRes.status >= 500) && attempt < retries) {
           const extra = ra > 0 ? Math.min(ra * 1000, 65000) : wait;
-          // Ajuste automático: 429 => aumenta gap e reduz concorrência para evitar �?oengarrafar�?�
+          // Ajuste automático: 429 => aumenta gap e reduz concorrência para evitar ?oengarrafar—
           if (authRes.status === 429 && typeof uploadState !== 'undefined' && uploadState) {
             uploadState.last429At = Date.now();
             const cur = Number.isFinite(uploadState.authMinGapMs) ? uploadState.authMinGapMs : 60;
@@ -6088,7 +6088,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (useOverlay) {
         uploadOv.classList.remove('hidden');
         uploadOv.setAttribute('aria-hidden', 'false');
-        if (uploadTitle) uploadTitle.textContent = line || 'Enviando�?�';
+        if (uploadTitle) uploadTitle.textContent = line || 'Enviando—';
         if (uploadFile) uploadFile.textContent = file ? file : '';
         if (uploadMeta) uploadMeta.textContent = meta || `${p.toFixed(0)}%`;
         if (uploadBar) uploadBar.style.strokeDashoffset = String(off);
@@ -6100,7 +6100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (bubble) {
       bubble.classList.toggle('hidden', !active || useOverlay);
-      if (bubbleTitle) bubbleTitle.textContent = line || 'Enviando�?�';
+      if (bubbleTitle) bubbleTitle.textContent = line || 'Enviando—';
       if (bubbleFile) bubbleFile.textContent = file ? file : '';
       if (bubbleMeta) bubbleMeta.textContent = meta || `${p.toFixed(0)}%`;
       if (bubbleBar) bubbleBar.style.strokeDashoffset = String(off);
@@ -6126,7 +6126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Evita �?otravada�?� por re-render a cada foto em lote grande
+  // Evita ?otravada— por re-render a cada foto em lote grande
   let _renderPhotosTimer = null;
   function scheduleRenderPhotos() {
     if (_renderPhotosTimer) return;
@@ -6292,7 +6292,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (_) { }
           // feedback para o usuário (não parecer travado)
           try {
-            updateOverallUi(`Reconectando�?� (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto');
+            updateOverallUi(`Reconectando— (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto');
           } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
@@ -6405,7 +6405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const timeout = /Tempo esgotado/i.test(msg) || /travou/i.test(msg);
         const retryable = rateLimited || timeout || (st >= 500) || (st === 0);
         if (retryable && attempt < retries) {
-          try { updateOverallUi(`Reconectando�?� (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
+          try { updateOverallUi(`Reconectando— (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
           wait = Math.min(wait * 2, 6000);
@@ -6540,7 +6540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg = (e && e.message) ? String(e.message) : 'Erro no upload';
         const retryable = (st === 429) || (st >= 500) || (st === 0) || /Tempo esgotado|travou/i.test(msg);
         if (retryable && attempt < retries) {
-          try { updateOverallUi(`Reconectando�?� (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
+          try { updateOverallUi(`Reconectando— (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
           wait = Math.min(wait * 2, 7000);
@@ -6670,7 +6670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg = (e && e.message) ? String(e.message) : 'Erro no upload';
         const retryable = (st === 429) || (st >= 500) || (st === 0) || /Tempo esgotado|travou/i.test(msg);
         if (retryable && attempt < retries) {
-          try { updateOverallUi(`Reconectando�?� (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
+          try { updateOverallUi(`Reconectando— (tentativa ${attempt + 1}/${retries})`, file?.name || 'foto'); } catch (_) { }
           // eslint-disable-next-line no-await-in-loop
           await sleep(wait + Math.round(Math.random() * 250));
           wait = Math.min(wait * 2, 7000);
@@ -6732,7 +6732,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!file) throw new Error('Arquivo inválido');
     const maxBytes = 10 * 1024 * 1024; // 10MB
     if ((file.size || 0) > maxBytes) {
-      throw new Error('A marca d�?Tágua é muito grande. Envie um PNG menor (até 10MB).');
+      throw new Error('A marca d\'água é muito grande. Envie um PNG menor (até 10MB).');
     }
     if (file.type && !String(file.type).toLowerCase().startsWith('image/')) {
       throw new Error('Arquivo inválido. Envie uma imagem (PNG/JPG).');
@@ -6803,7 +6803,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ks-nav-projects')?.classList.add('active');
   }));
 
-  // Link "Página de finalização" �?" abre a tela de config da mensagem de obrigado (Node)
+  // Link "Página de finalização" — abre a tela de config da mensagem de obrigado (Node)
   const linkConfigFinalizacao = document.getElementById('ks-link-config-finalizacao');
   if (linkConfigFinalizacao && galleryId) {
     linkConfigFinalizacao.addEventListener('click', (e) => {
@@ -6837,9 +6837,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openActContactModal(c) {
     if (!actContactModal || !c) return;
-    const nome = String(c.nome || '').trim() || '�?"';
-    const email = String(c.email || '').trim() || '�?"';
-    const phone = String(c.telefone || '').trim() || '�?"';
+    const nome = String(c.nome || '').trim() || '—';
+    const email = String(c.email || '').trim() || '—';
+    const phone = String(c.telefone || '').trim() || '—';
     if (actContactNome) actContactNome.textContent = nome;
     if (actContactEmail) actContactEmail.textContent = email;
     if (actContactPhone) actContactPhone.textContent = phone;
@@ -6916,7 +6916,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (k === 'nome') t = (actContactNome?.textContent || '').trim();
     if (k === 'email') t = (actContactEmail?.textContent || '').trim();
     if (k === 'phone') t = (actContactPhone?.textContent || '').trim();
-    if (!t || t === '�?"') return;
+    if (!t || t === '—') return;
     try {
       await navigator.clipboard.writeText(t);
       toast('Copiado.', { kind: 'ok', title: 'OK' });
@@ -6995,7 +6995,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })();
     const batch = parseInt(actBatchFilter?.value, 10);
     if (!cid || !batch || !Number.isFinite(batch) || batch < 1) return;
-    if (!confirm(`Remover todas as fotos da �?oSeleção ${batch}�?� deste cliente? (Outras rodadas e o projeto permanecem.)`)) return;
+    if (!confirm(`Remover todas as fotos da ?oSeleção ${batch}— deste cliente? (Outras rodadas e o projeto permanecem.)`)) return;
     try {
       actDeleteBatch.disabled = true;
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${cid}/delete-selection-batch`, {
@@ -7199,7 +7199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.message || 'Erro ao abrir nova seleção');
         await loadGallery();
-        toast(`Nova seleção aberta (nº ${data.selection_round != null ? data.selection_round : '�?"'}). O cliente pode acrescentar fotos.`, { kind: 'ok', title: 'Nova seleção' });
+        toast(`Nova seleção aberta (nº ${data.selection_round != null ? data.selection_round : '—'}). O cliente pode acrescentar fotos.`, { kind: 'ok', title: 'Nova seleção' });
       } catch (err) {
         showError(err?.message || 'Erro');
       }
@@ -7294,7 +7294,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.ks-nav a').forEach(n => n.classList.remove('active'));
       document.getElementById('ks-nav-projects')?.classList.add('active');
       setActiveTab('links');
-      toast('Aba �?oLink e compartilhamento�?�: copie o link ou a mensagem.', { kind: 'ok', title: 'Compartilhar' });
+      toast('Aba ?oLink e compartilhamento—: copie o link ou a mensagem.', { kind: 'ok', title: 'Compartilhar' });
     } catch (err) {
       showError(err?.message || 'Erro ao compartilhar');
     }
@@ -7756,13 +7756,13 @@ document.addEventListener('DOMContentLoaded', () => {
           body.installment_count = 1;
         } else {
           const n = parseInt(instRaw, 10);
-          if (!Number.isFinite(n) || n < 1 || n > 240) throw new Error('Parcelas do restante inválidas (1�?"240).');
+          if (!Number.isFinite(n) || n < 1 || n > 240) throw new Error('Parcelas do restante inválidas (1—240).');
           body.installment_count = n;
         }
         if (daysRaw === '') body.installment_interval_days = null;
         else {
           const nd = parseInt(daysRaw, 10);
-          if (!Number.isFinite(nd) || nd < 1 || nd > 730) throw new Error('Dias para pagar inválidos (1�?"730).');
+          if (!Number.isFinite(nd) || nd < 1 || nd > 730) throw new Error('Dias para pagar inválidos (1—730).');
           body.installment_interval_days = nd;
         }
       }
@@ -7810,7 +7810,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const cid = parseInt(salesClientSel?.value || '0', 10) || 0;
       if (!cid) throw new Error('Selecione um cliente.');
-      const amountRaw = window.prompt('Valor confirmado neste passo (R$). Ex.: 1000 ou 1000,00 �?" pode ser entrada parcial.', '');
+      const amountRaw = window.prompt('Valor confirmado neste passo (R$). Ex.: 1000 ou 1000,00 — pode ser entrada parcial.', '');
       if (amountRaw == null) return;
       const amount = parseAdminAmountInputToCents(amountRaw);
       if (amount == null) throw new Error('Valor inválido. Use formato em reais, ex.: 200 ou 200,00.');
@@ -7988,7 +7988,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ) {
         return;
       }
-      const note = (window.prompt('Observação interna (opcional):', 'Desfeito �?" aguardando novo comprovante') || '').trim();
+      const note = (window.prompt('Observação interna (opcional):', 'Desfeito — aguardando novo comprovante') || '').trim();
       const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/sales/clients/${cid}/round/${round}/payment-review`, {
         method: 'POST',
         headers: HEADERS,
@@ -8066,7 +8066,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!cid) throw new Error('Selecione um cliente.');
       if (
         !confirm(
-          `Marcar TODAS as fotos da rodada ${round} como AGUARDANDO LIBERA�?�fO?\n\n(Igual ao botão por foto: volta para análise antes de liberar download.)`
+          `Marcar TODAS as fotos da rodada ${round} como AGUARDANDO LIBERA—fO?\n\n(Igual ao botão por foto: volta para análise antes de liberar download.)`
         )
       ) {
         return;
@@ -8277,7 +8277,7 @@ document.addEventListener('DOMContentLoaded', () => {
           : '<span class="text-slate-400">(e-mail não informado)</span>';
       let pwdBlock = '';
       if (showCred && cid) {
-        pwdBlock = `<div class="mt-2 flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500">Senha:</span><span class="ks-pass-mask font-mono text-sm" data-cid="${cid}">�?��?��?��?��?��?�</span><button type="button" class="ks-btn ks-btn-sm" data-ks-reveal-pass="${cid}">Mostrar</button></div>`;
+        pwdBlock = `<div class="mt-2 flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500">Senha:</span><span class="ks-pass-mask font-mono text-sm" data-cid="${cid}">——————</span><button type="button" class="ks-btn ks-btn-sm" data-ks-reveal-pass="${cid}">Mostrar</button></div>`;
       }
       parts.push(
         `<div class="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"><div class="font-extrabold text-slate-900">${nm}</div><div class="mt-1"><span class="text-xs text-slate-500">E-mail:</span> ${emHtml}</div>${pwdBlock}</div>`
@@ -8299,7 +8299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const span = btn.previousElementSibling;
     if (!span || !span.classList.contains('ks-pass-mask')) return;
     if (span.getAttribute('data-revealed') === '1') {
-      span.textContent = '�?��?��?��?��?��?�';
+      span.textContent = '——————';
       span.removeAttribute('data-revealed');
       btn.textContent = 'Mostrar';
       return;
@@ -8367,7 +8367,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const nm = escapeHtml(c.nome || 'Cliente');
       const em = escapeHtml(c.email || '-');
       const ph = escapeHtml(c.telefone || '');
-      const passShown = _clientPwCache.has(cid) ? escapeHtml(_clientPwCache.get(cid)) : '�?��?��?��?��?��?�';
+      const passShown = _clientPwCache.has(cid) ? escapeHtml(_clientPwCache.get(cid)) : '——————';
       const menuOpen = (_openClientMenuFor === cid) ? 'open' : '';
       return `
         <div class="rounded-2xl border border-white/10 bg-black/30 p-4 relative" data-client-id="${cid}">
@@ -8567,7 +8567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (shareLink) shareLink.textContent = link;
         if (shareEmail) shareEmail.textContent = c.email || '-';
-        if (sharePass) sharePass.textContent = '�?��?��?��?��?��?�';
+        if (sharePass) sharePass.textContent = '——————';
         openShareModal();
         const amPriv = amShare === 'private';
         if (amPriv) {
@@ -8789,7 +8789,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadGallery();
       refreshWatermarkFilePreview().catch(() => { });
       scheduleWatermarkPreview(true);
-      toast('Marca d�?Tágua (retrato) enviada.', { kind: 'ok', title: 'OK' });
+      toast('Marca d\'água (retrato) enviada.', { kind: 'ok', title: 'OK' });
     } catch (e) {
       showError(e.message || 'Erro');
     } finally {
@@ -8807,7 +8807,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadGallery();
       refreshWatermarkFilePreview().catch(() => { });
       scheduleWatermarkPreview(true);
-      toast('Marca d�?Tágua (paisagem) enviada.', { kind: 'ok', title: 'OK' });
+      toast('Marca d\'água (paisagem) enviada.', { kind: 'ok', title: 'OK' });
     } catch (e) {
       showError(e.message || 'Erro');
     } finally {
@@ -8836,8 +8836,8 @@ document.addEventListener('DOMContentLoaded', () => {
         stretchWPctLandscape,
         stretchHPctLandscape
       } = getWmParams();
-      // Todos os modos funcionam com a marca d�?Tágua padrão.
-      // Colunas legado (offset/esticar únicos) espelham retrato �?" compatível com código antigo.
+      // Todos os modos funcionam com a marca d\'água padrão.
+      // Colunas legado (offset/esticar únicos) espelham retrato — compatível com código antigo.
       await savePatch({
         watermark_mode: mode,
         watermark_opacity: opacity,
@@ -8875,7 +8875,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   removeWmLogoBtn?.addEventListener('click', async () => {
     try {
-      if (!confirm('Remover a marca d�?Tágua personalizada desta galeria?')) return;
+      if (!confirm('Remover a marca d\'água personalizada desta galeria?')) return;
       removeWmLogoBtn.disabled = true;
       // remove arquivo e volta para o padrão completo
       const out = await savePatch({
@@ -8910,9 +8910,9 @@ document.addEventListener('DOMContentLoaded', () => {
       await refreshWatermarkFilePreview();
       const cf = out && out.cloudflare_watermark;
       if (cf && cf.attempted) {
-        toast(cf.deleted ? 'Marca d�?Tágua removida (Cloudflare: ok).' : 'Marca d�?Tágua removida (Cloudflare: não foi possível deletar).', { kind: cf.deleted ? 'ok' : 'warn', title: 'Marca d�?Tágua' });
+        toast(cf.deleted ? 'Marca d\'água removida (Cloudflare: ok).' : 'Marca d\'água removida (Cloudflare: não foi possível deletar).', { kind: cf.deleted ? 'ok' : 'warn', title: 'Marca d\'água' });
       } else {
-        toast('Marca d�?Tágua removida.', { kind: 'ok', title: 'Marca d�?Tágua' });
+        toast('Marca d\'água removida.', { kind: 'ok', title: 'Marca d\'água' });
       }
       scheduleWatermarkPreview(true);
     } catch (e) {
@@ -8941,11 +8941,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (status === 'ok') return 'OK';
     if (status === 'com_orfaos') return 'Com órfãos';
     if (status === 'sem_arquivos_r2') return 'Sem arquivos no R2';
-    return status || '�?"';
+    return status || '—';
   }
 
   function renderR2SubfoldersList(subfolders) {
-    if (!Array.isArray(subfolders) || !subfolders.length) return '�?"';
+    if (!Array.isArray(subfolders) || !subfolders.length) return '—';
     return subfolders
       .slice(0, 8)
       .map((s) => {
@@ -8961,9 +8961,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
     };
-    set('ks-r2-stat-total', String(s.r2TotalFiles ?? '�?"'));
+    set('ks-r2-stat-total', String(s.r2TotalFiles ?? '—'));
     set('ks-r2-stat-size', fmtBytes(s.r2TotalBytes));
-    set('ks-r2-stat-ref', String(s.referencedInDb ?? '�?"'));
+    set('ks-r2-stat-ref', String(s.referencedInDb ?? '—'));
     set('ks-r2-stat-orphans', `${s.orphanFiles ?? 0} (${fmtBytes(s.orphanBytes)})`);
     set('ks-r2-stat-projects', `${s.userProjectsWithR2 ?? 0} / ${s.userProjects ?? 0}`);
     set('ks-r2-stat-deleted', String(s.orphanProjectFolders ?? 0));
@@ -8986,7 +8986,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${p.r2Files ?? 0}</td>
             <td>${p.orphanFiles > 0 ? `<span class="text-amber-700 font-bold">${p.orphanFiles}</span>` : '0'}</td>
             <td>${fmtBytes(p.r2Bytes)}</td>
-            <td>${p.lastUploaded ? fmtDate(p.lastUploaded) : '�?"'}</td>
+            <td>${p.lastUploaded ? fmtDate(p.lastUploaded) : '—'}</td>
             <td class="ks-r2-subfolders">${renderR2SubfoldersList(p.subfolders)}</td>
             <td>${escapeHtml(r2StatusLabel(p.status))}</td>
           </tr>
@@ -9005,7 +9005,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><code>galleries/${f.galleryId}/</code></td>
             <td>${f.r2Files ?? 0}</td>
             <td>${fmtBytes(f.r2Bytes)}</td>
-            <td>${f.lastUploaded ? fmtDate(f.lastUploaded) : '�?"'}</td>
+            <td>${f.lastUploaded ? fmtDate(f.lastUploaded) : '—'}</td>
             <td class="ks-r2-subfolders">${renderR2SubfoldersList(f.subfolders)}</td>
           </tr>
         `).join('');
@@ -9018,14 +9018,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!files.length) {
         orphanFilesBody.innerHTML = '<tr><td colspan="5" class="ks-muted p-4 text-center">Nenhum arquivo órfão na amostra.</td></tr>';
       } else {
-        const more = data.orphanSamplesTruncated ? '<tr><td colspan="5" class="ks-muted p-2 text-center text-xs">�?� e mais arquivos órfãos (use Limpar R2 para todos).</td></tr>' : '';
+        const more = data.orphanSamplesTruncated ? '<tr><td colspan="5" class="ks-muted p-2 text-center text-xs">— e mais arquivos órfãos (use Limpar R2 para todos).</td></tr>' : '';
         orphanFilesBody.innerHTML = files.map((f) => `
           <tr>
             <td class="text-xs break-all">${escapeHtml(f.fileName || f.key || '')}</td>
             <td><code>galleries/${f.galleryId}/</code></td>
-            <td>${escapeHtml(f.subfolder || '�?"')}</td>
+            <td>${escapeHtml(f.subfolder || '—')}</td>
             <td>${fmtBytes(f.size)}</td>
-            <td>${f.uploaded ? fmtDate(f.uploaded) : '�?"'}</td>
+            <td>${f.uploaded ? fmtDate(f.uploaded) : '—'}</td>
           </tr>
         `).join('') + more;
       }
@@ -9076,7 +9076,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data.message || 'Erro');
       if (dryRun) {
         toast(
-          `�"rfãos no R2: ${data.orphans || 0} de ${data.total || 0} arquivo(s) (referenciados nos projetos ativos: ${data.referenced || 0}). Use «Limpar R2» para apagar só os órfãos.`,
+          `"rfãos no R2: ${data.orphans || 0} de ${data.total || 0} arquivo(s) (referenciados nos projetos ativos: ${data.referenced || 0}). Use «Limpar R2» para apagar só os órfãos.`,
           { kind: 'ok', title: 'Verificação R2' }
         );
       } else {
@@ -9259,14 +9259,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (wmScaleL) wmScaleL.value = String(n);
   }, 'scaleL');
 
-  /** Preencher: esticar forte para �?ocobrir�?� a área (largura+altura do ladrilho). Ajustar: proporção neutra. */
+  /** Preencher: esticar forte para ?ocobrir— a área (largura+altura do ladrilho). Ajustar: proporção neutra. */
   const WM_FILL_STRETCH_PCT = 380;
 
   async function applyWmSuggestFit(column, mode) {
     const m = mode === 'fit' ? 'fit' : 'fill';
     const col = column === 'landscape' ? 'landscape' : 'portrait';
     try {
-      if (!galleryId) throw new Error('URL sem galleryId. Abra o projeto com ?galleryId=�?�');
+      if (!galleryId) throw new Error('URL sem galleryId. Abra o projeto com ?galleryId=—');
       const res = await fetch(
         `${API_URL}/api/king-selection/galleries/${galleryId}/watermark-suggest-scales?mode=${encodeURIComponent(m)}`,
         { headers: HEADERS }
@@ -9328,7 +9328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         m === 'fill'
           ? ' (escala + esticar + centro)'
           : ' (escala + ajuste proporcional + centro)';
-      toast(`${modePt} no ${col === 'portrait' ? 'retrato' : 'paisagem'}${extra}. Salve para persistir.`, { kind: 'ok', title: 'Marca d�?Tágua' });
+      toast(`${modePt} no ${col === 'portrait' ? 'retrato' : 'paisagem'}${extra}. Salve para persistir.`, { kind: 'ok', title: 'Marca d\'água' });
     } catch (e) {
       showError(e?.message || 'Erro');
     }
@@ -9345,15 +9345,15 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelled: false,
     minConcurrency: 6,
     maxConcurrency: 20,
-    // Começa �?oturbo�?� e ajusta sozinho (desce se der 429/timeout, sobe quando estabilizar).
+    // Começa ?oturbo— e ajusta sozinho (desce se der 429/timeout, sobe quando estabilizar).
     concurrency: 20,
     // Gap dinâmico do /api/upload/auth (ms). Começa agressivo e ajusta sozinho se vier 429.
     // (turbo, mas com piso no authUpload para não zerar)
     authMinGapMs: 120,
     authMaxGapMs: 1500,
     last429At: 0,
-    // Upload em LOTES (evita travar a UI e reduz �?otempestade�?� de ações)
-    // Ex.: selecionou 1000 fotos �?' processa 100 por vez.
+    // Upload em LOTES (evita travar a UI e reduz ?otempestade— de ações)
+    // Ex.: selecionou 1000 fotos — processa 100 por vez.
     batchSize: 100,
     pendingBatches: [], // File[][]
     batchIndex: 0,
@@ -9363,7 +9363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     totalBytes: 0,
     doneBytes: 0,
     startAt: 0,
-    // Amostras para calcular velocidade real (janela móvel) e evitar �?omédia baixa�?� após travar.
+    // Amostras para calcular velocidade real (janela móvel) e evitar ?omédia baixa— após travar.
     speedSamples: [], // [{ t, bytes }]
     ok: 0,
     errors: []
@@ -9431,7 +9431,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : 0;
     if (upListMeta) {
       upListMeta.textContent = pending
-        ? `${inNow} agora �?� ${pending} pendente(s)`
+        ? `${inNow} agora — ${pending} pendente(s)`
         : `${inNow} arquivo(s) na fila`;
     }
   }
@@ -9450,7 +9450,7 @@ document.addEventListener('DOMContentLoaded', () => {
     _lastUpdateOverall = now;
     const total = uploadState.totalBytes || 1;
     const done = overallLoadedBytes();
-    // Velocidade por janela móvel (últimos ~10s), para não ficar �?obaixa�?� se travou no começo.
+    // Velocidade por janela móvel (últimos ~10s), para não ficar ?obaixa— se travou no começo.
     uploadState.speedSamples = Array.isArray(uploadState.speedSamples) ? uploadState.speedSamples : [];
     uploadState.speedSamples.push({ t: now, bytes: done });
     // manter só últimos 12s
@@ -9466,15 +9466,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const eta = (total - done) / Math.max(1, speed);
     const bTotal = uploadState.batchTotal || 0;
     const bIndex = uploadState.batchIndex || 0;
-    const batchInfo = bTotal > 1 ? `  �?�  Lote ${Math.min(bIndex + 1, bTotal)}/${bTotal}` : '';
+    const batchInfo = bTotal > 1 ? `  —  Lote ${Math.min(bIndex + 1, bTotal)}/${bTotal}` : '';
     const etaTxt = (done > 256 * 1024 && speed > 8192 && winSec >= 2) ? formatEta(eta) : '--:--';
-    const meta = `${pct.toFixed(0)}%  �?�  ${formatMbPerSec(speed)}  �?�  ETA ${etaTxt}${batchInfo}`;
+    const meta = `${pct.toFixed(0)}%  —  ${formatMbPerSec(speed)}  —  ETA ${etaTxt}${batchInfo}`;
     const pending = Array.isArray(uploadState.pendingBatches)
       ? uploadState.pendingBatches.reduce((acc, b) => acc + (Array.isArray(b) ? b.length : 0), 0)
       : 0;
     const totalCount = Math.max(1, uploadState.ok + uploadState.errors.length + uploadState.active.size + uploadState.queue.length + pending);
     const completed = uploadState.ok + uploadState.errors.length;
-    const line = overrideLine || `Enviadas ${completed} de ${totalCount}${uploadState.active.size > 0 ? `  �?�  ${uploadState.active.size} em andamento` : ''}`;
+    const line = overrideLine || `Enviadas ${completed} de ${totalCount}${uploadState.active.size > 0 ? `  —  ${uploadState.active.size} em andamento` : ''}`;
     setUploadUi({ active: uploadState.running, line, file: undefined, pct, meta });
   }
 
@@ -9518,7 +9518,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1) Presign (mais rápido: PUT direto do navegador pro R2). 2) Worker. 3) Proxy.
     let mode = 'worker';
     try {
-      updateOverallUi('Preparando uploads (R2)�?�', batch[0]?.name || 'foto');
+      updateOverallUi('Preparando uploads (R2)—', batch[0]?.name || 'foto');
       const map = await presignBatchForR2(toQueue.map(x => ({ id: x.id, file: x.file })));
       toQueue.forEach(x => { x.presigned = map.get(String(x.id)) || null; });
       if (toQueue.some(x => x.presigned?.uploadUrl)) mode = 'presign';
@@ -9540,7 +9540,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toQueue.forEach(x => uploadState.queue.push(x));
 
     updateUploadMeta();
-    updateOverallUi(`Enviando �?� ${baseTotal + 1}/${baseTotal + batch.length}`, batch[0]?.name || 'foto');
+    updateOverallUi(`Enviando — ${baseTotal + 1}/${baseTotal + batch.length}`, batch[0]?.name || 'foto');
     pumpUploads();
   }
 
@@ -9634,7 +9634,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `).join('');
       const more = rest > 0
-        ? `<div class="ks-dupe-list-more" style="padding:10px 12px;font-size:11px;color:rgba(255,255,255,.45);border-top:1px solid rgba(255,255,255,.08)">�?� e mais ${rest} (lista limitada a ${KS_DUPE_LIST_MAX} para o painel ficar rápido; total ${dups.length})</div>`
+        ? `<div class="ks-dupe-list-more" style="padding:10px 12px;font-size:11px;color:rgba(255,255,255,.45);border-top:1px solid rgba(255,255,255,.08)">— e mais ${rest} (lista limitada a ${KS_DUPE_LIST_MAX} para o painel ficar rápido; total ${dups.length})</div>`
         : '';
       dupeList.innerHTML = (rows || '<div>(sem detalhes)</div>') + more;
     }
@@ -9664,7 +9664,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const f = v.file;
     const folderIdForUpload = toPosInt(v.folderId) || getUploadFolderId();
 
-    // 1) Presign (PUT direto pro R2 �?" mais rápido). 2) Worker. 3) Proxy.
+    // 1) Presign (PUT direto pro R2 — mais rápido). 2) Worker. 3) Proxy.
     if (uploadState._uploadMode === 'presign' && v.presigned?.uploadUrl && v.presigned?.key) {
       try {
         setRowProgress(v.rowEl, 0, 'Enviando direto pro R2...');
@@ -9863,7 +9863,7 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadState.batchTotal = (uploadState.batchTotal || 0) + batches.length;
     uploadState.batchIndex = uploadState.batchIndex || 0;
 
-    // Inicia imediatamente o lote atual se estiver �?ovazio�?�
+    // Inicia imediatamente o lote atual se estiver ?ovazio—
     // eslint-disable-next-line no-void
     void startNextBatchIfNeeded();
   }
@@ -10291,7 +10291,7 @@ document.addEventListener('DOMContentLoaded', () => {
   expCopy?.addEventListener('click', async () => {
     const names = getExportNamesForModal();
     if (!names.length) {
-      toast('Nada para copiar. Escolha �?otodas�?� ou ajuste números/códigos no filtro.', { kind: 'warn', title: 'Lista vazia' });
+      toast('Nada para copiar. Escolha ?otodas— ou ajuste números/códigos no filtro.', { kind: 'warn', title: 'Lista vazia' });
       return;
     }
     await copyToClipboard(expTa.value || '');
@@ -10688,10 +10688,10 @@ document.addEventListener('DOMContentLoaded', () => {
         n === 1
           ? `3) Benefício: ${n} foto fica de fora do valor estimado (o total no topo usa as demais fotos para calcular pacotes/preço).`
           : `3) Benefício: até ${n} fotos ficam de fora do valor estimado (o total no topo usa só as que entram na cobrança).`,
-        `4) Depois de enviar a seleção, o fotógrafo aprova cada foto normalmente (cortesia, pago, etc.) �?" o cupom não substitui essa etapa.`,
+        `4) Depois de enviar a seleção, o fotógrafo aprova cada foto normalmente (cortesia, pago, etc.) — o cupom não substitui essa etapa.`,
         handles.length
           ? `Perfis: ${handles.map((h) => (h.startsWith('@') ? h : `@${h}`)).join(', ')}.`
-          : `Dica: adicione ao menos um perfil (Instagram etc.) na lista abaixo �?" o cliente precisa seguir antes de validar o cupom.`
+          : `Dica: adicione ao menos um perfil (Instagram etc.) na lista abaixo — o cliente precisa seguir antes de validar o cupom.`
       ];
     } else {
       lines = [

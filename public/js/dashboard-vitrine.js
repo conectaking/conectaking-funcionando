@@ -1,9 +1,9 @@
 /**
  * Dashboard - Modelo Vitrine (isolado do restante do editor).
- * Exp�e: window.applyVitrineDetails, window.getVitrineDetailsForSave
+ * Expe: window.applyVitrineDetails, window.getVitrineDetailsForSave
  *
- * Bugfix: n�o sobrescrever texto/cores/logos locais com dados antigos do servidor
- * enquanto o usu�rio est� editando (dirty). Sempre ler o DOM no save.
+ * Bugfix: não sobrescrever texto/cores/logos locais com dados antigos do servidor
+ * enquanto o usuário est editando (dirty). Sempre ler o DOM no save.
  */
 (function () {
     'use strict';
@@ -111,7 +111,7 @@
         if (avatarSel) {
             avatarSel.style.opacity = state.cardLayout === 'vitrine' ? '0.45' : '1';
             avatarSel.title = state.cardLayout === 'vitrine'
-                ? 'No Modelo Vitrine o topo � a arte. Formato do avatar vale no Cl�ssico.'
+                ? 'No Modelo Vitrine o topo  a arte. Formato do avatar vale no Clsico.'
                 : '';
         }
         syncBgTypeUI();
@@ -130,7 +130,7 @@
                 : '';
             wrap.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:contain;background:#111;" alt="">' +
                 badge +
-                '<button type="button" data-idx="' + idx + '" style="position:absolute;top:2px;right:2px;border:none;border-radius:4px;background:#c0392b;color:#fff;width:20px;height:20px;cursor:pointer;font-size:10px;">�</button>';
+                '<button type="button" data-idx="' + idx + '" style="position:absolute;top:2px;right:2px;border:none;border-radius:4px;background:#c0392b;color:#fff;width:20px;height:20px;cursor:pointer;font-size:10px;"></button>';
             wrap.querySelector('button').addEventListener('click', function () {
                 state.marqueeLogos.splice(idx, 1);
                 markDirty();
@@ -187,7 +187,7 @@
             method: 'POST',
             headers: Object.assign({ 'Content-Type': 'application/json' }, getHeaders())
         });
-        if (!authResponse.ok) throw new Error('Falha na autentica��o de upload');
+        if (!authResponse.ok) throw new Error('Falha na autenticao de upload');
         const authData = await authResponse.json();
         const uploadURL = authData.uploadURL || authData.url;
         const formData = new FormData();
@@ -204,7 +204,7 @@
     function applyVitrineDetails(details) {
         if (!details) return;
 
-        // Preservar edi��es locais n�o publicadas (ex.: digitou o texto e depois enviou logo)
+        // Preservar edies locais não publicadas (ex.: digitou o texto e depois enviou logo)
         syncStateFromDom();
         const preserved = isDirty ? {
             marqueeText: state.marqueeText,
@@ -337,14 +337,14 @@
                 if (btnLabelEl) btnLabelEl.value = 'Inscrever-se';
             } else if (tpl === 'curso') {
                 if (eyebrowEl) eyebrowEl.value = '?? Turma 2026';
-                if (titleEl) titleEl.value = 'Master Turma - M�dulo';
+                if (titleEl) titleEl.value = 'Master Turma - Módulo';
                 if (line1) line1.value = '05/11/2026 ? 08/11/2026';
                 if (line2) line2.value = '09:00 - 18:00';
                 if (line3) line3.value = '';
                 if (btnLabelEl) btnLabelEl.value = 'Quero participar';
             } else {
                 if (eyebrowEl) eyebrowEl.value = '';
-                if (titleEl) titleEl.value = 'T�tulo do destaque';
+                if (titleEl) titleEl.value = 'Título do destaque';
                 if (line1) line1.value = '';
                 if (line2) line2.value = '';
                 if (line3) line3.value = '';
@@ -428,11 +428,11 @@
                 const file = heroInput.files && heroInput.files[0];
                 if (!file) return;
                 syncStateFromDom();
-                // Abrir cropper 16:9 para o usu�rio ajustar o enquadramento
+                // Abrir cropper 16:9 para o usuário ajustar o enquadramento
                 if (typeof window.openCropper === 'function') {
                     window.openCropper(file, 'vitrine-hero', null, '16:9');
                 } else {
-                    // Fallback sem cropper (n�o deveria acontecer no dashboard)
+                    // Fallback sem cropper (não deveria acontecer no dashboard)
                     uploadImageFile(file).then(function (url) {
                         if (!url) throw new Error('URL vazia');
                         state.heroUrl = url;
@@ -440,7 +440,7 @@
                         updateMiniPreview();
                         pushToProfileCache();
                     }).catch(function (e) {
-                        alert('N�o foi poss�vel enviar a arte. Tente novamente.');
+                        alert('Não foi possvel enviar a arte. Tente novamente.');
                         console.error(e);
                     });
                 }
@@ -464,7 +464,7 @@
             logoAdd.addEventListener('click', function () {
                 syncStateFromDom();
                 if (state.marqueeLogos.length >= 3) {
-                    alert('M�ximo de 3 logomarcas na faixa.');
+                    alert('Mximo de 3 logomarcas na faixa.');
                     return;
                 }
                 logoInput.click();
@@ -472,7 +472,7 @@
             logoInput.addEventListener('change', async function () {
                 const file = logoInput.files && logoInput.files[0];
                 if (!file) return;
-                // Importante: n�o perder o texto digitado durante o upload
+                // Importante: não perder o texto digitado durante o upload
                 syncStateFromDom();
                 markDirty();
                 try {
@@ -486,7 +486,7 @@
                         pushToProfileCache();
                     }
                 } catch (e) {
-                    alert('N�o foi poss�vel enviar o logo.');
+                    alert('Não foi possvel enviar o logo.');
                 }
                 logoInput.value = '';
             });

@@ -1,5 +1,5 @@
 /**
- * Botão «Excluir fotos soltas» �?" funciona mesmo com kingSelectionProject.js antigo em cache.
+ * Botão «Excluir fotos soltas» — funciona mesmo com kingSelectionProject.js antigo em cache.
  */
 (function () {
   function galleryIdFromUrl() {
@@ -140,7 +140,7 @@
 })();
 
 /**
- * Pedidos de edição (modo público) �?" embutido em loose-photos.js para Hostinger sem HTML novo.
+ * Pedidos de edição (modo público) — embutido em loose-photos.js para Hostinger sem HTML novo.
  */
 (function () {
   'use strict';

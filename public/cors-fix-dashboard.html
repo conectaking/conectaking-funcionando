@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Correção CORS �?" Upload de banner</title>
+    <title>Correção CORS — Upload de banner</title>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
         h1 { font-size: 1.25rem; }
@@ -14,8 +14,8 @@
     </style>
 </head>
 <body>
-    <h1>Correção do erro �?oFailed to fetch�?� ao enviar imagens no banner</h1>
-    <p>Se o dashboard em <code>127.0.0.1:5500</code> mostra <strong>�?oFailed to fetch�?�</strong> ou <strong>CORS</strong> ao trocar a imagem do banner, é porque as chamadas estão a ir para <code>conectaking.com.br</code>, que redireciona e o browser bloqueia.</p>
+    <h1>Correção do erro ?oFailed to fetch— ao enviar imagens no banner</h1>
+    <p>Se o dashboard em <code>127.0.0.1:5500</code> mostra <strong>?oFailed to fetch—</strong> ou <strong>CORS</strong> ao trocar a imagem do banner, é porque as chamadas estão a ir para <code>conectaking.com.br</code>, que redireciona e o browser bloqueia.</p>
     <p class="ok"><strong>Solução:</strong> o dashboard deve usar sempre a URL da API abaixo (sem redirect):</p>
     <p><strong>URL da API a usar no dashboard:</strong><br>
        <span class="url" id="apiBaseUrl">https://www.conectaking.com.br</span></p>
@@ -25,7 +25,7 @@
     <p>Este script redireciona automaticamente todos os pedidos <code>fetch('/api/...')</code> e <code>fetch('...conectaking.com.br/api/...')</code> para a API no Render. Não é preciso alterar variáveis nem o <code>dashboard.js</code>.</p>
     <h2>Alternativa: alterar a base da API no código</h2>
     <ol>
-        <li>Abrir o <strong>projeto do dashboard</strong> (onde está <code>dashboard.html</code> e <code>dashboard.js</code>) �?" tanto em localhost como em produção (conectaking.com.br).</li>
+        <li>Abrir o <strong>projeto do dashboard</strong> (onde está <code>dashboard.html</code> e <code>dashboard.js</code>) — tanto em localhost como em produção (conectaking.com.br).</li>
         <li>Procurar onde está definida a base da API (<code>API_BASE</code>, <code>API_URL</code>, <code>apiUrl</code>, <code>baseURL</code> ou <code>conectaking.com.br</code> nas chamadas <code>fetch</code>).</li>
         <li>Substituir por: <code id="apiBaseCode">https://www.conectaking.com.br</code></li>
     </ol>

@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
-        console.error('�O [GLOBAL ERROR] Erro não capturado:', {
+        console.error('[GLOBAL ERROR] Erro não capturado:', {
             message: event.message,
             filename: event.filename,
             lineno: event.lineno,
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handler para promessas rejeitadas não tratadas
     window.addEventListener('unhandledrejection', (event) => {
-        console.error('�O [GLOBAL ERROR] Promise rejeitada não tratada:', {
+        console.error('[GLOBAL ERROR] Promise rejeitada não tratada:', {
             reason: event.reason,
             promise: event.promise
         });
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         params.set('v', '2026-03-23-anticache-a1');
         var q = '?' + params.toString();
         var h = (typeof window !== 'undefined' && window.location && window.location.hostname) ? String(window.location.hostname).toLowerCase() : '';
-        // Live Server / dev sem Apache: não existe rewrite /kingSelection �?' usar o HTML direto
+        // Live Server / dev sem Apache: não existe rewrite /kingSelection — usar o HTML direto
         if (h === '127.0.0.1' || h === 'localhost') {
             return 'kingSelectionEdit.html' + q;
         }
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUN�f�?�AO MELHORADA PARA FETCH (COMPAT�fVEL COM ANDROID) ---
+    // --- FUNf—AO MELHORADA PARA FETCH (COMPATfVEL COM ANDROID) ---
     // Cache de requisições para evitar rate limit
     const requestCache = new Map();
     const CACHE_DURATION = 30000; // 30 segundos de cache para GET requests
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cached = requestCache.get(cacheKey);
 
             if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-                console.log(`�Y"� Usando cache para: ${url}`);
+                console.log(`Usando cache para: ${url}`);
                 return cached.response.clone();
             }
         }
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            console.log(`ðŸ�?��?z Fazendo requisição para: ${url}`);
+            console.log(` Fazendo requisição para: ${url}`);
 
             // Cria um AbortController para timeout
             const controller = new AbortController();
@@ -343,11 +343,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Trata 429 (Rate Limit) de forma especial
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.warn(`�s�️ Requisição retornou 401 para: ${url}`);
+                    console.warn(`Requisição retornou 401 para: ${url}`);
                     return response;
                 }
                 if (response.status === 429) {
-                    console.warn(`�s�️ Rate limit atingido para: ${url}`);
+                    console.warn(`Rate limit atingido para: ${url}`);
                     const retryAfter = response.headers.get('Retry-After') || '60';
                     const err = new Error(`Muitas requisições. Aguarde ${retryAfter} segundos antes de tentar novamente.`);
                     err.status = 429;
@@ -373,11 +373,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            console.log(`�o. Requisição bem-sucedida para: ${url}`);
+            console.log(`Requisição bem-sucedida para: ${url}`);
             return response;
 
         } catch (error) {
-            console.error(`â�' Erro na requisição para ${url}:`, error);
+            console.error(` Erro na requisição para ${url}:`, error);
 
             // Tratamento específico para diferentes tipos de erro
             if (error.name === 'AbortError') {
@@ -396,22 +396,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUN�f�?�AO ESPEC�fFICA PARA UPLOAD DE PDF ---
+    // --- FUNf—AO ESPECfFICA PARA UPLOAD DE PDF ---
     async function uploadPDF(file, progressCallback = null) {
         if (!file) {
             throw new Error('Nenhum arquivo selecionado');
         }
 
-        // Valida�f§�f£o do arquivo
+        // Validaf§f£o do arquivo
         if (file.type !== 'application/pdf') {
-            throw new Error('Por favor, selecione um arquivo PDF v�f¡lido');
+            throw new Error('Por favor, selecione um arquivo PDF vf¡lido');
         }
 
         if (file.size > 10 * 1024 * 1024) { // 10MB
-            throw new Error('O arquivo deve ter no m�f¡ximo 10MB');
+            throw new Error('O arquivo deve ter no mf¡ximo 10MB');
         }
 
-        console.log(`ðŸ�?o�?z Iniciando upload do PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        console.log(`?o Iniciando upload do PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
         if (progressCallback) {
             progressCallback('Enviando para servidor...');
@@ -427,27 +427,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            console.log(`ðŸ�?o¡ Resposta do servidor: ${response.status} ${response.statusText}`);
+            console.log(`?o¡ Resposta do servidor: ${response.status} ${response.statusText}`);
 
-            // Verifica se a resposta �f© JSON v�f¡lida
+            // Verifica se a resposta f© JSON vf¡lida
             const contentType = response.headers.get('content-type');
-            console.log(`ðŸ�?o�?� Content-Type da resposta: ${contentType}`);
+            console.log(`?o— Content-Type da resposta: ${contentType}`);
 
             if (!contentType || !contentType.includes('application/json')) {
                 const responseText = await response.text();
-                console.error('Resposta n�f£o �f© JSON:', responseText.substring(0, 500));
+                console.error('Resposta nf£o f© JSON:', responseText.substring(0, 500));
 
-                // Mensagens espec�f­ficas para diferentes tipos de erro
+                // Mensagens especf­ficas para diferentes tipos de erro
                 if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf n�f£o est�f¡ funcionando. Verifique o arquivo SERVER-FIXES.md para corre�f§�fµes necess�f¡rias.');
+                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf nf£o estf¡ funcionando. Verifique o arquivo SERVER-FIXES.md para corref§fµes necessf¡rias.');
                 } else if (response.status === 404) {
-                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf n�f£o existe no servidor. Implemente conforme SERVER-FIXES.md');
+                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf nf£o existe no servidor. Implemente conforme SERVER-FIXES.md');
                 } else if (response.status === 401) {
-                    throw new Error('NAO AUTORIZADO: Token inv�f¡lido ou expirado. Fa�f§a login novamente.');
+                    throw new Error('NAO AUTORIZADO: Token invf¡lido ou expirado. Faf§a login novamente.');
                 } else if (response.status === 500) {
-                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as corre�f§�fµes do SERVER-FIXES.md');
+                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as corref§fµes do SERVER-FIXES.md');
                 } else {
-                    throw new Error(`â�' ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para corre�f§�fµes.`);
+                    throw new Error(` ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para corref§fµes.`);
                 }
             }
 
@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(result.message || `Erro do servidor: ${response.status}`);
             }
 
-            console.log(`â�"�?� Upload do PDF bem-sucedido:`, result);
+            console.log(`â"— Upload do PDF bem-sucedido:`, result);
 
             if (progressCallback) {
                 progressCallback('Arquivo Carregado!');
@@ -472,20 +472,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressCallback('Erro no envio');
             }
 
-            // Re-lan�f§a o erro com informa�f§�fµes espec�f­ficas
+            // Re-lanf§a o erro com informaf§fµes especf­ficas
             if (error.message.includes('Failed to fetch')) {
-                throw new Error('ERRO DE CONEXAO: N�f£o foi poss�f­vel conectar ao servidor. Verifique sua internet e se o servidor est�f¡ funcionando.');
+                throw new Error('ERRO DE CONEXAO: Nf£o foi possf­vel conectar ao servidor. Verifique sua internet e se o servidor estf¡ funcionando.');
             } else if (error.message.includes('Unexpected token')) {
-                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados inv�f¡lidos. Implemente as corre�f§�fµes do SERVER-FIXES.md');
+                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados invf¡lidos. Implemente as corref§fµes do SERVER-FIXES.md');
             } else {
                 throw error;
             }
         }
     }
 
-    // --- FUN�f�?�AO DE TESTE PARA VERIFICAR ENDPOINT ---
+    // --- FUNf—AO DE TESTE PARA VERIFICAR ENDPOINT ---
     async function testPDFEndpoint() {
-        console.log('ðŸ§ª Testando conectividade com o servidor...');
+        console.log(' Testando conectividade com o servidor...');
 
         try {
             // Testa um endpoint que sabemos que existe
@@ -497,10 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            console.log(`ðŸ�?� Teste de conectividade: ${testResponse.status} ${testResponse.statusText}`);
+            console.log(` Teste de conectividade: ${testResponse.status} ${testResponse.statusText}`);
 
             if (testResponse.ok) {
-                console.log('â�"�?� Servidor est�f¡ funcionando');
+                console.log('â"— Servidor estf¡ funcionando');
                 return {
                     server: true,
                     status: testResponse.status,
@@ -516,21 +516,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error('Servidor n�f£o acess�f­vel:', error);
+            console.error('Servidor nf£o acessf­vel:', error);
             return {
                 server: false,
                 error: error.message,
-                message: 'Servidor n�f£o acess�f­vel, usando modo offline'
+                message: 'Servidor nf£o acessf­vel, usando modo offline'
             };
         }
     }
 
-    // Disponibiliza a fun�f§�f£o de teste globalmente
+    // Disponibiliza a funf§f£o de teste globalmente
     window.testPDFEndpoint = testPDFEndpoint;
 
-    // --- FUN�f�?��f�?�ES PARA QR CODE PIX V�fLIDO ---
+    // --- FUNf—f—ES PARA QR CODE PIX VfLIDO ---
 
-    // Fun�f§�f£o para calcular CRC16 (necessário para PIX)
+    // Funf§f£o para calcular CRC16 (necessário para PIX)
     function calculateCRC16(data) {
         const polynomial = 0x1021;
         let crc = 0xFFFF;
@@ -550,33 +550,33 @@ document.addEventListener('DOMContentLoaded', () => {
         return crc.toString(16).toUpperCase().padStart(4, '0');
     }
 
-    // Fun�f§�f£o para formatar chave PIX
+    // Funf§f£o para formatar chave PIX
     function formatPixKey(pixKey) {
-        const cleanKey = pixKey.trim().replace(/\D/g, ''); // Remove tudo que n�f£o �f© n�fºmero
+        const cleanKey = pixKey.trim().replace(/\D/g, ''); // Remove tudo que nf£o f© nfºmero
 
-        // Se for celular (11 d�f­gitos), adiciona +55
+        // Se for celular (11 df­gitos), adiciona +55
         if (cleanKey.length === 11) {
             return '+55' + cleanKey;
         }
 
-        // Se for celular com DDD (13 d�f­gitos), adiciona +
+        // Se for celular com DDD (13 df­gitos), adiciona +
         if (cleanKey.length === 13 && cleanKey.startsWith('55')) {
             return '+' + cleanKey;
         }
 
-        // Se j�f¡ tem +, mant�f©m como est�f¡
+        // Se jf¡ tem +, mantf©m como estf¡
         if (pixKey.startsWith('+')) {
             return pixKey;
         }
 
-        // Para outros tipos (CPF, email, chave aleat�f³ria), mant�f©m como est�f¡
+        // Para outros tipos (CPF, email, chave aleatf³ria), mantf©m como estf¡
         return pixKey;
     }
 
-    // Fun�f§�f£o para gerar c�f³digo PIX EMV v�f¡lido
+    // Funf§f£o para gerar cf³digo PIX EMV vf¡lido
     function generatePixEMVCode(pixKey, recipientName, amount = null, description = '') {
         if (!pixKey || !recipientName) {
-            throw new Error('Chave PIX e nome do recebedor s�f£o obrigat�f³rios');
+            throw new Error('Chave PIX e nome do recebedor sf£o obrigatf³rios');
         }
 
         // Limpar e validar dados
@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanDescription = description.trim().substring(0, 25);
         const cleanAmount = amount ? parseFloat(amount).toFixed(2) : '0.00';
 
-        console.log('ðŸ�?�§ Gerando c�f³digo PIX com dados:', {
+        console.log(' Gerando cf³digo PIX com dados:', {
             pixKeyOriginal: pixKey,
             pixKeyFormatted: cleanPixKey,
             name: cleanName,
@@ -593,7 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
             description: cleanDescription
         });
 
-        // Construir c�f³digo EMV manualmente para garantir formato correto
+        // Construir cf³digo EMV manualmente para garantir formato correto
         let emvString = '';
 
         // Payload Format Indicator
@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Merchant City
         emvString += '6006CIDADE';
 
-        // Additional Data Field Template (se houver descri�f§�f£o)
+        // Additional Data Field Template (se houver descrif§f£o)
         if (cleanDescription) {
             const additionalData = '05' + cleanDescription.length.toString().padStart(2, '0') + cleanDescription;
             emvString += '62' + additionalData.length.toString().padStart(2, '0') + additionalData;
@@ -634,13 +634,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const crc = calculateCRC16(emvString + '6304');
         emvString += '6304' + crc;
 
-        console.log('ðŸ�?o�?z C�f³digo EMV final:', emvString);
-        console.log('ðŸ�?o Tamanho:', emvString.length);
+        console.log('?o Cf³digo EMV final:', emvString);
+        console.log('?o Tamanho:', emvString.length);
 
         return emvString;
     }
 
-    // Fun�f§�f£o para criar QR Code PIX visual
+    // Funf§f£o para criar QR Code PIX visual
     function createPixQRCode(pixKey, recipientName, amount = null, description = '') {
         try {
             const pixCode = generatePixEMVCode(pixKey, recipientName, amount, description);
@@ -660,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 correctLevel: QRCode.CorrectLevel.M
             });
 
-            // Adicionar informa�f§�fµes abaixo do QR Code
+            // Adicionar informaf§fµes abaixo do QR Code
             const info = document.createElement('div');
             info.style.marginTop = '10px';
             info.style.fontSize = '14px';
@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div><strong>${recipientName}</strong></div>
                 <div>Chave: ${pixKey}</div>
                 ${amount ? `<div>Valor: R$ ${parseFloat(amount).toFixed(2)}</div>` : ''}
-                ${description ? `<div>Descri�f§�f£o: ${description}</div>` : ''}
+                ${description ? `<div>Descrif§f£o: ${description}</div>` : ''}
             `;
 
             container.appendChild(info);
@@ -682,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Fun�f§�f£o para abrir modal com QR Code PIX
+    // Funf§f£o para abrir modal com QR Code PIX
     function openPixQRModal(pixKey, recipientName, amount = null, description = '') {
         const modal = document.createElement('div');
         modal.className = 'pix-qr-modal';
@@ -741,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Disponibiliza as fun�f§�fµes globalmente
+    // Disponibiliza as funf§fµes globalmente
     window.openPixQRModal = openPixQRModal;
     window.generatePixEMVCode = generatePixEMVCode;
 
@@ -890,66 +890,66 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
     }
 
-    // --- FUN�f�?�AO DE TESTE E DEBUG PARA PIX ---
+    // --- FUNf—AO DE TESTE E DEBUG PARA PIX ---
     function testPixCode(pixKey, recipientName, amount = null, description = '') {
-        console.log('ðŸ§ª Testando c�f³digo PIX...');
-        console.log('ðŸ�?o�?� Dados de entrada:');
+        console.log(' Testando cf³digo PIX...');
+        console.log('?o— Dados de entrada:');
         console.log('- Chave PIX:', pixKey);
         console.log('- Nome:', recipientName);
         console.log('- Valor:', amount);
-        console.log('- Descri�f§�f£o:', description);
+        console.log('- Descrif§f£o:', description);
 
         try {
             const pixCode = generatePixEMVCode(pixKey, recipientName, amount, description);
-            console.log('â�"�?� C�f³digo EMV gerado:', pixCode);
-            console.log('ðŸ�?o Tamanho do c�f³digo:', pixCode.length);
+            console.log('â"— Cf³digo EMV gerado:', pixCode);
+            console.log('?o Tamanho do cf³digo:', pixCode.length);
 
-            // Verificar se come�f§a com 000201
+            // Verificar se comef§a com 000201
             if (pixCode.startsWith('000201')) {
-                console.log('â�"�?� C�f³digo come�f§a corretamente com 000201');
+                console.log('â"— Cf³digo comef§a corretamente com 000201');
             } else {
-                console.log('ERRO: C�f³digo n�f£o come�f§a com 000201');
+                console.log('ERRO: Cf³digo nf£o comef§a com 000201');
             }
 
-            // Verificar se termina com CRC v�f¡lido
+            // Verificar se termina com CRC vf¡lido
             const crc = pixCode.slice(-4);
-            console.log('ðŸ�?� CRC calculado:', crc);
+            console.log(' CRC calculado:', crc);
 
-            // Verificar estrutura b�f¡sica
+            // Verificar estrutura bf¡sica
             if (pixCode.includes('BR.GOV.BCB.PIX')) {
-                console.log('â�"�?� Cont�f©m identificador BR.GOV.BCB.PIX');
+                console.log('â"— Contf©m identificador BR.GOV.BCB.PIX');
             } else {
-                console.log('ERRO: N�f£o cont�f©m BR.GOV.BCB.PIX');
+                console.log('ERRO: Nf£o contf©m BR.GOV.BCB.PIX');
             }
 
             if (pixCode.includes(pixKey)) {
-                console.log('â�"�?� Cont�f©m chave PIX');
+                console.log('â"— Contf©m chave PIX');
             } else {
-                console.log('ERRO: N�f£o cont�f©m chave PIX');
+                console.log('ERRO: Nf£o contf©m chave PIX');
             }
 
             return pixCode;
 
         } catch (error) {
-            console.error('Erro ao gerar c�f³digo PIX:', error);
+            console.error('Erro ao gerar cf³digo PIX:', error);
             return null;
         }
     }
 
-    // Fun�f§�f£o para testar com dados reais do cliente
+    // Funf§f£o para testar com dados reais do cliente
     function testClientPix() {
-        console.log('ðŸ§ª Testando com dados reais do cliente...');
+        console.log(' Testando com dados reais do cliente...');
         return testPixCode(
             '1119478723275204000053039865802BR',
             'ASSEMBLEIA DE DEUS CHAMA',
             null,
-            'Doa�f§�f£o'
+            'Doaf§f£o'
         );
     }
 
-    // Fun�f§�f£o para testar celular
+    // Funf§f£o para testar celular
     function testCelularPix(celular) {
-        console.log('ðŸ�?o± Testando PIX com celular:', celular);
+        console.log('?o± Testando PIX com celular:', celular);
         return testPixCode(
             celular,
             'TESTE CELULAR',
@@ -958,7 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
-    // Disponibiliza fun�f§�fµes de teste
+    // Disponibiliza funf§fµes de teste
     window.testPixCode = testPixCode;
     window.testClientPix = testClientPix;
     window.testCelularPix = testCelularPix;
@@ -1112,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Tratar 429 (Rate Limit)
             if (response.status === 429) {
-                console.warn('�s�️ Rate limit atingido ao verificar status. Usando dados locais.');
+                console.warn('Rate limit atingido ao verificar status. Usando dados locais.');
                 return JSON.parse(localStorage.getItem('conectaKingUser'));
             }
 
@@ -1145,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             // Tratar erro 429 especificamente
             if (error.status === 429 || (error.message && error.message.includes('429'))) {
-                console.warn('�s�️ Rate limit atingido. Usando dados locais.');
+                console.warn('Rate limit atingido. Usando dados locais.');
             } else {
                 console.error('Erro na API, usando dados locais:', error);
             }
@@ -1157,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (SELECTORS.previewBio) SELECTORS.previewBio.insertAdjacentElement('afterend', SELECTORS.previewItemsContainer);
 
     function hexToRgba(hex, alpha = 1) {
-        if (!hex) return `rgba(20, 20, 23, ${alpha})`; // Cor padr�f£o escura
+        if (!hex) return `rgba(20, 20, 23, ${alpha})`; // Cor padrf£o escura
         let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         if (!result) return `rgba(20, 20, 23, ${alpha})`;
         const r = parseInt(result[1], 16);
@@ -1324,7 +1324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return value.toLowerCase();
     }
 
-    // Fun�f§�f£o para extrair o ID do v�f­deo do YouTube de diferentes formatos de URL
+    // Funf§f£o para extrair o ID do vf­deo do YouTube de diferentes formatos de URL
     function extractYouTubeVideoId(url) {
         if (!url) return null;
 
@@ -1344,14 +1344,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
-    // Fun�f§�f£o para converter URL do YouTube para formato de embed
+    // Funf§f£o para converter URL do YouTube para formato de embed
     function convertYouTubeUrlToEmbed(url) {
         if (!url) return '';
 
         const videoId = extractYouTubeVideoId(url);
-        if (!videoId) return url; // Retorna a URL original se n�f£o conseguir extrair o ID
+        if (!videoId) return url; // Retorna a URL original se nf£o conseguir extrair o ID
 
-        // Remove par�f¢metros de timestamp e outros da URL
+        // Remove parf¢metros de timestamp e outros da URL
         const cleanVideoId = videoId.split('&')[0].split('?')[0];
 
         return `https://www.youtube.com/embed/${cleanVideoId}`;
@@ -1496,13 +1496,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const publicLinkUrl = normalizeUrlForVcard('generic', SELECTORS.publicLink?.href || '');
         if (publicLinkUrl) {
-            addUrlEntry(publicLinkUrl, 'Cart�f£o Digital', 'WORK');
+            addUrlEntry(publicLinkUrl, 'Cartf£o Digital', 'WORK');
         }
 
         if (slugCandidate) {
             const slugUrl = normalizeUrlForVcard('generic', `https://tag.conectaking.com.br/${slugCandidate.replace(/^\/+/, '')}`);
             if (slugUrl) {
-                addUrlEntry(slugUrl, 'Cart�f£o Digital', 'PROFILE');
+                addUrlEntry(slugUrl, 'Cartf£o Digital', 'PROFILE');
             }
         }
 
@@ -1697,7 +1697,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderKPIs(data) {
-        if (!data) return; // Seguran�f§a extra
+        if (!data) return; // Seguranf§a extra
         SELECTORS.kpiTotalViews.textContent = data.totalViews || 0;
         SELECTORS.kpiTotalClicks.textContent = data.totalClicks || 0;
         SELECTORS.kpiCtr.textContent = `${data.clickThroughRate || '0.0'}%`;
@@ -1707,7 +1707,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTopItems(data) {
         SELECTORS.topItemsList.innerHTML = '';
         if (data.length === 0) {
-            SELECTORS.topItemsList.innerHTML = '<li>Nenhum clique registrado no per�f­odo.</li>';
+            SELECTORS.topItemsList.innerHTML = '<li>Nenhum clique registrado no perf­odo.</li>';
             return;
         }
         data.forEach(item => {
@@ -1739,7 +1739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Visualiza�f§�fµes',
+                        label: 'Visualizaf§fµes',
                         data: viewsData,
                         borderColor: 'rgba(201, 164, 68, 0.8)', // Dourado
                         backgroundColor: 'rgba(201, 164, 68, 0.2)',
@@ -1915,11 +1915,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="color: var(--text, #ECECEC); font-size: 0.9rem; font-weight: 500;">${firstViewDate}</div>
                 </div>
                 <div>
-                    <div style="color: var(--text-dark, #A1A1A1); font-size: 0.85rem; margin-bottom: 3px;">�sltima visualização:</div>
+                    <div style="color: var(--text-dark, #A1A1A1); font-size: 0.85rem; margin-bottom: 3px;">ltima visualização:</div>
                     <div style="color: var(--text, #ECECEC); font-size: 0.9rem; font-weight: 500;">${lastViewDate}</div>
                 </div>
                 <div>
-                    <div style="color: var(--text-dark, #A1A1A1); font-size: 0.85rem; margin-bottom: 3px;">�sltimo clique:</div>
+                    <div style="color: var(--text-dark, #A1A1A1); font-size: 0.85rem; margin-bottom: 3px;">ltimo clique:</div>
                     <div style="color: var(--text, #ECECEC); font-size: 0.9rem; font-weight: 500;">${lastClickDate}</div>
                 </div>
             </div>
@@ -2021,7 +2021,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="color: var(--text, #ECECEC); font-size: 0.85rem; font-weight: 500;">${firstClick}</div>
                         </div>
                         <div>
-                            <div style="color: var(--text-dark, #A1A1A1); font-size: 0.85rem; margin-bottom: 3px;">�sltimo clique:</div>
+                            <div style="color: var(--text-dark, #A1A1A1); font-size: 0.85rem; margin-bottom: 3px;">ltimo clique:</div>
                             <div style="color: var(--text, #ECECEC); font-size: 0.85rem; font-weight: 500;">${lastClick}</div>
                         </div>
                         <div>
@@ -2039,7 +2039,7 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `
             <div style="margin-bottom: 30px; margin-top: 30px;">
                 <h3 style="color: var(--text, #ECECEC); margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-history"></i> Histórico Recente de Cliques (�sltimos ${recentClicks.length})
+                    <i class="fas fa-history"></i> Histórico Recente de Cliques (ltimos ${recentClicks.length})
                 </h3>
                 <div style="background: var(--card-background-color, #1C1C21); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color, #2C2C2F); overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
@@ -2370,7 +2370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // IMPORTANTE: Forçar leitura dos elementos atualizados do DOM
         // Usar querySelectorAll novamente para garantir que pegamos os elementos mais recentes
         const allItems = document.querySelectorAll('#items-container .item, #items-container .module-item');
-        console.log(`�Y"" Atualizando preview com ${allItems.length} itens do DOM`);
+        console.log(`Y"" Atualizando preview com ${allItems.length} itens do DOM`);
 
         allItems.forEach(itemEl => {
             const itemType = itemEl.dataset.itemType;
@@ -2547,7 +2547,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bannerPrimary = bannerDestParsed.primary_url || '#';
                 previewEl = document.createElement('div');
                 previewEl.className = 'preview-banner-wrap';
-                // Fun�f§�f£o para sanitizar URL de imagem do banner
+                // Funf§f£o para sanitizar URL de imagem do banner
                 function sanitizeBannerImageUrl(url) {
                     const defaultBannerPlaceholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDYwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjMwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiPkJhbm5lcjwvdGV4dD4KPC9zdmc+Cg==';
                     if (!url || typeof url !== 'string') {
@@ -2558,7 +2558,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (trimmedUrl.includes('placeholder.com') || trimmedUrl.includes('via.placeholder')) {
                         return defaultBannerPlaceholder;
                     }
-                    // Aceitar apenas URLs v�f¡lidas: data URIs ou http/https
+                    // Aceitar apenas URLs vf¡lidas: data URIs ou http/https
                     if (trimmedUrl.startsWith('data:image/') ||
                         trimmedUrl.startsWith('http://') ||
                         trimmedUrl.startsWith('https://')) {
@@ -2619,7 +2619,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const embedUrl = convertYouTubeUrlToEmbed(youtubeUrl);
 
                 if (embedUrl && embedUrl !== youtubeUrl) {
-                    // URL v�f¡lida convertida para embed
+                    // URL vf¡lida convertida para embed
                     previewEl = document.createElement('div');
                     previewEl.className = 'preview-embed-container';
                     previewEl.innerHTML = `
@@ -2632,7 +2632,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ></iframe>
                 `;
                 } else {
-                    // Placeholder se n�f£o houver URL v�f¡lida
+                    // Placeholder se nf£o houver URL vf¡lida
                     previewEl = document.createElement('div');
                     previewEl.className = 'preview-embed-placeholder';
                     const iconClass = itemEl.querySelector('.item-icon-picker')?.className.replace(' item-icon-picker', '').trim();
@@ -2654,7 +2654,7 @@ document.addEventListener('DOMContentLoaded', () => {
         SELECTORS.buttonFontSizeValue.textContent = fontSize;
     }
 
-    // Fun�f§�f£o para preservar o estado local dos itens antes de recarregar
+    // Funf§f£o para preservar o estado local dos itens antes de recarregar
     function preserveLocalItemStates() {
         const preservedStates = {};
         const itemElements = document.querySelectorAll('#items-container .item, #items-container .module-item');
@@ -2677,7 +2677,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (bannerImageInput) preservedStates[itemId].image_url = bannerImageInput.value;
                     if (bannerDestInput) preservedStates[itemId].destination_url = bannerDestInput.value;
                     if (bannerPreview) preservedStates[itemId].preview_src = bannerPreview.src;
-                    // Verificar se �f© carrossel
+                    // Verificar se f© carrossel
                     if (itemEl.classList.contains('banner-carousel')) {
                         preservedStates[itemId].isCarousel = true;
                     }
@@ -2761,7 +2761,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return preservedStates;
     }
 
-    // Fun�f§�f£o para restaurar o estado local dos itens ap�f³s recarregar
+    // Funf§f£o para restaurar o estado local dos itens apf³s recarregar
     function restoreLocalItemStates(preservedStates) {
         if (!preservedStates || Object.keys(preservedStates).length === 0) return;
 
@@ -2976,7 +2976,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="item-content" style="display: none;"><p style="padding:0.75rem;color:#f39c12;font-size:0.85rem;">Carregado em modo simplificado. Use o lápis para editar.</p></div>`;
         container.appendChild(itemEl);
-        console.log(`�o. Módulo ${idStr} (${item.item_type}) adicionado em modo simplificado`);
+        console.log(`Módulo ${idStr} (${item.item_type}) adicionado em modo simplificado`);
         return true;
     }
 
@@ -2990,7 +2990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return !container.querySelector('[data-id="' + it.id + '"]');
         });
         if (!missing.length) return false;
-        console.warn('�s�️ Módulos em falta na lista:', missing.map(function (m) {
+        console.warn('Módulos em falta na lista:', missing.map(function (m) {
             return (m.item_type || '?') + '#' + m.id;
         }).join(', '));
         missing.forEach(function (it) { appendMinimalModuleListItem(it); });
@@ -2998,7 +2998,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return !container.querySelector('[data-id="' + it.id + '"]');
         });
         if (stillMissing.length) {
-            console.warn('�s�️ Re-render completo - ainda faltam:', stillMissing.map(function (m) {
+            console.warn('Re-render completo - ainda faltam:', stillMissing.map(function (m) {
                 return (m.item_type || '?') + '#' + m.id;
             }).join(', '));
             renderEditor(profileData);
@@ -3024,7 +3024,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            console.log('�YZ� Iniciando renderização do editor com dados:', {
+            console.log('YZ Iniciando renderização do editor com dados:', {
                 hasDetails: !!profileData.details,
                 hasItems: !!profileData.items,
                 itemsCount: profileData.items?.length || 0
@@ -3045,12 +3045,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sidebarHandle) sidebarHandle.textContent = `@${details.profile_slug || 'seu-usuario'}`;
 
             if (SELECTORS.displayNameInput) SELECTORS.displayNameInput.value = details.display_name || '';
-            console.log('�Y"� [FETCH] Preenchendo campo WhatsApp com:', details.whatsapp);
+            console.log('[FETCH] Preenchendo campo WhatsApp com:', details.whatsapp);
             if (SELECTORS.whatsappNumberInput) {
                 SELECTORS.whatsappNumberInput.value = details.whatsapp || '';
-                console.log('�Y"� [FETCH] Campo WhatsApp preenchido com:', SELECTORS.whatsappNumberInput.value);
+                console.log('[FETCH] Campo WhatsApp preenchido com:', SELECTORS.whatsappNumberInput.value);
             } else {
-                console.warn('�s�️ [FETCH] Campo WhatsApp não encontrado no DOM');
+                console.warn('[FETCH] Campo WhatsApp não encontrado no DOM');
             }
             if (SELECTORS.bioInput) SELECTORS.bioInput.value = details.bio || '';
             if (SELECTORS.profileSlugInput) SELECTORS.profileSlugInput.value = details.profile_slug || '';
@@ -3193,7 +3193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let itemsContainer = SELECTORS.itemsContainer || document.getElementById('items-container');
 
             if (!itemsContainer) {
-                console.error('�O Container items-container não encontrado! Tentando criar...');
+                console.error('O Container items-container não encontrado! Tentando criar...');
                 // Tentar encontrar o editor pane e criar o container se não existir
                 const itemsEditorPane = document.getElementById('items-editor');
                 if (itemsEditorPane) {
@@ -3204,9 +3204,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     itemsEditorPane.insertBefore(newContainer, modulesActions ? modulesActions.nextElementSibling : null);
                     itemsContainer = newContainer;
                     SELECTORS.itemsContainer = newContainer; // Atualizar o seletor
-                    console.log('�o. Container criado dinamicamente');
+                    console.log('Container criado dinamicamente');
                 } else {
-                    console.error('�O items-editor pane também não encontrado!');
+                    console.error('O items-editor pane também não encontrado!');
                     return; // Não pode continuar sem o container
                 }
             }
@@ -3219,7 +3219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tempElements.forEach(tempEl => {
                 const tempId = tempEl.dataset.id;
                 if (tempId && !serverItemIds.has(String(tempId))) {
-                    console.log(`�Y"O Preservando item temporário ${tempId} que ainda não foi retornado pelo servidor`);
+                    console.log(`Y"O Preservando item temporário ${tempId} que ainda não foi retornado pelo servidor`);
                     // Clonar o elemento para preservá-lo após limpar o container
                     temporaryItems.push({
                         element: tempEl.cloneNode(true),
@@ -3228,29 +3228,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            console.log(`�Y�� Limpando container antes de renderizar ${uniqueItems.length} itens (${temporaryItems.length} temporários serão preservados)`);
+            console.log(`Y Limpando container antes de renderizar ${uniqueItems.length} itens (${temporaryItems.length} temporários serão preservados)`);
             itemsContainer.innerHTML = '';
 
             // Re-adicionar itens temporários preservados ANTES de renderizar os itens do servidor
             // Isso garante que apareçam primeiro na lista
             temporaryItems.forEach(temp => {
                 itemsContainer.appendChild(temp.element);
-                console.log(`�o. Item temporário ${temp.id} re-adicionado ao container`);
+                console.log(`Item temporário ${temp.id} re-adicionado ao container`);
             });
 
             // Verificar se temos itens para renderizar
             if (uniqueItems.length === 0) {
-                console.warn('�s�️ Nenhum item único para renderizar');
+                console.warn('Nenhum item único para renderizar');
                 return; // Retornar cedo se não houver itens
             }
 
-            console.log(`�YZ� Renderizando ${uniqueItems.length} itens...`);
+            console.log(`YZ Renderizando ${uniqueItems.length} itens...`);
             uniqueItems.forEach((item, itemIndex) => {
                 try {
                 // Se houver um item temporário com este ID, removê-lo primeiro
                 const tempItem = itemsContainer.querySelector(`[data-id="${item.id}"][data-is-temporary="true"]`);
                 if (tempItem) {
-                    console.log(`�Y"" Substituindo item temporário ${item.id} pelo item real do servidor`);
+                    console.log(`Y"" Substituindo item temporário ${item.id} pelo item real do servidor`);
                     tempItem.remove();
                 }
 
@@ -3272,7 +3272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (String(item.id).startsWith('temp_')) {
                     itemEl.dataset.isTemporary = 'true';
                     itemEl.dataset.isUnsaved = 'true'; // Manter ambos para compatibilidade
-                    console.log(`�Y"� Item temporário ${item.id} será renderizado como não salvo`);
+                    console.log(`Item temporário ${item.id} será renderizado como não salvo`);
                 }
                 // Armazenar dados originais do item para usar no modal
                 // Sanitizar destination_url e armazenar dados originais para o modal
@@ -3297,7 +3297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'link':
                         itemEl.classList.add('link-item');
                         // Se tiver image_url (logo), mostrar logo, senão mostrar ícone
-                        // NA LISTA DE CONTE�sDO: sempre usar tamanho fixo (40px), N�fO usar logo_size
+                        // NA LISTA DE CONTEDO: sempre usar tamanho fixo (40px), NÃO usar logo_size
                         const logoSizeListFixed = 40; // Tamanho FIXO na lista de conteúdo (não deve mudar)
                         if (item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder')) {
                             // Detectar se é PNG (logo) ou JPEG (foto)
@@ -3480,7 +3480,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                     case 'banner_carousel':
                     case 'carousel':
-                        // ===== NOVO CARROSSEL - IMPLEMENTA�?�fO LIMPA =====
+                        // ===== NOVO CARROSSEL - IMPLEMENTA—fO LIMPA =====
                         itemEl.classList.add('carousel-item');
                         itemEl.dataset.aspectRatio = item.aspect_ratio || 'auto';
 
@@ -3565,48 +3565,48 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                     case 'pix':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fa-solid fa-qrcode'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fa-solid fa-qrcode'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'PIX'}</div><div class="item-display-dest">${item.pix_key || 'Chave PIX'}</div>`;
                         editHTML = `
             <label>Título</label>
             <input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título (ex: PIX Celular)">
             <label>Nome do Recebedor</label>
             <input type="text" class="item-recipient-name-input" value="${item.recipient_name || ''}" placeholder="Seu nome completo">
-            <label>Chave PIX (Aleat�f³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+            <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
             <div class="pix-key-examples">
-                <small><strong>ðŸ�?ož Celular:</strong> Apenas n�fºmeros (ex: 11999999999)</small>
-                <small><strong>ðŸ�?o§ Email:</strong> seuemail@exemplo.com</small>
-                <small><strong>ðŸ�?��?� CPF:</strong> Apenas n�fºmeros (ex: 12345678901)</small>
-                <small><strong>ðŸ�?��?~ Chave Aleat�f³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: 11999999999)</small>
+                <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
+                <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
+                <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
             </div>
             <input type="text" class="item-pix-key-input" value="${item.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
             <label>Valor (opcional)</label>
             <input type="number" class="item-pix-amount-input" value="${item.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
-            <label>Descri�f§�f£o (opcional)</label>
-            <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descri�f§�f£o do pagamento">
+            <label>Descrif§f£o (opcional)</label>
+            <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
         `;
                         break;
                     case 'pix_qrcode':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-qrcode'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-qrcode'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'PIX QR Code'}</div><div class="item-display-dest">${item.pix_key || 'Nenhuma chave configurada'}</div>`;
                         editHTML = `
             <label>Título</label>
             <input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título (ex: Faça um PIX)">
             <label>Nome do Recebedor</label>
             <input type="text" class="item-recipient-name-input" value="${item.recipient_name || ''}" placeholder="Seu nome completo">
-            <label>Chave PIX (Aleat�f³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+            <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
             <div class="pix-key-examples">
-                <small><strong>ðŸ�?ož Celular:</strong> Apenas n�fºmeros (ex: 11999999999)</small>
-                <small><strong>ðŸ�?o§ Email:</strong> seuemail@exemplo.com</small>
-                <small><strong>ðŸ�?��?� CPF:</strong> Apenas n�fºmeros (ex: 12345678901)</small>
-                <small><strong>ðŸ�?��?~ Chave Aleat�f³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: 11999999999)</small>
+                <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
+                <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
+                <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
             </div>
             <input type="text" class="item-pix-key-input" value="${item.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
             <label>Valor (opcional)</label>
             <input type="number" class="item-pix-amount-input" value="${item.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
-            <label>Descri�f§�f£o (opcional)</label>
-            <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descri�f§�f£o do pagamento">
+            <label>Descrif§f£o (opcional)</label>
+            <input type="text" class="item-pix-description-input" value="${item.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
         `;
                         break;
                     case 'wifi': {
@@ -3659,9 +3659,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <label>Nome da rede Wi-Fi (SSID)</label>
-            <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">�? o nome que aparece na lista de redes do celular - obrigatório para gerar o QR Code.</small>
+            <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">? o nome que aparece na lista de redes do celular - obrigatório para gerar o QR Code.</small>
             <input type="text" class="wifi-ssid-input" value="${wifiSsid.replace(/"/g, '&quot;')}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
-            <label>Seguran�f§a</label>
+            <label>Seguranf§a</label>
             <select class="wifi-security-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);">
                 <option value="WPA" ${wifiSecurity === 'WPA' || wifiSecurity === 'WPA2' || wifiSecurity === 'WPA3' ? 'selected' : ''}>WPA/WPA2/WPA3</option>
                 <option value="WEP" ${wifiSecurity === 'WEP' ? 'selected' : ''}>WEP</option>
@@ -3743,11 +3743,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <label>Selo / linha de cima (opcional)</label>
-            <input type="text" class="tcb-eyebrow-input" value="${tcbEsc(tcb.eyebrow || '')}" placeholder="Ex: �YOZ Mentoria Impactus CLUB">
+            <input type="text" class="tcb-eyebrow-input" value="${tcbEsc(tcb.eyebrow || '')}" placeholder="Ex: YOZ Mentoria Impactus CLUB">
             <label>Título</label>
             <input type="text" class="tcb-title-input item-title-input" value="${tcbEsc(item.title || '')}" placeholder="Ex: Encontro Presencial Agosto 2026">
             <label>Linha 1 (data)</label>
-            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon1-input" value="${tcbEsc(l1.icon || '')}" style="width:56px;"><input type="text" class="tcb-line1-input" value="${tcbEsc(l1.text || '')}" placeholder="21/08/2026 �?' 22/08/2026" style="flex:1;"></div>
+            <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon1-input" value="${tcbEsc(l1.icon || '')}" style="width:56px;"><input type="text" class="tcb-line1-input" value="${tcbEsc(l1.text || '')}" placeholder="21/08/2026 — 22/08/2026" style="flex:1;"></div>
             <label>Linha 2 (horário)</label>
             <div style="display:flex;gap:8px;"><input type="text" class="tcb-icon2-input" value="${tcbEsc(l2.icon || '')}" style="width:56px;"><input type="text" class="tcb-line2-input" value="${tcbEsc(l2.text || '')}" placeholder="09:00 - 18:00" style="flex:1;"></div>
             <label>Linha 3 (local)</label>
@@ -3761,93 +3761,93 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     case 'pdf':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fa-solid fa-file-pdf'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fa-solid fa-file-pdf'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'PDF'}</div><div class="item-display-dest">${item.pdf_url || 'URL do PDF'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título (ex: Baixar Catálogo)"><label>URL do PDF</label><input type="text" class="item-pdf-url-input" value="${item.pdf_url || ''}" placeholder="URL do seu arquivo PDF">`;
                         break;
                     case 'whatsapp':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-whatsapp'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-whatsapp'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'WhatsApp'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Ex: Chamar no WhatsApp"><label>Telefone (com código do país)</label><input type="tel" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="5511999999999 (Brasil) ou 12125551234 (EUA)">`;
                         break;
                     case 'telegram':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-telegram'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-telegram'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Telegram'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título do Link"><label>URL ou Nome de Usuário</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://t.me/'}" placeholder="https://t.me/seu_usuario">`;
                         break;
                     case 'email':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-envelope'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-envelope'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Email'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Ex: Enviar Email"><label>Endereço de Email</label><input type="email" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="contato@exemplo.com">`;
                         break;
                     case 'facebook':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-facebook'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-facebook'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Facebook'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://facebook.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                         break;
                     case 'instagram':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-instagram'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-instagram'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Instagram'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://instagram.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                         break;
                     case 'pinterest':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-pinterest'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-pinterest'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Pinterest'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://pinterest.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                         break;
                     case 'reddit':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-reddit'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-reddit'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Reddit'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://reddit.com/u/'}" placeholder="Cole a URL completa do seu perfil">`;
                         break;
                     case 'tiktok':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-tiktok'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-tiktok'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'TikTok'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://tiktok.com/@'}" placeholder="Cole a URL completa do seu perfil">`;
                         break;
                     case 'twitch':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-twitch'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-twitch'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Twitch'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Canal</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://twitch.tv/'}" placeholder="Cole a URL completa do seu canal">`;
                         break;
                     case 'twitter':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-twitter'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-twitter'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'X / Twitter'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://x.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                         break;
                     case 'youtube':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-youtube'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-youtube'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'YouTube'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Canal</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL completa do seu canal">`;
                         break;
                     case 'spotify':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-spotify'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-spotify'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Spotify'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Ex: Ouça meu Podcast"><label>Link do seu Perfil, Música ou Playlist</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do Spotify aqui">`;
                         break;
                     case 'linkedin':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-linkedin'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-linkedin'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'LinkedIn'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://linkedin.com/in/'}" placeholder="Cole a URL completa do seu perfil">`;
                         break;
                     case 'portfolio':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-briefcase'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-briefcase'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'Meu Portfólio'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
-                        editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Portfólio</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do seu site ou portf�f³lio">`;
+                        editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Portfólio</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do seu site ou portff³lio">`;
                         break;
                     case 'product_catalog':
                         itemEl.classList.add('link-item');
@@ -3863,7 +3863,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
                 <i class="fas fa-check-double" style="font-size: 3rem; color: var(--dourado-principal, #FFC700); margin-bottom: 1rem;"></i>
                 <p>Crie galerias, envie link para o cliente e receba a seleção final com exportação.</p>
-                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-dark, #A1A1A1);">Clique em �?oAbrir Painel�?� para gerenciar.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-dark, #A1A1A1);">Clique em ?oAbrir Painel— para gerenciar.</p>
                 <button type="button" class="btn btn-primary" style="margin-top: 1rem;" onclick="window.openKingSelectionAdmin('${item.id}')">
                     <i class="fas fa-external-link-alt"></i> Abrir Painel
                 </button>
@@ -3879,8 +3879,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                     case 'youtube_embed':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-youtube'} item-icon-picker" title="Alterar �fcone"></i>`;
-                        displayHTML = `<div class="item-display-title">${item.title || 'YouTube Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do v�f­deo'}</div>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-youtube'} item-icon-picker" title="Alterar fcone"></i>`;
+                        displayHTML = `<div class="item-display-title">${item.title || 'YouTube Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do vf­deo'}</div>`;
                         editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Vídeo do YouTube</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://www.youtube.com/watch?v=...">`;
                         break;
                     case 'tiktok_embed':
@@ -3909,7 +3909,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                     case 'pdf_embed':
                         itemEl.classList.add('link-item');
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-file-import'} item-icon-picker" title="Alterar �fcone"></i>`;
+                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-file-import'} item-icon-picker" title="Alterar fcone"></i>`;
                         displayHTML = `<div class="item-display-title">${item.title || 'PDF Embed'}</div><div class="item-display-dest">${item.pdf_url && item.pdf_url !== '#' ? 'Arquivo carregado' : 'Nenhum arquivo'}</div>`;
                         editHTML = `
             <input type="hidden" class="item-title-input" value="${item.title || ''}">
@@ -4168,7 +4168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 logoPreview.style.maxWidth = previewSize + 'px';
                                 logoPreview.style.maxHeight = previewSize + 'px';
                             }
-                            // N�fO atualizar logo na lista - ela deve permanecer fixa (40px)
+                            // NÃO atualizar logo na lista - ela deve permanecer fixa (40px)
                             // O tamanho só aplica no cartão público (profile.ejs)
                             itemEl.dataset.logoSize = value;
                             // Atualizar preview ao vivo
@@ -4256,19 +4256,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Re-buscar o container a cada iteração para garantir que está acessível
                     const currentContainer = SELECTORS.itemsContainer || document.getElementById('items-container');
                     if (!currentContainer) {
-                        console.error(`�O Container não existe ao tentar adicionar item ${item.id}`);
+                        console.error(`O Container não existe ao tentar adicionar item ${item.id}`);
                         return;
                     }
                     currentContainer.appendChild(itemEl);
                     if (itemIndex < 3) { // Log apenas os 3 primeiros para não poluir o console
-                        console.log(`�o. Item ${item.id} (${item.item_type}) adicionado ao container`);
+                        console.log(`Item ${item.id} (${item.item_type}) adicionado ao container`);
                     }
                 } catch (appendError) {
-                    console.error(`�O Erro ao adicionar item ${item.id} ao container:`, appendError);
+                    console.error(`O Erro ao adicionar item ${item.id} ao container:`, appendError);
                     console.error('Stack trace:', appendError.stack);
                 }
                 } catch (itemRenderError) {
-                    console.error(`�O Falha ao renderizar módulo ${item.id} (${item.item_type}):`, itemRenderError);
+                    console.error(`O Falha ao renderizar módulo ${item.id} (${item.item_type}):`, itemRenderError);
                     appendMinimalModuleListItem(item);
                 }
             });
@@ -4276,14 +4276,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Verificar quantos itens foram realmente adicionados
             const finalContainer = SELECTORS.itemsContainer || document.getElementById('items-container');
             const itemsAdded = finalContainer?.querySelectorAll('.item, .module-item').length || 0;
-            console.log(`�o. Renderização concluída: ${itemsAdded} de ${uniqueItems.length} itens adicionados ao container`);
+            console.log(`Renderização concluída: ${itemsAdded} de ${uniqueItems.length} itens adicionados ao container`);
             if (itemsAdded < uniqueItems.length) {
                 const containerCheck = SELECTORS.itemsContainer || document.getElementById('items-container');
                 const notInDom = uniqueItems.filter(function (it) {
                     return containerCheck && !containerCheck.querySelector('[data-id="' + it.id + '"]');
                 });
                 if (notInDom.length) {
-                    console.warn(`�s�️ Discrepância: esperado ${uniqueItems.length} na aba Módulos, ${itemsAdded} no DOM. Em falta:`, notInDom.map(function (m) {
+                    console.warn(`Discrepância: esperado ${uniqueItems.length} na aba Módulos, ${itemsAdded} no DOM. Em falta:`, notInDom.map(function (m) {
                         return (m.item_type || '?') + '#' + m.id;
                     }).join(', '));
                     notInDom.forEach(function (it) { appendMinimalModuleListItem(it); });
@@ -4291,7 +4291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (itemsAdded === 0 && uniqueItems.length > 0) {
-                console.error('�O ERRO CRÍTICO: Itens não foram adicionados ao container!');
+                console.error('O ERRO CRÍTICO: Itens não foram adicionados ao container!');
                 const debugContainer = SELECTORS.itemsContainer || document.getElementById('items-container');
                 console.error('Container existe?', !!debugContainer);
                 if (debugContainer) {
@@ -4301,7 +4301,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Container display:', window.getComputedStyle(debugContainer).display);
                     console.error('Container visibility:', window.getComputedStyle(debugContainer).visibility);
                 } else {
-                    console.error('�O Container não existe no DOM!');
+                    console.error('O Container não existe no DOM!');
                 }
             }
 
@@ -4324,9 +4324,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 100);
             }
         } catch (error) {
-            console.error('�O Erro em renderEditor:', error);
-            console.error('�Y"� profileData recebido:', profileData);
-            console.error('�Y"� Stack trace:', error.stack);
+            console.error('O Erro em renderEditor:', error);
+            console.error('profileData recebido:', profileData);
+            console.error('Stack trace:', error.stack);
 
             // Tentar renderizar pelo menos os campos básicos mesmo com erro
             try {
@@ -4343,7 +4343,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     SELECTORS.profileSlugInput.value = profileData.details.profile_slug;
                 }
             } catch (fallbackError) {
-                console.error('�O Erro também no fallback de renderização:', fallbackError);
+                console.error('O Erro também no fallback de renderização:', fallbackError);
             }
 
             // Propagar o erro para que fetchProfileData possa tratá-lo
@@ -4390,7 +4390,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.lastProfileData.details.profile_image_url = finalUrl;
             }
 
-            console.log('�o. Foto de perfil atualizada com sucesso:', finalUrl);
+            console.log('Foto de perfil atualizada com sucesso:', finalUrl);
 
         } catch (error) {
             console.error('Erro no upload da foto de perfil:', error);
@@ -4577,7 +4577,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Verificar se �f© carrossel ou banner (banner pode virar carrossel)
+        // Verificar se f© carrossel ou banner (banner pode virar carrossel)
         const isBanner = itemElement && itemElement.dataset.itemType === 'banner';
         const isCarousel = itemElement && (itemElement.classList.contains('banner-carousel') || window.currentCarouselItemId);
         const itemId = (isCarousel || isBanner) ? (window.currentCarouselItemId || itemElement?.dataset?.id) : null;
@@ -4585,7 +4585,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // IMPORTANTE: Se for banner (não carrossel), pular a lógica de carrossel
         // Banners devem ir direto para a lógica de banner normal (mais abaixo)
         if (isCarousel && itemId && !isBanner) {
-            // Upload para carrossel (N�fO banner)
+            // Upload para carrossel (NÃO banner)
             try {
                 const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                     method: 'POST',
@@ -4865,9 +4865,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 bannerPreview.style.display = 'block';
                 const placeholder = bannerPreview.closest('.image-upload-area')?.querySelector('.preview-placeholder');
                 if (placeholder) placeholder.style.display = 'none';
-                console.log(`�o. [BANNER] Preview atualizado no modal:`, finalUrl);
+                console.log(`[BANNER] Preview atualizado no modal:`, finalUrl);
             } else {
-                console.warn(`�s�️ [BANNER] Preview #edit-banner-preview não encontrado`);
+                console.warn(`[BANNER] Preview #edit-banner-preview não encontrado`);
             }
 
             // Atualizar também o input hidden no modal (tentar múltiplas formas de encontrar)
@@ -4892,11 +4892,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     editImageUrlInput.value = finalUrl;
                     // Disparar evento change para garantir que outros listeners sejam notificados
                     editImageUrlInput.dispatchEvent(new Event('change', { bubbles: true }));
-                    console.log(`�o. [BANNER] Campo #edit-image-url atualizado no modal para item ${bannerItemId}:`, finalUrl);
-                    console.log(`�o. [BANNER] Valor do campo após atualização:`, editImageUrlInput.value);
+                    console.log(`[BANNER] Campo #edit-image-url atualizado no modal para item ${bannerItemId}:`, finalUrl);
+                    console.log(`[BANNER] Valor do campo após atualização:`, editImageUrlInput.value);
                 } else {
-                    console.error(`�O [BANNER] Campo #edit-image-url N�fO encontrado no modal para item ${bannerItemId}`);
-                    console.error(`�O [BANNER] Tentativas de busca:`, {
+                    console.error(`[BANNER] Campo #edit-image-url NÃO encontrado no modal para item ${bannerItemId}`);
+                    console.error(`[BANNER] Tentativas de busca:`, {
                         porId: !!document.getElementById('edit-image-url'),
                         porDataEditingId: !!document.querySelector(`#edit-item-modal[data-editing-id="${bannerItemId}"] #edit-image-url`),
                         porEditModalBody: !!SELECTORS.editModalBody?.querySelector('#edit-image-url'),
@@ -4911,9 +4911,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const listImageInput = listItem?.querySelector('.item-image-url-input');
                 if (listImageInput) {
                     listImageInput.value = finalUrl;
-                    console.log(`�o. [BANNER] Campo .item-image-url-input atualizado na lista para item ${bannerItemId}:`, finalUrl);
+                    console.log(`[BANNER] Campo .item-image-url-input atualizado na lista para item ${bannerItemId}:`, finalUrl);
                 } else {
-                    console.warn(`�s�️ [BANNER] Campo .item-image-url-input não encontrado na lista para item ${bannerItemId}`);
+                    console.warn(`[BANNER] Campo .item-image-url-input não encontrado na lista para item ${bannerItemId}`);
                 }
 
                 // Atualizar originalData também
@@ -4922,25 +4922,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         const originalData = JSON.parse(listItem.dataset.originalData);
                         originalData.image_url = finalUrl;
                         listItem.dataset.originalData = JSON.stringify(originalData);
-                        console.log(`�o. [BANNER] originalData atualizado para item ${bannerItemId}`);
+                        console.log(`[BANNER] originalData atualizado para item ${bannerItemId}`);
                     } catch (e) {
                         console.warn('Erro ao atualizar originalData:', e);
                     }
                 }
             }
 
-            console.log('�o. [BANNER] Imagem do banner atualizada:', finalUrl);
+            console.log('[BANNER] Imagem do banner atualizada:', finalUrl);
 
             // Salvar automaticamente após upload bem-sucedido
             if (bannerItemId) {
-                console.log(`�Y'� [BANNER] Salvando banner ${bannerItemId} automaticamente após upload...`);
+                console.log(`Y' [BANNER] Salvando banner ${bannerItemId} automaticamente após upload...`);
                 try {
                     // Pequeno delay para garantir que todos os campos foram atualizados
                     await new Promise(resolve => setTimeout(resolve, 500));
                     await saveBannerItem(bannerItemId);
-                    console.log(`�o. [BANNER] Banner ${bannerItemId} salvo automaticamente após upload`);
+                    console.log(`[BANNER] Banner ${bannerItemId} salvo automaticamente após upload`);
                 } catch (saveError) {
-                    console.error(`�O [BANNER] Erro ao salvar banner automaticamente:`, saveError);
+                    console.error(`[BANNER] Erro ao salvar banner automaticamente:`, saveError);
                     // Não mostrar alerta aqui para não interromper o fluxo
                 }
             }
@@ -4970,7 +4970,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.querySelector(`.duplicate-item-btn[data-item-id="${itemId}"], .module-action-btn.duplicate[data-item-id="${itemId}"]`);
         const origTitle = btn?.getAttribute?.('title');
         const url = `${typeof API_URL !== 'undefined' ? API_URL : window.API_URL || ''}/api/profile/items/${itemId}/duplicate`;
-        console.log('�Y"" Duplicando módulo:', itemId, '', url);
+        console.log('Y"" Duplicando módulo:', itemId, '', url);
         try {
             if (btn) {
                 btn.disabled = true;
@@ -4990,7 +4990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Sucesso (2xx): sempre recarregar o perfil completo para trazer digital_form_data (perguntas, fotos, etc.) do novo item
             const newItem = result?.id != null ? result : (result?.item || result?.data);
-            if (newItem?.id != null) console.log('�o. Módulo duplicado com id:', newItem.id);
+            if (newItem?.id != null) console.log('Módulo duplicado com id:', newItem.id);
             const doRefresh = typeof fetchProfileData === 'function' ? fetchProfileData : (typeof window.fetchProfileData === 'function' ? window.fetchProfileData : null);
             if (doRefresh) {
                 await doRefresh(true);
@@ -5014,7 +5014,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Função para deletar item
     async function deleteItem(itemId) {
         if (!itemId) {
-            console.error('�O ID do item não fornecido para deleção');
+            console.error('O ID do item não fornecido para deleção');
             alert('Erro: ID do módulo não encontrado.');
             return;
         }
@@ -5026,11 +5026,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isTemporary || isUnsaved) {
             // Item temporário: apenas remover do DOM e dos dados locais
-            console.log(`�Y-'️ Removendo item temporário ${itemId} (não salvo no servidor)...`);
+            console.log(`'️ Removendo item temporário ${itemId} (não salvo no servidor)...`);
 
             if (itemEl) {
                 itemEl.remove();
-                console.log(`�o. Item temporário ${itemId} removido do DOM`);
+                console.log(`Item temporário ${itemId} removido do DOM`);
             }
 
             // Remover dos dados locais também
@@ -5038,24 +5038,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
             }
 
-            console.log(`�o. Item temporário ${itemId} removido completamente (não era necessário salvar no servidor)`);
+            console.log(`Item temporário ${itemId} removido completamente (não era necessário salvar no servidor)`);
             return; // Não fazer requisição ao servidor
         }
 
         try {
-            console.log(`�Y-'️ Tentando deletar item ${itemId} do servidor...`);
-            console.log(`�Y"< URL da requisição: ${API_URL}/api/profile/items/${itemId}`);
+            console.log(`'️ Tentando deletar item ${itemId} do servidor...`);
+            console.log(`Y"< URL da requisição: ${API_URL}/api/profile/items/${itemId}`);
 
             // Atualizar headers antes de fazer a requisição
             const currentHeaders = getHeaders();
-            console.log(`�Y"� Headers da requisição:`, Object.keys(currentHeaders));
+            console.log(`Headers da requisição:`, Object.keys(currentHeaders));
 
             const response = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
                 method: 'DELETE',
                 headers: currentHeaders
             });
 
-            console.log(`�Y"� Resposta do servidor:`, {
+            console.log(`Resposta do servidor:`, {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok
@@ -5077,7 +5077,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const result = await retryResponse.json();
-                    console.log(`�o. Resposta do servidor:`, result);
+                    console.log(`Resposta do servidor:`, result);
 
                     // Remover visualmente o item IMEDIATAMENTE
                     let itemEl = document.querySelector(`.module-item[data-id="${itemId}"]`);
@@ -5089,11 +5089,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (itemEl) {
-                        console.log(`�Y-'️ Removendo item ${itemId} do DOM...`);
+                        console.log(`'️ Removendo item ${itemId} do DOM...`);
                         itemEl.remove();
-                        console.log(`�o. Item ${itemId} removido do DOM imediatamente`);
+                        console.log(`Item ${itemId} removido do DOM imediatamente`);
                     } else {
-                        console.warn(`�s�️ Item ${itemId} não encontrado no DOM`);
+                        console.warn(`Item ${itemId} não encontrado no DOM`);
                     }
 
                     // IMPORTANTE: Remover também dos dados locais para evitar que volte ao recarregar
@@ -5102,16 +5102,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
                         const removed = initialLength > window.currentProfileData.items.length;
                         if (removed) {
-                            console.log(`�o. Item ${itemId} removido dos dados locais (currentProfileData)`);
+                            console.log(`Item ${itemId} removido dos dados locais (currentProfileData)`);
                         } else {
-                            console.warn(`�s�️ Item ${itemId} não encontrado nos dados locais`);
+                            console.warn(`Item ${itemId} não encontrado nos dados locais`);
                         }
                     }
 
-                    // IMPORTANTE: N�fO recarregar dados após deletar!
+                    // IMPORTANTE: NÃO recarregar dados após deletar!
                     // O item foi removido do servidor e do DOM. Não fazer fetchProfileData aqui.
-                    console.log(`�o. Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
-                    console.log(`�Y'� Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
+                    console.log(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
+                    console.log(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
                     return;
                 } catch (refreshError) {
                     console.error('Erro ao renovar token:', refreshError);
@@ -5132,7 +5132,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`�o. Resposta do servidor:`, result);
+            console.log(`Resposta do servidor:`, result);
 
             // Remover visualmente o item IMEDIATAMENTE do DOM
             // Tentar múltiplos seletores para garantir que encontramos o elemento
@@ -5145,12 +5145,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (itemEl) {
-                console.log(`�Y-'️ Removendo item ${itemId} do DOM imediatamente...`);
+                console.log(`'️ Removendo item ${itemId} do DOM imediatamente...`);
                 // Remover imediatamente sem animação
                 itemEl.remove();
-                console.log(`�o. Item ${itemId} removido do DOM`);
+                console.log(`Item ${itemId} removido do DOM`);
             } else {
-                console.warn(`�s�️ Item ${itemId} não encontrado no DOM`);
+                console.warn(`Item ${itemId} não encontrado no DOM`);
             }
 
             // IMPORTANTE: Remover também dos dados locais para evitar que volte ao recarregar
@@ -5159,20 +5159,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
                 const removed = initialLength > window.currentProfileData.items.length;
                 if (removed) {
-                    console.log(`�o. Item ${itemId} removido dos dados locais (currentProfileData)`);
+                    console.log(`Item ${itemId} removido dos dados locais (currentProfileData)`);
                 } else {
-                    console.warn(`�s�️ Item ${itemId} não encontrado nos dados locais`);
+                    console.warn(`Item ${itemId} não encontrado nos dados locais`);
                 }
             }
 
-            // IMPORTANTE: N�fO recarregar dados após deletar!
+            // IMPORTANTE: NÃO recarregar dados após deletar!
             // O item foi removido do servidor e do DOM. Não fazer fetchProfileData aqui
             // porque isso pode trazer o item de volta se houver algum problema de sincronização.
             // O usuário pode clicar em "Publicar alterações" depois se quiser sincronizar.
-            console.log(`�o. Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
-            console.log(`�Y'� Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
+            console.log(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
+            console.log(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
         } catch (error) {
-            console.error('�O Erro ao deletar item:', error);
+            console.error('O Erro ao deletar item:', error);
             console.error('Stack trace:', error.stack);
 
             let errorMessage = error.message || 'Erro desconhecido ao deletar módulo';
@@ -5202,7 +5202,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // IMPORTANTE: sales_page salva DIRETAMENTE no servidor (não espera "Publicar alterações")
             if (itemType === 'sales_page') {
-                console.log(`�Y"" [TOGGLE] Sales_page ${itemId} - salvando diretamente no servidor: ${isActive ? 'ativado' : 'desativado'}`);
+                console.log(`Y"" [TOGGLE] Sales_page ${itemId} - salvando diretamente no servidor: ${isActive ? 'ativado' : 'desativado'}`);
 
                 // Salvar diretamente no servidor
                 const response = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
@@ -5230,14 +5230,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                console.log(`�o. Sales_page ${itemId} salvo no servidor: ${isActive ? 'ativado' : 'desativado'}`);
+                console.log(`Sales_page ${itemId} salvo no servidor: ${isActive ? 'ativado' : 'desativado'}`);
                 return;
             }
 
             // Para outros módulos: salvar APENAS localmente (frontend)
             // O botão "Publicar alterações" é que salva no servidor
-            console.log(`�Y"" [TOGGLE] Atualizando status do módulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
-            console.log(`�Y'� Nota: Clique em "Publicar alterações" para salvar esta mudança no servidor`);
+            console.log(`Y"" [TOGGLE] Atualizando status do módulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
+            console.log(`Y' Nota: Clique em "Publicar alterações" para salvar esta mudança no servidor`);
 
             // Atualizar visualmente apenas localmente
             itemEl.dataset.isActive = isActive;
@@ -5253,19 +5253,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemIndex = window.currentProfileData.items.findIndex(item => String(item.id) === String(itemId));
                 if (itemIndex !== -1) {
                     window.currentProfileData.items[itemIndex].is_active = isActive;
-                    console.log(`�o. Status do módulo ${itemId} atualizado localmente nos dados do perfil`);
+                    console.log(`Status do módulo ${itemId} atualizado localmente nos dados do perfil`);
                 }
             }
 
             // Atualizar preview local
             updateLivePreviewFromForm();
 
-            console.log(`�o. Status do módulo ${itemId} atualizado localmente. Clique em "Publicar alterações" para salvar no servidor.`);
+            console.log(`Status do módulo ${itemId} atualizado localmente. Clique em "Publicar alterações" para salvar no servidor.`);
 
-            // N�fO fazer requisição ao servidor aqui - isso será feito quando o usuário clicar em "Publicar alterações"
+            // NÃO fazer requisição ao servidor aqui - isso será feito quando o usuário clicar em "Publicar alterações"
             return;
         } catch (error) {
-            console.error('�O Erro ao atualizar status do item localmente:', error);
+            console.error('O Erro ao atualizar status do item localmente:', error);
             alert(`Erro ao atualizar status do módulo: ${error.message}`);
         }
     }
@@ -5273,12 +5273,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Função para atualizar item na lista usando dados retornados pela API após salvar
     async function updateItemFromApiResponse(itemId, apiResult, itemType) {
         if (!apiResult) {
-            console.warn(`�s�️ Item ${itemId} não encontrado ou dados da API vazios`);
+            console.warn(`Item ${itemId} não encontrado ou dados da API vazios`);
             return;
         }
         let itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.warn(`�s�️ Item ${itemId} (${itemType}) não está na lista do editor - re-render`);
+            console.warn(`Item ${itemId} (${itemType}) não está na lista do editor - re-render`);
             const pid = String(itemId);
             if (window.currentProfileData?.items) {
                 const idx = window.currentProfileData.items.findIndex(function (i) { return String(i.id) === pid; });
@@ -5304,7 +5304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        console.log(`�Y"" Atualizando item ${itemId} (${itemType}) na interface usando dados da API...`);
+        console.log(`Y"" Atualizando item ${itemId} (${itemType}) na interface usando dados da API...`);
 
         // Preparar timestamp para evitar cache de imagens
         const imageUrlWithTimestamp = apiResult.image_url ? `${apiResult.image_url}?t=${Date.now()}` : '';
@@ -5431,7 +5431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // ATUALIZAR CAMPOS ESPECÍFICOS POR TIPO DE M�"DULO
+        // ATUALIZAR CAMPOS ESPECÍFICOS POR TIPO DE M"DULO
         if (itemType === 'banner') {
             // Atualizar whatsapp_message (mensagem do banner)
             if (apiResult.whatsapp_message !== undefined) {
@@ -5529,11 +5529,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemIndex = window.currentProfileData.items.findIndex(item => String(item.id) === String(itemId));
             if (itemIndex !== -1) {
                 window.currentProfileData.items[itemIndex] = { ...window.currentProfileData.items[itemIndex], ...apiResult };
-                console.log(`�o. Dados do item ${itemId} atualizados em currentProfileData`);
+                console.log(`Dados do item ${itemId} atualizados em currentProfileData`);
             }
         }
 
-        console.log(`�o. Item ${itemId} atualizado na interface em tempo real (todos os campos visíveis)`);
+        console.log(`Item ${itemId} atualizado na interface em tempo real (todos os campos visíveis)`);
     }
 
     // Função para sincronizar dados do modal para o item da lista antes de salvar
@@ -5548,7 +5548,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itemType = itemEl.dataset.itemType;
 
-        console.log(`�Y"" Sincronizando dados do modal para item ${itemId} (${itemType}) antes de salvar`);
+        console.log(`Y"" Sincronizando dados do modal para item ${itemId} (${itemType}) antes de salvar`);
 
         // Aplicar as mesmas atualizações que o botão "Salvar Alterações" do modal faz
         // IMPORTANTE: Usar querySelector com data-editing-id para pegar apenas o valor do modal deste item específico
@@ -5697,14 +5697,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const newMsg = msgInputModal?.value?.trim() || '';
             const newImg = imageInputModal?.value?.trim() || '';
 
-            console.log(`�Y"" [BANNER] Sincronizando imagem do modal para item ${itemId}:`, newImg);
+            console.log(`Y"" [BANNER] Sincronizando imagem do modal para item ${itemId}:`, newImg);
 
             if (nameInputList) nameInputList.value = newName;
             if (destInputList) destInputList.value = newDest;
             if (msgHiddenList) msgHiddenList.value = newMsg;
             if (imageInputList) {
                 imageInputList.value = newImg;
-                console.log(`�o. [BANNER] Campo .item-image-url-input atualizado na lista:`, newImg);
+                console.log(`[BANNER] Campo .item-image-url-input atualizado na lista:`, newImg);
             }
             if (thumbList && newImg) {
                 thumbList.src = newImg;
@@ -5909,21 +5909,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Os campos principais já estão sincronizados acima
         }
 
-        console.log(`�o. Dados sincronizados do modal para item ${itemId}`);
+        console.log(`Dados sincronizados do modal para item ${itemId}`);
     }
 
     // ============================================
-    // FUN�?�.ES ESPECÍFICAS PARA CADA TIPO DE M�"DULO
+    // FUN—.ES ESPECÍFICAS PARA CADA TIPO DE M"DULO
     // ============================================
 
     // Salvar banner usando rota específica
     async function saveBannerItem(itemId) {
-        console.log(`�Y"� Salvando banner ${itemId} via rota específica...`);
+        console.log(`Salvando banner ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`�O Item ${itemId} não encontrado para salvar banner.`);
+            console.error(`O Item ${itemId} não encontrado para salvar banner.`);
             return;
         }
 
@@ -5933,7 +5933,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!currentId || !currentId.startsWith('temp_')) return currentId;
 
             const itemType = el.dataset.itemType || 'banner';
-            console.warn(`�s�️ [BANNER] Item ${currentId} ainda é temporário. Criando no servidor antes de salvar...`);
+            console.warn(`[BANNER] Item ${currentId} ainda é temporário. Criando no servidor antes de salvar...`);
 
             // Capturar dados mínimos do item
             let destinationUrl = el.querySelector('.item-destination-url-input')?.value || (itemType === 'whatsapp' ? '' : '#');
@@ -5986,7 +5986,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (idx !== -1) window.currentProfileData.items[idx] = createdItem;
             }
 
-            console.log(`�o. [BANNER] Item temporário ${currentId} criado no servidor com ID ${newId}`);
+            console.log(`[BANNER] Item temporário ${currentId} criado no servidor com ID ${newId}`);
             return newId;
         }
 
@@ -6000,7 +6000,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const whatsappInputModal = document.querySelector(`#edit-item-modal[data-editing-id="${realItemId}"] #edit-banner-title`);
         const aspectRatioInput = document.querySelector(`#edit-item-modal[data-editing-id="${realItemId}"] input[name="aspect-ratio-selector"]:checked`);
 
-        // CAPTURAR image_url DE M�sLTIPLAS FONTES (prioridade: modal > preview > lista > originalData)
+        // CAPTURAR image_url DE MLTIPLAS FONTES (prioridade: modal > preview > lista > originalData)
         let imageUrl = null;
 
         // 1. Tentar pegar do campo hidden do modal
@@ -6019,7 +6019,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalValue = imageInputModal.value.trim();
             if (modalValue && !modalValue.includes('placeholder') && !modalValue.startsWith('data:image/svg')) {
                 imageUrl = modalValue;
-                console.log(`�Y"� [BANNER] Image URL capturado do campo #edit-image-url do modal:`, imageUrl);
+                console.log(`[BANNER] Image URL capturado do campo #edit-image-url do modal:`, imageUrl);
             }
         }
 
@@ -6028,7 +6028,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bannerPreview = document.getElementById('edit-banner-preview');
             if (bannerPreview && bannerPreview.src && !bannerPreview.src.includes('placeholder') && !bannerPreview.src.startsWith('data:image/svg')) {
                 imageUrl = bannerPreview.src;
-                console.log(`�Y"� [BANNER] Image URL capturado do preview #edit-banner-preview:`, imageUrl);
+                console.log(`[BANNER] Image URL capturado do preview #edit-banner-preview:`, imageUrl);
             }
         }
 
@@ -6039,7 +6039,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const listValue = listImageInput.value.trim();
                 if (listValue && !listValue.includes('placeholder') && !listValue.startsWith('data:image/svg')) {
                     imageUrl = listValue;
-                    console.log(`�Y"� [BANNER] Image URL capturado do campo .item-image-url-input da lista:`, imageUrl);
+                    console.log(`[BANNER] Image URL capturado do campo .item-image-url-input da lista:`, imageUrl);
                 }
             }
         }
@@ -6049,7 +6049,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const thumbPreview = itemEl.querySelector('.banner-preview-thumb');
             if (thumbPreview && thumbPreview.src && !thumbPreview.src.includes('placeholder') && !thumbPreview.src.startsWith('data:image/svg')) {
                 imageUrl = thumbPreview.src;
-                console.log(`�Y"� [BANNER] Image URL capturado do preview .banner-preview-thumb da lista:`, imageUrl);
+                console.log(`[BANNER] Image URL capturado do preview .banner-preview-thumb da lista:`, imageUrl);
             }
         }
 
@@ -6059,7 +6059,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const originalData = JSON.parse(itemEl.dataset.originalData);
                 if (originalData.image_url && !originalData.image_url.includes('placeholder') && !originalData.image_url.startsWith('data:image/svg')) {
                     imageUrl = originalData.image_url.trim();
-                    console.log(`�Y"� [BANNER] Image URL capturado do originalData:`, imageUrl);
+                    console.log(`[BANNER] Image URL capturado do originalData:`, imageUrl);
                 }
             } catch (e) {
                 console.warn('Erro ao parsear originalData:', e);
@@ -6067,13 +6067,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Log detalhado de todas as tentativas
-        console.log(`�Y"� [BANNER] Resumo da captura de image_url para item ${realItemId}:`, {
+        console.log(`[BANNER] Resumo da captura de image_url para item ${realItemId}:`, {
             campoModal: imageInputModal?.value || 'não encontrado',
             previewModal: document.getElementById('edit-banner-preview')?.src || 'não encontrado',
             campoLista: itemEl.querySelector('.item-image-url-input')?.value || 'não encontrado',
             previewLista: itemEl.querySelector('.banner-preview-thumb')?.src || 'não encontrado',
             originalData: itemEl.dataset.originalData ? 'presente' : 'ausente',
-            imageUrlFinal: imageUrl || 'N�fO ENCONTRADO'
+            imageUrlFinal: imageUrl || 'NÃO ENCONTRADO'
         });
 
         const updateData = {
@@ -6086,7 +6086,7 @@ document.addEventListener('DOMContentLoaded', () => {
             display_order: parseInt(itemEl.dataset.displayOrder, 10)
         };
 
-        // N�fO filtrar image_url - sempre enviar mesmo se null para garantir que seja salvo
+        // NÃO filtrar image_url - sempre enviar mesmo se null para garantir que seja salvo
         // Filtrar apenas outros valores nulos ou vazios
         const finalUpdateData = {};
         for (const key in updateData) {
@@ -6098,8 +6098,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`�Y"� [BANNER] image_url FINAL que será enviado:`, finalUpdateData.image_url || 'null');
-        console.log(`�Y"� [BANNER] Dados completos para rota específica:`, finalUpdateData);
+        console.log(`[BANNER] image_url FINAL que será enviado:`, finalUpdateData.image_url || 'null');
+        console.log(`[BANNER] Dados completos para rota específica:`, finalUpdateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/banner/${realItemId}`, {
@@ -6114,27 +6114,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`�o. Banner ${realItemId} salvo com sucesso via rota específica.`);
-            console.log(`�Y"� [BANNER] image_url salvo no banco:`, result.image_url ? result.image_url.substring(0, 50) + '...' : 'null');
+            console.log(`Banner ${realItemId} salvo com sucesso via rota específica.`);
+            console.log(`[BANNER] image_url salvo no banco:`, result.image_url ? result.image_url.substring(0, 50) + '...' : 'null');
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(realItemId, result, 'banner');
 
-            console.log(`�o. Banner ${realItemId} salvo e interface atualizada em tempo real`);
+            console.log(`Banner ${realItemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`�O Erro ao salvar banner ${realItemId} via rota específica:`, error);
+            console.error(`O Erro ao salvar banner ${realItemId} via rota específica:`, error);
             throw error;
         }
     }
 
     // Salvar link personalizado usando rota específica
     async function saveLinkItem(itemId) {
-        console.log(`�Y"� Salvando link ${itemId} via rota específica...`);
+        console.log(`Salvando link ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`�O Item ${itemId} não encontrado para salvar link.`);
+            console.error(`O Item ${itemId} não encontrado para salvar link.`);
             return;
         }
 
@@ -6161,7 +6161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`�Y"� Dados para rota específica do link:`, updateData);
+        console.log(`Dados para rota específica do link:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/link/${itemId}`, {
@@ -6176,26 +6176,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`�o. Link ${itemId} salvo com sucesso via rota específica.`);
+            console.log(`Link ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'link');
 
-            console.log(`�o. Link ${itemId} salvo e interface atualizada em tempo real`);
+            console.log(`Link ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`�O Erro ao salvar link ${itemId} via rota específica:`, error);
+            console.error(`O Erro ao salvar link ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
     // Salvar carousel usando rota específica
     async function saveCarouselItem(itemId) {
-        console.log(`�Y"� Salvando carousel ${itemId} via rota específica...`);
+        console.log(`Salvando carousel ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`�O Item ${itemId} não encontrado para salvar carousel.`);
+            console.error(`O Item ${itemId} não encontrado para salvar carousel.`);
             return;
         }
 
@@ -6220,7 +6220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`�Y"� Dados para rota específica do carousel:`, updateData);
+        console.log(`Dados para rota específica do carousel:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/carousel/${itemId}`, {
@@ -6235,26 +6235,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`�o. Carousel ${itemId} salvo com sucesso via rota específica.`);
+            console.log(`Carousel ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'carousel');
 
-            console.log(`�o. Carousel ${itemId} salvo e interface atualizada em tempo real`);
+            console.log(`Carousel ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`�O Erro ao salvar carousel ${itemId} via rota específica:`, error);
+            console.error(`O Erro ao salvar carousel ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
     // Salvar PIX usando rota específica
     async function savePixItem(itemId) {
-        console.log(`�Y"� Salvando PIX ${itemId} via rota específica...`);
+        console.log(`Salvando PIX ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`�O Item ${itemId} não encontrado para salvar PIX.`);
+            console.error(`O Item ${itemId} não encontrado para salvar PIX.`);
             return;
         }
 
@@ -6283,7 +6283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`�Y"� Dados para rota específica do PIX:`, updateData);
+        console.log(`Dados para rota específica do PIX:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/pix/${itemId}`, {
@@ -6298,26 +6298,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`�o. PIX ${itemId} salvo com sucesso via rota específica.`);
+            console.log(`PIX ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'pix');
 
-            console.log(`�o. PIX ${itemId} salvo e interface atualizada em tempo real`);
+            console.log(`PIX ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`�O Erro ao salvar PIX ${itemId} via rota específica:`, error);
+            console.error(`O Erro ao salvar PIX ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
     // Salvar PDF usando rota específica
     async function savePdfItem(itemId) {
-        console.log(`�Y"� Salvando PDF ${itemId} via rota específica...`);
+        console.log(`Salvando PDF ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`�O Item ${itemId} não encontrado para salvar PDF.`);
+            console.error(`O Item ${itemId} não encontrado para salvar PDF.`);
             return;
         }
 
@@ -6340,7 +6340,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`�Y"� Dados para rota específica do PDF:`, updateData);
+        console.log(`Dados para rota específica do PDF:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/pdf/${itemId}`, {
@@ -6355,25 +6355,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`�o. PDF ${itemId} salvo com sucesso via rota específica.`);
+            console.log(`PDF ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'pdf');
 
-            console.log(`�o. PDF ${itemId} salvo e interface atualizada em tempo real`);
+            console.log(`PDF ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`�O Erro ao salvar PDF ${itemId} via rota específica:`, error);
+            console.error(`O Erro ao salvar PDF ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
     // Salvar Formulário King usando rota específica
     async function saveDigitalFormItem(itemId) {
-        console.log(`�Y"� Salvando Formulário King ${itemId} via rota específica...`);
+        console.log(`Salvando Formulário King ${itemId} via rota específica...`);
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`�O Item ${itemId} não encontrado para salvar formulário digital.`);
+            console.error(`O Item ${itemId} não encontrado para salvar formulário digital.`);
             return;
         }
 
@@ -6428,7 +6428,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateData.image_url = updateData.banner_image_url;
         }
 
-        console.log(`�Y"� Dados para rota específica do Formulário King:`, updateData);
+        console.log(`Dados para rota específica do Formulário King:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/digital_form/${itemId}`, {
@@ -6443,14 +6443,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`�o. Formulário King ${itemId} salvo com sucesso via rota específica.`);
+            console.log(`Formulário King ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'digital_form');
 
-            console.log(`�o. Formulário King ${itemId} salvo e interface atualizada em tempo real`);
+            console.log(`Formulário King ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`�O Erro ao salvar Formulário King ${itemId} via rota específica:`, error);
+            console.error(`O Erro ao salvar Formulário King ${itemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -6491,9 +6491,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Capturar WhatsApp (apenas números) - usuário deve incluir código do país
             const whatsappValue = (SELECTORS.whatsappNumberInput?.value || '').trim().replace(/\D/g, '');
-            console.log('�Y"� [SAVE-ALL] WhatsApp capturado:', whatsappValue);
-            console.log('�Y"� [SAVE-ALL] Campo WhatsApp existe?', !!SELECTORS.whatsappNumberInput);
-            console.log('�Y"� [SAVE-ALL] Valor original do campo:', SELECTORS.whatsappNumberInput?.value);
+            console.log('[SAVE-ALL] WhatsApp capturado:', whatsappValue);
+            console.log('[SAVE-ALL] Campo WhatsApp existe?', !!SELECTORS.whatsappNumberInput);
+            console.log('[SAVE-ALL] Valor original do campo:', SELECTORS.whatsappNumberInput?.value);
 
             const cardOpacityVal = SELECTORS.cardOpacityPicker ? parseFloat(SELECTORS.cardOpacityPicker.value) : 1;
             const bgImageOpacityVal = SELECTORS.backgroundImageOpacityPicker ? parseFloat(SELECTORS.backgroundImageOpacityPicker.value) : 1;
@@ -6542,7 +6542,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.assign(saveData.details, window.getVitrineDetailsForSave());
             }
 
-            console.log('�YZ� [SAVE-ALL] Dados de personalização capturados:', {
+            console.log('YZ [SAVE-ALL] Dados de personalização capturados:', {
                 fontFamily: saveData.details.fontFamily,
                 backgroundColor: saveData.details.backgroundColor,
                 textColor: saveData.details.textColor,
@@ -6557,14 +6557,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Capturar todos os itens do container
             const allItemElements = document.querySelectorAll('#items-container .item, #items-container .module-item');
-            console.log(`�Y"� Itens encontrados no DOM: ${allItemElements.length}`);
+            console.log(`Itens encontrados no DOM: ${allItemElements.length}`);
 
             if (allItemElements.length === 0) {
-                console.warn('�s�️ Nenhum item encontrado no container #items-container');
-                console.log('�Y"� Verificando se o container existe:', !!document.getElementById('items-container'));
+                console.warn('Nenhum item encontrado no container #items-container');
+                console.log('Verificando se o container existe:', !!document.getElementById('items-container'));
                 const container = document.getElementById('items-container');
                 if (container) {
-                    console.log('�Y"< Conteúdo do container:', container.innerHTML.substring(0, 200));
+                    console.log('Y"< Conteúdo do container:', container.innerHTML.substring(0, 200));
                 }
             }
 
@@ -6579,13 +6579,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Verificar se é um item temporário (não salvo ainda)
                 // IMPORTANTE: Mesmo itens 'sales_page' temporários precisam ser criados no servidor
                 if (itemIdRaw && (itemIdRaw.toString().startsWith('temp_') || itemEl.dataset.isUnsaved === 'true')) {
-                    console.log(`�Y"� Item temporário encontrado: ${itemIdRaw} (${itemType}) - será criado no servidor ao salvar`);
+                    console.log(`Item temporário encontrado: ${itemIdRaw} (${itemType}) - será criado no servidor ao salvar`);
                     tempItems.push({ element: itemEl, index });
                 } else {
                     const itemId = parseInt(itemIdRaw, 10);
                     // Validar ID do item existente
                     if (!itemIdRaw || isNaN(itemId) || itemId <= 0) {
-                        console.error(`�O Item inválido encontrado:`, {
+                        console.error(`O Item inválido encontrado:`, {
                             itemIdRaw,
                             itemId,
                             itemType,
@@ -6598,7 +6598,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // IMPORTANTE: sales_page é DESVINCULADO do save-all
                     // Não incluir no save-all - ele salva diretamente quando você salva na página de vendas
                     if (itemType === 'sales_page') {
-                        console.log(`�s�️ Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
+                        console.log(`Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
                         return; // Pular este item
                     }
 
@@ -6607,17 +6607,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // IMPORTANTE: Separar sales_page dos outros itens temporários
-            // sales_page N�fO deve ser criado aqui - ele já é criado quando você adiciona
+            // sales_page NÃO deve ser criado aqui - ele já é criado quando você adiciona
             const tempItemsNonSalesPage = tempItems.filter(tempItem => tempItem.element.dataset.itemType !== 'sales_page');
             const tempItemsSalesPage = tempItems.filter(tempItem => tempItem.element.dataset.itemType === 'sales_page');
 
             if (tempItemsSalesPage.length > 0) {
-                console.log(`�s�️ ${tempItemsSalesPage.length} sales_page(s) temporário(s) encontrado(s) - N�fO serão processados aqui (já foram criados quando adicionados)`);
+                console.log(`${tempItemsSalesPage.length} sales_page(s) temporário(s) encontrado(s) - NÃO serão processados aqui (já foram criados quando adicionados)`);
             }
 
             // Criar itens temporários no servidor ANTES de salvar (exceto sales_page)
             if (tempItemsNonSalesPage.length > 0) {
-                console.log(`�Y?. Criando ${tempItemsNonSalesPage.length} item(ns) temporário(s) no servidor...`);
+                console.log(`Y?. Criando ${tempItemsNonSalesPage.length} item(ns) temporário(s) no servidor...`);
                 for (const tempItem of tempItemsNonSalesPage) {
                     const itemEl = tempItem.element;
                     const itemType = itemEl.dataset.itemType;
@@ -6675,7 +6675,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             tempItemData.logo_size = logo_size;
                         }
 
-                        console.log(`�Y"� Criando item temporário ${tempId} no servidor...`);
+                        console.log(`Criando item temporário ${tempId} no servidor...`);
                         const createResponse = await fetch(`${API_URL}/api/profile/items`, {
                             method: 'POST',
                             headers: HEADERS,
@@ -6688,7 +6688,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         const createdItem = await createResponse.json();
-                        console.log(`�o. Item temporário ${tempId} criado no servidor com ID ${createdItem.id}`);
+                        console.log(`Item temporário ${tempId} criado no servidor com ID ${createdItem.id}`);
 
                         // Atualizar o ID temporário pelo ID real no DOM
                         const oldId = itemEl.dataset.id;
@@ -6702,7 +6702,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (itemEl.dataset.isTemporary) {
                             delete itemEl.dataset.isTemporary;
                         }
-                        console.log(`�Y"" ID atualizado de ${oldId} para ${itemEl.dataset.id} no elemento DOM`);
+                        console.log(`Y"" ID atualizado de ${oldId} para ${itemEl.dataset.id} no elemento DOM`);
 
                         // Atualizar também no currentProfileData
                         if (window.currentProfileData && window.currentProfileData.items) {
@@ -6712,11 +6712,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     } catch (createError) {
-                        console.error(`�O Erro ao criar item temporário ${tempId}:`, createError);
+                        console.error(`O Erro ao criar item temporário ${tempId}:`, createError);
                         throw new Error(`Erro ao criar módulo "${getItemTypeName(itemType)}": ${createError.message}`);
                     }
                 }
-                console.log(`�o. Todos os ${tempItems.length} item(ns) temporário(s) foram criados no servidor`);
+                console.log(`Todos os ${tempItems.length} item(ns) temporário(s) foram criados no servidor`);
             }
 
             // Agora processar todos os itens (incluindo os recém-criados) para salvar
@@ -6730,13 +6730,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Não incluir no save-all - ele salva diretamente quando você salva na página de vendas
                     // O toggle de ativar/desativar funciona independentemente
                     if (itemType === 'sales_page') {
-                        console.log(`�s�️ Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
+                        console.log(`Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
                         return null; // Não incluir no save-all
                     }
 
                     // Validar ID do item (agora todos devem ter IDs válidos após criar temporários)
                     if (!itemIdRaw || isNaN(itemId) || itemId <= 0) {
-                        console.error(`�O Item inválido encontrado após criar temporários:`, {
+                        console.error(`O Item inválido encontrado após criar temporários:`, {
                             itemIdRaw,
                             itemId,
                             itemType,
@@ -6756,7 +6756,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         isActive = itemEl.dataset.isActive !== 'false';
                     }
 
-                    console.log(`�Y"� Item ${itemId} (${itemType}): is_active = ${isActive}`, {
+                    console.log(`Item ${itemId} (${itemType}): is_active = ${isActive}`, {
                         hasToggle: !!toggleInput,
                         toggleChecked: toggleInput?.checked,
                         datasetIsActive: itemEl.dataset.isActive
@@ -6776,7 +6776,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     itemEl.dataset.displayOrder = finalDisplayOrder;
                     itemEl.setAttribute('data-display-order', finalDisplayOrder);
 
-                    console.log(`�Y"S Item ${itemId} (${itemType}): display_order = ${finalDisplayOrder} (posição ${actualIndex >= 0 ? actualIndex : 'não encontrado'})`);
+                    console.log(`Y"S Item ${itemId} (${itemType}): display_order = ${finalDisplayOrder} (posição ${actualIndex >= 0 ? actualIndex : 'não encontrado'})`);
 
                     let itemData = {
                         id: itemId,
@@ -6893,7 +6893,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             itemData.logo_fit_mode = linkLogoFitMode;
 
                             const originalItem = window.currentProfileData && window.currentProfileData.items ? window.currentProfileData.items.find(i => i.id === itemId) : null;
-                            console.log(`�Y"� Logo size para item ${itemId}: ${logoSizeValue}px, fit_mode: ${linkLogoFitMode} (origem: modal=${!!modalOpenForThisItem}, lista=${!!linkLogoSizeInputItem}, dataset=${!!itemEl.dataset.logoSize}, original=${!!(originalItem && originalItem.logo_size)})`);
+                            console.log(`Logo size para item ${itemId}: ${logoSizeValue}px, fit_mode: ${linkLogoFitMode} (origem: modal=${!!modalOpenForThisItem}, lista=${!!linkLogoSizeInputItem}, dataset=${!!itemEl.dataset.logoSize}, original=${!!(originalItem && originalItem.logo_size)})`);
 
                             // Se tiver logo, icon_class pode ser null, senão usar o ícone selecionado
                             const linkIconPicker = itemEl.querySelector('.item-icon-picker');
@@ -7043,7 +7043,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             }
                             itemData.logo_fit_mode = salesPageLogoFitMode;
-                            console.log(`�Y"� Logo size para sales_page ${itemId}: ${salesPageLogoSizeValue}px, fit_mode: ${salesPageLogoFitMode}`);
+                            console.log(`Logo size para sales_page ${itemId}: ${salesPageLogoSizeValue}px, fit_mode: ${salesPageLogoFitMode}`);
                             break;
                         case 'banner':
                             itemData.icon_class = null;
@@ -7072,7 +7072,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 imageInputModal = document.querySelector('#edit-item-modal #edit-image-url');
                             }
 
-                            console.log(`�Y"� [BANNER] Capturando image_url para item ${itemId}:`);
+                            console.log(`[BANNER] Capturando image_url para item ${itemId}:`);
                             console.log(`  - Modal aberto?`, !!document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`));
                             console.log(`  - imageInputModal encontrado?`, !!imageInputModal);
                             console.log(`  - imageInputModal.value:`, imageInputModal?.value);
@@ -7090,7 +7090,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     const modalValue = imageInputModal.value.trim();
                                     if (modalValue && !modalValue.includes('placeholder') && !modalValue.startsWith('data:image/svg')) {
                                         imageValue = modalValue;
-                                        console.log(`�Y"� [BANNER] Image URL do modal para item ${itemId}:`, imageValue);
+                                        console.log(`[BANNER] Image URL do modal para item ${itemId}:`, imageValue);
                                     }
                                 }
 
@@ -7099,7 +7099,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     const bannerPreview = document.getElementById('edit-banner-preview');
                                     if (bannerPreview && bannerPreview.src && !bannerPreview.src.includes('placeholder') && !bannerPreview.src.startsWith('data:image/svg')) {
                                         imageValue = bannerPreview.src;
-                                        console.log(`�Y"� [BANNER] Image URL do preview do modal para item ${itemId}:`, imageValue);
+                                        console.log(`[BANNER] Image URL do preview do modal para item ${itemId}:`, imageValue);
                                     }
                                 }
                             }
@@ -7109,7 +7109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const itemValue = imageInputItem.value.trim();
                                 if (itemValue && !itemValue.includes('placeholder') && !itemValue.startsWith('data:image/svg')) {
                                     imageValue = itemValue;
-                                    console.log(`�Y"� [BANNER] Image URL da lista para item ${itemId}:`, imageValue);
+                                    console.log(`[BANNER] Image URL da lista para item ${itemId}:`, imageValue);
                                 }
                             }
 
@@ -7118,7 +7118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const thumbPreview = itemEl.querySelector('.banner-preview-thumb');
                                 if (thumbPreview && thumbPreview.src && !thumbPreview.src.includes('placeholder') && !thumbPreview.src.startsWith('data:image/svg')) {
                                     imageValue = thumbPreview.src;
-                                    console.log(`�Y"� [BANNER] Image URL do preview da lista para item ${itemId}:`, imageValue);
+                                    console.log(`[BANNER] Image URL do preview da lista para item ${itemId}:`, imageValue);
                                 }
                             }
 
@@ -7128,7 +7128,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     const originalData = JSON.parse(itemEl.dataset.originalData);
                                     if (originalData.image_url && !originalData.image_url.includes('placeholder') && !originalData.image_url.startsWith('data:image/svg')) {
                                         imageValue = originalData.image_url.trim();
-                                        console.log(`�Y"� [BANNER] Image URL do originalData para item ${itemId}:`, imageValue);
+                                        console.log(`[BANNER] Image URL do originalData para item ${itemId}:`, imageValue);
                                     }
                                 } catch (e) {
                                     console.warn('Erro ao parsear originalData:', e);
@@ -7142,8 +7142,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 itemData.image_url = null;
                             }
 
-                            console.log(`�o. [BANNER] Image URL FINAL capturado para item ${itemId}:`, itemData.image_url);
-                            console.log(`�o. [BANNER] itemData completo para banner:`, {
+                            console.log(`[BANNER] Image URL FINAL capturado para item ${itemId}:`, itemData.image_url);
+                            console.log(`[BANNER] itemData completo para banner:`, {
                                 id: itemData.id,
                                 item_type: itemData.item_type,
                                 image_url: itemData.image_url,
@@ -7151,7 +7151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 destination_url: itemData.destination_url
                             });
 
-                            // destination_url (N�fO copiar a URL da imagem; só o que o usuário digitou)
+                            // destination_url (NÃO copiar a URL da imagem; só o que o usuário digitou)
                             // Helper para limpar destinos que contêm URLs de imagem ou listas
                             const sanitizeBannerDest = (raw) => {
                                 if (!raw || typeof raw !== 'string') return '';
@@ -7221,7 +7221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 carouselJsonInput = carouselJsonInputItem;
                             }
 
-                            console.log(`�Y"� [CARROSSEL] Salvando item ${itemId}:`, {
+                            console.log(`[CARROSSEL] Salvando item ${itemId}:`, {
                                 modalValue: carouselJsonInputModal?.value?.substring(0, 50) || 'vazio',
                                 itemValue: carouselJsonInputItem?.value?.substring(0, 50) || 'vazio',
                                 usando: carouselJsonInput === carouselJsonInputModal ? 'modal' : (carouselJsonInput === carouselJsonInputItem ? 'item' : 'nenhum')
@@ -7241,19 +7241,19 @@ document.addEventListener('DOMContentLoaded', () => {
                                             itemData.destination_url = JSON.stringify(realImages);
                                             const firstImg = typeof realImages[0] === 'string' ? realImages[0] : (realImages[0].image_url || realImages[0]);
                                             itemData.image_url = firstImg;
-                                            console.log(`�o. [CARROSSEL] Salvando ${realImages.length} imagem(ns) para item ${itemId}`);
+                                            console.log(`[CARROSSEL] Salvando ${realImages.length} imagem(ns) para item ${itemId}`);
                                         } else {
                                             itemData.destination_url = JSON.stringify([]);
                                             itemData.image_url = '';
-                                            console.log(`�s�️ [CARROSSEL] Nenhuma imagem válida encontrada para item ${itemId}`);
+                                            console.log(`[CARROSSEL] Nenhuma imagem válida encontrada para item ${itemId}`);
                                         }
                                     } else {
                                         itemData.destination_url = JSON.stringify([]);
                                         itemData.image_url = '';
-                                        console.log(`�s�️ [CARROSSEL] Array vazio ou inválido para item ${itemId}`);
+                                        console.log(`[CARROSSEL] Array vazio ou inválido para item ${itemId}`);
                                     }
                                 } catch (e) {
-                                    console.error(`�O [CARROSSEL] Erro ao parsear imagens do item ${itemId}:`, e);
+                                    console.error(`[CARROSSEL] Erro ao parsear imagens do item ${itemId}:`, e);
                                     console.error(`   Valor:`, carouselJsonInput.value?.substring(0, 100));
                                     itemData.destination_url = JSON.stringify([]);
                                     itemData.image_url = '';
@@ -7261,11 +7261,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             } else if (carouselImageInput && carouselImageInput.value && !carouselImageInput.value.includes('placeholder')) {
                                 itemData.destination_url = JSON.stringify([carouselImageInput.value]);
                                 itemData.image_url = carouselImageInput.value;
-                                console.log(`�o. [CARROSSEL] Usando image_url como fallback para item ${itemId}`);
+                                console.log(`[CARROSSEL] Usando image_url como fallback para item ${itemId}`);
                             } else {
                                 itemData.destination_url = JSON.stringify([]);
                                 itemData.image_url = '';
-                                console.log(`�s�️ [CARROSSEL] Nenhum dado encontrado para item ${itemId}`);
+                                console.log(`[CARROSSEL] Nenhum dado encontrado para item ${itemId}`);
                             }
                             itemData.aspect_ratio = itemEl.dataset.aspectRatio || 'auto';
                             break;
@@ -7357,7 +7357,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Validar que temos dados para salvar (itens OU configurações do perfil)
             // Permitir salvar mesmo sem itens, pois o usuário pode estar salvando apenas configurações do perfil
             if (saveData.items.length === 0) {
-                console.warn('�s�️ Nenhum módulo encontrado na lista. Salvando apenas configurações do perfil.');
+                console.warn('Nenhum módulo encontrado na lista. Salvando apenas configurações do perfil.');
                 // Não bloquear o salvamento - apenas avisar no console
                 // O usuário pode estar salvando apenas configurações do perfil (cores, nome, bio, etc)
             }
@@ -7421,8 +7421,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Não precisa mais aplicar alterações pendentes aqui - os dados já estão salvos no servidor
             // O botão "Publicar alterações" apenas atualiza o status se necessário
 
-            console.log('�Y"� Enviando requisição para:', `${API_URL}/api/profile/save-all`);
-            console.log('�Y"� Dados sendo enviados:', {
+            console.log('Enviando requisição para:', `${API_URL}/api/profile/save-all`);
+            console.log('Dados sendo enviados:', {
                 itemsCount: saveData.items?.length || 0,
                 hasDetails: !!saveData.details,
                 items: saveData.items?.map(item => ({
@@ -7453,7 +7453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Erro de rede: ${fetchError.message}`);
             }
 
-            console.log('�Y"� Resposta recebida:', {
+            console.log('Resposta recebida:', {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok,
@@ -7468,14 +7468,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 result = JSON.parse(responseText);
             } catch (parseError) {
-                console.error('�O Erro ao parsear resposta:', parseError);
-                console.error('�O Response status:', response.status);
-                console.error('�O Response headers:', Object.fromEntries(response.headers.entries()));
+                console.error('O Erro ao parsear resposta:', parseError);
+                console.error('O Response status:', response.status);
+                console.error('O Response headers:', Object.fromEntries(response.headers.entries()));
                 throw new Error('Erro ao processar resposta do servidor. Tente novamente.');
             }
 
             if (!response.ok) {
-                console.error('�O Erro ao salvar:', {
+                console.error('O Erro ao salvar:', {
                     status: response.status,
                     statusText: response.statusText,
                     result: result
@@ -7489,8 +7489,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorMessage);
             }
 
-            console.log('�o. Dados salvos com sucesso:', result);
-            console.log('�o. Resposta completa:', JSON.stringify(result, null, 2));
+            console.log('Dados salvos com sucesso:', result);
+            console.log('Resposta completa:', JSON.stringify(result, null, 2));
 
             // Salvar toggle Bíblia (visível/oculto) + posição/tamanho da Palavra do Dia
             // IMPORTANTE: Sempre salvar quando bibleItem existe - não depender de display (usuário pode estar em outra aba)
@@ -7520,16 +7520,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 bi.bible_data.verse_size = verse_size;
                             }
                         }
-                        console.log('�o. Config Bíblia salva:', { isVisible, verse_position, verse_size });
+                        console.log('Config Bíblia salva:', { isVisible, verse_position, verse_size });
                     }
                 } catch (bibleErr) {
-                    console.warn('�s�️ Erro ao salvar config Bíblia:', bibleErr);
+                    console.warn('Erro ao salvar config Bíblia:', bibleErr);
                 }
             }
 
             // Atualizar os itens na lista usando os dados retornados pela API (em tempo real)
             if (result.items && Array.isArray(result.items)) {
-                console.log(`�Y"" Atualizando ${result.items.length} itens na interface usando dados da API...`);
+                console.log(`Y"" Atualizando ${result.items.length} itens na interface usando dados da API...`);
                 for (const itemData of result.items) {
                     // Pular sales_page - eles são atualizados separadamente
                     if (itemData.item_type === 'sales_page') {
@@ -7539,14 +7539,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Usar a função centralizada para atualizar cada item
                     await updateItemFromApiResponse(itemData.id, itemData, itemData.item_type);
                 }
-                console.log(`�o. Todos os itens atualizados em tempo real`);
+                console.log(`Todos os itens atualizados em tempo real`);
             } else {
-                console.warn('�s�️ Resposta da API não contém items. Usando dados locais como fallback.');
+                console.warn('Resposta da API não contém items. Usando dados locais como fallback.');
                 // Fallback: atualizar usando saveData.items (dados enviados)
                 saveData.items.forEach(itemData => {
                     const itemEl = document.querySelector(`.item[data-id="${itemData.id}"], .module-item[data-id="${itemData.id}"]`);
                     if (!itemEl) {
-                        console.warn(`�s�️ Item ${itemData.id} não encontrado no DOM após salvar`);
+                        console.warn(`Item ${itemData.id} não encontrado no DOM após salvar`);
                         return;
                     }
 
@@ -7643,16 +7643,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     visualOrderMap.set(String(itemId), visualIndex + 1);
                 }
             });
-            console.log(`�Y"< Ordem visual capturada ANTES de processar: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
+            console.log(`Y"< Ordem visual capturada ANTES de processar: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
 
             // IMPORTANTE: Verificar se há itens sales_page na lista
             // Se houver, buscar dados atualizados APENAS do sales_page e atualizar localmente
-            // N�fO recarregar todos os dados para evitar sobrescrever alterações salvas na página de vendas
+            // NÃO recarregar todos os dados para evitar sobrescrever alterações salvas na página de vendas
             const salesPageElements = document.querySelectorAll('#items-container .item[data-item-type="sales_page"], #items-container .module-item[data-item-type="sales_page"]');
             const hasSalesPageItems = salesPageElements.length > 0;
 
             if (hasSalesPageItems) {
-                console.log(`�s�️ Detectado ${salesPageElements.length} item(ns) sales_page na lista.`);
+                console.log(`Detectado ${salesPageElements.length} item(ns) sales_page na lista.`);
                 console.log('Buscando dados atualizados APENAS do sales_page para preservar alterações salvas.');
 
                 // Buscar dados atualizados de cada sales_page diretamente do servidor
@@ -7660,7 +7660,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const itemId = itemEl.dataset.id;
                     if (itemId && !itemId.toString().startsWith('temp_')) {
                         try {
-                            console.log(`�Y"� Buscando dados atualizados do sales_page ${itemId}...`);
+                            console.log(`Buscando dados atualizados do sales_page ${itemId}...`);
                             const itemResponse = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
                                 method: 'GET',
                                 headers: HEADERS
@@ -7697,7 +7697,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (itemIndex !== -1) {
                                     // Atualizar item existente com dados do servidor
                                     window.currentProfileData.items[itemIndex] = updatedSalesPageItem;
-                                    console.log(`�o. Dados do sales_page ${itemId} atualizados em currentProfileData:`, {
+                                    console.log(`Dados do sales_page ${itemId} atualizados em currentProfileData:`, {
                                         title: salesPageData.title,
                                         image_url: salesPageData.image_url?.substring(0, 50) || 'null',
                                         logo_size: salesPageData.logo_size || 24
@@ -7705,17 +7705,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                 } else {
                                     // Adicionar item se não existir
                                     window.currentProfileData.items.push(updatedSalesPageItem);
-                                    console.log(`�o. Dados do sales_page ${itemId} adicionados em currentProfileData:`, {
+                                    console.log(`Dados do sales_page ${itemId} adicionados em currentProfileData:`, {
                                         title: salesPageData.title,
                                         image_url: salesPageData.image_url?.substring(0, 50) || 'null',
                                         logo_size: salesPageData.logo_size || 24
                                     });
                                 }
                             } else {
-                                console.warn(`�s�️ Não foi possível buscar dados atualizados do sales_page ${itemId}`);
+                                console.warn(`Não foi possível buscar dados atualizados do sales_page ${itemId}`);
                             }
                         } catch (error) {
-                            console.error(`�O Erro ao buscar dados atualizados do sales_page ${itemId}:`, error);
+                            console.error(`O Erro ao buscar dados atualizados do sales_page ${itemId}:`, error);
                         }
                     }
                 }
@@ -7724,7 +7724,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Mas apenas se houver dados e ordem visual capturada
                 if (window.currentProfileData && window.currentProfileData.items) {
                     if (visualOrderMap.size > 0) {
-                        console.log('�Y"" Aplicando ordem visual preservada aos dados antes de renderizar...');
+                        console.log('Y"" Aplicando ordem visual preservada aos dados antes de renderizar...');
                         window.currentProfileData.items.forEach(item => {
                             const itemId = String(item.id);
                             const visualOrder = visualOrderMap.get(itemId);
@@ -7732,7 +7732,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const oldOrder = item.display_order;
                                 item.display_order = visualOrder;
                                 if (oldOrder !== visualOrder) {
-                                    console.log(`�Y"" Item ${itemId}: display_order ${oldOrder} -> ${visualOrder}`);
+                                    console.log(`Y"" Item ${itemId}: display_order ${oldOrder} -> ${visualOrder}`);
                                 }
                             }
                         });
@@ -7743,15 +7743,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             const orderB = visualOrderMap.get(String(b.id)) || b.display_order || 9999;
                             return orderA - orderB;
                         });
-                        console.log('�o. Ordem visual aplicada aos dados');
+                        console.log('Ordem visual aplicada aos dados');
                     } else {
-                        console.log('�s�️ Ordem visual não capturada, usando ordem do servidor');
+                        console.log('Ordem visual não capturada, usando ordem do servidor');
                     }
                 } else {
-                    console.error('�O window.currentProfileData ou items não existe!');
+                    console.error('O window.currentProfileData ou items não existe!');
                 }
 
-                console.log('N�fO recarregando todos os dados para preservar alterações salvas na página de vendas.');
+                console.log('NÃO recarregando todos os dados para preservar alterações salvas na página de vendas.');
                 console.log('Os dados da página de vendas foram atualizados diretamente do servidor.');
                 console.log('O botão "Publicar alterações" apenas publica os outros módulos, não afeta a página de vendas.');
 
@@ -7777,7 +7777,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
 
                         if (needsReorder) {
-                            console.log('�Y"" Reordenando elementos no DOM para manter ordem visual (caminho sales_page)...');
+                            console.log('Y"" Reordenando elementos no DOM para manter ordem visual (caminho sales_page)...');
 
                             // Criar array ordenado baseado na ordem visual
                             const sortedItems = itemsInDOM.slice().sort((a, b) => {
@@ -7800,24 +7800,24 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             });
 
-                            console.log('�o. Elementos reordenados no DOM (caminho sales_page)');
+                            console.log('Elementos reordenados no DOM (caminho sales_page)');
 
                             // Re-inicializar Sortable após reordenar
                             if (typeof initSortable === 'function') {
                                 setTimeout(() => {
                                     initSortable();
-                                    console.log('�o. Sortable reinicializado após reordenar (caminho sales_page)');
+                                    console.log('Sortable reinicializado após reordenar (caminho sales_page)');
                                 }, 50);
                             }
                         } else {
-                            console.log('�o. Elementos já estão na ordem correta no DOM (caminho sales_page)');
+                            console.log('Elementos já estão na ordem correta no DOM (caminho sales_page)');
                         }
                     }
                 });
 
                 // Atualizar preview local
                 updateLivePreviewFromForm();
-                console.log('�o. Alterações publicadas sem recarregar todos os dados (preservando alterações da página de vendas)');
+                console.log('Alterações publicadas sem recarregar todos os dados (preservando alterações da página de vendas)');
                 return; // Retornar cedo para não recarregar todos os dados
             }
 
@@ -7839,8 +7839,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemsInDOM.add(itemId);
             });
 
-            console.log(`�Y"< Ordem visual capturada: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
-            console.log(`�Y"< Itens no DOM antes de recarregar: ${itemsInDOM.size}`, Array.from(itemsInDOM));
+            console.log(`Y"< Ordem visual capturada: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
+            console.log(`Y"< Itens no DOM antes de recarregar: ${itemsInDOM.size}`, Array.from(itemsInDOM));
 
             // Aguardar um pouco antes de recarregar para garantir que o servidor processou tudo
             // Isso evita que elementos sumam e voltem rapidamente
@@ -7849,7 +7849,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Preservar valor do WhatsApp antes de recarregar (caso a coluna não exista no banco)
             const preservedWhatsapp = SELECTORS.whatsappNumberInput?.value || '';
-            console.log('�Y"� [SAVE-ALL] Preservando valor do WhatsApp antes de recarregar:', preservedWhatsapp);
+            console.log('[SAVE-ALL] Preservando valor do WhatsApp antes de recarregar:', preservedWhatsapp);
 
             // Preservar fundo do cartão e fundo de tela antes de recarregar (evita "salva mas some")
             const preservedFundo = {
@@ -7860,17 +7860,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 card_background_color: SELECTORS.cardBackgroundColorPicker?.value || '#141417',
                 card_opacity: SELECTORS.cardOpacityPicker ? parseFloat(SELECTORS.cardOpacityPicker.value) : 1
             };
-            console.log('�YZ� [SAVE-ALL] Preservando fundo antes de recarregar:', preservedFundo);
+            console.log('YZ [SAVE-ALL] Preservando fundo antes de recarregar:', preservedFundo);
 
             // Recarregar dados do servidor para garantir sincronização
             // Isso é necessário para garantir que novos módulos apareçam no cartão público
-            console.log('�Y"" Recarregando dados do servidor após salvar...');
+            console.log('Y"" Recarregando dados do servidor após salvar...');
             try {
                 await fetchProfileData(true); // Forçar atualização imediata
 
                 // Se o WhatsApp não veio do servidor mas tinha valor antes, restaurar
                 if (preservedWhatsapp && (!window.currentProfileData?.details?.whatsapp || window.currentProfileData.details.whatsapp === '')) {
-                    console.log('�Y"� [SAVE-ALL] Restaurando valor do WhatsApp preservado:', preservedWhatsapp);
+                    console.log('[SAVE-ALL] Restaurando valor do WhatsApp preservado:', preservedWhatsapp);
                     if (SELECTORS.whatsappNumberInput) {
                         SELECTORS.whatsappNumberInput.value = preservedWhatsapp;
                     }
@@ -7885,7 +7885,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cardOpacityOk = (d?.card_opacity ?? d?.cardOpacity) != null;
                 const needRestoreFundo = !d || !cardColorOk || !cardOpacityOk;
                 if (needRestoreFundo && preservedFundo) {
-                    console.log('�YZ� [SAVE-ALL] Restaurando fundo preservado (API retornou vazio/default)');
+                    console.log('YZ [SAVE-ALL] Restaurando fundo preservado (API retornou vazio/default)');
                     if (SELECTORS.cardBackgroundColorPicker) SELECTORS.cardBackgroundColorPicker.value = preservedFundo.card_background_color;
                     if (SELECTORS.cardOpacityPicker) SELECTORS.cardOpacityPicker.value = String(preservedFundo.card_opacity);
                     if (SELECTORS.backgroundColorPicker) SELECTORS.backgroundColorPicker.value = preservedFundo.background_color;
@@ -7928,7 +7928,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const oldOrder = item.display_order;
                             item.display_order = visualOrder;
                             if (oldOrder !== visualOrder) {
-                                console.log(`�Y"" Aplicando ordem visual ao item ${itemId}: ${oldOrder} -> ${visualOrder}`);
+                                console.log(`Y"" Aplicando ordem visual ao item ${itemId}: ${oldOrder} -> ${visualOrder}`);
                                 orderUpdated = true;
                             }
                         }
@@ -7943,8 +7943,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (orderUpdated || visualOrderMap.size > 0) {
-                        console.log('�o. Ordem visual preservada e aplicada aos dados recarregados');
-                        console.log('�Y"S Ordem final dos itens:', window.currentProfileData.items.map(item => ({
+                        console.log('Ordem visual preservada e aplicada aos dados recarregados');
+                        console.log('Y"S Ordem final dos itens:', window.currentProfileData.items.map(item => ({
                             id: item.id,
                             type: item.item_type,
                             display_order: item.display_order,
@@ -7953,7 +7953,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Re-renderizar lista de módulos (Wi-Fi e outros que estavam no servidor mas não no DOM)
-                    console.log('�Y"" Renderizando lista de módulos após publicar...');
+                    console.log('Y"" Renderizando lista de módulos após publicar...');
                     if (window.currentProfileData) {
                         renderEditor(window.currentProfileData);
                         reconcileModulesListWithProfileData(window.currentProfileData);
@@ -7964,9 +7964,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
                             setTimeout(() => {
-                                console.log('�Y"" Forçando atualização do preview após renderEditor...');
+                                console.log('Y"" Forçando atualização do preview após renderEditor...');
                                 updateLivePreviewFromForm();
-                                console.log('�o. Preview atualizado após recarregar dados');
+                                console.log('Preview atualizado após recarregar dados');
                             }, 500);
                         });
                     });
@@ -7990,7 +7990,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
 
                             if (needsReorder) {
-                                console.log('�Y"" Reordenando elementos no DOM para manter ordem visual...');
+                                console.log('Y"" Reordenando elementos no DOM para manter ordem visual...');
 
                                 // Criar array ordenado baseado na ordem visual
                                 const sortedItems = itemsInDOM.slice().sort((a, b) => {
@@ -8013,17 +8013,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                 });
 
-                                console.log('�o. Elementos reordenados no DOM');
+                                console.log('Elementos reordenados no DOM');
 
                                 // Re-inicializar Sortable após reordenar
                                 if (typeof initSortable === 'function') {
                                     setTimeout(() => {
                                         initSortable();
-                                        console.log('�o. Sortable reinicializado após reordenar');
+                                        console.log('Sortable reinicializado após reordenar');
                                     }, 50);
                                 }
                             } else {
-                                console.log('�o. Elementos já estão na ordem correta no DOM');
+                                console.log('Elementos já estão na ordem correta no DOM');
                             }
 
                             // IMPORTANTE: Atualizar preview ao vivo após reordenar DOM
@@ -8031,7 +8031,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             requestAnimationFrame(() => {
                                 setTimeout(() => {
                                     updateLivePreviewFromForm();
-                                    console.log('�o. Preview atualizado após reordenar DOM');
+                                    console.log('Preview atualizado após reordenar DOM');
                                 }, 100);
                             });
                         }
@@ -8041,18 +8041,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
                             setTimeout(() => {
-                                console.log('�Y"" Forçando atualização do preview após recarregar (sem reordenar)...');
+                                console.log('Y"" Forçando atualização do preview após recarregar (sem reordenar)...');
                                 updateLivePreviewFromForm();
-                                console.log('�o. Preview atualizado após recarregar (sem reordenar)');
+                                console.log('Preview atualizado após recarregar (sem reordenar)');
                             }, 500);
                         });
                     });
                 }
 
-                console.log('�o. Dados recarregados com ordem visual preservada');
+                console.log('Dados recarregados com ordem visual preservada');
 
             } catch (fetchError) {
-                console.error('�s�️ Erro ao recarregar dados após salvar:', fetchError);
+                console.error('Erro ao recarregar dados após salvar:', fetchError);
                 // Não mostrar erro para o usuário, pois os dados já foram salvos
                 // Apenas logar para debug
                 // Mesmo com erro, atualizar preview com os dados atuais
@@ -8060,9 +8060,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error("�O Erro em saveAllChanges:", error);
-            console.error("�O Stack trace:", error.stack);
-            console.error("�O Error details:", {
+            console.error("O Erro em saveAllChanges:", error);
+            console.error("O Stack trace:", error.stack);
+            console.error("O Error details:", {
                 name: error.name,
                 message: error.message,
                 cause: error.cause
@@ -8101,29 +8101,29 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             await Promise.all(updatePromises);
-            console.log('�o. Ordem dos módulos atualizada com sucesso');
+            console.log('Ordem dos módulos atualizada com sucesso');
         } catch (error) {
-            console.error('�O Erro ao salvar ordem dos módulos:', error);
+            console.error('O Erro ao salvar ordem dos módulos:', error);
         }
     }
 
     function initSortable() {
         if (!SELECTORS.itemsContainer) {
-            console.warn('�s�️ initSortable: itemsContainer não encontrado');
+            console.warn('initSortable: itemsContainer não encontrado');
             return;
         }
 
         // Verificar se há itens no container
         const items = SELECTORS.itemsContainer.querySelectorAll('.module-item');
         if (items.length === 0) {
-            console.warn('�s�️ initSortable: Nenhum item encontrado no container');
+            console.warn('initSortable: Nenhum item encontrado no container');
             return;
         }
 
         // Verificar se há handles de arraste
         const handles = SELECTORS.itemsContainer.querySelectorAll('.module-drag-handle');
         if (handles.length === 0) {
-            console.warn('�s�️ initSortable: Nenhum handle de arraste encontrado. Aguardando renderização...');
+            console.warn('initSortable: Nenhum handle de arraste encontrado. Aguardando renderização...');
             // Tentar novamente após um pequeno delay
             setTimeout(() => {
                 if (SELECTORS.itemsContainer.querySelectorAll('.module-drag-handle').length > 0) {
@@ -8133,7 +8133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        console.log(`�Y"" Inicializando Sortable (mobile: ${window.innerWidth <= 768}, ${items.length} itens, ${handles.length} handles)`);
+        console.log(`Y"" Inicializando Sortable (mobile: ${window.innerWidth <= 768}, ${items.length} itens, ${handles.length} handles)`);
 
         // Destruir instância anterior se existir
         if (SELECTORS.itemsContainer.sortable) {
@@ -8147,7 +8147,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ('ontouchstart' in window) ||
             (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
 
-        console.log(`�Y"� Detecção mobile: ${isMobile} (width: ${window.innerWidth}, touch: ${'ontouchstart' in window}, maxTouchPoints: ${navigator.maxTouchPoints})`);
+        console.log(`Detecção mobile: ${isMobile} (width: ${window.innerWidth}, touch: ${'ontouchstart' in window}, maxTouchPoints: ${navigator.maxTouchPoints})`);
 
         SELECTORS.itemsContainer.sortable = new Sortable(SELECTORS.itemsContainer, {
             animation: 150,
@@ -8157,7 +8157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             delay: 0, // SEM delay - resposta imediata
             delayOnTouchStart: false, // SEM delay no touch
             touchStartThreshold: 0, // Zero - detecta movimento imediatamente
-            // Fallback no mobile - N�fO usar fallbackOnBody para manter eventos no container
+            // Fallback no mobile - NÃO usar fallbackOnBody para manter eventos no container
             forceFallback: isMobile,
             fallbackOnBody: false, // false = drag fica no container = touch contínuo no mobile
             fallbackTolerance: 0,
@@ -8186,7 +8186,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Callback para quando começar a arrastar
             onStart: function (evt) {
                 try {
-                    console.log('�YY� Drag iniciado', { item: evt.item, index: evt.oldIndex, isMobile: isMobile });
+                    console.log('YY Drag iniciado', { item: evt.item, index: evt.oldIndex, isMobile: isMobile });
 
                     // Prevenir seleção de texto
                     document.body.style.userSelect = 'none';
@@ -8218,12 +8218,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
 
                             // Garantir que o item arrastado não cause scroll da página
-                            // Mas N�fO bloquear o body para não cortar touchmove do Sortable
+                            // Mas NÃO bloquear o body para não cortar touchmove do Sortable
                             evt.item.style.touchAction = 'none';
                         }
                     }
                 } catch (error) {
-                    console.error('�O Erro no onStart do Sortable:', error);
+                    console.error('O Erro no onStart do Sortable:', error);
                 }
             },
             // Callback durante o drag - permitir movimento livre
@@ -8232,14 +8232,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Permitir movimento livre sem interferências
                     return true; // Sempre permitir movimento
                 } catch (error) {
-                    console.error('�O Erro no onMove do Sortable:', error);
+                    console.error('O Erro no onMove do Sortable:', error);
                     return true; // Permitir movimento mesmo com erro
                 }
             },
             // Callback para quando terminar de arrastar
             onEnd: function (evt) {
                 try {
-                    console.log('�Y"� Drag finalizado', { oldIndex: evt.oldIndex, newIndex: evt.newIndex });
+                    console.log('Drag finalizado', { oldIndex: evt.oldIndex, newIndex: evt.newIndex });
 
                     // Restaurar scroll da página
                     if (isMobile) {
@@ -8287,9 +8287,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Salvar a nova ordem apenas se realmente mudou
                     if (newOrder.length > 0 && evt.oldIndex !== evt.newIndex) {
-                        console.log(`�Y'� Salvando nova ordem (${newOrder.length} itens)`);
+                        console.log(`Y' Salvando nova ordem (${newOrder.length} itens)`);
                         saveItemOrder(newOrder).catch(err => {
-                            console.error('�O Erro ao salvar ordem:', err);
+                            console.error('O Erro ao salvar ordem:', err);
                         });
                     }
 
@@ -8299,16 +8299,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (SELECTORS.itemsContainer && SELECTORS.itemsContainer.sortable) {
                         // Garantir que não está desabilitado
                         SELECTORS.itemsContainer.sortable.option('disabled', false);
-                        console.log('�o. Sortable ainda ativo e habilitado após drag - pode arrastar novamente');
+                        console.log('Sortable ainda ativo e habilitado após drag - pode arrastar novamente');
                     } else {
-                        console.warn('�s�️ Sortable não encontrado após drag - reinicializando...');
+                        console.warn('Sortable não encontrado após drag - reinicializando...');
                         setTimeout(() => {
                             initSortable();
                         }, 100);
                     }
 
                 } catch (error) {
-                    console.error('�O Erro no onEnd do Sortable:', error);
+                    console.error('O Erro no onEnd do Sortable:', error);
                     // Tentar restaurar estado mesmo com erro
                     if (evt.item) {
                         evt.item.classList.remove('sortable-dragging', 'sortable-dragging-mobile');
@@ -8323,7 +8323,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        console.log('�o. Sortable inicializado - movimento livre habilitado para TODOS os mobiles');
+        console.log('Sortable inicializado - movimento livre habilitado para TODOS os mobiles');
 
         // Adicionar event listeners para botões de seta
         setupMoveButtons();
@@ -8335,7 +8335,7 @@ document.addEventListener('DOMContentLoaded', () => {
             SELECTORS.itemsContainer.sortable.option('invertSwap', false); // false = desliza contínuo
             SELECTORS.itemsContainer.sortable.option('scroll', true);
             SELECTORS.itemsContainer.sortable.option('fallbackOnBody', false); // mantém no container no mobile
-            console.log('�o. Sortable movimento livre (invertSwap:false fallbackOnBody:false) para mobile');
+            console.log('Sortable movimento livre (invertSwap:false fallbackOnBody:false) para mobile');
         }
     }
 
@@ -8367,7 +8367,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const direction = btn.dataset.direction;
 
             if (!itemId || !direction || !SELECTORS.itemsContainer) {
-                console.warn('�s�️ Dados incompletos para mover módulo:', { itemId, direction, hasContainer: !!SELECTORS.itemsContainer });
+                console.warn('Dados incompletos para mover módulo:', { itemId, direction, hasContainer: !!SELECTORS.itemsContainer });
                 return;
             }
 
@@ -8433,7 +8433,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemEl.dataset.isTemporary === 'true' ||
                 itemEl.hasAttribute('data-is-temporary');
 
-            console.log(`�Y"� Verificando se sales_page é temporário:`, {
+            console.log(`Verificando se sales_page é temporário:`, {
                 itemId,
                 isTemporary,
                 hasDataIsTemporary: itemEl.hasAttribute('data-is-temporary'),
@@ -8494,7 +8494,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let formHTML = '';
 
-        // Fun�f§�f£o auxiliar para sanitizar URLs de imagem
+        // Funf§f£o auxiliar para sanitizar URLs de imagem
         function sanitizeImageUrl(url) {
             const defaultPlaceholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9Ijc1IiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIj5JbWFnZW08L3RleHQ+Cjwvc3ZnPgo=';
             if (!url || typeof url !== 'string') {
@@ -8505,7 +8505,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (trimmedUrl.includes('placeholder.com') || trimmedUrl.includes('via.placeholder')) {
                 return defaultPlaceholder;
             }
-            // Aceitar apenas URLs v�f¡lidas: data URIs ou http/https
+            // Aceitar apenas URLs vf¡lidas: data URIs ou http/https
             if (trimmedUrl.startsWith('data:image/') ||
                 trimmedUrl.startsWith('http://') ||
                 trimmedUrl.startsWith('https://')) {
@@ -8555,7 +8555,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Verificar se �f© carrossel pela classe ou pelo destination_url
+        // Verificar se f© carrossel pela classe ou pelo destination_url
         const isCarouselItem = itemEl.classList.contains('banner-carousel') ||
             (itemType === 'banner' && currentDestUrl && (currentDestUrl.startsWith('[') || currentDestUrl === '[]'));
         const rawImageUrl = itemEl.querySelector('.item-image-url-input')?.value || '';
@@ -8853,12 +8853,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="edit-recipient-name" value="${itemEl.querySelector('.item-recipient-name-input')?.value || ''}" placeholder="Seu nome completo">
                 </div>
                 <div class="input-group">
-                    <label>Chave PIX (Aleat�f³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                    <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
                     <div class="pix-key-examples">
-                        <small><strong>ðŸ�?ož Celular:</strong> Apenas n�fºmeros (ex: +5511999999999)</small>
-                        <small><strong>ðŸ�?o§ Email:</strong> seuemail@exemplo.com</small>
-                        <small><strong>ðŸ�?��?� CPF:</strong> Apenas n�fºmeros (ex: 12345678901)</small>
-                        <small><strong>ðŸ�?��?~ Chave Aleat�f³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                        <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                        <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
+                        <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
+                        <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                     </div>
                     <input type="text" id="edit-pix-key" value="${currentPixKey}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
                 </div>
@@ -8867,8 +8867,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="edit-pix-amount" value="${itemEl.querySelector('.item-pix-amount-input')?.value || ''}" placeholder="Valor em reais" step="0.01">
                 </div>
                 <div class="input-group">
-                    <label>Descri�f§�f£o (opcional)</label>
-                    <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descri�f§�f£o do pagamento">
+                    <label>Descrif§f£o (opcional)</label>
+                    <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descrif§f£o do pagamento">
                 </div>
             `;
                 break;
@@ -8883,12 +8883,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="edit-recipient-name" value="${itemEl.querySelector('.item-recipient-name-input')?.value || ''}" placeholder="Seu nome completo">
                 </div>
                 <div class="input-group">
-                    <label>Chave PIX (Aleat�f³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                    <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
                     <div class="pix-key-examples">
-                        <small><strong>ðŸ�?ož Celular:</strong> Apenas n�fºmeros (ex: +5511999999999)</small>
-                        <small><strong>ðŸ�?o§ Email:</strong> seuemail@exemplo.com</small>
-                        <small><strong>ðŸ�?��?� CPF:</strong> Apenas n�fºmeros (ex: 12345678901)</small>
-                        <small><strong>ðŸ�?��?~ Chave Aleat�f³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                        <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                        <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
+                        <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
+                        <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                     </div>
                     <input type="text" id="edit-pix-key" value="${currentPixKey}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
                 </div>
@@ -8897,8 +8897,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="edit-pix-amount" value="${itemEl.querySelector('.item-pix-amount-input')?.value || ''}" placeholder="Valor em reais" step="0.01">
                 </div>
                 <div class="input-group">
-                    <label>Descri�f§�f£o (opcional)</label>
-                    <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descri�f§�f£o do pagamento">
+                    <label>Descrif§f£o (opcional)</label>
+                    <input type="text" id="edit-pix-description" value="${itemEl.querySelector('.item-pix-description-input')?.value || ''}" placeholder="Descrif§f£o do pagamento">
                 </div>
             `;
                 break;
@@ -8939,7 +8939,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="input-group">
                     <label>Nome da rede Wi-Fi (SSID)</label>
-                    <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">Obrigatório. �? o nome exato que aparece na lista de redes do celular (usado no QR Code).</small>
+                    <small style="display:block;color:#a1a1a1;font-size:0.8rem;margin:4px 0 8px;line-height:1.35;">Obrigatório. ? o nome exato que aparece na lista de redes do celular (usado no QR Code).</small>
                     <input type="text" id="edit-wifi-ssid" value="${escWifiModal(wSsid)}" placeholder="Ex: MinhaLoja_WiFi ou Visitantes_5G" maxlength="32">
                 </div>
                 <div class="input-group">
@@ -9458,9 +9458,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (uploadText) uploadText.style.display = 'none';
                                 if (removeBtn) removeBtn.style.display = 'block';
 
-                                console.log('�o. Logo do formulário digital enviado:', finalUrl);
+                                console.log('Logo do formulário digital enviado:', finalUrl);
                             } catch (error) {
-                                console.error('�O Erro ao fazer upload do logo:', error);
+                                console.error('O Erro ao fazer upload do logo:', error);
                                 alert(`Erro ao fazer upload: ${error.message}`);
                             } finally {
                                 if (loader) loader.style.display = 'none';
@@ -9543,9 +9543,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (uploadText) uploadText.style.display = 'none';
                                 if (removeBtn) removeBtn.style.display = 'block';
 
-                                console.log('�o. Banner do formulário digital enviado:', finalUrl);
+                                console.log('Banner do formulário digital enviado:', finalUrl);
                             } catch (error) {
-                                console.error('�O Erro ao fazer upload do banner:', error);
+                                console.error('O Erro ao fazer upload do banner:', error);
                                 alert(`Erro ao fazer upload: ${error.message}`);
                             } finally {
                                 if (loader) loader.style.display = 'none';
@@ -9587,7 +9587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         SELECTORS.editItemModal.dataset.itemType = itemType;
         SELECTORS.editItemModal.dataset.isNewItem = 'false';
 
-        console.log(`�o. [MODAL] Modal configurado:`, {
+        console.log(`[MODAL] Modal configurado:`, {
             editingId: SELECTORS.editItemModal.dataset.editingId,
             itemType: SELECTORS.editItemModal.dataset.itemType,
             isNewItem: SELECTORS.editItemModal.dataset.isNewItem
@@ -9614,13 +9614,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Garantir que o input tenha listener direto também
                 const fileInput = SELECTORS.editModalBody.querySelector(`#carousel-file-new-${itemId}`);
                 if (fileInput) {
-                    console.log('�o. [CARROSSEL] Input encontrado no modal:', fileInput.id);
+                    console.log('[CARROSSEL] Input encontrado no modal:', fileInput.id);
                     // Remover listener antigo se existir
                     const newInput = fileInput.cloneNode(true);
                     fileInput.parentNode.replaceChild(newInput, fileInput);
-                    console.log('�o. [CARROSSEL] Input clonado e substituído para garantir listener');
+                    console.log('[CARROSSEL] Input clonado e substituído para garantir listener');
                 } else {
-                    console.error('�O [CARROSSEL] Input não encontrado no modal!');
+                    console.error('[CARROSSEL] Input não encontrado no modal!');
                 }
             }, 150);
         }
@@ -10203,9 +10203,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const tipEl = document.querySelector('#cropper-modal .cropper-tip');
             if (tipEl) {
                 if (triggerType === 'vitrine-hero') {
-                    tipEl.innerHTML = 'Arte do <strong>Modelo Vitrine</strong>: corte em <strong>16:9</strong> (ex.: 1920�-1080). Arraste e ajuste o enquadramento antes de enviar.';
+                    tipEl.innerHTML = 'Arte do <strong>Modelo Vitrine</strong>: corte em <strong>16:9</strong> (ex.: 19201080). Arraste e ajuste o enquadramento antes de enviar.';
                 } else if (triggerType === 'background') {
-                    tipEl.innerHTML = 'Sugestão para fundo do cartão: <strong>1920�-1080</strong> (16:9) ou <strong>1600�-900</strong>. Prepare a foto nesse tamanho ou aproxime ao cortar. No telemóvel o fundo cobre o ecrã todo (centrado); detalhes nas bordas laterais podem sair fora.';
+                    tipEl.innerHTML = 'Sugestão para fundo do cartão: <strong>19201080</strong> (16:9) ou <strong>1600900</strong>. Prepare a foto nesse tamanho ou aproxime ao cortar. No telemóvel o fundo cobre o ecrã todo (centrado); detalhes nas bordas laterais podem sair fora.';
                 }
             }
         };
@@ -10222,7 +10222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Fun�f§�f£o para obter �f­cone padr�f£o baseado no tipo de item
+    // Funf§f£o para obter f­cone padrf£o baseado no tipo de item
     function getDefaultIcon(itemType) {
         const defaultIcons = {
             'whatsapp': 'fab fa-whatsapp',
@@ -10261,7 +10261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return defaultIcons[itemType] || 'fas fa-link';
     }
 
-    // Fun�f§�f£o para obter nome amig�f¡vel do tipo de item
+    // Funf§f£o para obter nome amigf¡vel do tipo de item
     function getItemTypeName(itemType) {
         const names = {
             'link': 'Link Personalizado',
@@ -10311,12 +10311,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return t || getItemTypeName(item && item.item_type) || 'Novo Módulo';
     }
 
-    // Fun�f§�f£o para abrir modal de edi�f§�f£o para novo item
+    // Funf§f£o para abrir modal de edif§f£o para novo item
     function openEditModalForNewItem(tempItem) {
         const itemType = tempItem.item_type;
         let formHTML = '';
 
-        // Usar a mesma l�f³gica do openEditModal mas para item novo
+        // Usar a mesma lf³gica do openEditModal mas para item novo
         switch (itemType) {
             case 'whatsapp':
             case 'telegram':
@@ -10370,12 +10370,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="text" id="edit-recipient-name" value="${tempItem.recipient_name || ''}" placeholder="Seu nome completo">
                     </div>
                     <div class="input-group">
-                        <label>Chave PIX (Aleat�f³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                        <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
                         <div class="pix-key-examples">
-                            <small><strong>ðŸ�?ož Celular:</strong> Apenas n�fºmeros (ex: +5511999999999)</small>
-                            <small><strong>ðŸ�?o§ Email:</strong> seuemail@exemplo.com</small>
-                            <small><strong>ðŸ�?��?� CPF:</strong> Apenas n�fºmeros (ex: 12345678901)</small>
-                            <small><strong>ðŸ�?��?~ Chave Aleat�f³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                            <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                            <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
+                            <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
+                            <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                         </div>
                         <input type="text" id="edit-pix-key" value="${tempItem.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
                     </div>
@@ -10384,8 +10384,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="number" id="edit-pix-amount" value="${tempItem.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
                     </div>
                     <div class="input-group">
-                        <label>Descri�f§�f£o (opcional)</label>
-                        <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descri�f§�f£o do pagamento">
+                        <label>Descrif§f£o (opcional)</label>
+                        <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
                     </div>
                 `;
                 break;
@@ -10400,12 +10400,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="text" id="edit-recipient-name" value="${tempItem.recipient_name || ''}" placeholder="Seu nome completo">
                     </div>
                     <div class="input-group">
-                        <label>Chave PIX (Aleat�f³ria, CPF/CNPJ, E-mail ou Telefone)</label>
+                        <label>Chave PIX (Aleatf³ria, CPF/CNPJ, E-mail ou Telefone)</label>
                         <div class="pix-key-examples">
-                            <small><strong>ðŸ�?ož Celular:</strong> Apenas n�fºmeros (ex: +5511999999999)</small>
-                            <small><strong>ðŸ�?o§ Email:</strong> seuemail@exemplo.com</small>
-                            <small><strong>ðŸ�?��?� CPF:</strong> Apenas n�fºmeros (ex: 12345678901)</small>
-                            <small><strong>ðŸ�?��?~ Chave Aleat�f³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
+                            <small><strong>?ož Celular:</strong> Apenas nfºmeros (ex: +5511999999999)</small>
+                            <small><strong>?o§ Email:</strong> seuemail@exemplo.com</small>
+                            <small><strong> CPF:</strong> Apenas nfºmeros (ex: 12345678901)</small>
+                            <small><strong>?~ Chave Aleatf³ria:</strong> Copie e cole (ex: 12345678-1234-...)</small>
                         </div>
                         <input type="text" id="edit-pix-key" value="${tempItem.pix_key || ''}" placeholder="Ex: +5511999999999 (celular) ou seuemail@exemplo.com">
                     </div>
@@ -10414,8 +10414,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="number" id="edit-pix-amount" value="${tempItem.pix_amount || ''}" placeholder="Valor em reais" step="0.01">
                     </div>
                     <div class="input-group">
-                        <label>Descri�f§�f£o (opcional)</label>
-                        <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descri�f§�f£o do pagamento">
+                        <label>Descrif§f£o (opcional)</label>
+                        <input type="text" id="edit-pix-description" value="${tempItem.pix_description || ''}" placeholder="Descrif§f£o do pagamento">
                     </div>
                 `;
                 break;
@@ -10755,7 +10755,7 @@ document.addEventListener('DOMContentLoaded', () => {
         SELECTORS.editItemModal.dataset.isNewItem = 'true';
         SELECTORS.editItemModal.dataset.itemType = itemType;
 
-        // Atualizar conte�fºdo do modal
+        // Atualizar contefºdo do modal
         const modalTitle = SELECTORS.editItemModal.querySelector('.modal-header h4');
         modalTitle.textContent = `Configurar ${getItemTypeName(itemType)}`;
 
@@ -10901,7 +10901,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // IMPORTANTE: alguns módulos são criados DIRETAMENTE no servidor (não espera "Publicar alterações")
                 // KingSelection precisa de itemId real para gerenciar galerias no painel dedicado
                 if (itemType === 'sales_page' || itemType === 'digital_form' || itemType === 'agenda' || itemType === 'king_selection' || itemType === 'convite' || itemType === 'wifi') {
-                    console.log(`�z. Criando ${qty} �- ${itemType} DIRETAMENTE no servidor...`);
+                    console.log(`z. Criando ${qty} ${itemType} DIRETAMENTE no servidor...`);
                     try {
                         for (let i = 0; i < qty; i++) {
                             const postBody = {
@@ -10945,7 +10945,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     errorMsg += `Links atuais: ${errorData.current || 0} de ${errorData.limit || 0}\n\n`;
 
                                     if (errorData.upgrade_suggestion) {
-                                        errorMsg += `�Y'� Sugestão: Faça upgrade para o plano "${errorData.upgrade_suggestion.plan_name}" para ter ${errorData.upgrade_suggestion.new_limit === null ? 'ilimitados' : errorData.upgrade_suggestion.new_limit} links disponíveis.\n\n`;
+                                        errorMsg += `Y' Sugestão: Faça upgrade para o plano "${errorData.upgrade_suggestion.plan_name}" para ter ${errorData.upgrade_suggestion.new_limit === null ? 'ilimitados' : errorData.upgrade_suggestion.new_limit} links disponíveis.\n\n`;
                                         errorMsg += `Deseja ver os planos disponíveis?`;
 
                                         if (confirm(errorMsg)) {
@@ -10966,14 +10966,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 throw new Error(errorData.message || `Erro ao criar ${itemType}`);
                             }
                             const newItem = await response.json();
-                            console.log(`�o. ${itemType} criado (${i + 1}/${qty}):`, newItem);
+                            console.log(`${itemType} criado (${i + 1}/${qty}):`, newItem);
                             await new Promise(resolve => setTimeout(resolve, 200));
                         }
                         await fetchProfileData(true);
                         setTimeout(() => { renderEditor(window.currentProfileData); }, 100);
                         return;
                     } catch (error) {
-                        console.error(`�O Erro ao criar ${itemType}:`, error);
+                        console.error(`O Erro ao criar ${itemType}:`, error);
                         let moduleName = 'módulo';
                         if (itemType === 'sales_page') moduleName = 'página de vendas';
                         else if (itemType === 'digital_form') moduleName = 'formulário digital';
@@ -10990,7 +10990,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Para outros módulos: criar localmente (qty vezes)
-                console.log(`�z. Adicionando ${qty} módulo(s) ${itemType} localmente...`);
+                console.log(`z. Adicionando ${qty} módulo(s) ${itemType} localmente...`);
                 if (!window.currentProfileData) {
                     window.currentProfileData = { details: {}, items: [] };
                 }
@@ -11036,7 +11036,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }, 100);
                             }
                         } catch (renderError) {
-                            console.error('�O Erro ao renderizar:', renderError);
+                            console.error('O Erro ao renderizar:', renderError);
                             alert(`Erro ao adicionar módulo: ${renderError.message}`);
                         }
                     } else {
@@ -11156,7 +11156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemType = itemEl?.dataset?.itemType;
                 const itemId = itemEl?.dataset?.id || editBtn?.dataset?.itemId;
 
-                console.log('�Y"� [DASHBOARD] Clique em editar:', {
+                console.log('[DASHBOARD] Clique em editar:', {
                     itemType,
                     itemId,
                     itemEl: !!itemEl,
@@ -11182,12 +11182,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (deleteBtn) {
                 const itemEl = deleteBtn.closest('.item, .module-item');
                 if (!itemEl) {
-                    console.error('�O Elemento do item não encontrado ao tentar deletar');
+                    console.error('O Elemento do item não encontrado ao tentar deletar');
                     return;
                 }
                 const itemId = itemEl.dataset?.id;
                 if (!itemId) {
-                    console.error('�O ID do item não encontrado no dataset');
+                    console.error('O ID do item não encontrado no dataset');
                     alert('Erro: Não foi possível identificar o módulo para deletar.');
                     return;
                 }
@@ -11220,7 +11220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (fileInput) {
                     // Prevenir múltiplos cliques simultâneos
                     if (fileInput.dataset.uploading === 'true') {
-                        console.log('�s�️ Upload de logo já em andamento, ignorando clique');
+                        console.log('Upload de logo já em andamento, ignorando clique');
                         return;
                     }
                     fileInput.dataset.uploading = 'true';
@@ -11322,7 +11322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemEl = document.querySelector(`.item[data-id='${itemId}']`);
                 if (itemEl) {
                     itemEl.dataset.aspectRatio = e.target.value;
-                    console.log(`�Y"� [ASPECT RATIO] Aspect ratio atualizado para: ${e.target.value}`);
+                    console.log(`[ASPECT RATIO] Aspect ratio atualizado para: ${e.target.value}`);
                     // Atualizar preview em tempo real
                     updateLivePreviewFromForm();
                 }
@@ -11401,7 +11401,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                console.log(`�Y"� [UPLOAD] Arquivo selecionado:`, {
+                console.log(`[UPLOAD] Arquivo selecionado:`, {
                     itemId,
                     itemType,
                     fileName: file.name,
@@ -11415,30 +11415,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (file && (itemType === 'banner' || itemType === 'wifi-banner')) {
                     const cropTrigger = itemType === 'wifi-banner' ? 'wifi-banner' : 'banner';
                     const modalItemType = SELECTORS.editItemModal?.dataset?.itemType;
-                    console.log(`�Y"� [BANNER] Upload no modal (${cropTrigger}) item ${itemId}:`, file.name);
+                    console.log(`[BANNER] Upload no modal (${cropTrigger}) item ${itemId}:`, file.name);
                     let itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
 
                     if (!itemEl && itemId && cropTrigger === 'wifi-banner') {
                         itemEl = { dataset: { id: itemId, itemType: 'wifi' } };
-                        console.log(`�s�️ [WIFI-BANNER] Item não encontrado na lista, usando referência temporária`);
+                        console.log(`[WIFI-BANNER] Item não encontrado na lista, usando referência temporária`);
                     } else if (!itemEl && itemId) {
                         itemEl = { dataset: { id: itemId, itemType: 'banner' } };
-                        console.log(`�s�️ [BANNER] Item não encontrado na lista, usando referência temporária`);
+                        console.log(`[BANNER] Item não encontrado na lista, usando referência temporária`);
                     }
 
                     if (itemEl) {
                         if (cropTrigger === 'wifi-banner' && modalItemType === 'wifi' && typeof itemEl.querySelector !== 'function') {
                             itemEl = document.querySelector(`.module-item[data-id='${itemId}']`) || itemEl;
                         }
-                        console.log(`�o. [BANNER] Abrindo cropper (${cropTrigger}) ${itemId}`);
+                        console.log(`[BANNER] Abrindo cropper (${cropTrigger}) ${itemId}`);
                         openCropper(file, cropTrigger, itemEl);
                     } else {
-                        console.error(`�O [BANNER] Item ${itemId} não encontrado para upload`);
+                        console.error(`[BANNER] Item ${itemId} não encontrado para upload`);
                         alert('Erro: Não foi possível encontrar o módulo. Tente fechar e abrir o modal novamente.');
                     }
                 } else if (file && !itemType) {
-                    console.error(`�O [UPLOAD] itemType não encontrado em nenhuma fonte!`);
-                    console.error(`�O [UPLOAD] Debug:`, {
+                    console.error(`[UPLOAD] itemType não encontrado em nenhuma fonte!`);
+                    console.error(`[UPLOAD] Debug:`, {
                         inputDataset: e.target.dataset,
                         uploadAreaDataset: e.target.closest('.image-upload-area')?.dataset,
                         modalDataset: SELECTORS.editItemModal?.dataset,
@@ -12080,7 +12080,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!itemId) return;
 
-            // N�fO deve mais haver itens novos sendo salvos aqui, mas mantemos para compatibilidade
+            // NÃO deve mais haver itens novos sendo salvos aqui, mas mantemos para compatibilidade
             if (isNewItem) {
                 console.warn('Tentativa de salvar item novo via modal - isso não deveria acontecer');
                 SELECTORS.editItemModal.classList.remove('active');
@@ -12096,7 +12096,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // IMPORTANTE: Botão "OK" salva APENAS localmente (frontend)
             // O botão "Publicar alterações" é que salva no servidor
-            console.log(`�Y'� [OK] Salvando alterações do item ${itemId} apenas localmente (não no servidor ainda)...`);
+            console.log(`Y' [OK] Salvando alterações do item ${itemId} apenas localmente (não no servidor ainda)...`);
 
             // Sincronizar dados do modal para o item no DOM
             syncModalDataToItem();
@@ -12107,7 +12107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fechar modal
             SELECTORS.editItemModal.classList.remove('active');
 
-            console.log(`�o. Alterações do item ${itemId} salvas localmente. Clique em "Publicar alterações" para salvar no servidor.`);
+            console.log(`Alterações do item ${itemId} salvas localmente. Clique em "Publicar alterações" para salvar no servidor.`);
 
             return; // Retornar cedo para não executar o código antigo abaixo
 
@@ -12230,13 +12230,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    // Atualizar tamanho da logo (salvar no dataset, mas N�fO aplicar na lista)
+                    // Atualizar tamanho da logo (salvar no dataset, mas NÃO aplicar na lista)
                     if (modalLogoSizeInput) {
                         const logoSizeValue = parseInt(modalLogoSizeInput.value) || 24;
                         if (itemLogoSizeInput) {
                             itemLogoSizeInput.value = logoSizeValue;
                         }
-                        // N�fO atualizar logo na lista - ela deve permanecer fixa (40px)
+                        // NÃO atualizar logo na lista - ela deve permanecer fixa (40px)
                         // O tamanho só aplica no cartão público (profile.ejs)
                         itemEl.dataset.logoSize = logoSizeValue;
                     }
@@ -12326,7 +12326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imageUrlInput = document.getElementById('edit-image-url');
 
                 if (hiddenInput && hiddenInput.value && hiddenInput.value.trim() !== '' && hiddenInput.value.startsWith('[')) {
-                    // �? carrossel - usar o input hidden
+                    // ? carrossel - usar o input hidden
                     try {
                         const images = JSON.parse(hiddenInput.value);
                         if (Array.isArray(images) && images.length > 0) {
@@ -12412,9 +12412,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 await saveAllChanges();
                 SELECTORS.editItemModal.classList.remove('active');
                 updateLivePreviewFromForm();
-                console.log('�o. Alterações salvas com sucesso via modal');
+                console.log('Alterações salvas com sucesso via modal');
             } catch (error) {
-                console.error('�O Erro ao salvar via modal:', error);
+                console.error('O Erro ao salvar via modal:', error);
                 alert(`Erro ao salvar: ${error.message}`);
                 // Não fechar o modal se houver erro
             }
@@ -12483,7 +12483,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Prevenir processamento duplicado
                     if (fileInput.dataset.processing === 'true') {
-                        console.log('�s�️ Logo já está sendo processado, ignorando');
+                        console.log('Logo já está sendo processado, ignorando');
                         return;
                     }
                     fileInput.dataset.processing = 'true';
@@ -12680,37 +12680,37 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('change', async function carouselUploadHandler(e) {
             if (!e.target.classList.contains('carousel-file-input-new')) return;
 
-            console.log('�Y"" [CARROSSEL] Upload iniciado');
+            console.log('Y"" [CARROSSEL] Upload iniciado');
             const fileInput = e.target;
             const itemId = fileInput.dataset.itemId || fileInput.getAttribute('data-item-id') || fileInput.id.replace('carousel-file-new-', '');
 
             if (!itemId) {
-                console.error('�O [CARROSSEL] itemId não encontrado. Input:', fileInput);
-                console.error('�O [CARROSSEL] Dataset:', fileInput.dataset);
-                console.error('�O [CARROSSEL] ID:', fileInput.id);
+                console.error('[CARROSSEL] itemId não encontrado. Input:', fileInput);
+                console.error('[CARROSSEL] Dataset:', fileInput.dataset);
+                console.error('[CARROSSEL] ID:', fileInput.id);
                 return;
             }
 
             const files = Array.from(fileInput.files || []);
             if (files.length === 0) {
-                console.log('�"�️ [CARROSSEL] Nenhum arquivo selecionado');
+                console.log('[CARROSSEL] Nenhum arquivo selecionado');
                 return;
             }
 
-            console.log(`�Y"� [CARROSSEL] Processando ${files.length} arquivo(s) para itemId: ${itemId}`);
+            console.log(`[CARROSSEL] Processando ${files.length} arquivo(s) para itemId: ${itemId}`);
 
             // Buscar itemEl ANTES de qualquer operação assíncrona - com try/catch para segurança extra
             let itemEl = null;
             try {
                 itemEl = document.querySelector(`.item[data-id="${itemId}"], .module-item[data-id="${itemId}"]`);
             } catch (err) {
-                console.error('�O [CARROSSEL] Erro ao buscar itemEl:', err);
+                console.error('[CARROSSEL] Erro ao buscar itemEl:', err);
                 alert('Erro ao localizar o item do carrossel. Recarregue a página e tente novamente.');
                 return;
             }
 
             if (!itemEl) {
-                console.error(`�O [CARROSSEL] Item não encontrado para id: ${itemId}`);
+                console.error(`[CARROSSEL] Item não encontrado para id: ${itemId}`);
                 alert('Erro: Item do carrossel não encontrado. Recarregue a página e tente novamente.');
                 return;
             }
@@ -12721,14 +12721,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (uploadLabel) uploadLabel.style.opacity = '0.6';
 
             try {
-                console.log('�Y"� [CARROSSEL] Solicitando autorização...');
+                console.log('[CARROSSEL] Solicitando autorização...');
                 const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                     method: 'POST',
                     headers: HEADERS
                 });
                 if (!authResponse.ok) throw new Error('Falha na autorização');
                 const { uploadURL } = await authResponse.json();
-                console.log('�o. [CARROSSEL] Autorização obtida');
+                console.log('[CARROSSEL] Autorização obtida');
 
                 const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ";
                 const uploadedImages = [];
@@ -12743,7 +12743,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         continue;
                     }
 
-                    console.log(`�Y"� [CARROSSEL] Enviando ${file.name}...`);
+                    console.log(`[CARROSSEL] Enviando ${file.name}...`);
                     const formData = new FormData();
                     formData.append('file', file);
                     // uploadURL pode ser /api/upload/receive-one (R2) e exige Authorization
@@ -12759,19 +12759,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && accountHash ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
                     if (finalUrl) {
                         uploadedImages.push(finalUrl);
-                        console.log(`�o. [CARROSSEL] ${file.name} enviado: ${finalUrl.substring(0, 50)}...`);
+                        console.log(`[CARROSSEL] ${file.name} enviado: ${finalUrl.substring(0, 50)}...`);
                     } else {
-                        console.warn('�s�️ [CARROSSEL] Resposta sem URL:', uploadData);
+                        console.warn('[CARROSSEL] Resposta sem URL:', uploadData);
                     }
                 }
 
                 if (uploadedImages.length > 0) {
-                    console.log(`�o. [CARROSSEL] ${uploadedImages.length} imagem(ns) enviada(s), atualizando interface...`);
+                    console.log(`[CARROSSEL] ${uploadedImages.length} imagem(ns) enviada(s), atualizando interface...`);
 
                     // Verificar novamente se itemEl ainda existe (pode ter sido removido do DOM)
                     const currentItemEl = document.querySelector(`.item[data-id="${itemId}"]`);
                     if (!currentItemEl) {
-                        console.warn('�s�️ [CARROSSEL] Item não encontrado após upload. Tentando continuar...');
+                        console.warn('[CARROSSEL] Item não encontrado após upload. Tentando continuar...');
                     }
 
                     // Buscar inputs do modal PRIMEIRO (prioridade)
@@ -12787,7 +12787,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const parsed = JSON.parse(jsonInput.value);
                             existingImages = Array.isArray(parsed) ? parsed : [];
                         } catch (e) {
-                            console.warn('�s�️ [CARROSSEL] Erro ao parsear imagens existentes:', e);
+                            console.warn('[CARROSSEL] Erro ao parsear imagens existentes:', e);
                         }
                     }
 
@@ -12797,15 +12797,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Atualizar AMBOS os inputs (modal e item) para garantir sincronização
                     if (jsonInputModal) {
                         jsonInputModal.value = jsonValue;
-                        console.log('�o. [CARROSSEL] Input JSON do modal atualizado');
+                        console.log('[CARROSSEL] Input JSON do modal atualizado');
                     }
                     if (jsonInputItem) {
                         jsonInputItem.value = jsonValue;
-                        console.log('�o. [CARROSSEL] Input JSON do item atualizado');
+                        console.log('[CARROSSEL] Input JSON do item atualizado');
                     }
 
                     if (!jsonInputModal && !jsonInputItem) {
-                        console.error('�O [CARROSSEL] Input JSON não encontrado! Procurando...');
+                        console.error('[CARROSSEL] Input JSON não encontrado! Procurando...');
                         console.error('Modal body:', SELECTORS.editModalBody);
                         console.error('Item el:', currentItemEl);
                     }
@@ -12825,19 +12825,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Renderizar IMEDIATAMENTE
-                    console.log('�YZ� [CARROSSEL] Renderizando imagens...');
+                    console.log('YZ [CARROSSEL] Renderizando imagens...');
                     renderCarouselImagesNew(itemId, allImages);
 
-                    // N�fO chamar syncModalDataToItem() aqui porque já atualizamos ambos os inputs manualmente
+                    // NÃO chamar syncModalDataToItem() aqui porque já atualizamos ambos os inputs manualmente
                     // syncModalDataToItem() pode sobrescrever os valores que acabamos de atualizar
 
                     updateLivePreviewFromForm();
-                    console.log('�o.�o.�o. [CARROSSEL] Upload concluído com sucesso!');
+                    console.log('[CARROSSEL] Upload concluído com sucesso!');
                 } else {
-                    console.warn('�s�️ [CARROSSEL] Nenhuma imagem foi enviada');
+                    console.warn('[CARROSSEL] Nenhuma imagem foi enviada');
                 }
             } catch (error) {
-                console.error('�O�O�O [CARROSSEL] Erro no upload:', error);
+                console.error('OO[CARROSSEL] Erro no upload:', error);
                 const errorMessage = error && error.message ? error.message : 'Erro desconhecido ao fazer upload';
                 alert(`Erro ao fazer upload: ${errorMessage}`);
             } finally {
@@ -12873,28 +12873,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemId = fileInput.dataset.itemId || fileInput.getAttribute('data-item-id');
 
                 if (!itemId) {
-                    console.error('�O itemId não encontrado no input de arquivo do carrossel (itemsContainer)');
+                    console.error('O itemId não encontrado no input de arquivo do carrossel (itemsContainer)');
                     return;
                 }
 
                 const files = Array.from(fileInput.files || []);
 
                 if (files.length === 0) {
-                    console.log('�"�️ Nenhum arquivo selecionado (itemsContainer)');
+                    console.log('Nenhum arquivo selecionado (itemsContainer)');
                     return;
                 }
 
-                console.log(`�Y"� Iniciando upload de ${files.length} imagem(ns) para carrossel (itemsContainer), itemId: ${itemId}`);
+                console.log(`Iniciando upload de ${files.length} imagem(ns) para carrossel (itemsContainer), itemId: ${itemId}`);
 
                 const itemEl = document.querySelector(`.item[data-id="${itemId}"]`);
                 if (!itemEl) {
-                    console.error('�O Item não encontrado para upload do carrossel (itemsContainer)');
+                    console.error('O Item não encontrado para upload do carrossel (itemsContainer)');
                     return;
                 }
 
                 const uploadArea = fileInput.closest('.carousel-add-image-area');
                 if (!uploadArea) {
-                    console.error('�O Área de upload não encontrada (itemsContainer)');
+                    console.error('O Área de upload não encontrada (itemsContainer)');
                     return;
                 }
 
@@ -12950,14 +12950,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (uploadedImages.length > 0) {
-                        console.log(`�Y"� ${uploadedImages.length} imagem(ns) enviada(s) com sucesso, processando...`);
+                        console.log(`${uploadedImages.length} imagem(ns) enviada(s) com sucesso, processando...`);
 
                         // Obter imagens existentes - procurar tanto no modal quanto no item
                         const jsonInputModal = SELECTORS.editModalBody?.querySelector(`.carousel-images-json-input[data-item-id="${itemId}"]`);
                         const jsonInputItem = itemEl.querySelector(`.carousel-images-json-input[data-item-id="${itemId}"]`);
                         const jsonInput = jsonInputModal || jsonInputItem;
 
-                        console.log('�Y"� Inputs encontrados:', {
+                        console.log('Inputs encontrados:', {
                             jsonInputModal: !!jsonInputModal,
                             jsonInputItem: !!jsonInputItem,
                             jsonInput: !!jsonInput
@@ -12975,33 +12975,33 @@ document.addEventListener('DOMContentLoaded', () => {
                                         !url.includes('via.placeholder') &&
                                         !url.startsWith('data:image/svg+xml');
                                 }) : [];
-                                console.log(`�Y"< [ITEMS CONTAINER] ${existingImages.length} imagem(ns) existente(s) encontrada(s) (filtrados placeholders)`);
+                                console.log(`Y"< [ITEMS CONTAINER] ${existingImages.length} imagem(ns) existente(s) encontrada(s) (filtrados placeholders)`);
                             } catch (e) {
-                                console.warn('�s�️ Erro ao parsear imagens existentes, iniciando array vazio:', e);
+                                console.warn('Erro ao parsear imagens existentes, iniciando array vazio:', e);
                                 existingImages = [];
                             }
                         } else {
-                            console.log('�"�️ Nenhuma imagem existente encontrada, iniciando array vazio');
+                            console.log('Nenhuma imagem existente encontrada, iniciando array vazio');
                         }
 
                         // Adicionar novas imagens
                         const allImages = [...existingImages, ...uploadedImages];
-                        console.log(`�Y"S Total de imagens após adicionar: ${allImages.length}`);
+                        console.log(`Y"S Total de imagens após adicionar: ${allImages.length}`);
 
                         // Atualizar TODOS os inputs hidden (modal e item)
                         const jsonValue = JSON.stringify(allImages);
                         if (jsonInputModal) {
                             jsonInputModal.value = jsonValue;
-                            console.log('�o. Input JSON do modal atualizado');
+                            console.log('Input JSON do modal atualizado');
                         } else {
-                            console.warn('�s�️ Input JSON do modal não encontrado!');
+                            console.warn('Input JSON do modal não encontrado!');
                         }
 
                         if (jsonInputItem) {
                             jsonInputItem.value = jsonValue;
-                            console.log('�o. Input JSON do item atualizado');
+                            console.log('Input JSON do item atualizado');
                         } else {
-                            console.warn('�s�️ Input JSON do item não encontrado!');
+                            console.warn('Input JSON do item não encontrado!');
                         }
 
                         // Atualizar image_url (primeira imagem REAL, não placeholder) - tanto no modal quanto no item
@@ -13017,28 +13017,28 @@ document.addEventListener('DOMContentLoaded', () => {
                             ? (typeof realImages[0] === 'string' ? realImages[0] : (realImages[0].image_url || realImages[0]))
                             : (allImages.length > 0 ? (typeof allImages[0] === 'string' ? allImages[0] : (allImages[0].image_url || allImages[0])) : '');
 
-                        console.log('�Y-�️ [ITEMS CONTAINER] Primeira imagem real selecionada:', firstImg.substring(0, 80) + '...');
+                        console.log('[ITEMS CONTAINER] Primeira imagem real selecionada:', firstImg.substring(0, 80) + '...');
 
                         const imageInputModal = SELECTORS.editModalBody?.querySelector(`#edit-image-url`);
                         const imageInputItem = itemEl.querySelector('.item-image-url-input');
                         if (imageInputModal) {
                             imageInputModal.value = firstImg;
-                            console.log('�o. Input image_url do modal atualizado com imagem real');
+                            console.log('Input image_url do modal atualizado com imagem real');
                         }
                         if (imageInputItem) {
                             imageInputItem.value = firstImg;
-                            console.log('�o. Input image_url do item atualizado com imagem real');
+                            console.log('Input image_url do item atualizado com imagem real');
                         }
 
                         // Atualizar display no item da lista
                         const displayDest = itemEl.querySelector('.item-display-dest');
                         if (displayDest) {
                             displayDest.textContent = `${allImages.length} imagem${allImages.length !== 1 ? 'ns' : ''}`;
-                            console.log('�o. Display do item atualizado:', displayDest.textContent);
+                            console.log('Display do item atualizado:', displayDest.textContent);
                         }
 
                         // Renderizar lista atualizada no modal IMEDIATAMENTE
-                        console.log('�YZ� [ITEMS CONTAINER] Renderizando lista de imagens IMEDIATAMENTE...');
+                        console.log('YZ [ITEMS CONTAINER] Renderizando lista de imagens IMEDIATAMENTE...');
                         // Usar requestAnimationFrame para garantir que o DOM está pronto
                         requestAnimationFrame(() => {
                             renderCarouselImagesNew(itemId, allImages);
@@ -13047,12 +13047,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             }, 100);
                         });
 
-                        console.log(`�o. �o. �o. [ITEMS CONTAINER] ${uploadedImages.length} imagem(ns) adicionada(s) com sucesso! Total: ${allImages.length}`);
+                        console.log(`[ITEMS CONTAINER] ${uploadedImages.length} imagem(ns) adicionada(s) com sucesso! Total: ${allImages.length}`);
                     } else {
-                        console.warn('�s�️ Nenhuma imagem foi enviada com sucesso');
+                        console.warn('Nenhuma imagem foi enviada com sucesso');
                     }
                 } catch (error) {
-                    console.error('�O Erro no upload do carrossel:', error);
+                    console.error('O Erro no upload do carrossel:', error);
                     alert(`Erro ao fazer upload: ${error.message}`);
                 } finally {
                     if (loader) loader.style.display = 'none';
@@ -13333,14 +13333,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(link);
             } catch (err) {
                 console.error('Erro ao baixar arte do QR:', err);
-                alert('Não foi possível baixar a arte (a logomarca pode bloquear o download). Desmarque �?oIncluir logomarca�?� e tente de novo.');
+                alert('Não foi possível baixar a arte (a logomarca pode bloquear o download). Desmarque ?oIncluir logomarca— e tente de novo.');
             }
         };
 
         if (downloadQrBtn) downloadQrBtn.addEventListener('click', downloadFunction);
         if (downloadQrBtnAlt) downloadQrBtnAlt.addEventListener('click', downloadFunction);
 
-        // --- Nova L�f³gica de UI para Adicionar Item ---
+        // --- Nova Lf³gica de UI para Adicionar Item ---
         if (SELECTORS.addItemBtn) {
             SELECTORS.addItemBtn.addEventListener('click', () => {
                 if (SELECTORS.addItemModal) SELECTORS.addItemModal.classList.add('active');
@@ -13454,11 +13454,11 @@ document.addEventListener('DOMContentLoaded', () => {
             radiusPresetRadios.forEach(r => {
                 r.addEventListener('change', () => {
                     const val = r.value;
-                    // Valores padr�f£o
+                    // Valores padrf£o
                     let tl = 12, tr = 12, br = 12, bl = 12;
                     switch (val) {
                         case 'all':
-                            // Para "Uniforme", usa o valor atual do primeiro input ou 12 como padr�f£o
+                            // Para "Uniforme", usa o valor atual do primeiro input ou 12 como padrf£o
                             const currentValue = parseInt(SELECTORS.radiusTL?.value || 12, 10);
                             tl = tr = br = bl = currentValue;
                             break;
@@ -13488,7 +13488,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Fun�f§�f£o para detectar qual preset est�f¡ ativo baseado nos valores atuais
+        // Funf§f£o para detectar qual preset estf¡ ativo baseado nos valores atuais
         function detectActivePreset() {
             const tl = parseInt(SELECTORS.radiusTL?.value || 12, 10);
             const tr = parseInt(SELECTORS.radiusTR?.value || 12, 10);
@@ -13511,7 +13511,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return null; // Valores customizados
         }
 
-        // Fun�f§�f£o para atualizar o preset selecionado
+        // Funf§f£o para atualizar o preset selecionado
         function updatePresetSelection() {
             const activePreset = detectActivePreset();
             const presetRadios = document.querySelectorAll('input[name="radius-preset"]');
@@ -13521,7 +13521,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Inputs individuais de raio com sincroniza�f§�f£o
+        // Inputs individuais de raio com sincronizaf§f£o
         if (SELECTORS.radiusTL) {
             SELECTORS.radiusTL.addEventListener('input', () => {
                 updateLivePreviewFromForm();
@@ -13547,7 +13547,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Bot�f£o "Aplicar como padr�f£o"
+        // Botf£o "Aplicar como padrf£o"
         const saveRadiusDefaultBtn = document.getElementById('save-radius-default-btn');
         if (saveRadiusDefaultBtn) {
             saveRadiusDefaultBtn.addEventListener('click', () => {
@@ -13556,7 +13556,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const br = parseInt(SELECTORS.radiusBR?.value || 12, 10);
                 const bl = parseInt(SELECTORS.radiusBL?.value || 12, 10);
 
-                // Salva os valores no localStorage para usar como padr�f£o
+                // Salva os valores no localStorage para usar como padrf£o
                 localStorage.setItem('defaultBorderRadius', JSON.stringify({ tl, tr, br, bl }));
 
                 // Feedback visual
@@ -13584,7 +13584,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // IMPORTANTE: sales_page e digital_form são criados DIRETAMENTE no servidor
                     if (itemType === 'sales_page' || itemType === 'digital_form') {
-                        console.log(`�z. Criando ${itemType} DIRETAMENTE no servidor...`);
+                        console.log(`z. Criando ${itemType} DIRETAMENTE no servidor...`);
 
                         try {
                             const response = await fetch(`${API_URL}/api/profile/items`, {
@@ -13603,7 +13603,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
 
                             const newItem = await response.json();
-                            console.log(`�o. ${itemType} criado diretamente no servidor:`, newItem);
+                            console.log(`${itemType} criado diretamente no servidor:`, newItem);
 
                             SELECTORS.addItemModal.classList.remove('active');
 
@@ -13618,7 +13618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 renderEditor(window.currentProfileData);
                             }, 100);
                         } catch (error) {
-                            console.error(`�O Erro ao criar ${itemType}:`, error);
+                            console.error(`O Erro ao criar ${itemType}:`, error);
                             const moduleName = itemType === 'sales_page' ? 'página de vendas' : 'formulário digital';
                             alert(`Não foi possível criar o ${moduleName}: ${error.message}`);
                         }
@@ -13635,7 +13635,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         const newItem = await response.json();
-                        console.log('�o. Item criado com sucesso:', newItem);
+                        console.log('Item criado com sucesso:', newItem);
 
                         SELECTORS.addItemModal.classList.remove('active');
 
@@ -13650,7 +13650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             renderEditor(window.currentProfileData);
                         }, 100);
                     } catch (error) {
-                        console.error("�O Erro ao criar item:", error);
+                        console.error("O Erro ao criar item:", error);
                         alert(`Não foi possível criar o item: ${error.message}`);
                     }
                 }
@@ -13664,7 +13664,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fileInput = document.getElementById('dashboard-photo-file-input');
 
             if (!uploadArea || !fileInput) {
-                console.warn('�s�️ Elementos de upload de foto não encontrados ainda:', {
+                console.warn('Elementos de upload de foto não encontrados ainda:', {
                     uploadArea: !!uploadArea,
                     fileInput: !!fileInput
                 });
@@ -13673,7 +13673,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Verificar se já tem listeners (evitar duplicação)
             if (uploadArea.dataset.listenersAdded === 'true') {
-                console.log('�Y"� Listeners já adicionados, pulando...');
+                console.log('Listeners já adicionados, pulando...');
                 return true;
             }
 
@@ -13693,7 +13693,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Event listener para quando arquivo é selecionado
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
-                console.log('�Y"� Arquivo selecionado:', file ? file.name : 'nenhum');
+                console.log('Arquivo selecionado:', file ? file.name : 'nenhum');
                 if (file) {
                     openCropper(file, 'profile');
                     // Resetar input para permitir selecionar o mesmo arquivo novamente
@@ -13706,7 +13706,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Marcar que listeners foram adicionados
             uploadArea.dataset.listenersAdded = 'true';
 
-            console.log('�o. Upload de foto configurado com sucesso');
+            console.log('Upload de foto configurado com sucesso');
             return true;
         };
 
@@ -13781,7 +13781,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderIcons();
 
-        // Event listeners para carrossel - usar delega�f§�f£o de eventos
+        // Event listeners para carrossel - usar delegaf§f£o de eventos
         document.addEventListener('click', async (e) => {
             // Botão de adicionar foto
             if (e.target.closest('.add-carousel-image-btn')) {
@@ -13877,9 +13877,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Fun�f§�f£o para renderizar lista de imagens do carrossel
+    // Funf§f£o para renderizar lista de imagens do carrossel
     // Função específica para o novo módulo Carrossel (não banner)
-    // ===== NOVO CARROSSEL - FUN�?�.ES LIMPAS =====
+    // ===== NOVO CARROSSEL - FUN—.ES LIMPAS =====
 
     // Função para renderizar imagens do carrossel
     function renderCarouselImagesNew(itemId, images) {
@@ -13889,7 +13889,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container = document.getElementById(`carousel-images-list-${itemId}`);
         }
         if (!container) {
-            console.error(`�O [CARROSSEL] Container não encontrado para itemId: ${itemId}`);
+            console.error(`[CARROSSEL] Container não encontrado para itemId: ${itemId}`);
             console.error(`   Tentou: carousel-images-list-new-${itemId} e carousel-images-list-${itemId}`);
             return;
         }
@@ -13932,15 +13932,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Atualizar ambos para garantir que estão sincronizados
         if (jsonInputModal) {
             jsonInputModal.value = jsonValue;
-            console.log(`�o. [CARROSSEL] JSON do modal atualizado: ${realImages.length} imagem(ns)`);
+            console.log(`[CARROSSEL] JSON do modal atualizado: ${realImages.length} imagem(ns)`);
         }
         if (jsonInputItem) {
             jsonInputItem.value = jsonValue;
-            console.log(`�o. [CARROSSEL] JSON do item atualizado: ${realImages.length} imagem(ns)`);
+            console.log(`[CARROSSEL] JSON do item atualizado: ${realImages.length} imagem(ns)`);
         }
 
         if (!jsonInputModal && !jsonInputItem) {
-            console.warn(`�s�️ [CARROSSEL] Nenhum input JSON encontrado para itemId: ${itemId}`);
+            console.warn(`[CARROSSEL] Nenhum input JSON encontrado para itemId: ${itemId}`);
         }
 
         // Atualizar image_url
@@ -13979,7 +13979,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleShareImageUpload(imageBlob) {
         try {
-            console.log('�Y"� Iniciando upload da imagem de compartilhamento...');
+            console.log('Iniciando upload da imagem de compartilhamento...');
 
             // Obter autorização para upload
             const authResponse = await safeFetch(`${API_URL}/api/upload/auth`, {
@@ -13989,7 +13989,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!authResponse.ok) {
                 const errorText = await authResponse.text();
-                console.error('�O Erro na autorização:', errorText);
+                console.error('O Erro na autorização:', errorText);
                 throw new Error('Falha na autorização para upload.');
             }
 
@@ -14000,7 +14000,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('URL de upload não recebida');
             }
 
-            console.log('�o. Autorização obtida, fazendo upload...');
+            console.log('Autorização obtida, fazendo upload...');
 
             // Fazer upload para Cloudflare
             const formData = new FormData();
@@ -14012,19 +14012,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!uploadResponse.ok) {
                 const errorText = await uploadResponse.text();
-                console.error('�O Erro no upload para Cloudflare:', errorText);
+                console.error('O Erro no upload para Cloudflare:', errorText);
                 throw new Error('Falha no upload para o Cloudflare.');
             }
 
             const uploadData = await uploadResponse.json();
-            console.log('�o. Upload para Cloudflare concluído:', uploadData);
+            console.log('Upload para Cloudflare concluído:', uploadData);
 
             const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ";
             const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && uploadData.result.id ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
             if (!finalUrl) {
                 throw new Error('Resposta do servidor de upload inválida. Tente novamente.');
             }
-            console.log('�o. URL final gerada:', finalUrl);
+            console.log('URL final gerada:', finalUrl);
 
             // Salvar no servidor
             console.log('Salvando URL no servidor...');
@@ -14039,11 +14039,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!saveResponse.ok) {
                 const errorData = await saveResponse.json().catch(() => ({ message: 'Erro desconhecido' }));
-                console.error('�O Erro ao salvar no servidor:', errorData);
+                console.error('O Erro ao salvar no servidor:', errorData);
 
                 // Verificar se é erro de migration
                 if (errorData.error === 'MIGRATION_REQUIRED') {
-                    alert('�s�️ �? necessário executar a migration 019 primeiro. A coluna share_image_url ainda não existe no banco de dados.');
+                    alert('? necessário executar a migration 019 primeiro. A coluna share_image_url ainda não existe no banco de dados.');
                 } else {
                     throw new Error(errorData.message || 'Erro ao salvar imagem de compartilhamento');
                 }
@@ -14051,7 +14051,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const saveData = await saveResponse.json();
-            console.log('�o. Imagem salva com sucesso:', saveData);
+            console.log('Imagem salva com sucesso:', saveData);
 
             alert('Imagem de compartilhamento salva com sucesso!');
 
@@ -14064,8 +14064,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error('�O Erro completo no upload da imagem de compartilhamento:', error);
-            console.error('�O Stack trace:', error.stack);
+            console.error('O Erro completo no upload da imagem de compartilhamento:', error);
+            console.error('O Stack trace:', error.stack);
 
             // Tratamento específico de erros de rede
             let errorMessage = 'Erro ao fazer upload da imagem.';
@@ -14165,7 +14165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Se forceRefresh for true, SEMPRE forçar atualização imediata
             if (forceRefresh) {
-                console.log('�Y"" FOR�?ANDO atualização imediata (ignorando cooldown e requisições em andamento)...');
+                console.log('Y"" FOR?ANDO atualização imediata (ignorando cooldown e requisições em andamento)...');
                 // Limpar promise anterior se existir para forçar nova requisição
                 profileFetchPromise = null;
                 lastProfileFetch = 0; // Resetar cooldown completamente
@@ -14251,7 +14251,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (authRelated || e.status === 429 || !transient || attempt >= profileAttempts - 1) {
                                 throw e;
                             }
-                            console.warn('�s�️ Perfil: falha de rede transitória, nova tentativa', attempt + 1, '/', profileAttempts, e);
+                            console.warn('Perfil: falha de rede transitória, nova tentativa', attempt + 1, '/', profileAttempts, e);
                         }
                     }
                     throw lastAttemptError || new Error('Erro ao carregar perfil');
@@ -14265,8 +14265,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             // Log para debug - ver o que está sendo retornado
-            console.log('�Y"� Dados recebidos da API:', data);
-            console.log('�Y"� Estrutura dos dados:', {
+            console.log('Dados recebidos da API:', data);
+            console.log('Estrutura dos dados:', {
                 hasData: !!data,
                 hasDetails: !!data?.details,
                 hasItems: !!data?.items,
@@ -14291,7 +14291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (typeof data === 'object' && !Array.isArray(data)) {
                 // Pode ser que a API retorne os dados diretamente sem o wrapper 'details'
                 // Tentar usar os dados como 'details' e criar array vazio para items
-                console.warn('�s�️ API retornou dados sem wrapper "details". Tentando normalizar...');
+                console.warn('API retornou dados sem wrapper "details". Tentando normalizar...');
                 profileData = {
                     details: data,
                     items: []
@@ -14307,23 +14307,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Garantir que items é sempre um array
             if (!Array.isArray(profileData.items)) {
-                console.warn('�s�️ Campo "items" não é um array. Convertendo...');
+                console.warn('Campo "items" não é um array. Convertendo...');
                 profileData.items = [];
             }
 
-            console.log('�o. Dados validados com sucesso. Renderizando editor...');
-            console.log(`�Y"S Total de itens para renderizar: ${profileData.items?.length || 0}`);
+            console.log('Dados validados com sucesso. Renderizando editor...');
+            console.log(`Y"S Total de itens para renderizar: ${profileData.items?.length || 0}`);
             if (profileData.items && profileData.items.length > 0) {
-                console.log(`�Y"< IDs dos itens:`, profileData.items.map(item => `${item.id} (${item.item_type})`).join(', '));
+                console.log(`Y"< IDs dos itens:`, profileData.items.map(item => `${item.id} (${item.item_type})`).join(', '));
             }
 
             // IMPORTANTE: Atualizar window.currentProfileData para garantir que está sincronizado
             window.currentProfileData = profileData;
             currentProfileData = profileData;
 
-            console.log('�o. window.currentProfileData atualizado com', profileData.items?.length || 0, 'itens');
+            console.log('window.currentProfileData atualizado com', profileData.items?.length || 0, 'itens');
             if (profileData.items && profileData.items.length > 0) {
-                console.log('�Y"< Itens atualizados:', profileData.items.map(item => ({
+                console.log('Y"< Itens atualizados:', profileData.items.map(item => ({
                     id: item.id,
                     type: item.item_type,
                     hasImage: !!item.image_url,
@@ -14333,14 +14333,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Renderizar editor com dados validados
             try {
-                console.log('�YZ� Chamando renderEditor...');
+                console.log('YZ Chamando renderEditor...');
                 renderEditor(profileData);
-                console.log('�o. renderEditor concluído com sucesso');
+                console.log('renderEditor concluído com sucesso');
 
                 reconcileModulesListWithProfileData(profileData);
             } catch (renderError) {
-                console.error('�O Erro ao renderizar editor:', renderError);
-                console.error('�O Stack trace:', renderError.stack);
+                console.error('O Erro ao renderizar editor:', renderError);
+                console.error('O Stack trace:', renderError.stack);
                 throw new Error(`Erro ao renderizar interface: ${renderError.message}`);
             }
 
@@ -14357,7 +14357,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 300);
             }
         } catch (error) {
-            console.error('�O Erro ao carregar perfil:', error);
+            console.error('O Erro ao carregar perfil:', error);
             console.error('Stack trace:', error.stack);
 
             // Se for erro de autenticação, redireciona para login
@@ -14376,7 +14376,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Tratar 429 (Rate Limit) silenciosamente - sem alerta para o usuário
             if (error.status === 429 || error.message.includes('Muitas requisições')) {
                 // Erro 429 - Rate Limit - apenas log no console, sem incomodar o usuário
-                console.warn('�s�️ Rate limit atingido. Usando dados locais do cache.');
+                console.warn('Rate limit atingido. Usando dados locais do cache.');
 
                 // Não tentar novamente automaticamente em caso de 429
                 return;
@@ -14388,7 +14388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ========== FUN�?�.ES PARA GERENCIAR PRODUTOS DO CATÁLOGO ==========
+    // ========== FUN—.ES PARA GERENCIAR PRODUTOS DO CATÁLOGO ==========
     // REMOVIDO COMPLETAMENTE
     /*
     async function loadProductsForCatalog(itemId) {
@@ -14744,8 +14744,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     image_url: imageUrl || null 
                 };
                 
-                console.log(`�Y'� Salvando produto:`, { itemId, productId, requestBody, method, url });
-                console.log(`�Y"� Headers:`, HEADERS);
+                console.log(`Y' Salvando produto:`, { itemId, productId, requestBody, method, url });
+                console.log(`Headers:`, HEADERS);
                 
                 const response = await safeFetch(url, {
                     method,
@@ -14762,16 +14762,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (e) {
                         errorMessage = `Erro ${response.status}: ${errorText || response.statusText}`;
                     }
-                    console.error('�O Erro ao salvar produto:', errorMessage);
+                    console.error('O Erro ao salvar produto:', errorMessage);
                     throw new Error(errorMessage);
                 }
                 
                 const result = await response.json();
-                console.log('�o. Produto salvo com sucesso:', result);
+                console.log('Produto salvo com sucesso:', result);
                 
                 // Verificar se o produto foi realmente salvo
                 if (!result.product && !result.message) {
-                    console.warn('�s�️ Resposta da API não contém produto ou mensagem:', result);
+                    console.warn('Resposta da API não contém produto ou mensagem:', result);
                 }
                 
                 // Fechar modal do produto
@@ -14780,11 +14780,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Aguardar um pouco antes de recarregar para garantir que o backend processou
                 setTimeout(async () => {
                     try {
-                        console.log(`�Y"" Recarregando produtos após salvar produto para catálogo ${itemId}...`);
+                        console.log(`Y"" Recarregando produtos após salvar produto para catálogo ${itemId}...`);
                         await loadProductsForCatalog(itemId);
-                        console.log('�o. Produtos recarregados com sucesso');
+                        console.log('Produtos recarregados com sucesso');
                     } catch (err) {
-                        console.error('�O Erro ao recarregar produtos após salvar:', err);
+                        console.error('O Erro ao recarregar produtos após salvar:', err);
                     }
                 }, 500);
                 
@@ -14806,7 +14806,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 500);
                 }
             } catch (error) {
-                console.error('�O Erro ao salvar produto:', error);
+                console.error('O Erro ao salvar produto:', error);
                 alert(`Erro ao salvar produto: ${error.message}`);
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalBtnText;
@@ -14853,7 +14853,7 @@ document.addEventListener('DOMContentLoaded', () => {
     */
 
     async function main() {
-        console.log('�Ys? Iniciando função main()...');
+        console.log('Ys? Iniciando função main()...');
         setupEventListeners();
 
         // Aplicar visibilidade da aba Empresa e outros controles (ADM, logo) em um único lugar
@@ -14869,7 +14869,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const empresaTab = document.querySelector('.sidebar-tab[data-tab="times"]');
             if (empresaTab) {
                 empresaTab.style.display = showEmpresa ? 'flex' : 'none';
-                console.log(showEmpresa ? '�o. Aba "Empresa" visível (ADM, modo empresa ou plano com Modo Empresa)' : '�"�️ Aba "Empresa" oculta');
+                console.log(showEmpresa ? 'Aba "Empresa" visível (ADM, modo empresa ou plano com Modo Empresa)' : 'Aba "Empresa" oculta');
             }
 
             const admLink = document.getElementById('adm-link');
@@ -14910,13 +14910,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Perfil e status em paralelo (antes o painel esperava o perfil inteiro para só depois pedir o plano)
         const profilePromise = fetchProfileData().then(function () {
-            console.log('�o. fetchProfileData() concluído com sucesso');
+            console.log('fetchProfileData() concluído com sucesso');
         }).catch(function (error) {
-            console.error('�O Erro ao carregar dados do perfil:', error);
+            console.error('O Erro ao carregar dados do perfil:', error);
             if (error && error.status !== 429) {
-                console.warn('�s�️ Erro ao carregar perfil, continuando com interface básica:', error);
+                console.warn('Erro ao carregar perfil, continuando com interface básica:', error);
             } else if (error && error.status === 429) {
-                console.error('�Ys� Rate limit atingido. Aguarde antes de tentar novamente.');
+                console.error('Ys Rate limit atingido. Aguarde antes de tentar novamente.');
             }
         });
         const statusPromise = fetchAndUpdateUserStatus();
@@ -15422,7 +15422,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filtrar planos: excluir King Essential (king_base)
         const filteredPlans = plans.filter(plan => plan.plan_code !== 'king_base');
-        console.log(`�Y"< Planos filtrados na assinatura: ${filteredPlans.length} planos (excluído: King Essential)`);
+        console.log(`Y"< Planos filtrados na assinatura: ${filteredPlans.length} planos (excluído: King Essential)`);
 
         // Usar função compartilhada se disponível, senão usar lógica antiga
         if (typeof window.renderPlansShared === 'function') {
@@ -15493,7 +15493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> Acesso a todos os módulos, exceto:</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">�o- Não Incluído:</strong>
+                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
                         </li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Logomarca editável</li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Carrossel</li>
@@ -15509,14 +15509,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">�o" Módulos Incluídos:</strong>
+                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
                         </li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Portfólio</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Banner</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">�o- Não Incluído:</strong>
+                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
                         </li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Gestão Financeira</li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Contratos</li>
@@ -15528,14 +15528,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">�o" Módulos Incluídos:</strong>
+                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
                         </li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Portfólio</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Banner</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">�o- Não Incluído:</strong>
+                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
                         </li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> King Forms</li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Contratos</li>
@@ -15547,7 +15547,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">�o" Módulos Incluídos:</strong>
+                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
                         </li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
@@ -15555,7 +15555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Banner</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Gestão Financeira</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">�o- Não Incluído:</strong>
+                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
                         </li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> King Forms</li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Agenda Inteligente</li>
@@ -15567,14 +15567,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil de cartão virtual</li>
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 2 perfis de Gestão Financeira</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">�o" Módulos Incluídos:</strong>
+                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
                         </li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Contratos</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Gestão Financeira</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">�o- Não Incluído:</strong>
+                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
                         </li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> King Forms</li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Agenda Inteligente</li>
@@ -15585,7 +15585,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">�o" Módulos Incluídos:</strong>
+                            <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
                         </li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Gestão Financeira</li>
                         <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Contratos</li>
@@ -15601,7 +15601,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> Modo Empresarial</li>
                         <li><i class="fas fa-check" style="color: #4CAF50;"></i> 3 perfis</li>
                         <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">�o- Não Incluído:</strong>
+                            <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
                         </li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Gestão Financeira</li>
                         <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Loja Virtual</li>
@@ -15652,7 +15652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carregar planos para edição (ADM)
     async function loadPlansForEdit() {
         try {
-            console.log('�Y"" Carregando planos para edição...');
+            console.log('Y"" Carregando planos para edição...');
 
             // Adicionar timestamp para evitar cache
             const response = await safeFetch(`${API_URL}/api/subscription/plans?t=${Date.now()}`, {
@@ -15665,23 +15665,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('�O Erro ao carregar planos:', response.status, errorText);
+                console.error('O Erro ao carregar planos:', response.status, errorText);
                 throw new Error(`Erro ao carregar planos para edição: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log(`�o. ${data.plans?.length || 0} planos carregados`);
+            console.log(`${data.plans?.length || 0} planos carregados`);
 
             if (!data.plans || data.plans.length === 0) {
-                console.warn('�s�️ Nenhum plano encontrado!');
+                console.warn('Nenhum plano encontrado!');
                 document.getElementById('plans-edit-form').innerHTML = '<p style="color: #ff4444;">Nenhum plano encontrado.</p>';
                 return;
             }
 
             await renderPlansEditForm(data.plans);
-            console.log('�o. Formulário de edição renderizado');
+            console.log('Formulário de edição renderizado');
         } catch (error) {
-            console.error('�O Erro ao carregar planos para edição:', error);
+            console.error('O Erro ao carregar planos para edição:', error);
             const formContainer = document.getElementById('plans-edit-form');
             if (formContainer) {
                 formContainer.innerHTML = `<p style="color: #ff4444;">Erro ao carregar planos: ${error.message}</p>`;
@@ -15693,17 +15693,17 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderPlansEditForm(plans) {
         const formContainer = document.getElementById('plans-edit-form');
         if (!formContainer) {
-            console.error('�O Container plans-edit-form não encontrado!');
+            console.error('O Container plans-edit-form não encontrado!');
             return;
         }
 
-        console.log(`�Y"" Renderizando formulário para ${plans.length} planos...`);
+        console.log(`Y"" Renderizando formulário para ${plans.length} planos...`);
 
         // Buscar disponibilidade de módulos (com cache busting agressivo)
         let moduleAvailability = [];
         try {
             const cacheBuster = `t=${Date.now()}&_=${Math.random()}`;
-            console.log('�Y"" Buscando disponibilidade de módulos (sem cache)...');
+            console.log('Y"" Buscando disponibilidade de módulos (sem cache)...');
             const moduleResponse = await safeFetch(`${API_URL}/api/modules/plan-availability?${cacheBuster}`, {
                 method: 'GET',
                 headers: {
@@ -15716,11 +15716,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (moduleResponse.ok) {
                 const moduleData = await moduleResponse.json();
                 moduleAvailability = moduleData.modules || [];
-                console.log(`�o. ${moduleAvailability.length} módulos carregados`);
+                console.log(`${moduleAvailability.length} módulos carregados`);
 
                 // Log detalhado dos módulos carregados para debug
                 if (moduleAvailability.length > 0) {
-                    console.log('�Y"S Módulos carregados da API:');
+                    console.log('Y"S Módulos carregados da API:');
                     moduleAvailability.forEach(module => {
                         const planCodes = Object.keys(module.plans || {});
                         planCodes.forEach(planCode => {
@@ -15729,14 +15729,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     });
                 } else {
-                    console.warn('�s�️ Nenhum módulo retornado pela API!');
+                    console.warn('Nenhum módulo retornado pela API!');
                 }
             } else {
                 const errorText = await moduleResponse.text();
-                console.warn('�s�️ Erro ao carregar módulos:', moduleResponse.status, errorText);
+                console.warn('Erro ao carregar módulos:', moduleResponse.status, errorText);
             }
         } catch (error) {
-            console.error('�O Erro ao carregar disponibilidade de módulos:', error);
+            console.error('O Erro ao carregar disponibilidade de módulos:', error);
             console.error('Stack:', error.stack);
         }
 
@@ -15773,7 +15773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Verificar explicitamente se is_available é true
                     const isAvailable = module.plans[plan.plan_code].is_available === true;
                     const isAvailableValue = module.plans[plan.plan_code].is_available;
-                    console.log(`  �Y"� ${moduleName} (${moduleCode}) para ${plan.plan_code}: is_available = ${isAvailableValue} (${typeof isAvailableValue})`);
+                    console.log(`  ${moduleName} (${moduleCode}) para ${plan.plan_code}: is_available = ${isAvailableValue} (${typeof isAvailableValue})`);
 
                     if (isAvailable) {
                         includedModules.push(moduleName);
@@ -15783,7 +15783,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else {
                     // Se módulo não encontrado na API, considerar como não incluído
-                    console.log(`  �s�️ Módulo ${moduleName} (${moduleCode}) não encontrado na API para ${plan.plan_code} - adicionando aos não incluídos`);
+                    console.log(`  Módulo ${moduleName} (${moduleCode}) não encontrado na API para ${plan.plan_code} - adicionando aos não incluídos`);
                     excludedModules.push(moduleName);
                 }
             });
@@ -15802,11 +15802,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const missingModules = allModuleNames.filter(name => !allInForm.includes(name));
 
             if (missingModules.length > 0) {
-                console.warn(`  �s�️ Módulos faltando no formulário para ${plan.plan_code}: ${missingModules.join(', ')} - adicionando aos não incluídos`);
+                console.warn(`  Módulos faltando no formulário para ${plan.plan_code}: ${missingModules.join(', ')} - adicionando aos não incluídos`);
                 finalExcluded.push(...missingModules);
             }
 
-            console.log(`�Y"< Plano ${plan.plan_name} (${plan.plan_code}): ${finalIncluded.length} incluídos, ${finalExcluded.length} não incluídos`);
+            console.log(`Y"< Plano ${plan.plan_name} (${plan.plan_code}): ${finalIncluded.length} incluídos, ${finalExcluded.length} não incluídos`);
             console.log(`   Incluídos: ${finalIncluded.join(', ') || '(nenhum)'}`);
             console.log(`   Não incluídos: ${finalExcluded.join(', ') || '(nenhum)'}`);
 
@@ -15818,9 +15818,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (plan.plan_code === 'king_finance') {
                 const contratosInIncluded = preservedIncluded.includes('Contratos');
                 const contratosInExcluded = preservedExcluded.includes('Contratos');
-                console.log(`   �Y"� [DEBUG King Finance] Contratos - Incluídos: ${contratosInIncluded}, Não Incluídos: ${contratosInExcluded}`);
+                console.log(`   [DEBUG King Finance] Contratos - Incluídos: ${contratosInIncluded}, Não Incluídos: ${contratosInExcluded}`);
                 if (!contratosInIncluded && !contratosInExcluded) {
-                    console.error(`   �O [ERRO] Contratos não está em nenhuma lista! Adicionando aos não incluídos.`);
+                    console.error(`   [ERRO] Contratos não está em nenhuma lista! Adicionando aos não incluídos.`);
                     finalExcluded.push('Contratos');
                 }
             }
@@ -15857,7 +15857,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label>Módulos Não Incluídos (separados por vírgula):</label>
                         <textarea class="form-input" id="plan-excluded-modules-${plan.id}" rows="4" placeholder="Ex: King Forms, Gestão Financeira">${preservedExcluded}</textarea>
                         <small style="color: var(--text-secondary, #888888); display: block; margin-top: 5px;">
-                            Lista os módulos que N�fO estão incluídos neste plano
+                            Lista os módulos que NÃO estão incluídos neste plano
                         </small>
                     </div>
                     <div class="form-group">
@@ -15886,14 +15886,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Salvar plano (ADM)
     window.savePlan = async function (planId) {
         try {
-            console.log(`�Y"" Iniciando salvamento do plano ID: ${planId}`);
+            console.log(`Y"" Iniciando salvamento do plano ID: ${planId}`);
 
             const planName = document.getElementById(`plan-name-${planId}`).value.trim();
             const priceInput = document.getElementById(`plan-price-${planId}`).value.trim();
             // Converter formato brasileiro (700,00) para formato JavaScript (700.00) apenas para parseFloat
             // Remove pontos (separadores de milhar, se houver) e substitui vírgula por ponto
-            // Exemplo: "700,00" �?' "700.00" �?' 700.00 (número)
-            // Exemplo: "1.700,50" �?' "1700.50" �?' 1700.50 (número)
+            // Exemplo: "700,00" — "700.00" — 700.00 (número)
+            // Exemplo: "1.700,50" — "1700.50" — 1700.50 (número)
             const priceInputNormalized = priceInput.replace(/\./g, '').replace(',', '.');
             const price = parseFloat(priceInputNormalized);
             const description = document.getElementById(`plan-description-${planId}`).value.trim();
@@ -15914,7 +15914,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            console.log('�Y"< Dados coletados:', {
+            console.log('Y"< Dados coletados:', {
                 planName,
                 price,
                 description: description.substring(0, 50) + '...',
@@ -15961,7 +15961,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentFeatures = currentPlan.features || {};
             const planCode = currentPlan.plan_code;
 
-            console.log(`�Y"< Plano encontrado: ${currentPlan.plan_name} (${planCode})`);
+            console.log(`Y"< Plano encontrado: ${currentPlan.plan_name} (${planCode})`);
 
             // Atualizar features com can_edit_logo
             const updatedFeatures = {
@@ -15982,7 +15982,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 excluded_modules: excludedModulesText || ''   // Enviar módulos não incluídos (string vazia se vazio)
             };
 
-            console.log('�Y"� Enviando dados do plano (com módulos):', {
+            console.log('Enviando dados do plano (com módulos):', {
                 plan_name: planData.plan_name,
                 price: planData.price,
                 description: planData.description?.substring(0, 50) + '...',
@@ -15993,8 +15993,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Log completo dos módulos para debug
-            console.log('�Y"< Módulos incluídos (completo):', includedModulesText);
-            console.log('�Y"< Módulos não incluídos (completo):', excludedModulesText);
+            console.log('Y"< Módulos incluídos (completo):', includedModulesText);
+            console.log('Y"< Módulos não incluídos (completo):', excludedModulesText);
 
             // Salvar plano (agora inclui módulos na mesma requisição)
             const response = await safeFetch(`${API_URL}/api/subscription/plans/${planId}`, {
@@ -16006,22 +16006,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(planData)
             });
 
-            console.log('�Y"� Resposta recebida:', response.status, response.statusText);
+            console.log('Resposta recebida:', response.status, response.statusText);
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('�O Erro na resposta:', errorText);
+                console.error('O Erro na resposta:', errorText);
                 throw new Error(`Erro ao salvar plano: ${response.status} - ${errorText}`);
             }
 
             const responseData = await response.json();
-            console.log('�o. Plano salvo com sucesso:', responseData);
+            console.log('Plano salvo com sucesso:', responseData);
 
             // Verificar se os módulos foram atualizados
             if (responseData.modulesUpdated) {
-                console.log('�o. Módulos incluídos e não incluídos foram salvos junto com o plano!');
+                console.log('Módulos incluídos e não incluídos foram salvos junto com o plano!');
             } else if (includedModulesText || excludedModulesText) {
-                console.log('�s�️ Módulos foram enviados, mas não foram processados. Verificando se precisa de atualização separada...');
+                console.log('Módulos foram enviados, mas não foram processados. Verificando se precisa de atualização separada...');
                 // Se por algum motivo os módulos não foram processados, tentar atualizar separadamente (fallback)
                 // Mas não bloquear o salvamento do plano
                 if (planCode) {
@@ -16053,7 +16053,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
 
                         if (moduleUpdates.length > 0) {
-                            console.log('�Y"" Tentando atualizar módulos via endpoint separado (fallback)...');
+                            console.log('Y"" Tentando atualizar módulos via endpoint separado (fallback)...');
                             const moduleResponse = await safeFetch(`${API_URL}/api/modules/plan-availability`, {
                                 method: 'PUT',
                                 headers: {
@@ -16064,13 +16064,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
 
                             if (moduleResponse.ok) {
-                                console.log('�o. Módulos atualizados via fallback');
+                                console.log('Módulos atualizados via fallback');
                             } else {
-                                console.warn('�s�️ Fallback de módulos falhou, mas plano foi salvo');
+                                console.warn('Fallback de módulos falhou, mas plano foi salvo');
                             }
                         }
                     } catch (fallbackError) {
-                        console.warn('�s�️ Erro no fallback de módulos (não crítico):', fallbackError);
+                        console.warn('Erro no fallback de módulos (não crítico):', fallbackError);
                     }
                 }
             }
@@ -16079,11 +16079,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('⏳ Aguardando processamento do banco (3 segundos)...');
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            console.log('�o. Aguardamento concluído. Dados devem estar disponíveis no banco.');
+            console.log('Aguardamento concluído. Dados devem estar disponíveis no banco.');
 
             alert('Plano atualizado com sucesso!');
 
-            console.log('�Y"" Recarregando formulário de edição...');
+            console.log('Y"" Recarregando formulário de edição...');
             // IMPORTANTE: Preservar valores dos campos de módulos antes de recarregar
             const includedFieldBefore = document.getElementById(`plan-included-modules-${planId}`);
             const excludedFieldBefore = document.getElementById(`plan-excluded-modules-${planId}`);
@@ -16099,7 +16099,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Limpar qualquer cache e forçar busca fresca
                 // Adicionar timestamp único e parâmetros de cache busting
                 const timestamp = Date.now();
-                console.log(`�Y"" Forçando recarregamento sem cache (timestamp: ${timestamp})...`);
+                console.log(`Y"" Forçando recarregamento sem cache (timestamp: ${timestamp})...`);
 
                 // Limpar cache do módulo de disponibilidade também
                 if (window.moduleAvailabilityCache) {
@@ -16125,7 +16125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Combinar: manter módulos preservados e adicionar módulos mapeados que não estão lá
                     const combinedModules = [...new Set([...preservedModules, ...currentModules])];
                     includedFieldAfter.value = combinedModules.join(', ');
-                    console.log(`�o. Valor restaurado em módulos incluídos: "${includedFieldAfter.value}"`);
+                    console.log(`Valor restaurado em módulos incluídos: "${includedFieldAfter.value}"`);
                 }
 
                 if (excludedFieldAfter && preservedExcludedValue) {
@@ -16137,37 +16137,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Combinar: manter módulos preservados e adicionar módulos mapeados que não estão lá
                     const combinedModules = [...new Set([...preservedModules, ...currentModules])];
                     excludedFieldAfter.value = combinedModules.join(', ');
-                    console.log(`�o. Valor restaurado em módulos não incluídos: "${excludedFieldAfter.value}"`);
+                    console.log(`Valor restaurado em módulos não incluídos: "${excludedFieldAfter.value}"`);
                 }
 
                 // Verificar se os dados foram carregados corretamente
-                console.log('�o. Formulário recarregado. Verifique os campos acima.');
+                console.log('Formulário recarregado. Verifique os campos acima.');
 
                 // Log adicional para debug
                 if (includedFieldAfter && excludedFieldAfter) {
-                    console.log('�Y"< Valores finais nos campos:');
+                    console.log('Y"< Valores finais nos campos:');
                     console.log(`   Incluídos: "${includedFieldAfter.value}"`);
                     console.log(`   Não incluídos: "${excludedFieldAfter.value}"`);
                 } else {
-                    console.warn('�s�️ Campos de módulos não encontrados após recarregar!');
+                    console.warn('Campos de módulos não encontrados após recarregar!');
                 }
             } catch (reloadError) {
-                console.error('�O Erro ao recarregar formulário:', reloadError);
+                console.error('O Erro ao recarregar formulário:', reloadError);
                 console.error('Stack:', reloadError.stack);
                 alert('Plano salvo, mas houve erro ao recarregar. Atualize a página manualmente (F5).');
             }
 
-            console.log('�Y"" Recarregando informações de assinatura...');
+            console.log('Y"" Recarregando informações de assinatura...');
             // Depois recarregar informações de assinatura (pode falhar silenciosamente se planRenderer der erro)
             try {
                 await loadSubscriptionInfo();
             } catch (subscriptionError) {
-                console.warn('�s�️ Erro ao recarregar informações de assinatura (não crítico):', subscriptionError);
+                console.warn('Erro ao recarregar informações de assinatura (não crítico):', subscriptionError);
             }
 
-            console.log('�o. Processo de salvamento concluído!');
+            console.log('Processo de salvamento concluído!');
         } catch (error) {
-            console.error('�O Erro completo ao salvar plano:', error);
+            console.error('O Erro completo ao salvar plano:', error);
             console.error('Stack:', error.stack);
             alert(`Erro ao salvar plano: ${error.message}\n\nVerifique o console para mais detalhes.`);
         }
@@ -16198,7 +16198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================================
-    // FUNCIONALIDADE DE SEPARA�?�fO DE PACOTES (ADM)
+    // FUNCIONALIDADE DE SEPARA—fO DE PACOTES (ADM)
     // ============================================
 
     let moduleAvailabilityData = null;
@@ -16396,7 +16396,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Feedback visual opcional (pode remover se não quiser)
-            console.log(`�o. Módulo ${moduleType} para plano ${planCode} salvo automaticamente`);
+            console.log(`Módulo ${moduleType} para plano ${planCode} salvo automaticamente`);
             // Atualizar visibilidade dos botões do menu (Gestão Financeira, Contratos, Agenda) sem recarregar a página
             try {
                 const statusRes = await safeFetch(`${API_URL}/api/account/status`, { headers: HEADERS_AUTH });
@@ -16776,7 +16776,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div>
                                         <h3 style="color: var(--text-primary, #F5F5F5); font-size: 1rem; font-weight: 600; margin-bottom: 4px;">${moduleName}</h3>
                                         <span class="module-type-badge" style="background: rgba(255,215,0,0.2); color: var(--dourado-principal, #FFD700); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">${module.module_type}</span>
-                                        ${isInBasePlan ? '<p style="color: #4ade80; font-size: 0.75rem; margin-top: 8px;">�o" Já no plano (pode desmarcar para tirar)</p>' : '<p style="color: #60a5fa; font-size: 0.75rem; margin-top: 8px;">+ Adicionar</p>'}
+                                        ${isInBasePlan ? '<p style="color: #4ade80; font-size: 0.75rem; margin-top: 8px;">o" Já no plano (pode desmarcar para tirar)</p>' : '<p style="color: #60a5fa; font-size: 0.75rem; margin-top: 8px;">+ Adicionar</p>'}
                                         ${isFinance ? `
                                         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
                                             <label style="color: var(--text-secondary, #888888); font-size: 0.8rem;">Quantidade de perfis:</label>
@@ -16925,7 +16925,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Verificar admin ao carregar página (já aplicado em applyEmpresaTabAndControls via /api/account/status)
 
     // ============================================
-    // FILTRO DE M�"DULOS POR PLANO
+    // FILTRO DE M"DULOS POR PLANO
     // ============================================
 
     let userAvailableModules = null;
@@ -17039,7 +17039,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUserAvailableModules();
 
     // ============================================
-    // FUN�?�.ES DO FORMULÁRIO KING - EDITOR DE PERGUNTAS
+    // FUN—.ES DO FORMULÁRIO KING - EDITOR DE PERGUNTAS
     // ============================================
 
     // Renderizar perguntas do formulário (tornar acessível globalmente)
@@ -17295,7 +17295,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div style="padding: 20px; background: var(--card-background-color, #1C1C21); border-radius: 8px; border: 1px solid var(--border-color, #2C2C2F);">
                             <div style="font-size: 2rem; font-weight: 600; color: var(--dourado-principal, #FFC700);">${stats.unique_responders || 0}</div>
-                            <div style="color: var(--text-dark, #A1A1A1); margin-top: 5px;">Respondentes �snicos</div>
+                            <div style="color: var(--text-dark, #A1A1A1); margin-top: 5px;">Respondentes nicos</div>
                         </div>
                     </div>
                 </div>
@@ -17354,22 +17354,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = e.target.closest('.btn-edit-form-page');
             const itemId = btn.dataset.itemId || btn.dataset.id;
 
-            console.log('�Y"� [DASHBOARD] Botão "Abrir Página de Edição Completa" clicado:', {
+            console.log('[DASHBOARD] Botão "Abrir Página de Edição Completa" clicado:', {
                 itemId,
                 dataset: btn.dataset
             });
 
             if (itemId) {
-                console.log('�o. [DASHBOARD] Redirecionando para formPageEdit.html com itemId:', itemId);
+                console.log('[DASHBOARD] Redirecionando para formPageEdit.html com itemId:', itemId);
                 window.location.href = `formPageEdit.html?itemId=${itemId}`;
             } else {
-                console.error('�O [DASHBOARD] itemId não encontrado no botão btn-edit-form-page');
+                console.error('[DASHBOARD] itemId não encontrado no botão btn-edit-form-page');
                 alert('Erro: ID do formulário não encontrado. Por favor, recarregue a página e tente novamente.');
             }
         }
     });
 
-    // === FUN�?�.ES PARA LISTA DE CONVIDADOS ===
+    // === FUN—.ES PARA LISTA DE CONVIDADOS ===
 
     // Carregar todas as listas de convidados
     async function loadGuestLists() {
@@ -17685,18 +17685,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (response.ok) {
                         const data = await response.json();
                         if (data.success) {
-                            alert('�o. Configuração salva com sucesso! A preview será atualizada em alguns segundos.');
+                            alert('Configuração salva com sucesso! A preview será atualizada em alguns segundos.');
                             updatePreview();
                         } else {
-                            alert('�O Erro ao salvar configuração. Tente novamente.');
+                            alert('O Erro ao salvar configuração. Tente novamente.');
                         }
                     } else {
                         const error = await response.json();
-                        alert(`�O Erro: ${error.message || 'Erro ao salvar configuração'}`);
+                        alert(`O Erro: ${error.message || 'Erro ao salvar configuração'}`);
                     }
                 } catch (error) {
                     console.error('Erro ao salvar configuração:', error);
-                    alert('�O Erro ao salvar configuração. Verifique sua conexão e tente novamente.');
+                    alert('O Erro ao salvar configuração. Verifique sua conexão e tente novamente.');
                 } finally {
                     linkPreviewSaveBtn.disabled = false;
                     linkPreviewSaveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Configuração';
@@ -17740,7 +17740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================================
-    // M�"DULO DE FINAN�?AS (Estilo Mobills)
+    // M"DULO DE FINAN?AS (Estilo Mobills)
     // ==========================================================
     window.initFinancePane = async function () {
         const financeContent = document.getElementById('finance-content');
@@ -18584,7 +18584,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         var datasStr = (t.data || t.dataPrevista) ? ' · ' + (t.data ? 'Trabalho: ' + (t.data.length >= 10 ? t.data.split('-').reverse().join('/') : t.data) : '') + (t.dataPrevista ? (t.data ? ' ' : '') + 'Previsto: ' + (t.dataPrevista.length >= 10 ? t.dataPrevista.split('-').reverse().join('/') : t.dataPrevista) : '') : '';
                         var cardStyle = 'background:linear-gradient(135deg,rgba(59,130,246,0.18) 0%,rgba(37,99,235,0.1) 50%,#111 100%);border:1px solid rgba(59,130,246,0.3);border-radius:20px;padding:1.5rem;min-height:180px;display:flex;flex-direction:column;position:relative;';
                         var valoresRow = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Valor recebido</p><p style="font-size:1.5rem;font-weight:800;margin:0;color:#22c55e;">R$ ' + fmt(pago) + '</p></div><div style="text-align:right;"><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Falta receber</p><p style="font-size:1.5rem;font-weight:800;margin:0;color:' + (restante > 0 ? '#f87171' : '#22c55e') + ';">' + (restante > 0 ? 'R$ ' + fmt(restante) : 'Quitado') + '</p></div></div>';
-                        return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">SERVI�?O PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (t.cliente || '').slice(0, 35) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">' + (t.servico || '').slice(0, 50) + (datasStr ? datasStr : '') + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
+                        return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">SERVI?O PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (t.cliente || '').slice(0, 35) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">' + (t.servico || '').slice(0, 50) + (datasStr ? datasStr : '') + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
                     }).join('');
                     container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#3b82f6;margin:0;">Trabalhos e Serviços</h3><button type="button" onclick="window._kingFinanceOpenModal(\'trabalho\')" style="padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar Serviço</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Controle de serviços prestados. Registre entradas (pagamentos parciais) e acompanhe a quitação.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsTrab + '</div>';
                     return;
@@ -18638,7 +18638,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return { id: c.id, nome: c.name || '', limite: limite, gasto: gasto, disponivel: disponivel, pctUsado: pctUsado, diaFechamento: c.closing_day || '' };
                     });
                     var cardsHtml = list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum cartão. Use + Novo Cartão.</p>' : list.map(function (c) {
-                        return '<div class="kf-card" style="' + styleKfCard + 'border-radius:20px;overflow:hidden;background:linear-gradient(135deg,rgba(249,115,22,0.15) 0%,rgba(234,88,12,0.08) 50%,#111 100%);border:1px solid rgba(249,115,22,0.25);min-height:180px;display:flex;flex-direction:column;position:relative;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">CART�fO DE CR�?DITO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (c.nome || '').slice(0, 25) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">Fechamento: dia ' + (c.diaFechamento || '-') + '</p></div><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceEditCartao && window._kingFinanceEditCartao(\'' + c.id + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#f97316;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteCard && window._kingFinanceDeleteCard(\'' + c.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div><div style="flex:1;"><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Limite disponível</p><p style="font-size:1.5rem;font-weight:800;margin:0 0 12px 0;color:#22c55e;">R$ ' + fmt(c.disponivel) + '</p><div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + c.pctUsado + '%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:999px;transition:width 0.3s;"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#f97316;">Utilizado: R$ ' + fmt(c.gasto) + '</span><span style="color:rgba(255,255,255,0.6);">Limite: R$ ' + fmt(c.limite) + '</span></div></div></div>';
+                        return '<div class="kf-card" style="' + styleKfCard + 'border-radius:20px;overflow:hidden;background:linear-gradient(135deg,rgba(249,115,22,0.15) 0%,rgba(234,88,12,0.08) 50%,#111 100%);border:1px solid rgba(249,115,22,0.25);min-height:180px;display:flex;flex-direction:column;position:relative;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">CARTfO DE CR?DITO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (c.nome || '').slice(0, 25) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">Fechamento: dia ' + (c.diaFechamento || '-') + '</p></div><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceEditCartao && window._kingFinanceEditCartao(\'' + c.id + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#f97316;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteCard && window._kingFinanceDeleteCard(\'' + c.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div><div style="flex:1;"><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Limite disponível</p><p style="font-size:1.5rem;font-weight:800;margin:0 0 12px 0;color:#22c55e;">R$ ' + fmt(c.disponivel) + '</p><div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + c.pctUsado + '%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:999px;transition:width 0.3s;"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#f97316;">Utilizado: R$ ' + fmt(c.gasto) + '</span><span style="color:rgba(255,255,255,0.6);">Limite: R$ ' + fmt(c.limite) + '</span></div></div></div>';
                     }).join('');
                     container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#f97316;margin:0;">Cartões de Crédito</h3><button type="button" onclick="window._kingFinanceOpenModal(\'cartao\')" style="padding:8px 16px;background:#ea580c;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Cartão</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Gasto do mês atual com base nas despesas vinculadas a cada cartão.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsHtml + '</div>';
                     return;
@@ -18660,7 +18660,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             var targetVal = Number(g.target_value) || 0;
                             var targetDate = g.target_date ? new Date(String(g.target_date).slice(0, 10)) : null;
                             var daysLeft = targetDate ? Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)) : 0;
-                            var daysStr = daysLeft > 0 ? 'Faltam ' + daysLeft + ' dias' : (daysLeft === 0 ? '�sltimo dia' : 'Data passou');
+                            var daysStr = daysLeft > 0 ? 'Faltam ' + daysLeft + ' dias' : (daysLeft === 0 ? 'ltimo dia' : 'Data passou');
                             var pct = targetVal > 0 ? Math.min(100, Math.round((earned / targetVal) * 100)) : 0;
                             var remaining = Math.max(0, targetVal - earned);
                             var remainingStr = remaining <= 0 ? 'Meta atingida!' : 'R$ ' + fmtMeta(remaining);
@@ -18747,9 +18747,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             var pctD = (Number(c.valor) || 0) > 0 ? Math.round((pago / (c.valor || 1)) * 100) : 100;
                             var pagamentosHtmlT = (c.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos (clique em Excluir para remover um pagamento errado)</p>' + (c.pagamentos || []).map(function (p, pIdx) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:8px;"><span style="font-size:11px;color:#cbd5e1;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDateT(p) + '</span><div style="display:flex;gap:6px;"><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarPagamentoTerceiro && window._kingFinanceEditarPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="event.stopPropagation(); window._kingFinanceExcluirPagamentoTerceiro && window._kingFinanceExcluirPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Excluir este pagamento"><i class="fas fa-trash"></i></button></div></div>'; }).join('') + '</div>' : '';
                             var vencStr = (c.dataVencimento || '').trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(vencStr)) { var pt = vencStr.split('-'); vencStr = pt[2] + '/' + pt[1] + '/' + pt[0]; }
-                            var tipoLabel = (c.tipo === 'recorrente') ? 'Mensal' : '�snica vez';
+                            var tipoLabel = (c.tipo === 'recorrente') ? 'Mensal' : 'nica vez';
                             var subtituloConta = (vencStr || tipoLabel) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Venc: ' + (vencStr || '-') + ' · ' + tipoLabel + '</p>' : '';
-                            return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:#94a3b8;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 45) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">VALOR DA NEGOCIA�?�fO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
+                            return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:#94a3b8;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 45) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">VALOR DA NEGOCIA—fO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
                         }).join('');
                         contentArea = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;"><h4 style="font-size:1rem;font-weight:800;color:#a78bfa;margin:0;">' + (person.nome || 'Pessoa').replace(/</g, ' ') + '</h4><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceImportarTerceirosImagem && window._kingFinanceImportarTerceirosImagem()" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceEditTerceiro && window._kingFinanceEditTerceiro(\'' + person.id + '\')" style="padding:8px 16px;background:rgba(139,92,246,0.25);color:#a78bfa;border:1px solid rgba(139,92,246,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-pencil-alt" style="margin-right:6px;"></i>Editar pessoa</button><button type="button" onclick="window._kingFinanceOpenModal(\'contaPessoa\', \'' + person.id + '\')" style="padding:8px 16px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Nova conta</button><button type="button" onclick="if(confirm(\'Excluir esta pessoa e todas as contas?\')) window._kingFinanceDelete(\'terceiros\',\'' + person.id + '\')" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir pessoa</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsContas + '</div>';
                     }
@@ -18775,7 +18775,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     var totalNegociacao = list.reduce(function (a, d) { return a + (Number(d.valorTotal) || 0); }, 0);
                     var searchBox = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;"><span style="font-size:1rem;font-weight:800;color:#f1f5f9;">Acordos</span><span style="font-size:12px;color:#94a3b8;">Total: ' + (list.length) + ' conta(s)</span><div style="flex:1;min-width:180px;max-width:320px;"><label style="position:relative;display:block;"><i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px;"></i><input type="text" id="serasa-search-input" placeholder="Pesquisar por nome do banco/credor ou valor" value="' + (window._kingFinanceSerasaSearch || '').replace(/"/g, '&quot;') + '" style="width:100%;padding:10px 10px 10px 36px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:#f1f5f9;font-size:12px;"></label></div></div>';
                     var bolinhasSerasa = '<div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:conic-gradient(var(--finance-indigo,#6366f1) 0% ' + pct + '%, rgba(255,255,255,0.12) ' + pct + '% 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(99,102,241,0.3);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(22,22,30,0.98) 0%,rgba(12,12,18,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.4);"><span style="font-size:2rem;font-weight:800;color:#a5b4fc;text-align:center;line-height:1;">' + pctDisplay + '%</span></div></div><p style="font-size:13px;font-weight:700;color:#94a3b8;margin:0;text-align:center;">' + label + '</p></div><div><p style="font-size:15px;font-weight:700;color:#a5b4fc;margin:0 0 6px 0;">Score Serasa (KING)</p><p style="font-size:13px;color:#94a3b8;margin:0;">Percentual das dívidas já quitadas.</p></div></div><div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:linear-gradient(180deg,rgba(245,158,11,0.45) 0%,rgba(245,158,11,0.3) 100%);border:2px solid rgba(245,158,11,0.6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(245,158,11,0.2),inset 0 0 30px rgba(245,158,11,0.08);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(20,18,12,0.97) 0%,rgba(14,12,8,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.5);"><span style="font-size:1.25rem;font-weight:800;color:#fcd34d;text-align:center;line-height:1;display:block;">R$ ' + fmt(totalValorAtual) + '</span></div></div><p style="font-size:13px;font-weight:700;color:#fcd34d;margin:0;text-align:center;">Valor total atual</p></div><div><p style="font-size:13px;color:#94a3b8;margin:0;">Soma do valor atual (juros/correções) de todas as contas.</p></div></div><div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:linear-gradient(180deg,rgba(239,68,68,0.45) 0%,rgba(239,68,68,0.28) 100%);border:2px solid rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(239,68,68,0.2),inset 0 0 30px rgba(239,68,68,0.08);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(28,12,12,0.97) 0%,rgba(18,8,8,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.5);"><span style="font-size:1.25rem;font-weight:800;color:#fca5a5;text-align:center;line-height:1;display:block;">R$ ' + fmt(totalFaltaPagar) + '</span></div></div><p style="font-size:13px;font-weight:700;color:#fca5a5;margin:0;text-align:center;">Falta pagar</p></div><div><p style="font-size:13px;color:#94a3b8;margin:0;">Total que ainda falta pagar em todos os acordos.</p></div></div><div style="display:flex;align-items:center;gap:1rem;"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:168px;height:168px;border-radius:50%;background:linear-gradient(180deg,rgba(100,116,139,0.4) 0%,rgba(71,85,105,0.35) 100%);border:2px solid rgba(148,163,184,0.5);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(100,116,139,0.15),inset 0 0 24px rgba(0,0,0,0.2);"><div style="width:138px;height:138px;border-radius:50%;background:linear-gradient(180deg,rgba(30,30,35,0.98) 0%,rgba(18,18,22,0.99) 100%);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 12px rgba(0,0,0,0.5);"><span style="font-size:1.25rem;font-weight:800;color:#cbd5e1;text-align:center;line-height:1;display:block;">R$ ' + fmt(totalNegociacao) + '</span></div></div><p style="font-size:13px;font-weight:700;color:#94a3b8;margin:0;text-align:center;">Valor da negociação (total)</p></div><div><p style="font-size:13px;color:#94a3b8;margin:0;">Total acordado em todos os acordos. Não diminui ao pagar; referência para quando quitar.</p></div></div>';
-                    container.innerHTML = '<div style="margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:var(--finance-indigo,#6366f1);margin:0 0 8px 0;">Serasa & Acordos</h3><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Indicador baseado nos acordos que você cadastrou.</p><div class="kf-card" style="' + styleKfCard + 'display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap;padding:1.5rem;">' + bolinhasSerasa + '</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">' + searchBox + '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" onclick="window._kingFinanceSerasaSelectAll && window._kingFinanceSerasaSelectAll()" style="padding:8px 16px;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-check-double" style="margin-right:6px;"></i>Selecionar todos</button><button type="button" id="serasa-excluir-todos-btn" disabled onclick="window._kingFinanceSerasaExcluirTodos && window._kingFinanceSerasaExcluirTodos()" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir selecionados</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'pdf\')" style="padding:8px 16px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-file-pdf" style="margin-right:6px;"></i>Importar PDF (valores)</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'image\')" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceOpenModal(\'divida\')" style="padding:8px 16px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Acordo</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + (filteredList.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">' + (list.length === 0 ? 'Nenhum acordo. Clique em + Novo Acordo.' : 'Nenhum acordo corresponde à pesquisa.') + '</p>' : filteredList.map(function (d, idx) { var num = idx + 1; var pago = (d.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0); var restante = (Number(d.valorTotal) || 0) - pago; var pctD = (Number(d.valorTotal) || 0) > 0 ? Math.round((pago / (d.valorTotal || 1)) * 100) : 100; var formatPayDate = function (p) { var dt = p.data || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { var pt = dt.split('-'); dt = pt[2] + '/' + pt[1] + '/' + pt[0]; } return dt + (p.hora ? ' às ' + p.hora : ''); }; var pagamentosHtml = (d.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos</p>' + (d.pagamentos || []).map(function (p) { return '<p style="font-size:11px;color:#cbd5e1;margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDate(p) + '</p>'; }).join('') + '</div>' : ''; var detalhesStr = (d.numeroContrato || d.dataDivida || d.produtoServico || d.empresaOrigem) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">' + (d.empresaOrigem ? 'Origem ' + (d.empresaOrigem || '').slice(0, 20) : '') + (d.numeroContrato ? (d.empresaOrigem ? ' · ' : '') + 'Contrato ' + d.numeroContrato : '') + (d.dataDivida ? ' · Data ' + d.dataDivida : '') + (d.produtoServico ? ' · ' + (d.produtoServico || '').slice(0, 25) : '') + '</p>' : ''; var origAtualStr = (d.valorOriginal != null || d.valorAtual != null) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Orig. R$ ' + fmt(d.valorOriginal) + ' · Atual R$ ' + fmt(d.valorAtual) + '</p>' : ''; return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid var(--finance-indigo,#6366f1);cursor:pointer;" onclick="if (!event.target.closest(\'button\') && !event.target.closest(\'input[type=checkbox]\')) window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;gap:8px;"><input type="checkbox" class="serasa-acordo-cb" data-divida-id="' + d.id + '" onclick="event.stopPropagation(); window._kingFinanceSerasaUpdateExcluirBtn && window._kingFinanceSerasaUpdateExcluirBtn()" style="cursor:pointer;flex-shrink:0;"><span style="font-size:12px;font-weight:800;color:#94a3b8;min-width:28px;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (d.nome || '').slice(0, 35) + '</h4><button type="button" onclick="event.stopPropagation(); window._kingFinanceDelete(\'dividas\',\'' + d.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;"><i class="fas fa-trash"></i></button></div><p style="font-size:10px;margin:0 0 6px 0;"><a href="javascript:void(0)" onclick="event.stopPropagation(); window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')" style="color:var(--finance-indigo,#6366f1);">Ver detalhes</a></p>' + detalhesStr + origAtualStr + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0 0 2px 0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;position:relative;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">VALOR DA NEGOCIA�?�fO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida(\'' + d.id + '\')" style="position:absolute;top:4px;right:4px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;padding:4px 8px;font-size:9px;font-weight:700;cursor:pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div></div>' + pagamentosHtml + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:var(--finance-indigo,#6366f1);border-radius:999px;"></div></div><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="width:100%;padding:12px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.02em;">Efetuar pagamento</button></div>'; }).join('')) + '</div>';
+                    container.innerHTML = '<div style="margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:var(--finance-indigo,#6366f1);margin:0 0 8px 0;">Serasa & Acordos</h3><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Indicador baseado nos acordos que você cadastrou.</p><div class="kf-card" style="' + styleKfCard + 'display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap;padding:1.5rem;">' + bolinhasSerasa + '</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">' + searchBox + '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" onclick="window._kingFinanceSerasaSelectAll && window._kingFinanceSerasaSelectAll()" style="padding:8px 16px;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-check-double" style="margin-right:6px;"></i>Selecionar todos</button><button type="button" id="serasa-excluir-todos-btn" disabled onclick="window._kingFinanceSerasaExcluirTodos && window._kingFinanceSerasaExcluirTodos()" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir selecionados</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'pdf\')" style="padding:8px 16px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-file-pdf" style="margin-right:6px;"></i>Importar PDF (valores)</button><button type="button" onclick="window._kingFinanceImportarSerasaPdf && window._kingFinanceImportarSerasaPdf(\'image\')" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceOpenModal(\'divida\')" style="padding:8px 16px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Acordo</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + (filteredList.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">' + (list.length === 0 ? 'Nenhum acordo. Clique em + Novo Acordo.' : 'Nenhum acordo corresponde à pesquisa.') + '</p>' : filteredList.map(function (d, idx) { var num = idx + 1; var pago = (d.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0); var restante = (Number(d.valorTotal) || 0) - pago; var pctD = (Number(d.valorTotal) || 0) > 0 ? Math.round((pago / (d.valorTotal || 1)) * 100) : 100; var formatPayDate = function (p) { var dt = p.data || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) { var pt = dt.split('-'); dt = pt[2] + '/' + pt[1] + '/' + pt[0]; } return dt + (p.hora ? ' às ' + p.hora : ''); }; var pagamentosHtml = (d.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos</p>' + (d.pagamentos || []).map(function (p) { return '<p style="font-size:11px;color:#cbd5e1;margin:0 0 4px 0;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDate(p) + '</p>'; }).join('') + '</div>' : ''; var detalhesStr = (d.numeroContrato || d.dataDivida || d.produtoServico || d.empresaOrigem) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">' + (d.empresaOrigem ? 'Origem ' + (d.empresaOrigem || '').slice(0, 20) : '') + (d.numeroContrato ? (d.empresaOrigem ? ' · ' : '') + 'Contrato ' + d.numeroContrato : '') + (d.dataDivida ? ' · Data ' + d.dataDivida : '') + (d.produtoServico ? ' · ' + (d.produtoServico || '').slice(0, 25) : '') + '</p>' : ''; var origAtualStr = (d.valorOriginal != null || d.valorAtual != null) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Orig. R$ ' + fmt(d.valorOriginal) + ' · Atual R$ ' + fmt(d.valorAtual) + '</p>' : ''; return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid var(--finance-indigo,#6366f1);cursor:pointer;" onclick="if (!event.target.closest(\'button\') && !event.target.closest(\'input[type=checkbox]\')) window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;gap:8px;"><input type="checkbox" class="serasa-acordo-cb" data-divida-id="' + d.id + '" onclick="event.stopPropagation(); window._kingFinanceSerasaUpdateExcluirBtn && window._kingFinanceSerasaUpdateExcluirBtn()" style="cursor:pointer;flex-shrink:0;"><span style="font-size:12px;font-weight:800;color:#94a3b8;min-width:28px;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (d.nome || '').slice(0, 35) + '</h4><button type="button" onclick="event.stopPropagation(); window._kingFinanceDelete(\'dividas\',\'' + d.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;"><i class="fas fa-trash"></i></button></div><p style="font-size:10px;margin:0 0 6px 0;"><a href="javascript:void(0)" onclick="event.stopPropagation(); window._kingFinanceVerDetalhesDivida && window._kingFinanceVerDetalhesDivida(\'' + d.id + '\')" style="color:var(--finance-indigo,#6366f1);">Ver detalhes</a></p>' + detalhesStr + origAtualStr + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0 0 2px 0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;position:relative;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;letter-spacing:0.02em;">VALOR DA NEGOCIA—fO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida(\'' + d.id + '\')" style="position:absolute;top:4px;right:4px;background:rgba(99,102,241,0.25);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;padding:4px 8px;font-size:9px;font-weight:700;cursor:pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div></div>' + pagamentosHtml + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:var(--finance-indigo,#6366f1);border-radius:999px;"></div></div><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento(\'' + d.id + '\')" style="width:100%;padding:12px;background:var(--finance-indigo,#6366f1);color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.02em;">Efetuar pagamento</button></div>'; }).join('')) + '</div>';
                     var searchInput = document.getElementById('serasa-search-input');
                     if (searchInput) searchInput.oninput = function () {
                         var v = this.value;
@@ -19004,7 +19004,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Valor R$ (total da negociação)</label><input name="valor" type="number" step="0.01" min="0.01" placeholder="0,00" required style="' + baseStyle + '">' +
                             '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data que adicionei</label><input name="dataAdicionada" type="date" style="' + baseStyle + '">' +
                             '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data do vencimento</label><input name="dataVencimento" type="date" style="' + baseStyle + '">' +
-                            '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Tipo de pagamento</label><div style="display:flex;gap:16px;margin-bottom:8px;"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="unica" checked> �snica vez</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="recorrente"> Recorrente (mensal)</label></div>' +
+                            '<label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Tipo de pagamento</label><div style="display:flex;gap:16px;margin-bottom:8px;"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="unica" checked> nica vez</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#f1f5f9;"><input type="radio" name="tipoConta" value="recorrente"> Recorrente (mensal)</label></div>' +
                             '<div id="conta-recorrente-wrap" style="display:none;"><label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Quantos meses vai repetir?</label><input name="recorrenteMeses" type="number" min="2" max="120" placeholder="Ex: 12" style="' + baseStyle + '"></div>' +
                             '<div id="conta-aplicar-todas-wrap" style="display:none;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#f1f5f9;margin:8px 0;font-size:0.9rem;"><input type="checkbox" name="aplicarTodasParcelas" id="aplicarTodasParcelas"> Aplicar este valor e nome a <strong>todas as parcelas</strong> do grupo</label></div>';
                         formEl.innerHTML = contaHtml + '<button type="submit" style="width:100%;padding:14px;background:var(--finance-indigo,#3b82f6);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;">Salvar</button>';
@@ -20108,7 +20108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const datasStr = (t.data || t.dataPrevista) ? ' · ' + (t.data ? 'Trabalho: ' + (t.data.length >= 10 ? t.data.split('-').reverse().join('/') : t.data) : '') + (t.dataPrevista ? (t.data ? ' ' : '') + 'Previsto: ' + (t.dataPrevista.length >= 10 ? t.dataPrevista.split('-').reverse().join('/') : t.dataPrevista) : '') : '';
                     const cardStyle = 'background:linear-gradient(135deg,rgba(59,130,246,0.18) 0%,rgba(37,99,235,0.1) 50%,#111 100%);border:1px solid rgba(59,130,246,0.3);border-radius:20px;padding:1.5rem;min-height:180px;display:flex;flex-direction:column;position:relative;';
                     const valoresRow = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Valor recebido</p><p style="font-size:1.5rem;font-weight:800;margin:0;color:#22c55e;">R$ ' + fmt(pago) + '</p></div><div style="text-align:right;"><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Falta receber</p><p style="font-size:1.5rem;font-weight:800;margin:0;color:' + (restante > 0 ? '#f87171' : '#22c55e') + ';">' + (restante > 0 ? 'R$ ' + fmt(restante) : 'Quitado') + '</p></div></div>';
-                    return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">SERVI�?O PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (t.cliente || '').slice(0, 35) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">' + (t.servico || '').slice(0, 50) + (datasStr ? datasStr : '') + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
+                    return '<div class="kf-card" style="' + cardStyle + '"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">SERVI?O PRESTADO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">' + (t.cliente || '').slice(0, 35) + '</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">' + (t.servico || '').slice(0, 50) + (datasStr ? datasStr : '') + '</p></div><button type="button" onclick="window._kingFinanceEditTrabalho && window._kingFinanceEditTrabalho(\'' + String(t.id).replace(/'/g, "\\'") + '\')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#60a5fa;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button></div>' + valoresRow + '<div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:' + pctD + '%;background:linear-gradient(90deg,#22c55e,#3b82f6);border-radius:999px;transition:width 0.3s;"></div></div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 12px 0;">' + pctD + '% recebido</p>' + dataQuitStr + pagamentosHtmlT + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button type="button" onclick="window._kingFinanceRegistrarEntradaTrabalho && window._kingFinanceRegistrarEntradaTrabalho(\'' + t.id + '\')" style="flex:1;min-width:140px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;"><i class="fas fa-plus" style="margin-right:6px;"></i>Registrar entrada</button><button type="button" onclick="window._kingFinanceDelete(\'trabalhos\',\'' + t.id + '\')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div>';
                 }).join('');
                 container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#3b82f6;margin:0;">Trabalhos e Serviços</h3><button type="button" onclick="window._kingFinanceOpenModal(\'trabalho\')" style="padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Registrar Serviço</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Controle de serviços prestados. Registre entradas (pagamentos parciais) e acompanhe a quitação.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsTrab + '</div>';
                 return;
@@ -20161,7 +20161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return { id: c.id, nome: c.name || '', limite, gasto, disponivel, pctUsado, diaFechamento: c.closing_day || '' };
                 });
                 const cardsHtml = list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum cartão cadastrado. Use + Novo Cartão para adicionar.</p>' : list.map(c => `
-                    <div class="kf-card" style="background:#111;padding:1.5rem;border-radius:20px;border:1px solid rgba(255,255,255,0.05);background:linear-gradient(135deg,rgba(249,115,22,0.15) 0%,rgba(234,88,12,0.08) 50%,#111 100%);border:1px solid rgba(249,115,22,0.25);min-height:180px;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">CART�fO DE CR�?DITO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">${(c.nome || '').slice(0, 25)}</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">Fechamento: dia ${c.diaFechamento || '-'}</p></div><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceEditCartao && window._kingFinanceEditCartao('${c.id}')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#f97316;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteCard && window._kingFinanceDeleteCard('${c.id}')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div><div><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Limite disponível</p><p style="font-size:1.5rem;font-weight:800;margin:0 0 12px 0;color:#22c55e;">R$ ${fmt(c.disponivel)}</p><div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:${c.pctUsado}%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:999px;"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#f97316;">Utilizado: R$ ${fmt(c.gasto)}</span><span style="color:rgba(255,255,255,0.6);">Limite: R$ ${fmt(c.limite)}</span></div></div></div>
+                    <div class="kf-card" style="background:#111;padding:1.5rem;border-radius:20px;border:1px solid rgba(255,255,255,0.05);background:linear-gradient(135deg,rgba(249,115,22,0.15) 0%,rgba(234,88,12,0.08) 50%,#111 100%);border:1px solid rgba(249,115,22,0.25);min-height:180px;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div><p style="font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;letter-spacing:0.1em;">CARTfO DE CR?DITO</p><h4 style="font-size:1.15rem;font-weight:800;margin:0;color:#fff;">${(c.nome || '').slice(0, 25)}</h4><p style="font-size:10px;color:rgba(255,255,255,0.5);margin:4px 0 0 0;">Fechamento: dia ${c.diaFechamento || '-'}</p></div><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceEditCartao && window._kingFinanceEditCartao('${c.id}')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#f97316;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteCard && window._kingFinanceDeleteCard('${c.id}')" style="background:none;border:1px solid rgba(239,68,68,0.4);color:#f87171;cursor:pointer;padding:8px 12px;border-radius:10px;" title="Excluir"><i class="fas fa-trash"></i></button></div></div><div><p style="font-size:10px;color:rgba(255,255,255,0.6);margin:0 0 4px 0;">Limite disponível</p><p style="font-size:1.5rem;font-weight:800;margin:0 0 12px 0;color:#22c55e;">R$ ${fmt(c.disponivel)}</p><div style="height:8px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:${c.pctUsado}%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:999px;"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#f97316;">Utilizado: R$ ${fmt(c.gasto)}</span><span style="color:rgba(255,255,255,0.6);">Limite: R$ ${fmt(c.limite)}</span></div></div></div>
                 `).join('');
                 container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:#f97316;margin:0;">Cartões de Crédito</h3><button type="button" onclick="window._kingFinanceOpenModal(\'cartao\')" style="padding:8px 16px;background:#ea580c;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Cartão</button></div><p style="font-size:11px;color:#94a3b8;margin:0 0 12px 0;">Gasto do mês atual com base nas despesas vinculadas a cada cartão.</p><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsHtml + '</div>';
                 return;
@@ -20280,7 +20280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ${origAtualHtml}
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                                         <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">TOTAL LIQUIDADO</p><p style="font-size: 16px; font-weight: 800; color: #86efac; margin: 0 0 2px 0;">R$ ${fmt(pago)}</p><p style="font-size: 10px; color: #94a3b8; margin: 0;">${pct}% Completo</p></div>
-                                        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem; position: relative;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">VALOR DA NEGOCIA�?�fO</p><p style="font-size: 16px; font-weight: 800; color: #f59e0b; margin: 0 0 6px 0;">R$ ${fmt(restante)}</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento('${d.id}')" style="padding: 6px 12px; background: rgba(245,158,11,0.35); color: #fcd34d; border: 1px solid rgba(245,158,11,0.6); border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida('${d.id}')" style="position: absolute; top: 4px; right: 4px; background: rgba(99,102,241,0.25); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 8px; padding: 4px 8px; font-size: 9px; font-weight: 700; cursor: pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div>
+                                        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 1rem; position: relative;"><p style="font-size: 9px; font-weight: 800; color: #94a3b8; margin: 0 0 4px 0; letter-spacing: 0.02em;">VALOR DA NEGOCIA—fO</p><p style="font-size: 16px; font-weight: 800; color: #f59e0b; margin: 0 0 6px 0;">R$ ${fmt(restante)}</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamento('${d.id}')" style="padding: 6px 12px; background: rgba(245,158,11,0.35); color: #fcd34d; border: 1px solid rgba(245,158,11,0.6); border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer;">Pagar mais</button><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarValorDivida && window._kingFinanceEditarValorDivida('${d.id}')" style="position: absolute; top: 4px; right: 4px; background: rgba(99,102,241,0.25); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 8px; padding: 4px 8px; font-size: 9px; font-weight: 700; cursor: pointer;" title="Alterar valor total da dívida"><i class="fas fa-pen"></i></button></div>
                                     </div>
                                     ${pagamentosHtml}
                                     <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem;"><div style="height: 100%; width: ${pct}%; background: var(--finance-indigo, #6366f1); border-radius: 999px;"></div></div>
@@ -21364,7 +21364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        // N�fO atualizar cards de resumo - eles devem permanecer fixos
+        // NÃO atualizar cards de resumo - eles devem permanecer fixos
         // updateFinanceTotals foi removido para não alterar os cards
     }
 
@@ -21397,7 +21397,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Re-renderizar transações filtradas
         if (window.allFinanceTransactions && window.allFinanceTransactions.length > 0) {
-            // N�fO atualizar cards de resumo - apenas renderizar transações abaixo
+            // NÃO atualizar cards de resumo - apenas renderizar transações abaixo
             renderFinanceTransactions(window.allFinanceTransactions, tab);
         }
     };
@@ -21423,22 +21423,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switch (period) {
             case '1M':
-                // �sltimo mês
+                // ltimo mês
                 dateFrom = new Date(now.getFullYear(), now.getMonth(), 1);
                 dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                 break;
             case '3M':
-                // �sltimos 3 meses
+                // ltimos 3 meses
                 dateFrom = new Date(now.getFullYear(), now.getMonth() - 2, 1);
                 dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                 break;
             case '6M':
-                // �sltimos 6 meses
+                // ltimos 6 meses
                 dateFrom = new Date(now.getFullYear(), now.getMonth() - 5, 1);
                 dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                 break;
             case '1A':
-                // �sltimo ano
+                // ltimo ano
                 dateFrom = new Date(now.getFullYear(), 0, 1);
                 dateTo = new Date(now.getFullYear(), 11, 31);
                 break;
@@ -22224,7 +22224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- Média Mensal -->
                     <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 25px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);">
                         <h3 style="color: white; font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-calendar-alt" style="color: #8b5cf6;"></i> Média Mensal (�sltimos 12 Meses)
+                            <i class="fas fa-calendar-alt" style="color: #8b5cf6;"></i> Média Mensal (ltimos 12 Meses)
                         </h3>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
                             <div>
@@ -22341,7 +22341,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button onclick="closeMonthlyBalanceModal(); showGeneralBalanceModal();" style="flex: 1; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; font-weight: 700; font-size: 1rem; transition: all 0.2s;"
                             onmouseover="this.style.transform='translateY(-2px)'"
                             onmouseout="this.style.transform='translateY(0)'">
-                        VER BALAN�?O GERAL
+                        VER BALAN?O GERAL
                     </button>
                 </div>
             </div>
@@ -22558,7 +22558,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rows.push([]);
         rows.push(['TOTAL RECEITAS', '', '', '', `R$ ${formatCurrency(income)}`, '', '']);
         rows.push(['TOTAL DESPESAS', '', '', '', `R$ ${formatCurrency(expenses)}`, '', '']);
-        rows.push(['BALAN�?O', '', '', '', `R$ ${formatCurrency(income - expenses)}`, '', '']);
+        rows.push(['BALAN?O', '', '', '', `R$ ${formatCurrency(income - expenses)}`, '', '']);
 
         // Converter para CSV
         const csvContent = [
@@ -22717,7 +22717,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.filterByPendingIncome = function () {
-        // Filtrar apenas receitas pendentes - N�fO atualizar cards de resumo
+        // Filtrar apenas receitas pendentes - NÃO atualizar cards de resumo
         window.currentFinanceFilter = 'pending-income';
         window.currentFinanceTab = 'income';
         const transactions = window.allFinanceTransactions || [];
@@ -22733,7 +22733,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.borderBottomColor = 'transparent';
         });
 
-        // N�fO atualizar cards de resumo - apenas filtrar transações abaixo
+        // NÃO atualizar cards de resumo - apenas filtrar transações abaixo
         // Renderizar transações filtradas
         renderFinanceTransactions(filtered, 'income');
     };
@@ -22809,13 +22809,13 @@ document.addEventListener('DOMContentLoaded', () => {
             expenseBtn.style.color = 'var(--finance-text-primary)';
         }
 
-        // N�fO atualizar cards de resumo - apenas filtrar transações abaixo
+        // NÃO atualizar cards de resumo - apenas filtrar transações abaixo
         // Renderizar transações filtradas
         renderFinanceTransactions(filtered, 'expense');
     };
 
     window.filterByBalance = function () {
-        // Mostrar todas as transações (saldo disponível) - N�fO atualizar cards de resumo
+        // Mostrar todas as transações (saldo disponível) - NÃO atualizar cards de resumo
         window.currentFinanceTab = 'all';
         window.currentFinanceFilter = null;
         const transactions = window.allFinanceTransactions || [];
@@ -22831,7 +22831,7 @@ document.addEventListener('DOMContentLoaded', () => {
             allBtn.style.color = 'var(--finance-text-primary)';
         }
 
-        // N�fO atualizar cards de resumo - apenas mostrar todas as transações abaixo
+        // NÃO atualizar cards de resumo - apenas mostrar todas as transações abaixo
         renderFinanceTransactions(transactions, 'all');
     };
 
@@ -22895,11 +22895,11 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFinanceTransactions(filtered, 'expense');
     };
 
-    // FUN�?�fO REMOVIDA: updateFinanceCardsFromTransactions
+    // FUN—fO REMOVIDA: updateFinanceCardsFromTransactions
     // Os cards de resumo devem permanecer FIXOS e não serem alterados pelos filtros
     // Os filtros apenas mostram/ocultam transações abaixo, sem alterar os cards
 
-    // FUN�?�fO REMOVIDA: updateFinanceTotals
+    // FUN—fO REMOVIDA: updateFinanceTotals
     // Os cards de resumo devem permanecer FIXOS e não serem alterados pelos filtros
     // Os filtros apenas mostram/ocultam transações abaixo, sem alterar os cards
 
@@ -23518,7 +23518,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const timesContainer = document.getElementById('recurring-times-container');
 
             if (!slider || !container) {
-                console.warn('�s�️ [FINANCE] Elementos do toggle não encontrados');
+                console.warn('[FINANCE] Elementos do toggle não encontrados');
                 return;
             }
 
@@ -23570,23 +23570,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // PREVENIR SUBMIT PADR�fO E CHAMAR FUN�?�fO DE SALVAR
+        // PREVENIR SUBMIT PADRfO E CHAMAR FUN—fO DE SALVAR
         if (form) {
-            console.log('�Y"� [FINANCE] Adicionando listeners para prevenir submit padrão e chamar saveFinanceTransaction');
+            console.log('[FINANCE] Adicionando listeners para prevenir submit padrão e chamar saveFinanceTransaction');
 
-            // Adicionar listener para submit - CHAMAR A FUN�?�fO DE SALVAR AQUI
+            // Adicionar listener para submit - CHAMAR A FUN—fO DE SALVAR AQUI
             form.addEventListener('submit', async (e) => {
-                console.log('�Y"� [FINANCE] Form submit capturado, prevenindo padrão e chamando saveFinanceTransaction');
+                console.log('[FINANCE] Form submit capturado, prevenindo padrão e chamando saveFinanceTransaction');
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
 
-                // CHAMAR A FUN�?�fO DE SALVAR
+                // CHAMAR A FUN—fO DE SALVAR
                 try {
-                    console.log('�Y"� [FINANCE] Chamando saveFinanceTransaction com type:', type);
+                    console.log('[FINANCE] Chamando saveFinanceTransaction com type:', type);
                     await saveFinanceTransaction(e, type);
                 } catch (error) {
-                    console.error('�O [FINANCE] Erro ao chamar saveFinanceTransaction:', error);
+                    console.error('[FINANCE] Erro ao chamar saveFinanceTransaction:', error);
                 }
 
                 return false;
@@ -23594,19 +23594,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Também prevenir no onsubmit inline e chamar função
             form.onsubmit = async function (e) {
-                console.log('�Y"� [FINANCE] Form onsubmit capturado, prevenindo padrão e chamando saveFinanceTransaction');
+                console.log('[FINANCE] Form onsubmit capturado, prevenindo padrão e chamando saveFinanceTransaction');
                 if (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     e.stopImmediatePropagation();
                 }
 
-                // CHAMAR A FUN�?�fO DE SALVAR
+                // CHAMAR A FUN—fO DE SALVAR
                 try {
-                    console.log('�Y"� [FINANCE] Chamando saveFinanceTransaction (onsubmit) com type:', type);
+                    console.log('[FINANCE] Chamando saveFinanceTransaction (onsubmit) com type:', type);
                     await saveFinanceTransaction(e, type);
                 } catch (error) {
-                    console.error('�O [FINANCE] Erro ao chamar saveFinanceTransaction:', error);
+                    console.error('[FINANCE] Erro ao chamar saveFinanceTransaction:', error);
                 }
 
                 return false;
@@ -23651,7 +23651,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     async function saveFinanceTransaction(event, type) {
-        console.log('�Y"� [FINANCE] saveFinanceTransaction chamado', { type, event });
+        console.log('[FINANCE] saveFinanceTransaction chamado', { type, event });
 
         // PREVENT DEFAULT IMEDIATAMENTE - ANTES DE QUALQUER COISA
         if (event) {
@@ -23660,7 +23660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             event.stopImmediatePropagation();
         }
 
-        console.log('�Y"� [FINANCE] Event preventDefault executado');
+        console.log('[FINANCE] Event preventDefault executado');
 
         // Retornar false para garantir que não há submit padrão
         try {
@@ -23671,13 +23671,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorMsg.style.display = 'none';
             }
 
-            console.log('�Y"� [FINANCE] Buscando elementos do formulário...');
+            console.log('[FINANCE] Buscando elementos do formulário...');
             const amountInput = document.getElementById('transaction-amount');
             const descriptionInput = document.getElementById('transaction-description');
             const dateInput = document.getElementById('transaction-date');
             const statusInput = document.getElementById('transaction-status');
 
-            console.log('�Y"� [FINANCE] Elementos encontrados:', {
+            console.log('[FINANCE] Elementos encontrados:', {
                 amountInput: !!amountInput,
                 descriptionInput: !!descriptionInput,
                 dateInput: !!dateInput,
@@ -23693,7 +23693,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const transactionDate = dateInput.value;
             const status = statusInput.value;
 
-            console.log('�Y"� [FINANCE] Valores coletados:', {
+            console.log('[FINANCE] Valores coletados:', {
                 amount,
                 description,
                 transactionDate,
@@ -23702,11 +23702,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Validação
-            console.log('�Y"� [FINANCE] Iniciando validação...');
+            console.log('[FINANCE] Iniciando validação...');
             let hasError = false;
 
             if (!amount || amount <= 0 || isNaN(amount)) {
-                console.warn('�s�️ [FINANCE] Erro de validação: Valor inválido', amount);
+                console.warn('[FINANCE] Erro de validação: Valor inválido', amount);
                 showTransactionError('Por favor, informe um valor válido maior que zero.');
                 amountInput.style.borderColor = '#ef4444';
                 amountInput.focus();
@@ -23716,7 +23716,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!description || description.length < 2) {
-                console.warn('�s�️ [FINANCE] Erro de validação: Descrição inválida', description);
+                console.warn('[FINANCE] Erro de validação: Descrição inválida', description);
                 showTransactionError('Por favor, informe uma descrição com pelo menos 2 caracteres.');
                 descriptionInput.style.borderColor = '#ef4444';
                 if (!hasError) {
@@ -23728,7 +23728,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!transactionDate) {
-                console.warn('�s�️ [FINANCE] Erro de validação: Data inválida', transactionDate);
+                console.warn('[FINANCE] Erro de validação: Data inválida', transactionDate);
                 showTransactionError('Por favor, selecione uma data.');
                 dateInput.style.borderColor = '#ef4444';
                 if (!hasError) {
@@ -23740,14 +23740,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (hasError) {
-                console.warn('�s�️ [FINANCE] Validação falhou, abortando envio');
+                console.warn('[FINANCE] Validação falhou, abortando envio');
                 return;
             }
 
-            console.log('�o. [FINANCE] Validação passou');
+            console.log('[FINANCE] Validação passou');
 
             // Mostrar loading
-            console.log('�Y"� [FINANCE] Preparando para enviar...');
+            console.log('[FINANCE] Preparando para enviar...');
             const submitBtn = document.getElementById('save-btn');
             const cancelBtn = document.getElementById('cancel-btn');
 
@@ -23766,7 +23766,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const typeUpper = (type || '').toUpperCase();
             const transactionType = typeUpper === 'INCOME' ? 'INCOME' : 'EXPENSE';
 
-            console.log('�Y"� [FINANCE] Tipo da transação determinado:', {
+            console.log('[FINANCE] Tipo da transação determinado:', {
                 typeOriginal: type,
                 typeUpper,
                 transactionType,
@@ -23799,7 +23799,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 profile_id: profileId ? parseInt(profileId) : null
             };
 
-            console.log('�Y"� [FINANCE] Enviando requisição:', {
+            console.log('[FINANCE] Enviando requisição:', {
                 url: `${API_URL}/api/finance/transactions`,
                 method: 'POST',
                 body: requestBody,
@@ -23809,8 +23809,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            console.log('�Y"� [FINANCE] API_URL:', API_URL);
-            console.log('�Y"� [FINANCE] HEADERS_AUTH:', HEADERS_AUTH);
+            console.log('[FINANCE] API_URL:', API_URL);
+            console.log('[FINANCE] HEADERS_AUTH:', HEADERS_AUTH);
 
             let response;
             try {
@@ -23823,34 +23823,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(requestBody)
                 });
 
-                console.log('�Y"� [FINANCE] Resposta recebida:', {
+                console.log('[FINANCE] Resposta recebida:', {
                     status: response.status,
                     statusText: response.statusText,
                     ok: response.ok,
                     headers: Object.fromEntries(response.headers.entries())
                 });
             } catch (fetchError) {
-                console.error('�O [FINANCE] Erro na requisição fetch:', fetchError);
+                console.error('[FINANCE] Erro na requisição fetch:', fetchError);
                 throw new Error(`Erro de conexão: ${fetchError.message}`);
             }
 
             let responseData = null;
             try {
                 const responseText = await response.text();
-                console.log('�Y"� [FINANCE] Resposta texto:', responseText);
+                console.log('[FINANCE] Resposta texto:', responseText);
 
                 if (responseText) {
                     responseData = JSON.parse(responseText);
-                    console.log('�Y"� [FINANCE] Resposta JSON:', responseData);
+                    console.log('[FINANCE] Resposta JSON:', responseData);
                 }
             } catch (parseError) {
-                console.error('�O [FINANCE] Erro ao parsear JSON:', parseError);
+                console.error('[FINANCE] Erro ao parsear JSON:', parseError);
                 throw new Error('Resposta inválida do servidor');
             }
 
             if (!response.ok) {
                 const errorMessage = responseData?.message || responseData?.error || responseData?.data?.message || `Erro ${response.status}: ${response.statusText}`;
-                console.error('�O [FINANCE] Erro na resposta:', {
+                console.error('[FINANCE] Erro na resposta:', {
                     status: response.status,
                     statusText: response.statusText,
                     errorMessage,
@@ -23859,7 +23859,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorMessage);
             }
 
-            console.log('�o. [FINANCE] Transação salva com sucesso:', responseData);
+            console.log('[FINANCE] Transação salva com sucesso:', responseData);
 
             // Fechar modal imediatamente para o usuário sair da tela de formulário
             closeFinanceTransactionModal();
@@ -23906,20 +23906,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } catch (reloadError) {
-                console.error('�O [FINANCE] Erro ao recarregar dados:', reloadError);
+                console.error('[FINANCE] Erro ao recarregar dados:', reloadError);
             }
 
             return false; // Retornar false para prevenir submit padrão
 
         } catch (error) {
-            console.error('�O [FINANCE] ERRO CAPTURADO:', error);
-            console.error('�O [FINANCE] Stack trace:', error.stack);
-            console.error('�O [FINANCE] Error name:', error.name);
-            console.error('�O [FINANCE] Error message:', error.message);
+            console.error('[FINANCE] ERRO CAPTURADO:', error);
+            console.error('[FINANCE] Stack trace:', error.stack);
+            console.error('[FINANCE] Error name:', error.name);
+            console.error('[FINANCE] Error message:', error.message);
 
             // Mostrar erro
             const errorMessage = error.message || 'Erro ao salvar transação. Verifique sua conexão e tente novamente.';
-            console.error('�O [FINANCE] Exibindo mensagem de erro:', errorMessage);
+            console.error('[FINANCE] Exibindo mensagem de erro:', errorMessage);
             showTransactionError(errorMessage);
 
             // Restaurar botão
@@ -23953,7 +23953,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.editFinanceTransaction = async function (id) {
-        console.log('�Y"� [FINANCE] editFinanceTransaction chamado para ID:', id);
+        console.log('[FINANCE] editFinanceTransaction chamado para ID:', id);
 
         if (!id) {
             alert('ID da transação não fornecido.');
@@ -23974,7 +23974,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const responseData = await response.json();
             const transaction = responseData.data || responseData;
 
-            console.log('�Y"� [FINANCE] Transação carregada:', transaction);
+            console.log('[FINANCE] Transação carregada:', transaction);
 
             // Determinar tipo (INCOME ou EXPENSE)
             const transactionType = (transaction.type || '').toUpperCase();
@@ -24003,17 +24003,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, true);
                 }
 
-                console.log('�o. [FINANCE] Modal de edição configurado');
+                console.log('[FINANCE] Modal de edição configurado');
             }, 500);
 
         } catch (error) {
-            console.error('�O [FINANCE] Erro ao carregar transação para edição:', error);
+            console.error('[FINANCE] Erro ao carregar transação para edição:', error);
             alert('Erro ao carregar transação: ' + error.message);
         }
     };
 
     async function updateFinanceTransaction(event, id, type) {
-        console.log('�Y"� [FINANCE] updateFinanceTransaction chamado', { id, type });
+        console.log('[FINANCE] updateFinanceTransaction chamado', { id, type });
 
         // PREVENT DEFAULT IMEDIATAMENTE
         if (event) {
@@ -24093,7 +24093,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 recurring_times: recurringTimes
             };
 
-            console.log('�Y"� [FINANCE] Atualizando transação:', { id, body: requestBody });
+            console.log('[FINANCE] Atualizando transação:', { id, body: requestBody });
 
             const response = await fetch(`${API_URL}/api/finance/transactions/${id}`, {
                 method: 'PUT',
@@ -24109,19 +24109,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 responseText = await response.text();
-                console.log('�Y"� [FINANCE] Resposta texto (update):', responseText);
+                console.log('[FINANCE] Resposta texto (update):', responseText);
 
                 if (responseText) {
                     try {
                         responseData = JSON.parse(responseText);
-                        console.log('�Y"� [FINANCE] Resposta JSON (update):', responseData);
+                        console.log('[FINANCE] Resposta JSON (update):', responseData);
                     } catch (parseError) {
-                        console.error('�O [FINANCE] Erro ao parsear JSON:', parseError);
+                        console.error('[FINANCE] Erro ao parsear JSON:', parseError);
                         responseData = { message: responseText };
                     }
                 }
             } catch (textError) {
-                console.error('�O [FINANCE] Erro ao ler resposta:', textError);
+                console.error('[FINANCE] Erro ao ler resposta:', textError);
             }
 
             if (!response.ok) {
@@ -24147,7 +24147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     errorMessage = responseText;
                 }
 
-                console.error('�O [FINANCE] Erro na resposta (update):', {
+                console.error('[FINANCE] Erro na resposta (update):', {
                     status: response.status,
                     statusText: response.statusText,
                     responseData,
@@ -24158,7 +24158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorMessage);
             }
 
-            console.log('�o. [FINANCE] Transação atualizada com sucesso:', responseData);
+            console.log('[FINANCE] Transação atualizada com sucesso:', responseData);
 
             // Fechar modal imediatamente para o usuário sair da tela de edição
             closeFinanceTransactionModal();
@@ -24204,13 +24204,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } catch (reloadError) {
-                console.error('�O [FINANCE] Erro ao recarregar dados:', reloadError);
+                console.error('[FINANCE] Erro ao recarregar dados:', reloadError);
             }
 
             return false;
 
         } catch (error) {
-            console.error('�O [FINANCE] Erro ao atualizar transação:', error);
+            console.error('[FINANCE] Erro ao atualizar transação:', error);
             showTransactionError(error.message || 'Erro ao atualizar transação. Verifique sua conexão e tente novamente.');
 
             const submitBtn = document.getElementById('save-btn');
@@ -24228,7 +24228,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ============================================
-    // FUN�?�.ES DE GERENCIAMENTO DE PERFIS FINANCEIROS
+    // FUN—.ES DE GERENCIAMENTO DE PERFIS FINANCEIROS
     // ============================================
 
     window.showFinanceProfilesModal = async function () {
@@ -25107,7 +25107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ============================================
-    // PERSONALIZA�?�fO DA MARCA
+    // PERSONALIZA—fO DA MARCA
     // ============================================
 
     // Carregar dados de branding

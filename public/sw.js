@@ -1,14 +1,14 @@
 /**
- * Service Worker (Conecta King) - vers�o segura
+ * Service Worker (Conecta King) - versão segura
  *
- * Vers�es antigas interceptavam todos os fetch() e faziam respondWith(fetch(request)).
- * Isso quebrava p�ginas como kingSelectionProject.html?itemId=... (erro no Console:
+ * Verses antigas interceptavam todos os fetch() e faziam respondWith(fetch(request)).
+ * Isso quebrava páginas como kingSelectionProject.html?itemId=... (erro no Console:
  * "FetchEvent resulted in a network error" / "Failed to fetch at sw.js:36").
  *
- * Este ficheiro N�O regista listener de "fetch": os pedidos HTTP seguem o comportamento
- * normal do browser. Mant�m-se s� install/activate para substituir SW problem�tico ap�s deploy.
+ * Este ficheiro NO regista listener de "fetch": os pedidos HTTP seguem o comportamento
+ * normal do browser. Mantm-se s install/activate para substituir SW problemtico apdeploy.
  *
- * Deploy: copiar para a raiz do site (mesmo s�tio que index/dashboard), p.ex. Hostinger:
+ * Deploy: copiar para a raiz do site (mesmo stio que index/dashboard), p.ex. Hostinger:
  *   /public_html/sw.js
  * Depois: recarregar o site com "Hard reload" ou Application > Service Workers > Unregister (uma vez).
  */
