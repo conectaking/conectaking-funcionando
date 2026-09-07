@@ -12,6 +12,8 @@ O `dashboard.js` é o **orquestrador** (auth, sidebar, cartão, itens). Módulos
 | `js/dashboard-relatorios.js` | Relatórios / analytics (`window.loadReportsData`, `DashboardRelatorios`) |
 | `js/dashboard-cartao.js` | Preview ao vivo, vCard, estado dos módulos (`DashboardCartao`) |
 | `js/dashboard-editor.js` | `renderEditor` — lista/form dos módulos do cartão (`DashboardEditor`) |
+| `js/dashboard-sortable.js` | Drag-and-drop / reordenar módulos (`DashboardSortable`) |
+| `js/dashboard-save.js` | **Publicar alterações** (`DashboardSave.saveAllChanges`) |
 | `js/dashboard-info.js` | Stub/namespace aba Informações (`DashboardInfo.init`) |
 | `js/dashboard-personalizar.js` | Preview após publicar (`DashboardPersonalizar.reloadPreview`) |
 | `js/dashboard-vitrine.js` | Vitrine |
