@@ -84,7 +84,7 @@
     <div class="wrap">
         <h1 style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
             <span style="display:inline-flex;align-items:center;gap:10px"><i class="fas fa-book-bible"></i> Bíblia &amp; Devocionais (ADM)</span>
-            <a class="btn btn-secondary" href="/dashboard.html" id="btn-voltar-dashboard" style="text-decoration:none"><i class="fas fa-arrow-left"></i> Voltar</a>
+            <a class="btn btn-secondary" href="/admin/" id="btn-voltar-dashboard" style="text-decoration:none" title="Voltar à tela anterior"><i class="fas fa-arrow-left"></i> Voltar</a>
         </h1>
         <p class="sub">Admin da Bíblia no cartão: <strong>Devocional 365</strong>, <strong>Prosperidade antes de dormir</strong> (Do Fracasso ao Legado), plano de leitura e estudos por livro. Requer token de administrador.</p>
 
@@ -1656,6 +1656,21 @@
     if (location.hash === '#prosperidade' || location.hash === '#prosperidade-dormir') {
         var tabPros = document.querySelector('.tabs button[data-tab="prosperidade"]');
         if (tabPros) tabPros.click();
+    }
+
+    // Voltar = tela anterior (de onde veio, ex.: painel ADM). Fallback: /admin/
+    var btnVoltar = document.getElementById('btn-voltar-dashboard');
+    if (btnVoltar) {
+        btnVoltar.addEventListener('click', function (e) {
+            e.preventDefault();
+            try {
+                if (window.history.length > 1) {
+                    window.history.back();
+                    return;
+                }
+            } catch (_) {}
+            window.location.href = '/admin/';
+        });
     }
 
 })();
