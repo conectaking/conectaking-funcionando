@@ -34,6 +34,12 @@ Route::get('/l/card/{slug}', [CardPublicController::class, 'show'])->where('slug
 Route::get('/l/api/card/{slug}', [CardPublicController::class, 'api'])->where('slug', $cardSlug);
 Route::get('/l/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])->where('itemId', '[0-9]+');
 Route::get('/l/api/bible/verse-of-day', [BiblePublicController::class, 'verseOfDay']);
+Route::get('/l/api/bible/books', [BiblePublicController::class, 'books']);
+Route::get('/l/api/bible/book/{bookId}/{chapter}', [BiblePublicController::class, 'bookChapter'])
+    ->where(['bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
+Route::get('/l/api/bible/study/books', [BiblePublicController::class, 'studyBooks']);
+Route::get('/l/api/bible/study/book/{bookId}', [BiblePublicController::class, 'studyBook'])
+    ->where('bookId', '[A-Za-z0-9_-]+');
 Route::post('/l/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/l/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/l/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -74,6 +80,12 @@ Route::get('/card/{slug}', [CardPublicController::class, 'show'])->where('slug',
 Route::get('/api/card/{slug}', [CardPublicController::class, 'api'])->where('slug', $cardSlug);
 Route::get('/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])->where('itemId', '[0-9]+');
 Route::get('/api/bible/verse-of-day', [BiblePublicController::class, 'verseOfDay']);
+Route::get('/api/bible/books', [BiblePublicController::class, 'books']);
+Route::get('/api/bible/book/{bookId}/{chapter}', [BiblePublicController::class, 'bookChapter'])
+    ->where(['bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
+Route::get('/api/bible/study/books', [BiblePublicController::class, 'studyBooks']);
+Route::get('/api/bible/study/book/{bookId}', [BiblePublicController::class, 'studyBook'])
+    ->where('bookId', '[A-Za-z0-9_-]+');
 Route::post('/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -133,5 +145,19 @@ Route::get('/l/{slug}/form/{itemId}', [SatellitePublicController::class, 'formBy
 Route::post('/l/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/l/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
+Route::get('/{slug}/biblia/estudos-livro', [SatellitePublicController::class, 'bibleStudyRedirect'])->where('slug', $cardSlug);
+Route::get('/l/{slug}/biblia/estudos-livro', [SatellitePublicController::class, 'bibleStudyRedirect'])->where('slug', $cardSlug);
+Route::get('/{slug}/biblia/estudos-livro/{bookId}', [SatellitePublicController::class, 'bibleStudy'])
+    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+']);
+Route::get('/l/{slug}/biblia/estudos-livro/{bookId}', [SatellitePublicController::class, 'bibleStudy'])
+    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+']);
+Route::get('/{slug}/bible', [SatellitePublicController::class, 'bibleRedirect'])->where('slug', $cardSlug);
+Route::get('/l/{slug}/bible', [SatellitePublicController::class, 'bibleRedirect'])->where('slug', $cardSlug);
+Route::get('/{slug}/bible/estudo-livro/{bookId}', [SatellitePublicController::class, 'bibleStudyLegacyRedirect'])
+    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+']);
+Route::get('/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReader'])
+    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
+Route::get('/l/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReader'])
+    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
 Route::get('/l/loja/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);

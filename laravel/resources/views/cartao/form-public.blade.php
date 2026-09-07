@@ -18,6 +18,9 @@
         p.desc { opacity: .85; margin: 0 0 20px; }
         label { display:block; font-size:.9rem; margin: 14px 0 6px; font-weight:600; }
         input, textarea, select { width:100%; box-sizing:border-box; padding:12px; border:1px solid #ddd; border-radius:8px; font: inherit; }
+        .opts { display:flex; flex-direction:column; gap:8px; }
+        .opt { font-weight:500; display:flex; align-items:center; gap:8px; margin:0; }
+        .opt input { width:auto; }
         button { margin-top: 20px; width:100%; padding:14px; border:0; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; }
         .ok { display:none; margin-top:16px; padding:12px; background:#e8f8ef; color:#146c2e; border-radius:8px; }
         .err { display:none; margin-top:16px; padding:12px; background:#fdecea; color:#8a1f11; border-radius:8px; }
@@ -44,7 +47,7 @@
                 @endphp
                 <label for="{{ $fid }}">{{ $label }}@if($required) * @endif</label>
                 @if($type === 'textarea')
-                    <textarea id="{{ $fid }}" name="{{ $fid }}" @if($required) required @endif></textarea>
+                    <textarea id="{{ $fid }}" name="{{ $fid }}" @if($required) required @endif placeholder="{{ $field['placeholder'] ?? '' }}"></textarea>
                 @elseif($type === 'select' && is_array($field['options'] ?? null))
                     <select id="{{ $fid }}" name="{{ $fid }}" @if($required) required @endif>
                         <option value="">Selecione</option>
@@ -54,12 +57,35 @@
                             </option>
                         @endforeach
                     </select>
+                @elseif(in_array($type, ['checkbox', 'checkboxes'], true) && is_array($field['options'] ?? null))
+                    <div class="opts">
+                        @foreach($field['options'] as $oi => $opt)
+                            @php
+                                $ov = is_array($opt) ? ($opt['value'] ?? $opt['label'] ?? '') : $opt;
+                                $ol = is_array($opt) ? ($opt['label'] ?? $opt['value'] ?? '') : $opt;
+                            @endphp
+                            <label class="opt"><input type="checkbox" name="{{ $fid }}[]" value="{{ $ov }}" data-multi="1"> {{ $ol }}</label>
+                        @endforeach
+                    </div>
+                @elseif($type === 'radio' && is_array($field['options'] ?? null))
+                    <div class="opts">
+                        @foreach($field['options'] as $oi => $opt)
+                            @php
+                                $ov = is_array($opt) ? ($opt['value'] ?? $opt['label'] ?? '') : $opt;
+                                $ol = is_array($opt) ? ($opt['label'] ?? $opt['value'] ?? '') : $opt;
+                            @endphp
+                            <label class="opt"><input type="radio" name="{{ $fid }}" value="{{ $ov }}" @if($required && $oi === 0) required @endif> {{ $ol }}</label>
+                        @endforeach
+                    </div>
+                @elseif($type === 'checkbox')
+                    <label class="opt"><input type="checkbox" id="{{ $fid }}" name="{{ $fid }}" value="1" @if($required) required @endif> {{ $field['placeholder'] ?? 'Sim' }}</label>
                 @else
-                    <input id="{{ $fid }}" name="{{ $fid }}" type="{{ in_array($type, ['email','tel','number','date'], true) ? $type : 'text' }}" @if($required) required @endif>
+                    <input id="{{ $fid }}" name="{{ $fid }}" type="{{ in_array($type, ['email','tel','number','date','url'], true) ? $type : 'text' }}"
+                           placeholder="{{ $field['placeholder'] ?? '' }}" @if($required) required @endif>
                 @endif
             @endforeach
-            <button type="submit">Enviar</button>
-            <div class="ok" id="ok">Enviado com sucesso!</div>
+            <button type="submit">{{ $form['submit_button_text'] ?? 'Enviar' }}</button>
+            <div class="ok" id="ok">{{ $form['success_message'] ?? 'Enviado com sucesso!' }}</div>
             <div class="err" id="err"></div>
         </form>
     </div>
@@ -77,8 +103,21 @@
     var name = '', email = '', phone = '';
     Array.from(form.elements).forEach(function (el) {
       if (!el.name || el.type === 'submit') return;
-      data[el.name] = el.value;
-      var low = (el.name + ' ' + (el.previousElementSibling && el.previousElementSibling.textContent || '')).toLowerCase();
+      var key = el.name.replace(/\[\]$/, '');
+      if (el.type === 'checkbox') {
+        if (!el.checked) return;
+        if (el.name.slice(-2) === '[]' || el.getAttribute('data-multi') === '1') {
+          if (!Array.isArray(data[key])) data[key] = [];
+          data[key].push(el.value);
+        } else {
+          data[key] = el.value || '1';
+        }
+      } else if (el.type === 'radio') {
+        if (el.checked) data[key] = el.value;
+      } else {
+        data[key] = el.value;
+      }
+      var low = (key + ' ' + (el.closest('label') && el.closest('label').textContent || '') + ' ' + (el.previousElementSibling && el.previousElementSibling.textContent || '')).toLowerCase();
       if (!name && /nome/.test(low)) name = el.value;
       if (!email && (el.type === 'email' || /e-?mail/.test(low))) email = el.value;
       if (!phone && (el.type === 'tel' || /telefone|whats|celular/.test(low))) phone = el.value;
@@ -93,6 +132,7 @@
       if (!res.ok || json.success === false) throw new Error(json.message || 'Falha ao enviar');
       form.reset();
       ok.style.display = 'block';
+      ok.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (ex) {
       err.textContent = ex.message || 'Erro';
       err.style.display = 'block';

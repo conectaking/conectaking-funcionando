@@ -54,8 +54,16 @@ function isLaravelCardApiPath(urlPath) {
     const patterns = [
         /^\/api\/pix\/qrcode\/\d+$/i,
         /^\/api\/bible\/verse-of-day$/i,
+        /^\/api\/bible\/books$/i,
+        /^\/api\/bible\/book\/[^/]+\/\d+$/i,
+        /^\/api\/bible\/study\/books$/i,
+        /^\/api\/bible\/study\/book\/[^/]+$/i,
         /^\/l\/api\/pix\/qrcode\/\d+$/i,
         /^\/l\/api\/bible\/verse-of-day$/i,
+        /^\/l\/api\/bible\/books$/i,
+        /^\/l\/api\/bible\/book\/[^/]+\/\d+$/i,
+        /^\/l\/api\/bible\/study\/books$/i,
+        /^\/l\/api\/bible\/study\/book\/[^/]+$/i,
         /^\/log\/view\/[^/]+$/i,
         /^\/log\/click\/item\/\d+$/i,
         /^\/log\/vcard\/[^/]+$/i,
@@ -127,6 +135,30 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
     if (bible && method === 'GET') {
         if (!force && !LARAVEL_SATELLITES) return false;
         return force || slugAllowedForSatellite(bible[1]);
+    }
+
+    const bibleStudy = pathOnly.match(/^\/(?:l\/)?([^/]+)\/biblia\/estudos-livro(?:\/([^/]+))?\/?$/i);
+    if (bibleStudy && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bibleStudy[1]);
+    }
+
+    const bibleStudyLegacy = pathOnly.match(/^\/([^/]+)\/bible\/estudo-livro\/([^/]+)\/?$/i);
+    if (bibleStudyLegacy && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bibleStudyLegacy[1]);
+    }
+
+    const bibleEn = pathOnly.match(/^\/(?:l\/)?([^/]+)\/bible\/?$/i);
+    if (bibleEn && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bibleEn[1]);
+    }
+
+    const bibleReader = pathOnly.match(/^\/(?:l\/)?([^/]+)\/bible\/([^/]+)\/(\d+)\/?$/i);
+    if (bibleReader && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bibleReader[1]);
     }
 
     const store = pathOnly.match(/^\/([^/]+)\/([^/]+)\/?$/i);

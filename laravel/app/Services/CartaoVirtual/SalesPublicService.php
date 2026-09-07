@@ -46,7 +46,8 @@ class SalesPublicService
 
         $products = DB::select(
             "SELECT * FROM sales_page_products
-             WHERE sales_page_id = ? AND (status IS NULL OR UPPER(status) <> 'ARCHIVED')
+             WHERE sales_page_id = ?
+               AND (status IS NULL OR status::text NOT IN ('ARCHIVED','archived'))
              ORDER BY display_order ASC NULLS LAST, id ASC",
             [$page->id]
         );

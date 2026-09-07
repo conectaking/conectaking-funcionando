@@ -34,6 +34,18 @@ class SatellitePublicController extends Controller
     public function formSubmit(Request $request, string $slug, string $itemId)
     {
         $result = $this->forms->submit($slug, $itemId, $request->all());
+        $wantsHtml = str_contains(strtolower((string) $request->header('Accept', '')), 'text/html')
+            && !str_contains(strtolower((string) $request->header('Accept', '')), 'application/json');
+
+        if ($wantsHtml && ($result['status'] === 201 || ($result['body']['success'] ?? false))) {
+            return response()
+                ->view('cartao.form-success', [
+                    'title' => 'Enviado!',
+                    'message' => $result['body']['message'] ?? 'Resposta enviada com sucesso!',
+                    'backUrl' => "/{$slug}/form/{$itemId}",
+                ], 201)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
 
         return response()->json($result['body'], $result['status'])
             ->header('X-Conecta-Engine', 'laravel');
@@ -51,6 +63,48 @@ class SatellitePublicController extends Controller
 
         return response()
             ->view('cartao.bible-hub', $result['data'])
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function bibleReader(Request $request, string $slug, string $bookId, string $chapter)
+    {
+        $result = $this->bible->reader($slug, $bookId, $chapter, $request->query('translation'));
+        if ($result['status'] !== 200) {
+            return response('<h1>'.e($result['message'] ?? 'Não encontrado').'</h1>', $result['status'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()
+            ->view('cartao.bible-reader', $result['data'])
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function bibleRedirect(string $slug)
+    {
+        return redirect('/'.$slug.'/biblia', 302)->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function bibleStudy(string $slug, string $bookId)
+    {
+        $result = $this->bible->bookStudy($slug, $bookId);
+        if ($result['status'] !== 200) {
+            return response('<h1>'.e($result['message'] ?? 'Não encontrado').'</h1>', $result['status'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()
+            ->view('cartao.bible-study', $result['data'])
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function bibleStudyRedirect(string $slug)
+    {
+        return redirect('/'.$slug.'/biblia', 302)->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function bibleStudyLegacyRedirect(string $slug, string $bookId)
+    {
+        return redirect('/'.$slug.'/biblia/estudos-livro/'.$bookId, 302)
             ->header('X-Conecta-Engine', 'laravel');
     }
 

@@ -15,7 +15,8 @@ RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoload
 
 COPY . .
 
-RUN rm -f bootstrap/cache/packages.php bootstrap/cache/services.php \
+RUN rm -f .env .env.backup \
+    && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache \
     && php artisan package:discover --ansi
