@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\CartaoVirtual\BiblePublicController;
 use App\Http\Controllers\CartaoVirtual\CardPublicController;
+use App\Http\Controllers\CartaoVirtual\PixQrCodeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,9 +24,19 @@ Route::get('/l/card/{slug}', [CardPublicController::class, 'show'])
 Route::get('/l/api/card/{slug}', [CardPublicController::class, 'api'])
     ->where('slug', '[A-Za-z0-9._-]+');
 
-// Também aceitar sem /l quando acessado direto no container (health/tests)
+Route::get('/l/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])
+    ->where('itemId', '[0-9]+');
+
+Route::get('/l/api/bible/verse-of-day', [BiblePublicController::class, 'verseOfDay']);
+
+// Também aceitar sem /l quando acessado direto no container (health/tests + proxy)
 Route::get('/card/{slug}', [CardPublicController::class, 'show'])
     ->where('slug', '[A-Za-z0-9._-]+');
 
 Route::get('/api/card/{slug}', [CardPublicController::class, 'api'])
     ->where('slug', '[A-Za-z0-9._-]+');
+
+Route::get('/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])
+    ->where('itemId', '[0-9]+');
+
+Route::get('/api/bible/verse-of-day', [BiblePublicController::class, 'verseOfDay']);

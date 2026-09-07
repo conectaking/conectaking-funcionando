@@ -5,6 +5,7 @@ namespace App\Services\CartaoVirtual;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Services\CartaoVirtual\VerseOfDayService;
 
 /**
  * Leitura do cartão público a partir do schema existente (Node/Postgres).
@@ -345,6 +346,16 @@ class CartaoPublicService
      */
     private function fetchVerseOfDay(string $translation = 'nvi'): ?array
     {
+        try {
+            $local = app(VerseOfDayService::class)->forCard($translation ?: 'nvi');
+            if ($local) {
+                return $local;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('cartao.verse_of_day.local', ['error' => $e->getMessage()]);
+        }
+
+        // Fallback: Node interno (se JSON ainda não estiver no container)
         try {
             $base = rtrim((string) env('NODE_INTERNAL_URL', 'http://api:5000'), '/');
             $res = Http::timeout(4)->get($base.'/api/bible/verse-of-day', [

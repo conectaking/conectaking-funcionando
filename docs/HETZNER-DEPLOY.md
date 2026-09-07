@@ -23,6 +23,7 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 | `LARAVEL_CARD_ENABLED` | `true` | Liga proxy `/l/*` |
 | `LARAVEL_CARD_PUBLIC` | `false` | Se `true`, `/:slug` passa a Laravel |
 | `LARAVEL_CARD_SLUGS` | vazio | Canário: lista `slug1,slug2` (vazio = todos quando PUBLIC=true) |
+| `LARAVEL_CARD_APIS` | `true` | Proxy `GET /api/pix/qrcode/:id` e `GET /api/bible/verse-of-day` → Laravel |
 
 **Teste sem mudar produção:** `https://www.conectaking.com.br/adrianokingg?laravel=1`  
 **Prévia:** `/l/card/adrianokingg` (banner de prévia)  
@@ -46,9 +47,9 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 
 | Fase | Status | Escopo |
 |---|---|---|
-| 1. Página pública (Blade) | em andamento | Render `/:slug` + tipos principais; APIs satélite ainda Node |
-| 2. Canário `LARAVEL_CARD_PUBLIC` | pronto (off) | Ligar slug a slug |
-| 3. APIs read do cartão | pendente | PIX QR, verse-of-day, vcard, PDF, logs |
+| 1. Página pública (Blade) | canário `adrianokingg` | Render `/:slug` + tipos principais |
+| 2. Canário `LARAVEL_CARD_PUBLIC` | ligado (slug) | `LARAVEL_CARD_SLUGS=adrianokingg` |
+| 3. APIs read do cartão | em andamento | PIX QR + verse-of-day no Laravel (`LARAVEL_CARD_APIS`) |
 | 4. Editor `/api/profile` | pendente | GET/save-all + CRUD itens |
 | 5. Páginas satélite | depois | form, sales, bible, king selection |
 
