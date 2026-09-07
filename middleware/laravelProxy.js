@@ -58,12 +58,17 @@ function isLaravelCardApiPath(urlPath) {
         /^\/api\/bible\/book\/[^/]+\/\d+$/i,
         /^\/api\/bible\/study\/books$/i,
         /^\/api\/bible\/study\/book\/[^/]+$/i,
+        /^\/api\/bible\/devocional-do-dia$/i,
+        /^\/api\/bible\/reading-plan\/day\/\d+$/i,
         /^\/l\/api\/pix\/qrcode\/\d+$/i,
         /^\/l\/api\/bible\/verse-of-day$/i,
         /^\/l\/api\/bible\/books$/i,
         /^\/l\/api\/bible\/book\/[^/]+\/\d+$/i,
         /^\/l\/api\/bible\/study\/books$/i,
         /^\/l\/api\/bible\/study\/book\/[^/]+$/i,
+        /^\/l\/api\/bible\/devocional-do-dia$/i,
+        /^\/l\/api\/bible\/devotionals-365\/\d+$/i,
+        /^\/l\/api\/bible\/reading-plan\/day\/\d+$/i,
         /^\/log\/view\/[^/]+$/i,
         /^\/log\/click\/item\/\d+$/i,
         /^\/log\/vcard\/[^/]+$/i,
@@ -75,7 +80,13 @@ function isLaravelCardApiPath(urlPath) {
         /^\/download\/pdf\/\d+$/i,
         /^\/l\/download\/pdf\/\d+$/i,
     ];
-    return patterns.some((re) => re.test(pathOnly));
+    if (patterns.some((re) => re.test(pathOnly))) return true;
+    // Devocional 365 no Laravel só no modo plain (IA enriquecida permanece no Node)
+    if (/^\/api\/bible\/devotionals-365\/\d+$/i.test(pathOnly)
+        && /[?&]plain=(1|true|db)(?:&|$)/i.test(urlPath)) {
+        return true;
+    }
+    return false;
 }
 
 function isLaravelProfileApiPath(reqMethod, urlPath) {
@@ -141,6 +152,12 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
     if (bibleStudy && method === 'GET') {
         if (!force && !LARAVEL_SATELLITES) return false;
         return force || slugAllowedForSatellite(bibleStudy[1]);
+    }
+
+    const bibleDev = pathOnly.match(/^\/(?:l\/)?([^/]+)\/biblia\/devocional(?:\/(\d+))?\/?$/i);
+    if (bibleDev && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bibleDev[1]);
     }
 
     const bibleStudyLegacy = pathOnly.match(/^\/([^/]+)\/bible\/estudo-livro\/([^/]+)\/?$/i);

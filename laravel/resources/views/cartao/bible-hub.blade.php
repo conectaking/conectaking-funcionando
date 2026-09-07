@@ -33,6 +33,25 @@
         </div>
     @endif
 
+    <p class="nav" style="margin-top:20px">
+        <a href="{{ $devotionalUrl ?? ('/'.$slug.'/biblia/devocional') }}">Devocional do dia ({{ $devotionalDay ?? '' }})</a>
+    </p>
+    @if(!empty($devotionalToday['titulo']) || !empty($devotionalToday['reflexao']))
+        <div class="verse" style="margin-top:8px">
+            <div style="font-family:system-ui,sans-serif;font-size:.8rem;color:#FFC700;margin-bottom:8px">Devocional 365</div>
+            @if(!empty($devotionalToday['titulo']))
+                <div style="font-weight:600;margin-bottom:8px">{{ $devotionalToday['titulo'] }}</div>
+            @endif
+            @if(!empty($devotionalToday['versiculo_ref']))
+                <div class="ref">{{ $devotionalToday['versiculo_ref'] }}</div>
+            @endif
+            @if(!empty($devotionalToday['reflexao']))
+                <div style="font-size:1rem;opacity:.9">{{ \Illuminate\Support\Str::limit($devotionalToday['reflexao'], 220) }}</div>
+            @endif
+            <p class="nav" style="margin-top:12px;margin-bottom:0"><a href="{{ $devotionalUrl }}">Ler completo →</a></p>
+        </div>
+    @endif
+
     @php $withStudy = $booksWithStudy ?? []; @endphp
     @if(!empty($withStudy))
         <h2>Estudos por livro</h2>

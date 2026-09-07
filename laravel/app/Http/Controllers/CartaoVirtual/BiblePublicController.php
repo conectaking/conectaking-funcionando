@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\CartaoVirtual;
 
 use App\Http\Controllers\Controller;
+use App\Services\CartaoVirtual\BibleDevotionalService;
 use App\Services\CartaoVirtual\BibleStudyService;
 use App\Services\CartaoVirtual\BibleTextService;
 use App\Services\CartaoVirtual\VerseOfDayService;
@@ -14,6 +15,7 @@ class BiblePublicController extends Controller
         private readonly VerseOfDayService $verse,
         private readonly BibleTextService $text,
         private readonly BibleStudyService $studies,
+        private readonly BibleDevotionalService $devotionals,
     ) {
     }
 
@@ -91,6 +93,67 @@ class BiblePublicController extends Controller
         return response()->json([
             'success' => true,
             'data' => $study,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function devocionalDoDia(Request $request)
+    {
+        $date = $request->query('date');
+        $data = $this->devotionals->getForDate(is_string($date) ? $date : null);
+        if (!$data || !$this->devotionals->hasContent($data)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Devocional não encontrado',
+            ], 404)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function devotionals365(string $day)
+    {
+        if (!ctype_digit($day) || (int) $day < 1 || (int) $day > 365) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dia deve ser entre 1 e 365',
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        $row = $this->devotionals->getByDay((int) $day);
+        if (!$row || !$this->devotionals->hasContent($row)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sem devocional na base para este dia.',
+            ], 404)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $row,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function readingPlanDay(string $day)
+    {
+        if (!ctype_digit($day) || (int) $day < 1 || (int) $day > 365) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dia deve ser entre 1 e 365',
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        $data = $this->devotionals->readingPlanDay((int) $day);
+        if (!$data) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dia do plano não encontrado',
+            ], 404)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
         ])->header('X-Conecta-Engine', 'laravel');
     }
 }

@@ -25,7 +25,7 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 | `LARAVEL_CARD_SLUGS` | vazio | Canário: lista `slug1,slug2` (vazio = todos quando PUBLIC=true) |
 | `LARAVEL_PROFILE_API` | `false` | Editor `/api/profile*` → Laravel (JWT) |
 | `LARAVEL_UPLOAD_API` | `false` | `/api/upload/*` e `/api/upload/pdf` → Laravel |
-| `LARAVEL_SATELLITES` | `false` | Form, `/:slug/biblia`, `/:slug/bible/:book/:ch`, `/:slug/biblia/estudos-livro/:book`, loja (respeita `LARAVEL_CARD_SLUGS`) |
+| `LARAVEL_SATELLITES` | `false` | Form, bíblia (hub/leitor/estudos/devocional), loja (respeita `LARAVEL_CARD_SLUGS`) |
 
 **Teste sem mudar produção:** `https://www.conectaking.com.br/adrianokingg?laravel=1`  
 **Prévia:** `/l/card/adrianokingg` (banner de prévia)  
@@ -57,14 +57,15 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
 | 4. Editor `/api/profile` | feito | CRUD + tipados + form extras |
 | 5. Uploads | feito (flag) | `/api/upload/*` + PDF |
-| 6. Satélites | feito (flag, canário) | form, bíblia hub+leitor+estudos, loja |
+| 6. Satélites | feito (flag, canário) | form, bíblia hub+leitor+estudos+devocional 365, loja |
 | 7. King Selection | depois | permanece Node (monólito grande; stub `modules/KingSelection/` paralelo) |
 
-**Ainda Node:** King Selection completo; bíblia devocionais/TTS/progresso; form EJS rico (checkout/portaria).
+**Ainda Node:** King Selection completo; bíblia TTS/progresso/IA-devocional; form EJS rico (checkout/portaria); hub “Receba mais” completo (EJS).
 
-APIs bíblia no Laravel (`LARAVEL_CARD_APIS`): books, chapter, verse-of-day, `GET /api/bible/study/books`, `GET /api/bible/study/book/{id}`.
+APIs bíblia no Laravel: books, chapter, verse-of-day, study, `devocional-do-dia`, `devotionals-365/:day?plain=1`, `reading-plan/day/:day`.  
+(IA em `devotionals-365` sem `plain` continua no Node.)
 
-Satélites bíblia: `/:slug/biblia`, `/:slug/bible/{book}/{chapter}`, `/:slug/biblia/estudos-livro/{book}`.
+Satélites: `/:slug/biblia`, leitor, estudos-livro, `/:slug/biblia/devocional[/:day]`.
 
 **Nota deploy:** não embutir `laravel/.env` (sqlite local) na imagem — o compose injeta `DB_CONNECTION=pgsql`. O `Dockerfile` remove `.env` no build e `.dockerignore` ignora o arquivo.
 

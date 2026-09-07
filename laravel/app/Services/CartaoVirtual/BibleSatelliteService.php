@@ -9,6 +9,7 @@ class BibleSatelliteService
     public function __construct(
         private readonly BibleTextService $text,
         private readonly BibleStudyService $studies,
+        private readonly BibleDevotionalService $devotionals,
     ) {
     }
 
@@ -26,6 +27,8 @@ class BibleSatelliteService
         $manifest = $this->text->manifest();
         $counts = $this->text->chapterCountsByBook();
         $withStudy = array_fill_keys($this->studies->bookIdsWithFullStudy(), true);
+        $todayDay = $this->devotionals->dayOfYear(null);
+        $devToday = $this->devotionals->getByDay($todayDay);
 
         return [
             'status' => 200,
@@ -38,6 +41,47 @@ class BibleSatelliteService
                 'nt' => $manifest['nt'],
                 'chapterCounts' => $counts,
                 'booksWithStudy' => $withStudy,
+                'devotionalToday' => $devToday,
+                'devotionalUrl' => '/'.$ctx['slug'].'/biblia/devocional',
+                'devotionalDay' => $todayDay,
+            ],
+        ];
+    }
+
+    /**
+     * @return array{status:int, data?:array<string,mixed>, message?:string}
+     */
+    public function devotional(string $slug, ?string $dayParam = null): array
+    {
+        $ctx = $this->context($slug);
+        if ($ctx === null) {
+            return ['status' => 404, 'message' => 'Bíblia não encontrada.'];
+        }
+
+        if ($dayParam !== null && $dayParam !== '') {
+            if (!ctype_digit($dayParam) || (int) $dayParam < 1 || (int) $dayParam > 365) {
+                return ['status' => 400, 'message' => 'Dia deve ser entre 1 e 365.'];
+            }
+            $day = (int) $dayParam;
+        } else {
+            $day = $this->devotionals->dayOfYear(null);
+        }
+
+        $dev = $this->devotionals->getByDay($day);
+        $prev = $day > 1 ? $day - 1 : null;
+        $next = $day < 365 ? $day + 1 : null;
+
+        return [
+            'status' => 200,
+            'data' => [
+                'slug' => $ctx['slug'],
+                'hubUrl' => '/'.$ctx['slug'].'/biblia',
+                'profileUrl' => '/'.$ctx['slug'],
+                'day' => $day,
+                'devotional' => $dev,
+                'prevUrl' => $prev ? '/'.$ctx['slug'].'/biblia/devocional/'.$prev : null,
+                'nextUrl' => $next ? '/'.$ctx['slug'].'/biblia/devocional/'.$next : null,
+                'todayUrl' => '/'.$ctx['slug'].'/biblia/devocional',
             ],
         ];
     }

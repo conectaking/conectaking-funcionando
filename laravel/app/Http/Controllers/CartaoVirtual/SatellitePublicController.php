@@ -108,6 +108,19 @@ class SatellitePublicController extends Controller
             ->header('X-Conecta-Engine', 'laravel');
     }
 
+    public function bibleDevotional(string $slug, ?string $day = null)
+    {
+        $result = $this->bible->devotional($slug, $day);
+        if ($result['status'] !== 200) {
+            return response('<h1>'.e($result['message'] ?? 'Não encontrado').'</h1>', $result['status'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()
+            ->view('cartao.bible-devotional', $result['data'])
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
     public function salesStore(Request $request, string $slug, string $storeSlug)
     {
         $result = $this->sales->show($slug, $storeSlug, $request->query('token'));
