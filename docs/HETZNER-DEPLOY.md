@@ -10,6 +10,22 @@ Stack: Docker (`api` + `postgres`) em `/opt/conectaking`
 | Health | http://46.225.100.64/health |
 | Login | http://46.225.100.64/login.html |
 | Painel | http://46.225.100.64/dashboard.html |
+| Cartão (Node, produção) | `/:slug` ex. `/adrianokingg` |
+| Cartão (Laravel, prévia) | `/l/card/:slug` |
+| API cartão Laravel | `/l/api/card/:slug` |
+
+## Laravel (migração gradual)
+
+Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node só em `/l/*`.  
+Código em `/opt/conectaking/laravel`. Variável `LARAVEL_APP_KEY` no `.env.prod`.
+
+```bash
+# Rebuild só o Laravel
+cd /opt/conectaking
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build laravel
+```
+
+O cartão público em produção **continua no Node** até a Blade ficar completa.
 
 ## Login inicial (banco novo)
 

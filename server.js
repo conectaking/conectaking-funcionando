@@ -35,6 +35,7 @@ const {
 } = require('./utils/kingSelectionOg');
 const logger = require('./utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
+const { laravelProxyMiddleware } = require('./middleware/laravelProxy');
 const { spawn } = require('child_process');
 
 const authRoutes = require('./routes/auth');
@@ -241,6 +242,9 @@ app.use(helmet({
     },
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
+// Laravel (cartão virtual em migração): só /l/* — não altera /:slug do Node
+app.use(laravelProxyMiddleware);
 
 // Rate limiters
 // Nota: trust proxy já está configurado acima, então express-rate-limit usará X-Forwarded-For corretamente

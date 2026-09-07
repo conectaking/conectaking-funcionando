@@ -33,6 +33,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      laravel:
+        condition: service_started
     env_file:
       - .env.docker
     environment:
@@ -43,12 +45,43 @@ services:
       JWT_SECRET: ${JWT_SECRET:-conectaking-local-dev-secret-change-me}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      LARAVEL_CARD_ENABLED: "${LARAVEL_CARD_ENABLED:-true}"
+      LARAVEL_HOST: laravel
+      LARAVEL_PORT: "8080"
     ports:
       # Host:Container — container sempre escuta 5000
       - "${PORT:-5000}:5000"
     volumes:
       # Persist uploads locais entre restarts (opcional)
       - api_uploads:/app/uploads
+
+  laravel:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    container_name: conectaking-laravel
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: ConectaKing
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:5000
+      APP_KEY: ${LARAVEL_APP_KEY:-base64:3H0rHGsdLIL0QfFRj6GitJ4WgjxMlzq9YsdYJocJ7Go=}
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-conectaking}
+      DB_USERNAME: ${POSTGRES_USER:-conectaking}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-conectaking}
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+    ports:
+      - "${LARAVEL_PORT:-8080}:8080"
 
 volumes:
   pgdata:

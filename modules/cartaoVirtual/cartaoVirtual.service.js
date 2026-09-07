@@ -717,7 +717,12 @@ async function getProfilePageData(client, identifier, req) {
  * @returns {{ type: 'ok', data: object }|{ type: 'notFound', message?: string }}
  */
 async function getProfileApi(client, identifier, req) {
-    const userRes = await client.query('SELECT id, profile_slug FROM users WHERE profile_slug = $1 OR id = $1', [identifier]);
+    const userRes = await client.query(
+        `SELECT id, profile_slug FROM users
+         WHERE LOWER(profile_slug) = LOWER($1) OR id::text = $1
+         LIMIT 1`,
+        [identifier]
+    );
     if (userRes.rows.length === 0) {
         return { type: 'notFound', message: 'Perfil não encontrado' };
     }
