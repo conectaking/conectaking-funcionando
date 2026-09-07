@@ -18,6 +18,7 @@ O `dashboard.js` é o **orquestrador** (auth, sidebar, cartão, itens). Módulos
 | `js/dashboard-edit-modal.js` | Modal editar módulo (`DashboardEditModal.openEditModal`) |
 | `js/dashboard-qr.js` | QR Code / Compartilhar (`DashboardQR`) |
 | `js/dashboard-assinatura.js` | Assinatura e planos (`DashboardAssinatura`) |
+| `js/dashboard-listeners.js` | `setupEventListeners` — wiring da UI (`DashboardListeners`) |
 | `js/dashboard-info.js` | Stub/namespace aba Informações (`DashboardInfo.init`) |
 | `js/dashboard-personalizar.js` | Preview após publicar (`DashboardPersonalizar.reloadPreview`) |
 | `js/dashboard-vitrine.js` | Vitrine |
