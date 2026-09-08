@@ -60,11 +60,15 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
 | 4. Editor `/api/profile` | feito | CRUD + tipados + form extras |
 | 5. Uploads | feito (flag) | `/api/upload/*` + PDF |
-| 6. Satélites | feito (flag, canário) | form rico, guest-list register, bíblia (+progress JWT), loja |
+| 6. Satélites | feito (flag, canário) | form rico, guest-list (register/confirm/portaria/QR), bíblia (+progress JWT), loja |
 | 7. King Selection | fatia pública | landing + gallery + share-meta + cover/og-image GD (`LARAVEL_KS`) |
 | 8. KS completo | depois | SPA cliente, uploads, watermark, seleção, vendas |
 
-**Ainda Node:** KS SPA cliente + uploads/watermark/seleção/vendas/face; portaria/QR guest-list; customize guest-list (auth); TTS browser-only; IA-devocional; form modes WhatsApp/checkout/QR; admin prosperidade/IA; dashboard.
+**Ainda Node:** KS SPA cliente + uploads/watermark/seleção/vendas/face; TTS browser-only; admin prosperidade **lote assíncrono** (`generate-range-ai` / jobs) + parse-paste; admin devotionals-365 generate lote; dashboard. **Checkout/PagBank:** fora do escopo.
+
+Devocional 365 público: Laravel serve `/api/bible/devotionals-365/{day}` com temas + enriquecimento IA opcional (`OPENAI_API_KEY` / `ai=0` / `plain=1`).
+
+Admin prosperidade (Laravel, `LARAVEL_ADMIN_BIBLE` ou satélites): list/get/save/publish/export/import/storytelling-map/`generate-ai` unitário.
 
 King Selection flags:
 ```

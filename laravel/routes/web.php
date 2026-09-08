@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\CartaoVirtual\AnalyticsLogController;
+use App\Http\Controllers\CartaoVirtual\BibleProsperidadeAdminController;
 use App\Http\Controllers\CartaoVirtual\BibleProgressController;
 use App\Http\Controllers\CartaoVirtual\BiblePublicController;
 use App\Http\Controllers\CartaoVirtual\CardPublicController;
+use App\Http\Controllers\CartaoVirtual\GuestListCustomizeController;
 use App\Http\Controllers\CartaoVirtual\GuestListPublicController;
 use App\Http\Controllers\CartaoVirtual\PdfDownloadController;
 use App\Http\Controllers\CartaoVirtual\PixQrCodeController;
@@ -67,6 +69,15 @@ Route::get('/l/guest-list/register/{token}', [GuestListPublicController::class, 
 Route::post('/l/api/guest-lists/public/register/{token}', [GuestListPublicController::class, 'registerSubmit'])->where('token', $cardSlug);
 Route::get('/l/guest-list/confirm/{identifier}', [GuestListPublicController::class, 'confirmPage'])->where('identifier', $cardSlug);
 Route::post('/l/api/guest-lists/public/confirm/{token}', [GuestListPublicController::class, 'confirmSubmit'])->where('token', $cardSlug);
+Route::get('/l/portaria/{token}', [GuestListPublicController::class, 'portariaPage'])->where('token', $cardSlug);
+Route::post('/l/portaria/{token}/checkin/{guestId}', [GuestListPublicController::class, 'portariaCheckin'])
+    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+']);
+Route::get('/l/guest-list/view-full/{token}', function (string $token) {
+    return redirect('/portaria/'.$token, 301)->header('X-Conecta-Engine', 'laravel');
+})->where('token', $cardSlug);
+Route::get('/l/guest-list/verify/qr/{qrToken}', [GuestListPublicController::class, 'verifyQr'])->where('qrToken', $cardSlug);
+Route::post('/l/guest-list/confirm/qr/{qrToken}', [GuestListPublicController::class, 'confirmQr'])->where('qrToken', $cardSlug);
+Route::post('/l/guest-list/confirm/cpf', [GuestListPublicController::class, 'confirmBySearch']);
 Route::post('/l/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/l/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/l/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -137,6 +148,17 @@ Route::get('/guest-list/register/{token}', [GuestListPublicController::class, 'r
 Route::post('/api/guest-lists/public/register/{token}', [GuestListPublicController::class, 'registerSubmit'])->where('token', $cardSlug);
 Route::get('/guest-list/confirm/{identifier}', [GuestListPublicController::class, 'confirmPage'])->where('identifier', $cardSlug);
 Route::post('/api/guest-lists/public/confirm/{token}', [GuestListPublicController::class, 'confirmSubmit'])->where('token', $cardSlug);
+Route::get('/portaria/{token}', [GuestListPublicController::class, 'portariaPage'])->where('token', $cardSlug);
+Route::post('/portaria/{token}/checkin/{guestId}', [GuestListPublicController::class, 'portariaCheckin'])
+    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+']);
+Route::get('/guest-list/view-full/{token}', function (string $token) {
+    return redirect('/portaria/'.$token, 301)->header('X-Conecta-Engine', 'laravel');
+})->where('token', $cardSlug);
+Route::post('/guest-list/view-full/{token}/checkin/{guestId}', [GuestListPublicController::class, 'portariaCheckin'])
+    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+']);
+Route::get('/guest-list/verify/qr/{qrToken}', [GuestListPublicController::class, 'verifyQr'])->where('qrToken', $cardSlug);
+Route::post('/guest-list/confirm/qr/{qrToken}', [GuestListPublicController::class, 'confirmQr'])->where('qrToken', $cardSlug);
+Route::post('/guest-list/confirm/cpf', [GuestListPublicController::class, 'confirmBySearch']);
 Route::post('/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -169,6 +191,43 @@ Route::middleware('jwt')->group(function () {
     Route::delete('/api/profile/items/{id}', [ProfileItemsController::class, 'destroy'])->where('id', '[0-9]+');
 });
 
+Route::middleware('admin')->group(function () {
+    Route::get('/api/admin/bible/prosperidade', [BibleProsperidadeAdminController::class, 'index']);
+    Route::get('/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
+    Route::post('/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);
+    Route::get('/api/admin/bible/prosperidade/storytelling-map', [BibleProsperidadeAdminController::class, 'storytellingMap']);
+    Route::get('/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'show'])->where('n', '[0-9]+');
+    Route::put('/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
+    Route::post('/api/admin/bible/prosperidade/{n}/save-activation', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
+    Route::patch('/api/admin/bible/prosperidade/{n}/publish', [BibleProsperidadeAdminController::class, 'publish'])->where('n', '[0-9]+');
+    Route::post('/api/admin/bible/prosperidade/{n}/generate-ai', [BibleProsperidadeAdminController::class, 'generateAi'])->where('n', '[0-9]+');
+
+    Route::get('/l/api/admin/bible/prosperidade', [BibleProsperidadeAdminController::class, 'index']);
+    Route::get('/l/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
+    Route::post('/l/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);
+    Route::get('/l/api/admin/bible/prosperidade/storytelling-map', [BibleProsperidadeAdminController::class, 'storytellingMap']);
+    Route::get('/l/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'show'])->where('n', '[0-9]+');
+    Route::put('/l/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
+    Route::post('/l/api/admin/bible/prosperidade/{n}/save-activation', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
+    Route::patch('/l/api/admin/bible/prosperidade/{n}/publish', [BibleProsperidadeAdminController::class, 'publish'])->where('n', '[0-9]+');
+    Route::post('/l/api/admin/bible/prosperidade/{n}/generate-ai', [BibleProsperidadeAdminController::class, 'generateAi'])->where('n', '[0-9]+');
+});
+
+Route::middleware('jwt')->group(function () {
+    Route::get('/api/guest-lists/{id}/customize-portaria', [GuestListCustomizeController::class, 'showPortaria'])->where('id', '[0-9]+');
+    Route::put('/api/guest-lists/{id}/customize-portaria', [GuestListCustomizeController::class, 'savePortaria'])->where('id', '[0-9]+');
+    Route::get('/api/guest-lists/{id}/customize-confirmacao', [GuestListCustomizeController::class, 'showConfirmacao'])->where('id', '[0-9]+');
+    Route::put('/api/guest-lists/{id}/customize-confirmacao', [GuestListCustomizeController::class, 'saveConfirmacao'])->where('id', '[0-9]+');
+    Route::get('/api/guest-lists/{id}/customize-inscricao', [GuestListCustomizeController::class, 'showInscricao'])->where('id', '[0-9]+');
+    Route::put('/api/guest-lists/{id}/customize-inscricao', [GuestListCustomizeController::class, 'saveInscricao'])->where('id', '[0-9]+');
+    Route::get('/l/api/guest-lists/{id}/customize-portaria', [GuestListCustomizeController::class, 'showPortaria'])->where('id', '[0-9]+');
+    Route::put('/l/api/guest-lists/{id}/customize-portaria', [GuestListCustomizeController::class, 'savePortaria'])->where('id', '[0-9]+');
+    Route::get('/l/api/guest-lists/{id}/customize-confirmacao', [GuestListCustomizeController::class, 'showConfirmacao'])->where('id', '[0-9]+');
+    Route::put('/l/api/guest-lists/{id}/customize-confirmacao', [GuestListCustomizeController::class, 'saveConfirmacao'])->where('id', '[0-9]+');
+    Route::get('/l/api/guest-lists/{id}/customize-inscricao', [GuestListCustomizeController::class, 'showInscricao'])->where('id', '[0-9]+');
+    Route::put('/l/api/guest-lists/{id}/customize-inscricao', [GuestListCustomizeController::class, 'saveInscricao'])->where('id', '[0-9]+');
+});
+
 // Uploads (JWT)
 Route::middleware('jwt')->group(function () {
     Route::post('/api/upload/auth', [UploadController::class, 'auth']);
@@ -192,8 +251,10 @@ Route::get('/form/{slug}', [SatellitePublicController::class, 'formByToken'])->w
 Route::get('/l/form/{slug}', [SatellitePublicController::class, 'formByToken'])->where('slug', $cardSlug);
 Route::get('/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::post('/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::get('/{slug}/form/{itemId}/success', [SatellitePublicController::class, 'formSuccess'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/l/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::post('/l/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::get('/l/{slug}/form/{itemId}/success', [SatellitePublicController::class, 'formSuccess'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/l/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/{slug}/biblia/estudos-livro', [SatellitePublicController::class, 'bibleStudyRedirect'])->where('slug', $cardSlug);

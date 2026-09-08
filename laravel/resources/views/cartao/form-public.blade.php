@@ -371,8 +371,18 @@
       if (!res.ok || json.success === false) throw new Error(json.message || 'Falha ao enviar');
       form.reset();
       applyConditionals();
+      if (json.success_page_url) {
+        window.location.href = json.success_page_url;
+        return;
+      }
       ok.style.display = 'block';
       ok.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (json.enable_whatsapp && json.whatsapp_number) {
+        var wa = String(json.whatsapp_number).replace(/\D+/g, '');
+        if (wa) {
+          window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent('Olá! Acabei de preencher o formulário.'), '_blank');
+        }
+      }
     } catch (ex) {
       err.textContent = ex.message || 'Erro';
       err.style.display = 'block';

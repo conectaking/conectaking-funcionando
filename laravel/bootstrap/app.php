@@ -39,9 +39,27 @@ return Application::configure(basePath: dirname(__DIR__))
             'l/api/guest-lists/public/register/*',
             'api/guest-lists/public/confirm/*',
             'l/api/guest-lists/public/confirm/*',
+            'portaria/*/checkin/*',
+            'l/portaria/*/checkin/*',
+            'guest-list/view-full/*/checkin/*',
+            'guest-list/confirm/qr/*',
+            'l/guest-list/confirm/qr/*',
+            'guest-list/confirm/cpf',
+            'l/guest-list/confirm/cpf',
+            'api/guest-lists/*/customize-portaria',
+            'api/guest-lists/*/customize-confirmacao',
+            'api/guest-lists/*/customize-inscricao',
+            'l/api/guest-lists/*/customize-portaria',
+            'l/api/guest-lists/*/customize-confirmacao',
+            'l/api/guest-lists/*/customize-inscricao',
+            'api/admin/bible/prosperidade',
+            'api/admin/bible/prosperidade/*',
+            'l/api/admin/bible/prosperidade',
+            'l/api/admin/bible/prosperidade/*',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,
+            'admin' => \App\Http\Middleware\AuthenticateAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

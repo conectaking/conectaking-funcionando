@@ -38,16 +38,43 @@ class SatellitePublicController extends Controller
             && !str_contains(strtolower((string) $request->header('Accept', '')), 'application/json');
 
         if ($wantsHtml && ($result['status'] === 201 || ($result['body']['success'] ?? false))) {
+            $url = $result['body']['success_page_url'] ?? null;
+            if (is_string($url) && $url !== '') {
+                return redirect($url)->header('X-Conecta-Engine', 'laravel');
+            }
+
             return response()
                 ->view('cartao.form-success', [
                     'title' => 'Enviado!',
                     'message' => $result['body']['message'] ?? 'Resposta enviada com sucesso!',
                     'backUrl' => "/{$slug}/form/{$itemId}",
+                    'showQr' => !empty($result['body']['qr_token']),
+                    'qrToken' => $result['body']['qr_token'] ?? null,
+                    'guestId' => $result['body']['guest_id'] ?? null,
                 ], 201)
                 ->header('X-Conecta-Engine', 'laravel');
         }
 
         return response()->json($result['body'], $result['status'])
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function formSuccess(Request $request, string $slug, string $itemId)
+    {
+        $responseId = $request->query('response_id');
+        if (is_array($responseId)) {
+            $responseId = $responseId[0] ?? null;
+        }
+        $result = $this->forms->successPage($slug, $itemId, $responseId !== null ? (string) $responseId : null);
+        if (($result['status'] ?? 500) !== 200) {
+            return response(
+                '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Erro</title></head><body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;"><h1>'.e($result['message'] ?? 'Não encontrado').'</h1></body></html>',
+                $result['status'] ?? 404
+            )->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()
+            ->view($result['view'], $result['data'])
             ->header('X-Conecta-Engine', 'laravel');
     }
 

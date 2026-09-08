@@ -119,7 +119,7 @@ class BiblePublicController extends Controller
         ])->header('X-Conecta-Engine', 'laravel');
     }
 
-    public function devotionals365(string $day)
+    public function devotionals365(Request $request, string $day)
     {
         if (!ctype_digit($day) || (int) $day < 1 || (int) $day > 365) {
             return response()->json([
@@ -127,11 +127,30 @@ class BiblePublicController extends Controller
                 'message' => 'Dia deve ser entre 1 e 365',
             ], 400)->header('X-Conecta-Engine', 'laravel');
         }
-        $row = $this->devotionals->getByDay((int) $day);
-        if (!$row || !$this->devotionals->hasContent($row)) {
+
+        $plain = $request->query('plain');
+        $isPlain = in_array((string) $plain, ['1', 'true', 'db'], true);
+        $aiQ = strtolower((string) $request->query('ai', ''));
+        $aiExplicitOff = in_array($aiQ, ['0', 'false', 'off', 'no'], true);
+
+        $year = (int) $request->query('year', 0);
+        $temaModo = (string) ($request->query('tema_modo') ?: $request->query('temaModo') ?: 'mes_auto');
+        $temaPersonalizado = (string) ($request->query('tema') ?: $request->query('tema_personalizado') ?: '');
+        $estilo = (string) $request->query('estilo', 'padrao');
+
+        $row = $this->devotionals->get365((int) $day, [
+            'plain' => $isPlain,
+            'aiExplicitOff' => $aiExplicitOff,
+            'useAi' => !$aiExplicitOff,
+            'year' => $year > 0 ? $year : null,
+            'temaModo' => $temaModo,
+            'temaPersonalizado' => $temaPersonalizado,
+            'estilo' => $estilo,
+        ]);
+        if (!$row) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sem devocional na base para este dia.',
+                'message' => $isPlain ? 'Sem devocional na base para este dia.' : 'Devocional não encontrado',
             ], 404)->header('X-Conecta-Engine', 'laravel');
         }
 

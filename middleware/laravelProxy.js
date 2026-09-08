@@ -17,6 +17,7 @@ const LARAVEL_PROFILE_API = String(process.env.LARAVEL_PROFILE_API || 'false').t
 const LARAVEL_UPLOAD_API = String(process.env.LARAVEL_UPLOAD_API || 'false').toLowerCase() === 'true';
 const LARAVEL_SATELLITES = String(process.env.LARAVEL_SATELLITES || 'false').toLowerCase() === 'true';
 const LARAVEL_KS = String(process.env.LARAVEL_KS || 'false').toLowerCase() === 'true';
+const LARAVEL_ADMIN_BIBLE = String(process.env.LARAVEL_ADMIN_BIBLE || process.env.LARAVEL_SATELLITES || 'false').toLowerCase() === 'true';
 const LARAVEL_CARD_SLUGS = new Set(
     String(process.env.LARAVEL_CARD_SLUGS || '')
         .split(',')
@@ -123,11 +124,8 @@ function isLaravelCardApiPath(urlPath) {
         /^\/l\/download\/pdf\/\d+$/i,
     ];
     if (patterns.some((re) => re.test(pathOnly))) return true;
-    // Devocional 365 no Laravel só no modo plain (IA enriquecida permanece no Node)
-    if (/^\/api\/bible\/devotionals-365\/\d+$/i.test(pathOnly)
-        && /[?&]plain=(1|true|db)(?:&|$)/i.test(urlPath)) {
-        return true;
-    }
+    // Devocional 365 completo no Laravel (plain + temas; IA se chave OpenAI / ai!=0)
+    if (/^\/(?:l\/)?api\/bible\/devotionals-365\/\d+$/i.test(pathOnly)) return true;
     return false;
 }
 
@@ -179,11 +177,13 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
     if (method === 'GET' && /^\/(?:l\/)?form\/[^/]+$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/l\/loja\/[^/]+\/[^/]+$/i.test(pathOnly)) return true;
 
-    const formItem = pathOnly.match(/^\/([^/]+)\/form\/(\d+)(\/submit)?$/i);
+    const formItem = pathOnly.match(/^\/([^/]+)\/form\/(\d+)(?:\/(submit|success))?$/i);
     if (formItem) {
         if (!force && !LARAVEL_SATELLITES) return false;
         if (!force && !slugAllowedForSatellite(formItem[1])) return false;
-        if (formItem[3]) return method === 'POST';
+        const action = (formItem[3] || '').toLowerCase();
+        if (action === 'submit') return method === 'POST';
+        if (action === 'success') return method === 'GET';
         return method === 'GET';
     }
 
@@ -294,11 +294,49 @@ function isLaravelGuestListPath(reqMethod, urlPath) {
     const pathOnly = urlPath.split('?')[0];
     const method = String(reqMethod || 'GET').toUpperCase();
     const force = wantsLaravelEngine(urlPath);
+
+    // Personalização (auth JWT) — satélites ou profile API
+    if (/^\/(?:l\/)?api\/guest-lists\/\d+\/customize-(portaria|confirmacao|inscricao)$/i.test(pathOnly)
+        && (method === 'GET' || method === 'PUT')) {
+        return force || LARAVEL_SATELLITES || LARAVEL_PROFILE_API;
+    }
+
     if (!force && !LARAVEL_SATELLITES) return false;
     if (method === 'GET' && /^\/(?:l\/)?guest-list\/register\/[^/]+$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/guest-lists\/public\/register\/[^/]+$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/(?:l\/)?guest-list\/confirm\/[^/]+$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/guest-lists\/public\/confirm\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?portaria\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?portaria\/[^/]+\/checkin\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?guest-list\/view-full\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/guest-list\/view-full\/[^/]+\/checkin\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?guest-list\/verify\/qr\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?guest-list\/confirm\/qr\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?guest-list\/confirm\/cpf$/i.test(pathOnly)) return true;
+    return false;
+}
+
+function isLaravelAdminBiblePath(reqMethod, urlPath) {
+    if (!urlPath) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    const force = wantsLaravelEngine(urlPath);
+    if (!force && !LARAVEL_ADMIN_BIBLE) return false;
+
+    // Lote assíncrono / jobs / parse-paste permanecem no Node
+    if (/\/generate-range-ai$/i.test(pathOnly)) return false;
+    if (/\/generation-job\//i.test(pathOnly)) return false;
+    if (/\/parse-paste$/i.test(pathOnly)) return false;
+
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/export$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/import$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/storytelling-map$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/save-activation$/i.test(pathOnly)) return true;
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/publish$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/generate-ai$/i.test(pathOnly)) return true;
     return false;
 }
 
@@ -403,6 +441,10 @@ function laravelProxyMiddleware(req, res, next) {
 
     if (isLaravelGuestListPath(req.method, url)) {
         return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
+    if (isLaravelAdminBiblePath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: 180000 });
     }
 
     if ((LARAVEL_KS || wantsLaravelEngine(url)) && isLaravelKsPath(req.method, url)) {

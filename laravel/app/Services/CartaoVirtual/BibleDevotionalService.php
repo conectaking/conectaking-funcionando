@@ -6,12 +6,42 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Devocionais 365 a partir de bible_devotionals_365 (sem enriquecimento IA).
+ * Devocionais 365 a partir de bible_devotionals_365 (+ temas e IA opcional).
  */
 class BibleDevotionalService
 {
-    public function __construct(private readonly BibleTextService $text)
-    {
+    private const TEMAS_MES = [
+        'Janeiro — Propósito em Deus e novos começos',
+        'Fevereiro — Amor, fé e relacionamentos restaurados',
+        'Março — Vida no Espírito e renovação interior',
+        'Abril — Esperança viva e a vitória em Cristo',
+        'Maio — Família, cuidado e bênção sob o olhar de Deus',
+        'Junho — Serviço humilde e missão no cotidiano',
+        'Julho — Descanso em Deus e confiança no tempo dEle',
+        'Agosto — Sabedoria divina para decisões e palavras',
+        'Setembro — Fidelidade e perseverança na caminhada',
+        'Outubro — Reavivamento pessoal e testemunho sincero',
+        'Novembro — Gratidão e generosidade cristã',
+        'Dezembro — Luz de Cristo e encerramento do ano com fé',
+    ];
+
+    private const TEMAS_ANO = [
+        'Ano da fé que se manifesta nas atitudes',
+        'Ano da esperança que ancora a alma em Cristo',
+        'Ano do amor que transforma corações',
+        'Ano da graça que fortalece o caminho',
+        'Ano da Palavra vivida no dia a dia',
+    ];
+
+    private const MESES_PT = [
+        'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+    ];
+
+    public function __construct(
+        private readonly BibleTextService $text,
+        private readonly BibleDevotionalAiService $ai,
+    ) {
     }
 
     /**
@@ -101,6 +131,190 @@ class BibleDevotionalService
         }
 
         return false;
+    }
+
+    /**
+     * Devocional 365 completo (temas + IA opcional). Paridade com Node getDevocional365.
+     *
+     * @param  array{plain?:bool,useAi?:bool,aiExplicitOff?:bool,year?:int,temaModo?:string,temaPersonalizado?:string,estilo?:string}  $options
+     * @return array<string,mixed>|null
+     */
+    public function get365(int $dayOfYear, array $options = []): ?array
+    {
+        $day = max(1, min(365, $dayOfYear));
+        $row = $this->getByDay($day);
+        if (!$row || !$this->hasContent($row)) {
+            return null;
+        }
+
+        if (!empty($options['plain'])) {
+            return $row;
+        }
+
+        $year = (int) ($options['year'] ?? 0);
+        if ($year < 2000 || $year > 2100) {
+            $year = (int) now('America/Sao_Paulo')->year;
+        }
+
+        $theme = $this->resolveTheme($day, $year, [
+            'temaModo' => (string) ($options['temaModo'] ?? 'mes_auto'),
+            'temaPersonalizado' => (string) ($options['temaPersonalizado'] ?? ''),
+        ]);
+        $result = array_merge($row, $theme);
+        $estilo = strtolower((string) ($options['estilo'] ?? 'padrao')) === 'cunha' ? 'cunha' : 'padrao';
+        $result['estilo_devocional'] = $estilo;
+
+        if ($this->shouldUseAi($options)) {
+            $ai = $this->ai->enrichDevotional365($result, [
+                'dayOfYear' => $day,
+                'year' => $year,
+                'estilo' => $estilo,
+            ]);
+            if (!empty($ai['reflexao'])) {
+                $result['reflexao_estatica'] = $result['reflexao'];
+                $result['reflexao'] = $ai['reflexao'];
+                if (!empty($ai['aplicacao'])) {
+                    $result['aplicacao'] = $ai['aplicacao'];
+                }
+                if (!empty($ai['oracao'])) {
+                    $result['oracao'] = $ai['oracao'];
+                }
+                $result['ai_gerado'] = true;
+            } else {
+                $result['ai_gerado'] = false;
+                $result['ai_aviso'] = $ai['error'] ?? 'IA indisponível.';
+            }
+        }
+
+        unset($result['tema_ia_instrucao']);
+
+        return $result;
+    }
+
+    /**
+     * @param  array{useAi?:bool,aiExplicitOff?:bool}  $options
+     */
+    private function shouldUseAi(array $options): bool
+    {
+        if (!empty($options['aiExplicitOff'])) {
+            return false;
+        }
+        $def = trim((string) env('BIBLE_DEV365_AI_DEFAULT', ''));
+        if ($def === '0') {
+            return false;
+        }
+        if ($def === '1') {
+            return true;
+        }
+
+        return ($options['useAi'] ?? true) !== false;
+    }
+
+    /**
+     * @param  array{temaModo?:string,temaPersonalizado?:string}  $options
+     * @return array<string,mixed>
+     */
+    private function resolveTheme(int $dayOfYear, int $year, array $options): array
+    {
+        $base = $this->baseThemes($dayOfYear, $year);
+        $modo = strtolower(str_replace('-', '_', (string) ($options['temaModo'] ?? 'mes_auto')));
+        $custom = mb_substr(trim((string) ($options['temaPersonalizado'] ?? '')), 0, 500);
+        $uniq = $this->uniquenessInstruction($dayOfYear, $year);
+
+        if (($modo === 'personalizado' || $modo === 'custom') && $custom !== '') {
+            $md = $this->dayOfYearToMonthDay($dayOfYear, $year);
+            $temaMesCal = self::TEMAS_MES[$md['month'] - 1] ?? self::TEMAS_MES[0];
+
+            return array_merge($base, [
+                'tema_mes' => $custom,
+                'tema_mes_calendario' => $temaMesCal,
+                'tema_modo_aplicado' => 'personalizado',
+                'tema_ia_instrucao' =>
+                    'O devocional deve girar em torno deste tema escolhido pelo usuário: "'.$custom.'". '.
+                    'Inclua também uma ligação clara ao TEMA DO MÊS CALENDÁRIO ('.$md['month'].'/'.$year.'): '.$temaMesCal.
+                    ' — pelo menos uma frase no corpo da reflexão. '.
+                    'A abertura e o fecho devem deixar o tema personalizado explícito.'.$uniq,
+            ]);
+        }
+        if ($modo === 'ano_auto' || $modo === 'ano') {
+            return array_merge($base, [
+                'tema_modo_aplicado' => 'ano',
+                'tema_ia_instrucao' =>
+                    'Priorize o TEMA DO ANO em toda a reflexão (introdução e conclusão centrados nele). '.
+                    'TEMA DO ANO: '.$base['tema_ano'].'. O tema do mês é apenas apoio.'.$uniq,
+            ]);
+        }
+        if (in_array($modo, ['mes_e_ano', 'mes_ano', 'ambos'], true)) {
+            return array_merge($base, [
+                'tema_modo_aplicado' => 'mes_e_ano',
+                'tema_ia_instrucao' =>
+                    'Integre de forma visível o TEMA DO MÊS ('.$base['tema_mes'].') e o TEMA DO ANO ('.$base['tema_ano'].') — '.
+                    'pelo menos uma frase para cada, além da ligação com a passagem.'.$uniq,
+            ]);
+        }
+
+        return array_merge($base, [
+            'tema_modo_aplicado' => 'mes',
+            'tema_ia_instrucao' =>
+                'Priorize o TEMA DO MÊS ('.$base['tema_mes'].'). O tema do ano pode aparecer só no fecho se couber.'.$uniq,
+        ]);
+    }
+
+    /**
+     * @return array{mes:int,dia_mes:int,ano_calendario:int,tema_mes:string,tema_ano:string}
+     */
+    private function baseThemes(int $dayOfYear, int $year): array
+    {
+        $md = $this->dayOfYearToMonthDay($dayOfYear, $year);
+        $temaMes = self::TEMAS_MES[$md['month'] - 1] ?? self::TEMAS_MES[0];
+        try {
+            $ov = DB::selectOne(
+                'SELECT theme_text FROM bible_dev365_month_themes WHERE year = ? AND month = ? LIMIT 1',
+                [$year, $md['month']]
+            );
+            if ($ov && trim((string) $ov->theme_text) !== '') {
+                $temaMes = mb_substr(trim((string) $ov->theme_text), 0, 500);
+            }
+        } catch (\Throwable) {
+            // tabela pode não existir
+        }
+        $temaAno = self::TEMAS_ANO[((($year % 5) + 5) % 5)];
+
+        return [
+            'mes' => $md['month'],
+            'dia_mes' => $md['day'],
+            'ano_calendario' => $year,
+            'tema_mes' => $temaMes,
+            'tema_ano' => $temaAno,
+        ];
+    }
+
+    private function uniquenessInstruction(int $dayOfYear, int $year): string
+    {
+        $md = $this->dayOfYearToMonthDay($dayOfYear, $year);
+        $nomeMes = self::MESES_PT[$md['month'] - 1] ?? (string) $md['month'];
+
+        return ' UNICIDADE: Dia '.$dayOfYear.'/365 do calendário devocional ('.$md['day'].' de '.$nomeMes.' de '.$year.'). '.
+            'Não repita frases, aberturas nem estrutura de outros dias; varie exemplos e ângulo pastoral. '.
+            'O texto final deve ser claramente diferente de qualquer outro dia.';
+    }
+
+    /**
+     * @return array{month:int,day:int}
+     */
+    private function dayOfYearToMonthDay(int $doy, int $year): array
+    {
+        $leap = ($year % 4 === 0 && $year % 100 !== 0) || ($year % 400 === 0);
+        $dim = [31, $leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        $d = $doy;
+        for ($m = 0; $m < 12; $m++) {
+            if ($d <= $dim[$m]) {
+                return ['month' => $m + 1, 'day' => $d];
+            }
+            $d -= $dim[$m];
+        }
+
+        return ['month' => 12, 'day' => $dim[11]];
     }
 
     /**
