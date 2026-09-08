@@ -56,6 +56,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/admin/bible/prosperidade/*',
             'l/api/admin/bible/prosperidade',
             'l/api/admin/bible/prosperidade/*',
+            'api/admin/bible/devotionals-365',
+            'api/admin/bible/devotionals-365/*',
+            'l/api/admin/bible/devotionals-365',
+            'l/api/admin/bible/devotionals-365/*',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CartaoVirtual\AnalyticsLogController;
+use App\Http\Controllers\CartaoVirtual\BibleAdminDev365Controller;
 use App\Http\Controllers\CartaoVirtual\BibleProsperidadeAdminController;
 use App\Http\Controllers\CartaoVirtual\BibleProgressController;
 use App\Http\Controllers\CartaoVirtual\BiblePublicController;
@@ -202,6 +203,17 @@ Route::middleware('admin')->group(function () {
     Route::patch('/api/admin/bible/prosperidade/{n}/publish', [BibleProsperidadeAdminController::class, 'publish'])->where('n', '[0-9]+');
     Route::post('/api/admin/bible/prosperidade/{n}/generate-ai', [BibleProsperidadeAdminController::class, 'generateAi'])->where('n', '[0-9]+');
 
+    Route::get('/api/admin/bible/devotionals-365/days', [BibleAdminDev365Controller::class, 'days']);
+    Route::get('/api/admin/bible/devotionals-365/admin-full', [BibleAdminDev365Controller::class, 'adminFull']);
+    Route::get('/api/admin/bible/devotionals-365/day/{day}', [BibleAdminDev365Controller::class, 'showDay'])->where('day', '[0-9]+');
+    Route::post('/api/admin/bible/devotionals-365/day/{day}/generate-ai', [BibleAdminDev365Controller::class, 'generateDay'])->where('day', '[0-9]+');
+    Route::get('/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'monthThemes'])->where('year', '[0-9]+');
+    Route::put('/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'saveMonthThemes'])->where('year', '[0-9]+');
+    Route::post('/api/admin/bible/devotionals-365/month-themes/{year}/generate/{month}', [BibleAdminDev365Controller::class, 'generateMonthTheme'])->where(['year' => '[0-9]+', 'month' => '[0-9]+']);
+    Route::post('/api/admin/bible/devotionals-365/month-themes/{year}/generate-all', [BibleAdminDev365Controller::class, 'generateAllMonthThemes'])->where('year', '[0-9]+');
+    Route::put('/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'upsert'])->where('day', '[0-9]+');
+    Route::delete('/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'destroy'])->where('day', '[0-9]+');
+
     Route::get('/l/api/admin/bible/prosperidade', [BibleProsperidadeAdminController::class, 'index']);
     Route::get('/l/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
     Route::post('/l/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);
@@ -211,6 +223,17 @@ Route::middleware('admin')->group(function () {
     Route::post('/l/api/admin/bible/prosperidade/{n}/save-activation', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
     Route::patch('/l/api/admin/bible/prosperidade/{n}/publish', [BibleProsperidadeAdminController::class, 'publish'])->where('n', '[0-9]+');
     Route::post('/l/api/admin/bible/prosperidade/{n}/generate-ai', [BibleProsperidadeAdminController::class, 'generateAi'])->where('n', '[0-9]+');
+
+    Route::get('/l/api/admin/bible/devotionals-365/days', [BibleAdminDev365Controller::class, 'days']);
+    Route::get('/l/api/admin/bible/devotionals-365/admin-full', [BibleAdminDev365Controller::class, 'adminFull']);
+    Route::get('/l/api/admin/bible/devotionals-365/day/{day}', [BibleAdminDev365Controller::class, 'showDay'])->where('day', '[0-9]+');
+    Route::post('/l/api/admin/bible/devotionals-365/day/{day}/generate-ai', [BibleAdminDev365Controller::class, 'generateDay'])->where('day', '[0-9]+');
+    Route::get('/l/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'monthThemes'])->where('year', '[0-9]+');
+    Route::put('/l/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'saveMonthThemes'])->where('year', '[0-9]+');
+    Route::post('/l/api/admin/bible/devotionals-365/month-themes/{year}/generate/{month}', [BibleAdminDev365Controller::class, 'generateMonthTheme'])->where(['year' => '[0-9]+', 'month' => '[0-9]+']);
+    Route::post('/l/api/admin/bible/devotionals-365/month-themes/{year}/generate-all', [BibleAdminDev365Controller::class, 'generateAllMonthThemes'])->where('year', '[0-9]+');
+    Route::put('/l/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'upsert'])->where('day', '[0-9]+');
+    Route::delete('/l/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'destroy'])->where('day', '[0-9]+');
 });
 
 Route::middleware('jwt')->group(function () {

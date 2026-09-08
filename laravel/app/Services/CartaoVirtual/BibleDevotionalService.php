@@ -192,6 +192,25 @@ class BibleDevotionalService
     }
 
     /**
+     * Temas + instrução IA (uso admin generate).
+     *
+     * @param  array{temaModo?:string,temaPersonalizado?:string}  $options
+     * @return array<string,mixed>
+     */
+    public function resolveThemeForDay(int $dayOfYear, int $year, array $options = []): array
+    {
+        return $this->resolveTheme($dayOfYear, $year, $options);
+    }
+
+    /**
+     * @return array{month:int,day:int}
+     */
+    public function calendarMonthDay(int $dayOfYear, int $year): array
+    {
+        return $this->dayOfYearToMonthDay($dayOfYear, $year);
+    }
+
+    /**
      * @param  array{useAi?:bool,aiExplicitOff?:bool}  $options
      */
     private function shouldUseAi(array $options): bool

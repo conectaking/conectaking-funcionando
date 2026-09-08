@@ -68,7 +68,9 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 
 Devocional 365 público: Laravel serve `/api/bible/devotionals-365/{day}` com temas + enriquecimento IA opcional (`OPENAI_API_KEY` / `ai=0` / `plain=1`).
 
-Admin prosperidade (Laravel, `LARAVEL_ADMIN_BIBLE` ou satélites): list/get/save/publish/export/import/storytelling-map/`generate-ai` unitário.
+Admin prosperidade (Laravel): list/get/save/publish/export/import/storytelling-map/`generate-ai` unitário.
+
+Admin devotionals-365 (Laravel): days, admin-full, day get/put/delete, month-themes, generate tema, `day/:d/generate-ai`. Lotes async/range/month ficam no Node.
 
 King Selection flags:
 ```

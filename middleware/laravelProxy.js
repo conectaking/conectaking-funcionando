@@ -323,8 +323,10 @@ function isLaravelAdminBiblePath(reqMethod, urlPath) {
     const force = wantsLaravelEngine(urlPath);
     if (!force && !LARAVEL_ADMIN_BIBLE) return false;
 
-    // Lote assíncrono / jobs / parse-paste permanecem no Node
+    // Lote assíncrono / jobs / parse-paste / range-month permanecem no Node
     if (/\/generate-range-ai$/i.test(pathOnly)) return false;
+    if (/\/generate-month-ai\//i.test(pathOnly)) return false;
+    if (/\/generate-calendar-months-async$/i.test(pathOnly)) return false;
     if (/\/generation-job\//i.test(pathOnly)) return false;
     if (/\/parse-paste$/i.test(pathOnly)) return false;
 
@@ -337,6 +339,17 @@ function isLaravelAdminBiblePath(reqMethod, urlPath) {
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/save-activation$/i.test(pathOnly)) return true;
     if (method === 'PATCH' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/publish$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/generate-ai$/i.test(pathOnly)) return true;
+
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/days$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/admin-full$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/day\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/day\/\d+\/generate-ai$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+\/generate\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+\/generate-all$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/\d+$/i.test(pathOnly)) return true;
     return false;
 }
 
