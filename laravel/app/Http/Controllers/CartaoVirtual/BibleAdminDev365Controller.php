@@ -103,6 +103,58 @@ class BibleAdminDev365Controller extends Controller
         }
     }
 
+    public function generateRange(Request $request)
+    {
+        $start = (int) $request->input('start');
+        $end = (int) $request->input('end');
+        $year = (int) $request->input('year', 0);
+        if ($year < 2000 || $year > 2100) {
+            $year = (int) now('America/Sao_Paulo')->year;
+        }
+        if ($start < 1 || $end < 1) {
+            return $this->fail('Informe start e end (1–365).', 400);
+        }
+        try {
+            $out = $this->admin->generateRangeAndSave($start, $end, $year, [
+                'delayMs' => (int) ($request->input('delayMs') ?? 400),
+                'temaModo' => (string) ($request->input('temaModo') ?: 'mes_auto'),
+                'temaPersonalizado' => (string) ($request->input('temaPersonalizado') ?: ''),
+                'estilo' => $request->input('estilo') === 'cunha' ? 'cunha' : 'padrao',
+            ]);
+            if (empty($out['ok'])) {
+                return $this->fail((string) ($out['error'] ?? 'Falha.'), 400);
+            }
+
+            return $this->ok($out);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
+    public function generateMonth(Request $request, string $year, string $month)
+    {
+        $y = (int) $year;
+        $m = (int) $month;
+        if ($y < 2000 || $y > 2100 || $m < 1 || $m > 12) {
+            return $this->fail('Ano ou mês inválido.', 400);
+        }
+        try {
+            $out = $this->admin->generateMonthAndSave($y, $m, [
+                'delayMs' => (int) ($request->input('delayMs') ?? 400),
+                'temaModo' => (string) ($request->input('temaModo') ?: 'mes_auto'),
+                'temaPersonalizado' => (string) ($request->input('temaPersonalizado') ?: ''),
+                'estilo' => $request->input('estilo') === 'cunha' ? 'cunha' : 'padrao',
+            ]);
+            if (empty($out['ok'])) {
+                return $this->fail((string) ($out['error'] ?? 'Falha.'), 400);
+            }
+
+            return $this->ok($out);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
     public function monthThemes(string $year)
     {
         $y = (int) $year;
@@ -162,6 +214,52 @@ class BibleAdminDev365Controller extends Controller
         $themes = $this->admin->setAllMonthThemes($y, $r['themes'] ?? []);
 
         return $this->ok(['year' => $y, 'themes' => $themes, 'errors' => $r['errors'] ?? []]);
+    }
+
+    public function generateCalendarMonthsAsync(Request $request)
+    {
+        $year = (int) ($request->input('year') ?: 0);
+        if ($year < 2000 || $year > 2100) {
+            $year = (int) now('America/Sao_Paulo')->year;
+        }
+        try {
+            $out = $this->admin->startCalendarMonthsBackgroundJob($year, $request->input('months'), [
+                'delayMs' => (int) ($request->input('delayMs') ?? 400),
+                'temaModo' => (string) ($request->input('temaModo') ?: 'mes_auto'),
+                'temaPersonalizado' => (string) ($request->input('temaPersonalizado') ?: ''),
+                'estilo' => $request->input('estilo') === 'cunha' ? 'cunha' : 'padrao',
+            ]);
+            if (empty($out['ok'])) {
+                return $this->fail((string) ($out['error'] ?? 'Pedido inválido.'), 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => ['jobId' => $out['jobId'], 'total' => $out['total']],
+            ], 202)->header('X-Conecta-Engine', 'laravel');
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
+    public function generationJob(string $jobId)
+    {
+        $j = $this->admin->getGenerationJob($jobId);
+        if ($j === null) {
+            return $this->fail('Trabalho não encontrado ou já expirou (memória do servidor).', 404);
+        }
+
+        return $this->ok($j);
+    }
+
+    public function cancelGenerationJob(string $jobId)
+    {
+        $out = $this->admin->cancelGenerationJob($jobId);
+        if (empty($out['ok'])) {
+            return $this->fail((string) ($out['error'] ?? 'Não foi possível cancelar.'), 400);
+        }
+
+        return response()->json(['success' => true])->header('X-Conecta-Engine', 'laravel');
     }
 
     private function ok(mixed $data)

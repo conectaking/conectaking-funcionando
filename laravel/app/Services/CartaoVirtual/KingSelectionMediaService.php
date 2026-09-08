@@ -75,6 +75,60 @@ class KingSelectionMediaService
         return ['status' => 200, 'binary' => $binary, 'contentType' => 'image/jpeg'];
     }
 
+    /**
+     * Preview JPEG público (sem download; watermark completo fica no Node por enquanto — só resize).
+     *
+     * @return array{status:int, binary?:string, contentType?:string, message?:string}
+     */
+    public function publicPreviewJpeg(string $slug, int $photoId, bool $thumb = false): array
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return ['status' => 400, 'message' => 'slug é obrigatório'];
+        }
+        if ($photoId < 1) {
+            return ['status' => 400, 'message' => 'photoId inválido'];
+        }
+
+        try {
+            $g = DB::selectOne(
+                'SELECT id, access_mode FROM king_galleries WHERE lower(trim(slug)) = lower(trim(?)) LIMIT 1',
+                [$slug]
+            );
+        } catch (\Throwable) {
+            $g = DB::selectOne(
+                'SELECT id FROM king_galleries WHERE lower(trim(slug)) = lower(trim(?)) LIMIT 1',
+                [$slug]
+            );
+        }
+        if (!$g) {
+            return ['status' => 404, 'message' => 'Não encontrado'];
+        }
+        $accessMode = (string) ($g->access_mode ?? 'private');
+        if ($accessMode === 'password') {
+            $accessMode = 'signup';
+        }
+        if ($accessMode !== 'public') {
+            return ['status' => 403, 'message' => 'Galeria não é pública'];
+        }
+
+        $path = $this->photoPath((int) $g->id, $photoId);
+        if (!$path) {
+            return ['status' => 404, 'message' => 'Não encontrado'];
+        }
+        $buf = $this->bufferFromPath($path);
+        if ($buf === null) {
+            return ['status' => 502, 'message' => 'Não foi possível carregar a imagem (ficheiro em falta no armazenamento).'];
+        }
+        $max = $thumb ? 400 : 1200;
+        $out = $this->resizeJpeg($buf, $max);
+        if ($out === null) {
+            return ['status' => 502, 'message' => 'Falha ao processar imagem'];
+        }
+
+        return ['status' => 200, 'binary' => $out, 'contentType' => 'image/jpeg'];
+    }
+
     private function fetchCoverBuffer(string $slug): ?string
     {
         $slug = trim($slug);

@@ -124,6 +124,82 @@ class BibleProsperidadeAdminController extends Controller
         }
     }
 
+    public function parsePaste(Request $request, string $n)
+    {
+        $text = (string) ($request->input('text') ?: $request->input('content') ?: '');
+        try {
+            $result = $this->admin->parsePaste((int) $n, $text);
+            if (!empty($result['error'])) {
+                return $this->fail((string) $result['error'], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ])->header('X-Conecta-Engine', 'laravel');
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
+    public function generateRange(Request $request)
+    {
+        $start = (int) $request->input('start');
+        $end = (int) $request->input('end');
+        $asyncMode = filter_var($request->input('async', false), FILTER_VALIDATE_BOOLEAN);
+        $delayMs = $request->input('delayMs');
+        if (!$start || !$end || $start < 1 || $end > 31 || $start > $end) {
+            return $this->fail('Intervalo inválido (1–31).', 400);
+        }
+        try {
+            if ($asyncMode) {
+                $job = $this->admin->startRangeBackgroundJob($start, $end, ['delayMs' => $delayMs]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Geração iniciada.',
+                    'data' => $job,
+                ], 202)->header('X-Conecta-Engine', 'laravel');
+            }
+            if (($end - $start + 1) > 15) {
+                return $this->fail('Máximo 15 Ativações por lote síncrono. Use async: true ou divida o intervalo.', 400);
+            }
+            $result = $this->admin->generateRangeAndSave($start, $end, ['delayMs' => $delayMs]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ])->header('X-Conecta-Engine', 'laravel');
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail($e->getMessage(), 400);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage(), 500);
+        }
+    }
+
+    public function generationJob(string $jobId)
+    {
+        $job = $this->admin->getGenerationJob($jobId);
+        if ($job === null) {
+            return $this->fail('Job não encontrado.', 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $job,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function cancelGenerationJob(string $jobId)
+    {
+        $result = $this->admin->cancelGenerationJob($jobId);
+
+        return response()->json([
+            'success' => $result['ok'],
+            'message' => $result['message'],
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
     private function fail(string $message, int $status)
     {
         return response()->json([

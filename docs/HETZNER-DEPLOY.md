@@ -61,16 +61,16 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 4. Editor `/api/profile` | feito | CRUD + tipados + form extras |
 | 5. Uploads | feito (flag) | `/api/upload/*` + PDF |
 | 6. Satélites | feito (flag, canário) | form rico, guest-list (register/confirm/portaria/QR), bíblia (+progress JWT), loja |
-| 7. King Selection | fatia pública | landing + gallery + share-meta + cover/og-image GD (`LARAVEL_KS`) |
+| 7. King Selection | fatia pública | landing + gallery + share-meta + cover/og/entry-splash + gallery-content + preview JPEG (`LARAVEL_KS`) |
 | 8. KS completo | depois | SPA cliente, uploads, watermark, seleção, vendas |
 
-**Ainda Node:** KS SPA cliente + uploads/watermark/seleção/vendas/face; TTS browser-only; admin prosperidade **lote assíncrono** (`generate-range-ai` / jobs) + parse-paste; admin devotionals-365 generate lote; dashboard. **Checkout/PagBank:** fora do escopo.
+**Ainda Node:** KS SPA cliente + uploads/watermark avançado/seleção/vendas/face; TTS browser-only; dashboard. **Checkout/PagBank:** fora do escopo.
 
 Devocional 365 público: Laravel serve `/api/bible/devotionals-365/{day}` com temas + enriquecimento IA opcional (`OPENAI_API_KEY` / `ai=0` / `plain=1`).
 
-Admin prosperidade (Laravel): list/get/save/publish/export/import/storytelling-map/`generate-ai` unitário.
+Admin prosperidade (Laravel): list/get/save/publish/export/import/storytelling-map/`generate-ai`, **parse-paste**, **generate-range-ai** (sync + async jobs em Cache) + generation-job get/cancel.
 
-Admin devotionals-365 (Laravel): days, admin-full, day get/put/delete, month-themes, generate tema, `day/:d/generate-ai`. Lotes async/range/month ficam no Node.
+Admin devotionals-365 (Laravel): days, admin-full, day get/put/delete, month-themes, generate tema, `day/:d/generate-ai`, **generate-range-ai** (máx. 31 dias), **generate-month-ai**, **generate-calendar-months-async** + generation-job get/cancel (Cache).
 
 King Selection flags:
 ```

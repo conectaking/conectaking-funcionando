@@ -18,6 +18,7 @@ class BibleProsperidadeAdminService
     public function __construct(
         private readonly BibleProsperidadeService $public,
         private readonly BibleProsperidadeAiService $ai,
+        private readonly BibleProsperidadeParseService $parse,
     ) {
     }
 
@@ -167,6 +168,218 @@ class BibleProsperidadeAdminService
         }
 
         return $this->ai->generateActivation($num);
+    }
+
+    /**
+     * @return array{ok?:bool,partial?:bool,sections?:array<string,string>,activation_number?:int,warning?:string,error?:string}
+     */
+    public function parsePaste(int $n, string $text): array
+    {
+        $parsed = $this->parse->parsePastedActivation($text);
+        if (!empty($parsed['error'])) {
+            return $parsed;
+        }
+        $num = $this->public->clampActivation($n);
+        if ($num === null) {
+            return ['error' => 'Ativação inválida.'];
+        }
+
+        return [
+            'ok' => true,
+            'partial' => !empty($parsed['partial']),
+            'sections' => $parsed['sections'] ?? [],
+            'activation_number' => $num,
+            'warning' => $parsed['warning'] ?? null,
+        ];
+    }
+
+    /**
+     * Lote síncrono (máx. 15).
+     *
+     * @param  array{delayMs?:int}  $options
+     * @return array{results:list<array<string,mixed>>,tokensTotal:int}
+     */
+    public function generateRangeAndSave(int $start, int $end, array $options = []): array
+    {
+        if ($start < 1 || $end > 31 || $start > $end) {
+            throw new \InvalidArgumentException('Intervalo inválido (1–31).');
+        }
+        if (($end - $start + 1) > 15) {
+            throw new \InvalidArgumentException('Máximo 15 Ativações por lote síncrono. Use async: true ou divida o intervalo.');
+        }
+        $delayMs = max(0, (int) ($options['delayMs'] ?? 800));
+        $results = [];
+        $tokensTotal = 0;
+        for ($n = $start; $n <= $end; $n++) {
+            $gen = $this->generateAi($n);
+            if (!empty($gen['error'])) {
+                $results[] = ['activation_number' => $n, 'ok' => false, 'error' => $gen['error']];
+                continue;
+            }
+            $data = array_merge($gen['data'] ?? [], ['content_source' => 'ai']);
+            $this->update($n, $data);
+            $tok = (int) ($gen['tokens']['total'] ?? 0);
+            $tokensTotal += $tok;
+            $results[] = ['activation_number' => $n, 'ok' => true, 'tokens' => $gen['tokens'] ?? null];
+            if ($delayMs > 0 && $n < $end) {
+                usleep($delayMs * 1000);
+            }
+        }
+
+        return ['results' => $results, 'tokensTotal' => $tokensTotal];
+    }
+
+    /**
+     * @param  array{delayMs?:int}  $options
+     * @return array{ok:bool,jobId:string,total:int}
+     */
+    public function startRangeBackgroundJob(int $start, int $end, array $options = []): array
+    {
+        if ($start < 1 || $end > 31 || $start > $end) {
+            throw new \InvalidArgumentException('Intervalo inválido (1–31).');
+        }
+        if (($end - $start + 1) > 15) {
+            throw new \InvalidArgumentException('Máximo 15 Ativações por lote. Divida em intervalos menores.');
+        }
+        $jobId = (string) \Illuminate\Support\Str::uuid();
+        $total = $end - $start + 1;
+        $job = [
+            'id' => $jobId,
+            'status' => 'running',
+            'start' => $start,
+            'end' => $end,
+            'current' => $start,
+            'done' => 0,
+            'total' => $total,
+            'errors' => [],
+            'tokensTotal' => 0,
+            'cancelRequested' => false,
+            'startedAt' => (int) (microtime(true) * 1000),
+            'delayMs' => max(0, (int) ($options['delayMs'] ?? 800)),
+        ];
+        \Illuminate\Support\Facades\Cache::put($this->jobCacheKey($jobId), $job, now()->addHours(6));
+
+        $jobIdCopy = $jobId;
+        dispatch(static function () use ($jobIdCopy) {
+            app(self::class)->runRangeJob($jobIdCopy);
+        })->afterResponse();
+
+        return ['ok' => true, 'jobId' => $jobId, 'total' => $total];
+    }
+
+    public function runRangeJob(string $jobId): void
+    {
+        $this->executeRangeJob($jobId);
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    public function getGenerationJob(string $jobId): ?array
+    {
+        $job = \Illuminate\Support\Facades\Cache::get($this->jobCacheKey($jobId));
+        if (!is_array($job)) {
+            return null;
+        }
+        $elapsed = (int) (microtime(true) * 1000) - (int) ($job['startedAt'] ?? 0);
+        $done = (int) ($job['done'] ?? 0);
+        $total = (int) ($job['total'] ?? 0);
+        $etaMs = $done > 0 ? (int) round(($elapsed / $done) * ($total - $done)) : null;
+
+        return [
+            'id' => $job['id'] ?? $jobId,
+            'status' => $job['status'] ?? 'unknown',
+            'start' => $job['start'] ?? null,
+            'end' => $job['end'] ?? null,
+            'current' => $job['current'] ?? null,
+            'done' => $done,
+            'total' => $total,
+            'errors' => $job['errors'] ?? [],
+            'tokensTotal' => $job['tokensTotal'] ?? 0,
+            'etaMs' => $etaMs,
+            'cancelRequested' => !empty($job['cancelRequested']),
+        ];
+    }
+
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    public function cancelGenerationJob(string $jobId): array
+    {
+        $key = $this->jobCacheKey($jobId);
+        $job = \Illuminate\Support\Facades\Cache::get($key);
+        if (!is_array($job)) {
+            return ['ok' => false, 'message' => 'Job não encontrado.'];
+        }
+        $job['cancelRequested'] = true;
+        \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(6));
+
+        return ['ok' => true, 'message' => 'Cancelamento solicitado.'];
+    }
+
+    private function jobCacheKey(string $jobId): string
+    {
+        return 'prosperidade_gen_job:'.$jobId;
+    }
+
+    private function executeRangeJob(string $jobId): void
+    {
+        $key = $this->jobCacheKey($jobId);
+        $job = \Illuminate\Support\Facades\Cache::get($key);
+        if (!is_array($job)) {
+            return;
+        }
+        $delayMs = max(0, (int) ($job['delayMs'] ?? 800));
+        $start = (int) $job['start'];
+        $end = (int) $job['end'];
+
+        for ($n = $start; $n <= $end; $n++) {
+            $job = \Illuminate\Support\Facades\Cache::get($key);
+            if (!is_array($job)) {
+                return;
+            }
+            if (!empty($job['cancelRequested'])) {
+                $job['status'] = 'cancelled';
+                $job['finishedAt'] = (int) (microtime(true) * 1000);
+                \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(6));
+
+                return;
+            }
+            $job['current'] = $n;
+            try {
+                $gen = $this->generateAi($n);
+                if (!empty($gen['error'])) {
+                    $job['errors'][] = ['activation_number' => $n, 'error' => $gen['error']];
+                } else {
+                    $this->update($n, array_merge($gen['data'] ?? [], ['content_source' => 'ai']));
+                    $job['tokensTotal'] = (int) ($job['tokensTotal'] ?? 0) + (int) ($gen['tokens']['total'] ?? 0);
+                }
+            } catch (\Throwable $e) {
+                Log::error('prosperidade range job', ['n' => $n, 'error' => $e->getMessage()]);
+                $job['errors'][] = ['activation_number' => $n, 'error' => $e->getMessage()];
+            }
+            $job['done'] = (int) ($job['done'] ?? 0) + 1;
+            \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(6));
+            if ($n < $end && $delayMs > 0) {
+                usleep($delayMs * 1000);
+            }
+        }
+
+        $job = \Illuminate\Support\Facades\Cache::get($key);
+        if (!is_array($job)) {
+            return;
+        }
+        $errCount = count($job['errors'] ?? []);
+        $total = (int) ($job['total'] ?? 0);
+        if ($errCount === $total) {
+            $job['status'] = 'failed';
+        } elseif ($errCount > 0) {
+            $job['status'] = 'partial';
+        } else {
+            $job['status'] = 'done';
+        }
+        $job['finishedAt'] = (int) (microtime(true) * 1000);
+        \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(6));
     }
 
     /**

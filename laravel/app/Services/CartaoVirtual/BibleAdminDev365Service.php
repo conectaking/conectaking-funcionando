@@ -188,7 +188,7 @@ class BibleAdminDev365Service
     }
 
     /**
-     * @param  array{temaModo?:string,temaPersonalizado?:string,estilo?:string}  $options
+     * @param  array{temaModo?:string,temaPersonalizado?:string,estilo?:string,sessionAvoid?:list<array<string,mixed>>}  $options
      * @return array{ok:bool,error?:string,data?:array<string,mixed>}
      */
     public function generateDayAndSave(int $day, int $year, array $options = []): array
@@ -201,6 +201,10 @@ class BibleAdminDev365Service
         $monthDays = $this->daysInCalendarMonth($y, $md['month']);
         $other = array_values(array_filter($monthDays, static fn ($d) => $d !== $day));
         $avoidRows = $this->snapshotsForDays($other);
+        $sess = is_array($options['sessionAvoid'] ?? null) ? array_slice($options['sessionAvoid'], -42) : [];
+        if ($sess !== []) {
+            $avoidRows = array_merge($avoidRows, $sess);
+        }
         $theme = $this->devotionals->resolveThemeForDay($day, $y, [
             'temaModo' => (string) ($options['temaModo'] ?? 'mes_auto'),
             'temaPersonalizado' => (string) ($options['temaPersonalizado'] ?? ''),
@@ -244,6 +248,101 @@ class BibleAdminDev365Service
                 'titulo' => $full['titulo'] ?? '',
                 'versiculo_ref' => $full['versiculo_ref'] ?? '',
             ],
+        ];
+    }
+
+    /**
+     * Lote síncrono (máx. 31 dias por request — um mês civil).
+     *
+     * @param  array{delayMs?:int,temaModo?:string,temaPersonalizado?:string,estilo?:string}  $options
+     * @return array{ok:bool,error?:string,results?:list<array<string,mixed>>,total?:int,errors?:int}
+     */
+    public function generateRangeAndSave(int $startDay, int $endDay, int $year, array $options = []): array
+    {
+        $a = max(1, min(365, $startDay));
+        $b = max(1, min(365, $endDay));
+        $from = min($a, $b);
+        $to = max($a, $b);
+        if (($to - $from + 1) > 31) {
+            return ['ok' => false, 'error' => 'Máximo 31 dias por lote síncrono. Divida o intervalo.'];
+        }
+        $y = $year >= 2000 && $year <= 2100 ? $year : (int) now('America/Sao_Paulo')->year;
+        $delayMs = max(0, (int) ($options['delayMs'] ?? 400));
+        $results = [];
+        $sessionAvoid = [];
+        for ($d = $from; $d <= $to; $d++) {
+            $r = $this->generateDayAndSave($d, $y, [
+                'temaModo' => (string) ($options['temaModo'] ?? 'mes_auto'),
+                'temaPersonalizado' => (string) ($options['temaPersonalizado'] ?? ''),
+                'estilo' => (string) ($options['estilo'] ?? 'padrao'),
+                'sessionAvoid' => $sessionAvoid,
+            ]);
+            if (!empty($r['ok']) && !empty($r['data'])) {
+                $sessionAvoid[] = [
+                    'day_of_year' => $d,
+                    'titulo' => $r['data']['titulo'] ?? '',
+                    'versiculo_ref' => $r['data']['versiculo_ref'] ?? '',
+                ];
+            }
+            $results[] = ['day' => $d, 'ok' => !empty($r['ok']), 'error' => $r['error'] ?? null];
+            if ($delayMs > 0 && $d < $to) {
+                usleep($delayMs * 1000);
+            }
+        }
+
+        return [
+            'ok' => true,
+            'results' => $results,
+            'total' => count($results),
+            'errors' => count(array_filter($results, static fn ($x) => empty($x['ok']))),
+        ];
+    }
+
+    /**
+     * Gera todos os dias do mês civil (síncrono; paridade com Node).
+     *
+     * @param  array{delayMs?:int,temaModo?:string,temaPersonalizado?:string,estilo?:string}  $options
+     * @return array{ok:bool,error?:string,results?:list<array<string,mixed>>,total?:int,errors?:int,month?:int,year?:int}
+     */
+    public function generateMonthAndSave(int $year, int $month, array $options = []): array
+    {
+        $y = $year >= 2000 && $year <= 2100 ? $year : (int) now('America/Sao_Paulo')->year;
+        $m = max(1, min(12, $month));
+        $days = $this->daysInCalendarMonth($y, $m);
+        if ($days === []) {
+            return ['ok' => false, 'error' => 'Mês inválido.', 'results' => [], 'total' => 0, 'errors' => 0];
+        }
+        $delayMs = max(0, (int) ($options['delayMs'] ?? 400));
+        $results = [];
+        $sessionAvoid = [];
+        $last = count($days) - 1;
+        foreach ($days as $i => $d) {
+            $r = $this->generateDayAndSave($d, $y, [
+                'temaModo' => (string) ($options['temaModo'] ?? 'mes_auto'),
+                'temaPersonalizado' => (string) ($options['temaPersonalizado'] ?? ''),
+                'estilo' => (string) ($options['estilo'] ?? 'padrao'),
+                'sessionAvoid' => $sessionAvoid,
+            ]);
+            if (!empty($r['ok']) && !empty($r['data'])) {
+                $sessionAvoid[] = [
+                    'day_of_year' => $d,
+                    'titulo' => $r['data']['titulo'] ?? '',
+                    'versiculo_ref' => $r['data']['versiculo_ref'] ?? '',
+                ];
+            }
+            $results[] = ['day' => $d, 'ok' => !empty($r['ok']), 'error' => $r['error'] ?? null];
+            if ($delayMs > 0 && $i < $last) {
+                usleep($delayMs * 1000);
+            }
+        }
+
+        return [
+            'ok' => true,
+            'year' => $y,
+            'month' => $m,
+            'results' => $results,
+            'total' => count($results),
+            'errors' => count(array_filter($results, static fn ($x) => empty($x['ok']))),
         ];
     }
 
@@ -316,5 +415,277 @@ class BibleAdminDev365Service
         }
 
         return null;
+    }
+
+    /**
+     * @param  mixed  $monthsInput
+     * @return list<int>
+     */
+    public function normalizeMonthsInput(mixed $monthsInput): array
+    {
+        if ($monthsInput === 'all' || $monthsInput === true) {
+            return range(1, 12);
+        }
+        if (!is_array($monthsInput)) {
+            return [];
+        }
+        $set = [];
+        foreach ($monthsInput as $x) {
+            $m = (int) $x;
+            if ($m >= 1 && $m <= 12) {
+                $set[$m] = true;
+            }
+        }
+        $out = array_keys($set);
+        sort($out);
+
+        return $out;
+    }
+
+    /**
+     * @param  list<int>  $months
+     * @return list<int>
+     */
+    public function collectDaysForCalendarMonths(int $year, array $months): array
+    {
+        $set = [];
+        foreach ($months as $m) {
+            foreach ($this->daysInCalendarMonth($year, (int) $m) as $d) {
+                $set[$d] = true;
+            }
+        }
+        $out = array_keys($set);
+        sort($out);
+
+        return $out;
+    }
+
+    /**
+     * @param  mixed  $monthsInput
+     * @param  array{delayMs?:int,temaModo?:string,temaPersonalizado?:string,estilo?:string}  $options
+     * @return array{ok:bool,error?:string,jobId?:string,total?:int}
+     */
+    public function startCalendarMonthsBackgroundJob(int $year, mixed $monthsInput, array $options = []): array
+    {
+        if ($year < 2000 || $year > 2100) {
+            return ['ok' => false, 'error' => 'Ano inválido (2000–2100).'];
+        }
+        $months = $this->normalizeMonthsInput($monthsInput);
+        if ($months === []) {
+            return ['ok' => false, 'error' => 'Selecione pelo menos um mês ou envie months: "all".'];
+        }
+        $days = $this->collectDaysForCalendarMonths($year, $months);
+        if ($days === []) {
+            return ['ok' => false, 'error' => 'Nenhum dia a gerar.'];
+        }
+        $jobId = (string) \Illuminate\Support\Str::uuid();
+        $nowMs = (int) (microtime(true) * 1000);
+        $job = [
+            'id' => $jobId,
+            'status' => 'queued',
+            'year' => $year,
+            'months' => $months,
+            'days' => $days,
+            'total' => count($days),
+            'processed' => 0,
+            'errors' => 0,
+            'etaSeconds' => null,
+            'currentDay' => null,
+            'startedAt' => $nowMs,
+            'updatedAt' => $nowMs,
+            'errorMessage' => null,
+            'failedSamples' => [],
+            'cancelRequested' => false,
+            'options' => [
+                'delayMs' => max(0, (int) ($options['delayMs'] ?? 400)),
+                'temaModo' => (string) ($options['temaModo'] ?? 'mes_auto'),
+                'temaPersonalizado' => (string) ($options['temaPersonalizado'] ?? ''),
+                'estilo' => ($options['estilo'] ?? '') === 'cunha' ? 'cunha' : 'padrao',
+            ],
+        ];
+        \Illuminate\Support\Facades\Cache::put($this->jobCacheKey($jobId), $job, now()->addHours(12));
+
+        $jobIdCopy = $jobId;
+        dispatch(static function () use ($jobIdCopy) {
+            app(self::class)->runCalendarMonthsJob($jobIdCopy);
+        })->afterResponse();
+
+        return ['ok' => true, 'jobId' => $jobId, 'total' => count($days)];
+    }
+
+    public function runCalendarMonthsJob(string $jobId): void
+    {
+        $this->executeCalendarMonthsJob($jobId);
+    }
+
+    /**
+     * @return array{ok:bool,error?:string}
+     */
+    public function cancelGenerationJob(string $jobId): array
+    {
+        $key = $this->jobCacheKey($jobId);
+        $job = \Illuminate\Support\Facades\Cache::get($key);
+        if (!is_array($job)) {
+            return ['ok' => false, 'error' => 'Trabalho não encontrado ou já expirou.'];
+        }
+        $status = (string) ($job['status'] ?? '');
+        if (in_array($status, ['done', 'error', 'cancelled'], true)) {
+            return ['ok' => false, 'error' => 'Este trabalho já terminou.'];
+        }
+        $job['cancelRequested'] = true;
+        $job['updatedAt'] = (int) (microtime(true) * 1000);
+        \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(12));
+
+        return ['ok' => true];
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    public function getGenerationJob(string $jobId): ?array
+    {
+        $job = \Illuminate\Support\Facades\Cache::get($this->jobCacheKey($jobId));
+        if (!is_array($job)) {
+            return null;
+        }
+        $total = (int) ($job['total'] ?? 0);
+        $processed = (int) ($job['processed'] ?? 0);
+        $progress = $total > 0 ? min(100, (int) floor((100 * $processed) / $total)) : 0;
+        if (($job['status'] ?? '') === 'done') {
+            $progress = 100;
+        }
+        $etaSeconds = $job['etaSeconds'] ?? null;
+        $etaMinutes = null;
+        if ($etaSeconds !== null && ($job['status'] ?? '') === 'running') {
+            $etaMinutes = round(((int) $etaSeconds / 60) * 10) / 10;
+        }
+
+        return [
+            'id' => $job['id'] ?? $jobId,
+            'status' => $job['status'] ?? 'unknown',
+            'year' => $job['year'] ?? null,
+            'months' => $job['months'] ?? [],
+            'total' => $total,
+            'processed' => $processed,
+            'progress' => $progress,
+            'errors' => (int) ($job['errors'] ?? 0),
+            'etaSeconds' => $etaSeconds,
+            'etaMinutes' => $etaMinutes,
+            'currentDay' => $job['currentDay'] ?? null,
+            'errorMessage' => $job['errorMessage'] ?? null,
+            'failedSamples' => array_slice($job['failedSamples'] ?? [], 0, 20),
+            'updatedAt' => $job['updatedAt'] ?? null,
+            'startedAt' => $job['startedAt'] ?? null,
+            'cancelRequested' => !empty($job['cancelRequested']),
+        ];
+    }
+
+    private function jobCacheKey(string $jobId): string
+    {
+        return 'dev365_gen_job:'.$jobId;
+    }
+
+    private function executeCalendarMonthsJob(string $jobId): void
+    {
+        $key = $this->jobCacheKey($jobId);
+        $job = \Illuminate\Support\Facades\Cache::get($key);
+        if (!is_array($job)) {
+            return;
+        }
+        $days = is_array($job['days'] ?? null) ? $job['days'] : [];
+        $year = (int) ($job['year'] ?? now('America/Sao_Paulo')->year);
+        $opts = is_array($job['options'] ?? null) ? $job['options'] : [];
+        $delayMs = max(0, (int) ($opts['delayMs'] ?? 400));
+        $total = count($days);
+
+        $job['status'] = 'running';
+        $job['updatedAt'] = (int) (microtime(true) * 1000);
+        \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(12));
+
+        $sessionAvoid = [];
+        try {
+            foreach ($days as $i => $d) {
+                $job = \Illuminate\Support\Facades\Cache::get($key);
+                if (!is_array($job)) {
+                    return;
+                }
+                if (!empty($job['cancelRequested'])) {
+                    $job['status'] = 'cancelled';
+                    $job['currentDay'] = null;
+                    $job['etaSeconds'] = 0;
+                    $job['updatedAt'] = (int) (microtime(true) * 1000);
+                    \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(12));
+
+                    return;
+                }
+
+                $day = (int) $d;
+                $job['currentDay'] = $day;
+                $job['updatedAt'] = (int) (microtime(true) * 1000);
+                \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(12));
+
+                $r = $this->generateDayAndSave($day, $year, [
+                    'temaModo' => (string) ($opts['temaModo'] ?? 'mes_auto'),
+                    'temaPersonalizado' => (string) ($opts['temaPersonalizado'] ?? ''),
+                    'estilo' => (string) ($opts['estilo'] ?? 'padrao'),
+                    'sessionAvoid' => $sessionAvoid,
+                ]);
+                if (!empty($r['ok']) && !empty($r['data'])) {
+                    $sessionAvoid[] = [
+                        'day_of_year' => $day,
+                        'titulo' => $r['data']['titulo'] ?? '',
+                        'versiculo_ref' => $r['data']['versiculo_ref'] ?? '',
+                    ];
+                }
+
+                $job = \Illuminate\Support\Facades\Cache::get($key);
+                if (!is_array($job)) {
+                    return;
+                }
+                $job['processed'] = $i + 1;
+                if (empty($r['ok'])) {
+                    $job['errors'] = (int) ($job['errors'] ?? 0) + 1;
+                    $samples = $job['failedSamples'] ?? [];
+                    if (count($samples) < 50) {
+                        $samples[] = ['day' => $day, 'error' => $r['error'] ?? '?'];
+                        $job['failedSamples'] = $samples;
+                    }
+                }
+                $elapsed = (int) (microtime(true) * 1000) - (int) ($job['startedAt'] ?? 0);
+                $avg = $job['processed'] > 0 ? $elapsed / $job['processed'] : 0;
+                $job['etaSeconds'] = max(0, (int) round((($total - $job['processed']) * $avg) / 1000));
+                $job['updatedAt'] = (int) (microtime(true) * 1000);
+                \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(12));
+
+                if ($delayMs > 0 && $i < $total - 1) {
+                    usleep($delayMs * 1000);
+                }
+            }
+
+            $job = \Illuminate\Support\Facades\Cache::get($key);
+            if (!is_array($job)) {
+                return;
+            }
+            if (!empty($job['cancelRequested'])) {
+                $job['status'] = 'cancelled';
+            } else {
+                $job['status'] = 'done';
+                $job['processed'] = $total;
+            }
+            $job['currentDay'] = null;
+            $job['etaSeconds'] = 0;
+            $job['updatedAt'] = (int) (microtime(true) * 1000);
+            \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(12));
+        } catch (\Throwable $e) {
+            Log::error('dev365.executeCalendarMonthsJob', ['error' => $e->getMessage()]);
+            $job = \Illuminate\Support\Facades\Cache::get($key);
+            if (!is_array($job)) {
+                return;
+            }
+            $job['status'] = 'error';
+            $job['errorMessage'] = $e->getMessage();
+            $job['updatedAt'] = (int) (microtime(true) * 1000);
+            \Illuminate\Support\Facades\Cache::put($key, $job, now()->addHours(12));
+        }
     }
 }

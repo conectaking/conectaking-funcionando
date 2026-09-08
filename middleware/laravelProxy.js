@@ -267,6 +267,14 @@ function isLaravelKsPath(reqMethod, urlPath) {
     if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/gallery$/i.test(pathOnly)) {
         return force || LARAVEL_KS;
     }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/gallery-content$/i.test(pathOnly)) {
+        if (!force && !LARAVEL_KS) return false;
+        const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
+        const m = /[?&]slug=([^&]+)/i.exec(q);
+        const slug = m ? decodeURIComponent(m[1]) : '';
+        if (!slug) return force || LARAVEL_KS;
+        return force || slugAllowedForKs(slug);
+    }
     const share = pathOnly.match(/^\/(?:l\/)?api\/king-selection\/public\/gallery-share-meta\/([^/]+)\/?$/i);
     if (share && method === 'GET') {
         if (!force && !LARAVEL_KS) return false;
@@ -277,8 +285,17 @@ function isLaravelKsPath(reqMethod, urlPath) {
         if (!force && !LARAVEL_KS) return false;
         return force || slugAllowedForKs(page[1]);
     }
-    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/(cover|og-image)$/i.test(pathOnly)) {
-        // cover/og usam ?slug= — canário via query
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/(cover|og-image|entry-splash)$/i.test(pathOnly)) {
+        // cover/og/splash usam ?slug= — canário via query
+        if (!force && !LARAVEL_KS) return false;
+        const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
+        const m = /[?&]slug=([^&]+)/i.exec(q);
+        const slug = m ? decodeURIComponent(m[1]) : '';
+        if (!slug) return force || LARAVEL_KS;
+        return force || slugAllowedForKs(slug);
+    }
+    const preview = pathOnly.match(/^\/(?:l\/)?api\/king-selection\/public\/photos\/(\d+)\/preview$/i);
+    if (preview && method === 'GET') {
         if (!force && !LARAVEL_KS) return false;
         const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
         const m = /[?&]slug=([^&]+)/i.exec(q);
@@ -323,27 +340,31 @@ function isLaravelAdminBiblePath(reqMethod, urlPath) {
     const force = wantsLaravelEngine(urlPath);
     if (!force && !LARAVEL_ADMIN_BIBLE) return false;
 
-    // Lote assíncrono / jobs / parse-paste / range-month permanecem no Node
-    if (/\/generate-range-ai$/i.test(pathOnly)) return false;
-    if (/\/generate-month-ai\//i.test(pathOnly)) return false;
-    if (/\/generate-calendar-months-async$/i.test(pathOnly)) return false;
-    if (/\/generation-job\//i.test(pathOnly)) return false;
-    if (/\/parse-paste$/i.test(pathOnly)) return false;
+    // (nenhum block especial — async Dev365 e prosperidade jobs no Laravel)
 
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/export$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/import$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/storytelling-map$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/generate-range-ai$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/generation-job\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/generation-job\/[^/]+\/cancel$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+$/i.test(pathOnly)) return true;
     if (method === 'PUT' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/save-activation$/i.test(pathOnly)) return true;
     if (method === 'PATCH' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/publish$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/generate-ai$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/prosperidade\/\d+\/parse-paste$/i.test(pathOnly)) return true;
 
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/days$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/admin-full$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/day\/\d+$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/day\/\d+\/generate-ai$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/generate-range-ai$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/generate-month-ai\/\d+\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/generate-calendar-months-async$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/generation-job\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/generation-job\/[^/]+\/cancel$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+$/i.test(pathOnly)) return true;
     if (method === 'PUT' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+\/generate\/\d+$/i.test(pathOnly)) return true;
@@ -457,7 +478,7 @@ function laravelProxyMiddleware(req, res, next) {
     }
 
     if (isLaravelAdminBiblePath(req.method, url)) {
-        return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: 180000 });
+        return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: 900000 });
     }
 
     if ((LARAVEL_KS || wantsLaravelEngine(url)) && isLaravelKsPath(req.method, url)) {

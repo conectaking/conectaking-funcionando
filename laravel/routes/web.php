@@ -197,16 +197,25 @@ Route::middleware('admin')->group(function () {
     Route::get('/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
     Route::post('/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);
     Route::get('/api/admin/bible/prosperidade/storytelling-map', [BibleProsperidadeAdminController::class, 'storytellingMap']);
+    Route::post('/api/admin/bible/prosperidade/generate-range-ai', [BibleProsperidadeAdminController::class, 'generateRange']);
+    Route::get('/api/admin/bible/prosperidade/generation-job/{jobId}', [BibleProsperidadeAdminController::class, 'generationJob']);
+    Route::post('/api/admin/bible/prosperidade/generation-job/{jobId}/cancel', [BibleProsperidadeAdminController::class, 'cancelGenerationJob']);
     Route::get('/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'show'])->where('n', '[0-9]+');
     Route::put('/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
     Route::post('/api/admin/bible/prosperidade/{n}/save-activation', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
     Route::patch('/api/admin/bible/prosperidade/{n}/publish', [BibleProsperidadeAdminController::class, 'publish'])->where('n', '[0-9]+');
     Route::post('/api/admin/bible/prosperidade/{n}/generate-ai', [BibleProsperidadeAdminController::class, 'generateAi'])->where('n', '[0-9]+');
+    Route::post('/api/admin/bible/prosperidade/{n}/parse-paste', [BibleProsperidadeAdminController::class, 'parsePaste'])->where('n', '[0-9]+');
 
     Route::get('/api/admin/bible/devotionals-365/days', [BibleAdminDev365Controller::class, 'days']);
     Route::get('/api/admin/bible/devotionals-365/admin-full', [BibleAdminDev365Controller::class, 'adminFull']);
     Route::get('/api/admin/bible/devotionals-365/day/{day}', [BibleAdminDev365Controller::class, 'showDay'])->where('day', '[0-9]+');
     Route::post('/api/admin/bible/devotionals-365/day/{day}/generate-ai', [BibleAdminDev365Controller::class, 'generateDay'])->where('day', '[0-9]+');
+    Route::post('/api/admin/bible/devotionals-365/generate-range-ai', [BibleAdminDev365Controller::class, 'generateRange']);
+    Route::post('/api/admin/bible/devotionals-365/generate-month-ai/{year}/{month}', [BibleAdminDev365Controller::class, 'generateMonth'])->where(['year' => '[0-9]+', 'month' => '[0-9]+']);
+    Route::post('/api/admin/bible/devotionals-365/generate-calendar-months-async', [BibleAdminDev365Controller::class, 'generateCalendarMonthsAsync']);
+    Route::get('/api/admin/bible/devotionals-365/generation-job/{jobId}', [BibleAdminDev365Controller::class, 'generationJob']);
+    Route::post('/api/admin/bible/devotionals-365/generation-job/{jobId}/cancel', [BibleAdminDev365Controller::class, 'cancelGenerationJob']);
     Route::get('/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'monthThemes'])->where('year', '[0-9]+');
     Route::put('/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'saveMonthThemes'])->where('year', '[0-9]+');
     Route::post('/api/admin/bible/devotionals-365/month-themes/{year}/generate/{month}', [BibleAdminDev365Controller::class, 'generateMonthTheme'])->where(['year' => '[0-9]+', 'month' => '[0-9]+']);
@@ -218,16 +227,25 @@ Route::middleware('admin')->group(function () {
     Route::get('/l/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
     Route::post('/l/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);
     Route::get('/l/api/admin/bible/prosperidade/storytelling-map', [BibleProsperidadeAdminController::class, 'storytellingMap']);
+    Route::post('/l/api/admin/bible/prosperidade/generate-range-ai', [BibleProsperidadeAdminController::class, 'generateRange']);
+    Route::get('/l/api/admin/bible/prosperidade/generation-job/{jobId}', [BibleProsperidadeAdminController::class, 'generationJob']);
+    Route::post('/l/api/admin/bible/prosperidade/generation-job/{jobId}/cancel', [BibleProsperidadeAdminController::class, 'cancelGenerationJob']);
     Route::get('/l/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'show'])->where('n', '[0-9]+');
     Route::put('/l/api/admin/bible/prosperidade/{n}', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
     Route::post('/l/api/admin/bible/prosperidade/{n}/save-activation', [BibleProsperidadeAdminController::class, 'save'])->where('n', '[0-9]+');
     Route::patch('/l/api/admin/bible/prosperidade/{n}/publish', [BibleProsperidadeAdminController::class, 'publish'])->where('n', '[0-9]+');
     Route::post('/l/api/admin/bible/prosperidade/{n}/generate-ai', [BibleProsperidadeAdminController::class, 'generateAi'])->where('n', '[0-9]+');
+    Route::post('/l/api/admin/bible/prosperidade/{n}/parse-paste', [BibleProsperidadeAdminController::class, 'parsePaste'])->where('n', '[0-9]+');
 
     Route::get('/l/api/admin/bible/devotionals-365/days', [BibleAdminDev365Controller::class, 'days']);
     Route::get('/l/api/admin/bible/devotionals-365/admin-full', [BibleAdminDev365Controller::class, 'adminFull']);
     Route::get('/l/api/admin/bible/devotionals-365/day/{day}', [BibleAdminDev365Controller::class, 'showDay'])->where('day', '[0-9]+');
     Route::post('/l/api/admin/bible/devotionals-365/day/{day}/generate-ai', [BibleAdminDev365Controller::class, 'generateDay'])->where('day', '[0-9]+');
+    Route::post('/l/api/admin/bible/devotionals-365/generate-range-ai', [BibleAdminDev365Controller::class, 'generateRange']);
+    Route::post('/l/api/admin/bible/devotionals-365/generate-month-ai/{year}/{month}', [BibleAdminDev365Controller::class, 'generateMonth'])->where(['year' => '[0-9]+', 'month' => '[0-9]+']);
+    Route::post('/l/api/admin/bible/devotionals-365/generate-calendar-months-async', [BibleAdminDev365Controller::class, 'generateCalendarMonthsAsync']);
+    Route::get('/l/api/admin/bible/devotionals-365/generation-job/{jobId}', [BibleAdminDev365Controller::class, 'generationJob']);
+    Route::post('/l/api/admin/bible/devotionals-365/generation-job/{jobId}/cancel', [BibleAdminDev365Controller::class, 'cancelGenerationJob']);
     Route::get('/l/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'monthThemes'])->where('year', '[0-9]+');
     Route::put('/l/api/admin/bible/devotionals-365/month-themes/{year}', [BibleAdminDev365Controller::class, 'saveMonthThemes'])->where('year', '[0-9]+');
     Route::post('/l/api/admin/bible/devotionals-365/month-themes/{year}/generate/{month}', [BibleAdminDev365Controller::class, 'generateMonthTheme'])->where(['year' => '[0-9]+', 'month' => '[0-9]+']);
@@ -318,14 +336,22 @@ Route::get('/kingSelection/{slug}', [KingSelectionPublicController::class, 'show
 Route::get('/l/kingSelection/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
 Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery']);
 Route::get('/l/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery']);
+Route::get('/api/king-selection/public/gallery-content', [KingSelectionPublicController::class, 'galleryContent']);
+Route::get('/l/api/king-selection/public/gallery-content', [KingSelectionPublicController::class, 'galleryContent']);
 Route::get('/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectionPublicController::class, 'shareMeta'])
     ->where('slug', $cardSlug);
 Route::get('/l/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectionPublicController::class, 'shareMeta'])
     ->where('slug', $cardSlug);
 Route::get('/api/king-selection/public/cover', [KingSelectionPublicController::class, 'cover']);
 Route::get('/l/api/king-selection/public/cover', [KingSelectionPublicController::class, 'cover']);
+Route::get('/api/king-selection/public/entry-splash', [KingSelectionPublicController::class, 'entrySplash']);
+Route::get('/l/api/king-selection/public/entry-splash', [KingSelectionPublicController::class, 'entrySplash']);
 Route::get('/api/king-selection/public/og-image', [KingSelectionPublicController::class, 'ogImage']);
 Route::get('/l/api/king-selection/public/og-image', [KingSelectionPublicController::class, 'ogImage']);
+Route::get('/api/king-selection/public/photos/{photoId}/preview', [KingSelectionPublicController::class, 'publicPreview'])
+    ->where('photoId', '[0-9]+');
+Route::get('/l/api/king-selection/public/photos/{photoId}/preview', [KingSelectionPublicController::class, 'publicPreview'])
+    ->where('photoId', '[0-9]+');
 
 Route::get('/l/loja/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);

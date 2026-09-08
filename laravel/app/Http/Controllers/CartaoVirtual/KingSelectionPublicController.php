@@ -86,4 +86,58 @@ class KingSelectionPublicController extends Controller
             ->header('Cache-Control', 'public, max-age=900')
             ->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function galleryContent(Request $request)
+    {
+        $slug = trim((string) $request->query('slug', ''));
+        $result = $this->ks->galleryContent($slug);
+
+        return response()->json($result['body'], $result['status'])
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function entrySplash(Request $request)
+    {
+        $slug = trim((string) $request->query('slug', ''));
+        if ($slug === '') {
+            return response('slug é obrigatório', 400)
+                ->header('Content-Type', 'text/plain; charset=UTF-8')
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $result = $this->media->coverJpeg($slug, 1600);
+        if (($result['status'] ?? 500) !== 200) {
+            return response($result['message'] ?? 'erro', $result['status'])
+                ->header('Content-Type', 'text/plain; charset=UTF-8')
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response($result['binary'], 200)
+            ->header('Content-Type', $result['contentType'] ?? 'image/jpeg')
+            ->header('Cache-Control', 'public, max-age=600')
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function publicPreview(Request $request, string $photoId)
+    {
+        $slug = trim((string) $request->query('slug', ''));
+        if ($slug === '') {
+            return response('slug é obrigatório', 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        if ((string) $request->query('download', '') === '1') {
+            return response('Cadastre-se na galeria para baixar fotos. Use o link com login do cliente.', 403)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $thumb = in_array(strtolower((string) ($request->query('thumb') ?: $request->query('size') ?: '')), ['1', 'true', 'thumb', 's'], true);
+        $result = $this->media->publicPreviewJpeg($slug, (int) $photoId, $thumb);
+        if (($result['status'] ?? 500) !== 200) {
+            return response($result['message'] ?? 'erro', $result['status'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response($result['binary'], 200)
+            ->header('Content-Type', $result['contentType'] ?? 'image/jpeg')
+            ->header('Cross-Origin-Resource-Policy', 'cross-origin')
+            ->header('Cache-Control', 'public, max-age=300')
+            ->header('X-Conecta-Engine', 'laravel');
+    }
 }
