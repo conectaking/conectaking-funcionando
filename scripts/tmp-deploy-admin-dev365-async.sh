@@ -24,7 +24,7 @@ curl -sS -D - -o /tmp/d365a0.json -X POST -H "$AUTH" -H 'Content-Type: applicati
 python3 -c "import json;o=json.load(open('/tmp/d365a0.json')); print('empty',o.get('success'), o.get('message'))"
 
 echo '=== async start + cancel ==='
-curl -sS -D - -o /tmp/d365a1.json -X POST -H "$AUTH" -H 'Content-Type: application/json' \
+curl -sS --max-time 30 -D - -o /tmp/d365a1.json -X POST -H "$AUTH" -H 'Content-Type: application/json' \
   'http://127.0.0.1:5000/api/admin/bible/devotionals-365/generate-calendar-months-async' \
   -d '{"year":'"$YEAR"',"months":[12],"delayMs":8000}' | hdr
 JOB=$(python3 -c "import json;o=json.load(open('/tmp/d365a1.json')); print((o.get('data') or {}).get('jobId') or '')")

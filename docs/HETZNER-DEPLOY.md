@@ -26,6 +26,7 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 | `LARAVEL_PROFILE_API` | `false` | Editor `/api/profile*` → Laravel (JWT) |
 | `LARAVEL_UPLOAD_API` | `false` | `/api/upload/*` e `/api/upload/pdf` → Laravel |
 | `LARAVEL_SATELLITES` | `false` | Form, bíblia, loja (respeita `LARAVEL_CARD_SLUGS`) |
+| `LARAVEL_ADMIN_BIBLE` | = satélites | Admin prosperidade + Dev365 (JWT admin) |
 | `LARAVEL_KS` | `false` | King Selection landing + APIs públicas read-only |
 | `LARAVEL_KS_SLUGS` | vazio | Canário de **slugs de galeria** KS (ex. `eliseu`) |
 
@@ -38,10 +39,40 @@ LARAVEL_CARD_SLUGS=adrianokingg
 LARAVEL_PROFILE_API=true
 LARAVEL_UPLOAD_API=true
 LARAVEL_SATELLITES=true
+LARAVEL_ADMIN_BIBLE=true
 LARAVEL_KS=true
 LARAVEL_KS_SLUGS=eliseu
 ```
-```bash
+
+## O que já está em PHP (Laravel) em produção
+
+Flags atuais (canário): cartão/`adrianokingg`, profile, upload, satélites, KS/`eliseu`, admin bíblia.
+
+| Área | Estado |
+|---|---|
+| Cartão público Blade + APIs read | Canário `adrianokingg` |
+| Editor profile + uploads | Ligado |
+| Form / guest-list / bíblia pública / loja | Canário satélites |
+| Admin prosperidade + Dev365 (incl. async jobs) | Ligado |
+| KS landing + gallery/share/cover/og/splash/content/preview | Canário `eliseu` |
+
+## O que ainda falta (código Node → PHP)
+
+| Prioridade | Item | Notas |
+|---|---|---|
+| Alta | **King Selection completo** | SPA cliente, uploads, watermark avançado, seleção, vendas, face |
+| Média | **Dashboard** (`dashboard.html` + APIs do painel) | Ainda Node |
+| Baixa / ops | Abrir canários | Tirar `LARAVEL_CARD_SLUGS` / `LARAVEL_KS_SLUGS` = todos os slugs |
+| Fora de escopo | Checkout / PagBank | Mantém Node de propósito |
+| N/A | TTS | Browser-only |
+
+## Configuração ops ainda aberta
+
+- DNS/domínio → `46.225.100.64` (se ainda não apontou)
+- HTTPS (Caddy/Nginx + Let's Encrypt)
+- Firewall Hetzner 22/80/443
+
+**Não falta** chave OpenAI / JWT / R2 / `LARAVEL_APP_KEY` no `.env.prod` para o que já migrou — já estão no container Laravel.```bash
 # Rebuild só o Laravel
 cd /opt/conectaking
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build laravel

@@ -505,10 +505,7 @@ class BibleAdminDev365Service
         ];
         \Illuminate\Support\Facades\Cache::put($this->jobCacheKey($jobId), $job, now()->addHours(12));
 
-        $jobIdCopy = $jobId;
-        dispatch(static function () use ($jobIdCopy) {
-            app(self::class)->runCalendarMonthsJob($jobIdCopy);
-        })->afterResponse();
+        \App\Support\BackgroundArtisan::run('dev365:run-calendar-job', $jobId);
 
         return ['ok' => true, 'jobId' => $jobId, 'total' => count($days)];
     }
