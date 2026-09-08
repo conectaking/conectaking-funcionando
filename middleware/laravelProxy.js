@@ -90,6 +90,8 @@ function isLaravelCardApiPath(urlPath) {
         /^\/api\/bible\/prosperidade\/nearest-published\/\d+$/i,
         /^\/api\/bible\/prosperidade\/mark-read$/i,
         /^\/api\/bible\/prosperidade\/read-status$/i,
+        /^\/api\/bible\/devotional\/mark-read$/i,
+        /^\/api\/bible\/devotional\/read-status$/i,
         /^\/l\/api\/pix\/qrcode\/\d+$/i,
         /^\/l\/api\/bible\/verse-of-day$/i,
         /^\/l\/api\/bible\/books$/i,
@@ -107,6 +109,8 @@ function isLaravelCardApiPath(urlPath) {
         /^\/l\/api\/bible\/prosperidade\/nearest-published\/\d+$/i,
         /^\/l\/api\/bible\/prosperidade\/mark-read$/i,
         /^\/l\/api\/bible\/prosperidade\/read-status$/i,
+        /^\/l\/api\/bible\/devotional\/mark-read$/i,
+        /^\/l\/api\/bible\/devotional\/read-status$/i,
         /^\/log\/view\/[^/]+$/i,
         /^\/log\/click\/item\/\d+$/i,
         /^\/log\/vcard\/[^/]+$/i,
@@ -150,6 +154,9 @@ function isLaravelProfileApiPath(reqMethod, urlPath) {
     if (method === 'POST' && /^\/(?:l\/)?api\/profile\/items\/digital_form\/\d+\/responses\/delete-bulk$/i.test(pathOnly)) return true;
     if (method === 'DELETE' && /^\/(?:l\/)?api\/profile\/items\/digital_form\/\d+\/responses\/\d+$/i.test(pathOnly)) return true;
     if (method === 'POST' && /^\/(?:l\/)?api\/profile\/items\/digital_form\/\d+\/create-import-link$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/bible\/my-progress$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/bible\/mark-read$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/bible\/reset-progress$/i.test(pathOnly)) return true;
     return false;
 }
 
@@ -270,6 +277,28 @@ function isLaravelKsPath(reqMethod, urlPath) {
         if (!force && !LARAVEL_KS) return false;
         return force || slugAllowedForKs(page[1]);
     }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/(cover|og-image)$/i.test(pathOnly)) {
+        // cover/og usam ?slug= — canário via query
+        if (!force && !LARAVEL_KS) return false;
+        const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
+        const m = /[?&]slug=([^&]+)/i.exec(q);
+        const slug = m ? decodeURIComponent(m[1]) : '';
+        if (!slug) return force || LARAVEL_KS;
+        return force || slugAllowedForKs(slug);
+    }
+    return false;
+}
+
+function isLaravelGuestListPath(reqMethod, urlPath) {
+    if (!urlPath) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    const force = wantsLaravelEngine(urlPath);
+    if (!force && !LARAVEL_SATELLITES) return false;
+    if (method === 'GET' && /^\/(?:l\/)?guest-list\/register\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/guest-lists\/public\/register\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?guest-list\/confirm\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/guest-lists\/public\/confirm\/[^/]+$/i.test(pathOnly)) return true;
     return false;
 }
 
@@ -369,6 +398,10 @@ function laravelProxyMiddleware(req, res, next) {
     }
 
     if ((LARAVEL_SATELLITES || wantsLaravelEngine(url)) && isLaravelSatellitePath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
+    if (isLaravelGuestListPath(req.method, url)) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 

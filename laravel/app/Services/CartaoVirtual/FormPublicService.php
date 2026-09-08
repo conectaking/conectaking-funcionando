@@ -132,9 +132,52 @@ class FormPublicService
         if (!is_array($responseData)) {
             $responseData = [];
         }
+
+        $formRow = DB::selectOne(
+            'SELECT form_fields, success_message FROM digital_form_items WHERE profile_item_id = ?
+             ORDER BY COALESCE(updated_at, \'1970-01-01\'::timestamp) DESC, id DESC LIMIT 1',
+            [$id]
+        );
+        $fields = [];
+        if ($formRow && is_string($formRow->form_fields ?? null)) {
+            $parsedFields = json_decode((string) $formRow->form_fields, true);
+            $fields = is_array($parsedFields) ? $parsedFields : [];
+        } elseif ($formRow && is_array($formRow->form_fields ?? null)) {
+            $fields = $formRow->form_fields;
+        }
+
+        foreach ($fields as $field) {
+            if (empty($field['required'])) {
+                continue;
+            }
+            $fid = (string) ($field['id'] ?? '');
+            if ($fid === '') {
+                continue;
+            }
+            $val = $responseData[$fid] ?? null;
+            $empty = $val === null || $val === '' || (is_array($val) && count($val) === 0);
+            if ($empty) {
+                $label = (string) ($field['label'] ?? 'Campo obrigatório');
+
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'success' => false,
+                        'message' => "Preencha o campo obrigatório: {$label}",
+                    ],
+                ];
+            }
+        }
+
         $name = trim((string) ($body['responder_name'] ?? '')) ?: null;
         $email = trim((string) ($body['responder_email'] ?? '')) ?: null;
         $phone = trim((string) ($body['responder_phone'] ?? '')) ?: null;
+        if (!$name || !$email || !$phone) {
+            $extracted = $this->extractContactFromResponses($fields, $responseData);
+            $name = $name ?: $extracted['name'];
+            $email = $email ?: $extracted['email'];
+            $phone = $phone ?: $extracted['phone'];
+        }
 
         try {
             $row = DB::selectOne(
@@ -149,7 +192,7 @@ class FormPublicService
                 'status' => 201,
                 'body' => [
                     'success' => true,
-                    'message' => 'Resposta enviada com sucesso!',
+                    'message' => (string) ($formRow->success_message ?? 'Resposta enviada com sucesso!'),
                     'responseId' => $row->id ?? null,
                 ],
             ];
@@ -167,7 +210,7 @@ class FormPublicService
                     'status' => 201,
                     'body' => [
                         'success' => true,
-                        'message' => 'Resposta enviada com sucesso!',
+                        'message' => (string) ($formRow->success_message ?? 'Resposta enviada com sucesso!'),
                         'responseId' => $row->id ?? null,
                     ],
                 ];
@@ -177,6 +220,42 @@ class FormPublicService
                 return ['status' => 500, 'body' => ['success' => false, 'message' => 'Erro ao salvar resposta.']];
             }
         }
+    }
+
+    /**
+     * @param  list<array<string,mixed>>  $fields
+     * @param  array<string,mixed>  $responseData
+     * @return array{name:?string,email:?string,phone:?string}
+     */
+    private function extractContactFromResponses(array $fields, array $responseData): array
+    {
+        $name = null;
+        $email = null;
+        $phone = null;
+        foreach ($fields as $field) {
+            $fid = (string) ($field['id'] ?? '');
+            if ($fid === '' || !array_key_exists($fid, $responseData)) {
+                continue;
+            }
+            $raw = $responseData[$fid];
+            $val = is_array($raw) ? implode(', ', array_map('strval', $raw)) : trim((string) $raw);
+            if ($val === '') {
+                continue;
+            }
+            $type = strtolower((string) ($field['type'] ?? ''));
+            $label = strtolower((string) ($field['label'] ?? '').' '.$fid);
+            if (!$name && in_array($type, ['short_text', 'text'], true) && preg_match('/nome|name/', $label)) {
+                $name = $val;
+            }
+            if (!$email && ($type === 'email' || preg_match('/e-?mail/', $label))) {
+                $email = $val;
+            }
+            if (!$phone && (in_array($type, ['phone', 'tel'], true) || preg_match('/telefone|whats|celular|fone/', $label))) {
+                $phone = $val;
+            }
+        }
+
+        return ['name' => $name, 'email' => $email, 'phone' => $phone];
     }
 
     /**
@@ -202,6 +281,18 @@ class FormPublicService
             $fd['form_fields'] = [];
         }
         $slug = (string) ($item['profile_slug'] ?? '');
+        $fieldsMeta = [];
+        foreach ($fd['form_fields'] as $f) {
+            if (!is_array($f)) {
+                continue;
+            }
+            $fieldsMeta[] = [
+                'id' => (string) ($f['id'] ?? ''),
+                'type' => strtolower((string) ($f['type'] ?? 'short_text')),
+                'label' => (string) ($f['label'] ?? ''),
+                'required' => !empty($f['required']),
+            ];
+        }
 
         return [
             'status' => 200,
@@ -209,6 +300,7 @@ class FormPublicService
             'data' => [
                 'item' => $item,
                 'form' => $fd,
+                'fieldsMeta' => $fieldsMeta,
                 'slug' => $slug,
                 'itemId' => $itemId,
                 'submitUrl' => "/{$slug}/form/{$itemId}/submit",

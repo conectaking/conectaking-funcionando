@@ -60,11 +60,11 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
 | 4. Editor `/api/profile` | feito | CRUD + tipados + form extras |
 | 5. Uploads | feito (flag) | `/api/upload/*` + PDF |
-| 6. Satélites | feito (flag, canário) | form, bíblia hub+leitor+estudos+devocional+salmo+plano+biblia-inteira+prosperidade, loja |
-| 7. King Selection | fatia read-only | landing + `public/gallery` + share-meta (`LARAVEL_KS`) |
+| 6. Satélites | feito (flag, canário) | form rico, guest-list register, bíblia (+progress JWT), loja |
+| 7. King Selection | fatia pública | landing + gallery + share-meta + cover/og-image GD (`LARAVEL_KS`) |
 | 8. KS completo | depois | SPA cliente, uploads, watermark, seleção, vendas |
 
-**Ainda Node:** KS SPA cliente + mídia (cover/og-image Sharp/R2); TTS/progresso/IA-devocional; form EJS rico; admin prosperidade/IA.
+**Ainda Node:** KS SPA cliente + uploads/watermark/seleção/vendas/face; portaria/QR guest-list; customize guest-list (auth); TTS browser-only; IA-devocional; form modes WhatsApp/checkout/QR; admin prosperidade/IA; dashboard.
 
 King Selection flags:
 ```

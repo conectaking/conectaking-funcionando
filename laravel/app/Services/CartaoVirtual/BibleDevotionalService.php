@@ -169,6 +169,119 @@ class BibleDevotionalService
     }
 
     /**
+     * @return array{success:bool, day_of_year:int}
+     */
+    public function markRead(?string $userId, ?string $visitorId, mixed $dayOfYear, ?string $userNote = null, ?string $slug = null): array
+    {
+        $day = (int) $dayOfYear;
+        if ($day < 1 || $day > 365) {
+            throw new \InvalidArgumentException('day_of_year deve ser entre 1 e 365');
+        }
+        if (!$userId && !$visitorId) {
+            throw new \InvalidArgumentException('Informe user_id (logado) ou visitor_id');
+        }
+
+        if ($userId) {
+            $ex = DB::selectOne(
+                'SELECT id FROM bible_devotional_reads WHERE user_id = ? AND day_of_year = ?',
+                [$userId, $day]
+            );
+            if ($ex) {
+                DB::update(
+                    'UPDATE bible_devotional_reads SET read_at = NOW(), user_note = COALESCE(?, user_note)
+                     WHERE user_id = ? AND day_of_year = ?',
+                    [$userNote, $userId, $day]
+                );
+            } else {
+                DB::insert(
+                    'INSERT INTO bible_devotional_reads (user_id, day_of_year, user_note, slug) VALUES (?, ?, ?, ?)',
+                    [$userId, $day, $userNote, $slug]
+                );
+            }
+        } else {
+            $vid = substr((string) $visitorId, 0, 64);
+            if ($vid === '') {
+                throw new \InvalidArgumentException('visitor_id não pode ser vazio');
+            }
+            $ex = DB::selectOne(
+                'SELECT id FROM bible_devotional_reads WHERE visitor_id = ? AND day_of_year = ?',
+                [$vid, $day]
+            );
+            if ($ex) {
+                DB::update(
+                    'UPDATE bible_devotional_reads SET read_at = NOW(), user_note = COALESCE(?, user_note)
+                     WHERE visitor_id = ? AND day_of_year = ?',
+                    [$userNote, $vid, $day]
+                );
+            } else {
+                DB::insert(
+                    'INSERT INTO bible_devotional_reads (visitor_id, day_of_year, user_note, slug) VALUES (?, ?, ?, ?)',
+                    [$vid, $day, $userNote, $slug]
+                );
+            }
+        }
+
+        return ['success' => true, 'day_of_year' => $day];
+    }
+
+    /**
+     * @return list<array{day_of_year:int, read_at:mixed, user_note:?string}>
+     */
+    public function getReadStatus(?string $userId, ?string $visitorId, mixed $days = null): array
+    {
+        $dayList = [];
+        if ($days !== null && $days !== '') {
+            $dayList = array_values(array_unique(array_filter(
+                array_map(static fn ($d) => (int) trim((string) $d), explode(',', (string) $days)),
+                static fn ($d) => $d >= 1 && $d <= 365
+            )));
+        }
+
+        try {
+            if ($userId) {
+                if ($dayList !== []) {
+                    $ph = implode(',', array_fill(0, count($dayList), '?'));
+                    $rows = DB::select(
+                        "SELECT day_of_year, read_at, user_note FROM bible_devotional_reads
+                         WHERE user_id = ? AND day_of_year IN ({$ph})",
+                        array_merge([$userId], $dayList)
+                    );
+                } else {
+                    $rows = DB::select(
+                        'SELECT day_of_year, read_at, user_note FROM bible_devotional_reads WHERE user_id = ?',
+                        [$userId]
+                    );
+                }
+            } elseif ($visitorId) {
+                $vid = substr((string) $visitorId, 0, 64);
+                if ($dayList !== []) {
+                    $ph = implode(',', array_fill(0, count($dayList), '?'));
+                    $rows = DB::select(
+                        "SELECT day_of_year, read_at, user_note FROM bible_devotional_reads
+                         WHERE visitor_id = ? AND day_of_year IN ({$ph})",
+                        array_merge([$vid], $dayList)
+                    );
+                } else {
+                    $rows = DB::select(
+                        'SELECT day_of_year, read_at, user_note FROM bible_devotional_reads WHERE visitor_id = ?',
+                        [$vid]
+                    );
+                }
+            } else {
+                return [];
+            }
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_map(static fn ($r) => [
+            'day_of_year' => (int) $r->day_of_year,
+            'read_at' => $r->read_at,
+            'user_note' => $r->user_note !== null ? (string) $r->user_note : null,
+        ], $rows);
+    }
+
+    /**
      * @param  object  $row
      * @return array{
      *   day_of_year:int,

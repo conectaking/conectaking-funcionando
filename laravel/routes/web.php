@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\CartaoVirtual\AnalyticsLogController;
+use App\Http\Controllers\CartaoVirtual\BibleProgressController;
 use App\Http\Controllers\CartaoVirtual\BiblePublicController;
 use App\Http\Controllers\CartaoVirtual\CardPublicController;
+use App\Http\Controllers\CartaoVirtual\GuestListPublicController;
 use App\Http\Controllers\CartaoVirtual\PdfDownloadController;
 use App\Http\Controllers\CartaoVirtual\PixQrCodeController;
 use App\Http\Controllers\CartaoVirtual\ProfileEditorController;
@@ -56,6 +58,15 @@ Route::get('/l/api/bible/prosperidade/nearest-published/{n}', [BiblePublicContro
     ->where('n', '[0-9]+');
 Route::post('/l/api/bible/prosperidade/mark-read', [BiblePublicController::class, 'prosperidadeMarkRead']);
 Route::get('/l/api/bible/prosperidade/read-status', [BiblePublicController::class, 'prosperidadeReadStatus']);
+Route::post('/l/api/bible/devotional/mark-read', [BiblePublicController::class, 'devotionalMarkRead']);
+Route::get('/l/api/bible/devotional/read-status', [BiblePublicController::class, 'devotionalReadStatus']);
+Route::get('/l/api/bible/my-progress', [BibleProgressController::class, 'myProgress'])->middleware('jwt');
+Route::post('/l/api/bible/mark-read', [BibleProgressController::class, 'markRead'])->middleware('jwt');
+Route::post('/l/api/bible/reset-progress', [BibleProgressController::class, 'reset'])->middleware('jwt');
+Route::get('/l/guest-list/register/{token}', [GuestListPublicController::class, 'registerPage'])->where('token', $cardSlug);
+Route::post('/l/api/guest-lists/public/register/{token}', [GuestListPublicController::class, 'registerSubmit'])->where('token', $cardSlug);
+Route::get('/l/guest-list/confirm/{identifier}', [GuestListPublicController::class, 'confirmPage'])->where('identifier', $cardSlug);
+Route::post('/l/api/guest-lists/public/confirm/{token}', [GuestListPublicController::class, 'confirmSubmit'])->where('token', $cardSlug);
 Route::post('/l/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/l/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/l/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -117,6 +128,15 @@ Route::get('/api/bible/prosperidade/nearest-published/{n}', [BiblePublicControll
     ->where('n', '[0-9]+');
 Route::post('/api/bible/prosperidade/mark-read', [BiblePublicController::class, 'prosperidadeMarkRead']);
 Route::get('/api/bible/prosperidade/read-status', [BiblePublicController::class, 'prosperidadeReadStatus']);
+Route::post('/api/bible/devotional/mark-read', [BiblePublicController::class, 'devotionalMarkRead']);
+Route::get('/api/bible/devotional/read-status', [BiblePublicController::class, 'devotionalReadStatus']);
+Route::get('/api/bible/my-progress', [BibleProgressController::class, 'myProgress'])->middleware('jwt');
+Route::post('/api/bible/mark-read', [BibleProgressController::class, 'markRead'])->middleware('jwt');
+Route::post('/api/bible/reset-progress', [BibleProgressController::class, 'reset'])->middleware('jwt');
+Route::get('/guest-list/register/{token}', [GuestListPublicController::class, 'registerPage'])->where('token', $cardSlug);
+Route::post('/api/guest-lists/public/register/{token}', [GuestListPublicController::class, 'registerSubmit'])->where('token', $cardSlug);
+Route::get('/guest-list/confirm/{identifier}', [GuestListPublicController::class, 'confirmPage'])->where('identifier', $cardSlug);
+Route::post('/api/guest-lists/public/confirm/{token}', [GuestListPublicController::class, 'confirmSubmit'])->where('token', $cardSlug);
 Route::post('/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -218,6 +238,10 @@ Route::get('/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectio
     ->where('slug', $cardSlug);
 Route::get('/l/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectionPublicController::class, 'shareMeta'])
     ->where('slug', $cardSlug);
+Route::get('/api/king-selection/public/cover', [KingSelectionPublicController::class, 'cover']);
+Route::get('/l/api/king-selection/public/cover', [KingSelectionPublicController::class, 'cover']);
+Route::get('/api/king-selection/public/og-image', [KingSelectionPublicController::class, 'ogImage']);
+Route::get('/l/api/king-selection/public/og-image', [KingSelectionPublicController::class, 'ogImage']);
 
 Route::get('/l/loja/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);

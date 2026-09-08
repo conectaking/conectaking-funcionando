@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\CartaoVirtual;
 
 use App\Http\Controllers\Controller;
+use App\Services\CartaoVirtual\KingSelectionMediaService;
 use App\Services\CartaoVirtual\KingSelectionPublicService;
 use Illuminate\Http\Request;
 
 class KingSelectionPublicController extends Controller
 {
-    public function __construct(private readonly KingSelectionPublicService $ks)
-    {
+    public function __construct(
+        private readonly KingSelectionPublicService $ks,
+        private readonly KingSelectionMediaService $media,
+    ) {
     }
 
     public function gallery(Request $request)
@@ -45,6 +48,42 @@ class KingSelectionPublicController extends Controller
 
         return response()
             ->view('cartao.ks-public', $result['data'])
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function cover(Request $request)
+    {
+        $slug = trim((string) $request->query('slug', ''));
+        if ($slug === '') {
+            return response('slug é obrigatório', 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        $result = $this->media->coverJpeg($slug);
+        if (($result['status'] ?? 500) !== 200) {
+            return response($result['message'] ?? 'erro', $result['status'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response($result['binary'], 200)
+            ->header('Content-Type', $result['contentType'] ?? 'image/jpeg')
+            ->header('Cache-Control', 'public, max-age=900')
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function ogImage(Request $request)
+    {
+        $slug = trim((string) $request->query('slug', ''));
+        if ($slug === '') {
+            return response('slug é obrigatório', 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        $result = $this->media->ogImageJpeg($slug);
+        if (($result['status'] ?? 500) !== 200) {
+            return response($result['message'] ?? 'erro', $result['status'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response($result['binary'], 200)
+            ->header('Content-Type', $result['contentType'] ?? 'image/jpeg')
+            ->header('Cache-Control', 'public, max-age=900')
             ->header('X-Conecta-Engine', 'laravel');
     }
 }

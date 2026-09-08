@@ -95,6 +95,8 @@ class BibleSatelliteService
                 'prevUrl' => $prev ? '/'.$ctx['slug'].'/biblia/devocional/'.$prev : null,
                 'nextUrl' => $next ? '/'.$ctx['slug'].'/biblia/devocional/'.$next : null,
                 'todayUrl' => '/'.$ctx['slug'].'/biblia/devocional',
+                'markReadApi' => '/api/bible/devotional/mark-read',
+                'readStatusApi' => '/api/bible/devotional/read-status',
             ],
         ];
     }

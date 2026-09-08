@@ -29,6 +29,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'l/*/form/*/submit',
             'api/bible/prosperidade/mark-read',
             'l/api/bible/prosperidade/mark-read',
+            'api/bible/devotional/mark-read',
+            'l/api/bible/devotional/mark-read',
+            'api/bible/mark-read',
+            'l/api/bible/mark-read',
+            'api/bible/reset-progress',
+            'l/api/bible/reset-progress',
+            'api/guest-lists/public/register/*',
+            'l/api/guest-lists/public/register/*',
+            'api/guest-lists/public/confirm/*',
+            'l/api/guest-lists/public/confirm/*',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,

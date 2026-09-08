@@ -373,4 +373,80 @@ class BiblePublicController extends Controller
             'error' => null,
         ])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function devotionalMarkRead(Request $request)
+    {
+        $body = $request->all();
+        $visitorId = $body['visitor_id'] ?? $body['visitorId'] ?? $request->query('visitor_id');
+        $userId = $request->attributes->get('userId');
+        $dayOfYear = $body['day_of_year'] ?? $body['dayOfYear'] ?? $request->query('day_of_year');
+        $userNote = $body['user_note'] ?? $body['userNote'] ?? null;
+        $slug = $body['slug'] ?? $request->query('slug');
+        if (!$dayOfYear) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'day_of_year é obrigatório',
+                'error' => ['code' => 'ERROR', 'message' => 'day_of_year é obrigatório'],
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        if (!$userId && !$visitorId) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Faça login ou informe visitor_id (ex: localStorage)',
+                'error' => ['code' => 'ERROR', 'message' => 'Faça login ou informe visitor_id (ex: localStorage)'],
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        try {
+            $result = $this->devotionals->markRead(
+                is_string($userId) ? $userId : null,
+                is_string($visitorId) ? $visitorId : null,
+                $dayOfYear,
+                is_string($userNote) ? $userNote : null,
+                is_string($slug) ? $slug : null
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => $e->getMessage(),
+                'error' => ['code' => 'ERROR', 'message' => $e->getMessage()],
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+            'message' => 'Devocional marcado como lido.',
+            'error' => null,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function devotionalReadStatus(Request $request)
+    {
+        $userId = $request->attributes->get('userId');
+        $visitorId = $request->query('visitor_id')
+            ?? $request->input('visitor_id')
+            ?? $request->input('visitorId');
+        $days = $request->query('days') ?? $request->query('day_of_year');
+        if (!$userId && !$visitorId) {
+            return response()->json([
+                'success' => true,
+                'data' => ['read' => []],
+                'error' => null,
+            ])->header('X-Conecta-Engine', 'laravel');
+        }
+        $read = $this->devotionals->getReadStatus(
+            is_string($userId) ? $userId : null,
+            is_string($visitorId) ? $visitorId : null,
+            $days
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => ['read' => $read],
+            'error' => null,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
 }
