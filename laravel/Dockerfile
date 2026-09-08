@@ -2,6 +2,7 @@ FROM php:8.4-cli-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git unzip libpq-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+        poppler-utils tesseract-ocr tesseract-ocr-por \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_pgsql pgsql zip gd \
     && rm -rf /var/lib/apt/lists/*

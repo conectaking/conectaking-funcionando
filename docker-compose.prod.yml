@@ -51,6 +51,9 @@ services:
       LARAVEL_KS_SLUGS: "${LARAVEL_KS_SLUGS:-}"
       LARAVEL_HOST: laravel
       LARAVEL_PORT: "8080"
+      LARAVEL_DASHBOARD: "${LARAVEL_DASHBOARD:-true}"
+      LEGACY_PUBLIC_PATH: /legacy/public
+      LEGACY_PUBLIC_HTML_PATH: /legacy/public_html
     ports:
       - "127.0.0.1:5000:5000"
     volumes:
@@ -91,10 +94,20 @@ services:
       BIBLE_CUNHA_URL: ${BIBLE_CUNHA_URL:-}
       BIBLE_AI_URL: ${BIBLE_AI_URL:-}
       KS_UPLOADS_PATH: /shared/uploads
+      LEGACY_PUBLIC_PATH: /legacy/public
+      LEGACY_PUBLIC_HTML_PATH: /legacy/public_html
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@conectaking.com.br}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
       - api_uploads:/shared/uploads
+      - ./public:/legacy/public:ro
+      - ./public_html:/legacy/public_html:ro
     networks:
       - cknet
 

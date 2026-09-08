@@ -27,7 +27,7 @@ class KingSelectionAdminController extends Controller
     {
         $r = $this->admin->listGalleries(
             (string) $request->attributes->get('auth_user_id'),
-            $request->query('profileItemId')
+            $request->query('profileItemId') ?? $request->query('itemId') ?? $request->query('itemid')
         );
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');

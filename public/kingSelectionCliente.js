@@ -6,8 +6,14 @@
 
   const KS_FALLBACK_API_ORIGIN = 'https://www.conectaking.com.br';
 
-  /** Evita API_URL apontando para conectaking.com.br (img /api/... — 404 sem marca d\'água). */
+  /** API KS: mesma origem em produção; nunca Render (CORS). */
   function resolveKsApiBase() {
+    try {
+      const h = String(window.location.hostname || '').toLowerCase();
+      if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br' || h.endsWith('.conectaking.com.br')) {
+        return String(window.location.origin).replace(/\/$/, '');
+      }
+    } catch (_) { /* fallback abaixo */ }
     const fallback = KS_FALLBACK_API_ORIGIN;
     const tryList = [
       typeof window !== 'undefined' ? window.API_URL : '',
@@ -19,7 +25,7 @@
       if (!raw || !/^https?:\/\//i.test(raw)) continue;
       try {
         const h = new URL(raw).hostname.toLowerCase();
-        if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br') continue;
+        if (h.includes('onrender.com')) continue;
         return raw;
       } catch (_) { /* próximo */ }
     }
@@ -27,6 +33,7 @@
   }
 
   const API = resolveKsApiBase();
+  try { window.API_URL = API; window.API_BASE = API; } catch (_) {}
 
   /** Pedidos ao arranque: sem timeout o Safari/rede móvel pode ficar em "A carregar—" para sempre. */
   const KS_FETCH_BOOT_MS = 35000;

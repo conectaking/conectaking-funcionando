@@ -131,4 +131,15 @@ class GuestListAdminController extends Controller
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function exportPdf(Request $request, string $id)
+    {
+        $r = $this->admin->exportPdf(
+            (string) $request->attributes->get('auth_user_id'),
+            (int) $id,
+            $request->query()
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
 }

@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {}
         // Anti-cache: garante refresh da versão nova no browser normal
-        params.set('v', '2026-03-23-anticache-a1');
+        params.set('v', '2026-09-08-no-render');
         var q = '?' + params.toString();
         var h = (typeof window !== 'undefined' && window.location && window.location.hostname) ? String(window.location.hostname).toLowerCase() : '';
         // Live Server / dev sem Apache: não existe rewrite /kingSelection — usar o HTML direto

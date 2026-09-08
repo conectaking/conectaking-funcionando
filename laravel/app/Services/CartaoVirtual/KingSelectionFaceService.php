@@ -1756,6 +1756,426 @@ class KingSelectionFaceService
         return $json;
     }
 
+    /**
+     * Painel admin: GET /facial/status
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialStatus(string $userId, int $galleryId): array
+    {
+        if ($galleryId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId é obrigatório.']];
+        }
+        $g = DB::selectOne(
+            'SELECT g.id, g.nome_projeto FROM king_galleries g
+             JOIN profile_items pi ON pi.id = g.profile_item_id
+             WHERE g.id = ? AND pi.user_id = ? LIMIT 1',
+            [$galleryId, $userId]
+        );
+        if (! $g) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
+        }
+        $totalPhotos = (int) (DB::selectOne(
+            'SELECT COUNT(*)::int AS n FROM king_photos WHERE gallery_id = ?',
+            [$galleryId]
+        )->n ?? 0);
+        $processedPhotos = 0;
+        $errorPhotos = 0;
+        $pendingPhotos = 0;
+        $totalFaces = 0;
+        $enrolledClients = 0;
+        if (Schema::hasTable('rekognition_photo_jobs')) {
+            $processedPhotos = (int) (DB::selectOne(
+                "SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs WHERE gallery_id = ? AND process_status = 'done'",
+                [$galleryId]
+            )->n ?? 0);
+            $errorPhotos = (int) (DB::selectOne(
+                "SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs WHERE gallery_id = ? AND process_status = 'error'",
+                [$galleryId]
+            )->n ?? 0);
+            $pendingPhotos = (int) (DB::selectOne(
+                "SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs
+                 WHERE gallery_id = ? AND process_status IN ('pending','processing')",
+                [$galleryId]
+            )->n ?? 0);
+        }
+        if (Schema::hasTable('rekognition_photo_faces')) {
+            $totalFaces = (int) (DB::selectOne(
+                'SELECT COUNT(*)::int AS n FROM rekognition_photo_faces rpf
+                 JOIN king_photos kp ON kp.id = rpf.photo_id WHERE kp.gallery_id = ?',
+                [$galleryId]
+            )->n ?? 0);
+        }
+        if (Schema::hasTable('rekognition_client_faces')) {
+            $enrolledClients = (int) (DB::selectOne(
+                'SELECT COUNT(DISTINCT client_id)::int AS n FROM rekognition_client_faces WHERE gallery_id = ?',
+                [$galleryId]
+            )->n ?? 0);
+        }
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'galleryName' => (string) ($g->nome_projeto ?? ''),
+            'totalPhotos' => $totalPhotos,
+            'processedPhotos' => $processedPhotos,
+            'errorPhotos' => $errorPhotos,
+            'pendingPhotos' => $pendingPhotos,
+            'totalFaces' => $totalFaces,
+            'enrolledClients' => $enrolledClients,
+            'rekogOnDemand' => $this->isRekogOnDemand(),
+        ]];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialClients(string $userId, int $galleryId): array
+    {
+        if ($galleryId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId é obrigatório.']];
+        }
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
+        }
+        if (! Schema::hasTable('rekognition_client_faces')) {
+            return ['status' => 200, 'body' => ['success' => true, 'clients' => []]];
+        }
+        $hasMatches = Schema::hasTable('rekognition_face_matches') && Schema::hasTable('rekognition_photo_faces');
+        $matchSub = $hasMatches
+            ? '(SELECT COUNT(DISTINCT kp.id)::int
+                 FROM rekognition_face_matches rfm
+                 JOIN rekognition_photo_faces rpf ON rpf.id = rfm.photo_face_id
+                 JOIN king_photos kp ON kp.id = rpf.photo_id
+                 WHERE rfm.client_id = c.id AND kp.gallery_id = ?)'
+            : '0';
+        $params = $hasMatches ? [$galleryId, $galleryId, $galleryId] : [$galleryId, $galleryId];
+        $rows = DB::select(
+            "SELECT c.id AS \"clientId\", c.nome, c.email,
+                    COUNT(rcf.id)::int AS \"faceCount\",
+                    {$matchSub} AS \"matchCount\"
+             FROM king_gallery_clients c
+             JOIN rekognition_client_faces rcf ON rcf.client_id = c.id AND rcf.gallery_id = ?
+             WHERE c.gallery_id = ?
+             GROUP BY c.id, c.nome, c.email
+             ORDER BY c.nome",
+            $params
+        );
+        $clients = array_map(static function ($r) {
+            return [
+                'clientId' => (int) $r->clientId,
+                'nome' => $r->nome,
+                'email' => $r->email,
+                'faceCount' => (int) $r->faceCount,
+                'matchCount' => (int) $r->matchCount,
+            ];
+        }, $rows);
+
+        return ['status' => 200, 'body' => ['success' => true, 'clients' => $clients]];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialJobs(string $userId, int $galleryId, int $limit = 50): array
+    {
+        if ($galleryId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId é obrigatório.']];
+        }
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
+        }
+        $limit = min(200, max(1, $limit));
+        if (! Schema::hasTable('rekognition_photo_jobs')) {
+            return ['status' => 200, 'body' => ['success' => true, 'jobs' => []]];
+        }
+        $faceCountSel = Schema::hasTable('rekognition_photo_faces')
+            ? '(SELECT COUNT(*)::int FROM rekognition_photo_faces WHERE photo_id = rpj.photo_id)'
+            : '0';
+        $rows = DB::select(
+            "SELECT rpj.photo_id AS \"photoId\", kp.original_name AS \"photoName\",
+                    rpj.process_status AS status, rpj.processed_at AS \"processedAt\",
+                    rpj.error_message AS \"errorMessage\",
+                    {$faceCountSel} AS \"faceCount\"
+             FROM rekognition_photo_jobs rpj
+             JOIN king_photos kp ON kp.id = rpj.photo_id
+             WHERE rpj.gallery_id = ?
+             ORDER BY rpj.processed_at DESC NULLS LAST, rpj.photo_id DESC
+             LIMIT ?",
+            [$galleryId, $limit]
+        );
+        $jobs = array_map(static function ($r) {
+            return [
+                'photoId' => (int) $r->photoId,
+                'photoName' => $r->photoName,
+                'status' => $r->status,
+                'processedAt' => $r->processedAt,
+                'errorMessage' => $r->errorMessage,
+                'faceCount' => (int) $r->faceCount,
+            ];
+        }, $rows);
+
+        return ['status' => 200, 'body' => ['success' => true, 'jobs' => $jobs]];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialMatches(string $userId, int $galleryId, int $clientId): array
+    {
+        if ($galleryId < 1 || $clientId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId e clientId são obrigatórios.']];
+        }
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
+        }
+        if (! Schema::hasTable('rekognition_face_matches') || ! Schema::hasTable('rekognition_photo_faces')) {
+            return ['status' => 200, 'body' => ['success' => true, 'matches' => []]];
+        }
+        $rows = DB::select(
+            'SELECT kp.id AS "photoId", kp.original_name AS "photoName",
+                    MAX(rfm.similarity) AS similarity
+             FROM king_photos kp
+             JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+             JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+             WHERE kp.gallery_id = ? AND rfm.client_id = ?
+             GROUP BY kp.id, kp.original_name
+             ORDER BY similarity DESC, kp.id',
+            [$galleryId, $clientId]
+        );
+        $matches = array_map(static function ($r) {
+            return [
+                'photoId' => (int) $r->photoId,
+                'photoName' => $r->photoName,
+                'similarity' => $r->similarity !== null ? (float) $r->similarity : null,
+            ];
+        }, $rows);
+
+        return ['status' => 200, 'body' => ['success' => true, 'matches' => $matches]];
+    }
+
+    /**
+     * POST /facial/process — reutiliza processAllFaces (background após resposta).
+     *
+     * @param  array<string,mixed>  $body
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialProcess(string $userId, int $galleryId, array $body = []): array
+    {
+        if ($galleryId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId é obrigatório.']];
+        }
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
+        }
+        $cfg = $this->rekogConfig();
+        if (! $cfg['enabled']) {
+            return ['status' => 503, 'body' => [
+                'message' => 'Reconhecimento facial não configurado. Verifique as variáveis de ambiente AWS e S3 staging.',
+            ]];
+        }
+        if (! Schema::hasTable('rekognition_photo_jobs')) {
+            return ['status' => 503, 'body' => [
+                'message' => 'Tabelas de reconhecimento facial não encontradas. Execute as migrations.',
+            ]];
+        }
+        $queued = (int) (DB::selectOne(
+            "SELECT COUNT(*)::int AS n FROM king_photos kp
+             WHERE kp.gallery_id = ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM rekognition_photo_jobs rpj
+                 WHERE rpj.gallery_id = ? AND rpj.photo_id = kp.id
+                   AND rpj.process_status IN ('done', 'processing')
+               )",
+            [$galleryId, $galleryId]
+        )->n ?? 0);
+        if ($queued === 0) {
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'queued' => 0,
+                'message' => 'Todas as fotos já foram processadas.',
+            ]];
+        }
+        $r = $this->processAllFaces($userId, $galleryId, $body);
+
+        return [
+            'status' => $r['status'],
+            'body' => array_merge($r['body'], [
+                'queued' => $queued,
+                'message' => $r['body']['message'] ?? "{$queued} foto(s) enviadas para processamento. Acompanhe o progresso no painel.",
+            ]),
+        ];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialProgress(string $userId, int $galleryId): array
+    {
+        if ($galleryId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId é obrigatório.']];
+        }
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
+        }
+        $total = (int) (DB::selectOne(
+            'SELECT COUNT(*)::int AS n FROM king_photos WHERE gallery_id = ?',
+            [$galleryId]
+        )->n ?? 0);
+        $done = 0;
+        $processing = 0;
+        $pending = 0;
+        $error = 0;
+        if (Schema::hasTable('rekognition_photo_jobs')) {
+            $rows = DB::select(
+                'SELECT process_status, COUNT(*)::int AS cnt FROM rekognition_photo_jobs WHERE gallery_id = ? GROUP BY process_status',
+                [$galleryId]
+            );
+            foreach ($rows as $r) {
+                $s = (string) ($r->process_status ?? '');
+                if ($s === 'done') {
+                    $done = (int) $r->cnt;
+                } elseif ($s === 'processing') {
+                    $processing = (int) $r->cnt;
+                } elseif ($s === 'pending') {
+                    $pending = (int) $r->cnt;
+                } elseif ($s === 'error') {
+                    $error = (int) $r->cnt;
+                }
+            }
+        }
+        $isRunning = $processing > 0 || $pending > 0;
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'total' => $total,
+            'done' => $done,
+            'processing' => $processing,
+            'pending' => $pending,
+            'error' => $error,
+            'isRunning' => $isRunning,
+            'pct' => $total > 0 ? (int) round(($done / $total) * 100) : 0,
+        ]];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialDeleteClientFaces(string $userId, int $galleryId, int $clientId): array
+    {
+        if ($galleryId < 1 || $clientId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId e clientId são obrigatórios.']];
+        }
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
+        }
+        if (Schema::hasTable('rekognition_face_matches')) {
+            DB::delete('DELETE FROM rekognition_face_matches WHERE client_id = ?', [$clientId]);
+        }
+        $deleted = 0;
+        if (Schema::hasTable('rekognition_client_faces')) {
+            $deleted = DB::delete(
+                'DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?',
+                [$galleryId, $clientId]
+            );
+        }
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'deleted' => $deleted,
+            'message' => "{$deleted} rosto(s) removido(s).",
+        ]];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function facialDiagnose(string $userId, ?int $galleryId = null): array
+    {
+        // Auth já validado pelo middleware JWT; userId só para exigir sessão.
+        if ($userId === '') {
+            return ['status' => 401, 'body' => ['message' => 'Não autenticado.']];
+        }
+        $colExists = Schema::hasColumn('king_galleries', 'face_recognition_enabled');
+        $tables = ['rekognition_client_faces', 'rekognition_photo_jobs', 'rekognition_photo_faces', 'rekognition_face_matches'];
+        $tableStatus = [];
+        foreach ($tables as $t) {
+            $tableStatus[$t] = Schema::hasTable($t);
+        }
+        $cfg = $this->rekogConfig();
+        $env = [
+            'AWS_ACCESS_KEY_ID' => trim((string) (env('AWS_ACCESS_KEY_ID') ?: '')) !== '',
+            'AWS_SECRET_ACCESS_KEY' => trim((string) (env('AWS_SECRET_ACCESS_KEY') ?: '')) !== '',
+            'AWS_REGION' => trim((string) (env('AWS_REGION') ?: '')) ?: '(não definido)',
+            'S3_STAGING_BUCKET' => trim((string) (env('S3_STAGING_BUCKET') ?: '')) ?: '(não definido)',
+            'REKOGNITION_COLLECTION_ID' => $cfg['collectionId'] ?: '(não definido)',
+        ];
+        $galleryFaceEnabled = null;
+        if ($galleryId && $galleryId > 0 && $colExists) {
+            $r = DB::selectOne('SELECT face_recognition_enabled FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
+            $galleryFaceEnabled = $r->face_recognition_enabled ?? null;
+        }
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'migration182' => $colExists
+                ? '✅ Coluna face_recognition_enabled EXISTS'
+                : '❌ Coluna face_recognition_enabled NÃO EXISTE — migration 182 não rodou',
+            'tables' => $tableStatus,
+            'env' => $env,
+            'galleryId' => $galleryId ?: null,
+            'galleryFaceEnabled' => $galleryFaceEnabled !== null ? $galleryFaceEnabled : '(não verificado)',
+            'rekogEnabled' => $cfg['enabled'],
+            'rekogOnDemand' => $this->isRekogOnDemand(),
+        ]];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function awsCheck(): array
+    {
+        $cfg = $this->rekogConfig();
+        $bucket = trim((string) (env('S3_STAGING_BUCKET') ?: env('AWS_S3_STAGING_BUCKET') ?: ''));
+        $region = $cfg['region'];
+
+        return ['status' => 200, 'body' => [
+            's3' => [
+                'enabled' => $bucket !== '' && $cfg['enabled'],
+                'bucket' => $bucket !== '' ? $bucket : null,
+                'region' => $region,
+            ],
+            'rekog' => [
+                'enabled' => $cfg['enabled'],
+                'collectionId' => $cfg['collectionId'],
+                'region' => $region,
+            ],
+        ]];
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function awsPing(): array
+    {
+        $cfg = $this->rekogConfig();
+        $bucket = trim((string) (env('S3_STAGING_BUCKET') ?: env('AWS_S3_STAGING_BUCKET') ?: ''));
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            's3' => $bucket !== '' && $cfg['enabled'],
+            'rekog' => $cfg['enabled'],
+            'bucket' => $bucket !== '' ? '***'.substr($bucket, -4) : null,
+            'collection' => $cfg['collectionId'],
+        ]];
+    }
+
+    private function isRekogOnDemand(): bool
+    {
+        $v = strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: '')));
+
+        return $v === 'true' || $v === '1';
+    }
+
     private function ownedGallery(string $userId, int $galleryId): bool
     {
         return (bool) DB::selectOne(

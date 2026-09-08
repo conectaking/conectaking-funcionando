@@ -274,4 +274,136 @@ class FinanceController extends Controller
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function profileById(Request $request, string $id)
+    {
+        $r = $this->finance->profileById((string) $request->attributes->get('auth_user_id'), (int) $id);
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function budgets(Request $request)
+    {
+        $month = $request->query('month');
+        $year = $request->query('year');
+        $r = $this->finance->budgets(
+            (string) $request->attributes->get('auth_user_id'),
+            ($month !== null && $month !== '') ? (int) $month : null,
+            ($year !== null && $year !== '') ? (int) $year : null
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function createBudget(Request $request)
+    {
+        $r = $this->finance->createBudget((string) $request->attributes->get('auth_user_id'), $request->all());
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function reportSummary(Request $request)
+    {
+        $pid = $request->query('profile_id');
+        $r = $this->finance->reportSummary(
+            (string) $request->attributes->get('auth_user_id'),
+            $request->query('dateFrom') ? (string) $request->query('dateFrom') : null,
+            $request->query('dateTo') ? (string) $request->query('dateTo') : null,
+            ($pid !== null && $pid !== '' && $pid !== 'undefined') ? (int) $pid : null
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function reportCategories(Request $request)
+    {
+        $r = $this->finance->reportCategories(
+            (string) $request->attributes->get('auth_user_id'),
+            $request->query('dateFrom') ? (string) $request->query('dateFrom') : null,
+            $request->query('dateTo') ? (string) $request->query('dateTo') : null,
+            $request->query('type') ? (string) $request->query('type') : null
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function transfer(Request $request)
+    {
+        $r = $this->finance->transfer((string) $request->attributes->get('auth_user_id'), $request->all());
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function uploadAttachment(Request $request)
+    {
+        $file = $request->file('file');
+        $url = null;
+        if ($file) {
+            $name = 'finance_'.time().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+            $destDir = public_path('uploads/finance');
+            if (! is_dir($destDir)) {
+                @mkdir($destDir, 0775, true);
+            }
+            $file->move($destDir, $name);
+            $url = '/uploads/finance/'.$name;
+        }
+        $r = $this->finance->uploadAttachment($url);
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function serasaImportPreview(Request $request)
+    {
+        $file = $request->file('file');
+        if (! $file) {
+            return response()->json([
+                'success' => false, 'data' => null, 'error' => 'Envie um arquivo PDF.', 'message' => 'Envie um arquivo PDF.',
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        $tmp = sys_get_temp_dir().'/serasa-pdf-'.uniqid('', true).'.pdf';
+        try {
+            file_put_contents($tmp, file_get_contents($file->getRealPath() ?: $file->getPathname()));
+            $r = $this->finance->serasaImportPreview($tmp);
+        } finally {
+            @unlink($tmp);
+        }
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function serasaImportImagePreview(Request $request)
+    {
+        $files = $request->file('files') ?: [];
+        if ($request->file('file')) {
+            $files = array_merge(is_array($files) ? $files : [], [$request->file('file')]);
+        }
+        if (! is_array($files)) {
+            $files = [$files];
+        }
+        $files = array_values(array_filter($files));
+        if (! $files) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'error' => 'Envie uma ou mais imagens (JPEG/PNG) da tela Detalhes da dívida.',
+                'message' => 'Envie uma ou mais imagens (JPEG/PNG) da tela Detalhes da dívida.',
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+        $paths = [];
+        try {
+            foreach ($files as $f) {
+                $ext = str_contains((string) $f->getMimeType(), 'png') ? '.png' : '.jpg';
+                $p = sys_get_temp_dir().'/serasa-ocr-'.uniqid('', true).$ext;
+                file_put_contents($p, file_get_contents($f->getRealPath() ?: $f->getPathname()));
+                $paths[] = $p;
+            }
+            $r = $this->finance->serasaImportImagePreview($paths);
+        } finally {
+            foreach ($paths as $p) {
+                @unlink($p);
+            }
+        }
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
 }

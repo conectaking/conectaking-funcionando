@@ -148,6 +148,52 @@ class GuestListAdminService
      * @param  array<string,mixed>  $query
      * @return array{status:int, body:mixed}
      */
+    /**
+     * Exportação "PDF" — paridade com Node: JSON com convidados (PDF real nunca foi implementado).
+     *
+     * @param  array<string,mixed>  $query
+     * @return array{status:int, body:mixed}
+     */
+    public function exportPdf(string $userId, int $listId, array $query = []): array
+    {
+        if ($listId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'ID da lista inválido']];
+        }
+        $owned = $this->resolveOwned($userId, $listId, false);
+        if ($owned === null) {
+            return ['status' => 404, 'body' => ['message' => 'Lista não encontrada']];
+        }
+        $gliId = (int) $owned['guest_list_item_id'];
+        $meta = DB::selectOne(
+            'SELECT gli.event_title, pi.title
+             FROM guest_list_items gli
+             INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+             WHERE gli.id = ? LIMIT 1',
+            [$gliId]
+        );
+        $eventTitle = (string) (($meta->event_title ?? null) ?: ($meta->title ?? 'Lista de Convidados'));
+
+        $sql = 'SELECT * FROM guests WHERE guest_list_id = ?';
+        $params = [$gliId];
+        $status = isset($query['status']) ? trim((string) $query['status']) : '';
+        if ($status !== '') {
+            $sql .= ' AND status = ?';
+            $params[] = $status;
+        }
+        $sql .= ' ORDER BY name ASC';
+        $guests = array_map(static fn ($r) => (array) $r, DB::select($sql, $params));
+
+        return [
+            'status' => 200,
+            'body' => [
+                'success' => true,
+                'event_title' => $eventTitle,
+                'total' => count($guests),
+                'guests' => $guests,
+            ],
+        ];
+    }
+
     public function guests(string $userId, int $listId, array $query = []): array
     {
         if ($listId < 1) {

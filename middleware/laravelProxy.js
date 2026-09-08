@@ -575,6 +575,21 @@ function isLaravelKsPath(reqMethod, urlPath) {
     if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/public\/enroll-face-anonymous$/i.test(pathOnly)) {
         return force || LARAVEL_KS;
     }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/aws-ping$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/aws-check$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/facial\/(status|clients|jobs|matches|progress|diagnose)$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/facial\/process$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/king-selection\/facial\/clients\/\d+\/faces$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
     if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/config-finalizacao\/\d+$/i.test(pathOnly)) {
         return force || LARAVEL_KS;
     }
@@ -607,6 +622,12 @@ function isLaravelDashboardPath(reqMethod, urlPath) {
     if (method === 'POST' && /^\/(?:l\/)?api\/auth\/(login|refresh|logout)$/i.test(pathOnly)) {
         return true;
     }
+    if (method === 'POST' && /^\/(?:l\/)?api\/password\/(forgot|reset)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?(health|api\/health)$/i.test(pathOnly)) {
+        return true;
+    }
     if (method === 'GET' && /^\/(?:l\/)?api\/modules\/(available|plan-availability)$/i.test(pathOnly)) {
         return true;
     }
@@ -619,13 +640,13 @@ function isLaravelDashboardPath(reqMethod, urlPath) {
     if (method === 'GET' && /^\/(?:l\/)?api\/business\/team$/i.test(pathOnly)) {
         return true;
     }
-    if (method === 'GET' && /^\/(?:l\/)?api\/finance\/(profiles(?:\/(primary|limit))?|dashboard|income-breakdown|cards|transactions(?:\/\d+)?|king-data|categories|accounts|goals|upgrade-plans|whatsapp-config|zerar-senha-status|admin\/clientes-senhas)$/i.test(pathOnly)) {
+    if (method === 'GET' && /^\/(?:l\/)?api\/finance\/(profiles(?:\/(primary|limit|\d+))?|dashboard|income-breakdown|cards|transactions(?:\/\d+)?|king-data|categories|accounts|goals|upgrade-plans|whatsapp-config|zerar-senha-status|admin\/clientes-senhas|budgets|reports\/(summary|categories))$/i.test(pathOnly)) {
         return true;
     }
     if (method === 'PUT' && /^\/(?:l\/)?api\/finance\/(king-data|whatsapp-config|zerar-senha)$/i.test(pathOnly)) {
         return true;
     }
-    if (method === 'POST' && /^\/(?:l\/)?api\/finance\/(transactions|cards|categories|accounts|goals|profiles|zerar-senha\/verify|zerar-mes)$/i.test(pathOnly)) {
+    if (method === 'POST' && /^\/(?:l\/)?api\/finance\/(transactions|cards|categories|accounts|goals|profiles|budgets|transfer|upload|zerar-senha\/verify|zerar-mes|serasa\/import-preview|serasa\/import-image-preview)$/i.test(pathOnly)) {
         return true;
     }
     if (method === 'PUT' && /^\/(?:l\/)?api\/finance\/(transactions|profiles)\/\d+$/i.test(pathOnly)) {
@@ -638,6 +659,13 @@ function isLaravelDashboardPath(reqMethod, urlPath) {
         return true;
     }
     if (method === 'GET' && /^\/(?:l\/)?(login|login\.html|dashboard|dashboard\.html)\/?$/i.test(pathOnly)) {
+        return true;
+    }
+    // Páginas HTML/JS legadas (edge Laravel)
+    if (method === 'GET' && /^\/(?:l\/)?(kingSelection(?:Edit|Project|Cliente|Gallery|Review|Success)?|registro|recuperar-senha|resetar-senha|conta|formPageEdit|salesPageEdit|guestListEdit(?:Manage)?|kingDocs(?:Share)?|kingForms|bible|bibliaking|documentos-(?:preview|ver)|orcamentos|recibos-orcamentos|checkoutConfig|termos|privacidade|admin-planos|admin-devocionais-365|admin-prosperidade-31|responsesList|conviteEdit|zerar-mes|arquetipo-resultados|config\.js)(?:\.html)?\/?$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /\.(js|css|map|png|jpe?g|webp|svg|woff2?|ttf|ico|json)$/i.test(pathOnly)) {
         return true;
     }
     return false;
@@ -654,11 +682,12 @@ function isLaravelGuestListPath(reqMethod, urlPath) {
         && (method === 'GET' || method === 'PUT')) {
         return force || LARAVEL_SATELLITES || LARAVEL_PROFILE_API;
     }
-    // Admin guest-lists (read + write; PDF export permanece no Node)
+    // Admin guest-lists (read + write + export/pdf JSON)
+    if (/^\/(?:l\/)?api\/guest-lists\/\d+\/export\/pdf$/i.test(pathOnly) && method === 'GET') {
+        return force || LARAVEL_SATELLITES || LARAVEL_PROFILE_API;
+    }
     if (/^\/(?:l\/)?api\/guest-lists(?:\/\d+(?:\/(guests(?:\/\d+(?:\/generate-qr)?)?|stats|generate-all-qr-codes|reset-tokens))?)?$/i.test(pathOnly)) {
         if (method === 'GET' || method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
-            // export/pdf fica no Node
-            if (/\/export\/pdf$/i.test(pathOnly)) return false;
             return force || LARAVEL_SATELLITES || LARAVEL_PROFILE_API;
         }
     }

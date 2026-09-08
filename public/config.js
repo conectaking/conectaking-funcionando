@@ -1,9 +1,34 @@
 ﻿// Configuracao da API (auto: producao por padrao) — VPS Hetzner, sem Render
 (function () {
+    function isRenderHost(hostname) {
+        return /\.onrender\.com$/i.test(String(hostname || '')) || String(hostname || '').toLowerCase() === 'onrender.com';
+    }
+
+    function sanitizeApiBase(url) {
+        try {
+            const raw = String(url || '').trim().replace(/\/$/, '');
+            if (!raw || !/^https?:\/\//i.test(raw)) return '';
+            const h = new URL(raw).hostname.toLowerCase();
+            if (isRenderHost(h)) return '';
+            return raw;
+        } catch (e) {
+            return '';
+        }
+    }
+
+    // Limpa restos de API no Render guardados no browser (causa CORS no KS).
+    try {
+        ['apiBase', 'API_BASE', 'API_URL', 'conecta_api_origin'].forEach(function (k) {
+            var v = localStorage.getItem(k);
+            if (v && /onrender\.com/i.test(v)) localStorage.removeItem(k);
+        });
+    } catch (e) {}
+
     // Producao: mesma origem no dominio; fallback www.
     const PROD_BASE_URL = (function () {
         try {
             const host = String(location.hostname || '').toLowerCase();
+            if (isRenderHost(host)) return 'https://www.conectaking.com.br';
             if (host === 'conectaking.com.br' || host === 'www.conectaking.com.br' || host.endsWith('.conectaking.com.br') || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) {
                 return String(location.origin).replace(/\/$/, '');
             }
@@ -83,14 +108,21 @@
         },
         get baseURL() {
             const mode = this.mode;
-            return (this[mode] && this[mode].baseURL) ? this[mode].baseURL : PROD_BASE_URL;
+            const raw = (this[mode] && this[mode].baseURL) ? this[mode].baseURL : PROD_BASE_URL;
+            return sanitizeApiBase(raw) || PROD_BASE_URL;
         }
     };
 
     if (typeof window !== 'undefined') {
         window.API_CONFIG = API_CONFIG;
-        window.API_BASE = window.API_BASE || API_CONFIG.baseURL;
-        window.API_URL = window.API_URL || API_CONFIG.baseURL;
+        var resolvedBase = sanitizeApiBase(window.API_BASE) || sanitizeApiBase(window.API_URL) || API_CONFIG.baseURL;
+        // Em dominio ConectaKing, forçar mesma origem (ignora localStorage/API antiga do Render).
+        if (isSelfHostedApi() && !isLocalHost(String(location.hostname || ''))) {
+            resolvedBase = String(location.origin).replace(/\/$/, '');
+        }
+        window.API_BASE = resolvedBase;
+        window.API_URL = resolvedBase;
+        try { localStorage.setItem('apiBase', resolvedBase); } catch (e) {}
         window.KS_WORKER_URL = window.KS_WORKER_URL || KS_WORKER_PROD_URL;
 
         if (!window.__CK_FETCH_FALLBACK_INSTALLED__) {
@@ -99,11 +131,24 @@
             var apiBase = String(window.API_URL || '').replace(/\/$/, '');
             var sameOriginBase = String(window.location && window.location.origin ? window.location.origin : '').replace(/\/$/, '');
 
-            function shouldRetryWithSameOrigin(absUrl) {
-                if (!apiBase || !sameOriginBase || apiBase === sameOriginBase) return false;
+            function shouldRewriteToSameOrigin(absUrl) {
+                if (!sameOriginBase) return false;
                 if (typeof absUrl !== 'string' || !absUrl) return false;
+                // Sempre redirecionar Render → mesma origem
+                if (/conectaking-api\.onrender\.com/i.test(absUrl) && absUrl.indexOf('/api/') !== -1) return true;
+                if (!apiBase || apiBase === sameOriginBase) return false;
                 if (absUrl.indexOf(apiBase + '/api/') !== 0) return false;
                 return true;
+            }
+
+            function rewriteToSameOrigin(absUrl) {
+                try {
+                    var u = new URL(absUrl);
+                    if (/conectaking-api\.onrender\.com/i.test(u.hostname) || (apiBase && absUrl.indexOf(apiBase) === 0)) {
+                        return sameOriginBase + u.pathname + u.search + u.hash;
+                    }
+                } catch (e) {}
+                return absUrl.replace(apiBase, sameOriginBase);
             }
 
             function toAbsoluteUrl(input) {
@@ -122,12 +167,22 @@
             if (nativeFetch) {
                 window.fetch = function (input, init) {
                     var abs = toAbsoluteUrl(input);
-                    if (!shouldRetryWithSameOrigin(abs)) {
-                        return nativeFetch(input, init);
+                    if (shouldRewriteToSameOrigin(abs)) {
+                        var rewritten = rewriteToSameOrigin(abs);
+                        if (rewritten && rewritten !== abs) {
+                            if (typeof input === 'string') {
+                                return nativeFetch(rewritten, init);
+                            }
+                            if (typeof Request !== 'undefined' && input instanceof Request) {
+                                return nativeFetch(new Request(rewritten, input), init);
+                            }
+                            return nativeFetch(rewritten, init);
+                        }
                     }
                     return nativeFetch(input, init).catch(function (err) {
                         if (!isNetworkLikeError(err)) throw err;
-                        var fallbackUrl = abs.replace(apiBase, sameOriginBase);
+                        if (!shouldRewriteToSameOrigin(abs)) throw err;
+                        var fallbackUrl = rewriteToSameOrigin(abs);
                         if (typeof input === 'string') {
                             return nativeFetch(fallbackUrl, init);
                         }

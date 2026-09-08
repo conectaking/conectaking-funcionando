@@ -671,9 +671,14 @@ function getInjectedKingSelectionPhotographerHtml() {
     }
     let html = fs.readFileSync(filePath, 'utf8');
     const jsVer = resolveKingSelectionJsVersion('kingSelectionEdit.js');
+    const configVer = '2026-09-08-no-render';
     html = html.replace(
         /\/kingSelectionEdit\.js(\?v=[^"']*)?/g,
         `/kingSelectionEdit.js?v=${jsVer}`
+    );
+    html = html.replace(
+        /\/config\.js(\?v=[^"']*)?/g,
+        `/config.js?v=${configVer}`
     );
     _ksPhotographerHtmlCache = { filePath, mtimeMs: st.mtimeMs, html };
     return html;

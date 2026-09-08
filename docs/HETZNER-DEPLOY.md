@@ -64,22 +64,22 @@ Flags atuais (canário): cartão/`adrianokingg`, profile, upload, satélites, KS
 | KS payment-proof (GET admin + POST cliente) + volume uploads compartilhado | Laravel |
 | KS worker-token + gallery reset-password | Laravel |
 | KS face (admin process/status/results/detail, auto-separate, client face-results/cache/reset/search, public my-photos/enroll-anonymous) | Laravel |
+| KS facial panel (`/facial/*` status/clients/jobs/matches/process/progress/delete/diagnose) + aws-check/aws-ping | Laravel |
 | KS config-finalizacao (HTML Blade) + thank-you-image | Laravel |
 | KS pastas avançadas / AI / zip / process-all-faces | Laravel (process-all-faces + auto-separate + zip já no PHP) |
 | Dashboard boot | auth login/refresh/logout + modules + analytics + branding + finance boot + login/dashboard shell (`LARAVEL_DASHBOARD=true`) |
 | Finance CRUD (transactions/cards/categories/accounts/goals/profiles + income-breakdown) | Laravel |
 | Finance extras (upgrade-plans, whatsapp-config, zerar-senha/verify/put, zerar-mes, admin clientes-senhas) | Laravel |
-| Guest-list admin (CRUD listas/convidados + QR + reset-tokens + team GET) | Laravel (export PDF ainda Node) |
+| Finance leftovers (budgets, reports, transfer, upload, profile by id, Serasa PDF/OCR) | Laravel (`pdftotext` + `tesseract`) |
+| Guest-list admin (CRUD listas/convidados + QR + reset-tokens + team GET + export/pdf) | Laravel (export/pdf = JSON paridade Node) |
 
 ## O que ainda falta (código Node → PHP)
 
 | Prioridade | Item | Notas |
 |---|---|---|
-| Média | Finance Serasa OCR (import-preview PDF/imagens) + budgets/reports/transfer/upload | CRUD + zerar/whatsapp já Laravel |
-| Baixa | Guest-list export PDF | admin raramente usado |
+| Baixa | KS CompareFaces chunked (`face-results?chunked=1` com REKOG_ON_DEMAND=1) | opcional; prod está com ON_DEMAND=0 |
 | Removido do roadmap | Checkout / PagBank | **Não será usado** — não migrar |
 | N/A | TTS | Browser-only |
-| Baixa | KS diag stubs (`aws-ping`, etc.) | opcional / pouco valor |
 
 ## Ops (já OK neste VPS)
 
@@ -106,7 +106,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-rec
 | 8. KS completo | depois | select, uploads, watermark, vendas, face |
 | 9. Dashboard | parcial | `account/status`; HTML/finance ainda Node |
 
-**Ainda Node (KS):** poucos leftovers (ex. CompareFaces chunked on-demand completo, diag aws-*). Núcleo face/jobs/zip/AI/pastas já Laravel. **Finance CRUD extras** ainda parciais. **PagBank/checkout:** não entra no roadmap.
+**Ainda Node (residual):** ver lista completa em [`docs/FULL-PHP-MIGRATION.md`](FULL-PHP-MIGRATION.md). Meta: Caddy → Laravel e desligar container `api`.
 
 Devocional 365 público: Laravel serve `/api/bible/devotionals-365/{day}` com temas + enriquecimento IA opcional (`OPENAI_API_KEY` / `ai=0` / `plain=1`).
 

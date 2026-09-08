@@ -1446,6 +1446,274 @@ class FinanceService
         return $this->ok(array_map(static fn ($r) => (array) $r, $rows));
     }
 
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function profileById(string $userId, int $id): array
+    {
+        $row = DB::selectOne(
+            'SELECT * FROM finance_profiles WHERE id = ? AND user_id = ? AND is_active = TRUE LIMIT 1',
+            [$id, $userId]
+        );
+        if (! $row) {
+            return $this->fail('Perfil não encontrado', 404);
+        }
+
+        return $this->ok($row);
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function budgets(string $userId, ?int $month, ?int $year): array
+    {
+        if (! Schema::hasTable('finance_budgets')) {
+            return $this->ok([]);
+        }
+        $sql = 'SELECT * FROM finance_budgets WHERE user_id = ?';
+        $params = [$userId];
+        if ($month && $year) {
+            $sql .= ' AND month = ? AND year = ?';
+            $params[] = $month;
+            $params[] = $year;
+        }
+        $sql .= ' ORDER BY year DESC, month DESC';
+
+        return $this->ok(array_map(static fn ($r) => (array) $r, DB::select($sql, $params)));
+    }
+
+    /**
+     * @param  array<string,mixed>  $body
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function createBudget(string $userId, array $body): array
+    {
+        if (! Schema::hasTable('finance_budgets')) {
+            return $this->fail('Tabela de orçamentos indisponível', 503);
+        }
+        $categoryId = isset($body['category_id']) ? (int) $body['category_id'] : 0;
+        $month = isset($body['month']) ? (int) $body['month'] : 0;
+        $year = isset($body['year']) ? (int) $body['year'] : 0;
+        $limit = isset($body['limit_amount']) ? (float) $body['limit_amount'] : 0;
+        if ($categoryId < 1) {
+            return $this->fail('category_id é obrigatório', 400);
+        }
+        if ($month < 1 || $month > 12) {
+            return $this->fail('month deve ser um número entre 1 e 12', 400);
+        }
+        if ($year < 2020 || $year > 2100) {
+            return $this->fail('year deve ser um ano válido', 400);
+        }
+        if ($limit <= 0) {
+            return $this->fail('limit_amount deve ser um número positivo', 400);
+        }
+        $consider = ! empty($body['consider_pending']);
+        $row = DB::selectOne(
+            'INSERT INTO finance_budgets (user_id, category_id, month, year, limit_amount, consider_pending)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT (user_id, category_id, month, year)
+             DO UPDATE SET limit_amount = EXCLUDED.limit_amount, consider_pending = EXCLUDED.consider_pending, updated_at = NOW()
+             RETURNING *',
+            [$userId, $categoryId, $month, $year, $limit, $consider]
+        );
+
+        return $this->ok($row, 'Orçamento criado com sucesso', 201);
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function reportSummary(string $userId, ?string $dateFrom, ?string $dateTo, ?int $profileId): array
+    {
+        $y = (int) date('Y');
+        $from = $dateFrom ?: "{$y}-01-01";
+        $to = $dateTo ?: "{$y}-12-31";
+
+        return $this->dashboard($userId, $from, $to, $profileId);
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function reportCategories(string $userId, ?string $dateFrom, ?string $dateTo, ?string $type): array
+    {
+        $y = (int) date('Y');
+        $from = $dateFrom ?: "{$y}-01-01";
+        $to = $dateTo ?: "{$y}-12-31";
+        $sql = "SELECT category_id, amount FROM finance_transactions
+                WHERE user_id = ? AND status = 'PAID'
+                  AND transaction_date >= ?::date AND transaction_date <= ?::date";
+        $params = [$userId, $from, $to];
+        if ($type) {
+            $sql .= ' AND type = ?';
+            $params[] = strtoupper($type);
+        }
+        $sql .= ' LIMIT 10000';
+        $rows = DB::select($sql, $params);
+        $map = [];
+        foreach ($rows as $t) {
+            $catId = $t->category_id ?? 'sem_categoria';
+            $key = (string) $catId;
+            if (! isset($map[$key])) {
+                $map[$key] = [
+                    'category_id' => $t->category_id,
+                    'category_name' => $t->category_id ? 'Categoria' : 'Sem categoria',
+                    'total' => 0.0,
+                    'count' => 0,
+                ];
+            }
+            $map[$key]['total'] += (float) $t->amount;
+            $map[$key]['count'] += 1;
+        }
+
+        return $this->ok(array_values($map));
+    }
+
+    /**
+     * @param  array<string,mixed>  $body
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function transfer(string $userId, array $body): array
+    {
+        $from = isset($body['from_account_id']) ? (int) $body['from_account_id'] : 0;
+        $to = isset($body['to_account_id']) ? (int) $body['to_account_id'] : 0;
+        $amount = isset($body['amount']) ? (float) $body['amount'] : 0;
+        $date = (string) ($body['transaction_date'] ?? '');
+        if ($from < 1 || $to < 1) {
+            return $this->fail('from_account_id e to_account_id são obrigatórios', 400);
+        }
+        if ($from === $to) {
+            return $this->fail('from_account_id e to_account_id devem ser diferentes', 400);
+        }
+        if ($amount <= 0) {
+            return $this->fail('amount deve ser um número positivo', 400);
+        }
+        if ($date === '') {
+            return $this->fail('transaction_date é obrigatório', 400);
+        }
+        $fromAcc = DB::selectOne('SELECT id FROM finance_accounts WHERE id = ? AND user_id = ? LIMIT 1', [$from, $userId]);
+        $toAcc = DB::selectOne('SELECT id FROM finance_accounts WHERE id = ? AND user_id = ? LIMIT 1', [$to, $userId]);
+        if (! $fromAcc || ! $toAcc) {
+            return $this->fail('Conta não encontrada', 400);
+        }
+        try {
+            $fromTx = null;
+            $toTx = null;
+            DB::transaction(function () use ($userId, $from, $to, $amount, $date, &$fromTx, &$toTx) {
+                $fromTx = $this->insertTransaction($userId, [
+                    'type' => 'EXPENSE',
+                    'amount' => $amount,
+                    'description' => "Transferência para {$to}",
+                    'transaction_date' => $date,
+                    'account_id' => $from,
+                    'status' => 'PAID',
+                ]);
+                $toTx = $this->insertTransaction($userId, [
+                    'type' => 'INCOME',
+                    'amount' => $amount,
+                    'description' => "Transferência de {$from}",
+                    'transaction_date' => $date,
+                    'account_id' => $to,
+                    'status' => 'PAID',
+                ]);
+            });
+            $this->recalcAccountBalance($from, $userId);
+            $this->recalcAccountBalance($to, $userId);
+
+            return $this->ok([
+                'fromTransaction' => $fromTx,
+                'toTransaction' => $toTx,
+            ], 'Transferência realizada com sucesso', 201);
+        } catch (\Throwable $e) {
+            Log::error('finance.transfer', ['error' => $e->getMessage()]);
+
+            return $this->fail($e->getMessage() ?: 'Erro ao transferir', 400);
+        }
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function uploadAttachment(?string $storedRelativeUrl): array
+    {
+        return $this->ok(['url' => $storedRelativeUrl], 'Anexo enviado com sucesso', 201);
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function serasaImportPreview(string $pdfPath): array
+    {
+        try {
+            $text = $this->extractPdfText($pdfPath);
+            $offers = SerasaPdfParser::parseSerasaOfertas($text);
+
+            return $this->ok(['offers' => $offers]);
+        } catch (\Throwable $e) {
+            Log::error('finance.serasa.pdf', ['error' => $e->getMessage()]);
+
+            return $this->fail($e->getMessage() ?: 'Não foi possível ler o PDF. Verifique se o arquivo é um relatório do Serasa.', 500);
+        }
+    }
+
+    /**
+     * @param  list<string>  $imagePaths
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function serasaImportImagePreview(array $imagePaths): array
+    {
+        try {
+            $ocrTexts = [];
+            foreach ($imagePaths as $path) {
+                $t = $this->ocrImage($path);
+                if ($t !== '') {
+                    $ocrTexts[] = $t;
+                }
+            }
+            $offers = SerasaImageParser::parseDetalhesDividaFromMultipleTexts($ocrTexts);
+
+            return $this->ok(['offers' => $offers, 'source' => 'image']);
+        } catch (\Throwable $e) {
+            Log::error('finance.serasa.ocr', ['error' => $e->getMessage()]);
+
+            return $this->fail($e->getMessage() ?: 'Não foi possível ler as imagens. Envie prints da tela "Detalhes da dívida".', 500);
+        }
+    }
+
+    private function extractPdfText(string $path): string
+    {
+        if (! is_file($path)) {
+            throw new \RuntimeException('Arquivo PDF inválido.');
+        }
+        $bin = trim((string) shell_exec('command -v pdftotext 2>/dev/null'));
+        if ($bin === '') {
+            throw new \RuntimeException('pdftotext não disponível no servidor.');
+        }
+        $cmd = escapeshellarg($bin).' -layout '.escapeshellarg($path).' -';
+        $out = shell_exec($cmd);
+        if ($out === null || trim($out) === '') {
+            // alguns PDFs sem camada de texto
+            return '';
+        }
+
+        return (string) $out;
+    }
+
+    private function ocrImage(string $path): string
+    {
+        if (! is_file($path)) {
+            return '';
+        }
+        $bin = trim((string) shell_exec('command -v tesseract 2>/dev/null'));
+        if ($bin === '') {
+            throw new \RuntimeException('tesseract não disponível no servidor.');
+        }
+        $cmd = escapeshellarg($bin).' '.escapeshellarg($path).' stdout -l por 2>/dev/null';
+        $out = shell_exec($cmd);
+
+        return trim((string) ($out ?? ''));
+    }
+
     private function isAdmin(string $userId): bool
     {
         $user = DB::selectOne('SELECT is_admin FROM users WHERE id = ? LIMIT 1', [$userId]);

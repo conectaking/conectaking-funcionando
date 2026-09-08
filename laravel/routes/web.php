@@ -33,6 +33,18 @@ Route::get('/up', function () {
     return response('ok', 200)->header('Content-Type', 'text/plain');
 });
 
+Route::get('/health', [\App\Http\Controllers\FrontLegacyController::class, 'health']);
+Route::get('/api/health', [\App\Http\Controllers\FrontLegacyController::class, 'health']);
+
+Route::post('/api/password/forgot', [\App\Http\Controllers\Auth\PasswordController::class, 'forgot'])
+    ->middleware('throttle:10,1');
+Route::post('/l/api/password/forgot', [\App\Http\Controllers\Auth\PasswordController::class, 'forgot'])
+    ->middleware('throttle:10,1');
+Route::post('/api/password/reset', [\App\Http\Controllers\Auth\PasswordController::class, 'reset'])
+    ->middleware('throttle:10,1');
+Route::post('/l/api/password/reset', [\App\Http\Controllers\Auth\PasswordController::class, 'reset'])
+    ->middleware('throttle:10,1');
+
 $cardSlug = '[A-Za-z0-9._-]+';
 $userId = '[A-Za-z0-9_-]+';
 
@@ -276,6 +288,8 @@ Route::middleware('jwt')->group(function () {
 
     Route::get('/api/guest-lists/{id}/stats', [GuestListAdminController::class, 'stats'])->where('id', '[0-9]+');
     Route::get('/l/api/guest-lists/{id}/stats', [GuestListAdminController::class, 'stats'])->where('id', '[0-9]+');
+    Route::get('/api/guest-lists/{id}/export/pdf', [GuestListAdminController::class, 'exportPdf'])->where('id', '[0-9]+');
+    Route::get('/l/api/guest-lists/{id}/export/pdf', [GuestListAdminController::class, 'exportPdf'])->where('id', '[0-9]+');
     Route::post('/api/guest-lists/{id}/generate-all-qr-codes', [GuestListAdminController::class, 'generateAllQr'])->where('id', '[0-9]+');
     Route::post('/l/api/guest-lists/{id}/generate-all-qr-codes', [GuestListAdminController::class, 'generateAllQr'])->where('id', '[0-9]+');
     Route::put('/api/guest-lists/{id}/reset-tokens', [GuestListAdminController::class, 'resetTokens'])->where('id', '[0-9]+');
@@ -393,6 +407,8 @@ Route::post('/api/king-selection/public/enroll-face-anonymous', [KingSelectionPu
     ->middleware('throttle:20,1');
 Route::post('/l/api/king-selection/public/enroll-face-anonymous', [KingSelectionPublicController::class, 'enrollFaceAnonymous'])
     ->middleware('throttle:20,1');
+Route::get('/api/king-selection/public/aws-ping', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsPing']);
+Route::get('/l/api/king-selection/public/aws-ping', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsPing']);
 
 Route::post('/api/king-selection/client/login', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'login']);
 Route::post('/l/api/king-selection/client/login', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'login']);
@@ -848,6 +864,31 @@ Route::middleware('jwt')->group(function () {
     Route::post('/l/api/king-selection/galleries/{galleryId}/process-all-faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'processAllFaces'])
         ->where('galleryId', '[0-9]+')
         ->middleware('throttle:5,1');
+
+    // Painel facial + diag AWS
+    Route::get('/api/king-selection/facial/status', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'status']);
+    Route::get('/l/api/king-selection/facial/status', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'status']);
+    Route::get('/api/king-selection/facial/clients', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'clients']);
+    Route::get('/l/api/king-selection/facial/clients', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'clients']);
+    Route::get('/api/king-selection/facial/jobs', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'jobs']);
+    Route::get('/l/api/king-selection/facial/jobs', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'jobs']);
+    Route::get('/api/king-selection/facial/matches', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'matches']);
+    Route::get('/l/api/king-selection/facial/matches', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'matches']);
+    Route::post('/api/king-selection/facial/process', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'process'])
+        ->middleware('throttle:5,1');
+    Route::post('/l/api/king-selection/facial/process', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'process'])
+        ->middleware('throttle:5,1');
+    Route::get('/api/king-selection/facial/progress', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'progress']);
+    Route::get('/l/api/king-selection/facial/progress', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'progress']);
+    Route::delete('/api/king-selection/facial/clients/{clientId}/faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'deleteClientFaces'])
+        ->where('clientId', '[0-9]+');
+    Route::delete('/l/api/king-selection/facial/clients/{clientId}/faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'deleteClientFaces'])
+        ->where('clientId', '[0-9]+');
+    Route::get('/api/king-selection/facial/diagnose', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'diagnose']);
+    Route::get('/l/api/king-selection/facial/diagnose', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'diagnose']);
+    Route::get('/api/king-selection/aws-check', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsCheck']);
+    Route::get('/l/api/king-selection/aws-check', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsCheck']);
+
     Route::get('/api/king-selection/config-finalizacao/{galleryId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'configFinalizacao'])
         ->where('galleryId', '[0-9]+');
     Route::get('/l/api/king-selection/config-finalizacao/{galleryId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'configFinalizacao'])
@@ -1000,6 +1041,29 @@ Route::middleware(['jwt', 'module:finance'])->group(function () {
     Route::post('/l/api/finance/zerar-mes', [\App\Http\Controllers\Finance\FinanceController::class, 'zerarMes']);
     Route::get('/api/finance/admin/clientes-senhas', [\App\Http\Controllers\Finance\FinanceController::class, 'adminClientesSenhas']);
     Route::get('/l/api/finance/admin/clientes-senhas', [\App\Http\Controllers\Finance\FinanceController::class, 'adminClientesSenhas']);
+
+    Route::get('/api/finance/profiles/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'profileById'])->whereNumber('id');
+    Route::get('/l/api/finance/profiles/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'profileById'])->whereNumber('id');
+
+    Route::get('/api/finance/budgets', [\App\Http\Controllers\Finance\FinanceController::class, 'budgets']);
+    Route::get('/l/api/finance/budgets', [\App\Http\Controllers\Finance\FinanceController::class, 'budgets']);
+    Route::post('/api/finance/budgets', [\App\Http\Controllers\Finance\FinanceController::class, 'createBudget']);
+    Route::post('/l/api/finance/budgets', [\App\Http\Controllers\Finance\FinanceController::class, 'createBudget']);
+
+    Route::get('/api/finance/reports/summary', [\App\Http\Controllers\Finance\FinanceController::class, 'reportSummary']);
+    Route::get('/l/api/finance/reports/summary', [\App\Http\Controllers\Finance\FinanceController::class, 'reportSummary']);
+    Route::get('/api/finance/reports/categories', [\App\Http\Controllers\Finance\FinanceController::class, 'reportCategories']);
+    Route::get('/l/api/finance/reports/categories', [\App\Http\Controllers\Finance\FinanceController::class, 'reportCategories']);
+
+    Route::post('/api/finance/transfer', [\App\Http\Controllers\Finance\FinanceController::class, 'transfer']);
+    Route::post('/l/api/finance/transfer', [\App\Http\Controllers\Finance\FinanceController::class, 'transfer']);
+    Route::post('/api/finance/upload', [\App\Http\Controllers\Finance\FinanceController::class, 'uploadAttachment']);
+    Route::post('/l/api/finance/upload', [\App\Http\Controllers\Finance\FinanceController::class, 'uploadAttachment']);
+
+    Route::post('/api/finance/serasa/import-preview', [\App\Http\Controllers\Finance\FinanceController::class, 'serasaImportPreview']);
+    Route::post('/l/api/finance/serasa/import-preview', [\App\Http\Controllers\Finance\FinanceController::class, 'serasaImportPreview']);
+    Route::post('/api/finance/serasa/import-image-preview', [\App\Http\Controllers\Finance\FinanceController::class, 'serasaImportImagePreview']);
+    Route::post('/l/api/finance/serasa/import-image-preview', [\App\Http\Controllers\Finance\FinanceController::class, 'serasaImportImagePreview']);
 });
 
 Route::middleware('admin')->group(function () {
@@ -1023,5 +1087,31 @@ Route::get('/dashboard.html', [\App\Http\Controllers\DashboardShellController::c
 Route::get('/l/dashboard', [\App\Http\Controllers\DashboardShellController::class, 'dashboard']);
 Route::get('/l/dashboard.html', [\App\Http\Controllers\DashboardShellController::class, 'dashboard']);
 
+
+// Front legado (HTML/JS) — até Blade full; necessário para desligar Node
+$legacyPages = [
+    'kingSelection', 'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
+    'kingSelectionGallery', 'kingSelectionReview', 'kingSelectionSuccess',
+    'registro', 'recuperar-senha', 'resetar-senha', 'conta', 'index',
+    'formPageEdit', 'salesPageEdit', 'guestListEdit', 'guestListEditManage',
+    'kingDocs', 'kingDocsShare', 'kingForms', 'bible', 'bibliaking',
+    'documentos-preview', 'documentos-ver', 'orcamentos', 'recibos-orcamentos',
+    'checkoutConfig', 'termos', 'privacidade', 'admin-planos',
+    'admin-devocionais-365', 'admin-prosperidade-31', 'responsesList', 'conviteEdit',
+    'zerar-mes', 'arquetipo-resultados',
+];
+foreach ($legacyPages as $pageName) {
+    Route::get('/'.$pageName, function () use ($pageName) {
+        return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), $pageName);
+    });
+    Route::get('/'.$pageName.'.html', function () use ($pageName) {
+        return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), $pageName.'.html');
+    });
+}
+Route::get('/config.js', function () {
+    return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), 'config.js');
+});
+Route::get('/{asset}', [\App\Http\Controllers\FrontLegacyController::class, 'page'])
+    ->where('asset', '.*\\.(js|css|map|png|jpg|jpeg|webp|svg|woff2?|ttf|ico|json)$');
 Route::get('/l/loja/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
