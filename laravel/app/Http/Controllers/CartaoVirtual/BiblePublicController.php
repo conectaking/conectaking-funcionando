@@ -4,6 +4,7 @@ namespace App\Http\Controllers\CartaoVirtual;
 
 use App\Http\Controllers\Controller;
 use App\Services\CartaoVirtual\BibleDevotionalService;
+use App\Services\CartaoVirtual\BibleSalmoService;
 use App\Services\CartaoVirtual\BibleStudyService;
 use App\Services\CartaoVirtual\BibleTextService;
 use App\Services\CartaoVirtual\VerseOfDayService;
@@ -16,6 +17,7 @@ class BiblePublicController extends Controller
         private readonly BibleTextService $text,
         private readonly BibleStudyService $studies,
         private readonly BibleDevotionalService $devotionals,
+        private readonly BibleSalmoService $salmos,
     ) {
     }
 
@@ -148,6 +150,23 @@ class BiblePublicController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Dia do plano não encontrado',
+            ], 404)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function salmoDoDia(Request $request)
+    {
+        $date = $request->query('date');
+        $data = $this->salmos->get(is_string($date) ? $date : null);
+        if (!$data || empty($data['texto'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Salmo não encontrado',
             ], 404)->header('X-Conecta-Engine', 'laravel');
         }
 

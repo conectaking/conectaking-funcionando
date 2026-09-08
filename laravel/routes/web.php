@@ -41,6 +41,7 @@ Route::get('/l/api/bible/study/books', [BiblePublicController::class, 'studyBook
 Route::get('/l/api/bible/study/book/{bookId}', [BiblePublicController::class, 'studyBook'])
     ->where('bookId', '[A-Za-z0-9_-]+');
 Route::get('/l/api/bible/devocional-do-dia', [BiblePublicController::class, 'devocionalDoDia']);
+Route::get('/l/api/bible/salmo-do-dia', [BiblePublicController::class, 'salmoDoDia']);
 Route::get('/l/api/bible/devotionals-365/{day}', [BiblePublicController::class, 'devotionals365'])
     ->where('day', '[0-9]+');
 Route::get('/l/api/bible/reading-plan/day/{day}', [BiblePublicController::class, 'readingPlanDay'])
@@ -92,6 +93,7 @@ Route::get('/api/bible/study/books', [BiblePublicController::class, 'studyBooks'
 Route::get('/api/bible/study/book/{bookId}', [BiblePublicController::class, 'studyBook'])
     ->where('bookId', '[A-Za-z0-9_-]+');
 Route::get('/api/bible/devocional-do-dia', [BiblePublicController::class, 'devocionalDoDia']);
+Route::get('/api/bible/salmo-do-dia', [BiblePublicController::class, 'salmoDoDia']);
 Route::get('/api/bible/devotionals-365/{day}', [BiblePublicController::class, 'devotionals365'])
     ->where('day', '[0-9]+');
 Route::get('/api/bible/reading-plan/day/{day}', [BiblePublicController::class, 'readingPlanDay'])
@@ -164,6 +166,12 @@ Route::get('/l/{slug}/biblia/estudos-livro/{bookId}', [SatellitePublicController
 Route::get('/{slug}/biblia/devocional/{day?}', [SatellitePublicController::class, 'bibleDevotional'])
     ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
 Route::get('/l/{slug}/biblia/devocional/{day?}', [SatellitePublicController::class, 'bibleDevotional'])
+    ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
+Route::get('/{slug}/biblia/salmo', [SatellitePublicController::class, 'bibleSalmo'])->where('slug', $cardSlug);
+Route::get('/l/{slug}/biblia/salmo', [SatellitePublicController::class, 'bibleSalmo'])->where('slug', $cardSlug);
+Route::get('/{slug}/biblia/plano/{day?}', [SatellitePublicController::class, 'biblePlan'])
+    ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
+Route::get('/l/{slug}/biblia/plano/{day?}', [SatellitePublicController::class, 'biblePlan'])
     ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
 Route::get('/{slug}/bible', [SatellitePublicController::class, 'bibleRedirect'])->where('slug', $cardSlug);
 Route::get('/l/{slug}/bible', [SatellitePublicController::class, 'bibleRedirect'])->where('slug', $cardSlug);

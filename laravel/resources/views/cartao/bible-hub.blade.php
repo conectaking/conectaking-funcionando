@@ -33,9 +33,26 @@
         </div>
     @endif
 
-    <p class="nav" style="margin-top:20px">
-        <a href="{{ $devotionalUrl ?? ('/'.$slug.'/biblia/devocional') }}">Devocional do dia ({{ $devotionalDay ?? '' }})</a>
+    <p class="nav" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:14px">
+        <a href="{{ $devotionalUrl ?? ('/'.$slug.'/biblia/devocional') }}">Devocional ({{ $devotionalDay ?? '' }})</a>
+        <a href="{{ $salmoUrl ?? ('/'.$slug.'/biblia/salmo') }}">Salmo do dia</a>
+        <a href="{{ $planUrl ?? ('/'.$slug.'/biblia/plano') }}">Plano de leitura</a>
     </p>
+    @if(!empty($salmo['texto']))
+        <div class="verse" style="margin-top:8px">
+            <div style="font-family:system-ui,sans-serif;font-size:.8rem;color:#FFC700;margin-bottom:8px">Salmo do dia</div>
+            @if(!empty($salmo['ref']))<div class="ref">{{ $salmo['ref'] }}</div>@endif
+            <div style="font-size:1rem">{{ $salmo['texto'] }}</div>
+            <p class="nav" style="margin-top:12px;margin-bottom:0"><a href="{{ $salmoUrl }}">Abrir →</a></p>
+        </div>
+    @endif
+    @if(!empty($plan['summary']) || !empty($plan['book_id']))
+        <div class="verse" style="margin-top:12px">
+            <div style="font-family:system-ui,sans-serif;font-size:.8rem;color:#FFC700;margin-bottom:8px">Plano · dia {{ $devotionalDay ?? '' }}</div>
+            <div style="font-weight:600">{{ $plan['summary'] ?? ($plan['book_id'].' '.$plan['chapter_from']) }}</div>
+            <p class="nav" style="margin-top:12px;margin-bottom:0"><a href="{{ $planUrl }}">Abrir plano →</a></p>
+        </div>
+    @endif
     @if(!empty($devotionalToday['titulo']) || !empty($devotionalToday['reflexao']))
         <div class="verse" style="margin-top:8px">
             <div style="font-family:system-ui,sans-serif;font-size:.8rem;color:#FFC700;margin-bottom:8px">Devocional 365</div>

@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Log;
  */
 class BibleDevotionalService
 {
+    public function __construct(private readonly BibleTextService $text)
+    {
+    }
+
     /**
      * @return array{
      *   day_of_year:int,
@@ -127,25 +131,38 @@ class BibleDevotionalService
         }
 
         $dev = $this->getByDay($day);
-        if (!$plan && !$dev) {
+        $fallback = null;
+        if (!$plan) {
+            $fallback = $this->text->readingPlanDayFallback($day);
+        }
+
+        if (!$plan && !$fallback && !$dev) {
             return null;
         }
 
-        $out = $plan ? [
-            'day_number' => (int) $plan->day_number,
-            'book_id' => (string) ($plan->book_id ?? ''),
-            'chapter_from' => isset($plan->chapter_from) ? (int) $plan->chapter_from : null,
-            'chapter_to' => isset($plan->chapter_to) ? (int) $plan->chapter_to : null,
-            'verse_count' => isset($plan->verse_count) ? (int) $plan->verse_count : null,
-            'summary' => isset($plan->summary) ? (string) $plan->summary : null,
-        ] : [
-            'day_number' => $day,
-            'book_id' => null,
-            'chapter_from' => null,
-            'chapter_to' => null,
-            'verse_count' => null,
-            'summary' => null,
-        ];
+        if ($plan) {
+            $out = [
+                'day_number' => (int) $plan->day_number,
+                'book_id' => (string) ($plan->book_id ?? ''),
+                'chapter_from' => isset($plan->chapter_from) ? (int) $plan->chapter_from : null,
+                'chapter_to' => isset($plan->chapter_to) ? (int) $plan->chapter_to : null,
+                'verse_count' => isset($plan->verse_count) ? (int) $plan->verse_count : null,
+                'summary' => isset($plan->summary) ? (string) $plan->summary : null,
+                'source' => 'db',
+            ];
+        } elseif ($fallback) {
+            $out = array_merge($fallback, ['source' => 'fallback']);
+        } else {
+            $out = [
+                'day_number' => $day,
+                'book_id' => null,
+                'chapter_from' => null,
+                'chapter_to' => null,
+                'verse_count' => null,
+                'summary' => null,
+                'source' => 'devotional-only',
+            ];
+        }
         $out['devocional'] = $dev;
 
         return $out;

@@ -10,6 +10,7 @@ class BibleSatelliteService
         private readonly BibleTextService $text,
         private readonly BibleStudyService $studies,
         private readonly BibleDevotionalService $devotionals,
+        private readonly BibleSalmoService $salmos,
     ) {
     }
 
@@ -29,6 +30,8 @@ class BibleSatelliteService
         $withStudy = array_fill_keys($this->studies->bookIdsWithFullStudy(), true);
         $todayDay = $this->devotionals->dayOfYear(null);
         $devToday = $this->devotionals->getByDay($todayDay);
+        $salmo = $this->salmos->get(null);
+        $plan = $this->devotionals->readingPlanDay($todayDay);
 
         return [
             'status' => 200,
@@ -44,6 +47,10 @@ class BibleSatelliteService
                 'devotionalToday' => $devToday,
                 'devotionalUrl' => '/'.$ctx['slug'].'/biblia/devocional',
                 'devotionalDay' => $todayDay,
+                'salmo' => $salmo,
+                'salmoUrl' => '/'.$ctx['slug'].'/biblia/salmo',
+                'plan' => $plan,
+                'planUrl' => '/'.$ctx['slug'].'/biblia/plano',
             ],
         ];
     }
@@ -163,6 +170,76 @@ class BibleSatelliteService
                 'readUrl' => '/'.$ctx['slug'].'/bible/'.$bookId.'/1',
                 'study' => $study,
                 'contentHtml' => $contentHtml,
+            ],
+        ];
+    }
+
+    /**
+     * @return array{status:int, data?:array<string,mixed>, message?:string}
+     */
+    public function salmo(string $slug): array
+    {
+        $ctx = $this->context($slug);
+        if ($ctx === null) {
+            return ['status' => 404, 'message' => 'Bíblia não encontrada.'];
+        }
+        $salmo = $this->salmos->get(null);
+        $readUrl = null;
+        if ($salmo && !empty($salmo['capitulo'])) {
+            $readUrl = '/'.$ctx['slug'].'/bible/ps/'.$salmo['capitulo']
+                .(!empty($salmo['versiculo']) ? '#v'.$salmo['versiculo'] : '');
+        }
+
+        return [
+            'status' => 200,
+            'data' => [
+                'slug' => $ctx['slug'],
+                'hubUrl' => '/'.$ctx['slug'].'/biblia',
+                'profileUrl' => '/'.$ctx['slug'],
+                'salmo' => $salmo,
+                'readUrl' => $readUrl,
+            ],
+        ];
+    }
+
+    /**
+     * @return array{status:int, data?:array<string,mixed>, message?:string}
+     */
+    public function readingPlan(string $slug, ?string $dayParam = null): array
+    {
+        $ctx = $this->context($slug);
+        if ($ctx === null) {
+            return ['status' => 404, 'message' => 'Bíblia não encontrada.'];
+        }
+        if ($dayParam !== null && $dayParam !== '') {
+            if (!ctype_digit($dayParam) || (int) $dayParam < 1 || (int) $dayParam > 365) {
+                return ['status' => 400, 'message' => 'Dia deve ser entre 1 e 365.'];
+            }
+            $day = (int) $dayParam;
+        } else {
+            $day = $this->devotionals->dayOfYear(null);
+        }
+        $plan = $this->devotionals->readingPlanDay($day);
+        $prev = $day > 1 ? $day - 1 : null;
+        $next = $day < 365 ? $day + 1 : null;
+        $readUrl = null;
+        if ($plan && !empty($plan['book_id']) && !empty($plan['chapter_from'])) {
+            $readUrl = '/'.$ctx['slug'].'/bible/'.$plan['book_id'].'/'.$plan['chapter_from'];
+        }
+
+        return [
+            'status' => 200,
+            'data' => [
+                'slug' => $ctx['slug'],
+                'hubUrl' => '/'.$ctx['slug'].'/biblia',
+                'profileUrl' => '/'.$ctx['slug'],
+                'day' => $day,
+                'plan' => $plan,
+                'readUrl' => $readUrl,
+                'devotionalUrl' => '/'.$ctx['slug'].'/biblia/devocional/'.$day,
+                'prevUrl' => $prev ? '/'.$ctx['slug'].'/biblia/plano/'.$prev : null,
+                'nextUrl' => $next ? '/'.$ctx['slug'].'/biblia/plano/'.$next : null,
+                'todayUrl' => '/'.$ctx['slug'].'/biblia/plano',
             ],
         ];
     }

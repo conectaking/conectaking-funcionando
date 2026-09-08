@@ -59,6 +59,7 @@ function isLaravelCardApiPath(urlPath) {
         /^\/api\/bible\/study\/books$/i,
         /^\/api\/bible\/study\/book\/[^/]+$/i,
         /^\/api\/bible\/devocional-do-dia$/i,
+        /^\/api\/bible\/salmo-do-dia$/i,
         /^\/api\/bible\/reading-plan\/day\/\d+$/i,
         /^\/l\/api\/pix\/qrcode\/\d+$/i,
         /^\/l\/api\/bible\/verse-of-day$/i,
@@ -67,6 +68,7 @@ function isLaravelCardApiPath(urlPath) {
         /^\/l\/api\/bible\/study\/books$/i,
         /^\/l\/api\/bible\/study\/book\/[^/]+$/i,
         /^\/l\/api\/bible\/devocional-do-dia$/i,
+        /^\/l\/api\/bible\/salmo-do-dia$/i,
         /^\/l\/api\/bible\/devotionals-365\/\d+$/i,
         /^\/l\/api\/bible\/reading-plan\/day\/\d+$/i,
         /^\/log\/view\/[^/]+$/i,
@@ -158,6 +160,18 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
     if (bibleDev && method === 'GET') {
         if (!force && !LARAVEL_SATELLITES) return false;
         return force || slugAllowedForSatellite(bibleDev[1]);
+    }
+
+    const bibleSalmo = pathOnly.match(/^\/(?:l\/)?([^/]+)\/biblia\/salmo\/?$/i);
+    if (bibleSalmo && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bibleSalmo[1]);
+    }
+
+    const biblePlan = pathOnly.match(/^\/(?:l\/)?([^/]+)\/biblia\/plano(?:\/(\d+))?\/?$/i);
+    if (biblePlan && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(biblePlan[1]);
     }
 
     const bibleStudyLegacy = pathOnly.match(/^\/([^/]+)\/bible\/estudo-livro\/([^/]+)\/?$/i);

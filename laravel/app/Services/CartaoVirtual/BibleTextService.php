@@ -98,6 +98,69 @@ class BibleTextService
     }
 
     /**
+     * Sequência linear de todos os capítulos (AT+NT) para plano 365.
+     *
+     * @return list<array{bookId:string,bookName:string,chapter:int}>
+     */
+    public function chapterSequence(): array
+    {
+        $counts = $this->chapterCountsByBook();
+        $all = array_merge($this->manifest()['at'], $this->manifest()['nt']);
+        $seq = [];
+        foreach ($all as $b) {
+            $id = (string) ($b['id'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+            $name = (string) ($b['name'] ?? $id);
+            $n = $counts[$id] ?? 1;
+            for ($ch = 1; $ch <= $n; $ch++) {
+                $seq[] = ['bookId' => $id, 'bookName' => $name, 'chapter' => $ch];
+            }
+        }
+
+        return $seq;
+    }
+
+    /**
+     * Fatia do plano anual (fallback quando a tabela está vazia).
+     *
+     * @return array{day_number:int,book_id:string,chapter_from:int,chapter_to:int,verse_count:int,summary:?string}|null
+     */
+    public function readingPlanDayFallback(int $dayNumber): ?array
+    {
+        $seq = $this->chapterSequence();
+        if ($seq === []) {
+            return null;
+        }
+        $day = max(1, min(365, $dayNumber));
+        $totalCh = count($seq);
+        $chunkSize = (int) ceil($totalCh / 365);
+        $startIdx = ($day - 1) * $chunkSize;
+        $endIdx = min($day * $chunkSize, $totalCh) - 1;
+        if ($startIdx > $endIdx || !isset($seq[$startIdx])) {
+            return null;
+        }
+        $first = $seq[$startIdx];
+        $last = $seq[$endIdx];
+        $sameBook = ($first['bookId'] ?? '') === ($last['bookId'] ?? '');
+        $from = (int) $first['chapter'];
+        $to = $sameBook ? (int) $last['chapter'] : $from;
+        $summary = $sameBook
+            ? ($first['bookName'].' '.$from.($to !== $from ? '–'.$to : ''))
+            : ($first['bookName'].' '.$from);
+
+        return [
+            'day_number' => $day,
+            'book_id' => (string) $first['bookId'],
+            'chapter_from' => $from,
+            'chapter_to' => $to,
+            'verse_count' => 0,
+            'summary' => $summary,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     private function loadBook(string $translation, string $bookId): ?array

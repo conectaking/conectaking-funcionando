@@ -38,6 +38,12 @@ class VerseOfDayService
         ]);
     }
 
+    /** Índice 0-based do dia no ano (igual Node getVerseOfDayIndex) para rotação de listas. */
+    public function dayIndexForRotation(?string $dateStr = null): int
+    {
+        return $this->dayOfYearIndex($dateStr);
+    }
+
     /**
      * Formato usado pelo Blade do cartão.
      *

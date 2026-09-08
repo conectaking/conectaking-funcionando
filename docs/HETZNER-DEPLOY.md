@@ -60,12 +60,11 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 6. Satélites | feito (flag, canário) | form, bíblia hub+leitor+estudos+devocional 365, loja |
 | 7. King Selection | depois | permanece Node (monólito grande; stub `modules/KingSelection/` paralelo) |
 
-**Ainda Node:** King Selection completo; bíblia TTS/progresso/IA-devocional; form EJS rico (checkout/portaria); hub “Receba mais” completo (EJS).
+**Ainda Node:** King Selection completo; bíblia TTS/progresso/IA-devocional; form EJS rico (checkout/portaria); hub “Receba mais” EJS (prosperidade, cunha, IA).
 
-APIs bíblia no Laravel: books, chapter, verse-of-day, study, `devocional-do-dia`, `devotionals-365/:day?plain=1`, `reading-plan/day/:day`.  
-(IA em `devotionals-365` sem `plain` continua no Node.)
+APIs bíblia no Laravel: books, chapter, verse-of-day, study, salmo-do-dia, `devocional-do-dia`, `devotionals-365/:day?plain=1`, `reading-plan/day/:day` (fallback de capítulos se tabela vazia).
 
-Satélites: `/:slug/biblia`, leitor, estudos-livro, `/:slug/biblia/devocional[/:day]`.
+Satélites: hub, leitor, estudos, `devocional`, `salmo`, `plano[/:day]`.
 
 **Nota deploy:** não embutir `laravel/.env` (sqlite local) na imagem — o compose injeta `DB_CONNECTION=pgsql`. O `Dockerfile` remove `.env` no build e `.dockerignore` ignora o arquivo.
 
