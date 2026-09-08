@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'l/api/upload/*',
             '*/form/*/submit',
             'l/*/form/*/submit',
+            'api/bible/prosperidade/mark-read',
+            'l/api/bible/prosperidade/mark-read',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,

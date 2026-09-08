@@ -25,7 +25,9 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 | `LARAVEL_CARD_SLUGS` | vazio | Canário: lista `slug1,slug2` (vazio = todos quando PUBLIC=true) |
 | `LARAVEL_PROFILE_API` | `false` | Editor `/api/profile*` → Laravel (JWT) |
 | `LARAVEL_UPLOAD_API` | `false` | `/api/upload/*` e `/api/upload/pdf` → Laravel |
-| `LARAVEL_SATELLITES` | `false` | Form, bíblia (hub/leitor/estudos/devocional), loja (respeita `LARAVEL_CARD_SLUGS`) |
+| `LARAVEL_SATELLITES` | `false` | Form, bíblia, loja (respeita `LARAVEL_CARD_SLUGS`) |
+| `LARAVEL_KS` | `false` | King Selection landing + APIs públicas read-only |
+| `LARAVEL_KS_SLUGS` | vazio | Canário de **slugs de galeria** KS (ex. `eliseu`) |
 
 **Teste sem mudar produção:** `https://www.conectaking.com.br/adrianokingg?laravel=1`  
 **Prévia:** `/l/card/adrianokingg` (banner de prévia)  
@@ -36,8 +38,9 @@ LARAVEL_CARD_SLUGS=adrianokingg
 LARAVEL_PROFILE_API=true
 LARAVEL_UPLOAD_API=true
 LARAVEL_SATELLITES=true
+LARAVEL_KS=true
+LARAVEL_KS_SLUGS=eliseu
 ```
-
 ```bash
 # Rebuild só o Laravel
 cd /opt/conectaking
@@ -57,14 +60,18 @@ O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=
 | 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
 | 4. Editor `/api/profile` | feito | CRUD + tipados + form extras |
 | 5. Uploads | feito (flag) | `/api/upload/*` + PDF |
-| 6. Satélites | feito (flag, canário) | form, bíblia hub+leitor+estudos+devocional 365, loja |
-| 7. King Selection | depois | permanece Node (monólito grande; stub `modules/KingSelection/` paralelo) |
+| 6. Satélites | feito (flag, canário) | form, bíblia hub+leitor+estudos+devocional+salmo+plano+biblia-inteira+prosperidade, loja |
+| 7. King Selection | fatia read-only | landing + `public/gallery` + share-meta (`LARAVEL_KS`) |
+| 8. KS completo | depois | SPA cliente, uploads, watermark, seleção, vendas |
 
-**Ainda Node:** King Selection completo; bíblia TTS/progresso/IA-devocional; form EJS rico (checkout/portaria); hub “Receba mais” EJS (prosperidade, cunha, IA).
+**Ainda Node:** KS SPA cliente + mídia (cover/og-image Sharp/R2); TTS/progresso/IA-devocional; form EJS rico; admin prosperidade/IA.
 
-APIs bíblia no Laravel: books, chapter, verse-of-day, study, salmo-do-dia, `devocional-do-dia`, `devotionals-365/:day?plain=1`, `reading-plan/day/:day` (fallback de capítulos se tabela vazia).
-
-Satélites: hub, leitor, estudos, `devocional`, `salmo`, `plano[/:day]`.
+King Selection flags:
+```
+LARAVEL_KS=true
+LARAVEL_KS_SLUGS=eliseu
+```
+Landing: `/kingSelection/{slug}` (use `?engine=node` para SPA Node). APIs: `/api/king-selection/public/gallery`, `.../gallery-share-meta/{slug}`.
 
 **Nota deploy:** não embutir `laravel/.env` (sqlite local) na imagem — o compose injeta `DB_CONNECTION=pgsql`. O `Dockerfile` remove `.env` no build e `.dockerignore` ignora o arquivo.
 

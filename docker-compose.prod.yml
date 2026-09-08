@@ -46,6 +46,8 @@ services:
       LARAVEL_PROFILE_API: "${LARAVEL_PROFILE_API:-false}"
       LARAVEL_UPLOAD_API: "${LARAVEL_UPLOAD_API:-false}"
       LARAVEL_SATELLITES: "${LARAVEL_SATELLITES:-false}"
+      LARAVEL_KS: "${LARAVEL_KS:-false}"
+      LARAVEL_KS_SLUGS: "${LARAVEL_KS_SLUGS:-}"
       LARAVEL_HOST: laravel
       LARAVEL_PORT: "8080"
     ports:
@@ -85,6 +87,8 @@ services:
       QUEUE_CONNECTION: sync
       NODE_INTERNAL_URL: http://api:5000
       JWT_SECRET: ${JWT_SECRET}
+      BIBLE_CUNHA_URL: ${BIBLE_CUNHA_URL:-}
+      BIBLE_AI_URL: ${BIBLE_AI_URL:-}
     ports:
       - "127.0.0.1:8080:8080"
     networks:

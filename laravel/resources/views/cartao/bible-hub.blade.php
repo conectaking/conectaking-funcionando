@@ -34,9 +34,17 @@
     @endif
 
     <p class="nav" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:14px">
-        <a href="{{ $devotionalUrl ?? ('/'.$slug.'/biblia/devocional') }}">Devocional ({{ $devotionalDay ?? '' }})</a>
-        <a href="{{ $salmoUrl ?? ('/'.$slug.'/biblia/salmo') }}">Salmo do dia</a>
-        <a href="{{ $planUrl ?? ('/'.$slug.'/biblia/plano') }}">Plano de leitura</a>
+        <a href="{{ $devotionalUrl ?? ('/'.$slug.'/biblia/devocional') }}">Devocional 365</a>
+        <a href="{{ $salmoUrl ?? ('/'.$slug.'/biblia/salmo') }}">Salmo</a>
+        <a href="{{ $planUrl ?? ('/'.$slug.'/biblia/plano') }}">Plano</a>
+        <a href="{{ $wholeUrl ?? ('/'.$slug.'/biblia/biblia-inteira') }}">Bíblia inteira</a>
+        <a href="{{ $prosperidadeUrl ?? ('/'.$slug.'/biblia/prosperidade') }}">Prosperidade</a>
+        @if(!empty($cunhaUrl))
+            <a href="{{ $cunhaUrl }}" target="_blank" rel="noopener">Mensagem</a>
+        @endif
+        @if(!empty($bibleAiUrl))
+            <a href="{{ $bibleAiUrl }}" target="_blank" rel="noopener">Assistente IA</a>
+        @endif
     </p>
     @if(!empty($salmo['texto']))
         <div class="verse" style="margin-top:8px">

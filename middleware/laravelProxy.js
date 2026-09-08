@@ -16,8 +16,15 @@ const LARAVEL_CARD_APIS = String(process.env.LARAVEL_CARD_APIS || 'true').toLowe
 const LARAVEL_PROFILE_API = String(process.env.LARAVEL_PROFILE_API || 'false').toLowerCase() === 'true';
 const LARAVEL_UPLOAD_API = String(process.env.LARAVEL_UPLOAD_API || 'false').toLowerCase() === 'true';
 const LARAVEL_SATELLITES = String(process.env.LARAVEL_SATELLITES || 'false').toLowerCase() === 'true';
+const LARAVEL_KS = String(process.env.LARAVEL_KS || 'false').toLowerCase() === 'true';
 const LARAVEL_CARD_SLUGS = new Set(
     String(process.env.LARAVEL_CARD_SLUGS || '')
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+);
+const LARAVEL_KS_SLUGS = new Set(
+    String(process.env.LARAVEL_KS_SLUGS || '')
         .split(',')
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean)
@@ -48,6 +55,21 @@ function slugAllowedForSatellite(slug) {
     return LARAVEL_CARD_SLUGS.has(s);
 }
 
+function slugAllowedForKs(gallerySlug) {
+    const s = String(gallerySlug || '').toLowerCase();
+    if (!s) return false;
+    if (LARAVEL_KS_SLUGS.size === 0) return true;
+    return LARAVEL_KS_SLUGS.has(s);
+}
+
+function wantsNodeEngine(urlPath) {
+    return /[?&](laravel|engine)=node(?:&|$)/i.test(String(urlPath || ''));
+}
+
+function wantsLaravelEngine(urlPath) {
+    return /[?&](laravel|engine)=(1|true|laravel)(?:&|$)/i.test(String(urlPath || ''));
+}
+
 function isLaravelCardApiPath(urlPath) {
     if (!urlPath) return false;
     const pathOnly = urlPath.split('?')[0];
@@ -60,7 +82,14 @@ function isLaravelCardApiPath(urlPath) {
         /^\/api\/bible\/study\/book\/[^/]+$/i,
         /^\/api\/bible\/devocional-do-dia$/i,
         /^\/api\/bible\/salmo-do-dia$/i,
+        /^\/api\/bible\/devocional-biblia-inteira$/i,
         /^\/api\/bible\/reading-plan\/day\/\d+$/i,
+        /^\/api\/bible\/prosperidade\/ativacao\/\d+$/i,
+        /^\/api\/bible\/prosperidade\/hoje$/i,
+        /^\/api\/bible\/prosperidade\/list$/i,
+        /^\/api\/bible\/prosperidade\/nearest-published\/\d+$/i,
+        /^\/api\/bible\/prosperidade\/mark-read$/i,
+        /^\/api\/bible\/prosperidade\/read-status$/i,
         /^\/l\/api\/pix\/qrcode\/\d+$/i,
         /^\/l\/api\/bible\/verse-of-day$/i,
         /^\/l\/api\/bible\/books$/i,
@@ -69,8 +98,15 @@ function isLaravelCardApiPath(urlPath) {
         /^\/l\/api\/bible\/study\/book\/[^/]+$/i,
         /^\/l\/api\/bible\/devocional-do-dia$/i,
         /^\/l\/api\/bible\/salmo-do-dia$/i,
+        /^\/l\/api\/bible\/devocional-biblia-inteira$/i,
         /^\/l\/api\/bible\/devotionals-365\/\d+$/i,
         /^\/l\/api\/bible\/reading-plan\/day\/\d+$/i,
+        /^\/l\/api\/bible\/prosperidade\/ativacao\/\d+$/i,
+        /^\/l\/api\/bible\/prosperidade\/hoje$/i,
+        /^\/l\/api\/bible\/prosperidade\/list$/i,
+        /^\/l\/api\/bible\/prosperidade\/nearest-published\/\d+$/i,
+        /^\/l\/api\/bible\/prosperidade\/mark-read$/i,
+        /^\/l\/api\/bible\/prosperidade\/read-status$/i,
         /^\/log\/view\/[^/]+$/i,
         /^\/log\/click\/item\/\d+$/i,
         /^\/log\/vcard\/[^/]+$/i,
@@ -174,6 +210,18 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
         return force || slugAllowedForSatellite(biblePlan[1]);
     }
 
+    const bibleWhole = pathOnly.match(/^\/(?:l\/)?([^/]+)\/biblia\/biblia-inteira(?:\/(\d+))?\/?$/i);
+    if (bibleWhole && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(bibleWhole[1]);
+    }
+
+    const biblePros = pathOnly.match(/^\/(?:l\/)?([^/]+)\/biblia\/prosperidade(?:\/(\d+))?\/?$/i);
+    if (biblePros && method === 'GET') {
+        if (!force && !LARAVEL_SATELLITES) return false;
+        return force || slugAllowedForSatellite(biblePros[1]);
+    }
+
     const bibleStudyLegacy = pathOnly.match(/^\/([^/]+)\/bible\/estudo-livro\/([^/]+)\/?$/i);
     if (bibleStudyLegacy && method === 'GET') {
         if (!force && !LARAVEL_SATELLITES) return false;
@@ -199,6 +247,28 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
         if (RESERVED_STORE_SEGMENTS.has(String(storeSlug).toLowerCase())) return false;
         if (!force && !LARAVEL_SATELLITES) return false;
         return force || slugAllowedForSatellite(profileSlug);
+    }
+    return false;
+}
+
+function isLaravelKsPath(reqMethod, urlPath) {
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    const force = wantsLaravelEngine(urlPath);
+
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/gallery$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    const share = pathOnly.match(/^\/(?:l\/)?api\/king-selection\/public\/gallery-share-meta\/([^/]+)\/?$/i);
+    if (share && method === 'GET') {
+        if (!force && !LARAVEL_KS) return false;
+        return force || slugAllowedForKs(share[1]);
+    }
+    const page = pathOnly.match(/^\/(?:l\/)?kingSelection\/([^/]+)\/?$/i);
+    if (page && method === 'GET') {
+        if (!force && !LARAVEL_KS) return false;
+        return force || slugAllowedForKs(page[1]);
     }
     return false;
 }
@@ -298,7 +368,11 @@ function laravelProxyMiddleware(req, res, next) {
         return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: 120000 });
     }
 
-    if ((LARAVEL_SATELLITES || /[?&](laravel|engine)=(1|true|laravel)/i.test(url)) && isLaravelSatellitePath(req.method, url)) {
+    if ((LARAVEL_SATELLITES || wantsLaravelEngine(url)) && isLaravelSatellitePath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
+    if ((LARAVEL_KS || wantsLaravelEngine(url)) && isLaravelKsPath(req.method, url)) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 
@@ -323,7 +397,9 @@ module.exports = {
     LARAVEL_PROFILE_API,
     LARAVEL_UPLOAD_API,
     LARAVEL_SATELLITES,
+    LARAVEL_KS,
     LARAVEL_CARD_SLUGS,
+    LARAVEL_KS_SLUGS,
     LARAVEL_HOST,
     LARAVEL_PORT
 };

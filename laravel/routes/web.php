@@ -9,6 +9,7 @@ use App\Http\Controllers\CartaoVirtual\ProfileEditorController;
 use App\Http\Controllers\CartaoVirtual\ProfileFormExtrasController;
 use App\Http\Controllers\CartaoVirtual\ProfileItemsController;
 use App\Http\Controllers\CartaoVirtual\ProfileTypedItemsController;
+use App\Http\Controllers\CartaoVirtual\KingSelectionPublicController;
 use App\Http\Controllers\CartaoVirtual\SatellitePublicController;
 use App\Http\Controllers\CartaoVirtual\UploadController;
 use App\Http\Controllers\CartaoVirtual\VcardController;
@@ -42,10 +43,19 @@ Route::get('/l/api/bible/study/book/{bookId}', [BiblePublicController::class, 's
     ->where('bookId', '[A-Za-z0-9_-]+');
 Route::get('/l/api/bible/devocional-do-dia', [BiblePublicController::class, 'devocionalDoDia']);
 Route::get('/l/api/bible/salmo-do-dia', [BiblePublicController::class, 'salmoDoDia']);
+Route::get('/l/api/bible/devocional-biblia-inteira', [BiblePublicController::class, 'devocionalBibliaInteira']);
 Route::get('/l/api/bible/devotionals-365/{day}', [BiblePublicController::class, 'devotionals365'])
     ->where('day', '[0-9]+');
 Route::get('/l/api/bible/reading-plan/day/{day}', [BiblePublicController::class, 'readingPlanDay'])
     ->where('day', '[0-9]+');
+Route::get('/l/api/bible/prosperidade/ativacao/{n}', [BiblePublicController::class, 'prosperidadeAtivacao'])
+    ->where('n', '[0-9]+');
+Route::get('/l/api/bible/prosperidade/hoje', [BiblePublicController::class, 'prosperidadeHoje']);
+Route::get('/l/api/bible/prosperidade/list', [BiblePublicController::class, 'prosperidadeList']);
+Route::get('/l/api/bible/prosperidade/nearest-published/{n}', [BiblePublicController::class, 'prosperidadeNearest'])
+    ->where('n', '[0-9]+');
+Route::post('/l/api/bible/prosperidade/mark-read', [BiblePublicController::class, 'prosperidadeMarkRead']);
+Route::get('/l/api/bible/prosperidade/read-status', [BiblePublicController::class, 'prosperidadeReadStatus']);
 Route::post('/l/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/l/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/l/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -94,10 +104,19 @@ Route::get('/api/bible/study/book/{bookId}', [BiblePublicController::class, 'stu
     ->where('bookId', '[A-Za-z0-9_-]+');
 Route::get('/api/bible/devocional-do-dia', [BiblePublicController::class, 'devocionalDoDia']);
 Route::get('/api/bible/salmo-do-dia', [BiblePublicController::class, 'salmoDoDia']);
+Route::get('/api/bible/devocional-biblia-inteira', [BiblePublicController::class, 'devocionalBibliaInteira']);
 Route::get('/api/bible/devotionals-365/{day}', [BiblePublicController::class, 'devotionals365'])
     ->where('day', '[0-9]+');
 Route::get('/api/bible/reading-plan/day/{day}', [BiblePublicController::class, 'readingPlanDay'])
     ->where('day', '[0-9]+');
+Route::get('/api/bible/prosperidade/ativacao/{n}', [BiblePublicController::class, 'prosperidadeAtivacao'])
+    ->where('n', '[0-9]+');
+Route::get('/api/bible/prosperidade/hoje', [BiblePublicController::class, 'prosperidadeHoje']);
+Route::get('/api/bible/prosperidade/list', [BiblePublicController::class, 'prosperidadeList']);
+Route::get('/api/bible/prosperidade/nearest-published/{n}', [BiblePublicController::class, 'prosperidadeNearest'])
+    ->where('n', '[0-9]+');
+Route::post('/api/bible/prosperidade/mark-read', [BiblePublicController::class, 'prosperidadeMarkRead']);
+Route::get('/api/bible/prosperidade/read-status', [BiblePublicController::class, 'prosperidadeReadStatus']);
 Route::post('/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
 Route::post('/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
 Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
@@ -173,6 +192,14 @@ Route::get('/{slug}/biblia/plano/{day?}', [SatellitePublicController::class, 'bi
     ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
 Route::get('/l/{slug}/biblia/plano/{day?}', [SatellitePublicController::class, 'biblePlan'])
     ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
+Route::get('/{slug}/biblia/biblia-inteira/{day?}', [SatellitePublicController::class, 'bibleWhole'])
+    ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
+Route::get('/l/{slug}/biblia/biblia-inteira/{day?}', [SatellitePublicController::class, 'bibleWhole'])
+    ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
+Route::get('/{slug}/biblia/prosperidade/{n?}', [SatellitePublicController::class, 'bibleProsperidade'])
+    ->where(['slug' => $cardSlug, 'n' => '[0-9]+']);
+Route::get('/l/{slug}/biblia/prosperidade/{n?}', [SatellitePublicController::class, 'bibleProsperidade'])
+    ->where(['slug' => $cardSlug, 'n' => '[0-9]+']);
 Route::get('/{slug}/bible', [SatellitePublicController::class, 'bibleRedirect'])->where('slug', $cardSlug);
 Route::get('/l/{slug}/bible', [SatellitePublicController::class, 'bibleRedirect'])->where('slug', $cardSlug);
 Route::get('/{slug}/bible/estudo-livro/{bookId}', [SatellitePublicController::class, 'bibleStudyLegacyRedirect'])
@@ -181,5 +208,16 @@ Route::get('/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
 Route::get('/l/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReader'])
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
+
+// King Selection (read-only público)
+Route::get('/kingSelection/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
+Route::get('/l/kingSelection/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
+Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery']);
+Route::get('/l/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery']);
+Route::get('/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectionPublicController::class, 'shareMeta'])
+    ->where('slug', $cardSlug);
+Route::get('/l/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectionPublicController::class, 'shareMeta'])
+    ->where('slug', $cardSlug);
+
 Route::get('/l/loja/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);

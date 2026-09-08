@@ -11,6 +11,8 @@ class BibleSatelliteService
         private readonly BibleStudyService $studies,
         private readonly BibleDevotionalService $devotionals,
         private readonly BibleSalmoService $salmos,
+        private readonly BibleWholeDevotionalService $whole,
+        private readonly BibleProsperidadeService $prosperidade,
     ) {
     }
 
@@ -51,6 +53,10 @@ class BibleSatelliteService
                 'salmoUrl' => '/'.$ctx['slug'].'/biblia/salmo',
                 'plan' => $plan,
                 'planUrl' => '/'.$ctx['slug'].'/biblia/plano',
+                'wholeUrl' => '/'.$ctx['slug'].'/biblia/biblia-inteira',
+                'prosperidadeUrl' => '/'.$ctx['slug'].'/biblia/prosperidade',
+                'cunhaUrl' => trim((string) env('BIBLE_CUNHA_URL', '')),
+                'bibleAiUrl' => trim((string) env('BIBLE_AI_URL', '')),
             ],
         ];
     }
@@ -240,6 +246,96 @@ class BibleSatelliteService
                 'prevUrl' => $prev ? '/'.$ctx['slug'].'/biblia/plano/'.$prev : null,
                 'nextUrl' => $next ? '/'.$ctx['slug'].'/biblia/plano/'.$next : null,
                 'todayUrl' => '/'.$ctx['slug'].'/biblia/plano',
+            ],
+        ];
+    }
+
+    /**
+     * @return array{status:int, data?:array<string,mixed>, message?:string}
+     */
+    public function wholeBible(string $slug, ?string $dayParam = null): array
+    {
+        $ctx = $this->context($slug);
+        if ($ctx === null) {
+            return ['status' => 404, 'message' => 'Bíblia não encontrada.'];
+        }
+        $seq = $this->text->chapterSequence();
+        $total = max(1, count($seq));
+        if ($dayParam !== null && $dayParam !== '') {
+            if (!ctype_digit($dayParam) || (int) $dayParam < 1) {
+                return ['status' => 400, 'message' => 'Dia inválido.'];
+            }
+            $day = (int) $dayParam;
+        } else {
+            $day = $this->devotionals->dayOfYear(null);
+        }
+        $item = $this->whole->bySequenceDay($day);
+        if (!$item) {
+            return ['status' => 404, 'message' => 'Devocional não encontrado.'];
+        }
+        $prev = $day > 1 ? $day - 1 : null;
+        $next = $day + 1;
+        $readUrl = '/'.$ctx['slug'].'/bible/'.$item['bookId'].'/'.$item['chapter'];
+
+        return [
+            'status' => 200,
+            'data' => [
+                'slug' => $ctx['slug'],
+                'hubUrl' => '/'.$ctx['slug'].'/biblia',
+                'profileUrl' => '/'.$ctx['slug'],
+                'day' => $day,
+                'totalDays' => $total,
+                'item' => $item,
+                'readUrl' => $readUrl,
+                'prevUrl' => $prev ? '/'.$ctx['slug'].'/biblia/biblia-inteira/'.$prev : null,
+                'nextUrl' => '/'.$ctx['slug'].'/biblia/biblia-inteira/'.$next,
+                'todayUrl' => '/'.$ctx['slug'].'/biblia/biblia-inteira',
+            ],
+        ];
+    }
+
+    /**
+     * @return array{status:int, data?:array<string,mixed>, message?:string}
+     */
+    public function prosperidade(string $slug, ?string $nParam = null): array
+    {
+        $ctx = $this->context($slug);
+        if ($ctx === null) {
+            return ['status' => 404, 'message' => 'Bíblia não encontrada.'];
+        }
+
+        if ($nParam !== null && $nParam !== '') {
+            if (!ctype_digit($nParam) || (int) $nParam < 1 || (int) $nParam > 31) {
+                return ['status' => 400, 'message' => 'Ativação deve ser entre 1 e 31.'];
+            }
+            $n = (int) $nParam;
+        } else {
+            $n = $this->prosperidade->activationForToday();
+        }
+
+        $result = $this->prosperidade->getAtivacaoPublic($n);
+        $ativacao = !empty($result['ok']) ? ($result['data'] ?? null) : null;
+        $list = $this->prosperidade->getList();
+        $prev = $n > 1 ? $n - 1 : null;
+        $next = $n < 31 ? $n + 1 : null;
+        $base = '/'.$ctx['slug'].'/biblia/prosperidade';
+
+        return [
+            'status' => 200,
+            'data' => [
+                'slug' => $ctx['slug'],
+                'hubUrl' => '/'.$ctx['slug'].'/biblia',
+                'profileUrl' => '/'.$ctx['slug'],
+                'n' => $n,
+                'ativacao' => $ativacao,
+                'notPublished' => empty($result['ok']),
+                'message' => $result['message'] ?? null,
+                'nearest' => $result['nearest_published'] ?? null,
+                'activations' => $list,
+                'prevUrl' => $prev ? $base.'/'.$prev : null,
+                'nextUrl' => $next ? $base.'/'.$next : null,
+                'todayUrl' => $base,
+                'markReadApi' => '/api/bible/prosperidade/mark-read',
             ],
         ];
     }
