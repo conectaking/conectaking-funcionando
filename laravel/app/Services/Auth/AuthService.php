@@ -120,6 +120,105 @@ class AuthService
     }
 
     /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function register(string $email, string $password, string $registrationCode): array
+    {
+        $email = strtolower(trim($email));
+        $registrationCode = trim($registrationCode);
+        if ($email === '' || $password === '' || $registrationCode === '') {
+            return ['status' => 400, 'body' => ['success' => false, 'message' => 'E-mail, senha e código são obrigatórios.']];
+        }
+        if (strlen($password) < 6) {
+            return ['status' => 400, 'body' => ['success' => false, 'message' => 'Senha deve ter no mínimo 6 caracteres.']];
+        }
+        if (! Schema::hasTable('registration_codes') || ! Schema::hasTable('users')) {
+            return ['status' => 503, 'body' => ['success' => false, 'message' => 'Registro indisponível.']];
+        }
+
+        try {
+            return DB::transaction(function () use ($email, $password, $registrationCode) {
+                $code = DB::selectOne(
+                    'SELECT * FROM registration_codes WHERE code = ? AND is_claimed = FALSE LIMIT 1 FOR UPDATE',
+                    [$registrationCode]
+                );
+                if (! $code) {
+                    return ['status' => 400, 'body' => ['success' => false, 'message' => 'Código de registro inválido ou já utilizado.']];
+                }
+                $exists = DB::selectOne('SELECT id FROM users WHERE email = ? LIMIT 1', [$email]);
+                if ($exists) {
+                    return ['status' => 400, 'body' => ['success' => false, 'message' => 'Este e-mail já está em uso.']];
+                }
+                $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
+                $accountType = 'individual';
+                $parentUserId = null;
+                $expiresAt = now()->addDays(30);
+                $subStatus = 'pre_sale_trial';
+                if (! empty($code->generated_by_user_id)) {
+                    $accountType = 'team_member';
+                    $parentUserId = $code->generated_by_user_id;
+                    $expiresAt = null;
+                    $subStatus = null;
+                }
+                DB::insert(
+                    'INSERT INTO users (id, email, password_hash, profile_slug, account_type, parent_user_id, subscription_status, subscription_expires_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    [$registrationCode, $email, $hash, $registrationCode, $accountType, $parentUserId, $subStatus, $expiresAt]
+                );
+                if (Schema::hasTable('user_profiles')) {
+                    DB::insert(
+                        'INSERT INTO user_profiles (user_id, display_name) VALUES (?, ?)',
+                        [$registrationCode, $email]
+                    );
+                }
+                $this->ensureDefaultBibleItem($registrationCode);
+                DB::update(
+                    'UPDATE registration_codes SET is_claimed = TRUE, claimed_by_user_id = ?, claimed_at = NOW() WHERE code = ?',
+                    [$registrationCode, $registrationCode]
+                );
+
+                return ['status' => 201, 'body' => [
+                    'success' => true,
+                    'message' => 'Usuário registrado com sucesso! Você ganhou 30 dias de acesso. Faça o login para continuar.',
+                ]];
+            });
+        } catch (\Throwable $e) {
+            Log::error('auth.register', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => ['success' => false, 'message' => 'Erro ao registrar.']];
+        }
+    }
+
+    private function ensureDefaultBibleItem(string $userId): void
+    {
+        if (! Schema::hasTable('profile_items')) {
+            return;
+        }
+        $n = (int) (DB::selectOne(
+            'SELECT COUNT(*)::int AS c FROM profile_items WHERE user_id = ?',
+            [$userId]
+        )->c ?? 0);
+        if ($n > 0) {
+            return;
+        }
+        try {
+            $id = DB::selectOne(
+                "INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
+                 VALUES (?, 'bible', 'Bíblia', true, 0) RETURNING id",
+                [$userId]
+            );
+            if ($id && Schema::hasTable('bible_items')) {
+                DB::insert(
+                    "INSERT INTO bible_items (profile_item_id, translation_code, is_visible) VALUES (?, 'nvi', true)",
+                    [$id->id]
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('auth.ensureBible', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * @return array{0:string,1:string}
      */
     private function tokenPair(object $user): array

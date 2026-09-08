@@ -35,11 +35,11 @@ Quando Laravel servir estáticos + todas as APIs + `/health`, o Caddy aponta par
 
 | # | API | Notas |
 |---|---|---|
-| B1 | `POST /api/auth/register` | Login já Laravel |
-| B2 | `/api/password/*` (forgot/reset) | |
-| B3 | `/api/account/*` (exceto GET status) | details, upgrade, password, debug-plan |
-| B4 | `/api/subscription/*` | planos / assinatura |
-| B5 | `/api/link-limits` | |
+| B1 | `POST /api/auth/register` | ✅ Laravel |
+| B2 | `/api/password/*` (forgot/reset) | ✅ Laravel |
+| B3 | `/api/account/*` (details/status/upgrade/password/debug) | ✅ Laravel |
+| B4 | `/api/subscription/*` | ✅ Laravel |
+| B5 | `/api/link-limits` | ✅ Laravel |
 | B6 | `/api/documentos/*` (+ OCR) | |
 | B7 | `/api/orcamentos` + recibos | |
 | B8 | `/api/king-docs/*` | |
@@ -86,7 +86,11 @@ Quando Laravel servir estáticos + todas as APIs + `/health`, o Caddy aponta par
 - [x] `/health` Laravel
 - [x] Front legado (HTML/JS) servido pelo Laravel + volumes `public`/`public_html`
 - [x] `/api/password/forgot|reset` → Laravel
-- [ ] Demais APIs B1–B21
+- [x] `/api/account/*` + status com plan map completo + linkLimits
+- [x] `/api/subscription/*` + plans-public
+- [x] `/api/link-limits/*`
+- [x] `POST /api/auth/register`
+- [ ] Demais APIs B6–B21 (documentos, king-docs, admin, …)
 - [ ] CompareFaces chunked
 - [ ] Caddy → `:8080`
 - [ ] Remover container `api`

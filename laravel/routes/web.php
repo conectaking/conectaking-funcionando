@@ -500,6 +500,47 @@ Route::middleware('ks.client')->group(function () {
 Route::middleware('jwt')->group(function () {
     Route::get('/api/account/status', [\App\Http\Controllers\Account\AccountStatusController::class, 'status']);
     Route::get('/l/api/account/status', [\App\Http\Controllers\Account\AccountStatusController::class, 'status']);
+    Route::get('/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'details']);
+    Route::get('/l/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'details']);
+    Route::put('/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'updateDetails']);
+    Route::put('/l/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'updateDetails']);
+    Route::put('/api/account/password', [\App\Http\Controllers\Account\AccountController::class, 'changePassword']);
+    Route::put('/l/api/account/password', [\App\Http\Controllers\Account\AccountController::class, 'changePassword']);
+    Route::post('/api/account/upgrade', [\App\Http\Controllers\Account\AccountController::class, 'upgrade']);
+    Route::post('/l/api/account/upgrade', [\App\Http\Controllers\Account\AccountController::class, 'upgrade']);
+    Route::get('/api/account/debug-plan/{email}', [\App\Http\Controllers\Account\AccountController::class, 'debugPlan'])
+        ->where('email', '[^/]+');
+    Route::get('/l/api/account/debug-plan/{email}', [\App\Http\Controllers\Account\AccountController::class, 'debugPlan'])
+        ->where('email', '[^/]+');
+
+    Route::get('/api/subscription/info', [\App\Http\Controllers\Account\SubscriptionController::class, 'info']);
+    Route::get('/l/api/subscription/info', [\App\Http\Controllers\Account\SubscriptionController::class, 'info']);
+    Route::get('/api/subscription/plans', [\App\Http\Controllers\Account\SubscriptionController::class, 'plans']);
+    Route::get('/l/api/subscription/plans', [\App\Http\Controllers\Account\SubscriptionController::class, 'plans']);
+    Route::put('/api/subscription/plans/{id}', [\App\Http\Controllers\Account\SubscriptionController::class, 'updatePlan'])
+        ->where('id', '[0-9]+');
+    Route::put('/l/api/subscription/plans/{id}', [\App\Http\Controllers\Account\SubscriptionController::class, 'updatePlan'])
+        ->where('id', '[0-9]+');
+
+    Route::get('/api/link-limits/user', [\App\Http\Controllers\Account\LinkLimitsController::class, 'user']);
+    Route::get('/l/api/link-limits/user', [\App\Http\Controllers\Account\LinkLimitsController::class, 'user']);
+    Route::get('/api/link-limits/check/{moduleType}', [\App\Http\Controllers\Account\LinkLimitsController::class, 'check'])
+        ->where('moduleType', '[A-Za-z0-9_]+');
+    Route::get('/l/api/link-limits/check/{moduleType}', [\App\Http\Controllers\Account\LinkLimitsController::class, 'check'])
+        ->where('moduleType', '[A-Za-z0-9_]+');
+    Route::get('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'index']);
+    Route::get('/l/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'index']);
+    Route::put('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'upsert']);
+    Route::put('/l/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'upsert']);
+    Route::post('/api/link-limits/bulk-update', [\App\Http\Controllers\Account\LinkLimitsController::class, 'bulkUpdate']);
+    Route::post('/l/api/link-limits/bulk-update', [\App\Http\Controllers\Account\LinkLimitsController::class, 'bulkUpdate']);
+    Route::post('/api/link-limits/reset-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'resetPlan']);
+    Route::post('/l/api/link-limits/reset-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'resetPlan']);
+    Route::post('/api/link-limits/copy-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'copyPlan']);
+    Route::post('/l/api/link-limits/copy-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'copyPlan']);
+    Route::get('/api/link-limits/stats', [\App\Http\Controllers\Account\LinkLimitsController::class, 'stats']);
+    Route::get('/l/api/link-limits/stats', [\App\Http\Controllers\Account\LinkLimitsController::class, 'stats']);
+
     Route::get('/api/modules/available', [\App\Http\Controllers\Account\ModulesController::class, 'available']);
     Route::get('/l/api/modules/available', [\App\Http\Controllers\Account\ModulesController::class, 'available']);
     Route::get('/api/analytics/kpis', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'kpis']);
@@ -1073,6 +1114,10 @@ Route::middleware('admin')->group(function () {
 
 Route::post('/api/auth/login', [\App\Http\Controllers\Auth\AuthController::class, 'login'])->middleware('throttle:20,1');
 Route::post('/l/api/auth/login', [\App\Http\Controllers\Auth\AuthController::class, 'login'])->middleware('throttle:20,1');
+Route::post('/api/auth/register', [\App\Http\Controllers\Auth\AuthController::class, 'register'])->middleware('throttle:10,1');
+Route::post('/l/api/auth/register', [\App\Http\Controllers\Auth\AuthController::class, 'register'])->middleware('throttle:10,1');
+Route::get('/api/subscription/plans-public', [\App\Http\Controllers\Account\SubscriptionController::class, 'plansPublic']);
+Route::get('/l/api/subscription/plans-public', [\App\Http\Controllers\Account\SubscriptionController::class, 'plansPublic']);
 Route::post('/api/auth/refresh', [\App\Http\Controllers\Auth\AuthController::class, 'refresh'])->middleware('throttle:30,1');
 Route::post('/l/api/auth/refresh', [\App\Http\Controllers\Auth\AuthController::class, 'refresh'])->middleware('throttle:30,1');
 Route::post('/api/auth/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->middleware('throttle:30,1');

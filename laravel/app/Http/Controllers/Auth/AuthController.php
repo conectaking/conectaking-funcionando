@@ -35,4 +35,15 @@ class AuthController extends Controller
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function register(Request $request)
+    {
+        $r = $this->auth->register(
+            (string) ($request->input('email') ?: ''),
+            (string) ($request->input('password') ?: ''),
+            (string) ($request->input('registrationCode') ?: '')
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
 }

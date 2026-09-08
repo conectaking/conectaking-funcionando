@@ -609,7 +609,17 @@ function isLaravelAccountPath(reqMethod, urlPath) {
     if (!urlPath || wantsNodeEngine(urlPath)) return false;
     const pathOnly = urlPath.split('?')[0];
     const method = String(reqMethod || 'GET').toUpperCase();
-    return method === 'GET' && /^\/(?:l\/)?api\/account\/status$/i.test(pathOnly);
+    if (method === 'GET' && /^\/(?:l\/)?api\/account\/(status|details)$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/account\/debug-plan\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/account\/(details|password)$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/account\/upgrade$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/subscription\/(info|plans|plans-public)$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/subscription\/plans\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/link-limits(?:\/(user|stats|check\/[^/]+))?$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/link-limits$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/link-limits\/(bulk-update|reset-plan|copy-plan)$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/auth\/register$/i.test(pathOnly)) return true;
+    return false;
 }
 
 function isLaravelDashboardPath(reqMethod, urlPath) {
@@ -839,7 +849,7 @@ function laravelProxyMiddleware(req, res, next) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 
-    if (LARAVEL_PROFILE_API && isLaravelAccountPath(req.method, url)) {
+    if ((LARAVEL_PROFILE_API || LARAVEL_DASHBOARD) && isLaravelAccountPath(req.method, url)) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 

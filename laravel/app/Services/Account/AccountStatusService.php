@@ -2,19 +2,15 @@
 
 namespace App\Services\Account;
 
+use App\Support\PlanCodeResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AccountStatusService
 {
-    private const ACCOUNT_TYPE_TO_PLAN = [
-        'individual' => 'basic',
-        'basic' => 'basic',
-        'pro' => 'pro',
-        'premium' => 'premium',
-        'business' => 'business',
-        'empresa' => 'business',
-    ];
+    public function __construct(private readonly LinkLimitsService $linkLimits)
+    {
+    }
 
     /**
      * @return array<string,mixed>
@@ -31,7 +27,7 @@ class AccountStatusService
              WHERE u.id = ? LIMIT 1',
             [$userId]
         );
-        if (!$user) {
+        if (! $user) {
             throw new \RuntimeException('Usuário não encontrado.');
         }
 
@@ -44,17 +40,16 @@ class AccountStatusService
                     [$subscriptionId]
                 );
                 if ($plan && filter_var($plan->is_active ?? true, FILTER_VALIDATE_BOOLEAN)) {
-                    $planCode = $this->normalizePlanCode((string) ($plan->plan_code ?? ''));
+                    $planCode = PlanCodeResolver::normalize((string) ($plan->plan_code ?? ''));
                 }
             } catch (\Throwable $e) {
                 Log::warning('account.plan', ['error' => $e->getMessage()]);
             }
         }
-        if (!$planCode) {
-            $accountType = (string) ($user->account_type ?? '');
-            $planCode = $this->normalizePlanCode(self::ACCOUNT_TYPE_TO_PLAN[$accountType] ?? $accountType ?: 'basic');
+        if (! $planCode) {
+            $planCode = PlanCodeResolver::fromAccountType((string) ($user->account_type ?? ''));
         }
-        if (!$planCode) {
+        if (! $planCode) {
             $planCode = 'basic';
         }
 
@@ -90,8 +85,10 @@ class AccountStatusService
         $indSet = array_fill_keys($individualModules, true);
         $exSet = array_fill_keys($excludedModules, true);
         $has = static function (string $type) use ($baseSet, $indSet, $exSet): bool {
-            return (($baseSet[$type] ?? false) && !($exSet[$type] ?? false)) || ($indSet[$type] ?? false);
+            return (($baseSet[$type] ?? false) && ! ($exSet[$type] ?? false)) || ($indSet[$type] ?? false);
         };
+
+        $linkLimits = $this->linkLimits->getUserLinkLimits($userId);
 
         return [
             'id' => (string) $user->id,
@@ -118,17 +115,7 @@ class AccountStatusService
             'hasKingDocs' => $has('king_docs'),
             'hasKingBolao' => false,
             'plan_code' => $planCode,
-            'linkLimits' => new \stdClass,
+            'linkLimits' => $linkLimits === [] ? new \stdClass : $linkLimits,
         ];
-    }
-
-    private function normalizePlanCode(string $code): string
-    {
-        $c = strtolower(trim($code));
-        if ($c === '' || $c === 'start' || $c === 'king_start') {
-            return 'basic';
-        }
-
-        return $c;
     }
 }
