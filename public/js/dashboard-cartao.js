@@ -1382,4 +1382,7 @@ function reconcileModulesListWithProfileData(profileData) {
     global.DashboardCartao = DashboardCartao;
     global.updateLivePreviewFromForm = updateLivePreviewFromForm;
     global.reconcileModulesListWithProfileData = reconcileModulesListWithProfileData;
+    // Labels partilhados (separacao / listeners) — estavam só no IIFE
+    global.ITEM_TYPE_LABELS_FOR_VCARD = ITEM_TYPE_LABELS_FOR_VCARD;
+    global.URL_TYPE_TAGS = URL_TYPE_TAGS;
 })(typeof window !== 'undefined' ? window : this);

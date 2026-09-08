@@ -45,7 +45,7 @@
     <div>
         <a class="btn" href="{{ $spaUrl }}">Abrir galeria (completa)</a>
     </div>
-    <p class="note">Landing Laravel (read-only). Seleção, upload e login do cliente continuam no motor Node.</p>
+    <p class="note">Landing Laravel. Use <code>?landing=1</code> nesta URL; a galeria completa é a SPA (padrão).</p>
 </div>
 <script>
 window.__KS_BOOT_GALLERY_META = {

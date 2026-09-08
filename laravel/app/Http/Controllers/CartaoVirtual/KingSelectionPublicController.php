@@ -34,7 +34,7 @@ class KingSelectionPublicController extends Controller
             ->header('X-Conecta-Engine', 'laravel');
     }
 
-    public function show(string $slug)
+    public function show(Request $request, string $slug)
     {
         $result = $this->ks->landing($slug);
         if ($result['status'] !== 200) {
@@ -46,8 +46,34 @@ class KingSelectionPublicController extends Controller
             )->header('X-Conecta-Engine', 'laravel');
         }
 
-        return response()
-            ->view('cartao.ks-public', $result['data'])
+        // SPA completa (JS continua no Node / mesmo host); ?landing=1 mantém a landing read-only.
+        if ((string) $request->query('landing', '') === '1') {
+            return response()
+                ->view('cartao.ks-public', $result['data'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        $spaPath = public_path('ks-spa/kingSelectionCliente.html');
+        if (! is_file($spaPath)) {
+            return response()
+                ->view('cartao.ks-public', $result['data'])
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        $html = (string) file_get_contents($spaPath);
+        // Garante slug na URL da SPA (script lê location / query).
+        $boot = '<script>window.__KS_LARAVEL_ENGINE=true;window.__KS_BOOT_SLUG='
+            .json_encode($slug, JSON_UNESCAPED_UNICODE)
+            .';</script>';
+        if (str_contains($html, '</head>')) {
+            $html = str_replace('</head>', $boot."\n</head>", $html);
+        } else {
+            $html = $boot.$html;
+        }
+
+        return response($html, 200)
+            ->header('Content-Type', 'text/html; charset=UTF-8')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('X-Conecta-Engine', 'laravel');
     }
 
@@ -139,5 +165,33 @@ class KingSelectionPublicController extends Controller
             ->header('Cross-Origin-Resource-Policy', 'cross-origin')
             ->header('Cache-Control', 'public, max-age=300')
             ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function myPhotos(Request $request, string $slug)
+    {
+        $token = trim((string) ($request->query('clientToken') ?: $request->header('X-Client-Token') ?: ''));
+        $face = app(\App\Services\CartaoVirtual\KingSelectionFaceService::class);
+        $r = $face->publicMyPhotos($slug, $token, $request->query());
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function enrollFaceAnonymous(Request $request)
+    {
+        $slug = trim((string) ($request->query('slug') ?: $request->input('slug') ?: ''));
+        $visitorId = $request->query('visitorId') ?: $request->input('visitorId');
+        $file = $request->file('image');
+        if (! $file) {
+            return response()->json(['message' => 'Nenhuma imagem enviada.'], 400)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $face = app(\App\Services\CartaoVirtual\KingSelectionFaceService::class);
+        $r = $face->enrollFaceAnonymous(
+            $slug,
+            (string) file_get_contents($file->getRealPath()),
+            $visitorId !== null ? (string) $visitorId : null
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
 }

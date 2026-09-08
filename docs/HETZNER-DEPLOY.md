@@ -32,47 +32,64 @@ Container `conectaking-laravel` (PHP 8.4) na rede Docker, proxy Node.
 
 **Teste sem mudar produção:** `https://www.conectaking.com.br/adrianokingg?laravel=1`  
 **Prévia:** `/l/card/adrianokingg` (banner de prévia)  
-**Canário (exemplo no `.env.prod`):**
+**Produção atual (todos os slugs):**
 ```bash
 LARAVEL_CARD_PUBLIC=true
-LARAVEL_CARD_SLUGS=adrianokingg
+LARAVEL_CARD_SLUGS=
 LARAVEL_PROFILE_API=true
 LARAVEL_UPLOAD_API=true
 LARAVEL_SATELLITES=true
 LARAVEL_ADMIN_BIBLE=true
 LARAVEL_KS=true
-LARAVEL_KS_SLUGS=eliseu
+LARAVEL_KS_SLUGS=
 ```
 
 ## O que já está em PHP (Laravel) em produção
 
-Flags atuais (canário): cartão/`adrianokingg`, profile, upload, satélites, KS/`eliseu`, admin bíblia.
+Flags atuais (canário): cartão/`adrianokingg`, profile, upload, satélites, KS/`eliseu`, admin bíblia, dashboard.
 
 | Área | Estado |
 |---|---|
-| Cartão público Blade + APIs read | Canário `adrianokingg` |
+| Cartão público Blade + APIs read | **Todos os slugs** (`LARAVEL_CARD_SLUGS` vazio) |
 | Editor profile + uploads | Ligado |
-| Form / guest-list / bíblia pública / loja | Canário satélites |
+| Form / guest-list / bíblia pública / loja | Todos (satélites) |
 | Admin prosperidade + Dev365 (incl. async jobs) | Ligado |
-| KS landing + gallery/share/cover/og/splash/content/preview | Canário `eliseu` |
+| KS público + client login/acesso + select/select-bulk/finalize/gallery + export/edit + SPA | **Todos** (`LARAVEL_KS_SLUGS` vazio) |
+| KS watermark preview/download (GD diagonal) | Ligado (modo off/none intacto) |
+| KS painel fotógrafo (CRUD + upload + pastas + clientes + PUT) | F4b Laravel |
+| KS vendas (sales-config, clients, round, payment-terms/review, approve) | Laravel |
+| KS access-link + reset-password cliente | Laravel |
+| KS uploads/presign-batch (R2 SigV4) | Laravel |
+| KS watermark-file (GET preview PNG) | Laravel |
+| KS payment-proof (GET admin + POST cliente) + volume uploads compartilhado | Laravel |
+| KS worker-token + gallery reset-password | Laravel |
+| KS face (admin process/status/results/detail, auto-separate, client face-results/cache/reset/search, public my-photos/enroll-anonymous) | Laravel |
+| KS config-finalizacao (HTML Blade) + thank-you-image | Laravel |
+| KS pastas avançadas / AI / zip / process-all-faces | Laravel (process-all-faces + auto-separate + zip já no PHP) |
+| Dashboard boot | auth login/refresh/logout + modules + analytics + branding + finance boot + login/dashboard shell (`LARAVEL_DASHBOARD=true`) |
+| Finance CRUD (transactions/cards/categories/accounts/goals/profiles + income-breakdown) | Laravel |
+| Finance extras (upgrade-plans, whatsapp-config, zerar-senha/verify/put, zerar-mes, admin clientes-senhas) | Laravel |
+| Guest-list admin (CRUD listas/convidados + QR + reset-tokens + team GET) | Laravel (export PDF ainda Node) |
 
 ## O que ainda falta (código Node → PHP)
 
 | Prioridade | Item | Notas |
 |---|---|---|
-| Alta | **King Selection completo** | SPA cliente, uploads, watermark avançado, seleção, vendas, face |
-| Média | **Dashboard** (`dashboard.html` + APIs do painel) | Ainda Node |
-| Baixa / ops | Abrir canários | Tirar `LARAVEL_CARD_SLUGS` / `LARAVEL_KS_SLUGS` = todos os slugs |
-| Fora de escopo | Checkout / PagBank | Mantém Node de propósito |
+| Média | Finance Serasa OCR (import-preview PDF/imagens) + budgets/reports/transfer/upload | CRUD + zerar/whatsapp já Laravel |
+| Baixa | Guest-list export PDF | admin raramente usado |
+| Removido do roadmap | Checkout / PagBank | **Não será usado** — não migrar |
 | N/A | TTS | Browser-only |
+| Baixa | KS diag stubs (`aws-ping`, etc.) | opcional / pouco valor |
 
-## Configuração ops ainda aberta
+## Ops (já OK neste VPS)
 
-- DNS/domínio → `46.225.100.64` (se ainda não apontou)
-- HTTPS (Caddy/Nginx + Let's Encrypt)
-- Firewall Hetzner 22/80/443
+- Caddy HTTPS em `conectaking.com.br` / `www` / `cnking.bio`
+- UFW: 22/80/443
+- DNS via Cloudflare (proxy) → origem Hetzner `46.225.100.64`
 
-**Não falta** chave OpenAI / JWT / R2 / `LARAVEL_APP_KEY` no `.env.prod` para o que já migrou — já estão no container Laravel.```bash
+**Não falta** OpenAI / JWT / R2 / `LARAVEL_APP_KEY` para o que já migrou.
+
+```bash
 # Rebuild só o Laravel
 cd /opt/conectaking
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build laravel
@@ -80,22 +97,16 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build lar
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps api
 ```
 
-O cartão público em produção **continua no Node** até `LARAVEL_CARD_PUBLIC=true` (ou `?laravel=1`).
-
 ## Roadmap migração cartão → Laravel
 
 | Fase | Status | Escopo |
 |---|---|---|
-| 1. Página pública (Blade) | canário `adrianokingg` | Render `/:slug` + tipos principais |
-| 2. Canário `LARAVEL_CARD_PUBLIC` | ligado (slug) | `LARAVEL_CARD_SLUGS=adrianokingg` |
-| 3. APIs read do cartão | feito (proxy) | PIX, verse, logs, vcard, PDF |
-| 4. Editor `/api/profile` | feito | CRUD + tipados + form extras |
-| 5. Uploads | feito (flag) | `/api/upload/*` + PDF |
-| 6. Satélites | feito (flag, canário) | form rico, guest-list (register/confirm/portaria/QR), bíblia (+progress JWT), loja |
-| 7. King Selection | fatia pública | landing + gallery + share-meta + cover/og/entry-splash + gallery-content + preview JPEG (`LARAVEL_KS`) |
-| 8. KS completo | depois | SPA cliente, uploads, watermark, seleção, vendas |
+| 1–6 | feito | cartão, profile, upload, satélites |
+| 7. King Selection | parcial | público + client login/gallery/preview |
+| 8. KS completo | depois | select, uploads, watermark, vendas, face |
+| 9. Dashboard | parcial | `account/status`; HTML/finance ainda Node |
 
-**Ainda Node:** KS SPA cliente + uploads/watermark avançado/seleção/vendas/face; TTS browser-only; dashboard. **Checkout/PagBank:** fora do escopo.
+**Ainda Node (KS):** poucos leftovers (ex. CompareFaces chunked on-demand completo, diag aws-*). Núcleo face/jobs/zip/AI/pastas já Laravel. **Finance CRUD extras** ainda parciais. **PagBank/checkout:** não entra no roadmap.
 
 Devocional 365 público: Laravel serve `/api/bible/devotionals-365/{day}` com temas + enriquecimento IA opcional (`OPENAI_API_KEY` / `ai=0` / `plain=1`).
 
@@ -103,12 +114,12 @@ Admin prosperidade (Laravel): list/get/save/publish/export/import/storytelling-m
 
 Admin devotionals-365 (Laravel): days, admin-full, day get/put/delete, month-themes, generate tema, `day/:d/generate-ai`, **generate-range-ai** (máx. 31 dias), **generate-month-ai**, **generate-calendar-months-async** + generation-job get/cancel (Cache).
 
-King Selection flags:
+King Selection:
 ```
 LARAVEL_KS=true
-LARAVEL_KS_SLUGS=eliseu
+LARAVEL_KS_SLUGS=
 ```
-Landing: `/kingSelection/{slug}` (use `?engine=node` para SPA Node). APIs: `/api/king-selection/public/gallery`, `.../gallery-share-meta/{slug}`.
+Landing SPA: `/kingSelection/{slug}` (Laravel; `?landing=1` = landing; `?engine=node` = SPA Node). Client APIs: login|acesso|select|finalize|export|edit-request*|gallery|preview.
 
 **Nota deploy:** não embutir `laravel/.env` (sqlite local) na imagem — o compose injeta `DB_CONNECTION=pgsql`. O `Dockerfile` remove `.env` no build e `.dockerignore` ignora o arquivo.
 

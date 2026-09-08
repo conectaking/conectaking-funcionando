@@ -17,6 +17,7 @@ const LARAVEL_PROFILE_API = String(process.env.LARAVEL_PROFILE_API || 'false').t
 const LARAVEL_UPLOAD_API = String(process.env.LARAVEL_UPLOAD_API || 'false').toLowerCase() === 'true';
 const LARAVEL_SATELLITES = String(process.env.LARAVEL_SATELLITES || 'false').toLowerCase() === 'true';
 const LARAVEL_KS = String(process.env.LARAVEL_KS || 'false').toLowerCase() === 'true';
+const LARAVEL_DASHBOARD = String(process.env.LARAVEL_DASHBOARD || 'false').toLowerCase() === 'true';
 const LARAVEL_ADMIN_BIBLE = String(process.env.LARAVEL_ADMIN_BIBLE || process.env.LARAVEL_SATELLITES || 'false').toLowerCase() === 'true';
 const LARAVEL_CARD_SLUGS = new Set(
     String(process.env.LARAVEL_CARD_SLUGS || '')
@@ -168,7 +169,7 @@ function isLaravelUploadPath(reqMethod, urlPath) {
 }
 
 function isLaravelSatellitePath(reqMethod, urlPath) {
-    if (!urlPath) return false;
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
     const pathOnly = urlPath.split('?')[0];
     const method = String(reqMethod || 'GET').toUpperCase();
     const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
@@ -251,7 +252,11 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
     if (store && method === 'GET') {
         const profileSlug = store[1];
         const storeSlug = store[2];
+        // /js/foo.js e /css/bar.css NÃO são loja — o 1º segmento também é reservado
+        if (RESERVED_STORE_SEGMENTS.has(String(profileSlug).toLowerCase())) return false;
         if (RESERVED_STORE_SEGMENTS.has(String(storeSlug).toLowerCase())) return false;
+        // ficheiros estáticos (extensão) nunca são sales store
+        if (/\.[a-z0-9]{1,8}$/i.test(storeSlug)) return false;
         if (!force && !LARAVEL_SATELLITES) return false;
         return force || slugAllowedForSatellite(profileSlug);
     }
@@ -303,6 +308,338 @@ function isLaravelKsPath(reqMethod, urlPath) {
         if (!slug) return force || LARAVEL_KS;
         return force || slugAllowedForKs(slug);
     }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/login$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/(login-by-details|register|public-enter|signup-enter)$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/(select|select-bulk|finalize)$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/client\/(export|edit-requests)$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/edit-request$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/edit-request\/\d+\/cancel$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/client\/gallery$/i.test(pathOnly)) {
+        if (!force && !LARAVEL_KS) return false;
+        const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
+        const m = /[?&]slug=([^&]+)/i.exec(q);
+        const slug = m ? decodeURIComponent(m[1]) : '';
+        if (!slug) return force || LARAVEL_KS;
+        return force || slugAllowedForKs(slug);
+    }
+    const clientPreview = pathOnly.match(/^\/(?:l\/)?api\/king-selection\/client\/photos\/(\d+)\/preview$/i);
+    if (clientPreview && method === 'GET') {
+        if (!force && !LARAVEL_KS) return false;
+        const q = urlPath.includes('?') ? urlPath.slice(urlPath.indexOf('?')) : '';
+        const m = /[?&]slug=([^&]+)/i.exec(q);
+        const slug = m ? decodeURIComponent(m[1]) : '';
+        if (!slug) return force || LARAVEL_KS;
+        return force || slugAllowedForKs(slug);
+    }
+    // Fatia 4b — painel fotógrafo (JWT user)
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/status$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos\/batch$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos\/worker-commit$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/uploads\/proxy$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/uploads\/presign-batch$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/watermark-file$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'PUT' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/generate$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/reorder$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos\/assign-folder$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/watermark$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/thank-you-image$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/open-selection-round$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/ai\/share-text$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/ai\/sales-whatsapp-template$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/ai\/support-default-message$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/edit-requests$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/edit-requests\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/edit-requests\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+\/delete-selection-batch$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+\/reactivate-selection-batch$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+\/clear-review$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos\/delete-batch$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'PUT' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+\/reset-password$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+\/access-link$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales-config$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'PUT' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales-config$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales\/clients$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales\/clients\/\d+\/round\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales\/clients\/\d+\/round\/\d+\/payment-terms$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales\/clients\/\d+\/round\/\d+\/payment-review$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales\/clients\/\d+\/round\/\d+\/approve-photo$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales\/clients\/\d+\/round\/\d+\/approve-all$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/sales\/payment-proof\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/uploads\/worker-token$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/reset-password$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/enrolled-faces$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+\/enroll-face$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/face-process-status$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/face-results$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos\/\d+\/face-detail$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/auto-separate-jobs?$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/auto-separate-by-face$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/auto-separate-job\/start$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/auto-separate-job\/\d+\/cancel$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos\/\d+\/process-faces$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/process-all-faces$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/clients\/\d+\/password$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/export$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/link-cover-upload$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/link-cover-preview$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/photos\/\d+\/edited-upload$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/king-selection\/photos\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/king-selection\/photos\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/photos\/\d+\/(replace-r2|replace|replace-proxy)$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/photos\/\d+\/(preview|download)$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/watermark-suggest-scales$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/king-selection\/galleries\/\d+\/folders\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/payment-proof$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/promo-verify$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/enroll-face-image$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/client\/face-results$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/(face-enroll-cache|reset-face-session)$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/search-face-by-photo$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/public\/enroll-face-anonymous$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/config-finalizacao\/\d+$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-selection\/public\/galleries\/[^/]+\/my-photos$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/download-zip-plan$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-selection\/client\/download-zip$/i.test(pathOnly)) {
+        return force || LARAVEL_KS;
+    }
+    return false;
+}
+
+function isLaravelAccountPath(reqMethod, urlPath) {
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    return method === 'GET' && /^\/(?:l\/)?api\/account\/status$/i.test(pathOnly);
+}
+
+function isLaravelDashboardPath(reqMethod, urlPath) {
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    const force = wantsLaravelEngine(urlPath);
+    if (!force && !LARAVEL_DASHBOARD) return false;
+
+    if (method === 'POST' && /^\/(?:l\/)?api\/auth\/(login|refresh|logout)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/modules\/(available|plan-availability)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/analytics\/(kpis|performance|top-items|details)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'PUT' && /^\/(?:l\/)?api\/business\/branding$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/business\/team$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/finance\/(profiles(?:\/(primary|limit))?|dashboard|income-breakdown|cards|transactions(?:\/\d+)?|king-data|categories|accounts|goals|upgrade-plans|whatsapp-config|zerar-senha-status|admin\/clientes-senhas)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'PUT' && /^\/(?:l\/)?api\/finance\/(king-data|whatsapp-config|zerar-senha)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/finance\/(transactions|cards|categories|accounts|goals|profiles|zerar-senha\/verify|zerar-mes)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'PUT' && /^\/(?:l\/)?api\/finance\/(transactions|profiles)\/\d+$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/finance\/cards\/\d+$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/finance\/(transactions|cards|goals|profiles)\/\d+$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?(login|login\.html|dashboard|dashboard\.html)\/?$/i.test(pathOnly)) {
+        return true;
+    }
     return false;
 }
 
@@ -316,6 +653,14 @@ function isLaravelGuestListPath(reqMethod, urlPath) {
     if (/^\/(?:l\/)?api\/guest-lists\/\d+\/customize-(portaria|confirmacao|inscricao)$/i.test(pathOnly)
         && (method === 'GET' || method === 'PUT')) {
         return force || LARAVEL_SATELLITES || LARAVEL_PROFILE_API;
+    }
+    // Admin guest-lists (read + write; PDF export permanece no Node)
+    if (/^\/(?:l\/)?api\/guest-lists(?:\/\d+(?:\/(guests(?:\/\d+(?:\/generate-qr)?)?|stats|generate-all-qr-codes|reset-tokens))?)?$/i.test(pathOnly)) {
+        if (method === 'GET' || method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
+            // export/pdf fica no Node
+            if (/\/export\/pdf$/i.test(pathOnly)) return false;
+            return force || LARAVEL_SATELLITES || LARAVEL_PROFILE_API;
+        }
     }
 
     if (!force && !LARAVEL_SATELLITES) return false;
@@ -462,6 +807,14 @@ function laravelProxyMiddleware(req, res, next) {
     }
 
     if (LARAVEL_PROFILE_API && isLaravelProfileApiPath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
+    if (LARAVEL_PROFILE_API && isLaravelAccountPath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
+    if ((LARAVEL_DASHBOARD || wantsLaravelEngine(url)) && isLaravelDashboardPath(req.method, url)) {
         return proxyToLaravel(req, res, url, { publicMode: false });
     }
 

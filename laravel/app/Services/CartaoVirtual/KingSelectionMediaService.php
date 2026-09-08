@@ -5,6 +5,7 @@ namespace App\Services\CartaoVirtual;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Capa / OG públicos do King Selection (sem Sharp: redimensiona com GD).
@@ -13,6 +14,14 @@ class KingSelectionMediaService
 {
     public function __construct(private readonly R2StorageService $r2)
     {
+    }
+
+    /**
+     * Lê bytes de caminho KS (r2:/http/local) — usado por face enroll e previews.
+     */
+    public function bufferFromStoragePath(string $path): ?string
+    {
+        return $this->bufferFromPath($path);
     }
 
     /**
@@ -73,6 +82,112 @@ class KingSelectionMediaService
         imagedestroy($canvas);
 
         return ['status' => 200, 'binary' => $binary, 'contentType' => 'image/jpeg'];
+    }
+
+    /**
+     * Preview JPEG a partir de um file_path (cliente autenticado).
+     *
+     * @param  array{enabled?:bool, mode?:string, opacity?:float}|null  $watermark
+     * @return array{status:int, binary?:string, contentType?:string, message?:string}
+     */
+    public function previewFromStoragePath(string $path, bool $thumb = false, ?array $watermark = null): array
+    {
+        $buf = $this->bufferFromPath($path);
+        if ($buf === null) {
+            return ['status' => 502, 'message' => 'Não foi possível carregar a imagem (ficheiro em falta no armazenamento).'];
+        }
+        $out = $this->resizeJpeg($buf, $thumb ? 400 : 1200);
+        if ($out === null) {
+            return ['status' => 502, 'message' => 'Falha ao processar imagem'];
+        }
+        if ($watermark && ! empty($watermark['enabled']) && ! $thumb) {
+            $wm = $this->applyDiagonalWatermark($out, (float) ($watermark['opacity'] ?? 0.22));
+            if ($wm !== null) {
+                $out = $wm;
+            }
+        }
+
+        return ['status' => 200, 'binary' => $out, 'contentType' => 'image/jpeg'];
+    }
+
+    /**
+     * Marca d'água diagonal simples (paridade mínima com modo "x" do Node).
+     */
+    private function applyDiagonalWatermark(string $jpegBinary, float $opacity): ?string
+    {
+        $img = @imagecreatefromstring($jpegBinary);
+        if ($img === false) {
+            return null;
+        }
+        imagesavealpha($img, true);
+        $w = imagesx($img);
+        $h = imagesy($img);
+        $alpha = (int) round((1 - min(1, max(0, $opacity))) * 127);
+        $color = imagecolorallocatealpha($img, 255, 255, 255, $alpha);
+        $step = max(80, (int) round(min($w, $h) / 6));
+        imagesetthickness($img, max(2, (int) round(min($w, $h) / 250)));
+        for ($x = -$h; $x < $w + $h; $x += $step) {
+            imageline($img, $x, 0, $x + $h, $h, $color);
+            imageline($img, $x + (int) ($step / 2), 0, $x + (int) ($step / 2) + $h, $h, $color);
+        }
+        ob_start();
+        imagejpeg($img, null, 88);
+        $out = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return $out !== '' ? $out : null;
+    }
+
+    /**
+     * Preview PNG da logo de marca d'água do painel (GET watermark-file).
+     *
+     * @return array{status:int, binary?:string, contentType?:string, message?:string}
+     */
+    public function watermarkFileForGallery(string $userId, int $galleryId, string $which = ''): array
+    {
+        if ($galleryId < 1) {
+            return ['status' => 400, 'message' => 'galleryId inválido'];
+        }
+        $cols = ['g.watermark_path'];
+        if (Schema::hasColumn('king_galleries', 'watermark_path_portrait')) {
+            $cols[] = 'g.watermark_path_portrait';
+        }
+        if (Schema::hasColumn('king_galleries', 'watermark_path_landscape')) {
+            $cols[] = 'g.watermark_path_landscape';
+        }
+        $row = DB::selectOne(
+            'SELECT '.implode(', ', $cols).'
+             FROM king_galleries g
+             JOIN profile_items pi ON pi.id = g.profile_item_id
+             WHERE g.id = ? AND pi.user_id = ? LIMIT 1',
+            [$galleryId, $userId]
+        );
+        if (! $row) {
+            return ['status' => 404, 'message' => 'Galeria não encontrada'];
+        }
+        $which = strtolower(trim($which));
+        $legacy = trim((string) ($row->watermark_path ?? ''));
+        $pathP = isset($row->watermark_path_portrait) ? trim((string) $row->watermark_path_portrait) : '';
+        $pathL = isset($row->watermark_path_landscape) ? trim((string) $row->watermark_path_landscape) : '';
+        $fp = $legacy;
+        if ($which === 'portrait') {
+            $fp = $pathP !== '' ? $pathP : $legacy;
+        } elseif ($which === 'landscape') {
+            $fp = $pathL !== '' ? $pathL : $legacy;
+        }
+        $buf = $fp !== '' ? $this->bufferFromPath($fp) : null;
+        if ($buf === null) {
+            $buf = $this->defaultWatermarkAssetBuffer($which === 'landscape');
+        }
+        if ($buf === null) {
+            return ['status' => 500, 'message' => 'Não foi possível carregar a marca d’água (Cloudflare/token ou arquivo padrão).'];
+        }
+        $out = $this->resizePng($buf, 560);
+        if ($out === null) {
+            return ['status' => 500, 'message' => 'Falha ao processar marca d’água'];
+        }
+
+        return ['status' => 200, 'binary' => $out, 'contentType' => 'image/png'];
     }
 
     /**
@@ -235,15 +350,38 @@ class KingSelectionMediaService
         return $fp !== '' ? $fp : null;
     }
 
+    public function readFileBuffer(string $path): ?string
+    {
+        return $this->bufferFromPath($path);
+    }
+
     private function bufferFromPath(string $path): ?string
     {
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+        if (str_starts_with(strtolower($path), 'r2:')) {
+            $path = substr($path, 3);
+        }
         if (preg_match('#^https?://#i', $path)) {
             return $this->httpGetBinary($path);
+        }
+        if (str_starts_with(strtolower($path), 'cfimage:')) {
+            // Cloudflare Images delivery — se houver URL pública base de delivery
+            $id = trim(substr($path, strlen('cfimage:')));
+            $cfBase = rtrim((string) (env('CF_IMAGES_DELIVERY_URL') ?: ''), '/');
+            if ($cfBase !== '' && $id !== '') {
+                return $this->httpGetBinary($cfBase.'/'.$id);
+            }
+
+            return null;
         }
         $cfg = $this->r2->config();
         $base = $cfg['publicBaseUrl'] ?? null;
         if ($base) {
-            $url = rtrim($base, '/').'/'.ltrim($path, '/');
+            $segments = array_map('rawurlencode', array_values(array_filter(explode('/', ltrim($path, '/')))));
+            $url = rtrim($base, '/').'/'.implode('/', $segments);
             $buf = $this->httpGetBinary($url);
             if ($buf !== null) {
                 return $buf;
@@ -297,6 +435,99 @@ class KingSelectionMediaService
         imagedestroy($dst);
 
         return $out !== '' ? $out : null;
+    }
+
+    private function resizePng(string $buf, int $maxSide): ?string
+    {
+        $img = @imagecreatefromstring($buf);
+        if ($img === false) {
+            return null;
+        }
+        imagesavealpha($img, true);
+        $w = imagesx($img);
+        $h = imagesy($img);
+        $scale = min($maxSide / max($w, $h, 1), 1.0);
+        $nw = max(1, (int) round($w * $scale));
+        $nh = max(1, (int) round($h * $scale));
+        $dst = imagecreatetruecolor($nw, $nh);
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+        imagefilledrectangle($dst, 0, 0, $nw, $nh, $transparent);
+        imagealphablending($dst, true);
+        imagecopyresampled($dst, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
+        imagedestroy($img);
+        ob_start();
+        imagepng($dst);
+        $out = (string) ob_get_clean();
+        imagedestroy($dst);
+
+        return $out !== '' ? $out : null;
+    }
+
+    private function defaultWatermarkAssetBuffer(bool $landscape): ?string
+    {
+        $envKey = $landscape
+            ? (env('KINGSELECTION_DEFAULT_WATERMARK_LANDSCAPE_FILE') ?: env('KINGSELECTION_DEFAULT_WATERMARK_HORIZONTAL_FILE'))
+            : (env('KINGSELECTION_DEFAULT_WATERMARK_PORTRAIT_FILE') ?: env('KINGSELECTION_DEFAULT_WATERMARK_VERTICAL_FILE'));
+        $envKey = trim((string) ($envKey ?: ''));
+        if ($envKey !== '') {
+            $b = $this->bufferFromPath($envKey);
+            if ($b !== null) {
+                return $b;
+            }
+            if (is_file($envKey)) {
+                $bin = @file_get_contents($envKey);
+                if ($bin !== false && $bin !== '') {
+                    return $bin;
+                }
+            }
+        }
+        $fileName = $landscape
+            ? 'marca dagua KingSelection horizontal.png'
+            : 'marca dagua KingSelection vertical.png';
+        $alt = $landscape
+            ? 'marca_dagua_kingselection_horizontal.png'
+            : 'marca_dagua_kingselection_vertical.png';
+        foreach ([
+            base_path('../public_html/'.$fileName),
+            base_path('../'.$fileName),
+            base_path('../public_html/'.$alt),
+            base_path('../'.$alt),
+            '/opt/conectaking/public_html/'.$fileName,
+            '/opt/conectaking/'.$fileName,
+            '/opt/conectaking/public_html/'.$alt,
+            '/opt/conectaking/'.$alt,
+        ] as $abs) {
+            if (is_file($abs)) {
+                $bin = @file_get_contents($abs);
+                if ($bin !== false && $bin !== '') {
+                    return $bin;
+                }
+            }
+        }
+
+        return $this->generateFallbackWatermarkPng($landscape);
+    }
+
+    private function generateFallbackWatermarkPng(bool $landscape): ?string
+    {
+        $w = $landscape ? 560 : 400;
+        $h = $landscape ? 280 : 560;
+        $im = imagecreatetruecolor($w, $h);
+        imagealphablending($im, false);
+        imagesavealpha($im, true);
+        $transparent = imagecolorallocatealpha($im, 0, 0, 0, 127);
+        imagefilledrectangle($im, 0, 0, $w, $h, $transparent);
+        imagealphablending($im, true);
+        $gold = imagecolorallocatealpha($im, 255, 199, 0, 40);
+        imagestring($im, 5, (int) ($w / 2 - 50), (int) ($h / 2 - 8), 'Conecta King', $gold);
+        ob_start();
+        imagepng($im);
+        $bin = (string) ob_get_clean();
+        imagedestroy($im);
+
+        return $bin !== '' ? $bin : null;
     }
 
     private function fallbackOgBuffer(string $slug): ?string

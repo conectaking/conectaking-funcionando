@@ -56,6 +56,7 @@
         composeShareQrArt: function () { return pick(qr().composeShareQrArt, global.composeShareQrArt).apply(null, arguments); },
         deleteItem: function () { return pick(core().deleteItem, global.deleteItem).apply(null, arguments); },
         duplicateItem: function () { return pick(core().duplicateItem, global.duplicateItem).apply(null, arguments); },
+        updateItemActiveStatus: function () { return pick(core().updateItemActiveStatus, global.updateItemActiveStatus).apply(null, arguments); },
         fetchProfileData: function () { return pick(core().fetchProfileData, global.fetchProfileData).apply(null, arguments); },
         initSortable: function () { return pick(sortMod().initSortable, core().initSortable, global.initSortable).apply(null, arguments); },
         setupMoveButtons: function () { return pick(sortMod().setupMoveButtons, core().setupMoveButtons, global.setupMoveButtons).apply(null, arguments); },
@@ -124,6 +125,29 @@
     });
 
 function setupEventListeners() {
+    if (global.__ckDashboardListenersBound) {
+        console.log('[DASHBOARD] setupEventListeners já ligado — skip');
+        return;
+    }
+    var c = core();
+    var sels = (typeof c.getSelectors === 'function') ? c.getSelectors() : null;
+    if (!sels || !sels.itemsContainer) {
+        console.warn('[DASHBOARD] setupEventListeners adiado — SELECTORS/Core ainda não prontos');
+        return;
+    }
+    global.__ckDashboardListenersBound = true;
+    console.log('[DASHBOARD] setupEventListeners ligando handlers…');
+
+    try {
+        _setupEventListenersBody();
+    } catch (err) {
+        global.__ckDashboardListenersBound = false;
+        console.error('[DASHBOARD] setupEventListeners falhou:', err);
+        throw err;
+    }
+}
+
+function _setupEventListenersBody() {
     // Botão de salvar no header (desktop)
     const headerSaveBtn = document.getElementById('header-save-btn');
     if (headerSaveBtn && typeof headerSaveBtn.addEventListener === 'function') {
@@ -160,19 +184,19 @@ function setupEventListeners() {
             }
         });
     }
-    SELECTORS.addItemBtn.addEventListener('click', async () => {
-        SELECTORS.addItemModal.classList.add('active');
+    SELECTORS.addItemBtn?.addEventListener('click', async () => {
+        SELECTORS.addItemModal?.classList.add('active');
         // Sempre recarregar módulos ao abrir (reflete Separação de Pacotes atual)
         window.userAvailableModules = null;
         if (typeof window.filterModulesByPlan === 'function') await window.filterModulesByPlan();
         else if (typeof env.filterModulesByPlan === 'function') await env.filterModulesByPlan();
     });
-    SELECTORS.closeAddModalBtn.addEventListener('click', () => SELECTORS.addItemModal.classList.remove('active'));
-    SELECTORS.addItemModal.addEventListener('click', e => { if (e.target === SELECTORS.addItemModal) SELECTORS.addItemModal.classList.remove('active'); });
-    SELECTORS.buttonAlignOptions.forEach(radio => {
+    SELECTORS.closeAddModalBtn?.addEventListener('click', () => SELECTORS.addItemModal?.classList.remove('active'));
+    SELECTORS.addItemModal?.addEventListener('click', e => { if (e.target === SELECTORS.addItemModal) SELECTORS.addItemModal.classList.remove('active'); });
+    (SELECTORS.buttonAlignOptions || []).forEach(radio => {
         radio.addEventListener('change', function () { env.updateLivePreviewFromForm(); });
     });
-    SELECTORS.addItemModal.addEventListener('click', async e => {
+    SELECTORS.addItemModal?.addEventListener('click', async e => {
         if (e.target === SELECTORS.addItemModal) {
             SELECTORS.addItemModal.classList.remove('active');
             return;
@@ -501,6 +525,7 @@ function setupEventListeners() {
     if (SELECTORS.backgroundImageOpacityPicker) {
         SELECTORS.backgroundImageOpacityPicker.addEventListener('input', function () { env.updateLivePreviewFromForm(); });
     }
+    if (SELECTORS.itemsContainer) {
     SELECTORS.itemsContainer.addEventListener('click', e => {
         const editBtn = e.target.closest('.edit-item-btn, .module-action-btn.edit');
         const deleteBtn = e.target.closest('.delete-item-btn, .module-action-btn.delete');
@@ -555,14 +580,16 @@ function setupEventListeners() {
             }
         }
 
-        // Toggle de módulo
-        const toggleInput = e.target.closest('.module-toggle-input');
-        if (toggleInput && toggleInput.dataset) {
+        // Toggle: clique no slider cai no label; input tem 0×0 — preferir change (abaixo)
+        const toggleWrap = e.target.closest('.module-toggle');
+        const toggleInput = e.target.closest('.module-toggle-input')
+            || (toggleWrap ? toggleWrap.querySelector('.module-toggle-input') : null);
+        if (toggleInput && toggleInput.dataset && e.target !== toggleInput) {
+            // label já alterna o checkbox; status é aplicado no evento change
+        } else if (toggleInput && toggleInput.dataset) {
             const itemId = toggleInput.dataset.itemId;
             if (itemId) {
-                const isActive = toggleInput.checked;
-                // Atualizar status ativo do módulo
-                updateItemActiveStatus(itemId, isActive);
+                env.updateItemActiveStatus(itemId, toggleInput.checked);
             }
         }
 
@@ -625,10 +652,16 @@ function setupEventListeners() {
         if (iconPicker) {
             const itemEl = iconPicker.closest('.item');
             activeItemIdForIconPicker = itemEl.dataset.id;
-            SELECTORS.iconModal.classList.add('active');
+            SELECTORS.iconModal?.classList.add('active');
         }
     });
     SELECTORS.itemsContainer.addEventListener('change', async e => {
+        if (e.target && e.target.classList && e.target.classList.contains('module-toggle-input')) {
+            const itemId = e.target.dataset?.itemId;
+            if (itemId) {
+                env.updateItemActiveStatus(itemId, !!e.target.checked);
+            }
+        }
         const pdfUploadArea = e.target.closest('.pdf-upload-area');
         if (pdfUploadArea) {
             const fileInput = e.target;
@@ -659,6 +692,9 @@ function setupEventListeners() {
             }
         }
     });
+    } else {
+        console.warn('[DASHBOARD] #items-container ausente — cliques de módulos não ligados');
+    }
 
     if (SELECTORS.backgroundUploadArea) {
         SELECTORS.backgroundUploadArea.addEventListener('click', () => {
@@ -675,7 +711,7 @@ function setupEventListeners() {
         });
     }
 
-    SELECTORS.editModalBody.addEventListener('change', e => {
+    SELECTORS.editModalBody?.addEventListener('change', e => {
         if (e.target.name === 'aspect-ratio-selector') {
             const itemId = SELECTORS.editItemModal.dataset.editingId;
             const itemEl = document.querySelector(`.item[data-id='${itemId}']`);
@@ -958,11 +994,18 @@ function setupEventListeners() {
             }
             if (link.id === 'king-selection-sidebar-link') {
                 // Garante destino canônico mesmo sem JS (fallback do href no HTML)
-                link.href = kingSelectionAdminUrl();
+                var ksUrlFn = (typeof window.kingSelectionAdminUrl === 'function')
+                    ? window.kingSelectionAdminUrl
+                    : (typeof kingSelectionAdminUrl === 'function' ? kingSelectionAdminUrl : null);
+                if (ksUrlFn) link.href = ksUrlFn();
                 link.addEventListener('click', async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    await window.navigateToKingSelectionAdmin();
+                    if (typeof window.navigateToKingSelectionAdmin === 'function') {
+                        await window.navigateToKingSelectionAdmin();
+                    } else if (ksUrlFn) {
+                        window.location.href = ksUrlFn();
+                    }
                 }, false);
                 return;
             }
@@ -3112,4 +3155,28 @@ function setupEventListeners() {
     };
     global.DashboardListeners = DashboardListeners;
     global.setupEventListeners = setupEventListeners;
+
+    // Garantir bind após Core/SELECTORS (DOMContentLoaded do dashboard.js)
+    function bootListeners(attempt) {
+        attempt = attempt || 0;
+        try {
+            if (global.__ckDashboardListenersBound) return;
+            if (typeof global.setupEventListeners === 'function') {
+                global.setupEventListeners();
+            }
+            if (!global.__ckDashboardListenersBound && attempt < 40) {
+                setTimeout(function () { bootListeners(attempt + 1); }, 50);
+            }
+        } catch (e) {
+            console.error('[DASHBOARD] bootListeners', e);
+            if (attempt < 40) setTimeout(function () { bootListeners(attempt + 1); }, 50);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () { bootListeners(0); }, 0);
+        });
+    } else {
+        setTimeout(function () { bootListeners(0); }, 0);
+    }
 })(typeof window !== 'undefined' ? window : this);

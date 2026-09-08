@@ -106,6 +106,84 @@ class R2StorageService
         return $c['publicBaseUrl'].'/'.implode('/', $segments);
     }
 
+    /**
+     * Upload por key (KS galleries) — não exige publicBaseUrl.
+     */
+    public function putKey(string $key, string $binary, string $contentType): bool
+    {
+        $c = $this->config();
+        if (! $c['enabled'] || ! $c['endpoint'] || ! $c['bucket']) {
+            return false;
+        }
+
+        return $this->putObjectRaw(
+            $c['endpoint'],
+            $c['bucket'],
+            (string) $c['accessKeyId'],
+            (string) $c['secretAccessKey'],
+            $key,
+            $binary,
+            $contentType,
+            'public, max-age=31536000, immutable'
+        );
+    }
+
+    /**
+     * Presigned PUT (SigV4 query) — paridade com utils/r2.js r2PresignPut.
+     *
+     * @return array{uploadUrl:string, publicUrl:?string}|null
+     */
+    public function presignPut(
+        string $key,
+        string $contentType = 'application/octet-stream',
+        string $cacheControl = 'public, max-age=31536000, immutable',
+        int $expiresInSeconds = 900
+    ): ?array {
+        $c = $this->config();
+        if (! $c['enabled'] || ! $c['endpoint'] || ! $c['bucket']) {
+            return null;
+        }
+        $expires = max(60, min(3600, $expiresInSeconds));
+        $host = parse_url((string) $c['endpoint'], PHP_URL_HOST) ?: '';
+        $canonicalUri = '/'.$c['bucket'].'/'.implode('/', array_map('rawurlencode', explode('/', ltrim($key, '/'))));
+        $amzDate = gmdate('Ymd\THis\Z');
+        $dateStamp = gmdate('Ymd');
+        $credentialScope = "{$dateStamp}/auto/s3/aws4_request";
+        $credential = $c['accessKeyId'].'/'.$credentialScope;
+
+        $signedHeaders = 'cache-control;content-type;host';
+        $canonicalHeaders = 'cache-control:'.trim($cacheControl)."\n"
+            .'content-type:'.trim($contentType)."\n"
+            .'host:'.$host."\n";
+
+        $query = [
+            'X-Amz-Algorithm' => 'AWS4-HMAC-SHA256',
+            'X-Amz-Credential' => $credential,
+            'X-Amz-Date' => $amzDate,
+            'X-Amz-Expires' => (string) $expires,
+            'X-Amz-SignedHeaders' => $signedHeaders,
+        ];
+        ksort($query);
+        $canonicalQuery = [];
+        foreach ($query as $k => $v) {
+            $canonicalQuery[] = rawurlencode($k).'='.rawurlencode($v);
+        }
+        $canonicalQueryString = implode('&', $canonicalQuery);
+        $canonicalRequest = "PUT\n{$canonicalUri}\n{$canonicalQueryString}\n{$canonicalHeaders}\n{$signedHeaders}\nUNSIGNED-PAYLOAD";
+        $stringToSign = "AWS4-HMAC-SHA256\n{$amzDate}\n{$credentialScope}\n".hash('sha256', $canonicalRequest);
+        $signingKey = $this->signingKey((string) $c['secretAccessKey'], $dateStamp, 'auto', 's3');
+        $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+        $uploadUrl = rtrim((string) $c['endpoint'], '/').$canonicalUri.'?'.$canonicalQueryString.'&X-Amz-Signature='.$signature;
+
+        $publicUrl = null;
+        if (! empty($c['publicBaseUrl'])) {
+            $segments = array_map('rawurlencode', array_values(array_filter(explode('/', ltrim($key, '/')))));
+            $publicUrl = $c['publicBaseUrl'].'/'.implode('/', $segments);
+        }
+
+        return ['uploadUrl' => $uploadUrl, 'publicUrl' => $publicUrl];
+    }
+
     private function putObjectRaw(
         string $endpoint,
         string $bucket,

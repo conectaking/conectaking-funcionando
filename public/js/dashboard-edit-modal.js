@@ -177,7 +177,13 @@ async function openEditModal(itemEl) {
             alert('Este módulo foi descontinuado e já não está disponível.');
             return;
         } else if (itemType === 'king_selection') {
-            window.location.href = kingSelectionAdminUrl();
+            if (typeof window.navigateToKingSelectionAdmin === 'function') {
+                window.navigateToKingSelectionAdmin();
+            } else if (typeof window.kingSelectionAdminUrl === 'function') {
+                window.location.href = window.kingSelectionAdminUrl();
+            } else {
+                window.location.href = '/kingSelection';
+            }
         } else if (itemType === 'convite') {
             window.location.href = `conviteEdit.html?itemId=${itemId}`;
         } else if (itemType === 'bible') {

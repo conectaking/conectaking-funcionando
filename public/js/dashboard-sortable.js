@@ -190,7 +190,8 @@ function initSortable() {
         dragClass: 'sortable-drag',
         // Filtrar botões para não arrastar quando clicar neles
         filter: '.module-move-btn, .module-action-btn, .module-toggle, .module-toggle-input, .module-toggle-slider, button, a',
-        preventOnFilter: true,
+        // false: não engolir o clique nos botões/toggle (mobile + forceFallback)
+        preventOnFilter: false,
         // Callback para quando começar a arrastar
         onStart: function (evt) {
             try {

@@ -167,7 +167,7 @@ class KingSelectionPublicService
                 'gallery' => $g,
                 'og' => $meta['body'] ?? [],
                 'coverUrl' => '/api/king-selection/public/cover?slug='.rawurlencode($g['slug']),
-                'spaUrl' => '/kingSelection/'.$g['slug'].'?engine=node',
+                'spaUrl' => '/kingSelection/'.$g['slug'],
                 'statusLabel' => $this->statusLabel((string) ($g['status'] ?? '')),
             ],
         ];
