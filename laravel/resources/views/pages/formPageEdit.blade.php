@@ -2027,7 +2027,7 @@
                         </div>
                     </header>
                     
-                    <!-- Main Content - Layout Checkout Premium -->
+                    <!-- Main Content - Layout do formulário (preview) -->
                     <main class="preview-form-container" style="padding: 40px 0 80px 0; position: relative; z-index: 5; min-height: calc(100vh - 200px);">
                         <div class="preview-container" style="max-width: 1000px; margin: 0 auto; padding: 0 24px;">
                             <div class="preview-checkout-layout" style="display: grid; grid-template-columns: 1fr; gap: 32px; align-items: start;">

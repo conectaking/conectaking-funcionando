@@ -631,7 +631,7 @@
         return apiWarmPromise;
     }
 
-    /** Comprime foto para OCR no celular (evita timeout Render + mantém texto legível). */
+    /** Comprime foto para OCR no celular (evita timeout no servidor + mantém texto legível). */
     function compressImageFileForUpload(file, maxSide) {
         maxSide = maxSide || 1600;
         var quality = isMobileDevice() ? 0.86 : 0.84;
@@ -807,7 +807,7 @@
                 } else if (scanResumo.openAiError) {
                     linhas.push('Erro na IA: ' + scanResumo.openAiError);
                 } else if (scanResumo.iaIndisponivel) {
-                    linhas.push('IA OpenAI não configurada no servidor — peça para ativar OPENAI_API_KEY no Render.');
+                    linhas.push('IA OpenAI não configurada no servidor — peça para ativar OPENAI_API_KEY no ambiente da VPS.');
                 } else {
                     linhas.push('Nenhum item identificado. Marque "Usar IA OpenAI" e tente outra foto.');
                 }
@@ -874,7 +874,7 @@
         var el = document.getElementById('ocr-ia-status');
         if (!el) return;
         function showPending() {
-            el.textContent = 'IA OpenAI: ao digitalizar, usa a chave do Render (requer API atualizada). Checkbox marcado = prioridade IA.';
+            el.textContent = 'IA OpenAI: ao digitalizar, usa OPENAI_API_KEY deste servidor. Checkbox marcado = prioridade IA.';
             el.className = 'text-xs text-slate-400 dark:text-slate-500 mb-3';
         }
         fetch(apiOrigin + '/api/documentos/ocr-info', { credentials: 'omit' })
@@ -889,7 +889,7 @@
                     el.textContent = 'IA OpenAI ativa no servidor (' + (info.model || 'gpt-4o-mini') + ').';
                     el.className = 'text-xs text-emerald-600 dark:text-emerald-400 mb-3';
                 } else {
-                    el.textContent = 'OPENAI_API_KEY ausente no Render — digitalização usará só OCR local.';
+                    el.textContent = 'OPENAI_API_KEY ausente neste servidor — digitalização usará só OCR local.';
                     el.className = 'text-xs text-amber-600 dark:text-amber-400 mb-3';
                 }
             })

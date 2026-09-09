@@ -7097,19 +7097,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     
-                    <div class="input-group form-config-checkout-section" style="display: none; border-top: 1px solid var(--border-color, #2C2C2F); padding-top: 20px; margin-top: 20px;">
-                        <div style="padding: 20px; background: rgba(34,197,94,0.05); border-radius: 12px; border: 2px solid rgba(34,197,94,0.25);">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                <i class="fas fa-credit-card" style="color: #22c55e; font-size: 18px;"></i>
-                                <div style="font-weight: 700; font-size: 16px; color: var(--text, #ECECEC);">Checkout (Pagamento)</div>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text, #ECECEC); font-weight: 500;">
-                                <input type="checkbox" id="modal-enable-checkout" style="width: 20px; height: 20px; accent-color: #22c55e;">
-                                <span>Ativar checkout (Pix e cartão). O botão do formulário levará à página de pagamento.</span>
-                            </label>
-                            <p style="font-size: 12px; color: var(--text-dark, #A1A1A1); margin-top: 8px;">Pagamento online (checkout) não está disponível nesta versão.</p>
-                        </div>
-                    </div>
                 </div>
                 
                 <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px;">
@@ -7555,10 +7542,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Checkout removido (fora de escopo): manter checkbox sempre desmarcado
-        const checkoutCheckbox = modal.querySelector('#modal-enable-checkout');
-        if (checkoutCheckbox) checkoutCheckbox.checked = false;
-        
         // Salvar configurações
         modal.querySelector('.save-settings-modal-btn').addEventListener('click', async () => {
             // Salvar is_listed em variável global para uso no saveForm
@@ -7892,7 +7875,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Configurações aplicadas localmente. Clique em "Salvar" para garantir.');
                     }
                 }
-                // Checkout removido (fora de escopo): sem sincronização
             } else {
                 if (typeof showSuccessMessage === 'function') {
                     showSuccessMessage('Configurações atualizadas! Clique em "Salvar" para salvar as alterações.');
@@ -7928,11 +7910,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Checkout/PagBank removido (fora de escopo — APIs retornam 410).
-    async function openCheckoutModal() {
-        alert('Checkout/pagamento online não está disponível.');
-    }
-
     // Função para abrir modal de Lista de Convidados
     async function openGuestListModal() {
         const modal = document.createElement('div');

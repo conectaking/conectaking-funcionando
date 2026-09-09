@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poltica de Privacidade - Conecta King</title>
+    <title>Política de Privacidade - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -82,106 +82,106 @@
     <div class="container">
         <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Voltar para página inicial</a>
         
-        <h1>Poltica de Privacidade</h1>
+        <h1>Política de Privacidade</h1>
         <p><strong>Conecta King</strong></p>
         
-        <p class="last-updated">ltima atualizao: 22 de janeiro de 2026</p>
+        <p class="last-updated">Última atualização: 22 de janeiro de 2026</p>
 
-        <h2>1. Introduo</h2>
+        <h2>1. Introdução</h2>
         <p>
-            Esta Poltica de Privacidade descreve como o Conecta King ("n", "nosso" ou "aplicativo") 
-            coleta, usa e protege suas informaes quando você utiliza nosso servio de Agenda Inteligente 
+            Esta Política de Privacidade descreve como o Conecta King ("nós", "nosso" ou "aplicativo")
+            coleta, usa e protege suas informações quando você utiliza nosso serviço de Agenda Inteligente
             integrado com o Google Calendar.
         </p>
 
         <h2>2. Informações que Coletamos</h2>
-        <p>Quando você utiliza a integrao com Google Calendar, coletamos as seguintes informaes:</p>
+        <p>Quando você utiliza a integração com Google Calendar, coletamos as seguintes informações:</p>
         <ul>
-            <li><strong>Dados do Google Calendar:</strong> Acesso para criar, visualizar e gerenciar eventos em seu calendrio</li>
-            <li><strong>Informações de Agendamento:</strong> Nome, email, telefone e outras informaes fornecidas durante o agendamento</li>
-            <li><strong>Dados de Autenticao:</strong> Tokens de acesso OAuth do Google (criptografados e armazenados de forma segura)</li>
+            <li><strong>Dados do Google Calendar:</strong> Acesso para criar, visualizar e gerenciar eventos em seu calendário</li>
+            <li><strong>Informações de Agendamento:</strong> Nome, email, telefone e outras informações fornecidas durante o agendamento</li>
+            <li><strong>Dados de Autenticação:</strong> Tokens de acesso OAuth do Google (criptografados e armazenados de forma segura)</li>
             <li><strong>Informações de Uso:</strong> Logs de atividades relacionadas aos agendamentos</li>
         </ul>
 
         <h2>3. Como Usamos suas Informações</h2>
-        <p>Utilizamos suas informaes exclusivamente para:</p>
+        <p>Utilizamos suas informações exclusivamente para:</p>
         <ul>
             <li>Criar e gerenciar eventos de agendamento no Google Calendar</li>
-            <li>Verificar disponibilidade de horrios</li>
-            <li>Enviar convites de calendrio para você e seus clientes</li>
-            <li>Gerar links do Google Meet para reunies online</li>
-            <li>Melhorar nossos servios e experincia do usuário</li>
+            <li>Verificar disponibilidade de horários</li>
+            <li>Enviar convites de calendário para você e seus clientes</li>
+            <li>Gerar links do Google Meet para reuniões online</li>
+            <li>Melhorar nossos serviços e experiência do usuário</li>
         </ul>
 
         <h2>4. Compartilhamento de Informações</h2>
         <p>
-            <strong>Não compartilhamos, vendemos ou alugamos suas informaes pessoais para terceiros.</strong>
+            <strong>Não compartilhamos, vendemos ou alugamos suas informações pessoais para terceiros.</strong>
         </p>
         <p>
-            Seus dados são compartilhados apenas quando necessrio para:
+            Seus dados são compartilhados apenas quando necessário para:
         </p>
         <ul>
-            <li>Fornecer o servio de agendamento (criar eventos no Google Calendar)</li>
-            <li>Cumprir obrigaes legais</li>
-            <li>Proteger nossos direitos e segurana</li>
+            <li>Fornecer o serviço de agendamento (criar eventos no Google Calendar)</li>
+            <li>Cumprir obrigações legais</li>
+            <li>Proteger nossos direitos e segurança</li>
         </ul>
 
-        <h2>5. Segurana dos Dados</h2>
+        <h2>5. Segurança dos Dados</h2>
         <p>
-            Implementamos medidas de segurana tcnicas e organizacionais para proteger suas informaes:
+            Implementamos medidas de segurança técnicas e organizacionais para proteger suas informações:
         </p>
         <ul>
             <li>Criptografia de tokens OAuth usando chaves seguras</li>
-            <li>Acesso restrito aos dados apenas para funcionrios autorizados</li>
-            <li>Monitoramento contnuo de segurana</li>
+            <li>Acesso restrito aos dados apenas para funcionários autorizados</li>
+            <li>Monitoramento contínuo de segurança</li>
             <li>Backup regular dos dados</li>
         </ul>
 
         <h2>6. Seus Direitos</h2>
         <p>Você tem o direito de:</p>
         <ul>
-            <li>Acessar suas informaes pessoais</li>
+            <li>Acessar suas informações pessoais</li>
             <li>Corrigir dados incorretos</li>
             <li>Solicitar a exclusão de seus dados</li>
             <li>Revogar o acesso ao Google Calendar a qualquer momento</li>
             <li>Exportar seus dados</li>
         </ul>
 
-        <h2>7. Reteno de Dados</h2>
+        <h2>7. Retenção de Dados</h2>
         <p>
-            Mantemos suas informaes apenas pelo tempo necessrio para fornecer nossos servios 
-            ou conforme exigido por lei. Quando você revoga o acesso ao Google Calendar, 
-            removemos seus tokens de autenticao imediatamente.
+            Mantemos suas informações apenas pelo tempo necessário para fornecer nossos serviços
+            ou conforme exigido por lei. Quando você revoga o acesso ao Google Calendar,
+            removemos seus tokens de autenticação imediatamente.
         </p>
 
         <h2>8. Cookies e Tecnologias Similares</h2>
         <p>
-            Utilizamos cookies e tecnologias similares para melhorar sua experincia, 
-            autenticao e funcionalidade do serviVocê pode gerenciar suas preferncias 
-            de cookies atravdas configurações do navegador.
+            Utilizamos cookies e tecnologias similares para melhorar sua experiência,
+            autenticação e funcionalidade do serviço. Você pode gerenciar suas preferências
+            de cookies através das configurações do navegador.
         </p>
 
-        <h2>9. Alteraes nesta Poltica</h2>
+        <h2>9. Alterações nesta Política</h2>
         <p>
-            Podemos atualizar esta Poltica de Privacidade periodicamente. 
-            Notificaremos você sobre mudanas significativas atravdo email cadastrado 
+            Podemos atualizar esta Política de Privacidade periodicamente.
+            Notificaremos você sobre mudanças significativas através do email cadastrado
             ou por meio de aviso em nosso aplicativo.
         </p>
 
         <h2>10. Contato</h2>
         <div class="contact">
             <p>
-                Se você tiver dvidas sobre esta Poltica de Privacidade ou sobre como tratamos seus dados, 
+                Se você tiver dúvidas sobre esta Política de Privacidade ou sobre como tratamos seus dados,
                 entre em contato conosco:
             </p>
             <p>
                 <strong>Email:</strong> conectaking@gmail.com<br>
-                <strong>Servio:</strong> Conecta King - Agenda Inteligente
+                <strong>Serviço:</strong> Conecta King - Agenda Inteligente
             </p>
         </div>
 
         <p class="last-updated">
-             2026 Conecta King. Todos os direitos reservados.
+            © 2026 Conecta King. Todos os direitos reservados.
         </p>
     </div>
 </body>

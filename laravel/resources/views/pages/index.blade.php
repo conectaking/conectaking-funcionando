@@ -1345,7 +1345,7 @@
         </section>
 
     <script>
-        // Detectar URL da API - mesma lgica do dashboard
+        // Detectar URL da API - mesma lógica do dashboard
         let API_URL = window.location.origin;
         
         // Se estiver em localhost com porta 5500 (Live Server), apontar para FrankenPHP :8080
@@ -1439,7 +1439,7 @@
             }
         }
         
-        // Carregar planos - mesma lgica do dashboard
+        // Carregar planos - mesma lógica do dashboard
         async function loadPlans() {
             try {
                 console.log('?x? Tentando carregar planos de:', `${API_URL}/api/subscription/plans-public`);
@@ -1542,7 +1542,7 @@
                 return;
             }
             
-            // Fallback para lgica antiga
+            // Fallback para lógica antiga
             const container = document.getElementById('plans-container');
             
             if (plans.length === 0) {

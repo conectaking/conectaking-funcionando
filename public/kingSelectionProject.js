@@ -6625,7 +6625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let msg = text || `Falha no upload (Worker) (${xhr.status})`;
         try { const j = JSON.parse(text || '{}'); msg = j?.message || msg; } catch (_) { }
-        if (xhr.status === 401) msg = 'Não autorizado: KINGSELECTION_WORKER_SECRET (Render) deve ser igual a KS_WORKER_SECRET (Cloudflare).';
+        if (xhr.status === 401) msg = 'Não autorizado: KINGSELECTION_WORKER_SECRET (servidor) deve ser igual a KS_WORKER_SECRET (Cloudflare).';
         const err = new Error(msg);
         err.status = xhr.status || 0;
         reject(err);

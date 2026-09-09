@@ -132,7 +132,7 @@
 
             <div class="card" id="card-batch-job">
                 <h2><i class="fas fa-cloud"></i> Gerar vários meses (civil) — síncrono ou segundo plano</h2>
-                <p style="margin-bottom:10px">Marque os meses e o ano civil. <strong>Gerar agora</strong> bloqueia até terminar. <strong>Segundo plano</strong> continua no servidor; ao recarregar a página, o progresso reaparece se o trabalho ainda existir na memória do Render.</p>
+                <p style="margin-bottom:10px">Marque os meses e o ano civil. <strong>Gerar agora</strong> bloqueia até terminar. <strong>Segundo plano</strong> continua no servidor; ao recarregar a página, o progresso reaparece se o trabalho ainda estiver em curso neste servidor.</p>
                 <div class="row">
                     <div>
                         <label for="batch-year">Ano civil</label>
@@ -153,7 +153,7 @@
 
             <div class="card">
                 <h2><i class="fas fa-robot"></i> Gerar com IA — por dia ou por mês civil</h2>
-                <p style="margin-bottom:14px">Use os atalhos abaixo ou a tabela. Cada pedido chama a API no servidor (OpenAI configurada no Render).</p>
+                <p style="margin-bottom:14px">Use os atalhos abaixo ou a tabela. Cada pedido chama a API neste servidor (OpenAI via <code>OPENAI_API_KEY</code> no ambiente).</p>
                 <div class="row">
                     <div>
                         <label for="gen-day">Dia do ano (1—365)</label>
@@ -727,7 +727,7 @@
         if (!v) {
             try { localStorage.removeItem(LS_API); } catch (e) {}
             setApiBaseUi();
-            flash('A usar o domínio desta página. Para gerar devocionais ou temas por IA no servidor, indique a URL da API (Render).', 'warn');
+            flash('A usar o domínio desta página. Para gerar devocionais ou temas por IA noutro host, indique a URL da API.', 'warn');
             return;
         }
         try {
