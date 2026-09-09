@@ -45,6 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
     return;
   }
+  // Cookie HttpOnly-friendly path: AuthenticateJwt aceita cookie `token` (não ?token=).
+  // Necessário para <img> direct em wm_mode=none sem vazar JWT em logs/Referer.
+  try {
+    const secure = location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
+  } catch (_) { /* ignore */ }
   const HEADERS = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
   // <img> não envia Authorization header. Para previews protegidos (admin),
@@ -120,8 +126,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!raw.includes('/api/king-selection/photos/') || !raw.includes('/preview')) return null;
     if (!/[?&]wm_mode=none(?:&|$)/i.test(raw)) return null;
     try {
+      // Sem JWT em query — cookie `token` (sincronizado no boot) autentica o <img>.
       const u = new URL(raw, API_URL || window.location.origin);
-      if (token) u.searchParams.set('token', token);
+      u.searchParams.delete('token');
       return u.toString();
     } catch (_) {
       return null;

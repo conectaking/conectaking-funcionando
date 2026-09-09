@@ -1008,29 +1008,34 @@ class FinanceService
         $now = now();
         $dateFrom = $dateFrom ?: $now->format('Y-m-01');
         $dateTo = $dateTo ?: $now->format('Y-m-t');
+        // Cap estável (espelha transactions): evita full-dump em contas antigas
+        $rowLimit = 500;
 
         if ($profileId !== null) {
             $params = [$userId, $dateFrom, $dateTo, $profileId];
             $profileSql = 't.profile_id = ?';
             if ($scope === 'accumulated') {
-                $params = [$userId, $profileId];
+                $params = [$userId, $profileId, $rowLimit];
                 $rows = DB::select(
                     "SELECT t.id, t.description, t.client_name, t.amount, t.transaction_date, c.name as category_name
                      FROM finance_transactions t
                      LEFT JOIN finance_categories c ON t.category_id = c.id
                      WHERE t.user_id = ? AND t.type = 'INCOME' AND t.status = 'PAID'
                      AND t.transaction_date <= CURRENT_DATE AND {$profileSql}
-                     ORDER BY t.transaction_date DESC",
+                     ORDER BY t.transaction_date DESC
+                     LIMIT ?",
                     $params
                 );
             } else {
+                $params[] = $rowLimit;
                 $rows = DB::select(
                     "SELECT t.id, t.description, t.client_name, t.amount, t.transaction_date, c.name as category_name
                      FROM finance_transactions t
                      LEFT JOIN finance_categories c ON t.category_id = c.id
                      WHERE t.user_id = ? AND t.type = 'INCOME' AND t.status = 'PAID'
                      AND t.transaction_date BETWEEN ?::date AND ?::date AND {$profileSql}
-                     ORDER BY t.transaction_date DESC",
+                     ORDER BY t.transaction_date DESC
+                     LIMIT ?",
                     $params
                 );
             }
@@ -1043,8 +1048,9 @@ class FinanceService
                      LEFT JOIN finance_categories c ON t.category_id = c.id
                      WHERE t.user_id = ? AND t.type = 'INCOME' AND t.status = 'PAID'
                      AND t.transaction_date <= CURRENT_DATE AND {$primaryFilter}
-                     ORDER BY t.transaction_date DESC",
-                    [$userId, $userId]
+                     ORDER BY t.transaction_date DESC
+                     LIMIT ?",
+                    [$userId, $userId, $rowLimit]
                 );
             } else {
                 $rows = DB::select(
@@ -1053,8 +1059,9 @@ class FinanceService
                      LEFT JOIN finance_categories c ON t.category_id = c.id
                      WHERE t.user_id = ? AND t.type = 'INCOME' AND t.status = 'PAID'
                      AND t.transaction_date BETWEEN ?::date AND ?::date AND {$primaryFilter}
-                     ORDER BY t.transaction_date DESC",
-                    [$userId, $dateFrom, $dateTo, $userId]
+                     ORDER BY t.transaction_date DESC
+                     LIMIT ?",
+                    [$userId, $dateFrom, $dateTo, $userId, $rowLimit]
                 );
             }
         }
@@ -1140,14 +1147,18 @@ class FinanceService
                 if ($scope === 'monthly') {
                     $docs = DB::select(
                         "SELECT id, cliente_json, data_documento, itens_json FROM documentos
-                         WHERE user_id = ? AND tipo = 'recibo' AND data_documento BETWEEN ?::date AND ?::date",
-                        [$userId, $dateFrom, $dateTo]
+                         WHERE user_id = ? AND tipo = 'recibo' AND data_documento BETWEEN ?::date AND ?::date
+                         ORDER BY data_documento DESC
+                         LIMIT ?",
+                        [$userId, $dateFrom, $dateTo, $rowLimit]
                     );
                 } else {
                     $docs = DB::select(
                         "SELECT id, cliente_json, data_documento, itens_json FROM documentos
-                         WHERE user_id = ? AND tipo = 'recibo' AND data_documento <= CURRENT_DATE",
-                        [$userId]
+                         WHERE user_id = ? AND tipo = 'recibo' AND data_documento <= CURRENT_DATE
+                         ORDER BY data_documento DESC
+                         LIMIT ?",
+                        [$userId, $rowLimit]
                     );
                 }
                 foreach ($docs as $row) {
@@ -1187,6 +1198,10 @@ class FinanceService
         usort($itens, static function ($a, $b) {
             return strcmp((string) ($b['data'] ?? ''), (string) ($a['data'] ?? ''));
         });
+        $truncated = count($itens) > $rowLimit;
+        if ($truncated) {
+            $itens = array_slice($itens, 0, $rowLimit);
+        }
         $total = array_sum(array_map(static fn ($x) => (float) ($x['valor'] ?? 0), $itens));
 
         return $this->ok([
@@ -1198,6 +1213,8 @@ class FinanceService
             'scope' => $scope,
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
+            'limit' => $rowLimit,
+            'truncated' => $truncated,
         ]);
     }
 
@@ -1951,7 +1968,20 @@ class FinanceService
             return Hash::check((string) $senha, $stored);
         }
 
-        return hash_equals($stored, (string) $senha);
+        $ok = hash_equals($stored, (string) $senha);
+        // Lazy-migrate plaintext legado → bcrypt após verify OK
+        if ($ok && Schema::hasTable('finance_zerar_senha')) {
+            try {
+                DB::update(
+                    'UPDATE finance_zerar_senha SET senha = ? WHERE user_id = ?',
+                    [Hash::make((string) $senha), $userId]
+                );
+            } catch (\Throwable) {
+                // best-effort
+            }
+        }
+
+        return $ok;
     }
 
     /**

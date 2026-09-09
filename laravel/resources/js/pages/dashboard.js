@@ -1,7 +1,7 @@
 /**
  * Dashboard — Vite entry.
- * Core do editor carrega já; módulos pesados (finanças/relatórios/assinatura/empresa/QR)
- * entram sob demanda no primeiro acesso ao painel correspondente.
+ * Core do editor carrega já; módulos pesados (finanças/relatórios/assinatura/QR
+ * + forms/edit-modal) entram sob demanda. Vitrine fica eager (save síncrono).
  * CDN (Chart/Cropper/Sortable/Leaflet/QR) e config.js continuam no Blade.
  */
 import '@legacy/style.css';
@@ -21,10 +21,8 @@ import '@legacy/js/dashboard-editor.js';
 import '@legacy/js/dashboard-sortable.js';
 import '@legacy/js/dashboard-save.js';
 import '@legacy/js/dashboard-upload.js';
-import '@legacy/js/dashboard-edit-modal.js';
 import '@legacy/js/dashboard-listeners.js';
 import '@legacy/js/dashboard-separacao.js';
-import '@legacy/js/dashboard-forms-editor.js';
 import '@legacy/js/dashboard-info.js';
 import '@legacy/js/dashboard-kingDocs-nav.js';
 import '@legacy/js/dashboard-personalizar.js';
@@ -36,6 +34,8 @@ const lazyChunks = {
   relatorios: () => import('@legacy/js/dashboard-relatorios.js'),
   assinatura: () => import('@legacy/js/dashboard-assinatura.js'),
   qr: () => import('@legacy/js/dashboard-qr.js'),
+  formsEditor: () => import('@legacy/js/dashboard-forms-editor.js'),
+  editModal: () => import('@legacy/js/dashboard-edit-modal.js'),
 };
 
 const lazyReady = {};
@@ -56,6 +56,7 @@ function paneKeyFromTarget(targetId) {
   if (targetId === 'relatorios-pane') return 'relatorios';
   if (targetId === 'assinatura-pane') return 'assinatura';
   if (targetId === 'compartilhar-pane' || targetId === 'qr-pane') return 'qr';
+  if (targetId === 'king-forms-pane') return 'formsEditor';
   return null;
 }
 
@@ -65,15 +66,26 @@ function installLazyGuards() {
     'click',
     (e) => {
       const el = e.target && e.target.closest
-        ? e.target.closest('[data-target], #assinatura-link, a[href*="#finance"], a[href*="#relatorios"], a[href*="#assinatura"]')
+        ? e.target.closest(
+            '[data-target], #assinatura-link, a[href*="#finance"], a[href*="#relatorios"], a[href*="#assinatura"], a[href*="#king-forms"], .edit-item-btn, .module-action-btn.edit'
+          )
         : null;
       if (!el) return;
+
+      if (el.matches('.edit-item-btn, .module-action-btn.edit')) {
+        // Modal + forms (perguntas/respostas no modal) antes do handler
+        ensureLazy('editModal');
+        ensureLazy('formsEditor');
+        return;
+      }
+
       const target =
         el.getAttribute('data-target') ||
         (el.id === 'assinatura-link' ? 'assinatura-pane' : '') ||
         (String(el.getAttribute('href') || '').includes('#finance') ? 'finance-pane' : '') ||
         (String(el.getAttribute('href') || '').includes('#relatorios') ? 'relatorios-pane' : '') ||
-        (String(el.getAttribute('href') || '').includes('#assinatura') ? 'assinatura-pane' : '');
+        (String(el.getAttribute('href') || '').includes('#assinatura') ? 'assinatura-pane' : '') ||
+        (String(el.getAttribute('href') || '').includes('#king-forms') ? 'king-forms-pane' : '');
       const key = paneKeyFromTarget(target);
       if (key) ensureLazy(key);
     },
@@ -87,6 +99,7 @@ function installLazyGuards() {
       relatorios: 'relatorios-pane',
       assinatura: 'assinatura-pane',
       compartilhar: 'compartilhar-pane',
+      'king-forms': 'king-forms-pane',
     };
     const target = mapped[h] || h;
     const key = paneKeyFromTarget(target);
@@ -101,6 +114,7 @@ function installLazyGuards() {
       relatorios: 'relatorios-pane',
       assinatura: 'assinatura-pane',
       compartilhar: 'compartilhar-pane',
+      'king-forms': 'king-forms-pane',
     };
     const key = paneKeyFromTarget(mapped[initial] || initial);
     if (key) ensureLazy(key);
@@ -122,6 +136,10 @@ function installLazyGuards() {
 
   if (typeof window.initFinancePane !== 'function') installStub('initFinancePane', 'finance');
   if (typeof window.loadReportsData !== 'function') installStub('loadReportsData', 'relatorios');
+  if (typeof window.renderFormQuestions !== 'function') installStub('renderFormQuestions', 'formsEditor');
+  if (typeof window.loadFormResponses !== 'function') installStub('loadFormResponses', 'formsEditor');
+  if (typeof window.openEditModal !== 'function') installStub('openEditModal', 'editModal');
+  if (typeof window.openEditModalForNewItem !== 'function') installStub('openEditModalForNewItem', 'editModal');
 }
 
 installLazyGuards();

@@ -97,7 +97,7 @@ class CartaoPublicService
         };
 
         $core = $publicMode
-            ? Cache::remember(self::cardCacheKey($userId), 45, $loadCore)
+            ? Cache::remember(self::cardCacheKey($userId), 300, $loadCore)
             : $loadCore();
 
         if (! is_array($core) || empty($core['profile'])) {

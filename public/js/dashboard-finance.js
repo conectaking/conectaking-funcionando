@@ -129,17 +129,20 @@ window.initFinancePane = async function () {
             }
         } catch (e) { }
         let kingDb = { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
+        // Memória + API; LS legado só one-shot migrate (não regravar dados sensíveis)
         try {
             const saved = localStorage.getItem('king_finance_v9');
-            if (saved) kingDb = JSON.parse(saved);
-            kingDb.terceiros = kingDb.terceiros || [];
-            kingDb.terceiros = (kingDb.terceiros || []).map(function (p) {
-                if (Array.isArray(p.contas) && p.contas.length > 0) return p;
-                var valorTotal = Number(p.valorTotal) || 0;
-                var pagamentos = Array.isArray(p.pagamentos) ? p.pagamentos : [];
-                var contas = [{ id: (p.id || '') + '-c1', nomeConta: 'Conta principal', valor: valorTotal, pagamentos: pagamentos }];
-                return { id: p.id, nome: p.nome || 'Pessoa', contas: contas, dataInicio: p.dataInicio || '', limite: p.limite };
-            });
+            if (saved) {
+                kingDb = JSON.parse(saved);
+                kingDb.terceiros = kingDb.terceiros || [];
+                kingDb.terceiros = (kingDb.terceiros || []).map(function (p) {
+                    if (Array.isArray(p.contas) && p.contas.length > 0) return p;
+                    var valorTotal = Number(p.valorTotal) || 0;
+                    var pagamentos = Array.isArray(p.pagamentos) ? p.pagamentos : [];
+                    var contas = [{ id: (p.id || '') + '-c1', nomeConta: 'Conta principal', valor: valorTotal, pagamentos: pagamentos }];
+                    return { id: p.id, nome: p.nome || 'Pessoa', contas: contas, dataInicio: p.dataInicio || '', limite: p.limite };
+                });
+            }
         } catch (e) { }
         // Sincronização: carregar Serasa + Quem eu devo do servidor (site/mobile/localhost iguais)
         try {
@@ -161,8 +164,8 @@ window.initFinancePane = async function () {
                     }
                     if (Array.isArray(remote.trabalhos)) kingDb.trabalhos = remote.trabalhos;
                     if (Array.isArray(remote.bens)) kingDb.bens = remote.bens;
-                    try { localStorage.setItem('king_finance_v9', JSON.stringify(kingDb)); } catch (_) { }
                 }
+                try { localStorage.removeItem('king_finance_v9'); } catch (_) { }
             }
         } catch (e) { console.warn('King-data sync load:', e); }
         const totalDividas = (kingDb.dividas || []).reduce((a, b) => {
@@ -333,11 +336,12 @@ window.initFinancePane = async function () {
         window._kingFinanceDb = kingDb;
         window._kingFinanceCards = cards;
         window._kingFinanceStats = { receitas, despesas, totalDividas, totalTrabalhos, saldo, scoreSerasaPct, scoreSerasaLabel, totalTerceirosGeral, totalPagoTerceiros, scoreTerceirosPct, scoreTerceirosLabel, totalFaltaPagarTerceiros, totalRecebidoTrabalhos, totalRecebidoTrabalhosEsteMes, totalFaltaReceberTrabalhos, faltaReceberGeral, totalRecebido };
-        // Persistir no localStorage e no servidor (sync localhost / site / mobile)
+        // Persistir em memória + servidor (sem espelhar dívidas/valores no localStorage)
         window._kingFinancePersist = function (db) {
             var d = db || window._kingFinanceDb;
             if (!d) return;
-            try { localStorage.setItem('king_finance_v9', JSON.stringify(d)); } catch (e) { }
+            window._kingFinanceDb = d;
+            try { localStorage.removeItem('king_finance_v9'); } catch (e) { }
             var profileId = localStorage.getItem('finance_current_profile_id') || '';
             var payload = { dividas: Array.isArray(d.dividas) ? d.dividas : [], terceiros: Array.isArray(d.terceiros) ? d.terceiros : [], trabalhos: Array.isArray(d.trabalhos) ? d.trabalhos : [], bens: Array.isArray(d.bens) ? d.bens : [] };
             var apiBase = (typeof env.API_URL !== 'undefined' ? env.API_URL : window.API_URL || '');
@@ -2256,8 +2260,8 @@ window.showKingFinancePane = async function () {
                 if (Array.isArray(remote.terceiros)) db.terceiros = remote.terceiros;
                 if (Array.isArray(remote.trabalhos)) db.trabalhos = remote.trabalhos;
                 if (Array.isArray(remote.bens)) db.bens = remote.bens;
-                try { localStorage.setItem('king_finance_v9', JSON.stringify(db)); } catch (_) { }
             }
+            try { localStorage.removeItem('king_finance_v9'); } catch (_) { }
         }
     } catch (e) { console.warn('King-data sync load:', e); }
 
@@ -2823,14 +2827,22 @@ window.showKingFinancePane = async function () {
 
 function getFluxoPartialPayments() {
     try {
+        if (window._kingFinanceFluxoPartial && typeof window._kingFinanceFluxoPartial === 'object') {
+            return window._kingFinanceFluxoPartial;
+        }
+        // One-shot migrate de LS legado → memória
         var raw = localStorage.getItem('king_finance_fluxo_partial');
         if (!raw) return {};
         var o = JSON.parse(raw);
-        return typeof o === 'object' && o !== null ? o : {};
+        var parsed = typeof o === 'object' && o !== null ? o : {};
+        window._kingFinanceFluxoPartial = parsed;
+        try { localStorage.removeItem('king_finance_fluxo_partial'); } catch (e2) {}
+        return parsed;
     } catch (e) { return {}; }
 }
 function setFluxoPartialPayments(obj) {
-    try { localStorage.setItem('king_finance_fluxo_partial', JSON.stringify(obj)); } catch (e) {}
+    window._kingFinanceFluxoPartial = (typeof obj === 'object' && obj !== null) ? obj : {};
+    try { localStorage.removeItem('king_finance_fluxo_partial'); } catch (e) {}
 }
 window.getFluxoPartialPayments = getFluxoPartialPayments;
 
