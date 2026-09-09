@@ -138,8 +138,25 @@ function installLazyGuards() {
   if (typeof window.loadReportsData !== 'function') installStub('loadReportsData', 'relatorios');
   if (typeof window.renderFormQuestions !== 'function') installStub('renderFormQuestions', 'formsEditor');
   if (typeof window.loadFormResponses !== 'function') installStub('loadFormResponses', 'formsEditor');
-  if (typeof window.openEditModal !== 'function') installStub('openEditModal', 'editModal');
-  if (typeof window.openEditModalForNewItem !== 'function') installStub('openEditModalForNewItem', 'editModal');
+  // openEditModal já existe no core (delegação); forçar await do chunk antes de delegar
+  window.openEditModal = async function (itemEl) {
+    await ensureLazy('editModal');
+    const fn = window.DashboardEditModal && window.DashboardEditModal.openEditModal;
+    if (typeof fn !== 'function') {
+      console.warn('[dashboard] editModal carregou sem openEditModal');
+      return;
+    }
+    return fn.call(window.DashboardEditModal, itemEl);
+  };
+  window.openEditModalForNewItem = async function (tempItem) {
+    await ensureLazy('editModal');
+    const fn = window.DashboardEditModal && window.DashboardEditModal.openEditModalForNewItem;
+    if (typeof fn !== 'function') {
+      console.warn('[dashboard] editModal carregou sem openEditModalForNewItem');
+      return;
+    }
+    return fn.call(window.DashboardEditModal, tempItem);
+  };
 }
 
 installLazyGuards();
