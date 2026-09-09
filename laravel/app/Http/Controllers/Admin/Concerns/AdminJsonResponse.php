@@ -48,7 +48,7 @@ trait AdminJsonResponse
     }
 
     /**
-     * Serviços devolvem `['error' => ..., 'status' => ...]` como no Node; converte para HTTP.
+     * Serviços devolvem `['error' => ..., 'status' => ...]`; converte para HTTP.
      *
      * @param  array<string,mixed>  $result
      */

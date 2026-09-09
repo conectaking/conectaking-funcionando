@@ -696,7 +696,7 @@ Route::middleware('admin')->group(function () {
 // Proxy de imagem OG (público)
 $imageProxy = \App\Http\Controllers\Media\ImageProxyController::class;
 Route::get('/api/image/profile-image', [$imageProxy, 'profileImage']);
-// Lead empresarial + chave curta de cadastro (públicos, como no Node)
+// Lead empresarial + chave curta de cadastro (públicos)
 $inquiry = \App\Http\Controllers\Leads\InquiryController::class;
 Route::post('/api/inquiry/submit', [$inquiry, 'submit'])->middleware('throttle:20,1');
 $generator = \App\Http\Controllers\Admin\GeneratorController::class;
@@ -772,8 +772,8 @@ Route::post('/api/auth/logout', [\App\Http\Controllers\Auth\AuthController::clas
 // Páginas já convertidas para Blade (resources/views/pages/*.blade.php).
 // O LegacyPageController renderiza o Blade quando existe e cai no HTML legado quando não existe.
 //
-// King Selection: /kingSelection (sem slug) = painel do fotógrafo (lista/projeto),
-// igual ao Node. /kingSelection/{slug} (acima) = galeria do cliente.
+// King Selection: /kingSelection (sem slug) = painel do fotógrafo (lista/projeto).
+// /kingSelection/{slug} (acima) = galeria do cliente.
 $ksPhotographerPage = function () {
     $request = request();
     $page = $request->filled('galleryId') ? 'kingSelectionProject' : 'kingSelectionEdit';
@@ -799,7 +799,7 @@ foreach ([
     '/mr/kingselectionproject', '/mr/ringsselectionproject',
 ] as $p) {
     Route::get($p, function () use ($ksPhotographerPage) {
-        // Com galleryId serve o projeto; sem, a lista (igual ao Node)
+        // Com galleryId serve o projeto; sem, a lista
         return $ksPhotographerPage();
     });
 }
@@ -836,6 +836,11 @@ foreach (['/admin/'] as $adminSlash) {
     Route::get($adminSlash, function () {
         return app(\App\Http\Controllers\LegacyPageController::class)->show(request(), 'admin');
     });
+}
+
+// Alias antigo /forms → King Forms
+foreach (['/forms', '/forms.html'] as $formsAlias) {
+    Route::get($formsAlias, fn () => redirect('/kingForms', 301));
 }
 
 // checkoutConfig / PagBank / Mercado Pago — fora de escopo

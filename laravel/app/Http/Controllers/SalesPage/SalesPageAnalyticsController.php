@@ -14,7 +14,7 @@ class SalesPageAnalyticsController extends Controller
     {
     }
 
-    /** Público (sem JWT), igual ao Node. */
+    /** Público (sem JWT). */
     public function track(Request $request)
     {
         try {

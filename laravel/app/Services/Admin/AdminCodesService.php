@@ -69,7 +69,7 @@ class AdminCodesService
     }
 
     /**
-     * `expiresAt` ausente no body limpa a data, igual ao Node.
+     * `expiresAt` ausente no body limpa a data (compatível com o contrato antigo da API).
      *
      * @return array<string,mixed>
      */

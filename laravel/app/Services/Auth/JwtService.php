@@ -5,7 +5,7 @@ namespace App\Services\Auth;
 use UnexpectedValueException;
 
 /**
- * Verificação JWT HS256 compatível com o Node (jsonwebtoken + JWT_SECRET).
+ * Verificação JWT HS256 (mesmo contrato do painel: JWT_SECRET).
  */
 class JwtService
 {

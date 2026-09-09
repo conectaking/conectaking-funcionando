@@ -2206,7 +2206,7 @@ body.sales-page-edit-page .dashboard-layout {
     gap: 1.5rem;
 }
 
-/* CORREÇÕES CRÍTICAS PARA MOBILE NA HOSTINGER - Garantir scroll funcionando */
+/* Correções críticas para mobile — garantir scroll */
 /* Regras com máxima especificidade para sobrescrever qualquer CSS conflitante */
 @media (max-width: 768px) {
     /* Forçar scroll no container principal - máxima especificidade */

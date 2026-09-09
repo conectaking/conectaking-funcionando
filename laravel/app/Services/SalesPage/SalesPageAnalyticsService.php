@@ -14,7 +14,7 @@ class SalesPageAnalyticsService
     private const FUNNEL_STEPS = ['page_view', 'product_view', 'product_click', 'add_to_cart', 'checkout_click'];
 
     /**
-     * Registro público de evento — sem autenticação, igual ao Node.
+     * Registro público de evento — sem autenticação.
      *
      * @param  array<string,mixed>  $data
      * @return array<string,mixed>
