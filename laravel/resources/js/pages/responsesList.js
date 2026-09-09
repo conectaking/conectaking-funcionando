@@ -586,7 +586,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 console.log('Y"" [loadFormResponsesData] Carregando respostas...');
                 // IMPORTANTE: Usar cachedFetch e delays sequenciais em vez de Promise.all para evitar rate limiting
                 await new Promise(resolve => setTimeout(resolve, 300));
-                const responsesRes = await cachedFetch(`${API_URL}/api/profile/items/digital_form/${itemId}/responses?mode=lead`, {
+                const responsesRes = await cachedFetch(`${API_URL}/api/profile/items/digital_form/${itemId}/responses?mode=lead&limit=100&offset=0`, {
                     headers: headersForFetch
                 });
                 
@@ -599,10 +599,16 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     throw new Error(`Erro ao carregar respostas: ${responsesRes.status} ${responsesRes.statusText}`);
                 }
                 
-                let responses = await responsesRes.json();
-                if (!Array.isArray(responses)) {
-                    responses = responses.responses || responses.data || [];
-                }
+                let responsesPayload = await responsesRes.json();
+                let responses = Array.isArray(responsesPayload)
+                    ? responsesPayload
+                    : (responsesPayload.responses || responsesPayload.data || []);
+                window.__formResponsesMeta = {
+                    total: responsesPayload.total ?? responses.length,
+                    limit: responsesPayload.limit ?? 100,
+                    offset: responsesPayload.offset ?? 0,
+                    hasMore: !!responsesPayload.hasMore,
+                };
                 
                 const formData = await formRes.json();
                 const currentForm = formData.items?.find(item => String(item.id) === String(itemId));

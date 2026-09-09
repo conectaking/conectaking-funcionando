@@ -345,9 +345,9 @@ class KingDocsService
         if (! password_verify($password, (string) $share->password_hash)) {
             return $this->fail('Senha incorreta.', 401);
         }
-        $viewerToken = $this->randomToken(16);
-        DB::update('UPDATE king_docs_share_links SET viewer_token = ? WHERE id = ?', [$viewerToken, $share->id]);
-        DB::update('UPDATE king_docs_share_links SET view_count = view_count + 1 WHERE id = ?', [$share->id]);
+        $viewerToken = $this->issueViewerSessionToken((int) $share->id);
+        // Não sobrescrever viewer_token partilhado — cada visitante recebe sessão HMAC própria
+        $this->incrementViewCountAtomic((int) $share->id, $share->max_views !== null ? (int) $share->max_views : null);
 
         return $this->ok(['viewerToken' => $viewerToken]);
     }
@@ -382,7 +382,7 @@ class KingDocsService
         if (empty($share->password_hash)) {
             $skip = in_array(strtolower((string) $repeatVisit), ['1', 'true', 'yes'], true);
             if (! $skip) {
-                DB::update('UPDATE king_docs_share_links SET view_count = view_count + 1 WHERE id = ?', [$share->id]);
+                $this->incrementViewCountAtomic((int) $share->id, $share->max_views !== null ? (int) $share->max_views : null);
             }
         }
 
@@ -703,8 +703,81 @@ class KingDocsService
             return;
         }
         $v = $viewerHeader !== null ? trim($viewerHeader) : '';
-        if ($v === '' || $v !== (string) $share->viewer_token) {
+        if ($v === '') {
             throw new \RuntimeException('Senha necessária ou sessão inválida.', 401);
+        }
+        // Sessão HMAC por visitante (não partilha um único viewer_token)
+        if ($this->verifyViewerSessionToken($v, (int) $share->id)) {
+            return;
+        }
+        // Compat: token legado gravado na coluna
+        if ($v === (string) $share->viewer_token) {
+            return;
+        }
+        throw new \RuntimeException('Senha necessária ou sessão inválida.', 401);
+    }
+
+    private function issueViewerSessionToken(int $shareId): string
+    {
+        $payload = rtrim(strtr(base64_encode(json_encode([
+            'sid' => $shareId,
+            'exp' => time() + 86400,
+            'n' => bin2hex(random_bytes(8)),
+        ])), '+/', '-_'), '=');
+        $sig = hash_hmac('sha256', $payload, $this->viewerSessionSecret());
+
+        return $payload.'.'.$sig;
+    }
+
+    private function verifyViewerSessionToken(string $token, int $shareId): bool
+    {
+        $parts = explode('.', $token, 2);
+        if (count($parts) !== 2) {
+            return false;
+        }
+        [$payload, $sig] = $parts;
+        $expected = hash_hmac('sha256', $payload, $this->viewerSessionSecret());
+        if (! hash_equals($expected, $sig)) {
+            return false;
+        }
+        $pad = strlen($payload) % 4;
+        $raw = base64_decode(strtr($payload, '-_', '+/').($pad ? str_repeat('=', 4 - $pad) : ''), true);
+        if ($raw === false) {
+            return false;
+        }
+        $data = json_decode($raw, true);
+        if (! is_array($data)) {
+            return false;
+        }
+        if ((int) ($data['sid'] ?? 0) !== $shareId) {
+            return false;
+        }
+        if ((int) ($data['exp'] ?? 0) < time()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function viewerSessionSecret(): string
+    {
+        return (string) (config('app.key') ?: env('APP_KEY') ?: 'conectaking-king-docs');
+    }
+
+    private function incrementViewCountAtomic(int $shareId, ?int $maxViews): void
+    {
+        if ($maxViews === null) {
+            DB::update('UPDATE king_docs_share_links SET view_count = view_count + 1 WHERE id = ?', [$shareId]);
+
+            return;
+        }
+        $updated = DB::update(
+            'UPDATE king_docs_share_links SET view_count = view_count + 1
+             WHERE id = ? AND view_count < ?',
+            [$shareId, $maxViews]
+        );
+        if ($updated < 1) {
+            throw new \RuntimeException('Este link atingiu o número máximo de visualizações.', 410);
         }
     }
 

@@ -26,7 +26,9 @@ class ProfileFormExtrasController extends Controller
             (string) $request->attributes->get('auth_user_id', ''),
             $id,
             is_string($mode) ? $mode : null,
-            $checkout
+            $checkout,
+            max(1, min(200, (int) $request->query('limit', 100))),
+            max(0, (int) $request->query('offset', 0))
         ));
     }
 

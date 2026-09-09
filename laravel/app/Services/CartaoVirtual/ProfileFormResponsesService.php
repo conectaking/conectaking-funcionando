@@ -13,7 +13,7 @@ class ProfileFormResponsesService
     /**
      * @return array{status:int, body:array<string, mixed>}
      */
-    public function list(string $userId, string $itemId, ?string $mode = null, bool $checkoutOnly = false): array
+    public function list(string $userId, string $itemId, ?string $mode = null, bool $checkoutOnly = false, int $limit = 100, int $offset = 0): array
     {
         $owned = $this->assertOwnedForm($userId, $itemId);
         if ($owned !== null) {
@@ -21,6 +21,8 @@ class ProfileFormResponsesService
         }
         $id = (int) $itemId;
         $listMode = strtolower((string) ($mode ?? ''));
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
 
         try {
             $where = ['profile_item_id = ?'];
@@ -34,14 +36,22 @@ class ProfileFormResponsesService
                 $where[] = "(COALESCE(entry_mode, CASE WHEN guest_id IS NOT NULL THEN 'checkin' ELSE 'lead' END) = 'checkin')";
             }
 
+            $whereSql = implode(' AND ', $where);
+
             try {
+                $total = (int) (DB::selectOne(
+                    'SELECT COUNT(*)::int AS total FROM digital_form_responses WHERE '.$whereSql,
+                    $vals
+                )->total ?? 0);
+
                 $rows = DB::select(
                     'SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at,
                             payment_status, paid_at, guest_id, entry_mode
                      FROM digital_form_responses
-                     WHERE '.implode(' AND ', $where).'
-                     ORDER BY submitted_at DESC',
-                    $vals
+                     WHERE '.$whereSql.'
+                     ORDER BY submitted_at DESC
+                     LIMIT ? OFFSET ?',
+                    array_merge($vals, [$limit, $offset])
                 );
             } catch (\Throwable $e) {
                 $fbWhere = ['profile_item_id = ?'];
@@ -49,13 +59,18 @@ class ProfileFormResponsesService
                 if ($checkoutOnly) {
                     $fbWhere[] = 'payment_status IS NOT NULL';
                 }
+                $total = (int) (DB::selectOne(
+                    'SELECT COUNT(*)::int AS total FROM digital_form_responses WHERE '.implode(' AND ', $fbWhere),
+                    $fbVals
+                )->total ?? 0);
                 $rows = DB::select(
                     'SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at,
                             payment_status, paid_at, guest_id
                      FROM digital_form_responses
                      WHERE '.implode(' AND ', $fbWhere).'
-                     ORDER BY submitted_at DESC',
-                    $fbVals
+                     ORDER BY submitted_at DESC
+                     LIMIT ? OFFSET ?',
+                    array_merge($fbVals, [$limit, $offset])
                 );
                 if ($listMode === 'lead' || $listMode === 'checkin') {
                     $rows = array_values(array_filter($rows, static function ($row) use ($listMode) {
@@ -63,6 +78,7 @@ class ProfileFormResponsesService
 
                         return $listMode === 'checkin' ? $isCheckin : !$isCheckin;
                     }));
+                    $total = count($rows);
                 }
             }
 
@@ -77,7 +93,16 @@ class ProfileFormResponsesService
                 return $r;
             }, $rows);
 
-            return ['status' => 200, 'body' => ['responses' => $responses]];
+            return [
+                'status' => 200,
+                'body' => [
+                    'responses' => $responses,
+                    'total' => $total,
+                    'limit' => $limit,
+                    'offset' => $offset,
+                    'hasMore' => ($offset + count($responses)) < $total,
+                ],
+            ];
         } catch (\Throwable $e) {
             Log::error('profile.form.responses', ['error' => $e->getMessage()]);
 
