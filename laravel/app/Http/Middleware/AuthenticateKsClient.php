@@ -45,8 +45,12 @@ class AuthenticateKsClient
 
             return $t !== '' ? $t : null;
         }
-        $q = $request->query('token');
+        // Cookie SameSite (para <img src> de preview) — sem token em query/logs/Referer.
+        $cookie = $request->cookie('ks_client_token');
+        if (is_string($cookie) && $cookie !== '') {
+            return $cookie;
+        }
 
-        return is_string($q) && $q !== '' ? $q : null;
+        return null;
     }
 }

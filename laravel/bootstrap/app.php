@@ -176,6 +176,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/admin',
             'api/admin/*',
         ]);
+        $middleware->encryptCookies(except: [
+            'ks_client_token',
+        ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,
             'admin' => \App\Http\Middleware\AuthenticateAdmin::class,

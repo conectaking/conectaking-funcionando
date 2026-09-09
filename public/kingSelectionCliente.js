@@ -208,6 +208,26 @@
 
   let jwt = null;
 
+  function syncKsAuthCookie() {
+    try {
+      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+      if (jwt) {
+        document.cookie = `ks_client_token=${encodeURIComponent(jwt)}; Path=/; SameSite=Lax${secure}`;
+      } else {
+        document.cookie = 'ks_client_token=; Path=/; Max-Age=0; SameSite=Lax';
+      }
+    } catch (_) { /* ignore */ }
+  }
+
+  function setJwt(token) {
+    jwt = token || null;
+    try {
+      if (jwt) localStorage.setItem(tokenKey(slug), jwt);
+      else localStorage.removeItem(tokenKey(slug));
+    } catch (_) { /* ignore */ }
+    syncKsAuthCookie();
+  }
+
   /** Link pessoal (?access=JWT): substitui sessão antiga e evita cair no cadastro de outro cliente. */
   function consumeAccessTokenFromUrl() {
     if (!slug) return false;
@@ -215,8 +235,7 @@
       const q = new URLSearchParams(window.location.search || '');
       const access = String(q.get('access') || q.get('token') || '').trim();
       if (!access) return false;
-      jwt = access;
-      localStorage.setItem(tokenKey(slug), jwt);
+      setJwt(access);
       q.delete('access');
       q.delete('token');
       const qs = q.toString();
@@ -230,6 +249,7 @@
   if (!consumeAccessTokenFromUrl()) {
     try {
       jwt = localStorage.getItem(tokenKey(slug)) || null;
+      syncKsAuthCookie();
     } catch (_) {}
   }
 
@@ -294,11 +314,16 @@
     /** Pedidos de edição do cliente (modo público). */
     clientEditRequests: [],
     /** Galerias muito grandes: quantas fotos renderizar na grade. */
-    gridVirtualShown: 120
+    gridVirtualShown: 120,
+    /** Paginação API: ainda há mais fotos no servidor. */
+    photosHasMore: false,
+    photosTotal: 0,
+    photosLoadingMore: false
   };
 
   const KS_VIRTUAL_THRESHOLD = 2000;
   const KS_VIRTUAL_BATCH = 120;
+  const KS_PHOTOS_PAGE = 200;
 
   /** Após modal de cadastro público: o que executar quando download já estiver liberado. */
   let pendingPublicDownloadAction = null;
@@ -1272,7 +1297,7 @@
   }
 
   function previewUrl(photoId, thumb) {
-    const q = new URLSearchParams({ slug, token: jwt || '', v: 'wm6' });
+    const q = new URLSearchParams({ slug, v: 'wm6' });
     if (thumb) q.set('thumb', '1');
     const base = resolveKsApiBase();
     return `${base}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
@@ -1287,7 +1312,7 @@
   }
 
   function previewDownloadUrl(photoId, opts) {
-    const q = new URLSearchParams({ slug, token: jwt || '', download: '1' });
+    const q = new URLSearchParams({ slug, download: '1' });
     if (opts && opts.bulk) q.set('bulk', '1');
     return `${resolveKsApiBase()}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
   }
@@ -2105,11 +2130,13 @@
   }
 
   function usesVirtualGridPaging(list) {
-    return Array.isArray(list) && list.length > KS_VIRTUAL_THRESHOLD;
+    return Array.isArray(list) && (list.length > KS_VIRTUAL_THRESHOLD || !!state.photosHasMore);
   }
 
   function getGridSliceForVirtual(list) {
-    if (!usesVirtualGridPaging(list)) return list;
+    if (!Array.isArray(list)) return [];
+    if (!usesVirtualGridPaging(list) && !state.photosHasMore) return list;
+    if (list.length <= KS_VIRTUAL_BATCH && !state.photosHasMore) return list;
     return list.slice(0, state.gridVirtualShown);
   }
 
@@ -2167,19 +2194,23 @@
   function updateVirtualGridHint(list) {
     const el = $('ks-virtual-grid-hint');
     if (!el) return;
-    if (!usesVirtualGridPaging(list)) {
+    const total = Number(state.photosTotal || list.length || 0);
+    const shown = Math.min(state.gridVirtualShown, list.length);
+    if (!state.photosHasMore && (!usesVirtualGridPaging(list) || shown >= list.length)) {
       el.classList.add('ks-hidden');
       el.textContent = '';
       return;
     }
-    const shown = Math.min(state.gridVirtualShown, list.length);
-    el.textContent = `A mostrar ${shown} de ${list.length} fotos — continue a rolar para carregar mais`;
+    const more = state.photosHasMore ? ' (a carregar mais do servidor…)' : '';
+    el.textContent = `A mostrar ${shown} de ${total} fotos — continue a rolar para carregar mais${more}`;
     el.classList.remove('ks-hidden');
   }
 
   function setupGridVirtualSentinel(grid, list) {
     disconnectGridVirtualSentinelIo();
-    if (!grid || !usesVirtualGridPaging(list) || state.gridVirtualShown >= list.length) {
+    const needMoreDom = usesVirtualGridPaging(list) && state.gridVirtualShown < list.length;
+    const needMoreApi = !!state.photosHasMore;
+    if (!grid || (!needMoreDom && !needMoreApi)) {
       grid?.querySelector('.ks-grid-sentinel')?.remove();
       updateVirtualGridHint(list);
       return;
@@ -2201,19 +2232,36 @@
     _gridVirtualSentinelIo.observe(sentinel);
   }
 
-  function loadMoreVirtualGridPhotos() {
+  async function loadMoreVirtualGridPhotos() {
     const list = getOrderedPhotosForGrid();
-    if (!usesVirtualGridPaging(list) || state.gridVirtualShown >= list.length) return;
+    const nearEnd = !usesVirtualGridPaging(list) || state.gridVirtualShown >= Math.max(0, list.length - KS_VIRTUAL_BATCH);
+    if (nearEnd && state.photosHasMore && !state.photosLoadingMore) {
+      const fetched = await fetchMoreGalleryPhotos();
+      if (fetched) {
+        const next = getOrderedPhotosForGrid();
+        if (!usesVirtualGridPaging(next) && !state.photosHasMore) {
+          renderGrid();
+          return;
+        }
+      }
+    }
+    const list2 = getOrderedPhotosForGrid();
+    if (!usesVirtualGridPaging(list2) || state.gridVirtualShown >= list2.length) {
+      if (state.photosHasMore && !state.photosLoadingMore) {
+        fetchMoreGalleryPhotos().then((ok) => { if (ok) loadMoreVirtualGridPhotos(); });
+      }
+      return;
+    }
     const prevShown = state.gridVirtualShown;
-    state.gridVirtualShown = Math.min(list.length, state.gridVirtualShown + KS_VIRTUAL_BATCH);
-    const chunk = list.slice(prevShown, state.gridVirtualShown);
+    state.gridVirtualShown = Math.min(list2.length, state.gridVirtualShown + KS_VIRTUAL_BATCH);
+    const chunk = list2.slice(prevShown, state.gridVirtualShown);
     const grid = $('ks-grid');
     if (!grid || !chunk.length) return;
     grid.querySelector('.ks-grid-sentinel')?.remove();
     const anyFrozenInGallery = [...state.selected].some((id) => isFrozenPhoto(id));
     const publicFree = isPublicFreeDownloadGallery();
     grid.insertAdjacentHTML('beforeend', chunk.map((p) => buildPhotoCardHtml(p, anyFrozenInGallery, publicFree)).join(''));
-    setupGridVirtualSentinel(grid, list);
+    setupGridVirtualSentinel(grid, list2);
     hydrateGridPreviews(grid);
   }
 
@@ -2738,7 +2786,7 @@
         }
       }
     }
-    try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+    setJwt(jwt);
     state.publicDownloadsPanelOpen = false;
     const gd = await loadGallery();
     applyGalleryData(gd);
@@ -3052,11 +3100,19 @@
     return data;
   }
 
-  async function loadGallery() {
+  async function loadGallery(opts) {
+    const limit = (opts && opts.limit != null) ? opts.limit : KS_PHOTOS_PAGE;
+    const offset = (opts && opts.offset != null) ? Math.max(0, opts.offset) : 0;
     let res;
     try {
+      const q = new URLSearchParams({
+        slug,
+        limit: String(limit),
+        offset: String(offset),
+        _ksnc: String(Date.now())
+      });
       res = await fetchWithTimeout(
-        `${API}/api/king-selection/client/gallery?slug=${encodeURIComponent(slug)}&_ksnc=${Date.now()}`,
+        `${API}/api/king-selection/client/gallery?${q.toString()}`,
         {
           headers: authHeaders(false),
           cache: 'no-store'
@@ -3070,18 +3126,32 @@
       throw friendlyFetchError(e);
     });
     if (res.status === 401) {
-      jwt = null;
-      try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+      setJwt(null);
       throw new Error('Sessão expirada. Entre novamente.');
     }
     if (!res.ok) throw new Error(data.message || 'Erro ao carregar galeria');
     return data;
   }
 
+  async function fetchMoreGalleryPhotos() {
+    if (!state.photosHasMore || state.photosLoadingMore || !state.gallery) return false;
+    state.photosLoadingMore = true;
+    try {
+      const offset = Array.isArray(state.gallery.photos) ? state.gallery.photos.length : 0;
+      const data = await loadGallery({ limit: KS_PHOTOS_PAGE, offset });
+      applyGalleryData(data, { appendPhotos: true });
+      return true;
+    } catch (e) {
+      console.warn('KS fetch more photos:', e);
+      return false;
+    } finally {
+      state.photosLoadingMore = false;
+    }
+  }
+
   function handleClientUnauthorized(res, data) {
     if (!res || res.status !== 401) return false;
-    jwt = null;
-    try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+    setJwt(null);
     showLogin();
     toast(
       String(data?.message || 'Seu acesso foi encerrado pelo fotógrafo. Entre novamente.'),
@@ -3102,7 +3172,7 @@
     const g = state.gallery;
     const el = $('ks-counts');
     if (!g || !el) return;
-    const total = (g.photos && g.photos.length) || 0;
+    const total = Number(g.photos_total || state.photosTotal || (g.photos && g.photos.length) || 0);
     const estaRodada = countSelectedThisRound();
     const totalAcumulado = state.selected.size;
     const min = g.min_selections != null ? parseInt(g.min_selections, 10) : 0;
@@ -3156,14 +3226,37 @@
   function refreshFacePanelVisibility() {
     const fp = $('ks-face-panel');
     if (!fp) return;
-    const totalPhotos = Array.isArray(state.gallery?.photos) ? state.gallery.photos.length : 0;
+    const totalPhotos = Number(state.photosTotal || (Array.isArray(state.gallery?.photos) ? state.gallery.photos.length : 0));
     const canSelectMore = !selectionLockedForUi() && totalPhotos > state.selected.size;
     const show = !!state.faceRecognitionUsable && canSelectMore;
     fp.classList.toggle('ks-hidden', !show);
   }
 
-  function applyGalleryData(data) {
-    const g = normalizeGalleryPhotosForState(data.gallery);
+  function applyGalleryData(data, opts) {
+    const appendPhotos = !!(opts && opts.appendPhotos);
+    const gIn = normalizeGalleryPhotosForState(data.gallery);
+    if (appendPhotos && state.gallery && Array.isArray(gIn?.photos)) {
+      const existing = Array.isArray(state.gallery.photos) ? state.gallery.photos : [];
+      const seen = new Set(existing.map((p) => parseInt(p.id, 10)).filter(Boolean));
+      const merged = existing.slice();
+      gIn.photos.forEach((p) => {
+        const id = parseInt(p.id, 10);
+        if (!id || seen.has(id)) return;
+        seen.add(id);
+        merged.push(p);
+      });
+      state.gallery.photos = merged;
+      const hasMore = !!(gIn.photos_has_more ?? data.photosHasMore);
+      const total = Number(gIn.photos_total || data.photosTotal || state.photosTotal || merged.length) || merged.length;
+      state.photosHasMore = hasMore;
+      state.photosTotal = total;
+      state.gallery.photos_has_more = hasMore;
+      state.gallery.photos_total = total;
+      updateHeaderCounts();
+      refreshFacePanelVisibility();
+      return;
+    }
+    const g = gIn;
     state.folders = filterClientVisibleFolders(normalizeFolders(g?.folders, g?.photos));
     const validFolderIds = new Set(state.folders.map((f) => f.id));
     if (Array.isArray(g?.photos)) {
@@ -3172,6 +3265,8 @@
       ));
     }
     state.gallery = g;
+    state.photosHasMore = !!(g?.photos_has_more ?? data.photosHasMore);
+    state.photosTotal = Number(g?.photos_total || data.photosTotal || (g?.photos?.length || 0)) || 0;
     applyClientCardHeightFromGallery(g);
     state.allowClientEditRequest = !!(g && g.allow_client_edit_request === true);
     if (!state.allowClientEditRequest) {
@@ -4416,8 +4511,7 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar');
       if (data.token) {
-        jwt = data.token;
-        try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+        setJwt(data.token);
       }
       const ty = data.thankYouConfig || {};
       const rawMsg = ty.message || 'Obrigado! Sua seleção foi recebida.';
@@ -4974,7 +5068,7 @@
     try {
       $('ks-reauth-btn').disabled = true;
       jwt = await apiLoginByDetails(nome, email, telefone);
-      try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+      setJwt(jwt);
       const data = await loadGallery();
       applyGalleryData(data);
     } catch (e) {
@@ -4997,7 +5091,7 @@
     try {
       $('ks-pub-guest-btn').disabled = true;
       jwt = await apiPublicGuestEnter();
-      try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+      setJwt(jwt);
       const data = await loadGallery();
       applyGalleryData(data);
     } catch (e) {
@@ -5074,7 +5168,7 @@
     try {
       $('ks-login-pw-btn').disabled = true;
       jwt = await apiLoginEmailSenha(email, senha);
-      try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+      setJwt(jwt);
       const data = await loadGallery();
       applyGalleryData(data);
     } catch (e) {
@@ -5088,15 +5182,13 @@
   });
 
   $('ks-logout').addEventListener('click', () => {
-    jwt = null;
+    setJwt(null);
     state.publicDownloadsPanelOpen = false;
-    try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
     showLogin();
   });
   $('ks-locked-logout').addEventListener('click', () => {
-    jwt = null;
+    setJwt(null);
     state.publicDownloadsPanelOpen = false;
-    try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
     showLogin();
   });
   $('ks-locked-open-gallery')?.addEventListener('click', async () => {
@@ -6311,8 +6403,7 @@
             return;
           }
           if (!jwtPayloadClientId()) {
-            jwt = null;
-            try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+            setJwt(null);
           }
         } catch (e) {
           const msg = String(e?.message || '').toLowerCase();
@@ -6322,8 +6413,7 @@
             msg.includes('não autorizado') ||
             msg.includes('nao autorizado');
           if (expired || !jwtPayloadClientId()) {
-            jwt = null;
-            try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+            setJwt(null);
           }
         }
       }
@@ -6355,7 +6445,7 @@
         });
         if (!res.ok) throw new Error(d.message || 'Não foi possível iniciar a sessão.');
         jwt = d.token;
-        try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+        setJwt(jwt);
         const gd = await loadGallery();
         applyGalleryData(gd);
       } catch (e) {
@@ -6373,8 +6463,7 @@
         const gd = await loadGallery();
         applyGalleryData(gd);
       } catch (e) {
-        jwt = null;
-        try { localStorage.removeItem(tokenKey(slug)); } catch (_) {}
+        setJwt(null);
         hideBootScreen();
         showLogin();
         const msg = (e && e.message) ? e.message : 'Não foi possível restaurar a sessão.';

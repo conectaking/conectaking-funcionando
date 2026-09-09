@@ -385,7 +385,7 @@ class KingSelectionClientService
      * @param  array<string,mixed>  $payload
      * @return array{status:int, body:array<string,mixed>}
      */
-    public function clientGallery(array $payload, string $slug): array
+    public function clientGallery(array $payload, string $slug, ?int $limit = null, int $offset = 0): array
     {
         $slug = trim($slug);
         if ($slug === '') {
@@ -422,21 +422,20 @@ class KingSelectionClientService
             return ['status' => 404, 'body' => ['message' => 'Galeria não encontrada.']];
         }
 
-        $content = $this->public->galleryContent((string) $g->slug);
-        $photos = [];
-        $folders = [];
         $folderLayout = strtolower(trim((string) ($g->client_folder_layout ?? 'folders'))) === 'flat' ? 'flat' : 'folders';
-        if (($content['status'] ?? 0) === 200) {
-            $photos = $content['body']['gallery']['photos'] ?? [];
-            $folders = $content['body']['gallery']['folders'] ?? [];
-            $folderLayout = (string) ($content['body']['gallery']['client_folder_layout'] ?? $folderLayout);
+        $offset = max(0, $offset);
+        // Sem limit explícito: página inicial de 200 (evita JSON gigante). limit=0 = todas (legado).
+        if ($limit === null) {
+            $limit = 200;
+        } elseif ($limit === 0) {
+            $limit = null;
         } else {
-            // Galeria não-pública: carregar mídia em chunks (mesma lógica do público).
-            $media = $this->public->loadClientMedia($galleryId, $folderLayout);
-            $photos = $media['photos'];
-            $folders = $media['folders'];
-            $folderLayout = $media['folder_layout'];
+            $limit = min(max(1, $limit), 1000);
         }
+        $media = $this->public->loadClientMedia($galleryId, $folderLayout, $limit, $offset);
+        $photos = $media['photos'];
+        $folders = $media['folders'];
+        $folderLayout = $media['folder_layout'];
 
         $accessMode = KsAccess::normAccessMode($g->access_mode ?? 'private');
         $sel = $this->selection->gallerySelectionState($payload, $g);
@@ -472,6 +471,10 @@ class KingSelectionClientService
             'client_entry_splash_enabled' => $splash,
             'currentSelectionRound' => $sel['currentSelectionRound'],
             'deferredSignupActive' => $sel['deferredSignupActive'],
+            'photos_total' => $media['photos_total'],
+            'photos_has_more' => $media['photos_has_more'],
+            'photos_offset' => $media['photos_offset'],
+            'photos_limit' => $media['photos_limit'],
         ];
 
         return [
@@ -484,6 +487,8 @@ class KingSelectionClientService
                 'approvedPhotoIds' => [],
                 'salesModeActive' => $accessMode === 'paid_event_photos',
                 'faceRecognitionUsable' => false,
+                'photosTotal' => $media['photos_total'],
+                'photosHasMore' => $media['photos_has_more'],
             ],
         ];
     }

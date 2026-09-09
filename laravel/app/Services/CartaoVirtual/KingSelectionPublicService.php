@@ -62,16 +62,18 @@ class KingSelectionPublicService
 
     /**
      * Fotos + pastas prontas para o cliente (público ou autenticado).
+     * Com $limit: devolve só uma página de fotos (pastas usam contagens SQL).
      *
-     * @return array{photos:list<array<string,mixed>>, folders:list<array<string,mixed>>, folder_layout:string}
+     * @return array{photos:list<array<string,mixed>>, folders:list<array<string,mixed>>, folder_layout:string, photos_total:int, photos_has_more:bool, photos_offset:int, photos_limit:?int}
      */
-    public function loadClientMedia(int $galleryId, string $folderLayout = 'folders'): array
+    public function loadClientMedia(int $galleryId, string $folderLayout = 'folders', ?int $limit = null, int $offset = 0): array
     {
         $folderLayout = strtolower(trim($folderLayout)) === 'flat' ? 'flat' : 'folders';
         $this->healOrphanFolderIds($galleryId);
-        $listed = $this->listPhotosForGallery($galleryId);
+        $offset = max(0, $offset);
+        $listed = $this->listPhotosForGallery($galleryId, $limit, $offset);
         $photos = $listed['photos'];
-        $folders = $folderLayout === 'flat' ? [] : $this->listFoldersForGallery($galleryId);
+        $folders = [];
         if ($folderLayout === 'flat') {
             $photos = array_map(static function (array $p) {
                 $p['folder_id'] = null;
@@ -79,11 +81,25 @@ class KingSelectionPublicService
                 return $p;
             }, $photos);
         } else {
-            $folders = $this->prepareClientFolders($folders, $photos);
+            $folders = array_values(array_filter(
+                $this->listFoldersForGallery($galleryId),
+                static fn (array $f) => ((int) ($f['photo_count'] ?? 0)) > 0
+            ));
+            if ($limit === null) {
+                $folders = $this->prepareClientFolders($folders, $photos);
+            }
             $photos = $this->sanitizePhotoFolderIds($photos, $folders);
         }
 
-        return ['photos' => $photos, 'folders' => $folders, 'folder_layout' => $folderLayout];
+        return [
+            'photos' => $photos,
+            'folders' => $folders,
+            'folder_layout' => $folderLayout,
+            'photos_total' => $listed['total'],
+            'photos_has_more' => $listed['hasMore'],
+            'photos_offset' => $offset,
+            'photos_limit' => $listed['limit'],
+        ];
     }
 
     /**

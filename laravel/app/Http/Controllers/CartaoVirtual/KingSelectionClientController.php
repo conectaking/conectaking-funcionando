@@ -151,7 +151,10 @@ class KingSelectionClientController extends Controller
     {
         $payload = (array) $request->attributes->get('ks_client', []);
         $slug = (string) $request->query('slug', '');
-        $r = $this->ks->clientGallery($payload, $slug);
+        $limitRaw = $request->query('limit');
+        $limit = ($limitRaw !== null && $limitRaw !== '') ? (int) $limitRaw : null;
+        $offset = max(0, (int) $request->query('offset', 0));
+        $r = $this->ks->clientGallery($payload, $slug, $limit, $offset);
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
