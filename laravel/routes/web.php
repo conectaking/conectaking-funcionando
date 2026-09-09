@@ -1391,9 +1391,22 @@ Route::post('/l/api/auth/logout', [\App\Http\Controllers\Auth\AuthController::cl
 
 // Páginas já convertidas para Blade (resources/views/pages/*.blade.php).
 // O LegacyPageController renderiza o Blade quando existe e cai no HTML legado quando não existe.
+//
+// King Selection: /kingSelection (sem slug) = painel do fotógrafo (lista/projeto),
+// igual ao Node. /kingSelection/{slug} (acima) = galeria do cliente.
+$ksPhotographerPage = function () {
+    $request = request();
+    $page = $request->filled('galleryId') ? 'kingSelectionProject' : 'kingSelectionEdit';
+
+    return app(\App\Http\Controllers\LegacyPageController::class)->show($request, $page);
+};
+foreach (['/kingSelection', '/kingSelection.html', '/l/kingSelection', '/l/kingSelection.html'] as $ksPath) {
+    Route::get($ksPath, $ksPhotographerPage);
+}
+
 $bladePages = [
     'login', 'dashboard', 'registro', 'recuperar-senha', 'resetar-senha', 'conta',
-    'kingSelection', 'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
+    'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
     'kingSelectionGallery', 'kingSelectionReview', 'kingSelectionSuccess',
     'formPageEdit', 'salesPageEdit', 'guestListEdit',
     'kingDocs', 'kingDocsShare', 'kingForms',
