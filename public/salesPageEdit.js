@@ -7,7 +7,7 @@
     'use strict';
 
     // Configuração da API (consistente com dashboard.js)
-    const API_URL = 'https://www.conectaking.com.br';
+    const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
 
     // Cache de requisições para evitar rate limit
     const requestCache = new Map();

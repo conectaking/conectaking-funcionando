@@ -170,9 +170,7 @@
                     
                     // Confirmar via API pelas flags (não pela existência de guest_list)
                     if (itemId && sendModeInput == null && document.getElementById('enable-guest-list-submit-value') == null) {
-                                const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                                    ? 'https://www.conectaking.com.br' 
-                                    : '';
+                                const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
                                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
                                 fetch(`${apiBaseUrl}/api/profile/items/${itemId}`, {
                                     headers: {
@@ -264,10 +262,8 @@
                                             return;
                                         }
                                         
-                                        // Usar URL completa do backend quando rodando localmente
-                                        const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                                            ? 'https://www.conectaking.com.br' 
-                                            : '';
+                                        // Same-origin (Laravel local ou produção)
+                                        const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
                                         
                                         // Passar token via query string para autenticação
                                         const url = `${apiBaseUrl}/api/guest-lists/${id}/customize-portaria?token=${encodeURIComponent(token)}`;
@@ -480,10 +476,8 @@
                             enable_guest_list_submit: isEnabled
                         };
                         
-                        // Usar URL completa do backend para evitar problemas com servidor local
-                        const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                            ? 'https://www.conectaking.com.br' 
-                            : '';
+                        // Same-origin (Laravel local ou produção)
+                        const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
                         
                         console.log(`[GUEST_LIST] Enviando requisição PUT para ${apiBaseUrl}/api/profile/items/digital_form/${itemId}`);
                         console.log(`[GUEST_LIST] Body:`, requestBody);

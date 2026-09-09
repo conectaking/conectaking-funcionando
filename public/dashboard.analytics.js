@@ -67,7 +67,7 @@
          */
         async loadGeneralAnalytics(salesPageId) {
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/analytics/${salesPageId}`, {
                     headers: {
@@ -96,7 +96,7 @@
          */
         async loadSalesFunnel(salesPageId) {
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/analytics/${salesPageId}/funnel`, {
                     headers: {
@@ -122,7 +122,7 @@
          */
         async loadProductRanking(salesPageId) {
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/analytics/${salesPageId}/ranking`, {
                     headers: {

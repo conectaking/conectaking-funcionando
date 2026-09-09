@@ -1,6 +1,6 @@
 // guestListEdit.js - Gerenciamento de Lista de Convidados
 
-const API_URL = 'https://www.conectaking.com.br';
+const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
 let currentGuestListId = null;
 let currentGuestList = null;
 let guests = [];

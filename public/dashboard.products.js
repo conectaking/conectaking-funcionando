@@ -178,7 +178,7 @@
             }
 
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
                     headers: {
@@ -223,7 +223,7 @@
             }
 
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
                     headers: {
@@ -518,7 +518,7 @@
             console.log('Y"" Movendo produto:', { productId, direction, productOrders });
 
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
                     method: 'POST',
@@ -620,7 +620,7 @@
             console.log('Y"" Reordenando produtos:', productOrders);
 
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
                     method: 'POST',
@@ -1046,7 +1046,7 @@
                             uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
                             const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                            const API_URL = 'https://www.conectaking.com.br';
+                            const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                             
                             // Obter URL de upload do Cloudflare
                             const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
@@ -1221,7 +1221,7 @@
             };
 
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 
                 const url = this.currentProduct
@@ -1359,7 +1359,7 @@
             }
 
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}/status`, {
                     method: 'PATCH',
@@ -1432,7 +1432,7 @@
             }
 
             try {
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}`, {
                     method: 'DELETE',
@@ -1762,7 +1762,7 @@
                         onConfirm: async (prompt) => {
                             try {
                                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                                const API_URL = 'https://www.conectaking.com.br';
+                                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                                 
                                 const response = await fetch(`${API_URL}/api/suggestions/generate`, {
                                     method: 'POST',
@@ -1840,7 +1840,7 @@
             const fetchSuggestions = async (name, prompt = '') => {
                 try {
                     const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                    const API_URL = 'https://www.conectaking.com.br';
+                    const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                     
                     const response = await fetch(`${API_URL}/api/suggestions/generate`, {
                         method: 'POST',

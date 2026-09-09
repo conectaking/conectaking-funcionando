@@ -12,10 +12,8 @@ import '@legacy/js/planRenderer.js';
             console.log('Servidor estático local detectado. Usando Laravel/FrankenPHP na porta 8080.');
         }
         
-        // Em produção, mesma origem (www)
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            API_URL = 'https://www.conectaking.com.br';
-        }
+        // Em produção / Docker: mesma origem (já em location.origin)
+        API_URL = String(API_URL || window.location.origin).replace(/\/$/, '');
         
         console.log('API URL configurada:', API_URL);
         
@@ -508,7 +506,7 @@ import '@legacy/js/planRenderer.js';
                 try {
                     rt = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
                 } catch (e) {}
-                var base = 'https://www.conectaking.com.br';
+                var base = String(window.API_URL || window.API_BASE || window.location.origin).replace(/\/$/, '');
                 function done() {
                     clearAuthStorage();
                     window.location.reload();
