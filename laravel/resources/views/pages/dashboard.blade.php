@@ -1757,7 +1757,6 @@
     <script>
       (function(){ var b = (window.API_BASE || window.location.origin || 'https://www.conectaking.com.br').replace(/\/$/, ''); var s = document.createElement('script'); s.src = b + '/api-config.js'; s.async = true; document.body.appendChild(s); })();
     </script>
-    <script src="js/module-link-limits.js?v=2026-01-28-03"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
