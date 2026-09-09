@@ -6816,7 +6816,13 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const jwt = localStorage.getItem('conectaKingToken') || localStorage.getItem('conectaking_token') || localStorage.getItem('token') || '';
       const base = (window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-      const url = `${base}/api/king-selection/config-finalizacao/${galleryId}?token=${encodeURIComponent(jwt)}`;
+      try {
+        if (jwt) {
+          const secure = location.protocol === 'https:' ? '; Secure' : '';
+          document.cookie = `token=${encodeURIComponent(jwt)}; Path=/; SameSite=Lax${secure}`;
+        }
+      } catch (_) {}
+      const url = `${base}/api/king-selection/config-finalizacao/${galleryId}`;
       window.open(url, '_blank');
     });
   }

@@ -210,12 +210,21 @@
       const galleryId = @json((int) $galleryId);
       const apiBase = @json($apiBase);
       const params = new URLSearchParams(window.location.search);
-      let token = params.get('token');
-      if (!token && typeof localStorage !== 'undefined') {
+      let token = null;
+      if (typeof localStorage !== 'undefined') {
         token = localStorage.getItem('conectaKingToken') || localStorage.getItem('conectaking_token') || localStorage.getItem('token') || localStorage.getItem('jwt');
       }
       if (!token) {
-        document.getElementById('msgErro').textContent = 'Token não encontrado. Abra esta página pelo painel (link com token) ou informe ?token=... na URL.';
+        const m = /(?:^|;\s*)token=([^;]+)/.exec(document.cookie || '');
+        if (m) {
+          try { token = decodeURIComponent(m[1]); } catch (_) { token = m[1]; }
+        }
+      }
+      if (params.has('token')) {
+        try { window.history.replaceState({}, '', window.location.pathname + window.location.hash); } catch (_) {}
+      }
+      if (!token) {
+        document.getElementById('msgErro').textContent = 'Token não encontrado. Abra esta página pelo painel King Selection (após login).';
         document.getElementById('msgErro').classList.remove('hidden');
       }
 
@@ -361,9 +370,6 @@
           }
           document.getElementById('msgSucesso').textContent = 'Mensagem de finalização salva com sucesso.';
           document.getElementById('msgSucesso').classList.remove('hidden');
-          if (params.has('token')) {
-            try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
-          }
         } catch (err) {
           document.getElementById('msgErro').textContent = err.message || 'Erro ao salvar.';
           document.getElementById('msgErro').classList.remove('hidden');
