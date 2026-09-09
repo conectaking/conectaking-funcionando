@@ -83,6 +83,11 @@
             var c = core();
             if (typeof c.moduleListDisplayTitle === 'function') return c.moduleListDisplayTitle(item);
             return (item && (item.title || item.item_type)) || 'Módulo';
+        },
+        syncModalDataToItem: function () {
+            var c = core();
+            if (typeof c.syncModalDataToItem === 'function') return c.syncModalDataToItem();
+            if (typeof global.syncModalDataToItem === 'function') return global.syncModalDataToItem();
         }
     };
 
@@ -96,7 +101,7 @@
 
 async function saveAllChanges(event) {
     // Sincronizar dados do modal para o item da lista ANTES de capturar os dados
-    syncModalDataToItem();
+    env.syncModalDataToItem();
 
     const wifiMissingSsid = Array.from(document.querySelectorAll('#items-container .item, #items-container .module-item')).some(el => {
         if (el.dataset.itemType !== 'wifi') return false;

@@ -1612,19 +1612,19 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-09-08-globals1" defer></script>
+    <script src="dashboard.js?v=2026-09-09-syncModal1" defer></script>
     <script src="js/dashboard-finance.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-empresa.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-relatorios.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-cartao.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-editor.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-sortable.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-save.js?v=2026-09-08-globals1" defer></script>
+    <script src="js/dashboard-save.js?v=2026-09-09-syncModal1" defer></script>
     <script src="js/dashboard-upload.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-edit-modal.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-qr.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-assinatura.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-listeners.js?v=2026-09-08-globals1" defer></script>
+    <script src="js/dashboard-listeners.js?v=2026-09-09-syncModal1" defer></script>
     <script src="js/dashboard-separacao.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-forms-editor.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-info.js?v=2026-09-08-globals1" defer></script>

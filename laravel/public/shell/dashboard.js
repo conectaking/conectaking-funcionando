@@ -1,9 +1,9 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     console.log('Dashboard iniciando... v2026-08-13-banner-url-models');
 
-    // Handler global de erros nÃ£o capturados
+    // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
-        console.error('[GLOBAL ERROR] Erro nÃ£o capturado:', {
+        console.error('[GLOBAL ERROR] Erro não capturado:', {
             message: event.message,
             filename: event.filename,
             lineno: event.lineno,
@@ -13,9 +13,9 @@
         });
     });
 
-    // Handler para promessas rejeitadas nÃ£o tratadas
+    // Handler para promessas rejeitadas não tratadas
     window.addEventListener('unhandledrejection', (event) => {
-        console.error('[GLOBAL ERROR] Promise rejeitada nÃ£o tratada:', {
+        console.error('[GLOBAL ERROR] Promise rejeitada não tratada:', {
             reason: event.reason,
             promise: event.promise
         });
@@ -24,9 +24,9 @@
     // --- GUARDA DE ROTA (MODO DESENVOLVIMENTO) ---
     const user = JSON.parse(localStorage.getItem('conectaKingUser'));
 
-    // Para desenvolvimento, permite acesso mesmo sem usuÃ¡rio
+    // Para desenvolvimento, permite acesso mesmo sem usuário
     if (!user) {
-        console.warn('UsuÃ¡rio nÃ£o encontrado, criando usuÃ¡rio de teste para desenvolvimento');
+        console.warn('Usuário não encontrado, criando usuário de teste para desenvolvimento');
         const testUser = {
             id: 'test-user',
             accountType: 'premium',
@@ -34,7 +34,7 @@
         };
         localStorage.setItem('conectaKingUser', JSON.stringify(testUser));
     } else if (user.accountType === 'free') {
-        alert('Acesso negado. FaÃ§a um upgrade do seu plano para acessar o dashboard.');
+        alert('Acesso negado. Faça um upgrade do seu plano para acessar o dashboard.');
         window.location.href = 'index.html#planos';
         return;
     }
@@ -94,7 +94,7 @@
         API_URL = explicitLocalApi && !isProdHost ? computedLocal : computedProd;
     }
 
-    // Tornar API_URL disponÃ­vel globalmente para planRenderer.js, module-link-limits.js e kingForms.html (nova aba)
+    // Tornar API_URL disponível globalmente para planRenderer.js, module-link-limits.js e kingForms.html (nova aba)
     window.API_URL = API_URL;
     try { localStorage.setItem('apiBase', API_URL); } catch (e) {}
 
@@ -105,11 +105,11 @@
                 params.set('api', 'local');
             }
         } catch (e) {}
-        // Anti-cache: garante refresh da versÃ£o nova no browser normal
+        // Anti-cache: garante refresh da versão nova no browser normal
         params.set('v', '2026-09-08-no-render');
         var q = '?' + params.toString();
         var h = (typeof window !== 'undefined' && window.location && window.location.hostname) ? String(window.location.hostname).toLowerCase() : '';
-        // Live Server / dev sem Apache: nÃ£o existe rewrite /kingSelection â€” usar o HTML direto
+        // Live Server / dev sem Apache: não existe rewrite /kingSelection — usar o HTML direto
         if (h === '127.0.0.1' || h === 'localhost') {
             return 'kingSelectionEdit.html' + q;
         }
@@ -129,12 +129,12 @@
         }
     }
 
-    // Abrir painel do KingSelection (produÃ§Ã£o: /kingSelection com .htaccess; local: kingSelectionEdit.html)
+    // Abrir painel do KingSelection (produção: /kingSelection com .htaccess; local: kingSelectionEdit.html)
     window.openKingSelectionAdmin = function () {
         window.location.href = kingSelectionAdminUrl();
     };
 
-    // FunÃ§Ã£o para atualizar headers com o token atual
+    // Função para atualizar headers com o token atual
     function getHeaders() {
         const currentToken = localStorage.getItem('conectaKingToken');
         return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken || token}` };
@@ -162,7 +162,7 @@
         window.location.href = kingSelectionAdminUrl();
     };
 
-    // Desktop pode manter links antigos em cache; forÃ§a o caminho canÃ´nico no clique.
+    // Desktop pode manter links antigos em cache; força o caminho canônico no clique.
     document.addEventListener('click', function (event) {
         var anchor = event && event.target && event.target.closest ? event.target.closest('a[href]') : null;
         if (!anchor) return;
@@ -173,15 +173,15 @@
         window.navigateToKingSelectionAdmin();
     }, true);
 
-    // Meu site: carregar orÃ§amentos e resultados do teste de arquÃ©tipo no painel
+    // Meu site: carregar orçamentos e resultados do teste de arquétipo no painel
 
-    // FunÃ§Ã£o para atualizar headers (chamada apÃ³s renovar token)
+    // Função para atualizar headers (chamada após renovar token)
     function updateHeaders() {
         HEADERS = getHeaders();
         HEADERS_AUTH = getAuthHeaders();
     }
 
-    // Se abriu o dashboard com ?import_form=TOKEN, oferecer importar formulÃ¡rio de outro usuÃ¡rio
+    // Se abriu o dashboard com ?import_form=TOKEN, oferecer importar formulário de outro usuário
     const importFormToken = (new URLSearchParams(window.location.search)).get('import_form');
     if (importFormToken) {
         (async () => {
@@ -194,10 +194,10 @@
                 const infoRes = await fetch(`${API_URL}/api/profile/import-form-info?token=${encodeURIComponent(importFormToken)}`);
                 const info = await infoRes.json().catch(() => ({}));
                 if (!infoRes.ok) {
-                    alert(info.message || 'Link invÃ¡lido ou expirado.');
+                    alert(info.message || 'Link inválido ou expirado.');
                     return;
                 }
-                const msg = 'Deseja importar o formulÃ¡rio "' + (info.formTitle || 'FormulÃ¡rio') + '"' + (info.ownerName ? ' de ' + info.ownerName : '') + '" para sua conta?\n\nEle serÃ¡ copiado com todas as perguntas, imagens e configuraÃ§Ãµes.';
+                const msg = 'Deseja importar o formulário "' + (info.formTitle || 'Formulário') + '"' + (info.ownerName ? ' de ' + info.ownerName : '') + '" para sua conta?\n\nEle será copiado com todas as perguntas, imagens e configurações.';
                 if (!confirm(msg)) return;
                 const impRes = await fetch(`${API_URL}/api/profile/import-form`, {
                     method: 'POST',
@@ -220,7 +220,7 @@
         })();
     }
 
-    // FunÃ§Ã£o para renovar token
+    // Função para renovar token
     async function refreshAccessToken() {
         const refreshToken = localStorage.getItem('conectaKingRefreshToken');
 
@@ -265,16 +265,16 @@
         }
     }
 
-    // --- FUNfâ€”AO MELHORADA PARA FETCH (COMPATfÂVEL COM ANDROID) ---
-    // Cache de requisiÃ§Ãµes para evitar rate limit
+    // --- FUNf—AO MELHORADA PARA FETCH (COMPATfVEL COM ANDROID) ---
+    // Cache de requisições para evitar rate limit
     const requestCache = new Map();
     const CACHE_DURATION = 30000; // 30 segundos de cache para GET requests
-    const RATE_LIMIT_COOLDOWN = 60000; // 60 segundos de cooldown apÃ³s rate limit
+    const RATE_LIMIT_COOLDOWN = 60000; // 60 segundos de cooldown após rate limit
 
     function safeFetchDefaultTimeoutMs() {
         try {
             const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
-            // Mobile: TLS/CPU mais lentos + rede instÃ¡vel; Safari costuma nÃ£o dizer "Failed to fetch"
+            // Mobile: TLS/CPU mais lentos + rede instável; Safari costuma não dizer "Failed to fetch"
             if (/Mobile|Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
                 return 120000;
             }
@@ -286,7 +286,7 @@
         if (!error) return false;
         const n = String(error.name || '');
         const m = String(error.message || '').toLowerCase();
-        if (n === 'AbortError') return false; // tratado Ã  parte (timeout)
+        if (n === 'AbortError') return false; // tratado à parte (timeout)
         if (m.includes('failed to fetch')) return true;
         if (m.includes('load failed')) return true; // Safari iOS
         if (m.includes('networkerror')) return true;
@@ -319,7 +319,7 @@
             headers: combinedHeaders
         };
 
-        // Verificar cache para requisiÃ§Ãµes GET
+        // Verificar cache para requisições GET
         if (defaultOptions.method === 'GET' || !defaultOptions.method) {
             const cacheKey = `${url}_${JSON.stringify(defaultOptions.headers || {})}`;
             const cached = requestCache.get(cacheKey);
@@ -330,14 +330,14 @@
             }
         }
 
-        // Adiciona headers de autorizaÃ§Ã£o se necessÃ¡rio
+        // Adiciona headers de autorização se necessário
         const currentToken = localStorage.getItem('conectaKingToken');
         if (currentToken && !defaultOptions.headers.Authorization) {
             defaultOptions.headers.Authorization = `Bearer ${currentToken}`;
         }
 
         try {
-            console.log(` Fazendo requisiÃ§Ã£o para: ${url}`);
+            console.log(` Fazendo requisição para: ${url}`);
 
             // Cria um AbortController para timeout
             const controller = new AbortController();
@@ -350,17 +350,17 @@
 
             clearTimeout(timeoutId);
 
-            // NÃ£o lanÃ§a erro em 401 para permitir tratamento/refresh de token no caller
+            // Não lança erro em 401 para permitir tratamento/refresh de token no caller
             // Trata 429 (Rate Limit) de forma especial
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.warn(`RequisiÃ§Ã£o retornou 401 para: ${url}`);
+                    console.warn(`Requisição retornou 401 para: ${url}`);
                     return response;
                 }
                 if (response.status === 429) {
                     console.warn(`Rate limit atingido para: ${url}`);
                     const retryAfter = response.headers.get('Retry-After') || '60';
-                    const err = new Error(`Muitas requisiÃ§Ãµes. Aguarde ${retryAfter} segundos antes de tentar novamente.`);
+                    const err = new Error(`Muitas requisições. Aguarde ${retryAfter} segundos antes de tentar novamente.`);
                     err.status = 429;
                     err.retryAfter = parseInt(retryAfter);
 
@@ -384,42 +384,42 @@
                 });
             }
 
-            console.log(`RequisiÃ§Ã£o bem-sucedida para: ${url}`);
+            console.log(`Requisição bem-sucedida para: ${url}`);
             return response;
 
         } catch (error) {
-            console.error(` Erro na requisiÃ§Ã£o para ${url}:`, error);
+            console.error(` Erro na requisição para ${url}:`, error);
 
-            // Tratamento especÃ­fico para diferentes tipos de erro
+            // Tratamento específico para diferentes tipos de erro
             if (error.name === 'AbortError') {
-                throw new Error('Timeout: A requisiÃ§Ã£o demorou muito para responder');
+                throw new Error('Timeout: A requisição demorou muito para responder');
             } else if (error.message && (error.message.includes('ERR_NETWORK_CHANGED') || error.message.includes('ERR_INTERNET_DISCONNECTED'))) {
-                throw new Error('Erro de conexÃ£o: Sua rede mudou ou foi desconectada. Verifique sua internet e tente novamente');
+                throw new Error('Erro de conexão: Sua rede mudou ou foi desconectada. Verifique sua internet e tente novamente');
             } else if (error.message && error.message.includes('Failed to fetch')) {
-                throw new Error('Erro de conexÃ£o: NÃ£o foi possÃ­vel conectar ao servidor. Verifique sua internet e tente novamente');
+                throw new Error('Erro de conexão: Não foi possível conectar ao servidor. Verifique sua internet e tente novamente');
             } else if (error.message && error.message.includes('NetworkError')) {
-                throw new Error('Erro de rede: Verifique sua conexÃ£o');
+                throw new Error('Erro de rede: Verifique sua conexão');
             } else if (isLikelyNetworkTransportError(error)) {
-                throw new Error('Erro de conexÃ£o: NÃ£o foi possÃ­vel conectar ao servidor. Verifique sua internet e tente novamente');
+                throw new Error('Erro de conexão: Não foi possível conectar ao servidor. Verifique sua internet e tente novamente');
             } else {
                 throw error;
             }
         }
     }
 
-    // --- FUNfâ€”AO ESPECfÂFICA PARA UPLOAD DE PDF ---
+    // --- FUNf—AO ESPECfFICA PARA UPLOAD DE PDF ---
     async function uploadPDF(file, progressCallback = null) {
         if (!file) {
             throw new Error('Nenhum arquivo selecionado');
         }
 
-        // ValidaÃ§Ã£o do arquivo
+        // Validação do arquivo
         if (file.type !== 'application/pdf') {
-            throw new Error('Por favor, selecione um arquivo PDF vÃ¡lido');
+            throw new Error('Por favor, selecione um arquivo PDF válido');
         }
 
         if (file.size > 10 * 1024 * 1024) { // 10MB
-            throw new Error('O arquivo deve ter no mÃ¡ximo 10MB');
+            throw new Error('O arquivo deve ter no máximo 10MB');
         }
 
         console.log(`?o Iniciando upload do PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
@@ -438,27 +438,27 @@
                 body: formData
             });
 
-            console.log(`?oÂ¡ Resposta do servidor: ${response.status} ${response.statusText}`);
+            console.log(`?o¡ Resposta do servidor: ${response.status} ${response.statusText}`);
 
-            // Verifica se a resposta Ã© JSON vÃ¡lida
+            // Verifica se a resposta é JSON válida
             const contentType = response.headers.get('content-type');
-            console.log(`?oâ€” Content-Type da resposta: ${contentType}`);
+            console.log(`?o— Content-Type da resposta: ${contentType}`);
 
             if (!contentType || !contentType.includes('application/json')) {
                 const responseText = await response.text();
-                console.error('Resposta nÃ£o Ã© JSON:', responseText.substring(0, 500));
+                console.error('Resposta não é JSON:', responseText.substring(0, 500));
 
-                // Mensagens especÃ­ficas para diferentes tipos de erro
+                // Mensagens específicas para diferentes tipos de erro
                 if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf nÃ£o estÃ¡ funcionando. Verifique o arquivo SERVER-FIXES.md para correÃ§Ãµes necessÃ¡rias.');
+                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf não está funcionando. Verifique o arquivo SERVER-FIXES.md para correções necessárias.');
                 } else if (response.status === 404) {
-                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf nÃ£o existe no servidor. Implemente conforme SERVER-FIXES.md');
+                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf não existe no servidor. Implemente conforme SERVER-FIXES.md');
                 } else if (response.status === 401) {
-                    throw new Error('NAO AUTORIZADO: Token invÃ¡lido ou expirado. FaÃ§a login novamente.');
+                    throw new Error('NAO AUTORIZADO: Token inválido ou expirado. Faça login novamente.');
                 } else if (response.status === 500) {
-                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as correÃ§Ãµes do SERVER-FIXES.md');
+                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as correções do SERVER-FIXES.md');
                 } else {
-                    throw new Error(` ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para correÃ§Ãµes.`);
+                    throw new Error(` ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para correções.`);
                 }
             }
 
@@ -468,7 +468,7 @@
                 throw new Error(result.message || `Erro do servidor: ${response.status}`);
             }
 
-            console.log(`âœ“ Upload do PDF bem-sucedido:`, result);
+            console.log(`✓ Upload do PDF bem-sucedido:`, result);
 
             if (progressCallback) {
                 progressCallback('Arquivo Carregado!');
@@ -483,18 +483,18 @@
                 progressCallback('Erro no envio');
             }
 
-            // Re-lanÃ§a o erro com informaÃ§Ãµes especÃ­ficas
+            // Re-lança o erro com informações específicas
             if (error.message.includes('Failed to fetch')) {
-                throw new Error('ERRO DE CONEXAO: NÃ£o foi possÃ­vel conectar ao servidor. Verifique sua internet e se o servidor estÃ¡ funcionando.');
+                throw new Error('ERRO DE CONEXAO: Não foi possível conectar ao servidor. Verifique sua internet e se o servidor está funcionando.');
             } else if (error.message.includes('Unexpected token')) {
-                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados invÃ¡lidos. Implemente as correÃ§Ãµes do SERVER-FIXES.md');
+                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados inválidos. Implemente as correções do SERVER-FIXES.md');
             } else {
                 throw error;
             }
         }
     }
 
-    // --- FUNfâ€”AO DE TESTE PARA VERIFICAR ENDPOINT ---
+    // --- FUNf—AO DE TESTE PARA VERIFICAR ENDPOINT ---
     async function testPDFEndpoint() {
         console.log(' Testando conectividade com o servidor...');
 
@@ -511,14 +511,14 @@
             console.log(` Teste de conectividade: ${testResponse.status} ${testResponse.statusText}`);
 
             if (testResponse.ok) {
-                console.log('âœ“ Servidor estÃ¡ funcionando');
+                console.log('✓ Servidor está funcionando');
                 return {
                     server: true,
                     status: testResponse.status,
                     message: 'Servidor funcionando normalmente'
                 };
             } else {
-                console.log('Ã¢Å¡Â Ã¯Â¸Â Servidor com problemas');
+                console.log('âš ï¸ Servidor com problemas');
                 return {
                     server: false,
                     status: testResponse.status,
@@ -527,21 +527,21 @@
             }
 
         } catch (error) {
-            console.error('Servidor nÃ£o acessÃ­vel:', error);
+            console.error('Servidor não acessível:', error);
             return {
                 server: false,
                 error: error.message,
-                message: 'Servidor nÃ£o acessÃ­vel, usando modo offline'
+                message: 'Servidor não acessível, usando modo offline'
             };
         }
     }
 
-    // Disponibiliza a funÃ§Ã£o de teste globalmente
+    // Disponibiliza a função de teste globalmente
     window.testPDFEndpoint = testPDFEndpoint;
 
-    // --- FUNfâ€”fâ€”ES PARA QR CODE PIX VfÂLIDO ---
+    // --- FUNf—f—ES PARA QR CODE PIX VfLIDO ---
 
-    // FunÃ§Ã£o para calcular CRC16 (necessÃ¡rio para PIX)
+    // Função para calcular CRC16 (necessário para PIX)
     function calculateCRC16(data) {
         const polynomial = 0x1021;
         let crc = 0xFFFF;
@@ -561,33 +561,33 @@
         return crc.toString(16).toUpperCase().padStart(4, '0');
     }
 
-    // FunÃ§Ã£o para formatar chave PIX
+    // Função para formatar chave PIX
     function formatPixKey(pixKey) {
-        const cleanKey = pixKey.trim().replace(/\D/g, ''); // Remove tudo que nÃ£o Ã© nÃºmero
+        const cleanKey = pixKey.trim().replace(/\D/g, ''); // Remove tudo que não é número
 
-        // Se for celular (11 dÃ­gitos), adiciona +55
+        // Se for celular (11 dígitos), adiciona +55
         if (cleanKey.length === 11) {
             return '+55' + cleanKey;
         }
 
-        // Se for celular com DDD (13 dÃ­gitos), adiciona +
+        // Se for celular com DDD (13 dígitos), adiciona +
         if (cleanKey.length === 13 && cleanKey.startsWith('55')) {
             return '+' + cleanKey;
         }
 
-        // Se jÃ¡ tem +, mantÃ©m como estÃ¡
+        // Se já tem +, mantém como está
         if (pixKey.startsWith('+')) {
             return pixKey;
         }
 
-        // Para outros tipos (CPF, email, chave aleatÃ³ria), mantÃ©m como estÃ¡
+        // Para outros tipos (CPF, email, chave aleatória), mantém como está
         return pixKey;
     }
 
-    // FunÃ§Ã£o para gerar cÃ³digo PIX EMV vÃ¡lido
+    // Função para gerar código PIX EMV válido
     function generatePixEMVCode(pixKey, recipientName, amount = null, description = '') {
         if (!pixKey || !recipientName) {
-            throw new Error('Chave PIX e nome do recebedor sÃ£o obrigatÃ³rios');
+            throw new Error('Chave PIX e nome do recebedor são obrigatórios');
         }
 
         // Limpar e validar dados
@@ -596,7 +596,7 @@
         const cleanDescription = description.trim().substring(0, 25);
         const cleanAmount = amount ? parseFloat(amount).toFixed(2) : '0.00';
 
-        console.log(' Gerando cÃ³digo PIX com dados:', {
+        console.log(' Gerando código PIX com dados:', {
             pixKeyOriginal: pixKey,
             pixKeyFormatted: cleanPixKey,
             name: cleanName,
@@ -604,7 +604,7 @@
             description: cleanDescription
         });
 
-        // Construir cÃ³digo EMV manualmente para garantir formato correto
+        // Construir código EMV manualmente para garantir formato correto
         let emvString = '';
 
         // Payload Format Indicator
@@ -635,7 +635,7 @@
         // Merchant City
         emvString += '6006CIDADE';
 
-        // Additional Data Field Template (se houver descriÃ§Ã£o)
+        // Additional Data Field Template (se houver descrição)
         if (cleanDescription) {
             const additionalData = '05' + cleanDescription.length.toString().padStart(2, '0') + cleanDescription;
             emvString += '62' + additionalData.length.toString().padStart(2, '0') + additionalData;
@@ -645,13 +645,13 @@
         const crc = calculateCRC16(emvString + '6304');
         emvString += '6304' + crc;
 
-        console.log('?o CÃ³digo EMV final:', emvString);
-        console.log('?oÂ Tamanho:', emvString.length);
+        console.log('?o Código EMV final:', emvString);
+        console.log('?o Tamanho:', emvString.length);
 
         return emvString;
     }
 
-    // FunÃ§Ã£o para criar QR Code PIX visual
+    // Função para criar QR Code PIX visual
     function createPixQRCode(pixKey, recipientName, amount = null, description = '') {
         try {
             const pixCode = generatePixEMVCode(pixKey, recipientName, amount, description);
@@ -671,7 +671,7 @@
                 correctLevel: QRCode.CorrectLevel.M
             });
 
-            // Adicionar informaÃ§Ãµes abaixo do QR Code
+            // Adicionar informações abaixo do QR Code
             const info = document.createElement('div');
             info.style.marginTop = '10px';
             info.style.fontSize = '14px';
@@ -680,7 +680,7 @@
                 <div><strong>${recipientName}</strong></div>
                 <div>Chave: ${pixKey}</div>
                 ${amount ? `<div>Valor: R$ ${parseFloat(amount).toFixed(2)}</div>` : ''}
-                ${description ? `<div>DescriÃ§Ã£o: ${description}</div>` : ''}
+                ${description ? `<div>Descrição: ${description}</div>` : ''}
             `;
 
             container.appendChild(info);
@@ -693,7 +693,7 @@
         }
     }
 
-    // FunÃ§Ã£o para abrir modal com QR Code PIX
+    // Função para abrir modal com QR Code PIX
     function openPixQRModal(pixKey, recipientName, amount = null, description = '') {
         const modal = document.createElement('div');
         modal.className = 'pix-qr-modal';
@@ -752,7 +752,7 @@
         };
     }
 
-    // disponibiliza as funÃ§Ãµes globalmente
+    // disponibiliza as funções globalmente
     window.openPixQRModal = openPixQRModal;
     window.generatePixEMVCode = generatePixEMVCode;
 
@@ -777,8 +777,8 @@
     }
 
     function serializeBannerDestination(primaryUrl, instagramRaw, whatsappRaw) {
-        // Atalhos IG/WA abaixo do banner foram removidos: grava sÃ³ a URL principal
-        // (ignora instagram/whatsapp legados para nÃ£o recriar o overlay no cartÃ£o).
+        // Atalhos IG/WA abaixo do banner foram removidos: grava só a URL principal
+        // (ignora instagram/whatsapp legados para não recriar o overlay no cartão).
         void instagramRaw;
         void whatsappRaw;
         return String(primaryUrl || '').trim();
@@ -858,7 +858,7 @@
         return `
                 <div class="banner-social-extras" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
                     <label style="font-weight: 600;">Modelos de link (cole na URL acima)</label>
-                    <p class="banner-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Copie o modelo, troque o @ ou o nÃºmero e cole no campo <strong style="color:#ececec">URL ao clicar na imagem</strong>. Assim o banner fica com um link sÃ³ - sem atalhos por cima da foto.</p>
+                    <p class="banner-field-hint" style="margin: 6px 0 12px; font-size: 0.8rem; color: #a1a1a1; line-height: 1.35;">Copie o modelo, troque o @ ou o número e cole no campo <strong style="color:#ececec">URL ao clicar na imagem</strong>. Assim o banner fica com um link só - sem atalhos por cima da foto.</p>
                     <div class="banner-field-row" style="margin-bottom: 12px;">
                         <label style="display: block; margin-bottom: 6px;"><i class="fab fa-instagram" style="margin-right: 6px;"></i>Modelo Instagram</label>
                         <code class="banner-url-model" data-model="${igModel}" style="display:block;padding:10px;border-radius:8px;border:1px solid var(--border-color,#2C2C2F);background:rgba(0,0,0,0.25);color:#facc15;font-size:0.82rem;word-break:break-all;">${igModel}</code>
@@ -912,66 +912,66 @@
                 </div>`;
     }
 
-    // --- FUNfâ€”AO DE TESTE E DEBUG PARA PIX ---
+    // --- FUNf—AO DE TESTE E DEBUG PARA PIX ---
     function testPixCode(pixKey, recipientName, amount = null, description = '') {
-        console.log(' Testando cÃ³digo PIX...');
-        console.log('?oâ€” Dados de entrada:');
+        console.log(' Testando código PIX...');
+        console.log('?o— Dados de entrada:');
         console.log('- Chave PIX:', pixKey);
         console.log('- Nome:', recipientName);
         console.log('- Valor:', amount);
-        console.log('- DescriÃ§Ã£o:', description);
+        console.log('- Descrição:', description);
 
         try {
             const pixCode = generatePixEMVCode(pixKey, recipientName, amount, description);
-            console.log('âœ“ CÃ³digo EMV gerado:', pixCode);
-            console.log('?oÂ Tamanho do cÃ³digo:', pixCode.length);
+            console.log('✓ Código EMV gerado:', pixCode);
+            console.log('?o Tamanho do código:', pixCode.length);
 
-            // Verificar se comeÃ§a com 000201
+            // Verificar se começa com 000201
             if (pixCode.startsWith('000201')) {
-                console.log('âœ“ CÃ³digo comeÃ§a corretamente com 000201');
+                console.log('✓ Código começa corretamente com 000201');
             } else {
-                console.log('ERRO: CÃ³digo nÃ£o comeÃ§a com 000201');
+                console.log('ERRO: Código não começa com 000201');
             }
 
-            // Verificar se termina com CRC vÃ¡lido
+            // Verificar se termina com CRC válido
             const crc = pixCode.slice(-4);
             console.log(' CRC calculado:', crc);
 
-            // Verificar estrutura bÃ¡sica
+            // Verificar estrutura básica
             if (pixCode.includes('BR.GOV.BCB.PIX')) {
-                console.log('âœ“ ContÃ©m identificador BR.GOV.BCB.PIX');
+                console.log('✓ Contém identificador BR.GOV.BCB.PIX');
             } else {
-                console.log('ERRO: NÃ£o contÃ©m BR.GOV.BCB.PIX');
+                console.log('ERRO: Não contém BR.GOV.BCB.PIX');
             }
 
             if (pixCode.includes(pixKey)) {
-                console.log('âœ“ ContÃ©m chave PIX');
+                console.log('✓ Contém chave PIX');
             } else {
-                console.log('ERRO: NÃ£o contÃ©m chave PIX');
+                console.log('ERRO: Não contém chave PIX');
             }
 
             return pixCode;
 
         } catch (error) {
-            console.error('Erro ao gerar cÃ³digo PIX:', error);
+            console.error('Erro ao gerar código PIX:', error);
             return null;
         }
     }
 
-    // FunÃ§Ã£o para testar com dados reais do cliente
+    // Função para testar com dados reais do cliente
     function testClientPix() {
         console.log(' Testando com dados reais do cliente...');
         return testPixCode(
             '1119478723275204000053039865802BR',
             'ASSEMBLEIA DE DEUS CHAMA',
             null,
-            'DoaÃ§Ã£o'
+            'Doação'
         );
     }
 
-    // FunÃ§Ã£o para testar celular
+    // Função para testar celular
     function testCelularPix(celular) {
-        console.log('?oÂ± Testando PIX com celular:', celular);
+        console.log('?o± Testando PIX com celular:', celular);
         return testPixCode(
             celular,
             'TESTE CELULAR',
@@ -980,15 +980,15 @@
         );
     }
 
-    // Disponibiliza funÃ§Ãµes de teste
+    // Disponibiliza funções de teste
     window.testPixCode = testPixCode;
     window.testClientPix = testClientPix;
     window.testCelularPix = testCelularPix;
     window.formatPixKey = formatPixKey;
 
     let activeItemIdForIconPicker = null;
-    // qrCodeInstance â†’ dashboard-qr.js
-    // cropper / imageToUpload â†’ js/dashboard-upload.js (DashboardUpload)
+    // qrCodeInstance → dashboard-qr.js
+    // cropper / imageToUpload → js/dashboard-upload.js (DashboardUpload)
 
     // --- 2. SELETORES DE DOM ---
     const SELECTORS = {
@@ -1077,19 +1077,19 @@
         configExpandedContent: document.getElementById('config-expanded-content')
     };
 
-    // Placeholder SVG padrÃ£o para avatar (usado quando nÃ£o hÃ¡ imagem ou falha no carregamento)
+    // Placeholder SVG padrão para avatar (usado quando não há imagem ou falha no carregamento)
     const DEFAULT_AVATAR_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=';
 
-    // FunÃ§Ã£o auxiliar para atualizar avatares com tratamento de erro
+    // Função auxiliar para atualizar avatares com tratamento de erro
     function setAvatarSrc(element, src) {
         if (!element) return;
-        // Se a URL for do serviÃ§o externo que estÃ¡ falhando, usar placeholder direto
+        // Se a URL for do serviço externo que está falhando, usar placeholder direto
         if (src && src.includes('avatar.iran.liara.run')) {
             element.src = DEFAULT_AVATAR_PLACEHOLDER;
             return;
         }
         element.src = src || DEFAULT_AVATAR_PLACEHOLDER;
-        // Garantir que hÃ¡ tratamento de erro para fallback
+        // Garantir que há tratamento de erro para fallback
         element.onerror = function () {
             this.onerror = null;
             this.src = DEFAULT_AVATAR_PLACEHOLDER;
@@ -1105,18 +1105,18 @@
 
     async function fetchAndUpdateUserStatus() {
         if (!token) {
-            console.warn('Token nÃ£o encontrado, usando dados mock');
+            console.warn('Token não encontrado, usando dados mock');
             return JSON.parse(localStorage.getItem('conectaKingUser'));
         }
 
         try {
-            // Cooldown para evitar muitas requisiÃ§Ãµes
+            // Cooldown para evitar muitas requisições
             const now = Date.now();
             const lastStatusCheck = localStorage.getItem('lastStatusCheck');
             const STATUS_CHECK_COOLDOWN = 5000; // 5 segundos
 
             if (lastStatusCheck && (now - parseInt(lastStatusCheck)) < STATUS_CHECK_COOLDOWN) {
-                console.log('â³ Cooldown ativo para status. Usando dados locais.');
+                console.log('⏳ Cooldown ativo para status. Usando dados locais.');
                 return JSON.parse(localStorage.getItem('conectaKingUser'));
             }
 
@@ -1127,7 +1127,7 @@
             });
 
             if (response.status === 401) {
-                console.warn('Token invÃ¡lido, usando dados locais para desenvolvimento');
+                console.warn('Token inválido, usando dados locais para desenvolvimento');
                 return JSON.parse(localStorage.getItem('conectaKingUser'));
             }
 
@@ -1138,14 +1138,14 @@
             }
 
             if (!response.ok) {
-                throw new Error('Falha ao buscar status do usuÃ¡rio.');
+                throw new Error('Falha ao buscar status do usuário.');
             }
 
             const freshUser = await response.json();
 
             localStorage.setItem('conectaKingUser', JSON.stringify(freshUser));
 
-            console.log('[fetchAndUpdateUserStatus] Status do usuÃ¡rio atualizado:', {
+            console.log('[fetchAndUpdateUserStatus] Status do usuário atualizado:', {
                 email: freshUser.email,
                 hasFinance: freshUser.hasFinance,
                 hasContract: freshUser.hasContract,
@@ -1153,12 +1153,12 @@
                 plan_code: freshUser.plan_code
             });
 
-            // Aplicar visibilidade dos mÃ³dulos imediatamente
+            // Aplicar visibilidade dos módulos imediatamente
             if (typeof window.applyModulesVisibility === 'function') {
-                console.log('[fetchAndUpdateUserStatus] Aplicando visibilidade dos mÃ³dulos...');
+                console.log('[fetchAndUpdateUserStatus] Aplicando visibilidade dos módulos...');
                 window.applyModulesVisibility(freshUser);
             } else {
-                console.warn('[fetchAndUpdateUserStatus] window.applyModulesVisibility nÃ£o estÃ¡ disponÃ­vel ainda');
+                console.warn('[fetchAndUpdateUserStatus] window.applyModulesVisibility não está disponível ainda');
             }
 
             return freshUser;
@@ -1178,7 +1178,7 @@
     if (SELECTORS.previewBio) SELECTORS.previewBio.insertAdjacentElement('afterend', SELECTORS.previewItemsContainer);
 
 
-    // CartÃ£o/preview: js/dashboard-cartao.js (DashboardCartao)
+    // Cartão/preview: js/dashboard-cartao.js (DashboardCartao)
     function updateLivePreviewFromForm() {
         if (window.DashboardCartao && typeof window.DashboardCartao.updateLivePreviewFromForm === 'function') {
             return window.DashboardCartao.updateLivePreviewFromForm();
@@ -1227,7 +1227,7 @@
 
 
 
-    // Editor de mÃ³dulos: js/dashboard-editor.js (DashboardEditor.renderEditor)
+    // Editor de módulos: js/dashboard-editor.js (DashboardEditor.renderEditor)
     function renderEditor(profileData) {
         if (window.DashboardEditor && typeof window.DashboardEditor.renderEditor === 'function') {
             return window.DashboardEditor.renderEditor(profileData);
@@ -1251,7 +1251,7 @@
 
     if (window.DashboardCore) window.DashboardCore.updateAvatarFormatSelector = updateAvatarFormatSelector;
 
-    // FunÃ§Ã£o para aplicar formato CSS ao preview do avatar
+    // Função para aplicar formato CSS ao preview do avatar
     function applyAvatarFormatToPreview(avatarElement, format) {
         if (!avatarElement) return;
 
@@ -1262,7 +1262,7 @@
         const formatClass = `avatar-${format}`;
         avatarElement.classList.add(formatClass);
 
-        // Aplicar estilos especÃ­ficos baseados no formato
+        // Aplicar estilos específicos baseados no formato
         if (format === 'circular') {
             avatarElement.style.borderRadius = '50%';
             avatarElement.style.width = '120px';
@@ -1289,7 +1289,7 @@
         window.DashboardCore.applyAvatarFormatToPreview = applyAvatarFormatToPreview;
     }
 
-    // FunÃ§Ã£o para salvar o formato do avatar
+    // Função para salvar o formato do avatar
     async function saveAvatarFormat(format) {
         try {
             console.log('Salvando formato do avatar:', format);
@@ -1307,7 +1307,7 @@
                 throw new Error(errorData.message || 'Erro ao salvar formato do avatar');
             }
 
-            // Atualizar dados do perfil na memÃ³ria
+            // Atualizar dados do perfil na memória
             if (window.currentProfileData && window.currentProfileData.details) {
                 window.currentProfileData.details.avatar_format = format;
             }
@@ -1380,13 +1380,13 @@
             return;
         }
         if (String(itemId).startsWith('temp_')) {
-            alert('Publique as alteraÃ§Ãµes primeiro para poder duplicar este mÃ³dulo.');
+            alert('Publique as alterações primeiro para poder duplicar este módulo.');
             return;
         }
         const btn = document.querySelector(`.duplicate-item-btn[data-item-id="${itemId}"], .module-action-btn.duplicate[data-item-id="${itemId}"]`);
         const origTitle = btn?.getAttribute?.('title');
         const url = `${typeof API_URL !== 'undefined' ? API_URL : window.API_URL || ''}/api/profile/items/${itemId}/duplicate`;
-        console.log(' Duplicando mÃ³dulo:', itemId, '', url);
+        console.log(' Duplicando módulo:', itemId, '', url);
         try {
             if (btn) {
                 btn.disabled = true;
@@ -1406,7 +1406,7 @@
             }
             // Sucesso (2xx): sempre recarregar o perfil completo para trazer digital_form_data (perguntas, fotos, etc.) do novo item
             const newItem = result?.id != null ? result : (result?.item || result?.data);
-            if (newItem?.id != null) console.log('MÃ³dulo duplicado com id:', newItem.id);
+            if (newItem?.id != null) console.log('Módulo duplicado com id:', newItem.id);
             const doRefresh = typeof fetchProfileData === 'function' ? fetchProfileData : (typeof window.fetchProfileData === 'function' ? window.fetchProfileData : null);
             if (doRefresh) {
                 await doRefresh(true);
@@ -1414,8 +1414,8 @@
                 window.location.reload();
             }
         } catch (err) {
-            console.error('Erro ao duplicar mÃ³dulo:', err);
-            alert(err.message || 'NÃ£o foi possÃ­vel duplicar o mÃ³dulo. Verifique se a API estÃ¡ atualizada e tente novamente.');
+            console.error('Erro ao duplicar módulo:', err);
+            alert(err.message || 'Não foi possível duplicar o módulo. Verifique se a API está atualizada e tente novamente.');
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -1427,45 +1427,45 @@
     }
     window.duplicateItem = duplicateItem;
 
-    // FunÃ§Ã£o para deletar item
+    // Função para deletar item
     if (window.DashboardCore) window.DashboardCore.deleteItem = function () { return deleteItem.apply(null, arguments); };
     async function deleteItem(itemId) {
         if (!itemId) {
-            console.error('O ID do item nÃ£o fornecido para deleÃ§Ã£o');
-            alert('Erro: ID do mÃ³dulo nÃ£o encontrado.');
+            console.error('O ID do item não fornecido para deleção');
+            alert('Erro: ID do módulo não encontrado.');
             return;
         }
 
-        // Verificar se Ã© um item temporÃ¡rio (nÃ£o salvo ainda)
+        // Verificar se é um item temporário (não salvo ainda)
         const isTemporary = itemId.toString().startsWith('temp_');
         const itemEl = document.querySelector(`[data-id="${itemId}"]`);
         const isUnsaved = itemEl?.dataset.isUnsaved === 'true';
 
         if (isTemporary || isUnsaved) {
-            // Item temporÃ¡rio: apenas remover do DOM e dos dados locais
-            console.log(`'ï¸ Removendo item temporÃ¡rio ${itemId} (nÃ£o salvo no servidor)...`);
+            // Item temporário: apenas remover do DOM e dos dados locais
+            console.log(`'️ Removendo item temporário ${itemId} (não salvo no servidor)...`);
 
             if (itemEl) {
                 itemEl.remove();
-                console.log(`Item temporÃ¡rio ${itemId} removido do DOM`);
+                console.log(`Item temporário ${itemId} removido do DOM`);
             }
 
-            // Remover dos dados locais tambÃ©m
+            // Remover dos dados locais também
             if (window.currentProfileData && window.currentProfileData.items) {
                 window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
             }
 
-            console.log(`Item temporÃ¡rio ${itemId} removido completamente (nÃ£o era necessÃ¡rio salvar no servidor)`);
-            return; // NÃ£o fazer requisiÃ§Ã£o ao servidor
+            console.log(`Item temporário ${itemId} removido completamente (não era necessário salvar no servidor)`);
+            return; // Não fazer requisição ao servidor
         }
 
         try {
-            console.log(`'ï¸ Tentando deletar item ${itemId} do servidor...`);
-            console.log(`Y"< URL da requisiÃ§Ã£o: ${API_URL}/api/profile/items/${itemId}`);
+            console.log(`'️ Tentando deletar item ${itemId} do servidor...`);
+            console.log(`Y"< URL da requisição: ${API_URL}/api/profile/items/${itemId}`);
 
-            // Atualizar headers antes de fazer a requisiÃ§Ã£o
+            // Atualizar headers antes de fazer a requisição
             const currentHeaders = getHeaders();
-            console.log(`Headers da requisiÃ§Ã£o:`, Object.keys(currentHeaders));
+            console.log(`Headers da requisição:`, Object.keys(currentHeaders));
 
             const response = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
                 method: 'DELETE',
@@ -1506,14 +1506,14 @@
                     }
 
                     if (itemEl) {
-                        console.log(`'ï¸ Removendo item ${itemId} do DOM...`);
+                        console.log(`'️ Removendo item ${itemId} do DOM...`);
                         itemEl.remove();
                         console.log(`Item ${itemId} removido do DOM imediatamente`);
                     } else {
-                        console.warn(`Item ${itemId} nÃ£o encontrado no DOM`);
+                        console.warn(`Item ${itemId} não encontrado no DOM`);
                     }
 
-                    // IMPORTANTE: Remover tambÃ©m dos dados locais para evitar que volte ao recarregar
+                    // IMPORTANTE: Remover também dos dados locais para evitar que volte ao recarregar
                     if (window.currentProfileData && window.currentProfileData.items) {
                         const initialLength = window.currentProfileData.items.length;
                         window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
@@ -1521,18 +1521,18 @@
                         if (removed) {
                             console.log(`Item ${itemId} removido dos dados locais (currentProfileData)`);
                         } else {
-                            console.warn(`Item ${itemId} nÃ£o encontrado nos dados locais`);
+                            console.warn(`Item ${itemId} não encontrado nos dados locais`);
                         }
                     }
 
-                    // IMPORTANTE: NÃƒO recarregar dados apÃ³s deletar!
-                    // O item foi removido do servidor e do DOM. NÃ£o fazer fetchProfileData aqui.
-                    console.log(`MÃ³dulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
-                    console.log(`Y' Nota: Clique em "Publicar alteraÃ§Ãµes" para sincronizar todas as mudanÃ§as`);
+                    // IMPORTANTE: NÃO recarregar dados após deletar!
+                    // O item foi removido do servidor e do DOM. Não fazer fetchProfileData aqui.
+                    console.log(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
+                    console.log(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
                     return;
                 } catch (refreshError) {
                     console.error('Erro ao renovar token:', refreshError);
-                    throw new Error('SessÃ£o expirada. Por favor, faÃ§a login novamente.');
+                    throw new Error('Sessão expirada. Por favor, faça login novamente.');
                 }
             }
 
@@ -1552,7 +1552,7 @@
             console.log(`Resposta do servidor:`, result);
 
             // Remover visualmente o item IMEDIATAMENTE do DOM
-            // Tentar mÃºltiplos seletores para garantir que encontramos o elemento
+            // Tentar múltiplos seletores para garantir que encontramos o elemento
             let itemEl = document.querySelector(`.module-item[data-id="${itemId}"]`);
             if (!itemEl) {
                 itemEl = document.querySelector(`.item[data-id="${itemId}"]`);
@@ -1562,15 +1562,15 @@
             }
 
             if (itemEl) {
-                console.log(`'ï¸ Removendo item ${itemId} do DOM imediatamente...`);
-                // Remover imediatamente sem animaÃ§Ã£o
+                console.log(`'️ Removendo item ${itemId} do DOM imediatamente...`);
+                // Remover imediatamente sem animação
                 itemEl.remove();
                 console.log(`Item ${itemId} removido do DOM`);
             } else {
-                console.warn(`Item ${itemId} nÃ£o encontrado no DOM`);
+                console.warn(`Item ${itemId} não encontrado no DOM`);
             }
 
-            // IMPORTANTE: Remover tambÃ©m dos dados locais para evitar que volte ao recarregar
+            // IMPORTANTE: Remover também dos dados locais para evitar que volte ao recarregar
             if (window.currentProfileData && window.currentProfileData.items) {
                 const initialLength = window.currentProfileData.items.length;
                 window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
@@ -1578,23 +1578,23 @@
                 if (removed) {
                     console.log(`Item ${itemId} removido dos dados locais (currentProfileData)`);
                 } else {
-                    console.warn(`Item ${itemId} nÃ£o encontrado nos dados locais`);
+                    console.warn(`Item ${itemId} não encontrado nos dados locais`);
                 }
             }
 
-            // IMPORTANTE: NÃƒO recarregar dados apÃ³s deletar!
-            // O item foi removido do servidor e do DOM. NÃ£o fazer fetchProfileData aqui
-            // porque isso pode trazer o item de volta se houver algum problema de sincronizaÃ§Ã£o.
-            // O usuÃ¡rio pode clicar em "Publicar alteraÃ§Ãµes" depois se quiser sincronizar.
-            console.log(`MÃ³dulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
-            console.log(`Y' Nota: Clique em "Publicar alteraÃ§Ãµes" para sincronizar todas as mudanÃ§as`);
+            // IMPORTANTE: NÃO recarregar dados após deletar!
+            // O item foi removido do servidor e do DOM. Não fazer fetchProfileData aqui
+            // porque isso pode trazer o item de volta se houver algum problema de sincronização.
+            // O usuário pode clicar em "Publicar alterações" depois se quiser sincronizar.
+            console.log(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
+            console.log(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
         } catch (error) {
             console.error('Erro ao deletar item:', error);
             console.error('Stack trace:', error.stack);
 
-            let errorMessage = error.message || 'Erro desconhecido ao deletar mÃ³dulo';
-            if (error.message.includes('SessÃ£o expirada')) {
-                alert('SessÃ£o expirada. Por favor, faÃ§a login novamente.');
+            let errorMessage = error.message || 'Erro desconhecido ao deletar módulo';
+            if (error.message.includes('Sessão expirada')) {
+                alert('Sessão expirada. Por favor, faça login novamente.');
                 localStorage.removeItem('conectaKingToken');
                 localStorage.removeItem('conectaKingRefreshToken');
                 localStorage.removeItem('conectaKingUser');
@@ -1602,11 +1602,11 @@
                 return;
             }
 
-            alert(`Erro ao deletar mÃ³dulo: ${errorMessage}\n\nTente atualizar a pÃ¡gina e tentar novamente.`);
+            alert(`Erro ao deletar módulo: ${errorMessage}\n\nTente atualizar a página e tentar novamente.`);
         }
     }
 
-    // FunÃ§Ã£o para atualizar status ativo do item
+    // Função para atualizar status ativo do item
     if (window.DashboardCore) {
         window.DashboardCore.updateItemActiveStatus = function () {
             return updateItemActiveStatus.apply(null, arguments);
@@ -1616,13 +1616,13 @@
         try {
             const itemEl = document.querySelector(`.module-item[data-id="${itemId}"], .item[data-id="${itemId}"]`);
             if (!itemEl) {
-                console.error(`Item ${itemId} nÃ£o encontrado no DOM`);
+                console.error(`Item ${itemId} não encontrado no DOM`);
                 return;
             }
 
             const itemType = itemEl.dataset.itemType;
 
-            // IMPORTANTE: sales_page salva DIRETAMENTE no servidor (nÃ£o espera "Publicar alteraÃ§Ãµes")
+            // IMPORTANTE: sales_page salva DIRETAMENTE no servidor (não espera "Publicar alterações")
             if (itemType === 'sales_page') {
                 console.log(` [TOGGLE] Sales_page ${itemId} - salvando diretamente no servidor: ${isActive ? 'ativado' : 'desativado'}`);
 
@@ -1637,7 +1637,7 @@
                     throw new Error(`Erro ${response.status} ao salvar status do sales_page`);
                 }
 
-                // Atualizar visualmente apÃ³s salvar no servidor
+                // Atualizar visualmente após salvar no servidor
                 itemEl.dataset.isActive = isActive;
                 const toggleInput = itemEl.querySelector('.module-toggle-input');
                 if (toggleInput) {
@@ -1656,52 +1656,52 @@
                 return;
             }
 
-            // Para outros mÃ³dulos: salvar APENAS localmente (frontend)
-            // O botÃ£o "Publicar alteraÃ§Ãµes" Ã© que salva no servidor
-            console.log(` [TOGGLE] Atualizando status do mÃ³dulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
-            console.log(`Y' Nota: Clique em "Publicar alteraÃ§Ãµes" para salvar esta mudanÃ§a no servidor`);
+            // Para outros módulos: salvar APENAS localmente (frontend)
+            // O botão "Publicar alterações" é que salva no servidor
+            console.log(` [TOGGLE] Atualizando status do módulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
+            console.log(`Y' Nota: Clique em "Publicar alterações" para salvar esta mudança no servidor`);
 
             // Atualizar visualmente apenas localmente
             itemEl.dataset.isActive = isActive;
 
-            // Garantir que o toggle estÃ¡ sincronizado
+            // Garantir que o toggle está sincronizado
             const toggleInput = itemEl.querySelector('.module-toggle-input');
             if (toggleInput) {
                 toggleInput.checked = isActive;
             }
 
-            // Atualizar tambÃ©m no currentProfileData para manter sincronizado
+            // Atualizar também no currentProfileData para manter sincronizado
             if (window.currentProfileData && window.currentProfileData.items) {
                 const itemIndex = window.currentProfileData.items.findIndex(item => String(item.id) === String(itemId));
                 if (itemIndex !== -1) {
                     window.currentProfileData.items[itemIndex].is_active = isActive;
-                    console.log(`Status do mÃ³dulo ${itemId} atualizado localmente nos dados do perfil`);
+                    console.log(`Status do módulo ${itemId} atualizado localmente nos dados do perfil`);
                 }
             }
 
             // Atualizar preview local
             updateLivePreviewFromForm();
 
-            console.log(`Status do mÃ³dulo ${itemId} atualizado localmente. Clique em "Publicar alteraÃ§Ãµes" para salvar no servidor.`);
+            console.log(`Status do módulo ${itemId} atualizado localmente. Clique em "Publicar alterações" para salvar no servidor.`);
 
-            // NÃƒO fazer requisiÃ§Ã£o ao servidor aqui - isso serÃ¡ feito quando o usuÃ¡rio clicar em "Publicar alteraÃ§Ãµes"
+            // NÃO fazer requisição ao servidor aqui - isso será feito quando o usuário clicar em "Publicar alterações"
             return;
         } catch (error) {
             console.error('Erro ao atualizar status do item localmente:', error);
-            alert(`Erro ao atualizar status do mÃ³dulo: ${error.message}`);
+            alert(`Erro ao atualizar status do módulo: ${error.message}`);
         }
     }
 
-    // FunÃ§Ã£o para atualizar item na lista usando dados retornados pela API apÃ³s salvar
+    // Função para atualizar item na lista usando dados retornados pela API após salvar
     if (window.DashboardCore) window.DashboardCore.updateItemFromApiResponse = function () { return updateItemFromApiResponse.apply(null, arguments); };
     async function updateItemFromApiResponse(itemId, apiResult, itemType) {
         if (!apiResult) {
-            console.warn(`Item ${itemId} nÃ£o encontrado ou dados da API vazios`);
+            console.warn(`Item ${itemId} não encontrado ou dados da API vazios`);
             return;
         }
         let itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.warn(`Item ${itemId} (${itemType}) nÃ£o estÃ¡ na lista do editor - re-render`);
+            console.warn(`Item ${itemId} (${itemType}) não está na lista do editor - re-render`);
             const pid = String(itemId);
             if (window.currentProfileData?.items) {
                 const idx = window.currentProfileData.items.findIndex(function (i) { return String(i.id) === pid; });
@@ -1732,13 +1732,13 @@
         // Preparar timestamp para evitar cache de imagens
         const imageUrlWithTimestamp = apiResult.image_url ? `${apiResult.image_url}?t=${Date.now()}` : '';
 
-        // ATUALIZAR TÃTULO - Todos os campos relacionados ao tÃ­tulo
+        // ATUALIZAR TÍTULO - Todos os campos relacionados ao título
         if (apiResult.title !== undefined) {
             const titleInput = itemEl.querySelector('.item-title-input');
             const displayTitle = itemEl.querySelector('.item-display-title');
             const moduleName = itemEl.querySelector('.module-name');
 
-            // Para banners, o tÃ­tulo estÃ¡ em um input visÃ­vel (item-banner-name-input)
+            // Para banners, o título está em um input visível (item-banner-name-input)
             if (itemType === 'banner') {
                 const bannerNameInput = itemEl.querySelector('.item-banner-name-input');
                 if (bannerNameInput) {
@@ -1746,10 +1746,10 @@
                 }
             }
 
-            // Atualizar campos padrÃ£o de tÃ­tulo
+            // Atualizar campos padrão de título
             if (titleInput) titleInput.value = apiResult.title || '';
             if (displayTitle) {
-                // Se for um input (como banner), atualizar value, senÃ£o textContent
+                // Se for um input (como banner), atualizar value, senão textContent
                 if (displayTitle.tagName === 'INPUT') {
                     displayTitle.value = apiResult.title || '';
                 } else {
@@ -1764,14 +1764,14 @@
             }
         }
 
-        // ATUALIZAR IMAGEM - Todos os campos relacionados Ã  imagem
+        // ATUALIZAR IMAGEM - Todos os campos relacionados à imagem
         if (apiResult.image_url !== undefined) {
             const imageInput = itemEl.querySelector('.item-image-url-input');
             if (imageInput) {
                 imageInput.value = apiResult.image_url || '';
             }
 
-            // Atualizar previews/imagens visÃ­veis com timestamp para evitar cache
+            // Atualizar previews/imagens visíveis com timestamp para evitar cache
             const thumbPreview = itemEl.querySelector('.banner-preview-thumb, .item-logo-preview, .item-image-preview, img[data-item-image]');
             if (thumbPreview) {
                 if (apiResult.image_url) {
@@ -1782,7 +1782,7 @@
                 }
             }
 
-            // Para links, atualizar logo preview (mÃºltiplos seletores possÃ­veis)
+            // Para links, atualizar logo preview (múltiplos seletores possíveis)
             if (itemType === 'link') {
                 const logoPreview = itemEl.querySelector('.link-logo-preview, .item-logo, .item-logo-preview');
                 if (logoPreview) {
@@ -1794,12 +1794,12 @@
                             logoPreview.style.backgroundImage = `url('${imageUrlWithTimestamp}')`;
                             logoPreview.style.display = 'block';
                         }
-                        // Esconder Ã­cone se tiver logo
+                        // Esconder ícone se tiver logo
                         const iconPicker = itemEl.querySelector('.item-icon-picker');
                         if (iconPicker) iconPicker.style.display = 'none';
                     } else {
                         logoPreview.style.display = 'none';
-                        // Mostrar Ã­cone se nÃ£o tiver logo
+                        // Mostrar ícone se não tiver logo
                         const iconPicker = itemEl.querySelector('.item-icon-picker');
                         if (iconPicker) iconPicker.style.display = 'inline-block';
                     }
@@ -1807,7 +1807,7 @@
             }
         }
 
-        // ATUALIZAR DESTINATION_URL - Todos os campos relacionados Ã  URL de destino
+        // ATUALIZAR DESTINATION_URL - Todos os campos relacionados à URL de destino
         if (apiResult.destination_url !== undefined) {
             const destInput = itemEl.querySelector('.item-destination-url-input');
             const destDisplay = itemEl.querySelector('.item-display-dest');
@@ -1844,7 +1844,7 @@
                         const cfg = JSON.parse(apiResult.destination_url);
                         const ssid = (cfg.ssid || '').trim();
                         const fmt = cfg.display_format === 'banner' ? 'banner' : 'button';
-                        destDisplay.textContent = ssid ? `${fmt === 'banner' ? 'Banner' : 'BotÃ£o'} Â· Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
+                        destDisplay.textContent = ssid ? `${fmt === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
                     } catch (e) {
                         destDisplay.textContent = displayDest || '#';
                     }
@@ -1854,7 +1854,7 @@
             }
         }
 
-        // ATUALIZAR CAMPOS ESPECÃFICOS POR TIPO DE MÃ“DULO
+        // ATUALIZAR CAMPOS ESPECÍFICOS POR TIPO DE MÓDULO
         if (itemType === 'banner') {
             // Atualizar whatsapp_message (mensagem do banner)
             if (apiResult.whatsapp_message !== undefined) {
@@ -1866,7 +1866,7 @@
         }
 
         if (itemType === 'pix' || itemType === 'pix_qrcode') {
-            // Atualizar campos especÃ­ficos do PIX
+            // Atualizar campos específicos do PIX
             if (apiResult.pix_key !== undefined) {
                 const pixKeyInput = itemEl.querySelector('.item-pix-key-input');
                 const pixDisplayDest = itemEl.querySelector('.item-display-dest');
@@ -1888,7 +1888,7 @@
         }
 
         if (itemType === 'pdf' || itemType === 'pdf_embed') {
-            // Atualizar campos especÃ­ficos do PDF
+            // Atualizar campos específicos do PDF
             if (apiResult.pdf_url !== undefined) {
                 const pdfUrlInput = itemEl.querySelector('.item-pdf-url-input');
                 const pdfDisplayDest = itemEl.querySelector('.item-display-dest');
@@ -1899,7 +1899,7 @@
             }
         }
 
-        // ATUALIZAR ICON_CLASS (para links, PIX e outros que usam Ã­cones)
+        // ATUALIZAR ICON_CLASS (para links, PIX e outros que usam ícones)
         if (apiResult.icon_class !== undefined && (itemType === 'link' || itemType === 'pix' || itemType === 'pix_qrcode' || ['whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'reddit', 'tiktok', 'twitch', 'twitter', 'youtube', 'linkedin', 'portfolio', 'spotify'].includes(itemType))) {
             const iconElement = itemEl.querySelector('.item-icon, .module-icon, .item-icon-picker i, i[class*="fa-"]');
             if (iconElement && apiResult.icon_class) {
@@ -1956,14 +1956,14 @@
             }
         }
 
-        console.log(`Item ${itemId} atualizado na interface em tempo real (todos os campos visÃ­veis)`);
+        console.log(`Item ${itemId} atualizado na interface em tempo real (todos os campos visíveis)`);
     }
 
-    // FunÃ§Ã£o para sincronizar dados do modal para o item da lista antes de salvar
+    // Função para sincronizar dados do modal para o item da lista antes de salvar
     function syncModalDataToItem() {
         const itemId = SELECTORS.editItemModal?.dataset.editingId;
         if (!itemId || !SELECTORS.editItemModal.classList.contains('active')) {
-            return; // Modal nÃ£o estÃ¡ aberto ou nÃ£o hÃ¡ item sendo editado
+            return; // Modal não está aberto ou não há item sendo editado
         }
 
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
@@ -1973,8 +1973,8 @@
 
         console.log(` Sincronizando dados do modal para item ${itemId} (${itemType}) antes de salvar`);
 
-        // Aplicar as mesmas atualizaÃ§Ãµes que o botÃ£o "Salvar AlteraÃ§Ãµes" do modal faz
-        // IMPORTANTE: Usar querySelector com data-editing-id para pegar apenas o valor do modal deste item especÃ­fico
+        // Aplicar as mesmas atualizações que o botão "Salvar Alterações" do modal faz
+        // IMPORTANTE: Usar querySelector com data-editing-id para pegar apenas o valor do modal deste item específico
         const newTitle = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-title`)?.value;
         if (newTitle !== undefined && itemEl.querySelector('.item-title-input')) {
             itemEl.querySelector('.item-title-input').value = newTitle;
@@ -1984,9 +1984,9 @@
             if (moduleName) moduleName.textContent = newTitle;
         }
 
-        // Para cada tipo de item, aplicar as atualizaÃ§Ãµes especÃ­ficas
+        // Para cada tipo de item, aplicar as atualizações específicas
         if (itemType === 'link') {
-            // Atualizar tÃ­tulo (apenas se o modal estiver aberto para este item especÃ­fico)
+            // Atualizar título (apenas se o modal estiver aberto para este item específico)
             const linkTitleModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-title`)?.value;
             const linkTitleInput = itemEl.querySelector('.item-title-input');
             const linkModuleName = itemEl.querySelector('.module-name');
@@ -2015,7 +2015,7 @@
                 itemEl.dataset.logoSize = logoSizeValue;
             }
 
-            // Atualizar destination_url (apenas se o modal estiver aberto para este item especÃ­fico)
+            // Atualizar destination_url (apenas se o modal estiver aberto para este item específico)
             const newDestUrl = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-dest-url`)?.value || '';
             const destInput = itemEl.querySelector('.item-destination-url-input');
             const destDisplay = itemEl.querySelector('.item-display-dest');
@@ -2024,7 +2024,7 @@
                 if (destDisplay) destDisplay.textContent = newDestUrl || '#';
             }
         } else if (['whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'reddit', 'tiktok', 'twitch', 'twitter', 'youtube', 'linkedin', 'portfolio', 'spotify', 'instagram_embed', 'youtube_embed', 'tiktok_embed', 'spotify_embed', 'linkedin_embed', 'pinterest_embed'].includes(itemType)) {
-            // Atualizar tÃ­tulo (apenas se o modal estiver aberto para este item especÃ­fico)
+            // Atualizar título (apenas se o modal estiver aberto para este item específico)
             const socialTitleModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-title`)?.value;
             const socialTitleInput = itemEl.querySelector('.item-title-input');
             const socialModuleName = itemEl.querySelector('.module-name');
@@ -2035,7 +2035,7 @@
                 if (socialDisplayTitle) socialDisplayTitle.textContent = socialTitleModal;
             }
 
-            // Atualizar destination_url (apenas se o modal estiver aberto para este item especÃ­fico)
+            // Atualizar destination_url (apenas se o modal estiver aberto para este item específico)
             const newDestUrl = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-dest-url`)?.value || '';
             const destInput = itemEl.querySelector('.item-destination-url-input');
             const destDisplay = itemEl.querySelector('.item-display-dest');
@@ -2044,7 +2044,7 @@
                 if (destDisplay) destDisplay.textContent = newDestUrl || '#';
             }
         } else if (itemType === 'carousel') {
-            // Atualizar tÃ­tulo do carrossel
+            // Atualizar título do carrossel
             const carouselTitleModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-title`)?.value;
             const carouselTitleInput = itemEl.querySelector('.item-title-input');
             const carouselModuleName = itemEl.querySelector('.module-name');
@@ -2062,7 +2062,7 @@
                 const modalJsonValue = modalCarouselJsonInput.value || '[]';
                 itemCarouselJsonInput.value = modalJsonValue;
 
-                // Atualizar tambÃ©m o image_url (primeira imagem)
+                // Atualizar também o image_url (primeira imagem)
                 try {
                     const images = JSON.parse(modalJsonValue);
                     if (Array.isArray(images) && images.length > 0) {
@@ -2139,7 +2139,7 @@
                 displayDest.textContent = bannerDestDisplayLabel(serializedDest);
             }
 
-            // Atualizar originalData tambÃ©m
+            // Atualizar originalData também
             try {
                 const originalData = itemEl.dataset.originalData ? JSON.parse(itemEl.dataset.originalData) : {};
                 originalData.image_url = newImg;
@@ -2159,7 +2159,7 @@
         } else if (itemType === 'location') {
             const modal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`);
             if (!modal) return;
-            const locTitle = modal.querySelector('#edit-title')?.value?.trim() || 'LocalizaÃ§Ã£o';
+            const locTitle = modal.querySelector('#edit-title')?.value?.trim() || 'Localização';
             const locAddr = modal.querySelector('#location-address-input')?.value?.trim() || '';
             const locFormatted = modal.querySelector('.location-formatted-display')?.textContent?.trim() || locAddr;
             const locLat = modal.querySelector('.location-lat-input')?.value?.trim() || '';
@@ -2171,7 +2171,7 @@
             if (titleInput) titleInput.value = locTitle;
             if (displayTitle) displayTitle.textContent = locTitle;
             if (moduleName) moduleName.textContent = locTitle;
-            if (displayDest) displayDest.textContent = locFormatted || locAddr || 'EndereÃ§o nÃ£o definido';
+            if (displayDest) displayDest.textContent = locFormatted || locAddr || 'Endereço não definido';
             const listAddrInput = itemEl.querySelector('.location-address-input');
             const listLatInput = itemEl.querySelector('.location-lat-input');
             const listLngInput = itemEl.querySelector('.location-lng-input');
@@ -2210,7 +2210,7 @@
                         item.location_data.place_name = payload.place_name;
                     }
                 }
-            }).catch(function (err) { console.warn('Erro ao salvar localizaÃ§Ã£o:', err); });
+            }).catch(function (err) { console.warn('Erro ao salvar localização:', err); });
         } else if (itemType === 'pix' || itemType === 'pix_qrcode') {
             // Sincronizar dados do PIX/PIX QR Code do modal para o item da lista
             const pixTitleModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-title`)?.value;
@@ -2313,10 +2313,10 @@
             const ssid = (itemEl.querySelector('.wifi-ssid-input')?.value || '').trim();
             const displayDest = itemEl.querySelector('.item-display-dest');
             if (displayDest) {
-                displayDest.textContent = ssid ? `${fmtModal === 'banner' ? 'Banner' : 'BotÃ£o'} Â· Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
+                displayDest.textContent = ssid ? `${fmtModal === 'banner' ? 'Banner' : 'Botão'} · Rede: ${ssid}` : 'Informe o nome da rede (SSID)';
             }
         } else if (itemType === 'digital_form') {
-            // Sincronizar dados do formulÃ¡rio digital do modal para o item da lista
+            // Sincronizar dados do formulário digital do modal para o item da lista
             const formTitleModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-digital-form-title`)?.value;
             const formTitleInput = itemEl.querySelector('.item-title-input');
             const formDisplayTitle = itemEl.querySelector('.item-display-title');
@@ -2328,37 +2328,42 @@
                 if (formModuleName) formModuleName.textContent = formTitleModal;
             }
 
-            // Sincronizar outros campos (campos do formulÃ¡rio sÃ£o salvos no servidor, nÃ£o localmente)
-            // Os campos principais jÃ¡ estÃ£o sincronizados acima
+            // Sincronizar outros campos (campos do formulário são salvos no servidor, não localmente)
+            // Os campos principais já estão sincronizados acima
         }
 
         console.log(`Dados sincronizados do modal para item ${itemId}`);
     }
 
+    if (window.DashboardCore) {
+        window.DashboardCore.syncModalDataToItem = syncModalDataToItem;
+    }
+    window.syncModalDataToItem = syncModalDataToItem;
+
     // ============================================
-    // FUNÃ‡Ã•ES ESPECÃFICAS PARA CADA TIPO DE MÃ“DULO
+    // FUNÇÕES ESPECÍFICAS PARA CADA TIPO DE MÓDULO
     // ============================================
 
-    // Salvar banner usando rota especÃ­fica
+    // Salvar banner usando rota específica
     async function saveBannerItem(itemId) {
-        console.log(`Salvando banner ${itemId} via rota especÃ­fica...`);
-        // Atualizar HEADERS antes de fazer a requisiÃ§Ã£o
+        console.log(`Salvando banner ${itemId} via rota específica...`);
+        // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`O Item ${itemId} nÃ£o encontrado para salvar banner.`);
+            console.error(`O Item ${itemId} não encontrado para salvar banner.`);
             return;
         }
 
-        // Se o item ainda Ã© temporÃ¡rio (temp_...), precisamos criar no servidor antes de salvar via rota especÃ­fica
+        // Se o item ainda é temporário (temp_...), precisamos criar no servidor antes de salvar via rota específica
         async function ensureServerIdForTempItem(el) {
             const currentId = String(el?.dataset?.id || '');
             if (!currentId || !currentId.startsWith('temp_')) return currentId;
 
             const itemType = el.dataset.itemType || 'banner';
-            console.warn(`[BANNER] Item ${currentId} ainda Ã© temporÃ¡rio. Criando no servidor antes de salvar...`);
+            console.warn(`[BANNER] Item ${currentId} ainda é temporário. Criando no servidor antes de salvar...`);
 
-            // Capturar dados mÃ­nimos do item
+            // Capturar dados mínimos do item
             let destinationUrl = el.querySelector('.item-destination-url-input')?.value || (itemType === 'whatsapp' ? '' : '#');
             if (itemType === 'whatsapp' && destinationUrl) destinationUrl = destinationUrl.replace(/\D/g, '');
 
@@ -2398,7 +2403,7 @@
             const modal = document.querySelector(`#edit-item-modal[data-editing-id="${currentId}"]`);
             if (modal) modal.setAttribute('data-editing-id', newId);
 
-            // Atualizar botÃµes/atributos que guardam o itemId
+            // Atualizar botões/atributos que guardam o itemId
             document.querySelectorAll(`[data-item-id="${currentId}"]`).forEach(node => {
                 node.setAttribute('data-item-id', newId);
             });
@@ -2409,7 +2414,7 @@
                 if (idx !== -1) window.currentProfileData.items[idx] = createdItem;
             }
 
-            console.log(`[BANNER] Item temporÃ¡rio ${currentId} criado no servidor com ID ${newId}`);
+            console.log(`[BANNER] Item temporário ${currentId} criado no servidor com ID ${newId}`);
             return newId;
         }
 
@@ -2446,7 +2451,7 @@
             }
         }
 
-        // 2. Se nÃ£o encontrou no campo, tentar pegar do preview do modal
+        // 2. Se não encontrou no campo, tentar pegar do preview do modal
         if (!imageUrl) {
             const bannerPreview = document.getElementById('edit-banner-preview');
             if (bannerPreview && bannerPreview.src && !bannerPreview.src.includes('placeholder') && !bannerPreview.src.startsWith('data:image/svg')) {
@@ -2455,7 +2460,7 @@
             }
         }
 
-        // 3. Se ainda nÃ£o encontrou, tentar pegar do campo da lista
+        // 3. Se ainda não encontrou, tentar pegar do campo da lista
         if (!imageUrl) {
             const listImageInput = itemEl.querySelector('.item-image-url-input');
             if (listImageInput && listImageInput.value && listImageInput.value.trim()) {
@@ -2467,7 +2472,7 @@
             }
         }
 
-        // 4. Se ainda nÃ£o encontrou, tentar pegar do preview da lista
+        // 4. Se ainda não encontrou, tentar pegar do preview da lista
         if (!imageUrl) {
             const thumbPreview = itemEl.querySelector('.banner-preview-thumb');
             if (thumbPreview && thumbPreview.src && !thumbPreview.src.includes('placeholder') && !thumbPreview.src.startsWith('data:image/svg')) {
@@ -2476,7 +2481,7 @@
             }
         }
 
-        // 5. Se ainda nÃ£o encontrou, tentar pegar do originalData
+        // 5. Se ainda não encontrou, tentar pegar do originalData
         if (!imageUrl && itemEl.dataset.originalData) {
             try {
                 const originalData = JSON.parse(itemEl.dataset.originalData);
@@ -2491,12 +2496,12 @@
 
         // Log detalhado de todas as tentativas
         console.log(`[BANNER] Resumo da captura de image_url para item ${realItemId}:`, {
-            campoModal: imageInputModal?.value || 'nÃ£o encontrado',
-            previewModal: document.getElementById('edit-banner-preview')?.src || 'nÃ£o encontrado',
-            campoLista: itemEl.querySelector('.item-image-url-input')?.value || 'nÃ£o encontrado',
-            previewLista: itemEl.querySelector('.banner-preview-thumb')?.src || 'nÃ£o encontrado',
+            campoModal: imageInputModal?.value || 'não encontrado',
+            previewModal: document.getElementById('edit-banner-preview')?.src || 'não encontrado',
+            campoLista: itemEl.querySelector('.item-image-url-input')?.value || 'não encontrado',
+            previewLista: itemEl.querySelector('.banner-preview-thumb')?.src || 'não encontrado',
             originalData: itemEl.dataset.originalData ? 'presente' : 'ausente',
-            imageUrlFinal: imageUrl || 'NÃƒO ENCONTRADO'
+            imageUrlFinal: imageUrl || 'NÃO ENCONTRADO'
         });
 
         const updateData = {
@@ -2509,7 +2514,7 @@
             display_order: parseInt(itemEl.dataset.displayOrder, 10)
         };
 
-        // NÃƒO filtrar image_url - sempre enviar mesmo se null para garantir que seja salvo
+        // NÃO filtrar image_url - sempre enviar mesmo se null para garantir que seja salvo
         // Filtrar apenas outros valores nulos ou vazios
         const finalUpdateData = {};
         for (const key in updateData) {
@@ -2521,8 +2526,8 @@
             }
         }
 
-        console.log(`[BANNER] image_url FINAL que serÃ¡ enviado:`, finalUpdateData.image_url || 'null');
-        console.log(`[BANNER] Dados completos para rota especÃ­fica:`, finalUpdateData);
+        console.log(`[BANNER] image_url FINAL que será enviado:`, finalUpdateData.image_url || 'null');
+        console.log(`[BANNER] Dados completos para rota específica:`, finalUpdateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/banner/${realItemId}`, {
@@ -2537,7 +2542,7 @@
             }
 
             const result = await response.json();
-            console.log(`Banner ${realItemId} salvo com sucesso via rota especÃ­fica.`);
+            console.log(`Banner ${realItemId} salvo com sucesso via rota específica.`);
             console.log(`[BANNER] image_url salvo no banco:`, result.image_url ? result.image_url.substring(0, 50) + '...' : 'null');
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
@@ -2545,19 +2550,19 @@
 
             console.log(`Banner ${realItemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`Erro ao salvar banner ${realItemId} via rota especÃ­fica:`, error);
+            console.error(`Erro ao salvar banner ${realItemId} via rota específica:`, error);
             throw error;
         }
     }
 
-    // Salvar link personalizado usando rota especÃ­fica
+    // Salvar link personalizado usando rota específica
     async function saveLinkItem(itemId) {
-        console.log(`Salvando link ${itemId} via rota especÃ­fica...`);
-        // Atualizar HEADERS antes de fazer a requisiÃ§Ã£o
+        console.log(`Salvando link ${itemId} via rota específica...`);
+        // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`O Item ${itemId} nÃ£o encontrado para salvar link.`);
+            console.error(`O Item ${itemId} não encontrado para salvar link.`);
             return;
         }
 
@@ -2584,7 +2589,7 @@
             }
         }
 
-        console.log(`Dados para rota especÃ­fica do link:`, updateData);
+        console.log(`Dados para rota específica do link:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/link/${itemId}`, {
@@ -2599,26 +2604,26 @@
             }
 
             const result = await response.json();
-            console.log(`Link ${itemId} salvo com sucesso via rota especÃ­fica.`);
+            console.log(`Link ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'link');
 
             console.log(`Link ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`Erro ao salvar link ${itemId} via rota especÃ­fica:`, error);
+            console.error(`Erro ao salvar link ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
-    // Salvar carousel usando rota especÃ­fica
+    // Salvar carousel usando rota específica
     async function saveCarouselItem(itemId) {
-        console.log(`Salvando carousel ${itemId} via rota especÃ­fica...`);
-        // Atualizar HEADERS antes de fazer a requisiÃ§Ã£o
+        console.log(`Salvando carousel ${itemId} via rota específica...`);
+        // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`O Item ${itemId} nÃ£o encontrado para salvar carousel.`);
+            console.error(`O Item ${itemId} não encontrado para salvar carousel.`);
             return;
         }
 
@@ -2643,7 +2648,7 @@
             }
         }
 
-        console.log(`Dados para rota especÃ­fica do carousel:`, updateData);
+        console.log(`Dados para rota específica do carousel:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/carousel/${itemId}`, {
@@ -2658,26 +2663,26 @@
             }
 
             const result = await response.json();
-            console.log(`Carousel ${itemId} salvo com sucesso via rota especÃ­fica.`);
+            console.log(`Carousel ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'carousel');
 
             console.log(`Carousel ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`Erro ao salvar carousel ${itemId} via rota especÃ­fica:`, error);
+            console.error(`Erro ao salvar carousel ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
-    // Salvar PIX usando rota especÃ­fica
+    // Salvar PIX usando rota específica
     async function savePixItem(itemId) {
-        console.log(`Salvando PIX ${itemId} via rota especÃ­fica...`);
-        // Atualizar HEADERS antes de fazer a requisiÃ§Ã£o
+        console.log(`Salvando PIX ${itemId} via rota específica...`);
+        // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`O Item ${itemId} nÃ£o encontrado para salvar PIX.`);
+            console.error(`O Item ${itemId} não encontrado para salvar PIX.`);
             return;
         }
 
@@ -2706,7 +2711,7 @@
             }
         }
 
-        console.log(`Dados para rota especÃ­fica do PIX:`, updateData);
+        console.log(`Dados para rota específica do PIX:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/pix/${itemId}`, {
@@ -2721,26 +2726,26 @@
             }
 
             const result = await response.json();
-            console.log(`PIX ${itemId} salvo com sucesso via rota especÃ­fica.`);
+            console.log(`PIX ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'pix');
 
             console.log(`PIX ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`Erro ao salvar PIX ${itemId} via rota especÃ­fica:`, error);
+            console.error(`Erro ao salvar PIX ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
-    // Salvar PDF usando rota especÃ­fica
+    // Salvar PDF usando rota específica
     async function savePdfItem(itemId) {
-        console.log(`Salvando PDF ${itemId} via rota especÃ­fica...`);
-        // Atualizar HEADERS antes de fazer a requisiÃ§Ã£o
+        console.log(`Salvando PDF ${itemId} via rota específica...`);
+        // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`O Item ${itemId} nÃ£o encontrado para salvar PDF.`);
+            console.error(`O Item ${itemId} não encontrado para salvar PDF.`);
             return;
         }
 
@@ -2763,7 +2768,7 @@
             }
         }
 
-        console.log(`Dados para rota especÃ­fica do PDF:`, updateData);
+        console.log(`Dados para rota específica do PDF:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/pdf/${itemId}`, {
@@ -2778,25 +2783,25 @@
             }
 
             const result = await response.json();
-            console.log(`PDF ${itemId} salvo com sucesso via rota especÃ­fica.`);
+            console.log(`PDF ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'pdf');
 
             console.log(`PDF ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`Erro ao salvar PDF ${itemId} via rota especÃ­fica:`, error);
+            console.error(`Erro ao salvar PDF ${itemId} via rota específica:`, error);
             throw error;
         }
     }
 
-    // Salvar FormulÃ¡rio King usando rota especÃ­fica
+    // Salvar Formulário King usando rota específica
     async function saveDigitalFormItem(itemId) {
-        console.log(`Salvando FormulÃ¡rio King ${itemId} via rota especÃ­fica...`);
+        console.log(`Salvando Formulário King ${itemId} via rota específica...`);
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
-            console.error(`O Item ${itemId} nÃ£o encontrado para salvar formulÃ¡rio digital.`);
+            console.error(`O Item ${itemId} não encontrado para salvar formulário digital.`);
             return;
         }
 
@@ -2815,7 +2820,7 @@
         const primaryColorInput = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-digital-form-primary-color`);
         const textColorInput = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-digital-form-text-color`);
 
-        // Capturar campos do formulÃ¡rio (form_fields JSON)
+        // Capturar campos do formulário (form_fields JSON)
         let formFields = [];
         try {
             const formFieldsInput = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] #edit-digital-form-fields`);
@@ -2846,12 +2851,12 @@
             display_order: parseInt(itemEl.dataset.displayOrder, 10)
         };
 
-        // Para banner_format, tambÃ©m atualizar image_url no profile_items
+        // Para banner_format, também atualizar image_url no profile_items
         if (updateData.display_format === 'banner' && updateData.banner_image_url) {
             updateData.image_url = updateData.banner_image_url;
         }
 
-        console.log(`Dados para rota especÃ­fica do FormulÃ¡rio King:`, updateData);
+        console.log(`Dados para rota específica do Formulário King:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/digital_form/${itemId}`, {
@@ -2862,18 +2867,18 @@
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Erro ao salvar FormulÃ¡rio King.');
+                throw new Error(errorData.message || 'Erro ao salvar Formulário King.');
             }
 
             const result = await response.json();
-            console.log(`FormulÃ¡rio King ${itemId} salvo com sucesso via rota especÃ­fica.`);
+            console.log(`Formulário King ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'digital_form');
 
-            console.log(`FormulÃ¡rio King ${itemId} salvo e interface atualizada em tempo real`);
+            console.log(`Formulário King ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
-            console.error(`Erro ao salvar FormulÃ¡rio King ${itemId} via rota especÃ­fica:`, error);
+            console.error(`Erro ao salvar Formulário King ${itemId} via rota específica:`, error);
             throw error;
         }
     }
@@ -2982,7 +2987,7 @@
 
     if (window.DashboardCore) window.DashboardCore.getDefaultIcon = getDefaultIcon;
 
-    // FunÃ§Ã£o para obter nome amigÃ¡vel do tipo de item
+    // Função para obter nome amigável do tipo de item
     function getItemTypeName(itemType) {
         const names = {
             'link': 'Link Personalizado',
@@ -2999,9 +3004,9 @@
             'spotify': 'Spotify',
             'linkedin': 'LinkedIn',
             'pinterest': 'Pinterest',
-            'portfolio': 'PortfÃ³lio',
+            'portfolio': 'Portfólio',
             'banner': 'Banner',
-            'texto_com_botao': 'Texto com BotÃ£o',
+            'texto_com_botao': 'Texto com Botão',
             'carousel': 'Carrossel',
             'banner_carousel': 'Carrossel (Banner)',
             'pdf': 'PDF',
@@ -3012,13 +3017,13 @@
             'spotify_embed': 'Spotify Incorporado',
             'linkedin_embed': 'LinkedIn Incorporado',
             'pinterest_embed': 'Pinterest Incorporado',
-            'sales_page': 'PÃ¡gina de Vendas',
-            'digital_form': 'FormulÃ¡rio King',
+            'sales_page': 'Página de Vendas',
+            'digital_form': 'Formulário King',
             'guest_list': 'Lista de Convidados',
             'convite': 'Convite Digital',
             'king_selection': 'King Selection',
-            'bible': 'BÃ­blia',
-            'location': 'LocalizaÃ§Ã£o',
+            'bible': 'Bíblia',
+            'location': 'Localização',
             'wifi': 'Wi-Fi (QR Code)'
         };
         return names[itemType] || 'Item';
@@ -3029,12 +3034,12 @@
         if (item && item.item_type === 'wifi' && (!t || t === 'Item')) {
             return getItemTypeName('wifi');
         }
-        return t || getItemTypeName(item && item.item_type) || 'Novo MÃ³dulo';
+        return t || getItemTypeName(item && item.item_type) || 'Novo Módulo';
     }
 
     if (window.DashboardCore) window.DashboardCore.moduleListDisplayTitle = moduleListDisplayTitle;
 
-    // FunÃ§Ã£o para abrir modal de ediÃ§Ã£o para novo item
+    // Função para abrir modal de edição para novo item
 
     // Listeners: js/dashboard-listeners.js
     function setupEventListeners() {
@@ -3045,20 +3050,20 @@
     window.setupEventListeners = setupEventListeners;
 
 
-    // FunÃ§Ã£o para renderizar lista de imagens do carrossel
-    // FunÃ§Ã£o especÃ­fica para o novo mÃ³dulo Carrossel (nÃ£o banner)
-    // ===== NOVO CARROSSEL - FUNÃ‡Ã•ES LIMPAS =====
+    // Função para renderizar lista de imagens do carrossel
+    // Função específica para o novo módulo Carrossel (não banner)
+    // ===== NOVO CARROSSEL - FUNÇÕES LIMPAS =====
 
-    // FunÃ§Ã£o para renderizar imagens do carrossel
+    // Função para renderizar imagens do carrossel
     if (window.DashboardCore) window.DashboardCore.renderCarouselImagesNew = function () { return renderCarouselImagesNew.apply(null, arguments); };
     function renderCarouselImagesNew(itemId, images) {
-        // Procurar por ambos os IDs possÃ­veis (com e sem "-new")
+        // Procurar por ambos os IDs possíveis (com e sem "-new")
         let container = document.getElementById(`carousel-images-list-new-${itemId}`);
         if (!container) {
             container = document.getElementById(`carousel-images-list-${itemId}`);
         }
         if (!container) {
-            console.error(`[CARROSSEL] Container nÃ£o encontrado para itemId: ${itemId}`);
+            console.error(`[CARROSSEL] Container não encontrado para itemId: ${itemId}`);
             console.error(`   Tentou: carousel-images-list-new-${itemId} e carousel-images-list-${itemId}`);
             return;
         }
@@ -3093,12 +3098,12 @@
             container.appendChild(imageItem);
         });
 
-        // Atualizar inputs (modal e item) para garantir sincronizaÃ§Ã£o
+        // Atualizar inputs (modal e item) para garantir sincronização
         const jsonInputModal = SELECTORS.editModalBody?.querySelector(`.carousel-images-json-new[data-item-id="${itemId}"]`);
         const jsonInputItem = document.querySelector(`.item[data-id="${itemId}"] .carousel-images-json-new`);
         const jsonValue = JSON.stringify(realImages);
 
-        // Atualizar ambos para garantir que estÃ£o sincronizados
+        // Atualizar ambos para garantir que estão sincronizados
         if (jsonInputModal) {
             jsonInputModal.value = jsonValue;
             console.log(`[CARROSSEL] JSON do modal atualizado: ${realImages.length} imagem(ns)`);
@@ -3129,7 +3134,7 @@
         }
     }
 
-    // FunÃ§Ã£o para remover imagem
+    // Função para remover imagem
     if (window.DashboardCore) window.DashboardCore.removeCarouselImageNew = function () { return removeCarouselImageNew.apply(null, arguments); };
     function removeCarouselImageNew(itemId, imageIndex) {
         const jsonInput = SELECTORS.editModalBody?.querySelector(`.carousel-images-json-new[data-item-id="${itemId}"]`) ||
@@ -3152,7 +3157,7 @@
         try {
             console.log('Iniciando upload da imagem de compartilhamento...');
 
-            // Obter autorizaÃ§Ã£o para upload
+            // Obter autorização para upload
             const authResponse = await safeFetch(`${API_URL}/api/upload/auth`, {
                 method: 'POST',
                 headers: HEADERS_AUTH
@@ -3160,18 +3165,18 @@
 
             if (!authResponse.ok) {
                 const errorText = await authResponse.text();
-                console.error('Erro na autorizaÃ§Ã£o:', errorText);
-                throw new Error('Falha na autorizaÃ§Ã£o para upload.');
+                console.error('Erro na autorização:', errorText);
+                throw new Error('Falha na autorização para upload.');
             }
 
             const authData = await authResponse.json();
             const uploadURL = authData.uploadURL;
 
             if (!uploadURL) {
-                throw new Error('URL de upload nÃ£o recebida');
+                throw new Error('URL de upload não recebida');
             }
 
-            console.log('AutorizaÃ§Ã£o obtida, fazendo upload...');
+            console.log('Autorização obtida, fazendo upload...');
 
             // Fazer upload para Cloudflare
             const formData = new FormData();
@@ -3188,12 +3193,12 @@
             }
 
             const uploadData = await uploadResponse.json();
-            console.log('Upload para Cloudflare concluÃ­do:', uploadData);
+            console.log('Upload para Cloudflare concluído:', uploadData);
 
             const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ";
             const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && uploadData.result.id ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
             if (!finalUrl) {
-                throw new Error('Resposta do servidor de upload invÃ¡lida. Tente novamente.');
+                throw new Error('Resposta do servidor de upload inválida. Tente novamente.');
             }
             console.log('URL final gerada:', finalUrl);
 
@@ -3212,9 +3217,9 @@
                 const errorData = await saveResponse.json().catch(() => ({ message: 'Erro desconhecido' }));
                 console.error('Erro ao salvar no servidor:', errorData);
 
-                // Verificar se Ã© erro de migration
+                // Verificar se é erro de migration
                 if (errorData.error === 'MIGRATION_REQUIRED') {
-                    alert('? necessÃ¡rio executar a migration 019 primeiro. A coluna share_image_url ainda nÃ£o existe no banco de dados.');
+                    alert('? necessário executar a migration 019 primeiro. A coluna share_image_url ainda não existe no banco de dados.');
                 } else {
                     throw new Error(errorData.message || 'Erro ao salvar imagem de compartilhamento');
                 }
@@ -3229,7 +3234,7 @@
             // Recarregar dados
             await fetchProfileData(true);
 
-            // Reabrir seÃ§Ã£o se estiver aberta
+            // Reabrir seção se estiver aberta
             if (SELECTORS.btnConfigCabecalho?.classList.contains('active')) {
                 SELECTORS.btnConfigCabecalho.click();
             }
@@ -3238,17 +3243,17 @@
             console.error('Erro completo no upload da imagem de compartilhamento:', error);
             console.error('O Stack trace:', error.stack);
 
-            // Tratamento especÃ­fico de erros de rede
+            // Tratamento específico de erros de rede
             let errorMessage = 'Erro ao fazer upload da imagem.';
 
             if (error.message && error.message.includes('ERR_NETWORK_CHANGED')) {
-                errorMessage = 'Erro de conexÃ£o: Sua rede mudou durante o upload. Verifique sua conexÃ£o e tente novamente.';
-            } else if (error.message && error.message.includes('Erro de conexÃ£o')) {
+                errorMessage = 'Erro de conexão: Sua rede mudou durante o upload. Verifique sua conexão e tente novamente.';
+            } else if (error.message && error.message.includes('Erro de conexão')) {
                 errorMessage = error.message;
             } else if (error.message && error.message.includes('Failed to fetch')) {
-                errorMessage = 'Erro de conexÃ£o: NÃ£o foi possÃ­vel conectar ao servidor. Verifique sua internet e tente novamente.';
+                errorMessage = 'Erro de conexão: Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
             } else if (error.message && error.message.includes('Timeout')) {
-                errorMessage = 'Timeout: A requisiÃ§Ã£o demorou muito. Tente novamente.';
+                errorMessage = 'Timeout: A requisição demorou muito. Tente novamente.';
             } else if (error.message) {
                 errorMessage = `Erro: ${error.message}`;
             }
@@ -3257,7 +3262,7 @@
         }
     }
 
-    /** Upload da arte do topo (Modelo Vitrine) apÃ³s crop 16:9 */
+    /** Upload da arte do topo (Modelo Vitrine) após crop 16:9 */
     if (window.DashboardCore) window.DashboardCore.handleVitrineHeroUpload = function () { return handleVitrineHeroUpload.apply(null, arguments); };
     async function handleVitrineHeroUpload(imageBlob) {
         try {
@@ -3265,10 +3270,10 @@
                 method: 'POST',
                 headers: HEADERS_AUTH
             });
-            if (!authResponse.ok) throw new Error('Falha na autorizaÃ§Ã£o para upload.');
+            if (!authResponse.ok) throw new Error('Falha na autorização para upload.');
             const authData = await authResponse.json();
             const uploadURL = authData.uploadURL;
-            if (!uploadURL) throw new Error('URL de upload nÃ£o recebida');
+            if (!uploadURL) throw new Error('URL de upload não recebida');
 
             const formData = new FormData();
             const isPNG = imageBlob.type === 'image/png';
@@ -3280,16 +3285,16 @@
             const uploadData = await uploadResponse.json();
             const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ";
             const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && uploadData.result.id ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
-            if (!finalUrl) throw new Error('Resposta do servidor de upload invÃ¡lida.');
+            if (!finalUrl) throw new Error('Resposta do servidor de upload inválida.');
 
             if (typeof window.applyVitrineHeroFromCrop === 'function') {
                 window.applyVitrineHeroFromCrop(finalUrl);
             } else {
-                console.warn('applyVitrineHeroFromCrop nÃ£o disponÃ­vel');
+                console.warn('applyVitrineHeroFromCrop não disponível');
             }
         } catch (error) {
             console.error('Erro no upload da arte Vitrine:', error);
-            alert(error.message || 'NÃ£o foi possÃ­vel enviar a arte. Tente novamente.');
+            alert(error.message || 'Não foi possível enviar a arte. Tente novamente.');
         }
     }
 
@@ -3301,7 +3306,7 @@
                 method: 'POST',
                 headers: HEADERS_AUTH
             });
-            if (!authResponse.ok) throw new Error('Falha na autorizaÃ§Ã£o para upload.');
+            if (!authResponse.ok) throw new Error('Falha na autorização para upload.');
             const { uploadURL } = await authResponse.json();
 
             const formData = new FormData();
@@ -3313,7 +3318,7 @@
 
             const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ"; // Seu Account Hash
             const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && uploadData.result.id ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
-            if (!finalUrl) throw new Error('Resposta do servidor de upload invÃ¡lida. Tente novamente.');
+            if (!finalUrl) throw new Error('Resposta do servidor de upload inválida. Tente novamente.');
 
             SELECTORS.backgroundImagePreview.src = finalUrl;
             SELECTORS.backgroundImageUrlInput.value = finalUrl;
@@ -3328,41 +3333,41 @@
         }
     }
 
-    // Cache para evitar requisiÃ§Ãµes repetidas muito rapidamente
+    // Cache para evitar requisições repetidas muito rapidamente
     let lastProfileFetch = 0;
     let profileFetchPromise = null;
-    const PROFILE_FETCH_COOLDOWN = 1000; // 1 segundo entre requisiÃ§Ãµes (reduzido para atualizaÃ§Ã£o mais rÃ¡pida)
+    const PROFILE_FETCH_COOLDOWN = 1000; // 1 segundo entre requisições (reduzido para atualização mais rápida)
 
     if (window.DashboardCore) window.DashboardCore.fetchProfileData = function () { return fetchProfileData.apply(null, arguments); };
     async function fetchProfileData(forceRefresh = false) {
-        window.fetchProfileData = fetchProfileData; // permite que duplicateItem chame apÃ³s duplicar
+        window.fetchProfileData = fetchProfileData; // permite que duplicateItem chame após duplicar
         try {
-            // Se forceRefresh for true, SEMPRE forÃ§ar atualizaÃ§Ã£o imediata
+            // Se forceRefresh for true, SEMPRE forçar atualização imediata
             if (forceRefresh) {
-                console.log(' FOR?ANDO atualizaÃ§Ã£o imediata (ignorando cooldown e requisiÃ§Ãµes em andamento)...');
-                // Limpar promise anterior se existir para forÃ§ar nova requisiÃ§Ã£o
+                console.log(' FOR?ANDO atualização imediata (ignorando cooldown e requisições em andamento)...');
+                // Limpar promise anterior se existir para forçar nova requisição
                 profileFetchPromise = null;
                 lastProfileFetch = 0; // Resetar cooldown completamente
             } else {
-                // Implementar cooldown apenas se nÃ£o for forÃ§ado
+                // Implementar cooldown apenas se não for forçado
                 const now = Date.now();
 
-                // Verificar se hÃ¡ requisiÃ§Ã£o em andamento apenas se nÃ£o for forÃ§ado
+                // Verificar se há requisição em andamento apenas se não for forçado
                 if (profileFetchPromise) {
-                    console.log('â³ Aguardando requisiÃ§Ã£o em andamento...');
+                    console.log('⏳ Aguardando requisição em andamento...');
                     return await profileFetchPromise;
                 }
 
-                // Verificar cooldown apenas se nÃ£o for forÃ§ado
+                // Verificar cooldown apenas se não for forçado
                 if ((now - lastProfileFetch) < PROFILE_FETCH_COOLDOWN) {
                     const waitSeconds = Math.ceil((PROFILE_FETCH_COOLDOWN - (now - lastProfileFetch)) / 1000);
-                    console.log(`â³ Cooldown ativo. Aguarde ${waitSeconds} segundos.`);
-                    // NÃ£o fazer a requisiÃ§Ã£o, apenas retornar silenciosamente
+                    console.log(`⏳ Cooldown ativo. Aguarde ${waitSeconds} segundos.`);
+                    // Não fazer a requisição, apenas retornar silenciosamente
                     return;
                 }
             }
 
-            // Criar promise para evitar requisiÃ§Ãµes simultÃ¢neas
+            // Criar promise para evitar requisições simultâneas
             profileFetchPromise = (async () => {
                 try {
                     lastProfileFetch = Date.now();
@@ -3392,11 +3397,11 @@
                                     });
 
                                     if (response.status === 401) {
-                                        throw new Error('NÃ£o foi possÃ­vel autenticar. Por favor, faÃ§a login novamente.');
+                                        throw new Error('Não foi possível autenticar. Por favor, faça login novamente.');
                                     }
                                 } catch (refreshError) {
                                     console.error('Erro ao renovar token:', refreshError);
-                                    throw new Error('SessÃ£o expirada. Por favor, faÃ§a login novamente.');
+                                    throw new Error('Sessão expirada. Por favor, faça login novamente.');
                                 }
                             }
 
@@ -3404,7 +3409,7 @@
                                 const retryAfter = response.headers.get('Retry-After') || '900';
                                 const waitTime = parseInt(retryAfter, 10);
                                 const waitMinutes = Math.ceil(waitTime / 60);
-                                const err = new Error(`Muitas requisiÃ§Ãµes ao servidor. Por favor, aguarde ${waitMinutes} minutos antes de tentar novamente.`);
+                                const err = new Error(`Muitas requisições ao servidor. Por favor, aguarde ${waitMinutes} minutos antes de tentar novamente.`);
                                 err.status = 429;
                                 err.retryAfter = waitTime;
                                 throw err;
@@ -3420,12 +3425,12 @@
                         } catch (e) {
                             lastAttemptError = e;
                             const msg = (e && e.message) ? String(e.message) : '';
-                            const authRelated = /SessÃ£o expirada|NÃ£o foi possÃ­vel autenticar/i.test(msg);
-                            const transient = /Timeout|Erro de conexÃ£o|Erro de rede/i.test(msg) || isLikelyNetworkTransportError(e);
+                            const authRelated = /Sessão expirada|Não foi possível autenticar/i.test(msg);
+                            const transient = /Timeout|Erro de conexão|Erro de rede/i.test(msg) || isLikelyNetworkTransportError(e);
                             if (authRelated || e.status === 429 || !transient || attempt >= profileAttempts - 1) {
                                 throw e;
                             }
-                            console.warn('Perfil: falha de rede transitÃ³ria, nova tentativa', attempt + 1, '/', profileAttempts, e);
+                            console.warn('Perfil: falha de rede transitória, nova tentativa', attempt + 1, '/', profileAttempts, e);
                         }
                     }
                     throw lastAttemptError || new Error('Erro ao carregar perfil');
@@ -3438,7 +3443,7 @@
 
             const data = await response.json();
 
-            // Log para debug - ver o que estÃ¡ sendo retornado
+            // Log para debug - ver o que está sendo retornado
             console.log('Dados recebidos da API:', data);
             console.log('Estrutura dos dados:', {
                 hasData: !!data,
@@ -3471,17 +3476,17 @@
                     items: []
                 };
             } else {
-                throw new Error(`Estrutura de dados invÃ¡lida: esperado objeto com "details", recebido: ${typeof data}`);
+                throw new Error(`Estrutura de dados inválida: esperado objeto com "details", recebido: ${typeof data}`);
             }
 
-            // Validar se details existe e nÃ£o estÃ¡ vazio apÃ³s normalizaÃ§Ã£o
+            // Validar se details existe e não está vazio após normalização
             if (!profileData.details || typeof profileData.details !== 'object') {
-                throw new Error('Dados do perfil incompletos: campo "details" estÃ¡ vazio ou invÃ¡lido');
+                throw new Error('Dados do perfil incompletos: campo "details" está vazio ou inválido');
             }
 
-            // Garantir que items Ã© sempre um array
+            // Garantir que items é sempre um array
             if (!Array.isArray(profileData.items)) {
-                console.warn('Campo "items" nÃ£o Ã© um array. Convertendo...');
+                console.warn('Campo "items" não é um array. Convertendo...');
                 profileData.items = [];
             }
 
@@ -3491,7 +3496,7 @@
                 console.log(`Y"< IDs dos itens:`, profileData.items.map(item => `${item.id} (${item.item_type})`).join(', '));
             }
 
-            // IMPORTANTE: Atualizar window.currentProfileData para garantir que estÃ¡ sincronizado
+            // IMPORTANTE: Atualizar window.currentProfileData para garantir que está sincronizado
             window.currentProfileData = profileData;
             currentProfileData = profileData;
 
@@ -3509,7 +3514,7 @@
             try {
                 console.log('YZ Chamando renderEditor...');
                 renderEditor(profileData);
-                console.log('renderEditor concluÃ­do com sucesso');
+                console.log('renderEditor concluído com sucesso');
 
                 reconcileModulesListWithProfileData(profileData);
             } catch (renderError) {
@@ -3518,12 +3523,12 @@
                 throw new Error(`Erro ao renderizar interface: ${renderError.message}`);
             }
 
-            // Atualizar link pÃºblico apenas se tiver dados necessÃ¡rios
+            // Atualizar link público apenas se tiver dados necessários
             if (profileData.details && SELECTORS.publicLink) {
                 SELECTORS.publicLink.href = `https://tag.conectaking.com.br/${profileData.details.profile_slug || user.id}`;
             }
 
-            // Gerar QR Code se a aba de compartilhar estiver visÃ­vel
+            // Gerar QR Code se a aba de compartilhar estiver visível
             const compartilharPane = document.getElementById('compartilhar-pane');
             if (compartilharPane && compartilharPane.classList.contains('active')) {
                 setTimeout(() => {
@@ -3534,8 +3539,8 @@
             console.error('Erro ao carregar perfil:', error);
             console.error('Stack trace:', error.stack);
 
-            // Se for erro de autenticaÃ§Ã£o, redireciona para login
-            if (error.message.includes('SessÃ£o expirada') || error.message.includes('autenticar')) {
+            // Se for erro de autenticação, redireciona para login
+            if (error.message.includes('Sessão expirada') || error.message.includes('autenticar')) {
                 alert(error.message);
                 localStorage.removeItem('conectaKingToken');
                 localStorage.removeItem('conectaKingRefreshToken');
@@ -3547,31 +3552,31 @@
             // Limpar promise em caso de erro
             profileFetchPromise = null;
 
-            // Tratar 429 (Rate Limit) silenciosamente - sem alerta para o usuÃ¡rio
-            if (error.status === 429 || error.message.includes('Muitas requisiÃ§Ãµes')) {
-                // Erro 429 - Rate Limit - apenas log no console, sem incomodar o usuÃ¡rio
+            // Tratar 429 (Rate Limit) silenciosamente - sem alerta para o usuário
+            if (error.status === 429 || error.message.includes('Muitas requisições')) {
+                // Erro 429 - Rate Limit - apenas log no console, sem incomodar o usuário
                 console.warn('Rate limit atingido. Usando dados locais do cache.');
 
-                // NÃ£o tentar novamente automaticamente em caso de 429
+                // Não tentar novamente automaticamente em caso de 429
                 return;
-            } else if (error.message.includes('Erro de conexÃ£o') || error.message.includes('Timeout')) {
-                alert('Problema de conexÃ£o detectado. Verifique sua internet e tente novamente.');
+            } else if (error.message.includes('Erro de conexão') || error.message.includes('Timeout')) {
+                alert('Problema de conexão detectado. Verifique sua internet e tente novamente.');
             } else {
                 alert('Erro ao carregar dados do perfil. Tente novamente.');
             }
         }
     }
 
-    // ========== FUNÃ‡Ã•ES PARA GERENCIAR PRODUTOS DO CATÃLOGO ==========
+    // ========== FUNÇÕES PARA GERENCIAR PRODUTOS DO CATÁLOGO ==========
     // REMOVIDO COMPLETAMENTE
     /*
     if (window.DashboardCore) window.DashboardCore.loadProductsForCatalog = function () { return loadProductsForCatalog.apply(null, arguments); };
     async function loadProductsForCatalog(itemId) {
-        // Tentar primeiro dentro do modal aberto; se nÃ£o achar, usa o documento inteiro
+        // Tentar primeiro dentro do modal aberto; se não achar, usa o documento inteiro
         const productsListEl = SELECTORS.editModalBody?.querySelector(`#products-list-${itemId}`) 
             || document.getElementById(`products-list-${itemId}`);
         if (!productsListEl) {
-            console.error('Elemento products-list nÃ£o encontrado para itemId:', itemId);
+            console.error('Elemento products-list não encontrado para itemId:', itemId);
             return;
         }
         
@@ -3694,11 +3699,11 @@
                         <input type="text" id="product-name" required value="${product?.name || ''}" placeholder="Ex: Camiseta Premium" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color, #2C2C2F); background: var(--background-color, #0D0D0F); color: var(--text, #ECECEC);">
                     </div>
                     <div>
-                        <label style="display: block; margin-bottom: 5px; color: var(--text, #ECECEC);">DescriÃ§Ã£o</label>
+                        <label style="display: block; margin-bottom: 5px; color: var(--text, #ECECEC);">Descrição</label>
                         <textarea id="product-description" placeholder="Descreva o produto..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color, #2C2C2F); background: var(--background-color, #0D0D0F); color: var(--text, #ECECEC); min-height: 100px; resize: vertical;">${product?.description || ''}</textarea>
                     </div>
                     <div>
-                        <label style="display: block; margin-bottom: 5px; color: var(--text, #ECECEC);">PreÃ§o (R$) *</label>
+                        <label style="display: block; margin-bottom: 5px; color: var(--text, #ECECEC);">Preço (R$) *</label>
                         <input type="text" id="product-price" required inputmode="numeric" autocomplete="off" value="" placeholder="Digite o valor (ex: 9999)" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color, #2C2C2F); background: var(--background-color, #0D0D0F); color: var(--text, #ECECEC);">
                     </div>
                     <div>
@@ -3711,7 +3716,7 @@
                         </div>
                         <input type="file" id="product-image-upload" accept="image/*" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color, #2C2C2F); background: var(--background-color, #0D0D0F); color: var(--text, #ECECEC); margin-bottom: 8px;">
                         <small style="color: var(--text-dark, #A1A1A1); display: block; margin-bottom: 8px;">
-                            <i class="fas fa-info-circle"></i> A imagem serÃ¡ exibida completamente sem corte (object-fit: contain)
+                            <i class="fas fa-info-circle"></i> A imagem será exibida completamente sem corte (object-fit: contain)
                         </small>
                         <input type="hidden" id="product-image-url" value="${product?.image_url || ''}">
                     </div>
@@ -3733,7 +3738,7 @@
             
             try {
                 const authResponse = await safeFetch(`${API_URL}/api/upload/auth`, { method: 'POST', headers: HEADERS_AUTH });
-                if (!authResponse.ok) throw new Error('Erro ao obter autorizaÃ§Ã£o');
+                if (!authResponse.ok) throw new Error('Erro ao obter autorização');
                 const { uploadURL } = await authResponse.json();
                 
                 const formData = new FormData();
@@ -3753,7 +3758,7 @@
             }
         });
         
-        // MÃ¡scara de moeda BRL no preÃ§o - versÃ£o simplificada
+        // Máscara de moeda BRL no preço - versão simplificada
         const priceInput = modal.querySelector('#product-price');
         
         const formatCurrencyBRL = (num) => {
@@ -3794,9 +3799,9 @@
             priceInput.value = 'R$ 0,00';
         }
         
-        // Interceptar digitaÃ§Ã£o
+        // Interceptar digitação
         priceInput.addEventListener('keydown', (e) => {
-            // Permitir teclas de navegaÃ§Ã£o e controle
+            // Permitir teclas de navegação e controle
             if (['Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
                 return;
             }
@@ -3807,7 +3812,7 @@
                 
                 const digits = priceInput.value.replace(/\D/g, '');
                 if (digits && digits.length > 0) {
-                    // Remove o Ãºltimo dÃ­gito
+                    // Remove o último dígito
                     const newDigits = digits.slice(0, -1);
                     if (newDigits === '' || newDigits === '0') {
                         priceInput.value = 'R$ 0,00';
@@ -3832,7 +3837,7 @@
             if (e.ctrlKey && e.key.toLowerCase() === 'v') {
                 e.preventDefault();
                 navigator.clipboard.readText().then(text => {
-                    // Extrai apenas dÃ­gitos do texto colado
+                    // Extrai apenas dígitos do texto colado
                     const digits = text.replace(/\D/g, '');
                     if (digits) {
                         const num = Number(digits) / 100;
@@ -3842,19 +3847,19 @@
                     }
                     priceInput.setSelectionRange(priceInput.value.length, priceInput.value.length);
                 }).catch(() => {
-                    // Se falhar, deixa o comportamento padrÃ£o
+                    // Se falhar, deixa o comportamento padrão
                 });
                 return;
             }
             
-            // Se Ã© um nÃºmero
+            // Se é um número
             if (/[0-9]/.test(e.key)) {
                 e.preventDefault();
                 
-                // Pega os dÃ­gitos atuais (remove tudo que nÃ£o Ã© dÃ­gito)
+                // Pega os dígitos atuais (remove tudo que não é dígito)
                 const currentDigits = priceInput.value.replace(/\D/g, '');
                 
-                // Adiciona o novo dÃ­gito ao final
+                // Adiciona o novo dígito ao final
                 const newDigits = currentDigits === '0' ? e.key : currentDigits + e.key;
                 
                 // Converte e formata
@@ -3864,12 +3869,12 @@
                 // Posiciona cursor no final
                 priceInput.setSelectionRange(priceInput.value.length, priceInput.value.length);
             } else {
-                // Bloqueia qualquer outra tecla que nÃ£o seja nÃºmero ou comando
+                // Bloqueia qualquer outra tecla que não seja número ou comando
                 e.preventDefault();
             }
         });
         
-        // Prevenir entrada manual no campo (tornar readonly visualmente mas permitir interaÃ§Ã£o via teclado)
+        // Prevenir entrada manual no campo (tornar readonly visualmente mas permitir interação via teclado)
         priceInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -3889,7 +3894,7 @@
             const imageUrl = document.getElementById('product-image-url').value;
             
             if (!name || !price || price <= 0) {
-                alert('Preencha nome e preÃ§o corretamente');
+                alert('Preencha nome e preço corretamente');
                 return;
             }
             
@@ -3904,10 +3909,10 @@
                     : `${API_URL}/api/profile/items/${itemId}/products`;
                 const method = productId ? 'PUT' : 'POST';
                 
-                // Garantir que o preÃ§o Ã© um nÃºmero vÃ¡lido
+                // Garantir que o preço é um número válido
                 const priceValue = parseFloat(price);
                 if (isNaN(priceValue) || priceValue <= 0) {
-                    alert('PreÃ§o invÃ¡lido. Por favor, insira um valor maior que zero.');
+                    alert('Preço inválido. Por favor, insira um valor maior que zero.');
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalBtnText;
                     return;
@@ -3947,7 +3952,7 @@
                 
                 // Verificar se o produto foi realmente salvo
                 if (!result.product && !result.message) {
-                    console.warn('Resposta da API nÃ£o contÃ©m produto ou mensagem:', result);
+                    console.warn('Resposta da API não contém produto ou mensagem:', result);
                 }
                 
                 // Fechar modal do produto
@@ -3956,11 +3961,11 @@
                 // Aguardar um pouco antes de recarregar para garantir que o backend processou
                 setTimeout(async () => {
                     try {
-                        console.log(` Recarregando produtos apÃ³s salvar produto para catÃ¡logo ${itemId}...`);
+                        console.log(` Recarregando produtos após salvar produto para catálogo ${itemId}...`);
                         await loadProductsForCatalog(itemId);
                         console.log('Produtos recarregados com sucesso');
                     } catch (err) {
-                        console.error('Erro ao recarregar produtos apÃ³s salvar:', err);
+                        console.error('Erro ao recarregar produtos após salvar:', err);
                     }
                 }, 500);
                 
@@ -4024,22 +4029,22 @@
         }
     }
     
-    // Event listener para botÃ£o adicionar produto (delegation)
+    // Event listener para botão adicionar produto (delegation)
     // REMOVIDO COMPLETAMENTE
     */
 
     window.__dashboardMain = null;
 
     async function main() {
-        console.log(' Iniciando funÃ§Ã£o main()...');
+        console.log(' Iniciando função main()...');
         setupEventListeners();
-        // Re-ligar apÃ³s splits (idempotente) â€” cobre race com defer
+        // Re-ligar após splits (idempotente) — cobre race com defer
         setTimeout(function () {
             try { setupEventListeners(); } catch (e) { /* ignore */ }
         }, 0);
 
-        // Aplicar visibilidade da aba Empresa e outros controles (ADM, logo) em um Ãºnico lugar
-        // ADM tem acesso sempre. King Corporate / modo empresa ou plano com Modo Empresa (separaÃ§Ã£o de pacotes).
+        // Aplicar visibilidade da aba Empresa e outros controles (ADM, logo) em um único lugar
+        // ADM tem acesso sempre. King Corporate / modo empresa ou plano com Modo Empresa (separação de pacotes).
         function applyEmpresaTabAndControls(user) {
             if (!user) return;
             const accountType = user.accountType || user.account_type;
@@ -4051,7 +4056,7 @@
             const empresaTab = document.querySelector('.sidebar-tab[data-tab="times"]');
             if (empresaTab) {
                 empresaTab.style.display = showEmpresa ? 'flex' : 'none';
-                console.log(showEmpresa ? 'Aba "Empresa" visÃ­vel (ADM, modo empresa ou plano com Modo Empresa)' : 'Aba "Empresa" oculta');
+                console.log(showEmpresa ? 'Aba "Empresa" visível (ADM, modo empresa ou plano com Modo Empresa)' : 'Aba "Empresa" oculta');
             }
 
             const admLink = document.getElementById('adm-link');
@@ -4085,13 +4090,13 @@
             console.warn('Erro ao aplicar visibilidade inicial da aba Empresa:', e);
         }
 
-        // Perfil e status em paralelo (antes o painel esperava o perfil inteiro para sÃ³ depois pedir o plano)
+        // Perfil e status em paralelo (antes o painel esperava o perfil inteiro para só depois pedir o plano)
         const profilePromise = fetchProfileData().then(function () {
-            console.log('fetchProfileData() concluÃ­do com sucesso');
+            console.log('fetchProfileData() concluído com sucesso');
         }).catch(function (error) {
             console.error('Erro ao carregar dados do perfil:', error);
             if (error && error.status !== 429) {
-                console.warn('Erro ao carregar perfil, continuando com interface bÃ¡sica:', error);
+                console.warn('Erro ao carregar perfil, continuando com interface básica:', error);
             } else if (error && error.status === 429) {
                 console.error('Ys Rate limit atingido. Aguarde antes de tentar novamente.');
             }
@@ -4124,21 +4129,21 @@
             }
         } catch (eOpen) { /* ignore */ }
 
-        // Atualizar status do usuÃ¡rio e reaplicar visibilidade (API Ã© fonte da verdade)
+        // Atualizar status do usuário e reaplicar visibilidade (API é fonte da verdade)
         try {
             const updatedUser = await statusPromise;
             if (!updatedUser) return;
 
             if (updatedUser.accountType === 'free') {
-                alert('Acesso negado. FaÃ§a um upgrade do seu plano para acessar o dashboard.');
+                alert('Acesso negado. Faça um upgrade do seu plano para acessar o dashboard.');
                 window.location.href = 'index.html#planos';
                 return;
             }
 
             applyEmpresaTabAndControls(updatedUser);
 
-            // Aplicar visibilidade dos mÃ³dulos (GestÃ£o Financeira, Contratos, Agenda)
-            console.log('[Dashboard] Aplicando visibilidade dos mÃ³dulos para:', {
+            // Aplicar visibilidade dos módulos (Gestão Financeira, Contratos, Agenda)
+            console.log('[Dashboard] Aplicando visibilidade dos módulos para:', {
                 email: updatedUser.email,
                 hasFinance: updatedUser.hasFinance,
                 hasContract: updatedUser.hasContract,
@@ -4160,12 +4165,12 @@
                     tryApply();
                     if (!applied) setTimeout(function () {
                         tryApply();
-                        if (!applied) console.warn('[Dashboard] applyModulesVisibility ainda nÃ£o disponÃ­vel; visibilidade dos mÃ³dulos serÃ¡ aplicada quando o script carregar.');
+                        if (!applied) console.warn('[Dashboard] applyModulesVisibility ainda não disponível; visibilidade dos módulos será aplicada quando o script carregar.');
                     }, 600);
                 }, 300);
             }
         } catch (error) {
-            console.warn('Erro ao atualizar status do usuÃ¡rio:', error);
+            console.warn('Erro ao atualizar status do usuário:', error);
         }
     }
 
@@ -4176,7 +4181,7 @@
         const navLinks = document.querySelectorAll('.sidebar-nav .nav-link, .sidebar-footer .nav-link');
 
         if (!mobileMenuToggle || !sidebar) {
-            console.warn('Elementos do menu mobile nÃ£o encontrados. Tentando novamente...');
+            console.warn('Elementos do menu mobile não encontrados. Tentando novamente...');
             setTimeout(initMobileMenu, 100);
             return;
         }
@@ -4222,10 +4227,10 @@
             }
         }
 
-        // Evento no overlay real - apenas fecha o menu, nÃ£o bloqueia cliques nos links
+        // Evento no overlay real - apenas fecha o menu, não bloqueia cliques nos links
         if (overlay) {
             overlay.addEventListener('click', (e) => {
-                // SÃ³ fechar se clicar diretamente no overlay, nÃ£o em elementos filhos
+                // Só fechar se clicar diretamente no overlay, não em elementos filhos
                 if (e.target === overlay) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -4234,7 +4239,7 @@
             });
 
             overlay.addEventListener('touchend', (e) => {
-                // SÃ³ fechar se tocar diretamente no overlay, nÃ£o em elementos filhos
+                // Só fechar se tocar diretamente no overlay, não em elementos filhos
                 if (e.target === overlay) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -4243,15 +4248,15 @@
             }, { passive: false });
         }
 
-        // Eventos para o botÃ£o de abrir
-        // FunÃ§Ã£o para toggle (abrir/fechar) do menu
+        // Eventos para o botão de abrir
+        // Função para toggle (abrir/fechar) do menu
         function toggleMobileMenu(e) {
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
 
-            // Verifica se o menu estÃ¡ aberto
+            // Verifica se o menu está aberto
             const isOpen = sidebar.classList.contains('mobile-open');
 
             if (isOpen) {
@@ -4269,29 +4274,29 @@
             toggleMobileMenu(e);
         }, { passive: false });
 
-        // Garantir que o botÃ£o estÃ¡ clicÃ¡vel
+        // Garantir que o botão está clicável
         mobileMenuToggle.style.pointerEvents = 'auto';
         mobileMenuToggle.style.cursor = 'pointer';
         mobileMenuToggle.setAttribute('tabindex', '0');
 
-        // BotÃ£o de fechar removido - agora usa toggle no botÃ£o hamburger
+        // Botão de fechar removido - agora usa toggle no botão hamburger
 
         // Fechar menu ao clicar em um link - GARANTIR QUE OS LINKS FUNCIONEM
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
 
-                // NÃ£o fechar se for link externo (conta.html, admin, business)
+                // Não fechar se for link externo (conta.html, admin, business)
                 if (link.href && (link.href.includes('conta.html') || link.href.includes('admin') || link.href.includes('business'))) {
                     // Fechar menu antes de navegar
                     closeMobileMenu();
                     return; // Deixa o navegador seguir o link normalmente
                 }
 
-                // Para links internos com data-target, garantir que o evento nÃ£o seja bloqueado
+                // Para links internos com data-target, garantir que o evento não seja bloqueado
                 const targetId = link.dataset.target;
                 if (targetId) {
-                    // NÃ£o prevenir default aqui - deixar o event listener principal tratar
-                    // Apenas fechar o menu apÃ³s um pequeno delay para permitir a navegaÃ§Ã£o
+                    // Não prevenir default aqui - deixar o event listener principal tratar
+                    // Apenas fechar o menu após um pequeno delay para permitir a navegação
                     setTimeout(() => {
                         closeMobileMenu();
                     }, 150);
@@ -4312,12 +4317,12 @@
                 const isInsideSidebar = sidebar.contains(clickedElement);
                 const isNavLink = clickedElement.closest('.nav-link');
 
-                // NÃ£o fechar se clicar em um link do menu
+                // Não fechar se clicar em um link do menu
                 if (isNavLink) {
                     return; // Deixa o link funcionar normalmente
                 }
 
-                // Verificar se Ã© o overlay (fora do sidebar)
+                // Verificar se é o overlay (fora do sidebar)
                 const isOverlay = clickedElement === overlay ||
                     clickedElement === document.body ||
                     (!isInsideSidebar && !isMenuButton);
@@ -4330,13 +4335,13 @@
             }
         }
 
-        // Eventos melhorados para mobile - usar capture phase false para nÃ£o interferir nos links
+        // Eventos melhorados para mobile - usar capture phase false para não interferir nos links
         document.addEventListener('click', handleOverlayClick, false);
         document.addEventListener('touchend', handleOverlayClick, { passive: false });
 
         // Fechar ao tocar no overlay usando o pseudo-elemento
         sidebar.addEventListener('click', (e) => {
-            // Se clicar diretamente no sidebar mas nÃ£o em um elemento filho interativo
+            // Se clicar diretamente no sidebar mas não em um elemento filho interativo
             if (e.target === sidebar && sidebar.classList.contains('mobile-open')) {
                 closeMobileMenu();
             }
@@ -4377,10 +4382,10 @@
             }
         });
     }
-    // SeparaÃ§Ã£o de Pacotes: js/dashboard-separacao.js
+    // Separação de Pacotes: js/dashboard-separacao.js
     // King Forms editor: js/dashboard-forms-editor.js
 
-    // FILTRO DE MÃ“DULOS POR PLANO
+    // FILTRO DE MÓDULOS POR PLANO
     // ============================================
 
     let userAvailableModules = null;
@@ -4390,7 +4395,7 @@
         configurable: true
     });
 
-    // Carregar mÃ³dulos disponÃ­veis para o usuÃ¡rio
+    // Carregar módulos disponíveis para o usuário
     async function loadUserAvailableModules() {
         try {
             const response = await safeFetch(`${API_URL}/api/modules/available`, {
@@ -4404,13 +4409,13 @@
                 userAvailableModules.add('wifi');
             }
         } catch (error) {
-            console.error('Erro ao carregar mÃ³dulos disponÃ­veis:', error);
+            console.error('Erro ao carregar módulos disponíveis:', error);
             userAvailableModules = null;
         }
         applySidebarModulesVisibility();
     }
 
-    // Mostrar/ocultar links do sidebar por plano (Recibos e OrÃ§amentos, Contratos, Agenda, etc.)
+    // Mostrar/ocultar links do sidebar por plano (Recibos e Orçamentos, Contratos, Agenda, etc.)
     function applySidebarModulesVisibility() {
         document.querySelectorAll('.sidebar .nav-link-by-plan').forEach(function (link) {
             const moduleType = link.getAttribute('data-module');
@@ -4423,7 +4428,7 @@
         });
     }
 
-    /** Garante cartÃ£o Wi-Fi no modal (deploy antigo do dashboard.html sem o bloco no HTML). */
+    /** Garante cartão Wi-Fi no modal (deploy antigo do dashboard.html sem o bloco no HTML). */
     function ensureWifiModuleCardInAddModal() {
         const modal = document.getElementById('add-item-modal');
         if (!modal || modal.querySelector('.module-choice-card[data-item-type="wifi"]')) return;
@@ -4442,10 +4447,10 @@
         }
     }
 
-    // Filtrar mÃ³dulos no modal baseado no plano
+    // Filtrar módulos no modal baseado no plano
     async function filterModulesByPlan() {
         ensureWifiModuleCardInAddModal();
-        // Carregar mÃ³dulos disponÃ­veis se ainda nÃ£o carregou
+        // Carregar módulos disponíveis se ainda não carregou
         if (userAvailableModules === null) {
             await loadUserAvailableModules();
         }
@@ -4453,7 +4458,7 @@
             userAvailableModules.add('wifi');
         }
 
-        // Se nÃ£o conseguiu carregar, mostrar todos (fallback), mas ainda ocultar Agenda/Contratos para nÃ£o-admin
+        // Se não conseguiu carregar, mostrar todos (fallback), mas ainda ocultar Agenda/Contratos para não-admin
         if (userAvailableModules === null) {
             let isAdminFallback = false;
             try {
@@ -4468,7 +4473,7 @@
             return;
         }
 
-        // Ocultar mÃ³dulos nÃ£o disponÃ­veis
+        // Ocultar módulos não disponíveis
         const allModuleCards = document.querySelectorAll('#add-item-modal .module-choice-card');
         let isAdmin = false;
         try {
@@ -4477,12 +4482,12 @@
         } catch (_) { }
         allModuleCards.forEach(card => {
             const moduleType = card.dataset.itemType;
-            // MÃ³dulos descontinuados: nunca mostrar no modal
+            // Módulos descontinuados: nunca mostrar no modal
             if (moduleType === 'agenda' || moduleType === 'contract' || moduleType === 'kingbrief' || moduleType === 'king_bolao' || moduleType === 'photographer_site') {
                 card.style.display = 'none';
                 return;
             }
-            // Wi-Fi (QR): mÃ³dulo do cartÃ£o virtual - sempre visÃ­vel no modal Â«Adicionar mÃ³duloÂ»
+            // Wi-Fi (QR): módulo do cartão virtual - sempre visível no modal «Adicionar módulo»
             if (moduleType === 'wifi') {
                 card.style.display = 'block';
                 return;
@@ -4497,7 +4502,7 @@
     window.filterModulesByPlan = filterModulesByPlan;
     window.loadUserAvailableModules = loadUserAvailableModules;
 
-    // Carregar mÃ³dulos disponÃ­veis ao carregar pÃ¡gina
+    // Carregar módulos disponíveis ao carregar página
     loadUserAvailableModules();
 
     // ============================================
@@ -4582,7 +4587,7 @@
             }
         }
 
-        // Carregar configuraÃ§Ã£o atual
+        // Carregar configuração atual
         async function loadLinkPreviewConfig() {
             try {
                 const response = await fetch(`${API_URL}/api/admin/link-preview-config`, {
@@ -4594,7 +4599,7 @@
                     if (data.success && data.config) {
                         const config = data.config;
                         if (linkPreviewTitle) linkPreviewTitle.value = config.title || 'CONECTAKING';
-                        if (linkPreviewSubtitle) linkPreviewSubtitle.value = config.subtitle || 'Sua PresenÃ§a Digital. Um Toque. Poder Absoluto.';
+                        if (linkPreviewSubtitle) linkPreviewSubtitle.value = config.subtitle || 'Sua Presença Digital. Um Toque. Poder Absoluto.';
                         if (linkPreviewBg1) linkPreviewBg1.value = config.bg_color_1 || '#991B1B';
                         if (linkPreviewBg1Text) linkPreviewBg1Text.value = config.bg_color_1 || '#991B1B';
                         if (linkPreviewBg2) linkPreviewBg2.value = config.bg_color_2 || '#000000';
@@ -4608,11 +4613,11 @@
                     }
                 }
             } catch (error) {
-                console.error('Erro ao carregar configuraÃ§Ã£o:', error);
+                console.error('Erro ao carregar configuração:', error);
             }
         }
 
-        // Salvar configuraÃ§Ã£o
+        // Salvar configuração
         if (linkPreviewForm) {
             linkPreviewForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -4625,7 +4630,7 @@
                 try {
                     const config = {
                         title: linkPreviewTitle?.value || 'CONECTAKING',
-                        subtitle: linkPreviewSubtitle?.value || 'Sua PresenÃ§a Digital. Um Toque. Poder Absoluto.',
+                        subtitle: linkPreviewSubtitle?.value || 'Sua Presença Digital. Um Toque. Poder Absoluto.',
                         bg_color_1: linkPreviewBg1?.value || '#991B1B',
                         bg_color_2: linkPreviewBg2?.value || '#000000',
                         text_color: linkPreviewTextColor?.value || '#F5F5F5',
@@ -4641,38 +4646,38 @@
                     if (response.ok) {
                         const data = await response.json();
                         if (data.success) {
-                            alert('ConfiguraÃ§Ã£o salva com sucesso! A preview serÃ¡ atualizada em alguns segundos.');
+                            alert('Configuração salva com sucesso! A preview será atualizada em alguns segundos.');
                             updatePreview();
                         } else {
-                            alert('Erro ao salvar configuraÃ§Ã£o. Tente novamente.');
+                            alert('Erro ao salvar configuração. Tente novamente.');
                         }
                     } else {
                         const error = await response.json();
-                        alert(`Erro: ${error.message || 'Erro ao salvar configuraÃ§Ã£o'}`);
+                        alert(`Erro: ${error.message || 'Erro ao salvar configuração'}`);
                     }
                 } catch (error) {
-                    console.error('Erro ao salvar configuraÃ§Ã£o:', error);
-                    alert('Erro ao salvar configuraÃ§Ã£o. Verifique sua conexÃ£o e tente novamente.');
+                    console.error('Erro ao salvar configuração:', error);
+                    alert('Erro ao salvar configuração. Verifique sua conexão e tente novamente.');
                 } finally {
                     linkPreviewSaveBtn.disabled = false;
-                    linkPreviewSaveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar ConfiguraÃ§Ã£o';
+                    linkPreviewSaveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Configuração';
                 }
             });
         }
 
-        // BotÃ£o de preview
+        // Botão de preview
         if (linkPreviewPreviewBtn) {
             linkPreviewPreviewBtn.addEventListener('click', () => {
                 updatePreview();
             });
         }
 
-        // BotÃ£o de reset
+        // Botão de reset
         if (linkPreviewResetBtn) {
             linkPreviewResetBtn.addEventListener('click', () => {
-                if (confirm('Deseja restaurar as configuraÃ§Ãµes padrÃ£o?')) {
+                if (confirm('Deseja restaurar as configurações padrão?')) {
                     if (linkPreviewTitle) linkPreviewTitle.value = 'CONECTAKING';
-                    if (linkPreviewSubtitle) linkPreviewSubtitle.value = 'Sua PresenÃ§a Digital. Um Toque. Poder Absoluto.';
+                    if (linkPreviewSubtitle) linkPreviewSubtitle.value = 'Sua Presença Digital. Um Toque. Poder Absoluto.';
                     if (linkPreviewBg1) linkPreviewBg1.value = '#991B1B';
                     if (linkPreviewBg1Text) linkPreviewBg1Text.value = '#991B1B';
                     if (linkPreviewBg2) linkPreviewBg2.value = '#000000';
@@ -4686,7 +4691,7 @@
             });
         }
 
-        // Carregar configuraÃ§Ã£o quando o painel for aberto
+        // Carregar configuração quando o painel for aberto
         const personalizarLinkLink = document.getElementById('personalizar-link-link');
         if (personalizarLinkLink) {
             personalizarLinkLink.addEventListener('click', () => {
@@ -4697,17 +4702,17 @@
 
     // ==========================================================
 
-    // FinanÃ§as e Branding foram extraÃ­dos para:
-    //   js/dashboard-finance.js  (window.initFinancePane, â€¦)
+    // Finanças e Branding foram extraídos para:
+    //   js/dashboard-finance.js  (window.initFinancePane, …)
     //   js/dashboard-empresa.js  (loadBrandingData / saveBranding / clearBranding)
-    // Carregados apÃ³s este arquivo no dashboard.html.
+    // Carregados após este arquivo no dashboard.html.
 
     try {
         if (window.DashboardInfo && typeof window.DashboardInfo.init === 'function') window.DashboardInfo.init();
         if (window.DashboardEmpresa && typeof window.DashboardEmpresa.init === 'function') window.DashboardEmpresa.init();
         if (window.DashboardPersonalizar && typeof window.DashboardPersonalizar.init === 'function') window.DashboardPersonalizar.init();
         if (window.DashboardRelatorios && typeof window.DashboardRelatorios.init === 'function') window.DashboardRelatorios.init();
-    } catch (eMod) { /* mÃ³dulos opcionais */ }
+    } catch (eMod) { /* módulos opcionais */ }
 
     try {
         const qsKs = new URLSearchParams(window.location.search || '');

@@ -2335,6 +2335,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Dados sincronizados do modal para item ${itemId}`);
     }
 
+    if (window.DashboardCore) {
+        window.DashboardCore.syncModalDataToItem = syncModalDataToItem;
+    }
+    window.syncModalDataToItem = syncModalDataToItem;
+
     // ============================================
     // FUNÇÕES ESPECÍFICAS PARA CADA TIPO DE MÓDULO
     // ============================================

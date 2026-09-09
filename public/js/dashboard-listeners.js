@@ -106,7 +106,10 @@
             if (typeof c.applyAvatarFormatToPreview === 'function') return c.applyAvatarFormatToPreview.apply(c, arguments);
         },
         loadSubscriptionInfo: function () { return pick(assinatura().loadSubscriptionInfo, global.loadSubscriptionInfo).apply(null, arguments); },
-        main: function () { return pick(core().main, global.__dashboardMain).apply(null, arguments); }
+        main: function () { return pick(core().main, global.__dashboardMain).apply(null, arguments); },
+        syncModalDataToItem: function () {
+            return pick(core().syncModalDataToItem, global.syncModalDataToItem).apply(null, arguments);
+        }
     };
 
     // Fix safeFetch properly
@@ -1484,7 +1487,7 @@ function _setupEventListenersBody() {
         console.log(`Y' [OK] Salvando alterações do item ${itemId} apenas localmente (não no servidor ainda)...`);
 
         // Sincronizar dados do modal para o item no DOM
-        syncModalDataToItem();
+        env.syncModalDataToItem();
 
         // Atualizar preview local
         env.updateLivePreviewFromForm();
@@ -1790,7 +1793,7 @@ function _setupEventListenersBody() {
         }
 
         // Sincronizar dados do modal para o item antes de salvar
-        syncModalDataToItem();
+        env.syncModalDataToItem();
 
         // Salvar automaticamente quando clicar em "Salvar Alterações" do modal
         try {
