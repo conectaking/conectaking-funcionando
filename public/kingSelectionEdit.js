@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
           q.set('galleryId', String(g.id));
           if (apiLocal) q.set('api', 'local');
           const h = (window.location.hostname || '').toLowerCase();
-          // Live Server: ficheiro .html; produção (Express): /kingSelection?galleryId=
+          // Live Server: ficheiro .html; produção: /kingSelection?galleryId=
           if (h === '127.0.0.1' || h === 'localhost') {
             window.location.href = `kingSelectionProject.html?${q.toString()}`;
           } else {

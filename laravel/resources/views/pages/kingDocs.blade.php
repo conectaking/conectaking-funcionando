@@ -587,7 +587,7 @@
 <body>
   <div class="wrap">
     <div class="kd-top-bar kd-top-bar--minimal">
-      <a href="dashboard.html" class="kd-back-dashboard" id="kd-back-dashboard" title="Voltar ao painel principal">— Painel principal</a>
+      <a href="/dashboard" class="kd-back-dashboard" id="kd-back-dashboard" title="Voltar ao painel principal">— Painel principal</a>
       <div class="kd-top-bar-actions">
         <button type="button" class="kd-theme-btn" id="kd-theme-toggle" title="Alternar tema claro/escuro">Tema escuro</button>
       </div>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1032,11 +1032,11 @@
                         <a href="#" class="btn btn-secondary" id="landing-sair-btn" style="display: none !important;" title="Encerrar sessão e entrar com outra conta">
                             <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Sair</span>
                         </a>
-                        <a href="login.html" class="btn btn-secondary" id="login-btn">Login</a>
-                        <a href="dashboard.html" class="btn btn-primary" id="access-panel-btn" style="display: none;">
+                        <a href="/login" class="btn btn-secondary" id="login-btn">Login</a>
+                        <a href="/dashboard" class="btn btn-primary" id="access-panel-btn" style="display: none;">
                             <i class="fas fa-tachometer-alt"></i> <span class="btn-text">Acessar Painel</span>
                         </a>
-                <a href="registro.html" class="btn btn-primary" id="create-account-btn"><span class="btn-text">Criar Acesso</span></a>
+                <a href="/registro" class="btn btn-primary" id="create-account-btn"><span class="btn-text">Criar Acesso</span></a>
                     </div>
         </div>
     </header>
@@ -1857,9 +1857,9 @@
                 <div>
                     <h3 style="font-family: 'Cinzel', serif; color: var(--yellow-primary); margin-bottom: 20px; font-size: 1.2rem;">Suporte</h3>
                     <ul style="list-style: none;">
-                        <li style="margin-bottom: 12px;" id="footer-login-item"><a href="login.html" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
-                        <li style="margin-bottom: 12px; display: none;" id="footer-access-panel-item"><a href="dashboard.html" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
-                        <li style="margin-bottom: 12px;"><a href="registro.html" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
+                        <li style="margin-bottom: 12px;" id="footer-login-item"><a href="/login" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
+                        <li style="margin-bottom: 12px; display: none;" id="footer-access-panel-item"><a href="/dashboard" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
+                        <li style="margin-bottom: 12px;"><a href="/registro" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
                         <li style="margin-bottom: 12px;"><a href="#planos" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Falar com Vendedor</a></li>
                         <li style="margin-bottom: 12px;"><a href="https://www.instagram.com/conectaking" target="_blank" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Instagram</a></li>
                     </ul>
@@ -1867,8 +1867,8 @@
                 <div>
                     <h3 style="font-family: 'Cinzel', serif; color: var(--yellow-primary); margin-bottom: 20px; font-size: 1.2rem;">Legal</h3>
                     <ul style="list-style: none;">
-                        <li style="margin-bottom: 12px;"><a href="termos.html" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Termos de Servío</a></li>
-                        <li style="margin-bottom: 12px;"><a href="privacidade.html" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Poltica de Privacidade</a></li>
+                        <li style="margin-bottom: 12px;"><a href="/termos" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Termos de Servío</a></li>
+                        <li style="margin-bottom: 12px;"><a href="/privacidade" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Poltica de Privacidade</a></li>
                     </ul>
                 </div>
             </div>

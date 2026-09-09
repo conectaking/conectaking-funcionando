@@ -2360,7 +2360,7 @@
                 if (errorMessage.includes('Autenticação') || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
                     setTimeout(() => {
                         alert('Sua sessão expirou. Por favor, faça login novamente.');
-                        window.location.href = 'dashboard.html';
+                        window.location.href = '/dashboard';
                     }, 1000);
                     return;
                 }
@@ -2406,7 +2406,7 @@
                             <i class="fas fa-lock" style="font-size: 3rem; margin-bottom: 16px;"></i>
                             <h3 style="color: #ff4444; margin-bottom: 12px;">Autenticação Necessária</h3>
                             <div style="color: #ECECEC; margin-bottom: 20px;">Por favor, faça login novamente.</div>
-                            <button onclick="window.location.href='dashboard.html'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
+                            <button onclick="window.location.href='/dashboard'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
                                 <i class="fas fa-sign-in-alt"></i> Ir para Login
                             </button>
                         </div>
@@ -2649,7 +2649,7 @@
                             <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; margin-right: 10px;">
                                 <i class="fas fa-redo"></i> Tentar Novamente
                             </button>
-                            <button onclick="window.location.href='dashboard.html'" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer;">
+                            <button onclick="window.location.href='/dashboard'" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer;">
                                 <i class="fas fa-arrow-left"></i> Voltar
                             </button>
                         </div>
@@ -2703,7 +2703,7 @@
                                 <i class="fas fa-lock" style="font-size: 3rem; margin-bottom: 16px;"></i>
                                 <h3 style="color: #ff4444; margin-bottom: 12px;">Autenticação Necessária</h3>
                                 <div style="color: #ECECEC; margin-bottom: 20px;">Por favor, faça login novamente.</div>
-                                <button onclick="window.location.href='dashboard.html'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
+                                <button onclick="window.location.href='/dashboard'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
                                     <i class="fas fa-sign-in-alt"></i> Ir para Login
                                 </button>
                             </div>
@@ -2800,7 +2800,7 @@
                         <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; margin-right: 10px;">
                             <i class="fas fa-redo"></i> Tentar Novamente
                         </button>
-                        <button onclick="window.location.href='dashboard.html'" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer;">
+                        <button onclick="window.location.href='/dashboard'" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer;">
                             <i class="fas fa-arrow-left"></i> Voltar
                         </button>
                     </div>
@@ -5787,7 +5787,7 @@
                 const headersForFetch = getHeaders();
                 if (!headersForFetch || Object.keys(headersForFetch).length === 0) {
                     alert('Sua sessão expirou. Por favor, faça login novamente.');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                     return;
                 }
                 
@@ -5954,7 +5954,7 @@
                 const headersForFetch = getHeaders();
                 if (!headersForFetch || Object.keys(headersForFetch).length === 0) {
                     alert('Sua sessão expirou. Por favor, faça login novamente.');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                     return;
                 }
                 
@@ -6814,7 +6814,7 @@
                 const headersForFetch = getHeaders();
                 if (!headersForFetch || Object.keys(headersForFetch).length === 0) {
                     alert('Sua sessão expirou. Por favor, faça login novamente.');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                     return;
                 }
                 const response = await fetch(`${API_URL}/api/guest-lists/${itemId}/guests/${guestId}`, {
@@ -6845,7 +6845,7 @@
                 const headersForFetch = getHeaders();
                 if (!headersForFetch || Object.keys(headersForFetch).length === 0) {
                     alert('Sua sessão expirou. Por favor, faça login novamente.');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                     return;
                 }
                 
@@ -6909,7 +6909,7 @@
                 const headersForFetch = getHeaders();
                 if (!headersForFetch || Object.keys(headersForFetch).length === 0) {
                     alert('Sua sessão expirou. Por favor, faça login novamente.');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                     return;
                 }
                 
@@ -6959,7 +6959,7 @@
                 const headersForFetch = getHeaders();
                 if (!headersForFetch || Object.keys(headersForFetch).length === 0) {
                     alert('Sua sessão expirou. Por favor, faça login novamente.');
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                     return;
                 }
                 
@@ -7685,7 +7685,7 @@
                     exportCsvBtn.addEventListener('click', exportToCSV);
                 }
                 
-                // Configurar botão voltar - deve voltar para formPageEdit.html, não fazer login
+                // Configurar botão voltar - deve voltar para /formPageEdit, não fazer login
                 const btnVoltar = document.getElementById('btn-voltar');
                 if (btnVoltar) {
                     // Remover qualquer onclick anterior para evitar conflitos
@@ -7696,21 +7696,21 @@
                         // Verificar se o itemId existe antes de navegar
                         const currentItemId = itemId || (new URLSearchParams(window.location.search)).get('itemId');
                         if (currentItemId) {
-                            console.log('Y"" [btn-voltar] Navegando para formPageEdit.html com itemId:', currentItemId);
-                            window.location.href = `formPageEdit.html?itemId=${currentItemId}`;
+                            console.log('Y"" [btn-voltar] Navegando para /formPageEdit com itemId:', currentItemId);
+                            window.location.href = `/formPageEdit?itemId=${currentItemId}`;
                         } else {
                             // Fallback: voltar para dashboard se não tiver itemId
-                            console.log('Y"" [btn-voltar] ItemId não encontrado, navegando para dashboard.html');
-                            window.location.href = 'dashboard.html';
+                            console.log('Y"" [btn-voltar] ItemId não encontrado, navegando para /dashboard');
+                            window.location.href = '/dashboard';
                         }
                         return false;
                     };
                     
                     // Configurar href também (fallback caso onclick não funcione)
                     if (itemId) {
-                        btnVoltar.href = `formPageEdit.html?itemId=${itemId}`;
+                        btnVoltar.href = `/formPageEdit?itemId=${itemId}`;
                     } else {
-                        btnVoltar.href = 'dashboard.html';
+                        btnVoltar.href = '/dashboard';
                     }
                 }
             } catch (e) {
@@ -7908,7 +7908,7 @@
                                         <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
                                             <i class="fas fa-redo"></i> Tentar Novamente
                                         </button>
-                                        <button onclick="window.location.href='dashboard.html'" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer;">
+                                        <button onclick="window.location.href='/dashboard'" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer;">
                                             <i class="fas fa-arrow-left"></i> Voltar
                                         </button>
                                     </div>
@@ -7925,7 +7925,7 @@
                                 <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px;"></i>
                                 <h3 style="color: #ff4444; margin-bottom: 12px;">ID do Item Não Fornecido</h3>
                                 <div style="color: #ECECEC; margin-bottom: 20px;">Por favor, acesse esta página através do dashboard.</div>
-                                <button onclick="window.location.href='dashboard.html'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
+                                <button onclick="window.location.href='/dashboard'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
                                     <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
                                 </button>
                             </div>

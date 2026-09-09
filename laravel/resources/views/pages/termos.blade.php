@@ -87,7 +87,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Voltar para página inicial</a>
+        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Voltar para página inicial</a>
         
         <h1>Termos de Servio</h1>
         <p><strong>Conecta King - Agenda Inteligente</strong></p>

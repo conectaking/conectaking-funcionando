@@ -256,14 +256,14 @@
                                 console.log('Dados do usuário salvos:', data.user);
                             }
                             
-                            // Mesma pasta que login.html (evita 404 no mobile com /public_html/ ou /login/)
+                            // Mesma pasta que /login (evita 404 no mobile com /public_html/ ou /login/)
                             const params = new URLSearchParams(window.location.search);
                             const returnUrl = params.get('returnUrl');
                             function postLoginTarget() {
                                 var ru = returnUrl && String(returnUrl).trim();
                                 var looksLikeLogin = ru && /\/login(\.html)?([?#/]|$)|(^|\/)login\.html/i.test(ru);
                                 if (ru && !looksLikeLogin) {
-                                    if (/^https?:\/\//i.test(ru)) {
+                                    if (/^https?:\/\/i.test(ru)) {
                                         try {
                                             var u = new URL(ru);
                                             if (u.origin === window.location.origin) {

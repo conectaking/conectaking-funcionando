@@ -1906,7 +1906,7 @@
 <body class="form-edit-page form-edit-page-body">
     <div class="form-edit-header">
         <div style="display: flex; align-items: center; gap: 16px;">
-            <a href="kingForms.html" target="_top" class="btn-back">
+            <a href="/kingForms" target="_top" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Voltar
             </a>
             <h1>Editar King Forms</h1>

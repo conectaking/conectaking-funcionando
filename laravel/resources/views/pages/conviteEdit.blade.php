@@ -46,7 +46,7 @@
 
     <p style="margin-bottom:20px">
       <button type="button" class="btn btn-primary" id="btn-save"><i class="fas fa-save"></i> Salvar convite</button>
-      <a href="dashboard.html" class="btn btn-secondary" style="margin-left:10px;text-decoration:none"><i class="fas fa-arrow-left"></i> Voltar</a>
+      <a href="/dashboard" class="btn btn-secondary" style="margin-left:10px;text-decoration:none"><i class="fas fa-arrow-left"></i> Voltar</a>
     </p>
 
     <div class="card">
@@ -180,11 +180,11 @@
   const itemId = qs.get('itemId');
   const token = localStorage.getItem('conectaKingToken');
   if (!token) {
-    location.href = 'login.html?returnUrl=' + encodeURIComponent(location.href);
+    location.href = '/login?returnUrl=' + encodeURIComponent(location.href);
     return;
   }
   if (!itemId) {
-    document.getElementById('err').textContent = 'Informe itemId na URL (conviteEdit.html?itemId=123)';
+    document.getElementById('err').textContent = 'Informe itemId na URL (/conviteEdit?itemId=123)';
     document.getElementById('err').classList.add('show');
     return;
   }

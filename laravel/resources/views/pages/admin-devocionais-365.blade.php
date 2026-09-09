@@ -324,9 +324,9 @@
                     <li>O leitor acompanha o capítulo sugerido na página pública do cartão.</li>
                 </ul>
                 <div class="row" style="margin-top:16px">
-                    <a class="btn" href="/bible.html" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Bíblia (bible.html)</a>
+                    <a class="btn" href="/bible" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Bíblia</a>
                     <a class="btn btn-secondary" href="#" id="link-biblia-api"><i class="fas fa-link"></i> Bíblia (URL da API)</a>
-                    <a class="btn btn-secondary" href="/dashboard.html"><i class="fas fa-th-large"></i> Ir ao painel</a>
+                    <a class="btn btn-secondary" href="/dashboard"><i class="fas fa-th-large"></i> Ir ao painel</a>
                 </div>
                 <p style="margin-top:14px;font-size:0.85rem;color:#666">Se um dos links falhar, experimente o outro (ficheiro estático vs. servidor da API).</p>
             </div>
@@ -436,7 +436,7 @@
             } catch (e) {}
         }
         var link = document.getElementById('link-biblia-api');
-        if (link) link.href = getApiBase() + '/bible.html';
+        if (link) link.href = getApiBase() + '/bible';
     }
 
     function apiFetch(path, opts) {

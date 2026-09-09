@@ -16,7 +16,7 @@
         if (!href || href === '#') return;
         if (href.trim().charAt(0) === '#' && href.indexOf('.html') === -1) return;
         var isHtml = href.indexOf('.html') !== -1;
-        var isAbs = /^https?:\/\//i.test(href);
+        var isAbs = /^https?:\/\/i.test(href);
         if (!isHtml && !isAbs) return;
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -235,7 +235,7 @@
             var base = apiBase();
             function go() {
                 clearAuthLocal();
-                window.location.href = 'index.html';
+                window.location.href = '/';
             }
             if (rt) {
                 fetch(base + '/api/auth/logout', {
@@ -291,7 +291,7 @@
 </button>
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <a href="index.html" class="logo-link">
+        <a href="/" class="logo-link">
             <img src="logo.png" alt="Conecta King" class="logo-image">
             <span class="logo-text">CONECTA KING</span>
         </a>
@@ -320,11 +320,11 @@
         <a href="#" class="nav-link active" data-target="editar-pane" title="Editar Conecta King"><i class="fas fa-pencil-alt"></i> <span>Editar Conecta King</span></a>
         <a href="#" class="nav-link" data-target="separacao-pacotes-pane" id="separacao-pacotes-link" title="Separação de Pacotes" style="display: none;"><i class="fas fa-layer-group"></i> <span>Separação de Pacotes</span></a>
         <a href="#" class="nav-link nav-link-by-plan" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira" style="display: none;"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
-        <a href="kingForms.html" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
+        <a href="/kingForms" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
         <a href="/kingSelection?v=2026-09-08-no-render" class="nav-link nav-link-by-plan" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection" style="display: none;"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
         <a href="#" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
-        <a href="kingDocs.html" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
-        <a href="recibos-orcamentos.html" class="nav-link nav-link-by-plan" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos" style="display: none;"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
+        <a href="/kingDocs" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
+        <a href="recibos-/orcamentos" class="nav-link nav-link-by-plan" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos" style="display: none;"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
         <a href="#" class="nav-link" data-target="relatorios-pane" title="Relatórios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
         <a href="#" class="nav-link" data-target="compartilhar-pane" title="Compartilhar"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></a>
         <a href="#" class="nav-link nav-link-by-plan" data-module="branding" data-target="branding-pane" id="branding-link" title="Personalização da Marca" style="display: none;"><i class="fas fa-palette"></i> <span>Personalização da Marca</span></a>
@@ -332,11 +332,11 @@
     
     <div class="sidebar-footer">
         <div class="footer-section-title">DADOS GERAIS DA CONTA</div>
-        <a href="admin/index.html" class="nav-link" id="adm-link" style="display: none;"><i class="fas fa-user-shield"></i> <span>ADM</span></a>
-        <a href="admin-devocionais-365.html" class="nav-link" id="dev365-admin-link" style="display: none;"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
+        <a href="admin//" class="nav-link" id="adm-link" style="display: none;"><i class="fas fa-user-shield"></i> <span>ADM</span></a>
+        <a href="/admin-devocionais-365" class="nav-link" id="dev365-admin-link" style="display: none;"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
         <a href="#" class="nav-link" data-target="personalizar-link-pane" id="personalizar-link-link" style="display: none;" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
         <a href="#" class="nav-link" data-target="assinatura-pane" id="assinatura-link"><i class="fas fa-crown"></i> <span>Assinatura</span></a>
-        <a href="business/index.html?only=logo" class="nav-link" id="personalizacao-logo-link" style="display: none;" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
+        <a href="business/?only=logo" class="nav-link" id="personalizacao-logo-link" style="display: none;" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
         <a href="#" id="logout-btn" class="nav-link" title="Sair"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a>
     </div>
 </aside>

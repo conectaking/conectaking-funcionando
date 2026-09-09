@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bíblia — Conecta King</title>
     <script>
-        /**
-         * Cópia de public_html/bibliaking.html — mesma lógica (ver comentários lá).
-         */
         (function () {
             var search = window.location.search || '';
             try {
@@ -25,21 +22,16 @@
                 var path = loc.pathname || '';
                 var localHost = loc.hostname === '127.0.0.1' || loc.hostname === 'localhost';
                 if (localHost && (loc.port === '5500' || path.indexOf('public_html') !== -1)) {
-                    var port = '5000';
-                    try {
-                        var p = localStorage.getItem('conecta_node_port');
-                        if (p && /^[0-9]+$/.test(String(p).trim())) port = String(p).trim();
-                    } catch (err) {}
-                    api = loc.protocol + '//' + loc.hostname + ':' + port;
+                    api = loc.protocol + '//' + loc.hostname + ':8080';
                 } else {
                     api = (loc.origin || '').replace(/\/$/, '');
                 }
             }
-            window.location.replace(api + '/bible.html' + search);
+            window.location.replace(api + '/bible' + search);
         })();
     </script>
 </head>
 <body>
-    <p style="font-family: system-ui, sans-serif; padding: 1.5rem;">A abrir a Bíblia no servidor Node (porta 5000 por defeito)…</p>
+    <p style="font-family: system-ui, sans-serif; padding: 1.5rem;">A abrir a Bíblia…</p>
 </body>
 </html>

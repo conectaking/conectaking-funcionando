@@ -62,7 +62,7 @@
     <div id="kf-list-view" class="kf-container">
         <div class="kf-header">
             <div class="kf-header-left">
-                <a href="dashboard.html" class="kf-btn kf-btn-secondary" id="kf-btn-back" style="text-decoration: none;"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+                <a href="/dashboard" class="kf-btn kf-btn-secondary" id="kf-btn-back" style="text-decoration: none;"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
                 <h1><i class="fas fa-file-signature"></i> King Forms</h1>
             </div>
             <button type="button" class="kf-btn kf-btn-primary" id="kf-btn-new">
@@ -82,7 +82,7 @@
             if (editId) {
                 document.getElementById('kf-editor-view').classList.add('kf-active');
                 document.getElementById('kf-list-view').classList.add('kf-hidden');
-                document.getElementById('kf-editor-frame').src = 'formPageEdit.html?itemId=' + encodeURIComponent(editId) + '&v=2026-09-07-utf8clean';
+                document.getElementById('kf-editor-frame').src = '/formPageEdit?itemId=' + encodeURIComponent(editId) + '&v=2026-09-07-utf8clean';
             }
             function getToken() {
                 try {
@@ -102,7 +102,7 @@
                 list.innerHTML = '<div class="kf-empty" id="kf-empty">' +
                     '<p><strong>Você precisa estar logado para usar o King Forms.</strong></p>' +
                     '<p>Abra o painel, faça login e depois abra &quot;King Forms&quot; pelo menu lateral.</p>' +
-                    '<a href="dashboard.html" class="kf-btn kf-btn-primary" style="margin-top:16px;text-decoration:none;"><i class="fas fa-external-link-alt"></i> Abrir painel</a>' +
+                    '<a href="/dashboard" class="kf-btn kf-btn-primary" style="margin-top:16px;text-decoration:none;"><i class="fas fa-external-link-alt"></i> Abrir painel</a>' +
                     '</div>';
                 document.getElementById('kf-btn-new').style.display = 'none';
             }
@@ -140,7 +140,7 @@
                             card.className = 'kf-card';
                             card.innerHTML = '<div class="kf-card-title"><i class="fas fa-file-signature"></i><span>' + escapeHtml(title) + '</span></div>' +
                                 '<div class="kf-card-actions">' +
-                                '<a href="kingForms.html?edit=' + encodeURIComponent(item.id) + '" class="kf-btn kf-btn-secondary"><i class="fas fa-pencil-alt"></i> Editar</a>' +
+                                '<a href="/kingForms?edit=' + encodeURIComponent(item.id) + '" class="kf-btn kf-btn-secondary"><i class="fas fa-pencil-alt"></i> Editar</a>' +
                                 '<button type="button" class="kf-btn kf-btn-danger kf-btn-delete" data-item-id="' + encodeURIComponent(item.id) + '" title="Apagar formulário"><i class="fas fa-trash-alt"></i> Apagar</button>' +
                                 '</div>';
                             list.appendChild(card);
@@ -182,7 +182,7 @@
                     })
                     .then(function (data) {
                         if (data && data.id) {
-                            window.location.href = 'kingForms.html?edit=' + encodeURIComponent(data.id);
+                            window.location.href = '/kingForms?edit=' + encodeURIComponent(data.id);
                             return;
                         } else {
                             alert(data && data.message ? data.message : 'Erro ao criar formulário.');

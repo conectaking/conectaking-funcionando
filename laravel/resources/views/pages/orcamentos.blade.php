@@ -51,8 +51,8 @@
     <h1><i class="fas fa-file-invoice-dollar"></i> Oramentos</h1>
     <div id="err" class="err"></div>
     <p style="margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center">
-      <a href="recibos-orcamentos.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar  página anterior</a>
-      <a href="dashboard.html" class="btn btn-secondary"><i class="fas fa-home"></i> Voltar ao dashboard</a>
+      <a href="recibos-/orcamentos" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar  página anterior</a>
+      <a href="/dashboard" class="btn btn-secondary"><i class="fas fa-home"></i> Voltar ao dashboard</a>
     </p>
 
     <div class="card">
@@ -129,7 +129,7 @@
   const API = (window.API_URL || window.API_BASE || '').replace(/\/$/, '') || (window.location.origin + '/api');
   const token = localStorage.getItem('conectaKingToken');
   if (!token) {
-    location.href = 'login.html?returnUrl=' + encodeURIComponent(location.href);
+    location.href = '/login?returnUrl=' + encodeURIComponent(location.href);
     return;
   }
   const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };

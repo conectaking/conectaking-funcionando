@@ -29,14 +29,14 @@
 <body class="kb-body">
   <header class="kb-header">
     <div class="kb-header-left">
-      <a href="dashboard.html" class="kb-logo" aria-label="Voltar">K</a>
+      <a href="/dashboard" class="kb-logo" aria-label="Voltar">K</a>
       <div>
         <div class="kb-workspace-title">Planos (ADM)</div>
         <div class="kb-workspace-subtitle">Limites KingBrief por plano  s administrador</div>
       </div>
     </div>
     <div class="kb-header-right">
-      <a href="dashboard.html" class="kb-btn kb-btn-icon" title="Voltar ao painel"><span class="material-icons-round">arrow_back</span></a>
+      <a href="/dashboard" class="kb-btn kb-btn-icon" title="Voltar ao painel"><span class="material-icons-round">arrow_back</span></a>
     </div>
   </header>
 
@@ -45,7 +45,7 @@
       <div id="ap-denied" class="ap-denied" style="display: none;">
         <span class="material-icons-round">lock</span>
         <p>Acesso negado. Esta página  apenas para administradores.</p>
-        <a href="dashboard.html" class="kb-btn kb-btn-gold" style="margin-top: 16px;">Ir para o painel</a>
+        <a href="/dashboard" class="kb-btn kb-btn-gold" style="margin-top: 16px;">Ir para o painel</a>
       </div>
       <div id="ap-content" style="display: none;">
         <div class="ap-header">

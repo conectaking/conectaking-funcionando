@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -44,7 +44,7 @@
             </form>
             
             <div id="message" class="message"></div>
-            <p class="auth-link">Já faz parte da realeza? <a href="login.html">Acesse seu Reino</a></p>
+            <p class="auth-link">Já faz parte da realeza? <a href="/login">Acesse seu Reino</a></p>
         </div>
     </div>
     
@@ -67,7 +67,7 @@
                     if (response.ok) {
                         messageDiv.textContent = data.message;
                         messageDiv.className = 'message success';
-                        setTimeout(() => window.location.href = 'login.html', 2000);
+                        setTimeout(() => window.location.href = '/login', 2000);
                     } else {
                         messageDiv.textContent = data.message;
                         messageDiv.className = 'message error';

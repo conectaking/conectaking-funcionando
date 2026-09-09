@@ -1412,7 +1412,7 @@
     </style>
 </head>
 <body class="form-edit-page form-edit-page-body">
-    <!-- Se houver itemId na URL, redirecionar para usar formPageEdit.html com parmetro guestList -->
+    <!-- Se houver itemId na URL, redirecionar para usar /formPageEdit com parmetro guestList -->
     <script>
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1779,9 +1779,9 @@
                             e.preventDefault();
                             const formItemId = urlParams.get('formItemId');
                             if (formItemId) {
-                                window.location.href = `formPageEdit.html?itemId=${formItemId}`;
+                                window.location.href = `/formPageEdit?itemId=${formItemId}`;
                             } else {
-                                window.location.href = `guestListEdit.html?itemId=${itemId}&mode=manage`;
+                                window.location.href = `/guestListEdit?itemId=${itemId}&mode=manage`;
                             }
                         });
                     }

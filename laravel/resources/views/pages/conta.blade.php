@@ -20,7 +20,7 @@
 <body>
     <header class="main-header">
         <div class="container navbar">
-            <a href="index.html" class="logo">Conecta King <i class="fa-solid fa-crown logo-crown"></i></a>
+            <a href="/" class="logo">Conecta King <i class="fa-solid fa-crown logo-crown"></i></a>
             <nav class="main-nav">
                 <a href="#solucao" class="nav-link-desktop">A Soluo</a>
                 <a href="#features" class="nav-link-desktop">Recursos</a>
@@ -29,15 +29,15 @@
                 
                 <div id="nav-auth-section">
                     <div class="logged-out-state">
-                        <a href="login.html" class="btn btn-secondary">Login</a>
-                        <a href="registro.html" class="btn btn-primary">Criar Carto</a>
+                        <a href="/login" class="btn btn-secondary">Login</a>
+                        <a href="/registro" class="btn btn-primary">Criar Carto</a>
                     </div>
                     <div class="logged-in-state" style="display: none;">
-                        <a href="dashboard.html" class="btn btn-secondary">Meu Painel</a>
+                        <a href="/dashboard" class="btn btn-secondary">Meu Painel</a>
                         <div class="profile-button" id="user-profile-btn">
                             <img id="navbar-user-avatar" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=" alt="Avatar">
                             <ul class="profile-dropdown">
-                                <li><a href="conta.html"><i class="fas fa-cog"></i>Configurações</a></li>
+                                <li><a href="/conta"><i class="fas fa-cog"></i>Configurações</a></li>
                                 <li id="logout-btn-global"><a href="#"><i class="fas fa-sign-out-alt"></i>Sair</a></li>
                             </ul>
                         </div>

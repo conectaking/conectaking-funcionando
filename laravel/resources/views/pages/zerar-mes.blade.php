@@ -62,7 +62,7 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-eraser"></i> Gestão do mês</h1>
-            <a href="dashboard.html#finance" class="back"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+            <a href="/dashboard#finance" class="back"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
         </header>
 
         <div class="month-bar">
@@ -98,7 +98,7 @@
         <div id="empty" class="empty card" style="display: none;">
             <i class="fas fa-inbox"></i>
             <p>Nenhum lançamento neste mês.</p>
-            <a href="dashboard.html#finance" class="btn btn-outline" style="margin-top: 12px;">Voltar ao painel</a>
+            <a href="/dashboard#finance" class="btn btn-outline" style="margin-top: 12px;">Voltar ao painel</a>
         </div>
     </div>
 
@@ -167,7 +167,7 @@
 
         async function loadTransactions() {
             if (!getToken()) {
-                window.location.href = 'login.html?redirect=' + encodeURIComponent('zerar-mes.html');
+                window.location.href = '/login?redirect=' + encodeURIComponent('/zerar-mes');
                 return;
             }
             const { month, year } = getParams();
@@ -192,7 +192,7 @@
             try {
                 const res = await fetch(url, { headers: getAuthHeaders() });
                 if (res.status === 401) {
-                    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
                     return;
                 }
                 if (!res.ok) {
@@ -282,7 +282,7 @@
             try {
                 const res = await fetch(API_URL + '/api/finance/transactions/' + id, { method: 'DELETE', headers: getAuthHeaders() });
                 if (res.status === 401) {
-                    window.location.href = 'login.html';
+                    window.location.href = '/login';
                     return;
                 }
                 if (res.ok) {

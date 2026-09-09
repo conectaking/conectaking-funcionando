@@ -20,7 +20,7 @@
                     if (sid) search = (search ? search + '&' : '?') + 'itemId=' + encodeURIComponent(sid);
                 }
             } catch (e2) {}
-            window.location.replace(api + '/bible.html' + search);
+            window.location.replace(api + '/bible' + search);
         })();
     </script>
 </head>
