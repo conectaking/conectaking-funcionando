@@ -21,22 +21,32 @@ class DocumentosService
     /**
      * @return array{status:int, body:mixed}
      */
-    public function list(string $userId, ?string $tipo = null): array
+    public function list(string $userId, ?string $tipo = null, int $limit = 50, int $offset = 0): array
     {
         if (! Schema::hasTable('documentos')) {
-            return $this->ok(['documentos' => []]);
+            return $this->ok(['documentos' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset, 'hasMore' => false]);
         }
+        $limit = max(1, min(100, $limit));
+        $offset = max(0, $offset);
+
         $q = DB::table('documentos')->where('user_id', $userId);
         if ($tipo) {
             $q->where('tipo', $tipo);
         }
-        $rows = $q->orderByDesc('created_at')->get();
+        $total = (clone $q)->count();
+        $rows = $q->orderByDesc('created_at')->offset($offset)->limit($limit)->get();
         $docs = [];
         foreach ($rows as $row) {
             $docs[] = $this->normalizeDoc($row);
         }
 
-        return $this->ok(['documentos' => $docs]);
+        return $this->ok([
+            'documentos' => $docs,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'hasMore' => ($offset + count($docs)) < $total,
+        ]);
     }
 
     /**
@@ -210,11 +220,23 @@ class DocumentosService
         if (! Schema::hasTable('documentos')) {
             return $this->fail('Tabela documentos indisponível.', 503);
         }
+        // Token público: só dados do cliente (não reescrever itens/valores do documento)
         $allowed = [];
-        foreach (['cliente_json', 'itens_json', 'observacoes', 'condicoes_pagamento'] as $k) {
-            if (array_key_exists($k, $body)) {
-                $allowed[$k] = $body[$k];
-            }
+        if (array_key_exists('cliente_json', $body) && is_array($body['cliente_json'])) {
+            $cliente = $body['cliente_json'];
+            $allowed['cliente_json'] = [
+                'nome' => isset($cliente['nome']) ? mb_substr(trim((string) $cliente['nome']), 0, 200) : null,
+                'email' => isset($cliente['email']) ? mb_substr(trim((string) $cliente['email']), 0, 200) : null,
+                'telefone' => isset($cliente['telefone']) ? mb_substr(trim((string) $cliente['telefone']), 0, 60) : null,
+                'documento' => isset($cliente['documento']) ? mb_substr(trim((string) $cliente['documento']), 0, 40) : null,
+                'endereco' => isset($cliente['endereco']) ? mb_substr(trim((string) $cliente['endereco']), 0, 400) : null,
+            ];
+        }
+        if (array_key_exists('observacoes', $body) && is_string($body['observacoes'])) {
+            $allowed['observacoes'] = mb_substr($body['observacoes'], 0, 2000);
+        }
+        if ($allowed === []) {
+            return $this->fail('Nenhum campo permitido para atualização pública.', 400);
         }
         $doc = $this->applyUpdateByToken($token, $allowed);
         if (! $doc) {

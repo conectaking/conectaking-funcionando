@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Services\Auth\JwtService;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 use UnexpectedValueException;
 
@@ -26,14 +27,25 @@ class AuthenticateAdmin
 
         try {
             $payload = $this->jwt->decode($token);
-            if (empty($payload['isAdmin'])) {
+            $userId = (string) ($payload['userId'] ?? $payload['id'] ?? '');
+            if ($userId === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID do usuário não encontrado.',
+                ], 400)->header('X-Conecta-Engine', 'laravel');
+            }
+
+            // Revalidar na DB — claim JWT isAdmin sozinho não basta (admin revogado)
+            $row = DB::selectOne('SELECT is_admin FROM users WHERE id = ? LIMIT 1', [$userId]);
+            $isAdmin = $row && filter_var($row->is_admin ?? false, FILTER_VALIDATE_BOOLEAN);
+            if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Acesso negado. Permissões insuficientes.',
                 ], 403)->header('X-Conecta-Engine', 'laravel');
             }
-            $userId = $payload['userId'] ?? $payload['id'] ?? null;
-            $request->attributes->set('auth_user_id', (string) ($userId ?? ''));
+
+            $request->attributes->set('auth_user_id', $userId);
             $request->attributes->set('auth_payload', $payload);
             $request->attributes->set('auth_is_admin', true);
         } catch (UnexpectedValueException $e) {
@@ -53,10 +65,6 @@ class AuthenticateAdmin
             $t = trim(substr($auth, 7));
 
             return $t !== '' ? $t : null;
-        }
-        $q = $request->query('token');
-        if (is_string($q) && $q !== '') {
-            return $q;
         }
 
         return null;

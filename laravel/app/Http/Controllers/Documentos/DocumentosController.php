@@ -23,7 +23,9 @@ class DocumentosController extends Controller
         $tipo = $request->query('tipo');
         $r = $this->documentos->list(
             (string) $request->attributes->get('auth_user_id'),
-            $tipo !== null && $tipo !== '' ? (string) $tipo : null
+            $tipo !== null && $tipo !== '' ? (string) $tipo : null,
+            max(1, min(100, (int) $request->query('limit', 50))),
+            max(0, (int) $request->query('offset', 0))
         );
 
         return $this->json($r);

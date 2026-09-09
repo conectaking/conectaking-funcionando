@@ -18,7 +18,9 @@ class OrcamentosController extends Controller
         return $this->run(fn (): array => $this->orcamentos->list(
             $this->userId($request),
             $this->nullableString($request->query('ticket')),
-            $this->nullableString($request->query('status'))
+            $this->nullableString($request->query('status')),
+            max(1, min(100, (int) $request->query('limit', 50))),
+            max(0, (int) $request->query('offset', 0))
         ), 'Erro ao listar orçamentos');
     }
 

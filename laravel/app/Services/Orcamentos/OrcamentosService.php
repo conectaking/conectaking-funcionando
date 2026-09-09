@@ -14,27 +14,40 @@ class OrcamentosService
     /**
      * @return array{status:int, body:array<string,mixed>}
      */
-    public function list(string $userId, ?string $ticket, ?string $status): array
+    public function list(string $userId, ?string $ticket, ?string $status, int $limit = 50, int $offset = 0): array
     {
         if (! Schema::hasTable('orcamento_leads')) {
-            return $this->ok(['leads' => []]);
+            return $this->ok(['leads' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset, 'hasMore' => false]);
         }
 
-        $sql = 'SELECT * FROM orcamento_leads WHERE user_id = ?';
+        $limit = max(1, min(100, $limit));
+        $offset = max(0, $offset);
+
+        $where = 'user_id = ?';
         $params = [$userId];
         if ($ticket !== null && $ticket !== '') {
-            $sql .= ' AND ticket = ?';
+            $where .= ' AND ticket = ?';
             $params[] = $ticket;
         }
         if ($status !== null && $status !== '') {
-            $sql .= ' AND status = ?';
+            $where .= ' AND status = ?';
             $params[] = $status;
         }
-        $sql .= ' ORDER BY created_at DESC';
 
-        $leads = array_map(fn ($row): array => $this->hydrate((array) $row), DB::select($sql, $params));
+        $total = (int) (DB::selectOne('SELECT COUNT(*)::int AS c FROM orcamento_leads WHERE '.$where, $params)->c ?? 0);
+        $rows = DB::select(
+            'SELECT * FROM orcamento_leads WHERE '.$where.' ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            array_merge($params, [$limit, $offset])
+        );
+        $leads = array_map(fn ($row): array => $this->hydrate((array) $row), $rows);
 
-        return $this->ok(['leads' => $leads]);
+        return $this->ok([
+            'leads' => $leads,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'hasMore' => ($offset + count($leads)) < $total,
+        ]);
     }
 
     /**

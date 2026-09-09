@@ -189,18 +189,18 @@
                     $type = $item['item_type'] ?? 'link';
                     $title = trim((string)($item['title'] ?? ''));
                     $icon = $item['icon_class'] ?? 'fas fa-link';
-                    $url = trim((string)($item['destination_url'] ?? ''));
+                    $url = \App\Support\SafeUrl::publicHref($item['destination_url'] ?? '');
                     $img = trim((string)($item['image_url'] ?? ''));
                 @endphp
 
                 @if($type === 'king_selection')
-                    <a href="{{ $item['ks_public_url'] ?? '#' }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                    <a href="@safeUrl($item['ks_public_url'] ?? '#')" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
                         <i class="{{ $item['icon_class'] ?? 'fas fa-images' }}"></i>
                         <span>{{ $title !== '' ? $title : 'King Selection' }}</span>
                     </a>
 
                 @elseif($type === 'banner')
-                    @php $primary = $item['primary_url'] ?? $url; @endphp
+                    @php $primary = \App\Support\SafeUrl::publicHref($item['primary_url'] ?? $url); @endphp
                     <div class="profile-banner-container">
                         @if($primary && $primary !== '#')
                             <a href="{{ $primary }}" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">

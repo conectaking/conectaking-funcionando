@@ -53,10 +53,7 @@ class AuthenticateJwt
 
             return $t !== '' ? $t : null;
         }
-        $q = $request->query('token');
-        if (is_string($q) && $q !== '') {
-            return $q;
-        }
+        // Query ?token= deixou de ser aceite (vaza em logs/Referer). Cookie HttpOnly ainda ok.
         $cookie = $request->cookie('token');
         if (is_string($cookie) && $cookie !== '') {
             return $cookie;

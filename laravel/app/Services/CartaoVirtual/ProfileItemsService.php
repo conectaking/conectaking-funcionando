@@ -218,7 +218,42 @@ class ProfileItemsService
                 DB::delete('DELETE FROM sales_pages WHERE profile_item_id = ?', [$id]);
             }
             if ($type === 'digital_form') {
+                try {
+                    DB::delete('DELETE FROM digital_form_responses WHERE profile_item_id = ?', [$id]);
+                } catch (\Throwable $e) {
+                    // tabela pode não existir em ambientes antigos
+                }
                 DB::delete('DELETE FROM digital_form_items WHERE profile_item_id = ?', [$id]);
+            }
+            if ($type === 'guest_list' || $type === 'digital_form') {
+                try {
+                    $gli = DB::selectOne('SELECT id FROM guest_list_items WHERE profile_item_id = ? LIMIT 1', [$id]);
+                    if ($gli && ! empty($gli->id)) {
+                        $gliId = (int) $gli->id;
+                        try {
+                            DB::delete('DELETE FROM cadastro_links WHERE guest_list_item_id = ?', [$gliId]);
+                        } catch (\Throwable $e) {
+                        }
+                        try {
+                            DB::delete('DELETE FROM guests WHERE guest_list_id = ?', [$gliId]);
+                        } catch (\Throwable $e) {
+                        }
+                        DB::delete('DELETE FROM guest_list_items WHERE id = ?', [$gliId]);
+                    }
+                } catch (\Throwable $e) {
+                }
+            }
+            if ($type === 'bible') {
+                try {
+                    DB::delete('DELETE FROM bible_items WHERE profile_item_id = ?', [$id]);
+                } catch (\Throwable $e) {
+                }
+            }
+            if ($type === 'location') {
+                try {
+                    DB::delete('DELETE FROM location_items WHERE profile_item_id = ?', [$id]);
+                } catch (\Throwable $e) {
+                }
             }
             DB::delete('DELETE FROM profile_items WHERE id = ? AND user_id = ?', [$id, $userId]);
 
