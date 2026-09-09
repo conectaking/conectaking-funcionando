@@ -41,10 +41,11 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 
 ### Vite (em curso)
 
-- Build no Docker (stage Node) → `laravel/public/build`
-- Auth em Vite: **login**, **registro**, **recuperar-senha**, **resetar-senha**
-- CSS auth ainda em `public/style.css` + `public/auth.css` (ou inline nas páginas de senha)
-- Próximo: dashboard / módulos do painel
+- Build no Docker (context raiz) → `laravel/public/build`
+- Auth em Vite: login, registro, recuperar-senha, resetar-senha
+- **Dashboard** em Vite: bundle único `@legacy` (scripts de `public/`)
+- CSS ainda em `public/` (style/dashboard/auth)
+- Próximos: King Forms / King Selection / admin
 
 Deploy limpo: `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
 

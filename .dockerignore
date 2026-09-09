@@ -17,3 +17,12 @@ docs
 scripts
 migrations
 cf-worker-kingselection-r2
+data
+database
+laravel/vendor
+laravel/node_modules
+laravel/public/build
+laravel/storage/logs
+laravel/storage/framework/cache
+laravel/storage/framework/sessions
+laravel/storage/framework/views

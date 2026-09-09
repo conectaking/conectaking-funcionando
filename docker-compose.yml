@@ -28,8 +28,8 @@ services:
 
   laravel:
     build:
-      context: ./laravel
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: laravel/Dockerfile
     container_name: conectaking-laravel
     restart: unless-stopped
     depends_on:

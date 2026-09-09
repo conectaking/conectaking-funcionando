@@ -16,7 +16,7 @@
         if (!href || href === '#') return;
         if (href.trim().charAt(0) === '#' && href.indexOf('.html') === -1) return;
         var isHtml = href.indexOf('.html') !== -1;
-        var isAbs = /^https?:\/\/i.test(href);
+        var isAbs = /^https?:\/\//i.test(href);
         if (!isHtml && !isAbs) return;
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -35,8 +35,8 @@
     <meta http-equiv="Expires" content="0">
 
     <!-- Cache-buster para CSS - Atualizado para forçar reload -->
-    <link rel="stylesheet" href="style.css?v=2025-01-31-01">
-    <link rel="stylesheet" href="dashboard.css?v=2026-09-06-cropper-fit">
+    <link rel="stylesheet" href="/style.css?v=2025-01-31-01">
+    <link rel="stylesheet" href="/dashboard.css?v=2026-09-06-cropper-fit">
     <style>
         .qr-art-hint { color: var(--text-dark, #A1A1A1); font-size: 13px; line-height: 1.45; margin: 0 0 14px; }
         .qr-theme-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -54,7 +54,7 @@
         #qr-art-canvas { width: min(100%, 340px); height: auto; border-radius: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.45); background: #111; }
         #share-qr-art-card { position: relative; }
     </style>
-    <link rel="stylesheet" href="css/profile-wifi.css?v=2026-05-19-wifi-qr-popup">
+    <link rel="stylesheet" href="/css/profile-wifi.css?v=2026-05-19-wifi-qr-popup">
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
     <script>
     (function (w) {
@@ -76,8 +76,6 @@
         w.initModulesByPlan = function () {};
     })(typeof window !== 'undefined' ? window : this);
     </script>
-    <!-- Deve carregar antes do dashboard.js para evitar erro "applyModulesVisibility não está disponível" -->
-    <script src="js/dashboard-ocultar-modulos-por-plano.js?v=2026-09-08-globals1"></script>
 
     <style>
     /* Detalhes expansíveis: orçamento e arquétipo (aparecem abaixo da linha) */
@@ -1586,11 +1584,8 @@
         setTimeout(restorePane, 0);
     })();
     </script>
-    <script src="global.js?v=2026-03-23-anticache-a1" defer></script>
-    <script src="android-fix.js?v=2026-03-22-no-fetch-patch"></script>
-    <script src="js/planRenderer.js?v=2026-09-09-ux1" defer></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="js/dashboard-cropper-enhance.js?v=2026-09-08-globals1" defer></script>
+    @vite(['resources/js/pages/dashboard.js'])
     <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
         <div class="wifi-modal-content">
             <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
@@ -1610,29 +1605,6 @@
             </div>
         </div>
     </div>
-
-    <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-09-09-ux1" defer></script>
-    <script src="js/dashboard-finance.js?v=2026-09-09-cleanUrls1" defer></script>
-    <script src="js/dashboard-empresa.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-relatorios.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-cartao.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-editor.js?v=2026-09-09-ux1" defer></script>
-    <script src="js/dashboard-sortable.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-save.js?v=2026-09-09-ux1" defer></script>
-    <script src="js/dashboard-upload.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-edit-modal.js?v=2026-09-09-ux1" defer></script>
-    <script src="js/dashboard-qr.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-assinatura.js?v=2026-09-09-ux1" defer></script>
-    <script src="js/dashboard-listeners.js?v=2026-09-09-ux1" defer></script>
-    <script src="js/dashboard-separacao.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-forms-editor.js?v=2026-09-09-cleanUrls1" defer></script>
-    <script src="js/dashboard-info.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-kingDocs-nav.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-personalizar.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-vitrine.js?v=2026-09-08-globals1" defer></script>
-    
-    <!-- Script para remover texto "image.png" que aparece no mobile -->
     <script>
         (function() {
             function removeImagePngText() {

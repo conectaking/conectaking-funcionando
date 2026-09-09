@@ -25,8 +25,8 @@ services:
   # Edge app: FrankenPHP classic (HTTP :8080). TLS fica no Caddy do host.
   laravel:
     build:
-      context: ./laravel
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: laravel/Dockerfile
     container_name: conectaking-laravel
     restart: unless-stopped
     depends_on:
