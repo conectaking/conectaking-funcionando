@@ -39,13 +39,15 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 | `data/bible` | JSON bíblia |
 | `migrations/*.sql` | Histórico do schema Postgres |
 
-### Vite (em curso)
+### Vite
 
 - Build no Docker (context raiz) → `laravel/public/build`
 - Auth em Vite: login, registro, recuperar-senha, resetar-senha
 - **Dashboard** + **King Forms** + **King Selection** (edit/project/cliente/gallery/review) em Vite via `@legacy`
-- CSS ainda em `public/` (style/dashboard/auth)
-- Próximo: **Admin**
+- **Admin**: `admin.js` (via `@legacy`), `admin-planos.js`, `admin-devocionais-365.js` (inline extraído)
+- **Conta** + **salesPageEdit** + **guestListEdit** em Vite via `@legacy`
+- CSS ainda em `public/` (style/dashboard/auth/admin)
+- `admin-prosperidade-31` fica redirect para `#prosperidade` (sem entry Vite)
 
 Deploy limpo: `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
 

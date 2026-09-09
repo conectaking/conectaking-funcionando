@@ -644,8 +644,6 @@
         </div>
     </div>
 
-    <!-- Scripts - upload-auth-helper primeiro para incluir token em todos os fetch (evita 401 no upload) -->
-    <script src="js/upload-auth-helper.js"></script>
     <script>
         // Dados globais
         window.SALES_PAGE_EDIT_DATA = {
@@ -654,15 +652,9 @@
             profileId: null
         };
     </script>
-    <!-- Cache-bust scripts - v2025-01-31-04 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-    <script src="suggestionModal.js?v=2025-01-31-04"></script>
-    <script src="textSuggestions.js?v=2025-01-31-04"></script>
-    <script src="dashboard.modals.js?v=2025-01-31-04"></script>
-    <script src="dashboard.salesPage.js?v=2025-01-31-04"></script>
-    <script src="dashboard.products.js?v=2025-01-31-04"></script>
-    <script src="dashboard.analytics.js?v=2025-01-31-04"></script>
-    <script src="salesPageEdit.js?v=2025-01-31-04"></script>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
+    @vite(['resources/js/pages/salesPageEdit.js'])
 
     <!-- Script para forçar limpeza de cache e garantir comportamento mobile -->
     <script>

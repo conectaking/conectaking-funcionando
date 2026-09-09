@@ -824,6 +824,7 @@
 </div>
         </div>
     </div>
-    <script src="/admin/admin.js?v=2026-09-09-ops1"></script>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
+    @vite(['resources/js/pages/admin.js'])
 </body>
 </html>

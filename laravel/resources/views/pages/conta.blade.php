@@ -127,6 +127,7 @@
         </div>
     </main>
     
-    <script src="global.js?v=2025-12-23-02"></script>
-    <script src="conta.js?v=2025-12-23-02"></script> </body>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
+    @vite(['resources/js/pages/conta.js'])
+</body>
 </html>

@@ -30,6 +30,15 @@ sleep 12
 echo '---SMOKE---'
 curl -sS http://127.0.0.1:8080/health; echo
 curl -sSI http://127.0.0.1:8080/admin | tr -d '\r' | grep -Ei 'HTTP/|X-Conecta-Engine'
+curl -sS http://127.0.0.1:8080/admin | grep -oE 'build/assets/admin-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/admin_vite:/'
+curl -sS -o /dev/null -w 'admin-planos:%{http_code}\n' http://127.0.0.1:8080/admin-planos
+curl -sS -o /dev/null -w 'admin-dev365:%{http_code}\n' http://127.0.0.1:8080/admin-devocionais-365
+curl -sS -o /dev/null -w 'conta:%{http_code}\n' http://127.0.0.1:8080/conta
+curl -sS http://127.0.0.1:8080/conta | grep -oE 'build/assets/conta-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/conta_vite:/'
+curl -sS -o /dev/null -w 'salesPageEdit:%{http_code}\n' http://127.0.0.1:8080/salesPageEdit
+curl -sS http://127.0.0.1:8080/salesPageEdit | grep -oE 'build/assets/salesPageEdit-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/sales_vite:/'
+curl -sS -o /dev/null -w 'guestListEdit:%{http_code}\n' http://127.0.0.1:8080/guestListEdit
+curl -sS http://127.0.0.1:8080/guestListEdit | grep -oE 'build/assets/guestListEdit-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/guest_vite:/'
 curl -sS -o /dev/null -w 'login:%{http_code}\n' http://127.0.0.1:8080/login
 curl -sS -o /dev/null -w 'dashboard:%{http_code}\n' http://127.0.0.1:8080/dashboard
 curl -sS -o /dev/null -w 'checkout:%{http_code}\n' http://127.0.0.1:8080/checkoutConfig

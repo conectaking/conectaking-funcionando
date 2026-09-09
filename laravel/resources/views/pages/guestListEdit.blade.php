@@ -1801,25 +1801,8 @@
         })();
     </script>
     
-    <!-- Carregar primeiro o formPageEdit.js para ter todas as funes do KingForms -->
-    <script src="formPageEdit.js"></script>
-    <!-- Depois carregar adaptao para lista de convidados -->
-    <script src="guestListEditKingFormsIntegration.js"></script>
-    <!-- Carregar script de gerenciamento apenas se não estivermos em modo de edição -->
-    <script>
-        (function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const itemId = urlParams.get('itemId') || urlParams.get('id');
-            const mode = urlParams.get('mode');
-            
-            // Se não h itemId OU estamos em modo de gerenciamento, carregar script de gerenciamento
-            if (!itemId || mode === 'manage') {
-                const script = document.createElement('script');
-                script.src = 'guestListEdit.js';
-                document.body.appendChild(script);
-            }
-        })();
-    </script>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
+    @vite(['resources/js/pages/guestListEdit.js'])
 </body>
 </html>
 
