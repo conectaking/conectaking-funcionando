@@ -36,6 +36,8 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 | `public/admin/*.js\|css` | Assets do painel ADM (página em Blade) |
 | `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge, não monólito Node) |
 | `data/bible` | JSON bíblia |
-| `public_html/` | Espelho legado Hostinger de assets (opcional enxugar) |
+| `public_html/` | Espelho de assets no VPS (`LEGACY_PUBLIC_HTML_PATH`); sem HTML do ADM nem scripts Hostinger |
+
+Deploy limpo (sem `docker cp`): `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `public_html/` + `docker-compose.prod.yml`.
 
 Não há container `api` Express. Não reintroduzir checkout/gateway sem pedido explícito.
