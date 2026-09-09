@@ -38,6 +38,15 @@ class CartaoPublicService
 
         $slug = (string) ($user->profile_slug ?? '');
         $redirectBase = $publicMode ? '/' : '/l/card/';
+        // Código de pulseira/ativação (≠ slug): redireciona para o slug original das Informações
+        if ($slug !== '' && strtolower($raw) !== strtolower($slug)) {
+            return [
+                'type' => 'redirect',
+                'statusCode' => 301,
+                'url' => $redirectBase.ltrim($slug, '/').$queryString,
+            ];
+        }
+        // Canonicaliza maiúsculas/minúsculas do slug
         if ($slug !== '' && strtolower($raw) === strtolower($slug) && $raw !== $slug) {
             return [
                 'type' => 'redirect',
@@ -195,13 +204,30 @@ class CartaoPublicService
 
     private function findUser(string $identifier): ?object
     {
-        return DB::selectOne(
+        $user = DB::selectOne(
             'SELECT id, account_type, profile_slug
              FROM users
              WHERE LOWER(profile_slug) = LOWER(?) OR id::text = ?
              LIMIT 1',
             [$identifier, $identifier]
         );
+        if ($user) {
+            return $user;
+        }
+
+        // Código de ativação / pulseira (camuflado): registration_codes → dono → profile_slug
+        $claimed = DB::selectOne(
+            'SELECT u.id, u.account_type, u.profile_slug
+             FROM registration_codes c
+             INNER JOIN users u ON u.id = c.claimed_by_user_id
+             WHERE LOWER(c.code) = LOWER(?)
+               AND c.is_claimed = TRUE
+               AND c.claimed_by_user_id IS NOT NULL
+             LIMIT 1',
+            [$identifier]
+        );
+
+        return $claimed ?: null;
     }
 
     private function loadProfile(string $userId): ?object

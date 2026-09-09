@@ -431,6 +431,11 @@
                 @elseif(in_array($type, ['whatsapp','telegram','email','instagram','facebook','tiktok','twitter','youtube','linkedin','portfolio','pinterest','reddit','twitch','spotify','link'], true))
                     @php
                         $href = $url !== '' ? $url : '#';
+                        if ($type === 'instagram' && $url !== '' && !str_starts_with($url, 'http')) {
+                            $handle = ltrim(preg_replace('#^instagram\.com/#i', '', $url), '@/');
+                            $handle = explode('/', $handle)[0];
+                            $href = $handle !== '' ? 'https://www.instagram.com/'.rawurlencode($handle).'/' : '#';
+                        }
                         if ($type === 'whatsapp' && $url !== '' && !str_starts_with($url, 'http')) {
                             $digits = preg_replace('/\D+/', '', $url);
                             $href = $digits ? 'https://wa.me/'.$digits : '#';

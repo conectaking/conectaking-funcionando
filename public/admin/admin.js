@@ -1630,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error(res.status === 404 ? 'Usuário não encontrado.' : 'Erro ao carregar dados.');
             const d = await res.json();
             const fmtDate = (x) => x ? new Date(x).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Nunca';
-            const tagCode = (d.user && (d.user.tag_code || d.user.profile_slug)) ? String(d.user.tag_code || d.user.profile_slug).trim() : '';
+            const tagCode = (d.user && d.user.tag_code) ? String(d.user.tag_code).trim() : ((d.user && d.user.profile_slug) ? String(d.user.profile_slug).trim() : '');
             const cardUrl = tagCode ? ('https://tag.conectaking.com.br/' + tagCode) : '';
             const lastLogin = d.logins && d.logins.last_at ? new Date(d.logins.last_at).getTime() : 0;
             const lastView = d.card_views && d.card_views.last_at ? new Date(d.card_views.last_at).getTime() : 0;
@@ -1868,7 +1868,7 @@ function renderUsers(users) {
             <td data-label="#" data-col="num"><strong style="color: var(--text-dark);">${rowNumber}</strong></td>
             <td data-label="Nome" data-col="name" class="admin-user-name-cell" data-user-id="${u.id}" data-display-name="${displayName}" style="cursor: pointer; color: var(--primary); text-decoration: underline; font-weight: 600;" title="Ver dashboard completo do usuário">${u.display_name || 'N/A'}</td>
             <td data-label="Email" data-col="email">${u.email}</td>
-            <td data-label="Tipo de Conta" data-col="account_type" class="account-type-cell" style="cursor: pointer; user-select: none;" data-user-id="${u.id}" data-user-email="${u.email}" data-account-type="${u.account_type}" data-is-admin="${u.is_admin}" data-subscription-status="${u.subscription_status || ''}" data-expires-at="${u.subscription_expires_at || ''}" data-max-team-invites="${u.max_team_invites}" data-profile-slug="${u.profile_slug || ''}">${accountTypeBadges[u.account_type] || u.account_type}</td>
+            <td data-label="Tipo de Conta" data-col="account_type" class="account-type-cell" style="cursor: pointer; user-select: none;" data-user-id="${u.id}" data-user-email="${u.email}" data-account-type="${u.account_type}" data-is-admin="${u.is_admin}" data-subscription-status="${u.subscription_status || ''}" data-expires-at="${u.subscription_expires_at || ''}" data-max-team-invites="${u.max_team_invites}" data-profile-slug="${u.profile_slug || ''}" data-tag-code="${u.tag_code || ''}">${accountTypeBadges[u.account_type] || u.account_type}</td>
             <td data-label="Status Assinatura" data-col="subscription_status">${u.subscription_status || 'N/A'}</td>
             <td data-label="Expira em" data-col="expires_at">${u.subscription_expires_at ? new Date(u.subscription_expires_at).toLocaleDateString('pt-BR') : 'N/A'}</td>
             <td data-label="Status Vencimento" data-col="days_left">
@@ -2034,7 +2034,7 @@ if (usersTable) {
             }
 
             const actEl = document.getElementById('modal-activation-code');
-            if (actEl) actEl.value = accountTypeCell.dataset.profileSlug || '';
+            if (actEl) actEl.value = accountTypeCell.dataset.tagCode || accountTypeCell.dataset.profileSlug || '';
             accountTypeSelect.dispatchEvent(new Event('change'));
             userModal.classList.add('active');
         }
@@ -2048,7 +2048,7 @@ if (usersTable) {
             document.getElementById('modal-user-email').value = button.dataset.email;
             document.getElementById('modal-max-invites').value = button.dataset.maxTeamInvites;
             const actElBtn = document.getElementById('modal-activation-code');
-            if (actElBtn) actElBtn.value = button.dataset.profileSlug || '';
+            if (actElBtn) actElBtn.value = button.dataset.tagCode || button.dataset.profileSlug || '';
 
             // Mapear account_type antigo para novo ao exibir no dropdown
             const accountType = button.dataset.accountType;

@@ -81,7 +81,13 @@ class AdminOverviewService
         return $this->rows(
             'SELECT u.id, p.display_name, u.email, u.profile_slug, u.is_admin, u.created_at,
                     u.account_type, u.parent_user_id, parent.email AS parent_email,
-                    u.subscription_status, u.subscription_expires_at, u.max_team_invites
+                    u.subscription_status, u.subscription_expires_at, u.max_team_invites,
+                    (
+                        SELECT c.code FROM registration_codes c
+                        WHERE c.claimed_by_user_id = u.id AND c.is_claimed = TRUE
+                        ORDER BY c.claimed_at DESC NULLS LAST
+                        LIMIT 1
+                    ) AS tag_code
              FROM users u
              LEFT JOIN user_profiles p ON u.id = p.user_id
              LEFT JOIN users parent ON u.parent_user_id = parent.id

@@ -192,21 +192,20 @@ class AdminUsersService
                         (int) ($activationResult['status'] ?? 400)
                     );
                 }
-                if ($user) {
-                    $user->profile_slug = $activationResult['activation_code'] ?? $activationCode;
-                }
             }
 
             return [
                 'user' => $user ? (array) $user : null,
                 'message' => 'Usuário atualizado com sucesso!',
-                'activation_code' => $activationResult['activation_code'] ?? ($user->profile_slug ?? null),
+                'activation_code' => $activationResult['activation_code'] ?? null,
+                'profile_slug' => $user->profile_slug ?? null,
             ];
         });
     }
 
     /**
-     * Altera o código de ativação / slug do cartão (pulseira NFC) do cliente.
+     * Altera só o código de ativação da pulseira/tag (camuflado).
+     * NÃO altera o profile_slug das Informações — a tag redireciona para o slug original.
      *
      * @return array<string,mixed>
      */
@@ -225,12 +224,13 @@ class AdminUsersService
             return ['error' => 'Usuário não encontrado.', 'status' => 404];
         }
 
+        // Não pode colidir com slug de outra conta (senão a pulseira abriria o cartão errado)
         $slugTaken = DB::selectOne(
             'SELECT id FROM users WHERE LOWER(profile_slug) = LOWER(?) AND id <> ? LIMIT 1',
             [$code, $id]
         );
         if ($slugTaken) {
-            return ['error' => 'Este código/slug já está em uso por outra conta.', 'status' => 409];
+            return ['error' => 'Este código já é o slug público de outra conta.', 'status' => 409];
         }
 
         $codeRow = DB::selectOne(
@@ -243,8 +243,6 @@ class AdminUsersService
         if ($codeRow && ! (bool) $codeRow->is_claimed) {
             DB::delete('DELETE FROM registration_codes WHERE LOWER(code) = LOWER(?) AND is_claimed = FALSE', [$code]);
         }
-
-        DB::update('UPDATE users SET profile_slug = ? WHERE id = ?', [$code, $id]);
 
         $claimed = DB::selectOne(
             'SELECT code FROM registration_codes
@@ -268,8 +266,8 @@ class AdminUsersService
 
         return [
             'activation_code' => $code,
-            'profile_slug' => $code,
-            'message' => 'Código de ativação atualizado com sucesso!',
+            'profile_slug' => $user->profile_slug,
+            'message' => 'Código de ativação (pulseira/tag) atualizado. O slug das Informações permanece '.$user->profile_slug.'.',
         ];
     }
 
