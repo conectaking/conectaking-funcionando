@@ -1,0 +1,19 @@
+{
+  "name": "ConectaKing",
+  "short_name": "ConectaKing",
+  "description": "Sua presença digital. Um toque. Poder absoluto. Cartão digital NFC.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0B",
+  "theme_color": "#DC2626",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"]
+}

@@ -18,25 +18,25 @@
 <aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
     <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
     <nav class="flex flex-col gap-6">
-        <a href="dashboard-recibos-/orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+        <a href="dashboard-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
             <span class="material-icons-outlined">dashboard</span>
             <span class="text-[10px] font-semibold uppercase">Painel</span>
         </a>
-        <a href="dashboard-recibos-/orcamentos?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+        <a href="dashboard-recibos-orcamentos?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
             <span class="material-icons-outlined">receipt_long</span>
             <span class="text-[10px] font-semibold uppercase">Recibos</span>
         </a>
-        <a href="dashboard-recibos-/orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+        <a href="dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
             <span class="material-icons-outlined">request_quote</span>
             <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
         </a>
     </nav>
     <div class="flex flex-col gap-6 mt-6">
-        <a href="clientes-recibos-/orcamentos" class="flex flex-col items-center gap-1 text-primary">
+        <a href="clientes-recibos-orcamentos" class="flex flex-col items-center gap-1 text-primary">
             <span class="material-icons-outlined">people</span>
             <span class="text-[10px] font-semibold uppercase">Clientes</span>
         </a>
-        <a href="./configuracoes-recibos-/orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+        <a href="./configuracoes-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
             <span class="material-icons-outlined">settings</span>
             <span class="text-[10px] font-semibold uppercase">Config.</span>
         </a>
@@ -90,7 +90,7 @@
             <p id="empty-clientes" class="text-slate-500 text-sm hidden">Nenhum cliente cadastrado. Cadastre acima ou marque "Cadastrar este cliente" ao salvar um recibo/orçamento.</p>
         </section>
 
-        <p class="mt-6 text-slate-500 text-sm">No <a href="dashboard-recibos-/orcamentos" class="text-primary font-medium hover:underline">painel</a>, escolha <a href="dashboard-recibos-/orcamentos?abrir=recibo" class="text-primary font-medium hover:underline">Recibo</a> ou <a href="dashboard-recibos-/orcamentos?abrir=orcamento" class="text-primary font-medium hover:underline">Orçamento</a> para criar novo ou continuar um existente. Ao editar, digite o nome do cliente para buscar na lista.</p>
+        <p class="mt-6 text-slate-500 text-sm">No <a href="dashboard-recibos-orcamentos" class="text-primary font-medium hover:underline">painel</a>, escolha <a href="dashboard-recibos-orcamentos?abrir=recibo" class="text-primary font-medium hover:underline">Recibo</a> ou <a href="dashboard-recibos-orcamentos?abrir=orcamento" class="text-primary font-medium hover:underline">Orçamento</a> para criar novo ou continuar um existente. Ao editar, digite o nome do cliente para buscar na lista.</p>
     </div>
 </main>
 <script>

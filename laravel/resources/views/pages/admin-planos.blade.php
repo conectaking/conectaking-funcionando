@@ -32,7 +32,7 @@
       <a href="/dashboard" class="kb-logo" aria-label="Voltar">K</a>
       <div>
         <div class="kb-workspace-title">Planos (ADM)</div>
-        <div class="kb-workspace-subtitle">Limites KingBrief por plano  s administrador</div>
+        <div class="kb-workspace-subtitle">Limites KingBrief por plano — só administrador</div>
       </div>
     </div>
     <div class="kb-header-right">

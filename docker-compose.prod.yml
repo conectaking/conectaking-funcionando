@@ -78,6 +78,7 @@ services:
     volumes:
       - api_uploads:/shared/uploads
       - ./public:/legacy/public:ro
+      # public_html: espelho legado (fallback). Canónico = ./public
       - ./public_html:/legacy/public_html:ro
     # FrankenPHP image healthchecka :2019/metrics (admin off) — usar /health na app
     healthcheck:

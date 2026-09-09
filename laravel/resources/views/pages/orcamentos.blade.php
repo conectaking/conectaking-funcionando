@@ -51,7 +51,7 @@
     <h1><i class="fas fa-file-invoice-dollar"></i> Oramentos</h1>
     <div id="err" class="err"></div>
     <p style="margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center">
-      <a href="recibos-/orcamentos" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar  página anterior</a>
+      <a href="recibos-orcamentos" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar à página anterior</a>
       <a href="/dashboard" class="btn btn-secondary"><i class="fas fa-home"></i> Voltar ao dashboard</a>
     </p>
 

@@ -31,15 +31,16 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 
 | Item | Porquê |
 |---|---|
-| `migrations/*.sql` | Histórico do schema Postgres |
-| `public/*.js\|css` | Front do painel (JS no browser — normal) |
-| `public/admin/*.js\|css` | Assets do painel ADM (página em Blade) |
+| `public/` | **Canónico** — JS/CSS/imagens do painel |
+| `public_html/` | Espelho legado (fallback VPS); manter sincronizado com `public/` até desligar o mount |
 | `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge, não monólito Node) |
 | `data/bible` | JSON bíblia |
-| `public_html/` | Espelho de assets no VPS (`LEGACY_PUBLIC_HTML_PATH`); assets críticos também espelhados em `public/` |
+| `migrations/*.sql` | Histórico do schema Postgres |
 
 Deploy limpo (sem `docker cp`): `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `public_html/` + `docker-compose.prod.yml`.
 
-Limpeza pós-migração (feita): scripts `tmp-*`/`patch-admin-*`, pasta `Checkout/` vazia, Blade órfã `kingSelection.blade.php`, stubs PHP Hostinger KS, `.git` aninhado em `public_html`, env `MERCADOPAGO_*` no compose, UI PagBank no editor de forms.
+Limpeza pós-migração (feita): scripts `tmp-*`/`patch-admin-*`, pasta `Checkout/` vazia, Blade órfã `kingSelection.blade.php`, stubs PHP Hostinger KS, `.git` aninhado em `public_html`, env `MERCADOPAGO_*` no compose, UI PagBank no editor de forms, links quebrados Recibos (`recibos-/orcamentos`), assets críticos copiados para `public/`.
+
+Padrão Laravel+Blade: páginas em `resources/views/pages/*.blade.php`; APIs em `routes/web.php`; assets browser em `public/` (não Node). Checkout/gateway fora de escopo (HTTP 410).
 
 Não há container `api` Express. Não reintroduzir checkout/gateway sem pedido explícito.

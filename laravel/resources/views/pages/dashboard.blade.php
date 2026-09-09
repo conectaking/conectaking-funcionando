@@ -324,7 +324,7 @@
         <a href="/kingSelection?v=2026-09-08-no-render" class="nav-link nav-link-by-plan" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection" style="display: none;"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
         <a href="#" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
         <a href="/kingDocs" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
-        <a href="recibos-/orcamentos" class="nav-link nav-link-by-plan" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos" style="display: none;"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
+        <a href="recibos-orcamentos" class="nav-link nav-link-by-plan" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos" style="display: none;"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
         <a href="#" class="nav-link" data-target="relatorios-pane" title="Relatórios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
         <a href="#" class="nav-link" data-target="compartilhar-pane" title="Compartilhar"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></a>
         <a href="#" class="nav-link nav-link-by-plan" data-module="branding" data-target="branding-pane" id="branding-link" title="Personalização da Marca" style="display: none;"><i class="fas fa-palette"></i> <span>Personalização da Marca</span></a>

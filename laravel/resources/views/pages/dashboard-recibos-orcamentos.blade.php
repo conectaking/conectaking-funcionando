@@ -43,25 +43,25 @@
 <aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
     <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
     <nav class="flex flex-col gap-6">
-        <a href="dashboard-recibos-/orcamentos" class="flex flex-col items-center gap-1 text-primary">
+        <a href="dashboard-recibos-orcamentos" class="flex flex-col items-center gap-1 text-primary">
             <span class="material-icons-outlined">dashboard</span>
             <span class="text-[10px] font-semibold uppercase">Painel</span>
         </a>
-        <a href="dashboard-recibos-/orcamentos?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Recibos">
+        <a href="dashboard-recibos-orcamentos?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Recibos">
             <span class="material-icons-outlined">receipt_long</span>
             <span class="text-[10px] font-semibold uppercase">Recibos</span>
         </a>
-        <a href="dashboard-recibos-/orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos">
+        <a href="dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos">
             <span class="material-icons-outlined">request_quote</span>
             <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
         </a>
     </nav>
     <div class="flex flex-col gap-6 mt-6">
-        <a href="clientes-recibos-/orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Clientes">
+        <a href="clientes-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Clientes">
             <span class="material-icons-outlined">people</span>
             <span class="text-[10px] font-semibold uppercase">Clientes</span>
         </a>
-        <a href="./configuracoes-recibos-/orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Configurações">
+        <a href="./configuracoes-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Configurações">
             <span class="material-icons-outlined">settings</span>
             <span class="text-[10px] font-semibold uppercase">Config.</span>
         </a>
@@ -162,13 +162,13 @@
     try {
         var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
         if (isLocal && portasEstaticas.indexOf(port) >= 0 && !token) {
-            window.location.replace(window.location.protocol + '//' + host + ':5000/dashboard-recibos-/orcamentos');
+            window.location.replace('/login');
             return;
         }
     } catch (e) {}
     var apiBase = (typeof window !== 'undefined' && (window.API_BASE || window.CONECTAKING_API_BASE));
     var PROD_API_BASE = 'https://www.conectaking.com.br';
-    var apiOrigin = apiBase ? (apiBase.replace(/\/$/, '')) : (isLocal && portasEstaticas.indexOf(port) >= 0 ? (window.location.protocol + '//' + host + ':5000') : PROD_API_BASE);
+    var apiOrigin = apiBase ? (apiBase.replace(/\/$/, '')) : ((typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin.replace(/\/$/, '') : PROD_API_BASE);
     var API = apiOrigin + '/api/documentos';
 
     function getAuthHeaders(extra) {
@@ -226,12 +226,12 @@
     }
     document.getElementById('modal-btn-novo').onclick = function() {
         if (!modalTipoAtual) return;
-        location.href = 'recibos-/orcamentos?novo=' + encodeURIComponent(modalTipoAtual);
+        location.href = 'recibos-orcamentos?novo=' + encodeURIComponent(modalTipoAtual);
     };
     document.getElementById('modal-btn-continuar').onclick = function() {
         var id = this.dataset.id;
         if (!id) return;
-        location.href = 'recibos-/orcamentos?id=' + encodeURIComponent(id);
+        location.href = 'recibos-orcamentos?id=' + encodeURIComponent(id);
     };
     document.getElementById('modal-btn-lista').onclick = function() {
         fecharModalEscolha();
@@ -283,7 +283,7 @@
                 var row = document.createElement('div');
                 row.className = 'flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-black/40 transition-colors doc-row';
                 row.dataset.id = doc.id;
-                var editUrl = 'recibos-/orcamentos?id=' + encodeURIComponent(doc.id);
+                var editUrl = 'recibos-orcamentos?id=' + encodeURIComponent(doc.id);
                 row.innerHTML = '<label class="flex-shrink-0 cursor-pointer"><input type="checkbox" class="doc-check rounded border-slate-300 text-primary focus:ring-primary" data-id="' + escapeHtmlAttr(doc.id) + '"/></label>' +
                     '<div class="flex-1 flex items-center gap-2 min-w-0">' +
                     '<a href="' + editUrl + '" class="flex-1 flex items-center justify-between no-underline text-inherit min-w-0 gap-2">' +
@@ -308,7 +308,7 @@
                                 alert((res.j && res.j.message) || 'Erro ao duplicar.');
                                 return;
                             }
-                            window.location.href = 'recibos-/orcamentos?id=' + encodeURIComponent(res.j.data.id);
+                            window.location.href = 'recibos-orcamentos?id=' + encodeURIComponent(res.j.data.id);
                         })
                         .catch(function() { alert('Erro ao duplicar.'); })
                         .finally(function() { btnDup.disabled = false; });
