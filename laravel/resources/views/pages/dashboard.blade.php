@@ -1588,7 +1588,7 @@
     </script>
     <script src="global.js?v=2026-03-23-anticache-a1" defer></script>
     <script src="android-fix.js?v=2026-03-22-no-fetch-patch"></script>
-    <script src="js/planRenderer.js?v=2025-01-31-01" defer></script>
+    <script src="js/planRenderer.js?v=2026-09-09-ux1" defer></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="js/dashboard-cropper-enhance.js?v=2026-09-08-globals1" defer></script>
     <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
@@ -1612,19 +1612,19 @@
     </div>
 
     <script src="js/profile-wifi.js?v=2026-05-19-wifi-qr-popup" defer></script>
-    <script src="dashboard.js?v=2026-09-09-cleanUrls1" defer></script>
+    <script src="dashboard.js?v=2026-09-09-ux1" defer></script>
     <script src="js/dashboard-finance.js?v=2026-09-09-cleanUrls1" defer></script>
     <script src="js/dashboard-empresa.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-relatorios.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-cartao.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-editor.js?v=2026-09-09-cleanUrls1" defer></script>
+    <script src="js/dashboard-editor.js?v=2026-09-09-ux1" defer></script>
     <script src="js/dashboard-sortable.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-save.js?v=2026-09-09-syncModal1" defer></script>
+    <script src="js/dashboard-save.js?v=2026-09-09-ux1" defer></script>
     <script src="js/dashboard-upload.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-edit-modal.js?v=2026-09-09-cleanUrls1" defer></script>
+    <script src="js/dashboard-edit-modal.js?v=2026-09-09-ux1" defer></script>
     <script src="js/dashboard-qr.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-assinatura.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-listeners.js?v=2026-09-09-cleanUrls1" defer></script>
+    <script src="js/dashboard-assinatura.js?v=2026-09-09-ux1" defer></script>
+    <script src="js/dashboard-listeners.js?v=2026-09-09-ux1" defer></script>
     <script src="js/dashboard-separacao.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-forms-editor.js?v=2026-09-09-cleanUrls1" defer></script>
     <script src="js/dashboard-info.js?v=2026-09-08-globals1" defer></script>

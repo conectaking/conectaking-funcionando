@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/admin/admin.css?v=2026-09-09-blade1">
+    <link rel="stylesheet" href="/admin/admin.css?v=2026-09-09-ops1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -798,9 +798,15 @@
         </div>
 
         <div class="input-group">
+            <label for="modal-profile-slug">Slug público (Informações)</label>
+            <input type="text" id="modal-profile-slug" class="modal-input-text" readonly tabindex="-1" style="opacity:.85;cursor:default;">
+            <small style="display:block;margin-top:6px;opacity:.75;font-size:0.8rem;">Só leitura — o cliente altera isto no painel (Informações). Ex.: adrianokingg</small>
+        </div>
+
+        <div class="input-group">
             <label for="modal-activation-code">Código de ativação / pulseira (camuflado)</label>
             <input type="text" id="modal-activation-code" class="modal-input-text" maxlength="32" placeholder="Ex: ADRIANO-KING" autocomplete="off">
-            <small style="display:block;margin-top:6px;opacity:.75;font-size:0.8rem;">Vai na tag NFC. Redireciona para o slug original das Informações (não substitui o slug público).</small>
+            <small style="display:block;margin-top:6px;opacity:.75;font-size:0.8rem;">Vai na tag NFC. Redireciona para o slug público acima (não o substitui).</small>
         </div>
 
         <div class="input-group">
@@ -818,6 +824,6 @@
 </div>
         </div>
     </div>
-    <script src="/admin/admin.js?v=2026-09-09-blade1"></script>
+    <script src="/admin/admin.js?v=2026-09-09-ops1"></script>
 </body>
 </html>

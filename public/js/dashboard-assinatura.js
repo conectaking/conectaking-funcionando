@@ -5,6 +5,8 @@
 (function (global) {
     'use strict';
 
+    var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
+
     function core() { return global.DashboardCore || {}; }
 
     var env = {
@@ -255,7 +257,7 @@ async function renderSubscriptionPlans() {
 
     // Filtrar planos: excluir King Essential (king_base)
     const filteredPlans = plans.filter(plan => plan.plan_code !== 'king_base');
-    console.log(`Y"< Planos filtrados na assinatura: ${filteredPlans.length} planos (excluído: King Essential)`);
+    __ckDashLog(`Y"< Planos filtrados na assinatura: ${filteredPlans.length} planos (excluído: King Essential)`);
 
     // Usar função compartilhada se disponível, senão usar lógica antiga
     if (typeof window.renderPlansShared === 'function') {
@@ -311,6 +313,15 @@ async function renderSubscriptionPlans() {
         const financeProfiles = features.max_finance_profiles || 0;
         const regularProfiles = features.max_profiles || 1;
 
+        // Flags do plano (fallback quando renderPlansShared não está disponível)
+        const isStart = plan.plan_code === 'basic';
+        const isPrime = plan.plan_code === 'premium';
+        const isBase = plan.plan_code === 'king_base';
+        const isFinance = plan.plan_code === 'king_finance';
+        const isFinancePlus = plan.plan_code === 'king_finance_plus';
+        const isPremiumPlus = plan.plan_code === 'king_premium_plus';
+        const isCorporate = plan.plan_code === 'king_corporate' || plan.plan_code === 'enterprise';
+
         return `
             <div class="subscription-plan-card ${isCorporate ? 'plan-highlighted' : ''}">
                 <h3>${plan.plan_name}</h3>
@@ -326,7 +337,7 @@ async function renderSubscriptionPlans() {
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> Acesso a todos os módulos, exceto:</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
+                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">Não incluído:</strong>
                     </li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Logomarca editável</li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Carrossel</li>
@@ -342,14 +353,14 @@ async function renderSubscriptionPlans() {
                     ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
+                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">Módulos incluídos:</strong>
                     </li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Portfólio</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Banner</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
+                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">Não incluído:</strong>
                     </li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Gestão Financeira</li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Contratos</li>
@@ -361,14 +372,14 @@ async function renderSubscriptionPlans() {
                     ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
+                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">Módulos incluídos:</strong>
                     </li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Portfólio</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Banner</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
+                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">Não incluído:</strong>
                     </li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> King Forms</li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Contratos</li>
@@ -380,7 +391,7 @@ async function renderSubscriptionPlans() {
                     ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
+                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">Módulos incluídos:</strong>
                     </li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
@@ -388,7 +399,7 @@ async function renderSubscriptionPlans() {
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Banner</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Gestão Financeira</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
+                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">Não incluído:</strong>
                     </li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> King Forms</li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Agenda Inteligente</li>
@@ -400,14 +411,14 @@ async function renderSubscriptionPlans() {
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil de cartão virtual</li>
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 2 perfis de Gestão Financeira</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
+                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">Módulos incluídos:</strong>
                     </li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Carrossel</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Loja Virtual</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Contratos</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Gestão Financeira</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
+                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">Não incluído:</strong>
                     </li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> King Forms</li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Agenda Inteligente</li>
@@ -418,7 +429,7 @@ async function renderSubscriptionPlans() {
                     ${features.can_edit_logo ? '<li><i class="fas fa-check" style="color: #4CAF50;"></i> Logomarca editável</li>' : ''}
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 1 perfil</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">o" Módulos Incluídos:</strong>
+                        <strong style="color: var(--text-primary, #FFFFFF); font-size: 0.95rem;">Módulos incluídos:</strong>
                     </li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Gestão Financeira</li>
                     <li style="padding-left: 8px;"><i class="fas fa-check" style="color: #4CAF50; margin-right: 8px;"></i> Contratos</li>
@@ -434,7 +445,7 @@ async function renderSubscriptionPlans() {
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> Modo Empresarial</li>
                     <li><i class="fas fa-check" style="color: #4CAF50;"></i> 3 perfis</li>
                     <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color, #2C2C2F);">
-                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">o- Não Incluído:</strong>
+                        <strong style="color: var(--text-secondary, #888888); font-size: 0.95rem;">Não incluído:</strong>
                     </li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Gestão Financeira</li>
                     <li style="padding-left: 8px; opacity: 0.7;"><i class="fas fa-times" style="color: #ff4444; margin-right: 8px;"></i> Loja Virtual</li>
@@ -485,7 +496,7 @@ window.copyPixKey = function (pixKey) {
 // Carregar planos para edição (ADM)
 async function loadPlansForEdit() {
     try {
-        console.log(' Carregando planos para edição...');
+        __ckDashLog(' Carregando planos para edição...');
 
         // Adicionar timestamp para evitar cache
         const response = await env.safeFetch(`${env.API_URL}/api/subscription/plans?t=${Date.now()}`, {
@@ -503,7 +514,7 @@ async function loadPlansForEdit() {
         }
 
         const data = await response.json();
-        console.log(`${data.plans?.length || 0} planos carregados`);
+        __ckDashLog(`${data.plans?.length || 0} planos carregados`);
 
         if (!data.plans || data.plans.length === 0) {
             console.warn('Nenhum plano encontrado!');
@@ -512,7 +523,7 @@ async function loadPlansForEdit() {
         }
 
         await renderPlansEditForm(data.plans);
-        console.log('Formulário de edição renderizado');
+        __ckDashLog('Formulário de edição renderizado');
     } catch (error) {
         console.error('Erro ao carregar planos para edição:', error);
         const formContainer = document.getElementById('plans-edit-form');
@@ -530,13 +541,13 @@ async function renderPlansEditForm(plans) {
         return;
     }
 
-    console.log(` Renderizando formulário para ${plans.length} planos...`);
+    __ckDashLog(` Renderizando formulário para ${plans.length} planos...`);
 
     // Buscar disponibilidade de módulos (com cache busting agressivo)
     let moduleAvailability = [];
     try {
         const cacheBuster = `t=${Date.now()}&_=${Math.random()}`;
-        console.log(' Buscando disponibilidade de módulos (sem cache)...');
+        __ckDashLog(' Buscando disponibilidade de módulos (sem cache)...');
         const moduleResponse = await env.safeFetch(`${env.API_URL}/api/modules/plan-availability?${cacheBuster}`, {
             method: 'GET',
             headers: {
@@ -549,16 +560,16 @@ async function renderPlansEditForm(plans) {
         if (moduleResponse.ok) {
             const moduleData = await moduleResponse.json();
             moduleAvailability = moduleData.modules || [];
-            console.log(`${moduleAvailability.length} módulos carregados`);
+            __ckDashLog(`${moduleAvailability.length} módulos carregados`);
 
             // Log detalhado dos módulos carregados para debug
             if (moduleAvailability.length > 0) {
-                console.log('Y"S Módulos carregados da API:');
+                __ckDashLog('Y"S Módulos carregados da API:');
                 moduleAvailability.forEach(module => {
                     const planCodes = Object.keys(module.plans || {});
                     planCodes.forEach(planCode => {
                         const planData = module.plans[planCode];
-                        console.log(`   ${module.module_type} para ${planCode}: is_available = ${planData.is_available} (${typeof planData.is_available})`);
+                        __ckDashLog(`   ${module.module_type} para ${planCode}: is_available = ${planData.is_available} (${typeof planData.is_available})`);
                     });
                 });
             } else {
@@ -606,7 +617,7 @@ async function renderPlansEditForm(plans) {
                 // Verificar explicitamente se is_available é true
                 const isAvailable = module.plans[plan.plan_code].is_available === true;
                 const isAvailableValue = module.plans[plan.plan_code].is_available;
-                console.log(`  ${moduleName} (${moduleCode}) para ${plan.plan_code}: is_available = ${isAvailableValue} (${typeof isAvailableValue})`);
+                __ckDashLog(`  ${moduleName} (${moduleCode}) para ${plan.plan_code}: is_available = ${isAvailableValue} (${typeof isAvailableValue})`);
 
                 if (isAvailable) {
                     includedModules.push(moduleName);
@@ -616,7 +627,7 @@ async function renderPlansEditForm(plans) {
                 }
             } else {
                 // Se módulo não encontrado na API, considerar como não incluído
-                console.log(`  Módulo ${moduleName} (${moduleCode}) não encontrado na API para ${plan.plan_code} - adicionando aos não incluídos`);
+                __ckDashLog(`  Módulo ${moduleName} (${moduleCode}) não encontrado na API para ${plan.plan_code} - adicionando aos não incluídos`);
                 excludedModules.push(moduleName);
             }
         });
@@ -639,9 +650,9 @@ async function renderPlansEditForm(plans) {
             finalExcluded.push(...missingModules);
         }
 
-        console.log(`Y"< Plano ${plan.plan_name} (${plan.plan_code}): ${finalIncluded.length} incluídos, ${finalExcluded.length} não incluídos`);
-        console.log(`   Incluídos: ${finalIncluded.join(', ') || '(nenhum)'}`);
-        console.log(`   Não incluídos: ${finalExcluded.join(', ') || '(nenhum)'}`);
+        __ckDashLog(`Y"< Plano ${plan.plan_name} (${plan.plan_code}): ${finalIncluded.length} incluídos, ${finalExcluded.length} não incluídos`);
+        __ckDashLog(`   Incluídos: ${finalIncluded.join(', ') || '(nenhum)'}`);
+        __ckDashLog(`   Não incluídos: ${finalExcluded.join(', ') || '(nenhum)'}`);
 
         // Usar valores finais calculados
         const preservedIncluded = finalIncluded.join(', ');
@@ -651,7 +662,7 @@ async function renderPlansEditForm(plans) {
         if (plan.plan_code === 'king_finance') {
             const contratosInIncluded = preservedIncluded.includes('Contratos');
             const contratosInExcluded = preservedExcluded.includes('Contratos');
-            console.log(`   [DEBUG King Finance] Contratos - Incluídos: ${contratosInIncluded}, Não Incluídos: ${contratosInExcluded}`);
+            __ckDashLog(`   [DEBUG King Finance] Contratos - Incluídos: ${contratosInIncluded}, Não Incluídos: ${contratosInExcluded}`);
             if (!contratosInIncluded && !contratosInExcluded) {
                 console.error(`   [ERRO] Contratos não está em nenhuma lista! Adicionando aos não incluídos.`);
                 finalExcluded.push('Contratos');
@@ -719,7 +730,7 @@ async function renderPlansEditForm(plans) {
 // Salvar plano (ADM)
 window.savePlan = async function (planId) {
     try {
-        console.log(` Iniciando salvamento do plano ID: ${planId}`);
+        __ckDashLog(` Iniciando salvamento do plano ID: ${planId}`);
 
         const planName = document.getElementById(`plan-name-${planId}`).value.trim();
         const priceInput = document.getElementById(`plan-price-${planId}`).value.trim();
@@ -747,7 +758,7 @@ window.savePlan = async function (planId) {
             return;
         }
 
-        console.log('Y"< Dados coletados:', {
+        __ckDashLog('Y"< Dados coletados:', {
             planName,
             price,
             description: description.substring(0, 50) + '...',
@@ -798,7 +809,7 @@ window.savePlan = async function (planId) {
         const currentFeatures = currentPlan.features || {};
         const planCode = currentPlan.plan_code;
 
-        console.log(`Y"< Plano encontrado: ${currentPlan.plan_name} (${planCode})`);
+        __ckDashLog(`Y"< Plano encontrado: ${currentPlan.plan_name} (${planCode})`);
 
         // Atualizar features com can_edit_logo
         const updatedFeatures = {
@@ -819,7 +830,7 @@ window.savePlan = async function (planId) {
             excluded_modules: excludedModulesText || ''   // Enviar módulos não incluídos (string vazia se vazio)
         };
 
-        console.log('Enviando dados do plano (com módulos):', {
+        __ckDashLog('Enviando dados do plano (com módulos):', {
             plan_name: planData.plan_name,
             price: planData.price,
             description: planData.description?.substring(0, 50) + '...',
@@ -830,8 +841,8 @@ window.savePlan = async function (planId) {
         });
 
         // Log completo dos módulos para debug
-        console.log('Y"< Módulos incluídos (completo):', includedModulesText);
-        console.log('Y"< Módulos não incluídos (completo):', excludedModulesText);
+        __ckDashLog('Y"< Módulos incluídos (completo):', includedModulesText);
+        __ckDashLog('Y"< Módulos não incluídos (completo):', excludedModulesText);
 
         // Salvar plano (agora inclui módulos na mesma requisição)
         const response = await env.safeFetch(`${env.API_URL}/api/subscription/plans/${planId}`, {
@@ -843,7 +854,7 @@ window.savePlan = async function (planId) {
             body: JSON.stringify(planData)
         });
 
-        console.log('Resposta recebida:', response.status, response.statusText);
+        __ckDashLog('Resposta recebida:', response.status, response.statusText);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -852,13 +863,13 @@ window.savePlan = async function (planId) {
         }
 
         const responseData = await response.json();
-        console.log('Plano salvo com sucesso:', responseData);
+        __ckDashLog('Plano salvo com sucesso:', responseData);
 
         // Verificar se os módulos foram atualizados
         if (responseData.modulesUpdated) {
-            console.log('Módulos incluídos e não incluídos foram salvos junto com o plano!');
+            __ckDashLog('Módulos incluídos e não incluídos foram salvos junto com o plano!');
         } else if (includedModulesText || excludedModulesText) {
-            console.log('Módulos foram enviados, mas não foram processados. Verificando se precisa de atualização separada...');
+            __ckDashLog('Módulos foram enviados, mas não foram processados. Verificando se precisa de atualização separada...');
             // Se por algum motivo os módulos não foram processados, tentar atualizar separadamente (fallback)
             // Mas não bloquear o salvamento do plano
             if (planCode) {
@@ -890,7 +901,7 @@ window.savePlan = async function (planId) {
                     });
 
                     if (moduleUpdates.length > 0) {
-                        console.log(' Tentando atualizar módulos via endpoint separado (fallback)...');
+                        __ckDashLog(' Tentando atualizar módulos via endpoint separado (fallback)...');
                         const moduleResponse = await env.safeFetch(`${env.API_URL}/api/modules/plan-availability`, {
                             method: 'PUT',
                             headers: {
@@ -901,7 +912,7 @@ window.savePlan = async function (planId) {
                         });
 
                         if (moduleResponse.ok) {
-                            console.log('Módulos atualizados via fallback');
+                            __ckDashLog('Módulos atualizados via fallback');
                         } else {
                             console.warn('Fallback de módulos falhou, mas plano foi salvo');
                         }
@@ -913,30 +924,30 @@ window.savePlan = async function (planId) {
         }
 
         // Aguardar mais tempo para garantir que o banco processou e commitou
-        console.log('⏳ Aguardando processamento do banco (3 segundos)...');
+        __ckDashLog('⏳ Aguardando processamento do banco (3 segundos)...');
         await new Promise(resolve => setTimeout(resolve, 3000));
 
-        console.log('Aguardamento concluído. Dados devem estar disponíveis no banco.');
+        __ckDashLog('Aguardamento concluído. Dados devem estar disponíveis no banco.');
 
         alert('Plano atualizado com sucesso!');
 
-        console.log(' Recarregando formulário de edição...');
+        __ckDashLog(' Recarregando formulário de edição...');
         // IMPORTANTE: Preservar valores dos campos de módulos antes de recarregar
         const includedFieldBefore = document.getElementById(`plan-included-modules-${planId}`);
         const excludedFieldBefore = document.getElementById(`plan-excluded-modules-${planId}`);
         const preservedIncludedValue = includedFieldBefore ? includedFieldBefore.value.trim() : '';
         const preservedExcludedValue = excludedFieldBefore ? excludedFieldBefore.value.trim() : '';
 
-        console.log('Valores preservados antes de recarregar:');
-        console.log(`   Incluídos: "${preservedIncludedValue}"`);
-        console.log(`   Não incluídos: "${preservedExcludedValue}"`);
+        __ckDashLog('Valores preservados antes de recarregar:');
+        __ckDashLog(`   Incluídos: "${preservedIncludedValue}"`);
+        __ckDashLog(`   Não incluídos: "${preservedExcludedValue}"`);
 
         // Recarregar formulário de edição PRIMEIRO para mostrar mudanças imediatamente
         try {
             // Limpar qualquer cache e forçar busca fresca
             // Adicionar timestamp único e parâmetros de cache busting
             const timestamp = Date.now();
-            console.log(` Forçando recarregamento sem cache (timestamp: ${timestamp})...`);
+            __ckDashLog(` Forçando recarregamento sem cache (timestamp: ${timestamp})...`);
 
             // Limpar cache do módulo de disponibilidade também
             if (window.moduleAvailabilityCache) {
@@ -962,7 +973,7 @@ window.savePlan = async function (planId) {
                 // Combinar: manter módulos preservados e adicionar módulos mapeados que não estão lá
                 const combinedModules = [...new Set([...preservedModules, ...currentModules])];
                 includedFieldAfter.value = combinedModules.join(', ');
-                console.log(`Valor restaurado em módulos incluídos: "${includedFieldAfter.value}"`);
+                __ckDashLog(`Valor restaurado em módulos incluídos: "${includedFieldAfter.value}"`);
             }
 
             if (excludedFieldAfter && preservedExcludedValue) {
@@ -974,17 +985,17 @@ window.savePlan = async function (planId) {
                 // Combinar: manter módulos preservados e adicionar módulos mapeados que não estão lá
                 const combinedModules = [...new Set([...preservedModules, ...currentModules])];
                 excludedFieldAfter.value = combinedModules.join(', ');
-                console.log(`Valor restaurado em módulos não incluídos: "${excludedFieldAfter.value}"`);
+                __ckDashLog(`Valor restaurado em módulos não incluídos: "${excludedFieldAfter.value}"`);
             }
 
             // Verificar se os dados foram carregados corretamente
-            console.log('Formulário recarregado. Verifique os campos acima.');
+            __ckDashLog('Formulário recarregado. Verifique os campos acima.');
 
             // Log adicional para debug
             if (includedFieldAfter && excludedFieldAfter) {
-                console.log('Y"< Valores finais nos campos:');
-                console.log(`   Incluídos: "${includedFieldAfter.value}"`);
-                console.log(`   Não incluídos: "${excludedFieldAfter.value}"`);
+                __ckDashLog('Y"< Valores finais nos campos:');
+                __ckDashLog(`   Incluídos: "${includedFieldAfter.value}"`);
+                __ckDashLog(`   Não incluídos: "${excludedFieldAfter.value}"`);
             } else {
                 console.warn('Campos de módulos não encontrados após recarregar!');
             }
@@ -994,7 +1005,7 @@ window.savePlan = async function (planId) {
             alert('Plano salvo, mas houve erro ao recarregar. Atualize a página manualmente (F5).');
         }
 
-        console.log(' Recarregando informações de assinatura...');
+        __ckDashLog(' Recarregando informações de assinatura...');
         // Depois recarregar informações de assinatura (pode falhar silenciosamente se planRenderer der erro)
         try {
             await loadSubscriptionInfo();
@@ -1002,7 +1013,7 @@ window.savePlan = async function (planId) {
             console.warn('Erro ao recarregar informações de assinatura (não crítico):', subscriptionError);
         }
 
-        console.log('Processo de salvamento concluído!');
+        __ckDashLog('Processo de salvamento concluído!');
     } catch (error) {
         console.error('Erro completo ao salvar plano:', error);
         console.error('Stack:', error.stack);

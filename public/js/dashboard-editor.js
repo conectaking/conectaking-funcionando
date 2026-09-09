@@ -7,6 +7,8 @@
 (function (global) {
     'use strict';
 
+    var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
+
     function core() { return global.DashboardCore || {}; }
     function cartao() { return global.DashboardCartao || {}; }
 
@@ -118,7 +120,7 @@ function renderEditor(profileData) {
             return;
         }
 
-        console.log('YZ Iniciando renderização do editor com dados:', {
+        __ckDashLog('YZ Iniciando renderização do editor com dados:', {
             hasDetails: !!profileData.details,
             hasItems: !!profileData.items,
             itemsCount: profileData.items?.length || 0
@@ -139,10 +141,10 @@ function renderEditor(profileData) {
         if (sidebarHandle) sidebarHandle.textContent = `@${details.profile_slug || 'seu-usuario'}`;
 
         if (SELECTORS.displayNameInput) SELECTORS.displayNameInput.value = details.display_name || '';
-        console.log('[FETCH] Preenchendo campo WhatsApp com:', details.whatsapp);
+        __ckDashLog('[FETCH] Preenchendo campo WhatsApp com:', details.whatsapp);
         if (SELECTORS.whatsappNumberInput) {
             SELECTORS.whatsappNumberInput.value = details.whatsapp || '';
-            console.log('[FETCH] Campo WhatsApp preenchido com:', SELECTORS.whatsappNumberInput.value);
+            __ckDashLog('[FETCH] Campo WhatsApp preenchido com:', SELECTORS.whatsappNumberInput.value);
         } else {
             console.warn('[FETCH] Campo WhatsApp não encontrado no DOM');
         }
@@ -298,7 +300,7 @@ function renderEditor(profileData) {
                 itemsEditorPane.insertBefore(newContainer, modulesActions ? modulesActions.nextElementSibling : null);
                 itemsContainer = newContainer;
                 SELECTORS.itemsContainer = newContainer; // Atualizar o seletor
-                console.log('Container criado dinamicamente');
+                __ckDashLog('Container criado dinamicamente');
             } else {
                 console.error('O items-editor pane também não encontrado!');
                 return; // Não pode continuar sem o container
@@ -313,7 +315,7 @@ function renderEditor(profileData) {
         tempElements.forEach(tempEl => {
             const tempId = tempEl.dataset.id;
             if (tempId && !serverItemIds.has(String(tempId))) {
-                console.log(`Y"O Preservando item temporário ${tempId} que ainda não foi retornado pelo servidor`);
+                __ckDashLog(`Y"O Preservando item temporário ${tempId} que ainda não foi retornado pelo servidor`);
                 // Clonar o elemento para preservá-lo após limpar o container
                 temporaryItems.push({
                     element: tempEl.cloneNode(true),
@@ -322,14 +324,14 @@ function renderEditor(profileData) {
             }
         });
 
-        console.log(`Y Limpando container antes de renderizar ${uniqueItems.length} itens (${temporaryItems.length} temporários serão preservados)`);
+        __ckDashLog(`Y Limpando container antes de renderizar ${uniqueItems.length} itens (${temporaryItems.length} temporários serão preservados)`);
         itemsContainer.innerHTML = '';
 
         // Re-adicionar itens temporários preservados ANTES de renderizar os itens do servidor
         // Isso garante que apareçam primeiro na lista
         temporaryItems.forEach(temp => {
             itemsContainer.appendChild(temp.element);
-            console.log(`Item temporário ${temp.id} re-adicionado ao container`);
+            __ckDashLog(`Item temporário ${temp.id} re-adicionado ao container`);
         });
 
         // Verificar se temos itens para renderizar
@@ -338,13 +340,13 @@ function renderEditor(profileData) {
             return; // Retornar cedo se não houver itens
         }
 
-        console.log(`YZ Renderizando ${uniqueItems.length} itens...`);
+        __ckDashLog(`YZ Renderizando ${uniqueItems.length} itens...`);
         uniqueItems.forEach((item, itemIndex) => {
             try {
             // Se houver um item temporário com este ID, removê-lo primeiro
             const tempItem = itemsContainer.querySelector(`[data-id="${item.id}"][data-is-temporary="true"]`);
             if (tempItem) {
-                console.log(` Substituindo item temporário ${item.id} pelo item real do servidor`);
+                __ckDashLog(` Substituindo item temporário ${item.id} pelo item real do servidor`);
                 tempItem.remove();
             }
 
@@ -366,7 +368,7 @@ function renderEditor(profileData) {
             if (String(item.id).startsWith('temp_')) {
                 itemEl.dataset.isTemporary = 'true';
                 itemEl.dataset.isUnsaved = 'true'; // Manter ambos para compatibilidade
-                console.log(`Item temporário ${item.id} será renderizado como não salvo`);
+                __ckDashLog(`Item temporário ${item.id} será renderizado como não salvo`);
             }
             // Armazenar dados originais do item para usar no modal
             // Sanitizar destination_url e armazenar dados originais para o modal
@@ -1355,7 +1357,7 @@ function renderEditor(profileData) {
                 }
                 currentContainer.appendChild(itemEl);
                 if (itemIndex < 3) { // Log apenas os 3 primeiros para não poluir o console
-                    console.log(`Item ${item.id} (${item.item_type}) adicionado ao container`);
+                    __ckDashLog(`Item ${item.id} (${item.item_type}) adicionado ao container`);
                 }
             } catch (appendError) {
                 console.error(`Erro ao adicionar item ${item.id} ao container:`, appendError);
@@ -1370,7 +1372,7 @@ function renderEditor(profileData) {
         // Verificar quantos itens foram realmente adicionados
         const finalContainer = SELECTORS.itemsContainer || document.getElementById('items-container');
         const itemsAdded = finalContainer?.querySelectorAll('.item, .module-item').length || 0;
-        console.log(`Renderização concluída: ${itemsAdded} de ${uniqueItems.length} itens adicionados ao container`);
+        __ckDashLog(`Renderização concluída: ${itemsAdded} de ${uniqueItems.length} itens adicionados ao container`);
         if (itemsAdded < uniqueItems.length) {
             const containerCheck = SELECTORS.itemsContainer || document.getElementById('items-container');
             const notInDom = uniqueItems.filter(function (it) {

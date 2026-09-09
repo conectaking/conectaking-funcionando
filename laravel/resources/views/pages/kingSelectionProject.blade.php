@@ -45,7 +45,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* â€œSistemaâ€ no fundo (preenche o preto vazio) */
+    /* “Sistema” no fundo (preenche o preto vazio) */
     body:before {
       content: "";
       position: fixed;
@@ -80,7 +80,7 @@
       -webkit-backdrop-filter: blur(14px)
     }
 
-    /* Mais espaço útil no desktop (menos â€œpreto vazioâ€ nas laterais) */
+    /* Mais espaço útil no desktop (menos “preto vazio” nas laterais) */
     .ks-wrap {
       max-width: min(1920px, 98vw);
       width: 100%;
@@ -127,7 +127,7 @@
       border-color: var(--ks-line) !important
     }
 
-    /* Modal â€œDados do clienteâ€: .bg-white global é escuro; forçar cartão claro + texto escuro */
+    /* Modal “Dados do cliente”: .bg-white global é escuro; forçar cartão claro + texto escuro */
     #ks-act-contact-modal .ks-modal-light {
       background: #f8fafc !important;
       color: #0f172a !important;
@@ -204,7 +204,7 @@
       overflow: hidden;
     }
 
-    /* Fotos: evita â€œsegundaâ€ rolagem interna; a página rola naturalmente */
+    /* Fotos: evita “segunda” rolagem interna; a página rola naturalmente */
     .ks-card[data-pane="photos"] {
       overflow: visible;
     }
@@ -241,7 +241,7 @@
       max-width: 220px;
     }
 
-    /* Menu de abas do projeto (Atividadesâ€¦ Marca dâ€™água): no mobile a página rola por fora â€” sem coluna presa */
+    /* Menu de abas do projeto (Atividades… Marca d’água): no mobile a página rola por fora — sem coluna presa */
     .ks-card.ks-card--side-nav {
       overflow: visible;
     }
@@ -311,7 +311,7 @@
       box-shadow: 0 0 0 3px rgba(250, 204, 21, .12)
     }
 
-    /* Modal exportar: leitura nítida (evita textarea â€œbrancaâ€ / texto ilegível) */
+    /* Modal exportar: leitura nítida (evita textarea “branca” / texto ilegível) */
     #ks-export-modal textarea.ks-export-ta,
     #ks-export-modal textarea#ks-export-filter-input {
       background: rgba(6, 6, 6, .94) !important;
@@ -435,7 +435,7 @@
       background: #fff
     }
 
-    /* o tile pode â€œvazarâ€ para mostrar o menu */
+    /* o tile pode “vazar” para mostrar o menu */
     .ks-photo-tile {
       position: relative;
       overflow: visible
@@ -670,7 +670,7 @@
       display: block
     }
 
-    /* Prévias retrato/paisagem: preenchem o moldura (crop visual), sem â€œfaixasâ€ pretas */
+    /* Prévias retrato/paisagem: preenchem o moldura (crop visual), sem “faixas” pretas */
     .ks-wm-preview-frame {
       width: 100%;
       position: relative;
@@ -819,7 +819,7 @@
     }
 
     /* Upload "bolinha" moderna */
-    /* Upload overlay (escuro, sem â€œbranco do ladoâ€) */
+    /* Upload overlay (escuro, sem “branco do lado”) */
     .ks-bubble {
       /* Ancorado no topo do drop: visível sem rolar quando há muitas fotos */
       position: absolute;
@@ -1452,7 +1452,7 @@
 
     .ks-abo-kpi {
       display: grid;
-      /* Quebra para a linha seguinte quando a caixa â€œResumoâ€ fica estreita (evita texto a invadir a coluna ao lado) */
+      /* Quebra para a linha seguinte quando a caixa “Resumo” fica estreita (evita texto a invadir a coluna ao lado) */
       grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
       gap: 10px
     }
@@ -1695,7 +1695,7 @@
       min-width: 48px
     }
 
-    /* Mobile: mais largura + mais â€œrespiroâ€ */
+    /* Mobile: mais largura + mais “respiro” */
     @media (max-width: 560px) {
       .ks-wrap {
         padding: 12px;
@@ -1800,7 +1800,7 @@
         padding: 10px
       }
 
-      /* Cabeçalho do cliente não pode â€œapertarâ€/cortar */
+      /* Cabeçalho do cliente não pode “apertar”/cortar */
       .ks-abo-client {
         padding: 12px
       }
@@ -1888,7 +1888,7 @@
         padding: 12px
       }
 
-      /* Finalizar + exportar: coluna em ecrãs estreitos (evita â€œFINALIZâ€¦â€) */
+      /* Finalizar + exportar: coluna em ecrãs estreitos (evita “FINALIZ…”) */
       .ks-abo-actions {
         flex-direction: column;
         align-items: stretch
@@ -1936,7 +1936,7 @@
     <div class="ks-wrap flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center gap-3">
         <div>
-          <div class="font-black uppercase tracking-[0.38em] text-[10px] text-slate-500 hidden">â€” â€” â€”</div>
+          <div class="font-black uppercase tracking-[0.38em] text-[10px] text-slate-500 hidden">— — —</div>
           <div class="font-extrabold text-slate-900 tracking-tight">KingSelection</div>
         </div>
       </div>
@@ -2013,8 +2013,8 @@
                 <div class="flex flex-wrap gap-2 items-center">
                   <label for="ks-activity-sort" class="text-[10px] uppercase tracking-widest font-extrabold text-slate-500 whitespace-nowrap">Ordenar</label>
                   <select id="ks-activity-sort" class="ks-input text-xs py-1.5 px-2 rounded-lg flex-1 min-w-[min(100%,200px)] max-w-[260px]" title="Ordem da lista em cada grupo">
-                    <option value="name_asc">Nome Aâ€“Z</option>
-                    <option value="name_desc">Nome Zâ€“A</option>
+                    <option value="name_asc">Nome A–Z</option>
+                    <option value="name_desc">Nome Z–A</option>
                     <option value="order_asc">Pedido: mais antigo primeiro</option>
                     <option value="order_desc">Pedido: mais recente primeiro</option>
                   </select>
@@ -2054,7 +2054,7 @@
                     <div class="ks-abo-client-name" id="ks-activity-client-name">-</div>
                     <div class="ks-abo-client-sub" id="ks-activity-contact-line">
                       <span id="ks-activity-email">-</span>
-                      <span class="opacity-40 ks-activity-contact-sep"> â€¢ </span>
+                      <span class="opacity-40 ks-activity-contact-sep"> • </span>
                       <span id="ks-activity-phone">-</span>
                       <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-open-whatsapp" style="margin-left:8px;padding:4px 9px">
                         <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
@@ -2062,7 +2062,7 @@
                     </div>
                     <div class="ks-abo-client-sub mt-2 flex flex-wrap items-center gap-2" id="ks-activity-pass-row" style="display:none">
                       <span class="text-xs text-slate-500">Senha de acesso (login do cliente):</span>
-                      <span class="ks-pass-mask font-mono text-sm text-slate-800" id="ks-activity-pass">â€¢â€¢â€¢â€¢â€¢â€¢</span>
+                      <span class="ks-pass-mask font-mono text-sm text-slate-800" id="ks-activity-pass">••••••</span>
                       <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-reveal-pass" data-ks-reveal-pass="0">Mostrar</button>
                     </div>
                     <div class="ks-abo-client-sub" style="margin-top:8px">
@@ -2164,7 +2164,7 @@
                       title="Abre uma nova seleção sem mexer nas fotos desta rodada">Nova seleção</button>
                     <button type="button" class="ks-btn hidden" id="ks-activity-sales-approve-all"
                       title="Aprova todas as fotos desta seleção para download original (modo Fotos vendidas por evento)."><i class="fas fa-check-double"></i> Aprovar todas</button>
-                    <span class="text-xs ks-muted leading-snug">A contagem em â€œSelecionadasâ€ segue este filtro. Exportar usa o mesmo critério ao abrir o modal.</span>
+                    <span class="text-xs ks-muted leading-snug">A contagem em “Selecionadas” segue este filtro. Exportar usa o mesmo critério ao abrir o modal.</span>
                   </div>
                   <div class="ks-abo-photos" id="ks-activity-selected-photos"></div>
                   <div class="ks-abo-empty hidden" id="ks-activity-selected-empty">Nenhuma foto selecionada ainda</div>
@@ -2193,16 +2193,16 @@
           </div>
 
           <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="ks-r2-summary">
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Arquivos no R2</div><div class="font-extrabold text-lg" id="ks-r2-stat-total">â€”</div></div>
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Tamanho total</div><div class="font-extrabold text-lg" id="ks-r2-stat-size">â€”</div></div>
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Referenciados no BD</div><div class="font-extrabold text-lg" id="ks-r2-stat-ref">â€”</div></div>
-            <div class="ks-card p-3 border border-amber-300/70 bg-amber-50/90"><div class="text-xs text-amber-900/80">Órfãos no R2</div><div class="font-extrabold text-lg text-amber-900" id="ks-r2-stat-orphans">â€”</div></div>
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Seus projetos</div><div class="font-extrabold text-lg" id="ks-r2-stat-projects">â€”</div></div>
-            <div class="ks-card p-3 border border-red-200/80 bg-red-50/80"><div class="text-xs text-red-800/80">Pastas de projetos excluídos</div><div class="font-extrabold text-lg text-red-800" id="ks-r2-stat-deleted">â€”</div></div>
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Arquivos no R2</div><div class="font-extrabold text-lg" id="ks-r2-stat-total">—</div></div>
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Tamanho total</div><div class="font-extrabold text-lg" id="ks-r2-stat-size">—</div></div>
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Referenciados no BD</div><div class="font-extrabold text-lg" id="ks-r2-stat-ref">—</div></div>
+            <div class="ks-card p-3 border border-amber-300/70 bg-amber-50/90"><div class="text-xs text-amber-900/80">Órfãos no R2</div><div class="font-extrabold text-lg text-amber-900" id="ks-r2-stat-orphans">—</div></div>
+            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Seus projetos</div><div class="font-extrabold text-lg" id="ks-r2-stat-projects">—</div></div>
+            <div class="ks-card p-3 border border-red-200/80 bg-red-50/80"><div class="text-xs text-red-800/80">Pastas de projetos excluídos</div><div class="font-extrabold text-lg text-red-800" id="ks-r2-stat-deleted">—</div></div>
           </div>
 
-          <p class="text-xs ks-muted mt-3" id="ks-r2-generated">Clique em Â«Atualizar inventárioÂ» para carregar pastas, datas e comparação com o banco.</p>
-          <div class="hidden mt-2 text-sm text-amber-800" id="ks-r2-loading"><i class="fas fa-spinner fa-spin"></i> Lendo arquivos no Cloudflare R2â€¦ pode levar alguns minutos em galerias grandes.</div>
+          <p class="text-xs ks-muted mt-3" id="ks-r2-generated">Clique em «Atualizar inventário» para carregar pastas, datas e comparação com o banco.</p>
+          <div class="hidden mt-2 text-sm text-amber-800" id="ks-r2-loading"><i class="fas fa-spinner fa-spin"></i> Lendo arquivos no Cloudflare R2… pode levar alguns minutos em galerias grandes.</div>
 
           <div class="mt-6">
             <div class="font-extrabold text-slate-900">Seus projetos (King Selection × R2)</div>
@@ -2231,7 +2231,7 @@
 
           <div class="mt-8">
             <div class="font-extrabold text-slate-900">Pastas órfãs (projeto já excluído no King Selection)</div>
-            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto não está mais no banco â€” candidatas à limpeza.</p>
+            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto não está mais no banco — candidatas à limpeza.</p>
             <div class="mt-3 overflow-x-auto rounded-xl border border-red-200/60">
               <table class="ks-r2-table w-full text-sm">
                 <thead>
@@ -2244,7 +2244,7 @@
                   </tr>
                 </thead>
                 <tbody id="ks-r2-orphan-folders-tbody">
-                  <tr><td colspan="5" class="ks-muted p-4 text-center">â€”</td></tr>
+                  <tr><td colspan="5" class="ks-muted p-4 text-center">—</td></tr>
                 </tbody>
               </table>
             </div>
@@ -2252,7 +2252,7 @@
 
           <div class="mt-8">
             <div class="font-extrabold text-slate-900">Arquivos órfãos (amostra)</div>
-            <p class="text-xs ks-muted mt-1">Arquivos no R2 sem referência no banco (até 250 na lista). Use Â«Limpar R2Â» para remover todos os órfãos de uma vez.</p>
+            <p class="text-xs ks-muted mt-1">Arquivos no R2 sem referência no banco (até 250 na lista). Use «Limpar R2» para remover todos os órfãos de uma vez.</p>
             <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80 max-h-96 overflow-y-auto">
               <table class="ks-r2-table w-full text-sm">
                 <thead>
@@ -2265,7 +2265,7 @@
                   </tr>
                 </thead>
                 <tbody id="ks-r2-orphan-files-tbody">
-                  <tr><td colspan="5" class="ks-muted p-4 text-center">â€”</td></tr>
+                  <tr><td colspan="5" class="ks-muted p-4 text-center">—</td></tr>
                 </tbody>
               </table>
             </div>
@@ -2283,7 +2283,7 @@
             <div class="ks-field">
               <label>Categoria</label>
               <select class="ks-input mt-2" id="f-categoria">
-                <option value="">â€” Selecione (opcional) â€”</option>
+                <option value="">— Selecione (opcional) —</option>
                 <option value="Casamento">Casamento</option>
                 <option value="Corporativo">Corporativo</option>
                 <option value="Ensaio">Ensaio</option>
@@ -2542,7 +2542,7 @@
                 </div>
                 <div class="ks-field">
                   <label class="text-slate-300">Status pagamento</label>
-                  <div id="ks-sales-payment-status" class="ks-input mt-2 flex flex-col justify-center gap-0.5 py-2 min-h-[44px] text-left leading-snug">â€”</div>
+                  <div id="ks-sales-payment-status" class="ks-input mt-2 flex flex-col justify-center gap-0.5 py-2 min-h-[44px] text-left leading-snug">—</div>
                 </div>
               </div>
               <div id="ks-sales-terms-panel" class="mt-3 rounded-xl border border-slate-600 bg-slate-950/60 p-3">
@@ -2552,7 +2552,7 @@
                 </p>
                 <div class="mt-2 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2">
                   <div class="text-[10px] text-emerald-300/90 uppercase font-extrabold tracking-wide">Referência (soma pelas fotos)</div>
-                  <div id="ks-sales-terms-photo-ref" class="text-emerald-100 font-bold text-sm mt-1">â€”</div>
+                  <div id="ks-sales-terms-photo-ref" class="text-emerald-100 font-bold text-sm mt-1">—</div>
                   <div id="ks-sales-terms-cupom-note" class="text-[10px] text-slate-500 mt-1 hidden"></div>
                 </div>
                 <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -2639,7 +2639,7 @@
               <div class="ks-field">
                 <label id="ks-promo-free-label">Fotos isentas pelo cupom (no valor estimado)</label>
                 <input type="number" min="1" max="50" class="ks-input mt-2" id="ks-promo-free-photos" value="1" />
-                <p id="ks-promo-free-hint-sales" class="text-xs ks-muted mt-1 max-w-xl">Quantas fotos entram <strong>de graça</strong> no cálculo do total (pacotes/preço unitário). Ex.: 12 escolhidas com isenção 1 â†’ o cliente vê o preço como se fossem 11 cobradas. A <strong>aprovação</strong> de cada foto (cortesia, pago, PIX) continua normal no seu painel.</p>
+                <p id="ks-promo-free-hint-sales" class="text-xs ks-muted mt-1 max-w-xl">Quantas fotos entram <strong>de graça</strong> no cálculo do total (pacotes/preço unitário). Ex.: 12 escolhidas com isenção 1 → o cliente vê o preço como se fossem 11 cobradas. A <strong>aprovação</strong> de cada foto (cortesia, pago, PIX) continua normal no seu painel.</p>
                 <p id="ks-promo-free-hint-public" class="text-xs ks-muted mt-1 max-w-xl hidden">Limite de <strong>fotos para baixar</strong> após validar o cupom e seguir as redes (entre 1 e todas as selecionadas, até o número que definir aqui).</p>
               </div>
             </div>
@@ -2664,10 +2664,10 @@
         <!-- Link do cliente / compartilhar -->
         <div class="ks-card p-5 hidden" data-pane="links">
           <div class="font-extrabold text-slate-900">Link e compartilhamento</div>
-          <p class="text-sm ks-muted mt-2 max-w-3xl">Use o link de produção para o cliente. Abra numa nova aba para testar com o e-mail e a senha. Copie só o link ou a mensagem completa â€” o que clicar em <b>Compartilhar</b> no topo abre esta aba.</p>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Use o link de produção para o cliente. Abra numa nova aba para testar com o e-mail e a senha. Copie só o link ou a mensagem completa — o que clicar em <b>Compartilhar</b> no topo abre esta aba.</p>
 
           <div class="mt-5 ks-field">
-            <label>Link da galeria (cliente â€” URL de partilha)</label>
+            <label>Link da galeria (cliente — URL de partilha)</label>
             <div class="flex gap-2 mt-2 flex-wrap items-stretch">
               <input type="text" readonly id="ks-links-prod-url" class="ks-input flex-1 min-w-[min(100%,280px)]" />
               <button type="button" class="ks-btn ks-btn-primary" id="ks-links-copy-prod"><i class="fas fa-copy"></i> Copiar link</button>
@@ -2696,7 +2696,7 @@
           </div>
 
           <div class="mt-5 ks-field">
-            <label>Mensagem completa (edite livremente â€” WhatsApp ou e-mail)</label>
+            <label>Mensagem completa (edite livremente — WhatsApp ou e-mail)</label>
             <p class="text-xs ks-muted mt-1 mb-0">Com <b>acesso privado</b> e <b>um</b> cliente na lista, o modelo automático inclui <b>e-mail e senha</b>. Em <b>autocadastro</b> ou <b>fotos vendidas</b>, a mensagem automática leva só o link. Pode editar à vontade. <b>Restaurar modelo</b> recalcula a partir das configurações atuais.</p>
             <textarea id="ks-links-full-msg" class="ks-input mt-2" rows="11"
               style="font-size:13px;line-height:1.45;resize:vertical"></textarea>
@@ -2751,26 +2751,26 @@
           </div>
 
           <div class="mt-6 rounded-xl border border-amber-500/35 bg-amber-950/20 p-4">
-            <div class="text-xs font-extrabold text-amber-100/90 tracking-widest uppercase mb-2">Mensagens WhatsApp Â· Fotos e vendas</div>
+            <div class="text-xs font-extrabold text-amber-100/90 tracking-widest uppercase mb-2">Mensagens WhatsApp · Fotos e vendas</div>
             <p class="text-sm text-amber-50/90 mt-1 max-w-3xl">Textos usados no botão <b>WhatsApp do cliente</b> (aba <b>Fotos e vendas</b>), conforme a situação. Ao abrir o WhatsApp, o sistema preenche com o modelo correspondente e os códigos abaixo.</p>
-            <p class="text-xs text-amber-100/75 mt-2 max-w-3xl"><code class="text-amber-200/95">{{nome}}</code> nome do cliente Â· <code class="text-amber-200/95">{{link}}</code> link público da galeria Â· <code class="text-amber-200/95">{{galeria}}</code> nome do evento ou projeto. No texto você pode usar <span class="whitespace-nowrap">*asteriscos*</span> para negrito no WhatsApp.</p>
-            <label class="mt-4 block font-semibold text-sm text-slate-100">1 Â· Falta pagamento (PIX pendente ou saldo em aberto)</label>
-            <textarea id="ks-sales-wa-tpl-pending" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <p class="text-xs text-amber-100/75 mt-2 max-w-3xl"><code class="text-amber-200/95">{{nome}}</code> nome do cliente · <code class="text-amber-200/95">{{link}}</code> link público da galeria · <code class="text-amber-200/95">{{galeria}}</code> nome do evento ou projeto. No texto você pode usar <span class="whitespace-nowrap">*asteriscos*</span> para negrito no WhatsApp.</p>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">1 · Falta pagamento (PIX pendente ou saldo em aberto)</label>
+            <textarea id="ks-sales-wa-tpl-pending" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-pending" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
-            <label class="mt-4 block font-semibold text-sm text-slate-100">2 Â· Comprovante recusado â€” pedir novo envio</label>
-            <textarea id="ks-sales-wa-tpl-rejected" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">2 · Comprovante recusado — pedir novo envio</label>
+            <textarea id="ks-sales-wa-tpl-rejected" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-rejected" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
-            <label class="mt-4 block font-semibold text-sm text-slate-100">3 Â· Pagamento ok â€” aguardando <i>sua</i> aprovação das fotos</label>
-            <textarea id="ks-sales-wa-tpl-awaiting" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">3 · Pagamento ok — aguardando <i>sua</i> aprovação das fotos</label>
+            <textarea id="ks-sales-wa-tpl-awaiting" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-awaiting" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
-            <label class="mt-4 block font-semibold text-sm text-slate-100">4 Â· Tudo certo â€” fotos aprovadas (liberar download)</label>
-            <textarea id="ks-sales-wa-tpl-approved" class="ks-input mt-2 font-mono text-sm" rows="6" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">4 · Tudo certo — fotos aprovadas (liberar download)</label>
+            <textarea id="ks-sales-wa-tpl-approved" class="ks-input mt-2 font-mono text-sm" rows="6" placeholder="Ex.: Olá, {{nome}}! … {{link}} … {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-approved" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
@@ -2906,7 +2906,7 @@
               <input type="checkbox" id="d-allow" />
               <div>
                 <div class="font-extrabold">Permitir o download das fotos</div>
-                <div class="text-sm ks-muted">Libera botão de download (previews com marca dâ€™água).</div>
+                <div class="text-sm ks-muted">Libera botão de download (previews com marca d’água).</div>
               </div>
             </label>
             <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
@@ -2922,7 +2922,7 @@
                 <input type="radio" name="ks_client_folder_layout" id="ks-dl-layout-flat" value="flat" class="mt-1" />
                 <div>
                   <div class="font-semibold text-sm">Fotos soltas</div>
-                  <div class="text-xs ks-muted">Sem lista de pastas â€” só a grelha (útil quando subiu só fotos).</div>
+                  <div class="text-xs ks-muted">Sem lista de pastas — só a grelha (útil quando subiu só fotos).</div>
                 </div>
               </label>
             </div>
@@ -2946,14 +2946,14 @@
             <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
               <input type="radio" name="wm_mode" value="none" class="mt-1" />
               <div>
-                <div class="font-extrabold">Sem marca dâ€™água</div>
-                <div class="text-sm ks-muted">Desativa a marca dâ€™água (não recomendado).</div>
+                <div class="font-extrabold">Sem marca d’água</div>
+                <div class="text-sm ks-muted">Desativa a marca d’água (não recomendado).</div>
               </div>
             </label>
             <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white" id="wm-mode-ck-wrap">
               <input type="radio" name="wm_mode" value="tile_dense" class="mt-1" id="wm-mode-ck" />
               <div>
-                <div class="font-extrabold">Marca dâ€™água da Conecta King</div>
+                <div class="font-extrabold">Marca d’água da Conecta King</div>
                 <div class="text-sm ks-muted">Quando o cliente não envia marca própria, usa automaticamente a logomarca
                   oficial da Conecta King.</div>
               </div>
@@ -2962,8 +2962,8 @@
               id="wm-mode-logo-wrap">
               <input type="radio" name="wm_mode" value="logo" class="mt-1" id="wm-mode-logo" />
               <div>
-                <div class="font-extrabold">Sua marca dâ€™água personalizada</div>
-                <div class="text-sm ks-muted">Usa a marca dâ€™água que você enviou (a miniatura aparece lá embaixo).</div>
+                <div class="font-extrabold">Sua marca d’água personalizada</div>
+                <div class="text-sm ks-muted">Usa a marca d’água que você enviou (a miniatura aparece lá embaixo).</div>
               </div>
             </label>
 
@@ -2971,20 +2971,20 @@
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <div class="font-extrabold text-white">Pré-visualização (tempo real)</div>
-                  <div class="text-sm text-zinc-400">Mostra como o cliente verá a marca dâ€™água.</div>
+                  <div class="text-sm text-zinc-400">Mostra como o cliente verá a marca d’água.</div>
                 </div>
                 <div class="text-xs text-zinc-400 font-extrabold" id="wm-current"></div>
               </div>
 
-              <div class="mt-3 text-xs text-zinc-400"><strong class="text-zinc-200">Preencher</strong>: escala forte + <strong class="text-zinc-200">esticar</strong> largura/altura (cobre a foto, tipo papel de parede â€œpreencherâ€). <strong class="text-zinc-200">Ajustar</strong>: escala contida + <strong class="text-zinc-200">100% esticar</strong> + posição ao centro (tipo â€œajustarâ€ sem cortar o desenho da marca). Tamanho retrato/paisagem continua separado nos sliders.</div>
+              <div class="mt-3 text-xs text-zinc-400"><strong class="text-zinc-200">Preencher</strong>: escala forte + <strong class="text-zinc-200">esticar</strong> largura/altura (cobre a foto, tipo papel de parede “preencher”). <strong class="text-zinc-200">Ajustar</strong>: escala contida + <strong class="text-zinc-200">100% esticar</strong> + posição ao centro (tipo “ajustar” sem cortar o desenho da marca). Tamanho retrato/paisagem continua separado nos sliders.</div>
 
               <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="rounded-xl border border-zinc-700 bg-black p-3">
                   <div class="text-sm font-extrabold text-white">Foto vertical (retrato)</div>
-                  <div class="text-xs text-zinc-400 mt-1">Prévia em 3:4 â€” como em fotos em pé.</div>
+                  <div class="text-xs text-zinc-400 mt-1">Prévia em 3:4 — como em fotos em pé.</div>
                   <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--portrait mt-2">
                     <div class="ks-wm-ph" id="wm-ph-p">Adicione fotos para ver o preview</div>
-                    <img id="wm-preview-portrait" class="hidden" alt="preview marca dâ€™água retrato" />
+                    <img id="wm-preview-portrait" class="hidden" alt="preview marca d’água retrato" />
                   </div>
                   <div class="mt-2 flex items-center justify-between gap-2">
                     <div class="text-xs font-extrabold text-zinc-200">Tamanho no retrato</div>
@@ -3003,11 +3003,11 @@
                     <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="270" title="270Â°">270Â°</button>
                   </div>
                   <div class="mt-2 grid grid-cols-2 gap-1.5">
-                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-p" title="Preencher â€” escala forte (cobre a área)">Preencher</button>
-                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-p" title="Ajustar â€” escala mais contida">Ajustar</button>
+                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-p" title="Preencher — escala forte (cobre a área)">Preencher</button>
+                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-p" title="Ajustar — escala mais contida">Ajustar</button>
                   </div>
                   <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
-                    <div class="text-xs font-extrabold text-zinc-200">Mosaico â€” só em fotos verticais</div>
+                    <div class="text-xs font-extrabold text-zinc-200">Mosaico — só em fotos verticais</div>
                     <div class="text-[11px] text-zinc-500">Posição vertical do padrão (cima / centro / baixo)</div>
                     <div class="grid grid-cols-3 gap-1.5">
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-top-p" title="Cima">Cima</button>
@@ -3017,7 +3017,7 @@
                     <div>
                       <div class="flex items-center justify-between gap-2">
                         <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
-                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-p">X 0% Â· Y 0%</div>
+                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-p">X 0% · Y 0%</div>
                       </div>
                       <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-p" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
@@ -3043,10 +3043,10 @@
                 </div>
                 <div class="rounded-xl border border-zinc-700 bg-black p-3">
                   <div class="text-sm font-extrabold text-white">Foto horizontal (paisagem)</div>
-                  <div class="text-xs text-zinc-400 mt-1">Prévia em 16:9 â€” como em fotos deitadas.</div>
+                  <div class="text-xs text-zinc-400 mt-1">Prévia em 16:9 — como em fotos deitadas.</div>
                   <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--landscape mt-2">
                     <div class="ks-wm-ph" id="wm-ph-l">Adicione fotos para ver o preview</div>
-                    <img id="wm-preview-landscape" class="hidden" alt="preview marca dâ€™água paisagem" />
+                    <img id="wm-preview-landscape" class="hidden" alt="preview marca d’água paisagem" />
                   </div>
                   <div class="mt-2 flex items-center justify-between gap-2">
                     <div class="text-xs font-extrabold text-zinc-200">Tamanho na paisagem</div>
@@ -3069,7 +3069,7 @@
                     <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-l" title="Ajustar">Ajustar</button>
                   </div>
                   <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
-                    <div class="text-xs font-extrabold text-zinc-200">Mosaico â€” só em fotos horizontais</div>
+                    <div class="text-xs font-extrabold text-zinc-200">Mosaico — só em fotos horizontais</div>
                     <div class="text-[11px] text-zinc-500">Posição horizontal do padrão (esquerda / centro / direita)</div>
                     <div class="grid grid-cols-3 gap-1.5">
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-left-l" title="Esquerda">Esquerda</button>
@@ -3079,7 +3079,7 @@
                     <div>
                       <div class="flex items-center justify-between gap-2">
                         <div class="text-[11px] font-extrabold text-zinc-200">Ajuste fino (passo 3%)</div>
-                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-l">X 0% Â· Y 0%</div>
+                        <div class="text-[10px] text-zinc-400 font-mono" id="wm-logo-offset-val-l">X 0% · Y 0%</div>
                       </div>
                       <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <button type="button" class="ks-btn text-[10px]" id="btn-wm-offset-left-l" title="Esquerda"><i class="fas fa-arrow-left"></i></button>
@@ -3117,22 +3117,22 @@
             </div>
 
             <div class="rounded-xl border border-zinc-700 bg-black p-4 text-zinc-100">
-              <div class="font-extrabold text-white">Marca dâ€™água atual</div>
-              <div class="text-sm text-zinc-400 mt-1">Mostra a marca dâ€™água que está valendo (padrão Conecta King ou personalizada).</div>
+              <div class="font-extrabold text-white">Marca d’água atual</div>
+              <div class="text-sm text-zinc-400 mt-1">Mostra a marca d’água que está valendo (padrão Conecta King ou personalizada).</div>
               <div id="wm-file-defaults" class="mt-3 flex flex-wrap gap-4 items-start">
                 <div class="text-xs text-zinc-400 max-w-[220px]">
-                  <div class="font-extrabold text-white mb-2" id="wm-file-ph">Marca Conecta King (fixa â€” retrato e paisagem)</div>
+                  <div class="font-extrabold text-white mb-2" id="wm-file-ph">Marca Conecta King (fixa — retrato e paisagem)</div>
                   <div class="flex flex-wrap gap-3 items-end">
                     <div class="text-center">
                       <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Retrato</div>
                       <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:112px;aspect-ratio:3/4;max-height:180px">
-                        <img id="wm-file-default-portrait" class="w-full h-full object-contain" alt="Marca Conecta King â€” retrato" src="./marca%20dagua%20KingSelection%20vertical.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_vertical.png'" />
+                        <img id="wm-file-default-portrait" class="w-full h-full object-contain" alt="Marca Conecta King — retrato" src="./marca%20dagua%20KingSelection%20vertical.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_vertical.png'" />
                       </div>
                     </div>
                     <div class="text-center">
                       <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Paisagem</div>
                       <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:168px;aspect-ratio:16/9;max-height:110px">
-                        <img id="wm-file-default-landscape" class="w-full h-full object-contain" alt="Marca Conecta King â€” paisagem" src="./marca%20dagua%20KingSelection%20horizontal.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_horizontal.png'" />
+                        <img id="wm-file-default-landscape" class="w-full h-full object-contain" alt="Marca Conecta King — paisagem" src="./marca%20dagua%20KingSelection%20horizontal.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_horizontal.png'" />
                       </div>
                     </div>
                   </div>
@@ -3166,7 +3166,7 @@
               <input type="file" id="wm-file-l" accept="image/png,image/jpeg,image/webp" class="hidden" />
               <button type="button" class="ks-btn" id="btn-upload-wm-p"><i class="fas fa-upload"></i> Enviar retrato</button>
               <button type="button" class="ks-btn" id="btn-upload-wm-l"><i class="fas fa-upload"></i> Enviar paisagem</button>
-              <button class="ks-btn" id="btn-remove-wm-logo"><i class="fas fa-trash"></i> Remover marca dâ€™água</button>
+              <button class="ks-btn" id="btn-remove-wm-logo"><i class="fas fa-trash"></i> Remover marca d’água</button>
               <button class="ks-btn ks-btn-primary" id="btn-save-wm"><i class="fas fa-save"></i> Salvar</button>
             </div>
             <div class="text-xs ks-muted">Dica: envie um PNG com fundo transparente.</div>
@@ -3220,7 +3220,7 @@
         <div class="ks-card p-5 hidden" data-pane="image-quality">
           <div class="font-extrabold text-slate-900">Resolução da foto (cliente)</div>
           <div class="mt-2 text-sm ks-muted max-w-3xl">
-            Define o tamanho máximo do lado longo das imagens com marca dâ€™água que o visitante vê e baixa na galeria.
+            Define o tamanho máximo do lado longo das imagens com marca d’água que o visitante vê e baixa na galeria.
             Padrão recomendado para economia de banda: <strong>fraca</strong>. Altere antes de divulgar o link.
           </div>
           <div class="mt-5 space-y-3 max-w-xl">
@@ -3263,7 +3263,7 @@
                 </svg>
               </div>
               <div class="min-w-0 flex-1">
-                <div class="ttl" id="ks-upload-title">Enviandoâ€¦</div>
+                <div class="ttl" id="ks-upload-title">Enviando…</div>
                 <div class="sub" id="ks-upload-file">Arquivo: -</div>
                 <div class="meta" id="ks-upload-meta">0%</div>
                 <div class="ks-upload-actions">
@@ -3283,7 +3283,7 @@
               <input type="file" id="p-folder-file" multiple class="hidden" />
             </div>
 
-            <!-- Upload (bolinha) â€” mantido no topo ao rolar a grelha -->
+            <!-- Upload (bolinha) — mantido no topo ao rolar a grelha -->
             <div class="mt-3">
               <div class="ks-drop" id="ks-drop">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -3311,9 +3311,9 @@
                     </svg>
                   </div>
                   <div class="ks-bubble-txt">
-                    <div class="ks-bubble-title" id="ks-bubble-title">Enviandoâ€¦</div>
+                    <div class="ks-bubble-title" id="ks-bubble-title">Enviando…</div>
                     <div class="ks-bubble-file" id="ks-bubble-file">Arquivo: -</div>
-                    <div class="ks-bubble-meta" id="ks-bubble-meta">0/0 â€¢ 0%</div>
+                    <div class="ks-bubble-meta" id="ks-bubble-meta">0/0 • 0%</div>
                     <div class="ks-bubble-actions">
                       <button class="ks-btn" type="button" id="ks-bubble-cancel">Cancelar</button>
                     </div>
@@ -3399,7 +3399,7 @@
     </div>
   </div>
 
-  <!-- Modal: Dashboard vendas â€” detalhe recebido / falta / cortesia -->
+  <!-- Modal: Dashboard vendas — detalhe recebido / falta / cortesia -->
   <div id="ks-sales-dash-detail-modal" class="fixed inset-0 hidden items-center justify-center p-4"
     style="background:rgba(0,0,0,.55);z-index:125;" aria-hidden="true">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
@@ -3476,7 +3476,7 @@
             <div><span class="text-white/60">Link:</span> <span class="ks-link" id="ks-client-share-link">-</span></div>
             <div class="mt-1"><span class="text-white/60">E-mail:</span> <span id="ks-client-share-email">-</span></div>
             <div class="mt-1"><span class="text-white/60">Senha:</span> <span class="font-mono"
-                id="ks-client-share-pass">â€¢â€¢â€¢â€¢â€¢â€¢</span></div>
+                id="ks-client-share-pass">••••••</span></div>
           </div>
           <button class="ks-btn ks-btn-primary mt-4 w-full" id="ks-client-share-copy"><i class="fas fa-copy"></i>
             Copiar</button>
@@ -3492,7 +3492,7 @@
     </div>
   </div>
 
-  <!-- Modal: dados do cliente (atividades) â€” copiar nome, e-mail, telefone -->
+  <!-- Modal: dados do cliente (atividades) — copiar nome, e-mail, telefone -->
   <div id="ks-act-contact-modal" class="fixed inset-0 hidden items-center justify-center p-4"
     style="background:rgba(0,0,0,.55);z-index:125;" aria-hidden="true">
     <div class="bg-white ks-modal-light w-full max-w-md rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
@@ -3505,21 +3505,21 @@
         <div>
           <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Nome</div>
           <div class="flex gap-2 items-center">
-            <span id="ks-act-contact-nome" class="flex-1 min-w-0 break-words font-medium">â€”</span>
+            <span id="ks-act-contact-nome" class="flex-1 min-w-0 break-words font-medium">—</span>
             <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="nome"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div>
           <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">E-mail</div>
           <div class="flex gap-2 items-center">
-            <span id="ks-act-contact-email" class="flex-1 min-w-0 break-all font-mono text-xs">â€”</span>
+            <span id="ks-act-contact-email" class="flex-1 min-w-0 break-all font-mono text-xs">—</span>
             <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="email"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div>
           <div class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1">Telefone</div>
           <div class="flex gap-2 items-center">
-            <span id="ks-act-contact-phone" class="flex-1 min-w-0 break-all font-mono text-xs">â€”</span>
+            <span id="ks-act-contact-phone" class="flex-1 min-w-0 break-all font-mono text-xs">—</span>
             <button type="button" class="ks-btn ks-btn-primary shrink-0 text-xs px-3 py-1.5" data-ks-act-copy="phone"><i class="fas fa-copy"></i></button>
           </div>
         </div>
@@ -3555,7 +3555,7 @@
         <p id="ks-export-all-hint" class="text-xs text-slate-500 mt-2 leading-relaxed min-h-[1.25rem]"></p>
         <div id="ks-export-filter-block" class="hidden mt-3">
           <textarea id="ks-export-filter-input" class="ks-input" rows="3"
-            placeholder="IDs do sistema (ex.: 1642) ou código no ficheiro (3, ADR0003) â€” vírgula ou linha"
+            placeholder="IDs do sistema (ex.: 1642) ou código no ficheiro (3, ADR0003) — vírgula ou linha"
             style="font-size:13px"></textarea>
           <div class="mt-2 flex flex-wrap gap-2 items-center">
             <button type="button" id="ks-export-filter-apply" class="ks-btn flex items-center gap-2">
@@ -3631,8 +3631,8 @@
   <!-- Toast host -->
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="/config.js?v=2026-09-08-no-render"></script>
-  <script src="/kingSelectionProject.js?v=2026-09-07-encoding"></script>
+  <script src="/config.js?v=2026-09-09-ux1"></script>
+  <script src="/kingSelectionProject.js?v=2026-09-09-ux1"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>

@@ -6,6 +6,8 @@
 (function (global) {
     'use strict';
 
+    var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
+
     function core() { return global.DashboardCore || {}; }
     function cartao() { return global.DashboardCartao || {}; }
     function editor() { return global.DashboardEditor || {}; }
@@ -135,9 +137,9 @@ async function saveAllChanges(event) {
 
         // Capturar WhatsApp (apenas números) - usuário deve incluir código do país
         const whatsappValue = (SELECTORS.whatsappNumberInput?.value || '').trim().replace(/\D/g, '');
-        console.log('[SAVE-ALL] WhatsApp capturado:', whatsappValue);
-        console.log('[SAVE-ALL] Campo WhatsApp existe?', !!SELECTORS.whatsappNumberInput);
-        console.log('[SAVE-ALL] Valor original do campo:', SELECTORS.whatsappNumberInput?.value);
+        __ckDashLog('[SAVE-ALL] WhatsApp capturado:', whatsappValue);
+        __ckDashLog('[SAVE-ALL] Campo WhatsApp existe?', !!SELECTORS.whatsappNumberInput);
+        __ckDashLog('[SAVE-ALL] Valor original do campo:', SELECTORS.whatsappNumberInput?.value);
 
         const cardOpacityVal = SELECTORS.cardOpacityPicker ? parseFloat(SELECTORS.cardOpacityPicker.value) : 1;
         const bgImageOpacityVal = SELECTORS.backgroundImageOpacityPicker ? parseFloat(SELECTORS.backgroundImageOpacityPicker.value) : 1;
@@ -186,7 +188,7 @@ async function saveAllChanges(event) {
             Object.assign(saveData.details, window.getVitrineDetailsForSave());
         }
 
-        console.log('YZ [SAVE-ALL] Dados de personalização capturados:', {
+        __ckDashLog('YZ [SAVE-ALL] Dados de personalização capturados:', {
             fontFamily: saveData.details.fontFamily,
             backgroundColor: saveData.details.backgroundColor,
             textColor: saveData.details.textColor,
@@ -201,14 +203,14 @@ async function saveAllChanges(event) {
 
         // Capturar todos os itens do container
         const allItemElements = document.querySelectorAll('#items-container .item, #items-container .module-item');
-        console.log(`Itens encontrados no DOM: ${allItemElements.length}`);
+        __ckDashLog(`Itens encontrados no DOM: ${allItemElements.length}`);
 
         if (allItemElements.length === 0) {
             console.warn('Nenhum item encontrado no container #items-container');
-            console.log('Verificando se o container existe:', !!document.getElementById('items-container'));
+            __ckDashLog('Verificando se o container existe:', !!document.getElementById('items-container'));
             const container = document.getElementById('items-container');
             if (container) {
-                console.log('Y"< Conteúdo do container:', container.innerHTML.substring(0, 200));
+                __ckDashLog('Y"< Conteúdo do container:', container.innerHTML.substring(0, 200));
             }
         }
 
@@ -223,7 +225,7 @@ async function saveAllChanges(event) {
             // Verificar se é um item temporário (não salvo ainda)
             // IMPORTANTE: Mesmo itens 'sales_page' temporários precisam ser criados no servidor
             if (itemIdRaw && (itemIdRaw.toString().startsWith('temp_') || itemEl.dataset.isUnsaved === 'true')) {
-                console.log(`Item temporário encontrado: ${itemIdRaw} (${itemType}) - será criado no servidor ao salvar`);
+                __ckDashLog(`Item temporário encontrado: ${itemIdRaw} (${itemType}) - será criado no servidor ao salvar`);
                 tempItems.push({ element: itemEl, index });
             } else {
                 const itemId = parseInt(itemIdRaw, 10);
@@ -242,7 +244,7 @@ async function saveAllChanges(event) {
                 // IMPORTANTE: sales_page é DESVINCULADO do save-all
                 // Não incluir no save-all - ele salva diretamente quando você salva na página de vendas
                 if (itemType === 'sales_page') {
-                    console.log(`Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
+                    __ckDashLog(`Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
                     return; // Pular este item
                 }
 
@@ -256,12 +258,12 @@ async function saveAllChanges(event) {
         const tempItemsSalesPage = tempItems.filter(tempItem => tempItem.element.dataset.itemType === 'sales_page');
 
         if (tempItemsSalesPage.length > 0) {
-            console.log(`${tempItemsSalesPage.length} sales_page(s) temporário(s) encontrado(s) - NÃO serão processados aqui (já foram criados quando adicionados)`);
+            __ckDashLog(`${tempItemsSalesPage.length} sales_page(s) temporário(s) encontrado(s) - NÃO serão processados aqui (já foram criados quando adicionados)`);
         }
 
         // Criar itens temporários no servidor ANTES de salvar (exceto sales_page)
         if (tempItemsNonSalesPage.length > 0) {
-            console.log(`Y?. Criando ${tempItemsNonSalesPage.length} item(ns) temporário(s) no servidor...`);
+            __ckDashLog(`Y?. Criando ${tempItemsNonSalesPage.length} item(ns) temporário(s) no servidor...`);
             for (const tempItem of tempItemsNonSalesPage) {
                 const itemEl = tempItem.element;
                 const itemType = itemEl.dataset.itemType;
@@ -319,7 +321,7 @@ async function saveAllChanges(event) {
                         tempItemData.logo_size = logo_size;
                     }
 
-                    console.log(`Criando item temporário ${tempId} no servidor...`);
+                    __ckDashLog(`Criando item temporário ${tempId} no servidor...`);
                     const createResponse = await fetch(`${env.API_URL}/api/profile/items`, {
                         method: 'POST',
                         headers: env.HEADERS,
@@ -332,7 +334,7 @@ async function saveAllChanges(event) {
                     }
 
                     const createdItem = await createResponse.json();
-                    console.log(`Item temporário ${tempId} criado no servidor com ID ${createdItem.id}`);
+                    __ckDashLog(`Item temporário ${tempId} criado no servidor com ID ${createdItem.id}`);
 
                     // Atualizar o ID temporário pelo ID real no DOM
                     const oldId = itemEl.dataset.id;
@@ -346,7 +348,7 @@ async function saveAllChanges(event) {
                     if (itemEl.dataset.isTemporary) {
                         delete itemEl.dataset.isTemporary;
                     }
-                    console.log(` ID atualizado de ${oldId} para ${itemEl.dataset.id} no elemento DOM`);
+                    __ckDashLog(` ID atualizado de ${oldId} para ${itemEl.dataset.id} no elemento DOM`);
 
                     // Atualizar também no currentProfileData
                     if (window.currentProfileData && window.currentProfileData.items) {
@@ -360,7 +362,7 @@ async function saveAllChanges(event) {
                     throw new Error(`Erro ao criar módulo "${getItemTypeName(itemType)}": ${createError.message}`);
                 }
             }
-            console.log(`Todos os ${tempItems.length} item(ns) temporário(s) foram criados no servidor`);
+            __ckDashLog(`Todos os ${tempItems.length} item(ns) temporário(s) foram criados no servidor`);
         }
 
         // Agora processar todos os itens (incluindo os recém-criados) para salvar
@@ -374,7 +376,7 @@ async function saveAllChanges(event) {
                 // Não incluir no save-all - ele salva diretamente quando você salva na página de vendas
                 // O toggle de ativar/desativar funciona independentemente
                 if (itemType === 'sales_page') {
-                    console.log(`Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
+                    __ckDashLog(`Sales_page ${itemId} DESVINCULADO do save-all - não será incluído`);
                     return null; // Não incluir no save-all
                 }
 
@@ -400,7 +402,7 @@ async function saveAllChanges(event) {
                     isActive = itemEl.dataset.isActive !== 'false';
                 }
 
-                console.log(`Item ${itemId} (${itemType}): is_active = ${isActive}`, {
+                __ckDashLog(`Item ${itemId} (${itemType}): is_active = ${isActive}`, {
                     hasToggle: !!toggleInput,
                     toggleChecked: toggleInput?.checked,
                     datasetIsActive: itemEl.dataset.isActive
@@ -420,7 +422,7 @@ async function saveAllChanges(event) {
                 itemEl.dataset.displayOrder = finalDisplayOrder;
                 itemEl.setAttribute('data-display-order', finalDisplayOrder);
 
-                console.log(`Y"S Item ${itemId} (${itemType}): display_order = ${finalDisplayOrder} (posição ${actualIndex >= 0 ? actualIndex : 'não encontrado'})`);
+                __ckDashLog(`Y"S Item ${itemId} (${itemType}): display_order = ${finalDisplayOrder} (posição ${actualIndex >= 0 ? actualIndex : 'não encontrado'})`);
 
                 let itemData = {
                     id: itemId,
@@ -537,7 +539,7 @@ async function saveAllChanges(event) {
                         itemData.logo_fit_mode = linkLogoFitMode;
 
                         const originalItem = window.currentProfileData && window.currentProfileData.items ? window.currentProfileData.items.find(i => i.id === itemId) : null;
-                        console.log(`Logo size para item ${itemId}: ${logoSizeValue}px, fit_mode: ${linkLogoFitMode} (origem: modal=${!!modalOpenForThisItem}, lista=${!!linkLogoSizeInputItem}, dataset=${!!itemEl.dataset.logoSize}, original=${!!(originalItem && originalItem.logo_size)})`);
+                        __ckDashLog(`Logo size para item ${itemId}: ${logoSizeValue}px, fit_mode: ${linkLogoFitMode} (origem: modal=${!!modalOpenForThisItem}, lista=${!!linkLogoSizeInputItem}, dataset=${!!itemEl.dataset.logoSize}, original=${!!(originalItem && originalItem.logo_size)})`);
 
                         // Se tiver logo, icon_class pode ser null, senão usar o ícone selecionado
                         const linkIconPicker = itemEl.querySelector('.item-icon-picker');
@@ -687,7 +689,7 @@ async function saveAllChanges(event) {
                             }
                         }
                         itemData.logo_fit_mode = salesPageLogoFitMode;
-                        console.log(`Logo size para sales_page ${itemId}: ${salesPageLogoSizeValue}px, fit_mode: ${salesPageLogoFitMode}`);
+                        __ckDashLog(`Logo size para sales_page ${itemId}: ${salesPageLogoSizeValue}px, fit_mode: ${salesPageLogoFitMode}`);
                         break;
                     case 'banner':
                         itemData.icon_class = null;
@@ -716,12 +718,12 @@ async function saveAllChanges(event) {
                             imageInputModal = document.querySelector('#edit-item-modal #edit-image-url');
                         }
 
-                        console.log(`[BANNER] Capturando image_url para item ${itemId}:`);
-                        console.log(`  - Modal aberto?`, !!document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`));
-                        console.log(`  - imageInputModal encontrado?`, !!imageInputModal);
-                        console.log(`  - imageInputModal.value:`, imageInputModal?.value);
-                        console.log(`  - imageInputItem encontrado?`, !!imageInputItem);
-                        console.log(`  - imageInputItem.value:`, imageInputItem?.value);
+                        __ckDashLog(`[BANNER] Capturando image_url para item ${itemId}:`);
+                        __ckDashLog(`  - Modal aberto?`, !!document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"]`));
+                        __ckDashLog(`  - imageInputModal encontrado?`, !!imageInputModal);
+                        __ckDashLog(`  - imageInputModal.value:`, imageInputModal?.value);
+                        __ckDashLog(`  - imageInputItem encontrado?`, !!imageInputItem);
+                        __ckDashLog(`  - imageInputItem.value:`, imageInputItem?.value);
 
                         // image_url (priorizar modal se aberto, depois lista, depois dataset)
                         let imageValue = '';
@@ -734,7 +736,7 @@ async function saveAllChanges(event) {
                                 const modalValue = imageInputModal.value.trim();
                                 if (modalValue && !modalValue.includes('placeholder') && !modalValue.startsWith('data:image/svg')) {
                                     imageValue = modalValue;
-                                    console.log(`[BANNER] Image URL do modal para item ${itemId}:`, imageValue);
+                                    __ckDashLog(`[BANNER] Image URL do modal para item ${itemId}:`, imageValue);
                                 }
                             }
 
@@ -743,7 +745,7 @@ async function saveAllChanges(event) {
                                 const bannerPreview = document.getElementById('edit-banner-preview');
                                 if (bannerPreview && bannerPreview.src && !bannerPreview.src.includes('placeholder') && !bannerPreview.src.startsWith('data:image/svg')) {
                                     imageValue = bannerPreview.src;
-                                    console.log(`[BANNER] Image URL do preview do modal para item ${itemId}:`, imageValue);
+                                    __ckDashLog(`[BANNER] Image URL do preview do modal para item ${itemId}:`, imageValue);
                                 }
                             }
                         }
@@ -753,7 +755,7 @@ async function saveAllChanges(event) {
                             const itemValue = imageInputItem.value.trim();
                             if (itemValue && !itemValue.includes('placeholder') && !itemValue.startsWith('data:image/svg')) {
                                 imageValue = itemValue;
-                                console.log(`[BANNER] Image URL da lista para item ${itemId}:`, imageValue);
+                                __ckDashLog(`[BANNER] Image URL da lista para item ${itemId}:`, imageValue);
                             }
                         }
 
@@ -762,7 +764,7 @@ async function saveAllChanges(event) {
                             const thumbPreview = itemEl.querySelector('.banner-preview-thumb');
                             if (thumbPreview && thumbPreview.src && !thumbPreview.src.includes('placeholder') && !thumbPreview.src.startsWith('data:image/svg')) {
                                 imageValue = thumbPreview.src;
-                                console.log(`[BANNER] Image URL do preview da lista para item ${itemId}:`, imageValue);
+                                __ckDashLog(`[BANNER] Image URL do preview da lista para item ${itemId}:`, imageValue);
                             }
                         }
 
@@ -772,7 +774,7 @@ async function saveAllChanges(event) {
                                 const originalData = JSON.parse(itemEl.dataset.originalData);
                                 if (originalData.image_url && !originalData.image_url.includes('placeholder') && !originalData.image_url.startsWith('data:image/svg')) {
                                     imageValue = originalData.image_url.trim();
-                                    console.log(`[BANNER] Image URL do originalData para item ${itemId}:`, imageValue);
+                                    __ckDashLog(`[BANNER] Image URL do originalData para item ${itemId}:`, imageValue);
                                 }
                             } catch (e) {
                                 console.warn('Erro ao parsear originalData:', e);
@@ -786,8 +788,8 @@ async function saveAllChanges(event) {
                             itemData.image_url = null;
                         }
 
-                        console.log(`[BANNER] Image URL FINAL capturado para item ${itemId}:`, itemData.image_url);
-                        console.log(`[BANNER] itemData completo para banner:`, {
+                        __ckDashLog(`[BANNER] Image URL FINAL capturado para item ${itemId}:`, itemData.image_url);
+                        __ckDashLog(`[BANNER] itemData completo para banner:`, {
                             id: itemData.id,
                             item_type: itemData.item_type,
                             image_url: itemData.image_url,
@@ -865,7 +867,7 @@ async function saveAllChanges(event) {
                             carouselJsonInput = carouselJsonInputItem;
                         }
 
-                        console.log(`[CARROSSEL] Salvando item ${itemId}:`, {
+                        __ckDashLog(`[CARROSSEL] Salvando item ${itemId}:`, {
                             modalValue: carouselJsonInputModal?.value?.substring(0, 50) || 'vazio',
                             itemValue: carouselJsonInputItem?.value?.substring(0, 50) || 'vazio',
                             usando: carouselJsonInput === carouselJsonInputModal ? 'modal' : (carouselJsonInput === carouselJsonInputItem ? 'item' : 'nenhum')
@@ -885,16 +887,16 @@ async function saveAllChanges(event) {
                                         itemData.destination_url = JSON.stringify(realImages);
                                         const firstImg = typeof realImages[0] === 'string' ? realImages[0] : (realImages[0].image_url || realImages[0]);
                                         itemData.image_url = firstImg;
-                                        console.log(`[CARROSSEL] Salvando ${realImages.length} imagem(ns) para item ${itemId}`);
+                                        __ckDashLog(`[CARROSSEL] Salvando ${realImages.length} imagem(ns) para item ${itemId}`);
                                     } else {
                                         itemData.destination_url = JSON.stringify([]);
                                         itemData.image_url = '';
-                                        console.log(`[CARROSSEL] Nenhuma imagem válida encontrada para item ${itemId}`);
+                                        __ckDashLog(`[CARROSSEL] Nenhuma imagem válida encontrada para item ${itemId}`);
                                     }
                                 } else {
                                     itemData.destination_url = JSON.stringify([]);
                                     itemData.image_url = '';
-                                    console.log(`[CARROSSEL] Array vazio ou inválido para item ${itemId}`);
+                                    __ckDashLog(`[CARROSSEL] Array vazio ou inválido para item ${itemId}`);
                                 }
                             } catch (e) {
                                 console.error(`[CARROSSEL] Erro ao parsear imagens do item ${itemId}:`, e);
@@ -905,11 +907,11 @@ async function saveAllChanges(event) {
                         } else if (carouselImageInput && carouselImageInput.value && !carouselImageInput.value.includes('placeholder')) {
                             itemData.destination_url = JSON.stringify([carouselImageInput.value]);
                             itemData.image_url = carouselImageInput.value;
-                            console.log(`[CARROSSEL] Usando image_url como fallback para item ${itemId}`);
+                            __ckDashLog(`[CARROSSEL] Usando image_url como fallback para item ${itemId}`);
                         } else {
                             itemData.destination_url = JSON.stringify([]);
                             itemData.image_url = '';
-                            console.log(`[CARROSSEL] Nenhum dado encontrado para item ${itemId}`);
+                            __ckDashLog(`[CARROSSEL] Nenhum dado encontrado para item ${itemId}`);
                         }
                         itemData.aspect_ratio = itemEl.dataset.aspectRatio || 'auto';
                         break;
@@ -1032,15 +1034,15 @@ async function saveAllChanges(event) {
             addedFromServer++;
         });
         if (addedFromServer > 0) {
-            console.log(addedFromServer + ' item(ns) do servidor que não estavam no DOM foram incluídos no save para não sumir do cartão público.');
+            __ckDashLog(addedFromServer + ' item(ns) do servidor que não estavam no DOM foram incluídos no save para não sumir do cartão público.');
         }
 
         // IMPORTANTE: Verificar se há sales_page no array antes de enviar
-        console.log('=== DADOS ENVIADOS PARA SALVAR ===');
-        console.log(`Total de itens: ${saveData.items.length}`);
-        console.log('Items completos:', JSON.stringify(saveData.items, null, 2));
+        __ckDashLog('=== DADOS ENVIADOS PARA SALVAR ===');
+        __ckDashLog(`Total de itens: ${saveData.items.length}`);
+        __ckDashLog('Items completos:', JSON.stringify(saveData.items, null, 2));
         saveData.items.forEach((item, idx) => {
-            console.log(`Item ${idx} (${item.item_type}):`, {
+            __ckDashLog(`Item ${idx} (${item.item_type}):`, {
                 id: item.id,
                 title: item.title,
                 is_active: item.is_active,
@@ -1058,15 +1060,15 @@ async function saveAllChanges(event) {
             type: el.dataset.itemType,
             displayOrder: el.dataset.displayOrder || (idx + 1)
         }));
-        console.log('=== ORDEM VISUAL ATUAL NO DOM ===');
-        console.log(JSON.stringify(currentVisualOrder, null, 2));
+        __ckDashLog('=== ORDEM VISUAL ATUAL NO DOM ===');
+        __ckDashLog(JSON.stringify(currentVisualOrder, null, 2));
 
         // SIMPLIFICADO: Sales_page agora salva diretamente quando você clica em "Salvar" na página de vendas
         // Não precisa mais aplicar alterações pendentes aqui - os dados já estão salvos no servidor
         // O botão "Publicar alterações" apenas atualiza o status se necessário
 
-        console.log('Enviando requisição para:', `${env.API_URL}/api/profile/save-all`);
-        console.log('Dados sendo enviados:', {
+        __ckDashLog('Enviando requisição para:', `${env.API_URL}/api/profile/save-all`);
+        __ckDashLog('Dados sendo enviados:', {
             itemsCount: saveData.items?.length || 0,
             hasDetails: !!saveData.details,
             items: saveData.items?.map(item => ({
@@ -1097,7 +1099,7 @@ async function saveAllChanges(event) {
             throw new Error(`Erro de rede: ${fetchError.message}`);
         }
 
-        console.log('Resposta recebida:', {
+        __ckDashLog('Resposta recebida:', {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok,
@@ -1133,8 +1135,8 @@ async function saveAllChanges(event) {
             throw new Error(errorMessage);
         }
 
-        console.log('Dados salvos com sucesso:', result);
-        console.log('Resposta completa:', JSON.stringify(result, null, 2));
+        __ckDashLog('Dados salvos com sucesso:', result);
+        __ckDashLog('Resposta completa:', JSON.stringify(result, null, 2));
 
         try {
             if (window.DashboardPersonalizar && typeof window.DashboardPersonalizar.reloadPreview === 'function') {
@@ -1170,7 +1172,7 @@ async function saveAllChanges(event) {
                             bi.bible_data.verse_size = verse_size;
                         }
                     }
-                    console.log('Config Bíblia salva:', { isVisible, verse_position, verse_size });
+                    __ckDashLog('Config Bíblia salva:', { isVisible, verse_position, verse_size });
                 }
             } catch (bibleErr) {
                 console.warn('Erro ao salvar config Bíblia:', bibleErr);
@@ -1179,7 +1181,7 @@ async function saveAllChanges(event) {
 
         // Atualizar os itens na lista usando os dados retornados pela API (em tempo real)
         if (result.items && Array.isArray(result.items)) {
-            console.log(` Atualizando ${result.items.length} itens na interface usando dados da API...`);
+            __ckDashLog(` Atualizando ${result.items.length} itens na interface usando dados da API...`);
             for (const itemData of result.items) {
                 // Pular sales_page - eles são atualizados separadamente
                 if (itemData.item_type === 'sales_page') {
@@ -1189,7 +1191,7 @@ async function saveAllChanges(event) {
                 // Usar a função centralizada para atualizar cada item
                 await env.updateItemFromApiResponse(itemData.id, itemData, itemData.item_type);
             }
-            console.log(`Todos os itens atualizados em tempo real`);
+            __ckDashLog(`Todos os itens atualizados em tempo real`);
         } else {
             console.warn('Resposta da API não contém items. Usando dados locais como fallback.');
             // Fallback: atualizar usando saveData.items (dados enviados)
@@ -1293,7 +1295,7 @@ async function saveAllChanges(event) {
                 visualOrderMap.set(String(itemId), visualIndex + 1);
             }
         });
-        console.log(`Y"< Ordem visual capturada ANTES de processar: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
+        __ckDashLog(`Y"< Ordem visual capturada ANTES de processar: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
 
         // IMPORTANTE: Verificar se há itens sales_page na lista
         // Se houver, buscar dados atualizados APENAS do sales_page e atualizar localmente
@@ -1302,15 +1304,15 @@ async function saveAllChanges(event) {
         const hasSalesPageItems = salesPageElements.length > 0;
 
         if (hasSalesPageItems) {
-            console.log(`Detectado ${salesPageElements.length} item(ns) sales_page na lista.`);
-            console.log('Buscando dados atualizados APENAS do sales_page para preservar alterações salvas.');
+            __ckDashLog(`Detectado ${salesPageElements.length} item(ns) sales_page na lista.`);
+            __ckDashLog('Buscando dados atualizados APENAS do sales_page para preservar alterações salvas.');
 
             // Buscar dados atualizados de cada sales_page diretamente do servidor
             for (const itemEl of salesPageElements) {
                 const itemId = itemEl.dataset.id;
                 if (itemId && !itemId.toString().startsWith('temp_')) {
                     try {
-                        console.log(`Buscando dados atualizados do sales_page ${itemId}...`);
+                        __ckDashLog(`Buscando dados atualizados do sales_page ${itemId}...`);
                         const itemResponse = await fetch(`${env.API_URL}/api/profile/items/${itemId}`, {
                             method: 'GET',
                             headers: env.HEADERS
@@ -1347,7 +1349,7 @@ async function saveAllChanges(event) {
                             if (itemIndex !== -1) {
                                 // Atualizar item existente com dados do servidor
                                 window.currentProfileData.items[itemIndex] = updatedSalesPageItem;
-                                console.log(`Dados do sales_page ${itemId} atualizados em currentProfileData:`, {
+                                __ckDashLog(`Dados do sales_page ${itemId} atualizados em currentProfileData:`, {
                                     title: salesPageData.title,
                                     image_url: salesPageData.image_url?.substring(0, 50) || 'null',
                                     logo_size: salesPageData.logo_size || 24
@@ -1355,7 +1357,7 @@ async function saveAllChanges(event) {
                             } else {
                                 // Adicionar item se não existir
                                 window.currentProfileData.items.push(updatedSalesPageItem);
-                                console.log(`Dados do sales_page ${itemId} adicionados em currentProfileData:`, {
+                                __ckDashLog(`Dados do sales_page ${itemId} adicionados em currentProfileData:`, {
                                     title: salesPageData.title,
                                     image_url: salesPageData.image_url?.substring(0, 50) || 'null',
                                     logo_size: salesPageData.logo_size || 24
@@ -1374,7 +1376,7 @@ async function saveAllChanges(event) {
             // Mas apenas se houver dados e ordem visual capturada
             if (window.currentProfileData && window.currentProfileData.items) {
                 if (visualOrderMap.size > 0) {
-                    console.log(' Aplicando ordem visual preservada aos dados antes de renderizar...');
+                    __ckDashLog(' Aplicando ordem visual preservada aos dados antes de renderizar...');
                     window.currentProfileData.items.forEach(item => {
                         const itemId = String(item.id);
                         const visualOrder = visualOrderMap.get(itemId);
@@ -1382,7 +1384,7 @@ async function saveAllChanges(event) {
                             const oldOrder = item.display_order;
                             item.display_order = visualOrder;
                             if (oldOrder !== visualOrder) {
-                                console.log(` Item ${itemId}: display_order ${oldOrder} -> ${visualOrder}`);
+                                __ckDashLog(` Item ${itemId}: display_order ${oldOrder} -> ${visualOrder}`);
                             }
                         }
                     });
@@ -1393,17 +1395,17 @@ async function saveAllChanges(event) {
                         const orderB = visualOrderMap.get(String(b.id)) || b.display_order || 9999;
                         return orderA - orderB;
                     });
-                    console.log('Ordem visual aplicada aos dados');
+                    __ckDashLog('Ordem visual aplicada aos dados');
                 } else {
-                    console.log('Ordem visual não capturada, usando ordem do servidor');
+                    __ckDashLog('Ordem visual não capturada, usando ordem do servidor');
                 }
             } else {
                 console.error('O window.currentProfileData ou items não existe!');
             }
 
-            console.log('NÃO recarregando todos os dados para preservar alterações salvas na página de vendas.');
-            console.log('Os dados da página de vendas foram atualizados diretamente do servidor.');
-            console.log('O botão "Publicar alterações" apenas publica os outros módulos, não afeta a página de vendas.');
+            __ckDashLog('NÃO recarregando todos os dados para preservar alterações salvas na página de vendas.');
+            __ckDashLog('Os dados da página de vendas foram atualizados diretamente do servidor.');
+            __ckDashLog('O botão "Publicar alterações" apenas publica os outros módulos, não afeta a página de vendas.');
 
             // Re-renderizar para garantir que os dados atualizados do sales_page sejam exibidos
             if (window.currentProfileData) {
@@ -1427,7 +1429,7 @@ async function saveAllChanges(event) {
                     });
 
                     if (needsReorder) {
-                        console.log(' Reordenando elementos no DOM para manter ordem visual (caminho sales_page)...');
+                        __ckDashLog(' Reordenando elementos no DOM para manter ordem visual (caminho sales_page)...');
 
                         // Criar array ordenado baseado na ordem visual
                         const sortedItems = itemsInDOM.slice().sort((a, b) => {
@@ -1450,24 +1452,24 @@ async function saveAllChanges(event) {
                             }
                         });
 
-                        console.log('Elementos reordenados no DOM (caminho sales_page)');
+                        __ckDashLog('Elementos reordenados no DOM (caminho sales_page)');
 
                         // Re-inicializar Sortable após reordenar
                         if (typeof initSortable === 'function') {
                             setTimeout(() => {
                                 env.initSortable();
-                                console.log('Sortable reinicializado após reordenar (caminho sales_page)');
+                                __ckDashLog('Sortable reinicializado após reordenar (caminho sales_page)');
                             }, 50);
                         }
                     } else {
-                        console.log('Elementos já estão na ordem correta no DOM (caminho sales_page)');
+                        __ckDashLog('Elementos já estão na ordem correta no DOM (caminho sales_page)');
                     }
                 }
             });
 
             // Atualizar preview local
             env.updateLivePreviewFromForm();
-            console.log('Alterações publicadas sem recarregar todos os dados (preservando alterações da página de vendas)');
+            __ckDashLog('Alterações publicadas sem recarregar todos os dados (preservando alterações da página de vendas)');
             return; // Retornar cedo para não recarregar todos os dados
         }
 
@@ -1489,17 +1491,17 @@ async function saveAllChanges(event) {
             itemsInDOM.add(itemId);
         });
 
-        console.log(`Y"< Ordem visual capturada: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
-        console.log(`Y"< Itens no DOM antes de recarregar: ${itemsInDOM.size}`, Array.from(itemsInDOM));
+        __ckDashLog(`Y"< Ordem visual capturada: ${visualOrderMap.size} itens`, Array.from(visualOrderMap.entries()));
+        __ckDashLog(`Y"< Itens no DOM antes de recarregar: ${itemsInDOM.size}`, Array.from(itemsInDOM));
 
         // Aguardar um pouco antes de recarregar para garantir que o servidor processou tudo
         // Isso evita que elementos sumam e voltem rapidamente
-        console.log('⏳ Aguardando processamento do servidor...');
+        __ckDashLog('⏳ Aguardando processamento do servidor...');
         await new Promise(resolve => setTimeout(resolve, 1500)); // Aumentar delay para 1.5s para garantir que DELETE foi processado
 
         // Preservar valor do WhatsApp antes de recarregar (caso a coluna não exista no banco)
         const preservedWhatsapp = SELECTORS.whatsappNumberInput?.value || '';
-        console.log('[SAVE-ALL] Preservando valor do WhatsApp antes de recarregar:', preservedWhatsapp);
+        __ckDashLog('[SAVE-ALL] Preservando valor do WhatsApp antes de recarregar:', preservedWhatsapp);
 
         // Preservar fundo do cartão e fundo de tela antes de recarregar (evita "salva mas some")
         const preservedFundo = {
@@ -1510,17 +1512,17 @@ async function saveAllChanges(event) {
             card_background_color: SELECTORS.cardBackgroundColorPicker?.value || '#141417',
             card_opacity: SELECTORS.cardOpacityPicker ? parseFloat(SELECTORS.cardOpacityPicker.value) : 1
         };
-        console.log('YZ [SAVE-ALL] Preservando fundo antes de recarregar:', preservedFundo);
+        __ckDashLog('YZ [SAVE-ALL] Preservando fundo antes de recarregar:', preservedFundo);
 
         // Recarregar dados do servidor para garantir sincronização
         // Isso é necessário para garantir que novos módulos apareçam no cartão público
-        console.log(' Recarregando dados do servidor após salvar...');
+        __ckDashLog(' Recarregando dados do servidor após salvar...');
         try {
             await env.fetchProfileData(true); // Forçar atualização imediata
 
             // Se o WhatsApp não veio do servidor mas tinha valor antes, restaurar
             if (preservedWhatsapp && (!window.currentProfileData?.details?.whatsapp || window.currentProfileData.details.whatsapp === '')) {
-                console.log('[SAVE-ALL] Restaurando valor do WhatsApp preservado:', preservedWhatsapp);
+                __ckDashLog('[SAVE-ALL] Restaurando valor do WhatsApp preservado:', preservedWhatsapp);
                 if (SELECTORS.whatsappNumberInput) {
                     SELECTORS.whatsappNumberInput.value = preservedWhatsapp;
                 }
@@ -1535,7 +1537,7 @@ async function saveAllChanges(event) {
             const cardOpacityOk = (d?.card_opacity ?? d?.cardOpacity) != null;
             const needRestoreFundo = !d || !cardColorOk || !cardOpacityOk;
             if (needRestoreFundo && preservedFundo) {
-                console.log('YZ [SAVE-ALL] Restaurando fundo preservado (API retornou vazio/default)');
+                __ckDashLog('YZ [SAVE-ALL] Restaurando fundo preservado (API retornou vazio/default)');
                 if (SELECTORS.cardBackgroundColorPicker) SELECTORS.cardBackgroundColorPicker.value = preservedFundo.card_background_color;
                 if (SELECTORS.cardOpacityPicker) SELECTORS.cardOpacityPicker.value = String(preservedFundo.card_opacity);
                 if (SELECTORS.backgroundColorPicker) SELECTORS.backgroundColorPicker.value = preservedFundo.background_color;
@@ -1578,7 +1580,7 @@ async function saveAllChanges(event) {
                         const oldOrder = item.display_order;
                         item.display_order = visualOrder;
                         if (oldOrder !== visualOrder) {
-                            console.log(` Aplicando ordem visual ao item ${itemId}: ${oldOrder} -> ${visualOrder}`);
+                            __ckDashLog(` Aplicando ordem visual ao item ${itemId}: ${oldOrder} -> ${visualOrder}`);
                             orderUpdated = true;
                         }
                     }
@@ -1593,8 +1595,8 @@ async function saveAllChanges(event) {
                 });
 
                 if (orderUpdated || visualOrderMap.size > 0) {
-                    console.log('Ordem visual preservada e aplicada aos dados recarregados');
-                    console.log('Y"S Ordem final dos itens:', window.currentProfileData.items.map(item => ({
+                    __ckDashLog('Ordem visual preservada e aplicada aos dados recarregados');
+                    __ckDashLog('Y"S Ordem final dos itens:', window.currentProfileData.items.map(item => ({
                         id: item.id,
                         type: item.item_type,
                         display_order: item.display_order,
@@ -1603,7 +1605,7 @@ async function saveAllChanges(event) {
                 }
 
                 // Re-renderizar lista de módulos (Wi-Fi e outros que estavam no servidor mas não no DOM)
-                console.log(' Renderizando lista de módulos após publicar...');
+                __ckDashLog(' Renderizando lista de módulos após publicar...');
                 if (window.currentProfileData) {
                     env.renderEditor(window.currentProfileData);
                     reconcileModulesListWithProfileData(window.currentProfileData);
@@ -1614,9 +1616,9 @@ async function saveAllChanges(event) {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         setTimeout(() => {
-                            console.log(' Forçando atualização do preview após renderEditor...');
+                            __ckDashLog(' Forçando atualização do preview após renderEditor...');
                             env.updateLivePreviewFromForm();
-                            console.log('Preview atualizado após recarregar dados');
+                            __ckDashLog('Preview atualizado após recarregar dados');
                         }, 500);
                     });
                 });
@@ -1640,7 +1642,7 @@ async function saveAllChanges(event) {
                         });
 
                         if (needsReorder) {
-                            console.log(' Reordenando elementos no DOM para manter ordem visual...');
+                            __ckDashLog(' Reordenando elementos no DOM para manter ordem visual...');
 
                             // Criar array ordenado baseado na ordem visual
                             const sortedItems = itemsInDOM.slice().sort((a, b) => {
@@ -1663,17 +1665,17 @@ async function saveAllChanges(event) {
                                 }
                             });
 
-                            console.log('Elementos reordenados no DOM');
+                            __ckDashLog('Elementos reordenados no DOM');
 
                             // Re-inicializar Sortable após reordenar
                             if (typeof initSortable === 'function') {
                                 setTimeout(() => {
                                     env.initSortable();
-                                    console.log('Sortable reinicializado após reordenar');
+                                    __ckDashLog('Sortable reinicializado após reordenar');
                                 }, 50);
                             }
                         } else {
-                            console.log('Elementos já estão na ordem correta no DOM');
+                            __ckDashLog('Elementos já estão na ordem correta no DOM');
                         }
 
                         // IMPORTANTE: Atualizar preview ao vivo após reordenar DOM
@@ -1681,7 +1683,7 @@ async function saveAllChanges(event) {
                         requestAnimationFrame(() => {
                             setTimeout(() => {
                                 env.updateLivePreviewFromForm();
-                                console.log('Preview atualizado após reordenar DOM');
+                                __ckDashLog('Preview atualizado após reordenar DOM');
                             }, 100);
                         });
                     }
@@ -1691,15 +1693,15 @@ async function saveAllChanges(event) {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         setTimeout(() => {
-                            console.log(' Forçando atualização do preview após recarregar (sem reordenar)...');
+                            __ckDashLog(' Forçando atualização do preview após recarregar (sem reordenar)...');
                             env.updateLivePreviewFromForm();
-                            console.log('Preview atualizado após recarregar (sem reordenar)');
+                            __ckDashLog('Preview atualizado após recarregar (sem reordenar)');
                         }, 500);
                     });
                 });
             }
 
-            console.log('Dados recarregados com ordem visual preservada');
+            __ckDashLog('Dados recarregados com ordem visual preservada');
 
         } catch (fetchError) {
             console.error('Erro ao recarregar dados após salvar:', fetchError);

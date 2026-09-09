@@ -5,6 +5,8 @@
 (function (global) {
     'use strict';
 
+    var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
+
     function core() { return global.DashboardCore || {}; }
     function cartao() { return global.DashboardCartao || {}; }
     function editor() { return global.DashboardEditor || {}; }
@@ -130,7 +132,7 @@ async function openEditModal(itemEl) {
             itemEl.dataset.isTemporary === 'true' ||
             itemEl.hasAttribute('data-is-temporary');
 
-        console.log(`Verificando se sales_page é temporário:`, {
+        __ckDashLog(`Verificando se sales_page é temporário:`, {
             itemId,
             isTemporary,
             hasDataIsTemporary: itemEl.hasAttribute('data-is-temporary'),
@@ -231,7 +233,7 @@ async function openEditModal(itemEl) {
         try {
             itemOriginalData = JSON.parse(itemEl.dataset.originalData);
         } catch (e) {
-            console.log('Erro ao parsear originalData:', e);
+            __ckDashLog('Erro ao parsear originalData:', e);
         }
     }
 
@@ -270,7 +272,7 @@ async function openEditModal(itemEl) {
         currentImageUrl = sanitizeImageUrl(itemOriginalData.image_url || '');
     }
 
-    console.log('Abrindo modal para item:', {
+    __ckDashLog('Abrindo modal para item:', {
         itemId: itemEl.dataset.id,
         itemType: itemType,
         currentDestUrl: currentDestUrl,
@@ -1162,7 +1164,7 @@ async function openEditModal(itemEl) {
                             if (uploadText) uploadText.style.display = 'none';
                             if (removeBtn) removeBtn.style.display = 'block';
 
-                            console.log('Logo do formulário digital enviado:', finalUrl);
+                            __ckDashLog('Logo do formulário digital enviado:', finalUrl);
                         } catch (error) {
                             console.error('Erro ao fazer upload do logo:', error);
                             alert(`Erro ao fazer upload: ${error.message}`);
@@ -1247,7 +1249,7 @@ async function openEditModal(itemEl) {
                             if (uploadText) uploadText.style.display = 'none';
                             if (removeBtn) removeBtn.style.display = 'block';
 
-                            console.log('Banner do formulário digital enviado:', finalUrl);
+                            __ckDashLog('Banner do formulário digital enviado:', finalUrl);
                         } catch (error) {
                             console.error('Erro ao fazer upload do banner:', error);
                             alert(`Erro ao fazer upload: ${error.message}`);
@@ -1291,7 +1293,7 @@ async function openEditModal(itemEl) {
     SELECTORS.editItemModal.dataset.itemType = itemType;
     SELECTORS.editItemModal.dataset.isNewItem = 'false';
 
-    console.log(`[MODAL] Modal configurado:`, {
+    __ckDashLog(`[MODAL] Modal configurado:`, {
         editingId: SELECTORS.editItemModal.dataset.editingId,
         itemType: SELECTORS.editItemModal.dataset.itemType,
         isNewItem: SELECTORS.editItemModal.dataset.isNewItem
@@ -1318,11 +1320,11 @@ async function openEditModal(itemEl) {
             // Garantir que o input tenha listener direto também
             const fileInput = SELECTORS.editModalBody.querySelector(`#carousel-file-new-${itemId}`);
             if (fileInput) {
-                console.log('[CARROSSEL] Input encontrado no modal:', fileInput.id);
+                __ckDashLog('[CARROSSEL] Input encontrado no modal:', fileInput.id);
                 // Remover listener antigo se existir
                 const newInput = fileInput.cloneNode(true);
                 fileInput.parentNode.replaceChild(newInput, fileInput);
-                console.log('[CARROSSEL] Input clonado e substituído para garantir listener');
+                __ckDashLog('[CARROSSEL] Input clonado e substituído para garantir listener');
             } else {
                 console.error('[CARROSSEL] Input não encontrado no modal!');
             }

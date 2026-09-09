@@ -354,13 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             ]);
 
-            console.log('Y"S Dados carregados:', { 
-                stats: stats ? 'OK' : 'null', 
-                users: users ? `${users.length} usuários` : 'null',
-                codes: codes ? `${codes.length} códigos` : 'null',
-                analytics: analytics ? `${Array.isArray(analytics) ? analytics.length : 'não-array'} itens` : 'null',
-                analyticsRaw: analytics
-            });
 
             // Armazenar analytics globalmente
             userAnalytics = (Array.isArray(analytics) ? analytics : []) || [];
@@ -738,12 +731,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        console.log('YZ Renderizando top perfis. Analytics recebido:', {
-            isArray: Array.isArray(analytics),
-            length: Array.isArray(analytics) ? analytics.length : 'N/A',
-            type: typeof analytics,
-            sample: Array.isArray(analytics) && analytics.length > 0 ? analytics[0] : null
-        });
         
         if (!analytics || !Array.isArray(analytics) || analytics.length === 0) {
             topViewedEl.innerHTML = `
@@ -1064,21 +1051,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        console.log('YZ Renderizando analytics com dados:', {
-            hasStats: !!details.stats,
-            stats: details.stats,
-            hasLinks: !!details.links,
-            linksCount: Array.isArray(details.links) ? details.links.length : 'não é array',
-            links: details.links,
-            hasPeriodStats: !!details.period_stats,
-            periodStats: details.period_stats,
-            hasPerformance: !!details.performance,
-            performanceCount: Array.isArray(details.performance) ? details.performance.length : 'não é array',
-            performance: details.performance,
-            hasRecentClicks: !!details.recent_clicks,
-            recentClicksCount: Array.isArray(details.recent_clicks) ? details.recent_clicks.length : 'não é array',
-            rawData: details
-        });
         
         const stats = details.stats || {};
         const links = details.links || [];
@@ -1086,24 +1058,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const performance = details.performance || [];
         const recentClicks = details.recent_clicks || [];
         
-        console.log('Y"S Valores extraídos:', {
-            stats,
-            total_views: stats.total_views,
-            total_clicks: stats.total_clicks,
-            periodStats,
-            linksLength: links.length,
-            period: period
-        });
         
         // Debug detalhado dos links
-        console.log('Y"< Links recebidos:', links.map(l => ({
-            id: l.id,
-            title: l.title,
-            click_count: l.click_count,
-            click_count_period: l.click_count_period,
-            last_click_date: l.last_click_date,
-            first_click_date: l.first_click_date
-        })));
         
         const totalViews = parseInt(stats.total_views) || 0;
         const totalClicks = parseInt(stats.total_clicks) || 0;
@@ -1111,13 +1067,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const viewsPeriod = parseInt(periodStats.views_period) || 0;
         const clicksPeriod = parseInt(periodStats.clicks_period) || 0;
         
-        console.log('Y"S Estatísticas finais calculadas:', {
-            totalViews,
-            totalClicks,
-            viewsPeriod,
-            clicksPeriod,
-            periodSelecionado: period
-        });
         
         // Calcular últimas datas dentro do período
         const periodDays = parseInt(period) || 30;
@@ -2033,8 +1982,10 @@ if (usersTable) {
                 document.getElementById('modal-expires-at').value = '';
             }
 
+            const slugEl = document.getElementById('modal-profile-slug');
+            if (slugEl) slugEl.value = accountTypeCell.dataset.profileSlug || '';
             const actEl = document.getElementById('modal-activation-code');
-            if (actEl) actEl.value = accountTypeCell.dataset.tagCode || accountTypeCell.dataset.profileSlug || '';
+            if (actEl) actEl.value = accountTypeCell.dataset.tagCode || '';
             accountTypeSelect.dispatchEvent(new Event('change'));
             userModal.classList.add('active');
         }
@@ -2047,8 +1998,10 @@ if (usersTable) {
             
             document.getElementById('modal-user-email').value = button.dataset.email;
             document.getElementById('modal-max-invites').value = button.dataset.maxTeamInvites;
+            const slugElBtn = document.getElementById('modal-profile-slug');
+            if (slugElBtn) slugElBtn.value = button.dataset.profileSlug || '';
             const actElBtn = document.getElementById('modal-activation-code');
-            if (actElBtn) actElBtn.value = button.dataset.tagCode || button.dataset.profileSlug || '';
+            if (actElBtn) actElBtn.value = button.dataset.tagCode || '';
 
             // Mapear account_type antigo para novo ao exibir no dropdown
             const accountType = button.dataset.accountType;
@@ -2132,7 +2085,7 @@ if (deleteUserBtn) {
         const id = document.getElementById('modal-user-id').value;
         const email = document.getElementById('modal-user-email').value;
 
-        if (confirm(`ATEN—fO!\n\nVocê tem certeza que deseja deletar permanentemente o usuário '${email}'?\n\nTODOS os dados associados a esta conta (perfil, links, analytics) serão perdidos. Esta ação é IRREVERSÍVEL.`)) {
+        if (confirm(`ATENÇÃO!\n\nVocê tem certeza que deseja deletar permanentemente o usuário '${email}'?\n\nTODOS os dados associados a esta conta (perfil, links, analytics) serão perdidos. Esta ação é IRREVERSÍVEL.`)) {
             try {
                 const response = await fetch(`${API_URL}/users/${id}`, {
                     method: 'DELETE',

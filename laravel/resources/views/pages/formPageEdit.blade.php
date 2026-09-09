@@ -1964,10 +1964,6 @@
                     <i class="fas fa-inbox"></i>
                     <span>Envios | Listas</span>
                 </button>
-                <button class="sidebar-btn checkout-sidebar-btn" id="sidebar-checkout" title="Configurar pagamento PagBank (KingForms)" style="display: none;">
-                    <i class="fas fa-credit-card"></i>
-                    <span>Checkout</span>
-                </button>
                 <button class="sidebar-btn" id="sidebar-dashboard">
                     <i class="fas fa-chart-bar"></i>
                     <span>Dashboard</span>

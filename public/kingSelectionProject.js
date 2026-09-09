@@ -9053,7 +9053,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json().catch(() => ({}));
       if (res.status === 404) {
         throw new Error(
-          'A API no Render ainda não tem a rota r2-inventory. Faça deploy do backend (server.js + routes/kingSelectionR2.routes.js) e confira GET /api/king-selection/r2-ping'
+          'Rota de inventário R2 não encontrada. Verifique o deploy Laravel e a rota GET /api/king-selection/r2-ping.'
         );
       }
       if (!res.ok) throw new Error(data.message || 'Erro ao carregar inventário R2');
@@ -9803,7 +9803,6 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadGallery();
         // [AUTO] Se reconhecimento facial estiver habilitado, disparar processamento automático das novas fotos
         if (fFaceEnabled && fFaceEnabled.checked) {
-          console.log('[AUTO-FACIAL] Disparando processamento automático...');
           processFacialAll({ silent: true }).catch(err => console.error('[AUTO-FACIAL] Erro:', err));
         }
       } catch (_) { }

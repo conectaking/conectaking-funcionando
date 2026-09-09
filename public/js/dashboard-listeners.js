@@ -5,6 +5,8 @@
 (function (global) {
     'use strict';
 
+    var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
+
     function core() { return global.DashboardCore || {}; }
     function cartao() { return global.DashboardCartao || {}; }
     function editor() { return global.DashboardEditor || {}; }
@@ -129,7 +131,7 @@
 
 function setupEventListeners() {
     if (global.__ckDashboardListenersBound) {
-        console.log('[DASHBOARD] setupEventListeners já ligado — skip');
+        __ckDashLog('[DASHBOARD] setupEventListeners já ligado — skip');
         return;
     }
     var c = core();
@@ -139,7 +141,7 @@ function setupEventListeners() {
         return;
     }
     global.__ckDashboardListenersBound = true;
-    console.log('[DASHBOARD] setupEventListeners ligando handlers…');
+    __ckDashLog('[DASHBOARD] setupEventListeners ligando handlers…');
 
     try {
         _setupEventListenersBody();
@@ -287,7 +289,7 @@ function _setupEventListenersBody() {
             // IMPORTANTE: alguns módulos são criados DIRETAMENTE no servidor (não espera "Publicar alterações")
             // KingSelection precisa de itemId real para gerenciar galerias no painel dedicado
             if (itemType === 'sales_page' || itemType === 'digital_form' || itemType === 'agenda' || itemType === 'king_selection' || itemType === 'convite' || itemType === 'wifi') {
-                console.log(`z. Criando ${qty} ${itemType} DIRETAMENTE no servidor...`);
+                __ckDashLog(`z. Criando ${qty} ${itemType} DIRETAMENTE no servidor...`);
                 try {
                     for (let i = 0; i < qty; i++) {
                         const postBody = {
@@ -352,7 +354,7 @@ function _setupEventListenersBody() {
                             throw new Error(errorData.message || `Erro ao criar ${itemType}`);
                         }
                         const newItem = await response.json();
-                        console.log(`${itemType} criado (${i + 1}/${qty}):`, newItem);
+                        __ckDashLog(`${itemType} criado (${i + 1}/${qty}):`, newItem);
                         await new Promise(resolve => setTimeout(resolve, 200));
                     }
                     await env.fetchProfileData(true);
@@ -376,7 +378,7 @@ function _setupEventListenersBody() {
             }
 
             // Para outros módulos: criar localmente (qty vezes)
-            console.log(`z. Adicionando ${qty} módulo(s) ${itemType} localmente...`);
+            __ckDashLog(`z. Adicionando ${qty} módulo(s) ${itemType} localmente...`);
             if (!window.currentProfileData) {
                 window.currentProfileData = { details: {}, items: [] };
             }
@@ -543,7 +545,7 @@ function _setupEventListenersBody() {
             const itemType = itemEl?.dataset?.itemType;
             const itemId = itemEl?.dataset?.id || editBtn?.dataset?.itemId;
 
-            console.log('[DASHBOARD] Clique em editar:', {
+            __ckDashLog('[DASHBOARD] Clique em editar:', {
                 itemType,
                 itemId,
                 itemEl: !!itemEl,
@@ -609,7 +611,7 @@ function _setupEventListenersBody() {
             if (fileInput) {
                 // Prevenir múltiplos cliques simultâneos
                 if (fileInput.dataset.uploading === 'true') {
-                    console.log('Upload de logo já em andamento, ignorando clique');
+                    __ckDashLog('Upload de logo já em andamento, ignorando clique');
                     return;
                 }
                 fileInput.dataset.uploading = 'true';
@@ -720,7 +722,7 @@ function _setupEventListenersBody() {
             const itemEl = document.querySelector(`.item[data-id='${itemId}']`);
             if (itemEl) {
                 itemEl.dataset.aspectRatio = e.target.value;
-                console.log(`[ASPECT RATIO] Aspect ratio atualizado para: ${e.target.value}`);
+                __ckDashLog(`[ASPECT RATIO] Aspect ratio atualizado para: ${e.target.value}`);
                 // Atualizar preview em tempo real
                 env.updateLivePreviewFromForm();
             }
@@ -799,7 +801,7 @@ function _setupEventListenersBody() {
                 }
             }
 
-            console.log(`[UPLOAD] Arquivo selecionado:`, {
+            __ckDashLog(`[UPLOAD] Arquivo selecionado:`, {
                 itemId,
                 itemType,
                 fileName: file.name,
@@ -813,22 +815,22 @@ function _setupEventListenersBody() {
             if (file && (itemType === 'banner' || itemType === 'wifi-banner')) {
                 const cropTrigger = itemType === 'wifi-banner' ? 'wifi-banner' : 'banner';
                 const modalItemType = SELECTORS.editItemModal?.dataset?.itemType;
-                console.log(`[BANNER] Upload no modal (${cropTrigger}) item ${itemId}:`, file.name);
+                __ckDashLog(`[BANNER] Upload no modal (${cropTrigger}) item ${itemId}:`, file.name);
                 let itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
 
                 if (!itemEl && itemId && cropTrigger === 'wifi-banner') {
                     itemEl = { dataset: { id: itemId, itemType: 'wifi' } };
-                    console.log(`[WIFI-BANNER] Item não encontrado na lista, usando referência temporária`);
+                    __ckDashLog(`[WIFI-BANNER] Item não encontrado na lista, usando referência temporária`);
                 } else if (!itemEl && itemId) {
                     itemEl = { dataset: { id: itemId, itemType: 'banner' } };
-                    console.log(`[BANNER] Item não encontrado na lista, usando referência temporária`);
+                    __ckDashLog(`[BANNER] Item não encontrado na lista, usando referência temporária`);
                 }
 
                 if (itemEl) {
                     if (cropTrigger === 'wifi-banner' && modalItemType === 'wifi' && typeof itemEl.querySelector !== 'function') {
                         itemEl = document.querySelector(`.module-item[data-id='${itemId}']`) || itemEl;
                     }
-                    console.log(`[BANNER] Abrindo cropper (${cropTrigger}) ${itemId}`);
+                    __ckDashLog(`[BANNER] Abrindo cropper (${cropTrigger}) ${itemId}`);
                     env.openCropper(file, cropTrigger, itemEl);
                 } else {
                     console.error(`[BANNER] Item ${itemId} não encontrado para upload`);
@@ -1160,10 +1162,10 @@ function _setupEventListenersBody() {
 
             if (response.ok) {
                 const clients = await response.json();
-                console.log('Clientes da empresa:', clients);
+                __ckDashLog('Clientes da empresa:', clients);
                 // TODO: Renderizar lista de clientes na interface quando necessário
             } else if (response.status === 403) {
-                console.log('Usuário não tem conta empresarial');
+                __ckDashLog('Usuário não tem conta empresarial');
                 alert('Você precisa de uma conta empresarial para acessar esta funcionalidade.');
             }
         } catch (error) {
@@ -1484,7 +1486,7 @@ function _setupEventListenersBody() {
 
         // IMPORTANTE: Botão "OK" salva APENAS localmente (frontend)
         // O botão "Publicar alterações" é que salva no servidor
-        console.log(`Y' [OK] Salvando alterações do item ${itemId} apenas localmente (não no servidor ainda)...`);
+        __ckDashLog(`Y' [OK] Salvando alterações do item ${itemId} apenas localmente (não no servidor ainda)...`);
 
         // Sincronizar dados do modal para o item no DOM
         env.syncModalDataToItem();
@@ -1495,7 +1497,7 @@ function _setupEventListenersBody() {
         // Fechar modal
         SELECTORS.editItemModal.classList.remove('active');
 
-        console.log(`Alterações do item ${itemId} salvas localmente. Clique em "Publicar alterações" para salvar no servidor.`);
+        __ckDashLog(`Alterações do item ${itemId} salvas localmente. Clique em "Publicar alterações" para salvar no servidor.`);
 
         return; // Retornar cedo para não executar o código antigo abaixo
 
@@ -1743,14 +1745,14 @@ function _setupEventListenersBody() {
                         itemEl.classList.add('banner-carousel');
                     }
                 } catch (e) {
-                    console.log('Erro ao processar carrossel:', e);
+                    __ckDashLog('Erro ao processar carrossel:', e);
                 }
             } else if (destUrlInput) {
                 // Banner normal - usar o input de destino
                 const newDestUrl = destUrlInput.value.trim() || '#';
                 const destInputEl = itemEl.querySelector('.item-destination-url-input');
 
-                console.log('Modal Banner - Salvando destination_url:', {
+                __ckDashLog('Modal Banner - Salvando destination_url:', {
                     itemId,
                     newDestUrl,
                     hasDestInputEl: !!destInputEl,
@@ -1759,7 +1761,7 @@ function _setupEventListenersBody() {
 
                 if (destInputEl) {
                     destInputEl.value = newDestUrl;
-                    console.log('Modal Banner - destination_url atualizado no item:', destInputEl.value);
+                    __ckDashLog('Modal Banner - destination_url atualizado no item:', destInputEl.value);
                 }
 
                 // Atualizar imagem se houver
@@ -1779,7 +1781,7 @@ function _setupEventListenersBody() {
                 const displayDest = itemEl.querySelector('.item-display-dest');
                 if (displayDest) {
                     displayDest.textContent = newDestUrl && newDestUrl !== '#' ? newDestUrl : 'Sem destino';
-                    console.log('Modal Banner - Display atualizado:', displayDest.textContent);
+                    __ckDashLog('Modal Banner - Display atualizado:', displayDest.textContent);
                 }
 
                 itemEl.classList.remove('banner-carousel');
@@ -1800,7 +1802,7 @@ function _setupEventListenersBody() {
             await env.saveAllChanges();
             SELECTORS.editItemModal.classList.remove('active');
             env.updateLivePreviewFromForm();
-            console.log('Alterações salvas com sucesso via modal');
+            __ckDashLog('Alterações salvas com sucesso via modal');
         } catch (error) {
             console.error('Erro ao salvar via modal:', error);
             alert(`Erro ao salvar: ${error.message}`);
@@ -1871,7 +1873,7 @@ function _setupEventListenersBody() {
 
                 // Prevenir processamento duplicado
                 if (fileInput.dataset.processing === 'true') {
-                    console.log('Logo já está sendo processado, ignorando');
+                    __ckDashLog('Logo já está sendo processado, ignorando');
                     return;
                 }
                 fileInput.dataset.processing = 'true';
@@ -2068,7 +2070,7 @@ function _setupEventListenersBody() {
     document.addEventListener('change', async function carouselUploadHandler(e) {
         if (!e.target.classList.contains('carousel-file-input-new')) return;
 
-        console.log(' [CARROSSEL] Upload iniciado');
+        __ckDashLog(' [CARROSSEL] Upload iniciado');
         const fileInput = e.target;
         const itemId = fileInput.dataset.itemId || fileInput.getAttribute('data-item-id') || fileInput.id.replace('carousel-file-new-', '');
 
@@ -2081,11 +2083,11 @@ function _setupEventListenersBody() {
 
         const files = Array.from(fileInput.files || []);
         if (files.length === 0) {
-            console.log('[CARROSSEL] Nenhum arquivo selecionado');
+            __ckDashLog('[CARROSSEL] Nenhum arquivo selecionado');
             return;
         }
 
-        console.log(`[CARROSSEL] Processando ${files.length} arquivo(s) para itemId: ${itemId}`);
+        __ckDashLog(`[CARROSSEL] Processando ${files.length} arquivo(s) para itemId: ${itemId}`);
 
         // Buscar itemEl ANTES de qualquer operação assíncrona - com try/catch para segurança extra
         let itemEl = null;
@@ -2109,14 +2111,14 @@ function _setupEventListenersBody() {
         if (uploadLabel) uploadLabel.style.opacity = '0.6';
 
         try {
-            console.log('[CARROSSEL] Solicitando autorização...');
+            __ckDashLog('[CARROSSEL] Solicitando autorização...');
             const authResponse = await fetch(`${env.API_URL}/api/upload/auth`, {
                 method: 'POST',
                 headers: env.HEADERS
             });
             if (!authResponse.ok) throw new Error('Falha na autorização');
             const { uploadURL } = await authResponse.json();
-            console.log('[CARROSSEL] Autorização obtida');
+            __ckDashLog('[CARROSSEL] Autorização obtida');
 
             const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ";
             const uploadedImages = [];
@@ -2131,7 +2133,7 @@ function _setupEventListenersBody() {
                     continue;
                 }
 
-                console.log(`[CARROSSEL] Enviando ${file.name}...`);
+                __ckDashLog(`[CARROSSEL] Enviando ${file.name}...`);
                 const formData = new FormData();
                 formData.append('file', file);
                 // uploadURL pode ser /api/upload/receive-one (R2) e exige Authorization
@@ -2147,14 +2149,14 @@ function _setupEventListenersBody() {
                 const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && accountHash ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
                 if (finalUrl) {
                     uploadedImages.push(finalUrl);
-                    console.log(`[CARROSSEL] ${file.name} enviado: ${finalUrl.substring(0, 50)}...`);
+                    __ckDashLog(`[CARROSSEL] ${file.name} enviado: ${finalUrl.substring(0, 50)}...`);
                 } else {
                     console.warn('[CARROSSEL] Resposta sem URL:', uploadData);
                 }
             }
 
             if (uploadedImages.length > 0) {
-                console.log(`[CARROSSEL] ${uploadedImages.length} imagem(ns) enviada(s), atualizando interface...`);
+                __ckDashLog(`[CARROSSEL] ${uploadedImages.length} imagem(ns) enviada(s), atualizando interface...`);
 
                 // Verificar novamente se itemEl ainda existe (pode ter sido removido do DOM)
                 const currentItemEl = document.querySelector(`.item[data-id="${itemId}"]`);
@@ -2185,11 +2187,11 @@ function _setupEventListenersBody() {
                 // Atualizar AMBOS os inputs (modal e item) para garantir sincronização
                 if (jsonInputModal) {
                     jsonInputModal.value = jsonValue;
-                    console.log('[CARROSSEL] Input JSON do modal atualizado');
+                    __ckDashLog('[CARROSSEL] Input JSON do modal atualizado');
                 }
                 if (jsonInputItem) {
                     jsonInputItem.value = jsonValue;
-                    console.log('[CARROSSEL] Input JSON do item atualizado');
+                    __ckDashLog('[CARROSSEL] Input JSON do item atualizado');
                 }
 
                 if (!jsonInputModal && !jsonInputItem) {
@@ -2213,14 +2215,14 @@ function _setupEventListenersBody() {
                 }
 
                 // Renderizar IMEDIATAMENTE
-                console.log('YZ [CARROSSEL] Renderizando imagens...');
+                __ckDashLog('YZ [CARROSSEL] Renderizando imagens...');
                 env.renderCarouselImagesNew(itemId, allImages);
 
                 // NÃO chamar syncModalDataToItem() aqui porque já atualizamos ambos os inputs manualmente
                 // syncModalDataToItem() pode sobrescrever os valores que acabamos de atualizar
 
                 env.updateLivePreviewFromForm();
-                console.log('[CARROSSEL] Upload concluído com sucesso!');
+                __ckDashLog('[CARROSSEL] Upload concluído com sucesso!');
             } else {
                 console.warn('[CARROSSEL] Nenhuma imagem foi enviada');
             }
@@ -2268,11 +2270,11 @@ function _setupEventListenersBody() {
             const files = Array.from(fileInput.files || []);
 
             if (files.length === 0) {
-                console.log('Nenhum arquivo selecionado (itemsContainer)');
+                __ckDashLog('Nenhum arquivo selecionado (itemsContainer)');
                 return;
             }
 
-            console.log(`Iniciando upload de ${files.length} imagem(ns) para carrossel (itemsContainer), itemId: ${itemId}`);
+            __ckDashLog(`Iniciando upload de ${files.length} imagem(ns) para carrossel (itemsContainer), itemId: ${itemId}`);
 
             const itemEl = document.querySelector(`.item[data-id="${itemId}"]`);
             if (!itemEl) {
@@ -2338,14 +2340,14 @@ function _setupEventListenersBody() {
                 }
 
                 if (uploadedImages.length > 0) {
-                    console.log(`${uploadedImages.length} imagem(ns) enviada(s) com sucesso, processando...`);
+                    __ckDashLog(`${uploadedImages.length} imagem(ns) enviada(s) com sucesso, processando...`);
 
                     // Obter imagens existentes - procurar tanto no modal quanto no item
                     const jsonInputModal = SELECTORS.editModalBody?.querySelector(`.carousel-images-json-input[data-item-id="${itemId}"]`);
                     const jsonInputItem = itemEl.querySelector(`.carousel-images-json-input[data-item-id="${itemId}"]`);
                     const jsonInput = jsonInputModal || jsonInputItem;
 
-                    console.log('Inputs encontrados:', {
+                    __ckDashLog('Inputs encontrados:', {
                         jsonInputModal: !!jsonInputModal,
                         jsonInputItem: !!jsonInputItem,
                         jsonInput: !!jsonInput
@@ -2363,31 +2365,31 @@ function _setupEventListenersBody() {
                                     !url.includes('via.placeholder') &&
                                     !url.startsWith('data:image/svg+xml');
                             }) : [];
-                            console.log(`Y"< [ITEMS CONTAINER] ${existingImages.length} imagem(ns) existente(s) encontrada(s) (filtrados placeholders)`);
+                            __ckDashLog(`Y"< [ITEMS CONTAINER] ${existingImages.length} imagem(ns) existente(s) encontrada(s) (filtrados placeholders)`);
                         } catch (e) {
                             console.warn('Erro ao parsear imagens existentes, iniciando array vazio:', e);
                             existingImages = [];
                         }
                     } else {
-                        console.log('Nenhuma imagem existente encontrada, iniciando array vazio');
+                        __ckDashLog('Nenhuma imagem existente encontrada, iniciando array vazio');
                     }
 
                     // Adicionar novas imagens
                     const allImages = [...existingImages, ...uploadedImages];
-                    console.log(`Y"S Total de imagens após adicionar: ${allImages.length}`);
+                    __ckDashLog(`Y"S Total de imagens após adicionar: ${allImages.length}`);
 
                     // Atualizar TODOS os inputs hidden (modal e item)
                     const jsonValue = JSON.stringify(allImages);
                     if (jsonInputModal) {
                         jsonInputModal.value = jsonValue;
-                        console.log('Input JSON do modal atualizado');
+                        __ckDashLog('Input JSON do modal atualizado');
                     } else {
                         console.warn('Input JSON do modal não encontrado!');
                     }
 
                     if (jsonInputItem) {
                         jsonInputItem.value = jsonValue;
-                        console.log('Input JSON do item atualizado');
+                        __ckDashLog('Input JSON do item atualizado');
                     } else {
                         console.warn('Input JSON do item não encontrado!');
                     }
@@ -2405,28 +2407,28 @@ function _setupEventListenersBody() {
                         ? (typeof realImages[0] === 'string' ? realImages[0] : (realImages[0].image_url || realImages[0]))
                         : (allImages.length > 0 ? (typeof allImages[0] === 'string' ? allImages[0] : (allImages[0].image_url || allImages[0])) : '');
 
-                    console.log('[ITEMS CONTAINER] Primeira imagem real selecionada:', firstImg.substring(0, 80) + '...');
+                    __ckDashLog('[ITEMS CONTAINER] Primeira imagem real selecionada:', firstImg.substring(0, 80) + '...');
 
                     const imageInputModal = SELECTORS.editModalBody?.querySelector(`#edit-image-url`);
                     const imageInputItem = itemEl.querySelector('.item-image-url-input');
                     if (imageInputModal) {
                         imageInputModal.value = firstImg;
-                        console.log('Input image_url do modal atualizado com imagem real');
+                        __ckDashLog('Input image_url do modal atualizado com imagem real');
                     }
                     if (imageInputItem) {
                         imageInputItem.value = firstImg;
-                        console.log('Input image_url do item atualizado com imagem real');
+                        __ckDashLog('Input image_url do item atualizado com imagem real');
                     }
 
                     // Atualizar display no item da lista
                     const displayDest = itemEl.querySelector('.item-display-dest');
                     if (displayDest) {
                         displayDest.textContent = `${allImages.length} imagem${allImages.length !== 1 ? 'ns' : ''}`;
-                        console.log('Display do item atualizado:', displayDest.textContent);
+                        __ckDashLog('Display do item atualizado:', displayDest.textContent);
                     }
 
                     // Renderizar lista atualizada no modal IMEDIATAMENTE
-                    console.log('YZ [ITEMS CONTAINER] Renderizando lista de imagens IMEDIATAMENTE...');
+                    __ckDashLog('YZ [ITEMS CONTAINER] Renderizando lista de imagens IMEDIATAMENTE...');
                     // Usar requestAnimationFrame para garantir que o DOM está pronto
                     requestAnimationFrame(() => {
                         env.renderCarouselImagesNew(itemId, allImages);
@@ -2435,7 +2437,7 @@ function _setupEventListenersBody() {
                         }, 100);
                     });
 
-                    console.log(`[ITEMS CONTAINER] ${uploadedImages.length} imagem(ns) adicionada(s) com sucesso! Total: ${allImages.length}`);
+                    __ckDashLog(`[ITEMS CONTAINER] ${uploadedImages.length} imagem(ns) adicionada(s) com sucesso! Total: ${allImages.length}`);
                 } else {
                     console.warn('Nenhuma imagem foi enviada com sucesso');
                 }
@@ -2915,7 +2917,7 @@ function _setupEventListenersBody() {
 
                 // IMPORTANTE: sales_page e digital_form são criados DIRETAMENTE no servidor
                 if (itemType === 'sales_page' || itemType === 'digital_form') {
-                    console.log(`z. Criando ${itemType} DIRETAMENTE no servidor...`);
+                    __ckDashLog(`z. Criando ${itemType} DIRETAMENTE no servidor...`);
 
                     try {
                         const response = await fetch(`${env.API_URL}/api/profile/items`, {
@@ -2934,7 +2936,7 @@ function _setupEventListenersBody() {
                         }
 
                         const newItem = await response.json();
-                        console.log(`${itemType} criado diretamente no servidor:`, newItem);
+                        __ckDashLog(`${itemType} criado diretamente no servidor:`, newItem);
 
                         SELECTORS.addItemModal.classList.remove('active');
 
@@ -2966,7 +2968,7 @@ function _setupEventListenersBody() {
                     }
 
                     const newItem = await response.json();
-                    console.log('Item criado com sucesso:', newItem);
+                    __ckDashLog('Item criado com sucesso:', newItem);
 
                     SELECTORS.addItemModal.classList.remove('active');
 
@@ -3004,7 +3006,7 @@ function _setupEventListenersBody() {
 
         // Verificar se já tem listeners (evitar duplicação)
         if (uploadArea.dataset.listenersAdded === 'true') {
-            console.log('Listeners já adicionados, pulando...');
+            __ckDashLog('Listeners já adicionados, pulando...');
             return true;
         }
 
@@ -3024,7 +3026,7 @@ function _setupEventListenersBody() {
         // Event listener para quando arquivo é selecionado
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            console.log('Arquivo selecionado:', file ? file.name : 'nenhum');
+            __ckDashLog('Arquivo selecionado:', file ? file.name : 'nenhum');
             if (file) {
                 env.openCropper(file, 'profile');
                 // Resetar input para permitir selecionar o mesmo arquivo novamente
@@ -3037,7 +3039,7 @@ function _setupEventListenersBody() {
         // Marcar que listeners foram adicionados
         uploadArea.dataset.listenersAdded = 'true';
 
-        console.log('Upload de foto configurado com sucesso');
+        __ckDashLog('Upload de foto configurado com sucesso');
         return true;
     };
 
@@ -3085,7 +3087,7 @@ function _setupEventListenersBody() {
             const itemId = input.dataset.itemId;
             const file = input.files[0];
             if (file) {
-                console.log('Arquivo selecionado para item:', itemId);
+                __ckDashLog('Arquivo selecionado para item:', itemId);
                 const itemEl = document.querySelector(`.item[data-id="${itemId}"]`);
                 window.currentCarouselItemId = itemId;
                 env.openCropper(file, 'carousel', itemEl);
@@ -3134,7 +3136,7 @@ function _setupEventListenersBody() {
                 if (imageContainer) imageContainer.remove();
                 const imageContainerNew = btn.closest('.carousel-image-item-new');
                 if (imageContainerNew) imageContainerNew.remove();
-                console.log('Banner: imagem removida e campos limpos');
+                __ckDashLog('Banner: imagem removida e campos limpos');
             }
             return;
         }
@@ -3146,7 +3148,7 @@ function _setupEventListenersBody() {
             if (input) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Clicou no container, abrindo input para item:', itemId);
+                __ckDashLog('Clicou no container, abrindo input para item:', itemId);
                 input.click();
             }
         }

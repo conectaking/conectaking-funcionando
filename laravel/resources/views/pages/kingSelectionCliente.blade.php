@@ -34,7 +34,7 @@
       color: var(--text);
       min-height: 100vh;
     }
-    /* Espao por baixo para o FAB WhatsApp não tapar o Resumo da seleção / ltimo bloco */
+    /* Espaço por baixo para o FAB WhatsApp não tapar o Resumo da seleção / último bloco */
     #ks-app:not(.ks-hidden) {
       padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 80px));
     }
@@ -48,7 +48,7 @@
     body.ks-viewer-open {
       overflow: hidden !important;
       touch-action: none;
-      /* iOS/Android: impede scroll da página por baixo (X e botes "saem" do stio) */
+      /* iOS/Android: impede scroll da página por baixo (X e botões "saem" do stio) */
       position: fixed;
       width: 100%;
       left: 0;
@@ -207,7 +207,7 @@
         text-align: center;
         text-align-last: center;
       }
-      /* Botes da galeria: grelha 2n centrada (par em par: Limpar/Confirmar, Fotos baixar/Sair, etc.) */
+      /* Botões da galeria: grelha 2n centrada (par em par: Limpar/Confirmar, Fotos baixar/Sair, etc.) */
       .ks-gallery-scroll .ks-top-row-actions {
         justify-content: center;
         width: 100%;
@@ -1502,7 +1502,7 @@
       display: none !important;
     }
 
-    /* Modo vendas apenvio: s painel de download (marca d'gua), sem grelha de seleção */
+    /* Modo vendas apenvio: s painel de download (marca d'água), sem grelha de seleção */
     #ks-step-gallery.ks-sales-post-submit #ks-grid,
     #ks-step-gallery.ks-sales-post-submit #ks-search-block,
     #ks-step-gallery.ks-sales-post-submit #ks-folder-wrap,
@@ -1544,7 +1544,7 @@
   </style>
 </head>
 <body>
-  <!-- Capa do evento (modo pblico, configurvel no painel) -->
+  <!-- Capa do evento (modo público, configurvel no painel) -->
   <div id="ks-entry-splash" class="ks-hidden" style="position:fixed;inset:0;z-index:360;background:radial-gradient(120% 80% at 50% 0%,#1a1a1a 0%,#000 55%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0;overflow:auto" aria-hidden="true">
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:max(24px,env(safe-area-inset-top)) 16px 20px;min-height:42vh">
       <div style="width:min(440px,92vw);aspect-ratio:3/4;border-radius:20px;overflow:hidden;border:1px solid rgba(250,204,21,.35);box-shadow:0 24px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.06) inset;background:#111">
@@ -1559,12 +1559,12 @@
     </div>
   </div>
 
-  <!-- Cadastro rpido s ao tentar baixar (modo pblico + download liberado pelo fotgrafo) -->
+  <!-- Cadastro rápido só ao tentar baixar (modo público + download liberado pelo fotógrafo) -->
   <div id="ks-modal-public-dl" class="ks-hidden" style="position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px" aria-hidden="true">
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:420px;width:100%;padding:18px 18px 16px;box-shadow:0 20px 50px rgba(0,0,0,.5)">
       <h2 style="margin:0 0 8px;font-size:1.1rem">Cadastro para liberar download</h2>
       <p class="ks-muted" style="font-size:13px;margin:0 0 14px;line-height:1.45">
-        O fotgrafo liberou baixar com marca d'gua. Preencha para continuar - a senha  gerada e mostrada ao concluir.
+        O fotógrafo liberou baixar com marca d'água. Preencha para continuar - a senha é gerada e mostrada ao concluir.
       </p>
       <div class="ks-field">
         <label for="ks-modal-pub-nome">Nome</label>
@@ -1611,7 +1611,7 @@
         <div id="ks-login-mode-details" class="ks-hidden">
           <p class="ks-section-h">Entrar na minha seleção</p>
           <p id="ks-login-details-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left">
-            Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleção). Informe com DDD e, se necessrio, código do pa(ex.: 55). Se o fotgrafo não salvou seu WhatsApp no cadastro, pode deixar em branco.
+            Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleção). Informe com DDD e, se necessário, código do pa(ex.: 55). Se o fotógrafo não salvou seu WhatsApp no cadastro, pode deixar em branco.
           </p>
           <div class="ks-field">
             <label for="ks-reauth-nome">Nome</label>
@@ -1630,11 +1630,11 @@
           </button>
           <div class="ks-err ks-hidden" id="ks-reauth-err"></div>
         </div>
-        <!-- Cadastro obrigatório na entrada - apenas modo pblico -->
+        <!-- Cadastro obrigatório na entrada - apenas modo público -->
         <div id="ks-login-mode-register-first" class="ks-hidden">
-          <p class="ks-section-h">Acesso  galeria</p>
+          <p class="ks-section-h">Acesso à galeria</p>
           <p id="ks-register-first-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left">
-            Informe nome, e-mail e WhatsApp. Não usamos senha - na primeira vez criamos seu cadastro; depois  s repetir os mesmos dados.
+            Informe nome, e-mail e WhatsApp. Não usamos senha - na primeira vez criamos seu cadastro; depois é só repetir os mesmos dados.
           </p>
           <div class="ks-field">
             <label for="ks-reg-nome">Nome</label>
@@ -1653,16 +1653,16 @@
           </button>
           <div class="ks-err ks-hidden" id="ks-register-first-err"></div>
         </div>
-        <!-- Modo pblico legado (visitante) - oculto quando cadastro  obrigatório -->
+        <!-- Modo público legado (visitante) - oculto quando cadastro é obrigatório -->
         <div id="ks-login-mode-public" class="ks-hidden">
-          <p class="ks-section-h">Voltar  galeria</p>
+          <p class="ks-section-h">Voltar à galeria</p>
           <button type="button" class="ks-btn ks-btn-outline" id="ks-pub-guest-btn" style="width:100%;justify-content:center;margin-bottom:12px;border-color:rgba(250,204,21,.45);color:#fef08a">
             <i class="fas fa-eye"></i> Entrar como visitante
           </button>
         </div>
-        <!-- Modo Privado ou visitante (e-mail + senha criados pelo fotgrafo ou no cadastro) -->
+        <!-- Modo Privado ou visitante (e-mail + senha criados pelo fotógrafo ou no cadastro) -->
         <div id="ks-login-mode-password" class="ks-hidden">
-          <p class="ks-section-h" id="ks-login-pw-section-h">Acesso  galeria</p>
+          <p class="ks-section-h" id="ks-login-pw-section-h">Acesso à galeria</p>
           <p id="ks-login-pw-lead" class="ks-muted" style="font-size:13px;margin:-6px 0 14px;line-height:1.45;text-align:left"></p>
           <div class="ks-field">
             <label for="ks-login-email">E-mail</label>
@@ -1700,7 +1700,7 @@
             <div class="ks-brand">KINGSELECTION<small id="ks-proj">-</small></div>
             <div class="ks-top-sort-meta">
               <label class="ks-muted" for="ks-sort" style="font-size:12px;font-weight:700;margin:0">Ordenar:</label>
-              <select id="ks-sort" class="ks-select" title="Ordenao">
+              <select id="ks-sort" class="ks-select" title="Ordenação">
                 <option value="order">Sequncia original</option>
                 <option value="name">Nome do arquivo</option>
                 <option value="id">Número da foto (ID)</option>
@@ -1749,13 +1749,13 @@
             <div class="ks-search-row">
               <div class="ks-search-wrap">
                 <i class="fas fa-search" aria-hidden="true"></i>
-                <input type="text" id="ks-search" class="ks-input" placeholder="Ex.: 1642 1615 ou ADR0003 - espao ou vrgula" autocomplete="off" />
+                <input type="text" id="ks-search" class="ks-input" placeholder="Ex.: 1642 1615 ou ADR0003 - espaço ou vírgula" autocomplete="off" />
               </div>
               <button type="button" class="ks-btn" id="ks-search-clear" title="Mostrar todas">
                 <i class="fas fa-times"></i> Limpar busca
               </button>
             </div>
-            <div class="ks-muted" style="font-size:12px;margin-top:6px;line-height:1.4">Separe por espao ou vrgula. Vazio = galeria completa.</div>
+            <div class="ks-muted" style="font-size:12px;margin-top:6px;line-height:1.4">Separe por espaço ou vírgula. Vazio = galeria completa.</div>
           </div>
         </div>
       </div>
@@ -1769,7 +1769,7 @@
           <div id="ks-downloads-pix-wrap" class="ks-hidden" style="margin-top:12px;padding:12px;border-radius:12px;border:1px solid rgba(250,204,21,.38);background:rgba(234,179,8,.10)">
             <div style="font-weight:900;font-size:14px;color:#fef3c7;margin-bottom:8px;letter-spacing:.02em"><i class="fas fa-qrcode"></i> Pagamento via PIX</div>
             <p class="ks-dl-pix-lead">
-              Se você ainda não pagou o valor das suas fotos em PIX, faa agora: confira o <strong>total estimado</strong> no resumo acima, faa o PIX para o favorecido abaixo, use <strong>Copiar chave PIX</strong> e envie o <strong>comprovante</strong> (imagem) para o fotgrafo validar. Depois que o pagamento for confirmado e as fotos forem liberadas, as opes de download aparecem neste mesmo painel.
+              Se você ainda não pagou o valor das suas fotos em PIX, faça agora: confira o <strong>total estimado</strong> no resumo acima, faça o PIX para o favorecido abaixo, use <strong>Copiar chave PIX</strong> e envie o <strong>comprovante</strong> (imagem) para o fotógrafo validar. Depois que o pagamento for confirmado e as fotos forem liberadas, as opções de download aparecem neste mesmo painel.
             </p>
             <div id="ks-dl-pix-block">
               <div style="font-size:12px;margin-bottom:4px"><b>Favorecido:</b> <span id="ks-dl-pix-holder">-</span></div>
@@ -1782,8 +1782,8 @@
             <button type="button" class="ks-btn ks-btn-yellow" id="ks-dl-proof-send" style="width:100%;justify-content:center"><i class="fas fa-paper-plane"></i> Enviar comprovante</button>
             <div id="ks-dl-proof-status" style="font-size:12px;margin-top:8px;color:#86efac;min-height:1.2em" aria-live="polite"></div>
           </div>
-          <div class="ks-muted" id="ks-downloads-msg" style="font-size:12px;margin-top:8px">Disponvel apaprovao do fotgrafo e confirmao do pagamento.</div>
-          <button type="button" class="ks-btn ks-btn-yellow ks-hidden" id="ks-refresh-downloads" title="Buscar fotos liberadas pelo fotgrafo">
+          <div class="ks-muted" id="ks-downloads-msg" style="font-size:12px;margin-top:8px">Disponvel apaprovao do fotógrafo e confirmao do pagamento.</div>
+          <button type="button" class="ks-btn ks-btn-yellow ks-hidden" id="ks-refresh-downloads" title="Buscar fotos liberadas pelo fotógrafo">
             <i class="fas fa-sync-alt"></i> Atualizar liberaes
           </button>
           <div id="ks-downloads-progress" class="ks-hidden" style="margin-top:8px">
@@ -1820,7 +1820,7 @@
         </div>
         <div class="ks-face-panel ks-hidden" id="ks-face-panel">
           <div class="ks-face-panel-title"><i class="fas fa-face-smile"></i> Reconhecimento facial</div>
-          <p class="ks-face-panel-lead" id="ks-face-lead">Clique em <strong>Reconhecimento facial</strong>, faa uma selfie ou envie sua foto e mostramos apenas as fotos em que você aparece.</p>
+          <p class="ks-face-panel-lead" id="ks-face-lead">Clique em <strong>Reconhecimento facial</strong>, faça uma selfie ou envie sua foto e mostramos apenas as fotos em que você aparece.</p>
           <div class="ks-face-actions">
             <input type="file" id="ks-face-camera-in" accept="image/*" capture="user" class="ks-hidden-input" aria-hidden="true" />
             <input type="file" id="ks-face-gallery-in" accept="image/*" class="ks-hidden-input" aria-hidden="true" />
@@ -1844,7 +1844,7 @@
         <div class="ks-folder-wrap ks-hidden" id="ks-folder-wrap">
           <div class="ks-folder-head">
             <div class="ks-folder-title" id="ks-folder-title">Pastas</div>
-            <select id="ks-folder-sort" class="ks-select" title="Ordenao das pastas" style="max-width:240px">
+            <select id="ks-folder-sort" class="ks-select" title="Ordenação das pastas" style="max-width:240px">
               <option value="manual">Pastas: ordem manual</option>
               <option value="name">Pastas: nome (A-Z / 1-2-3)</option>
               <option value="count">Pastas: mais fotos primeiro</option>
@@ -1921,7 +1921,7 @@
             </div>
             <p class="ks-cmp-add-lead">Toque numa foto para incluir na seleção desta rodada. Você continua na tela de comparar.</p>
             <div class="ks-cmp-add-grid-wrap">
-              <div class="ks-cmp-add-empty ks-hidden" id="ks-cmp-add-empty">Todas as fotos da galeria j esto selecionadas.</div>
+              <div class="ks-cmp-add-empty ks-hidden" id="ks-cmp-add-empty">Todas as fotos da galeria já estão selecionadas.</div>
               <div class="ks-cmp-add-grid" id="ks-cmp-add-grid"></div>
             </div>
           </div>
@@ -1946,21 +1946,21 @@
         <p id="ks-confirm-preflight" class="ks-confirm-preflight ks-hidden">Preencha os dados abaixo para poder enviar suas fotos.</p>
         <div id="ks-confirm-sales-dashboard" class="ks-hidden" style="margin-bottom:12px"></div>
         <div id="ks-confirm-contact-fields" class="ks-hidden ks-confirm-fields">
-          <div class="ks-muted">Seus dados para o fotgrafo (obrigatório)</div>
+          <div class="ks-muted">Seus dados para o fotógrafo (obrigatório)</div>
           <label for="ks-confirm-nome">Nome</label>
           <input id="ks-confirm-nome" class="ks-input" autocomplete="name" />
           <label for="ks-confirm-email">E-mail</label>
           <input id="ks-confirm-email" type="email" class="ks-input" autocomplete="email" />
-          <label for="ks-confirm-tel">WhatsApp (com DDD / pa)</label>
+          <label for="ks-confirm-tel">WhatsApp (com DDD / país)</label>
           <input id="ks-confirm-tel" type="tel" class="ks-input" autocomplete="tel" placeholder="Ex.: 5511999999999" />
         </div>
         <div class="ks-confirm-feedback-wrap">
-          <label for="ks-confirm-feedback" class="ks-muted" style="font-size:12px;font-weight:700">Mensagem ou observao (opcional)</label>
-          <textarea id="ks-confirm-feedback" class="ks-textarea" rows="3" placeholder="Ex.: Fotos para impressão 15x21, preferncia por P&B."></textarea>
+          <label for="ks-confirm-feedback" class="ks-muted" style="font-size:12px;font-weight:700">Mensagem ou observação (opcional)</label>
+          <textarea id="ks-confirm-feedback" class="ks-textarea" rows="3" placeholder="Ex.: Fotos para impressão 15x21, preferência por P&B."></textarea>
         </div>
         <div id="ks-confirm-payment-check" class="ks-hidden ks-confirm-fields">
           <div class="ks-muted">Pagamento (fotos vendidas por evento)</div>
-          <label for="ks-confirm-paid">Você j pagou?</label>
+          <label for="ks-confirm-paid">Você já pagou?</label>
           <select id="ks-confirm-paid" class="ks-input">
             <option value="no">Não</option>
             <option value="yes">Sim</option>
@@ -1998,7 +1998,7 @@
         <button type="button" class="ks-btn ks-locked-wa-pending" id="ks-locked-pix-whats-pending" style="width:100%;justify-content:center;margin-top:8px">
           <i class="fab fa-whatsapp"></i> Ainda vou pagar . avisar no WhatsApp
         </button>
-        <div class="ks-locked-pix-note">Faz o pagamento das suas fotos para desbloquear e avise o fotgrafo.</div>
+        <div class="ks-locked-pix-note">Faz o pagamento das suas fotos para desbloquear e avise o fotógrafo.</div>
       </div>
       <hr />
       <div class="ks-tagline">Com carinho,</div>
@@ -2079,21 +2079,21 @@
     </div>
   </div>
 
-  <button type="button" class="ks-support-whats ks-hidden" id="ks-support-whats" title="Falar com o fotgrafo no WhatsApp" aria-label="Suporte no WhatsApp">
+  <button type="button" class="ks-support-whats ks-hidden" id="ks-support-whats" title="Falar com o fotógrafo no WhatsApp" aria-label="Suporte no WhatsApp">
     <i class="fab fa-whatsapp"></i>
     <span id="ks-support-whats-text">Suporte</span>
   </button>
 
-  <script src="/config.js?v=2026-06-09-api-fix"></script>
+  <script src="/config.js?v=2026-09-09-ux1"></script>
   <div id="ks-sales-confirm-bar" class="ks-hidden" aria-live="polite">
     <span id="ks-sales-confirm-count">0 foto(s) selecionada(s)</span>
     <button type="button" class="ks-btn ks-btn-yellow" id="ks-sales-confirm-go">
       <i class="fas fa-paper-plane"></i> Confirmar seleção
     </button>
   </div>
-  <script src="/kingSelectionCliente.js?v=2026-08-07-edit-req-flow"></script>
-  <script src="/kingSelectionCliente-no-sem-pasta.js?v=2026-06-19-edit-req"></script>
-  <script src="/kingSelectionCliente-edit-requests.js?v=2026-06-19-edit-req"></script>
+  <script src="/kingSelectionCliente.js?v=2026-09-09-ux1"></script>
+  <script src="/kingSelectionCliente-no-sem-pasta.js?v=2026-09-09-ux1"></script>
+  <script src="/kingSelectionCliente-edit-requests.js?v=2026-09-09-ux1"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>

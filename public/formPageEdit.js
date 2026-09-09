@@ -1781,19 +1781,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('s️ Botão de lista de convidados não encontrado (sidebar-guest-list ou sidebar-responses). Funcionalidade pode não estar disponível.');
         }
         
-        // Checkout (PagBank/Mercado Pago) — fora de escopo
+        // Checkout removido (fora de escopo)
         const sidebarCheckout = document.getElementById('sidebar-checkout');
-        if (sidebarCheckout) {
-            sidebarCheckout.style.display = 'none';
-            const newCheckoutBtn = sidebarCheckout.cloneNode(true);
-            sidebarCheckout.parentNode.replaceChild(newCheckoutBtn, sidebarCheckout);
-            newCheckoutBtn.style.display = 'none';
-            newCheckoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                alert('Checkout/pagamento online não está disponível.');
-            });
-        }
+        if (sidebarCheckout) sidebarCheckout.remove();
         
         // Função auxiliar para lidar com clique
         function handleGuestListButtonClick() {
@@ -7117,7 +7107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <input type="checkbox" id="modal-enable-checkout" style="width: 20px; height: 20px; accent-color: #22c55e;">
                                 <span>Ativar checkout (Pix e cartão). O botão do formulário levará à página de pagamento.</span>
                             </label>
-                            <p style="font-size: 12px; color: var(--text-dark, #A1A1A1); margin-top: 8px;">Configure valor e PagBank na página <strong>Checkout</strong> da sidebar.</p>
+                            <p style="font-size: 12px; color: var(--text-dark, #A1A1A1); margin-top: 8px;">Pagamento online (checkout) não está disponível nesta versão.</p>
                         </div>
                     </div>
                 </div>
@@ -7565,20 +7555,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Carregar estado do Checkout (Ativar checkout)
+        // Checkout removido (fora de escopo): manter checkbox sempre desmarcado
         const checkoutCheckbox = modal.querySelector('#modal-enable-checkout');
-        if (checkoutCheckbox) {
-            const itemIdForCheckout = typeof currentItemId !== 'undefined' ? currentItemId : (window.currentItemId || null);
-            if (itemIdForCheckout) {
-                fetch(`${API_URL}/api/checkout/config/${itemIdForCheckout}`, { headers: getHeaders() })
-                    .then(r => r.ok ? r.json() : {})
-                    .then(data => {
-                        const c = data.config || {};
-                        checkoutCheckbox.checked = !!c.checkout_enabled;
-                    })
-                    .catch(() => {});
-            }
-        }
+        if (checkoutCheckbox) checkoutCheckbox.checked = false;
         
         // Salvar configurações
         modal.querySelector('.save-settings-modal-btn').addEventListener('click', async () => {
@@ -7913,26 +7892,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Configurações aplicadas localmente. Clique em "Salvar" para garantir.');
                     }
                 }
-                // Sincronizar Ativar Checkout com a página de Checkout
-                const checkoutCheckbox = modal.querySelector('#modal-enable-checkout');
-                if (checkoutCheckbox) {
-                    try {
-                        const getRes = await fetch(`${API_URL}/api/checkout/config/${itemId}`, { headers: getHeaders() });
-                        const current = getRes.ok ? (await getRes.json()).config || {} : {};
-                        await fetch(`${API_URL}/api/checkout/config/${itemId}`, {
-                            method: 'PUT',
-                            headers: getHeaders(),
-                            body: JSON.stringify({
-                                checkout_enabled: checkoutCheckbox.checked,
-                                price_cents: current.price_cents != null ? current.price_cents : 0,
-                                pay_button_label: (current.pay_button_label && current.pay_button_label.trim()) ? current.pay_button_label.trim() : 'Pagamento',
-                                pagbank_seller_id: (current.pagbank_seller_id && current.pagbank_seller_id.trim()) ? current.pagbank_seller_id.trim() : undefined
-                            })
-                        });
-                    } catch (e) {
-                        console.warn('Checkout enable sync:', e);
-                    }
-                }
+                // Checkout removido (fora de escopo): sem sincronização
             } else {
                 if (typeof showSuccessMessage === 'function') {
                     showSuccessMessage('Configurações atualizadas! Clique em "Salvar" para salvar as alterações.');
@@ -7968,172 +7928,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // —— Modal Checkout (PagBank - KingForms) ——
+    // Checkout/PagBank removido (fora de escopo — APIs retornam 410).
     async function openCheckoutModal() {
-        const itemId = typeof currentItemId !== 'undefined' ? currentItemId : (window.currentItemId || null);
-        if (!itemId) {
-            alert('Nenhum formulário selecionado. Salve o formulário primeiro.');
-            return;
-        }
-        const token = localStorage.getItem('conectaKingToken');
-        if (!token) {
-            alert('Sessão expirada. Faça login novamente.');
-            return;
-        }
-        const modal = document.createElement('div');
-        modal.className = 'checkout-modal';
-        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
-        modal.innerHTML = `
-            <div style="background: var(--card-background-color, #1C1C21); padding: 40px; border-radius: 16px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border-color, #2C2C2F); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h3 style="margin: 0; color: var(--text, #ECECEC); font-size: 22px; font-weight: 700;">
-                        <i class="fas fa-credit-card" style="color: #22c55e;"></i> Checkout PagBank
-                    </h3>
-                    <button class="close-checkout-modal-btn" style="background: none; border: none; color: var(--text-dark, #A1A1A1); font-size: 24px; cursor: pointer; padding: 5px 10px; border-radius: 8px;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div style="display: grid; gap: 20px;">
-                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text, #ECECEC); font-weight: 600;">
-                        <input type="checkbox" id="checkout-modal-enabled" style="width: 20px; height: 20px; accent-color: #22c55e;">
-                        <span>Ativar pagamento no formulário (Pix via PagBank)</span>
-                    </label>
-                    <div class="input-group">
-                        <label style="display: block; margin-bottom: 8px; color: var(--text, #ECECEC); font-weight: 600;">Valor (R$)</label>
-                        <input type="number" id="checkout-modal-price-cents" min="0" step="0.01" placeholder="0,00" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--background-color, #0D0D0F); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC);">
-                        <small style="color: var(--text-dark, #A1A1A1); display: block; margin-top: 5px;">Valor cobrado por submissão (em reais). Ex: 10 ou 29.90</small>
-                    </div>
-                    <div class="input-group">
-                        <label style="display: block; margin-bottom: 8px; color: var(--text, #ECECEC); font-weight: 600;">Texto do botão de pagamento</label>
-                        <input type="text" id="checkout-modal-pay-button-label" placeholder="Pagamento" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--background-color, #0D0D0F); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC);">
-                    </div>
-                    <div style="border-top: 1px solid var(--border-color, #2C2C2F); padding-top: 20px; margin-top: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <i class="fas fa-key" style="color: #22c55e;"></i>
-                            <span style="color: var(--text, #ECECEC); font-weight: 600;">Credenciais PagBank</span>
-                        </div>
-                        <div class="input-group" style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark, #A1A1A1); font-size: 14px;">Identificador para marketplace (PagBank)</label>
-                            <input type="text" id="checkout-modal-seller-id" placeholder="Account ID (Vendas — Plataformas e Checkout — Identificador para marketplace)" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--background-color, #0D0D0F); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC);">
-                            <small style="color: var(--text-dark, #A1A1A1); display: block; margin-top: 5px;">Split: 10% plataforma, 90% para este vendedor. O vendedor não precisa passar token.</small>
-                        </div>
-                        <div class="input-group">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark, #A1A1A1); font-size: 14px;">Token (opcional)</label>
-                            <input type="password" id="checkout-modal-token" placeholder="Deixe em branco para usar conta da plataforma" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--background-color, #0D0D0F); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC);">
-                            <small style="color: var(--text-dark, #A1A1A1); display: block; margin-top: 5px;">Em branco: usa token da plataforma. Só preencha para conta própria do vendedor.</small>
-                        </div>
-                        <button type="button" id="checkout-modal-test-btn" style="margin-top: 8px; padding: 10px 20px; background: rgba(34,197,94,0.2); border: 1px solid #22c55e; color: #22c55e; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            <i class="fas fa-plug"></i> Testar conexão
-                        </button>
-                        <span id="checkout-test-result" style="margin-left: 12px; font-size: 14px;"></span>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px;">
-                    <button type="button" class="cancel-checkout-modal-btn" style="padding: 12px 24px; background: transparent; border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC); border-radius: 8px; cursor: pointer; font-weight: 600;">Cancelar</button>
-                    <button type="button" class="save-checkout-modal-btn" style="padding: 12px 24px; background: #22c55e; border: none; color: #fff; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                        <i class="fas fa-save"></i> Salvar
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.querySelector('.close-checkout-modal-btn').addEventListener('click', () => modal.remove());
-        modal.querySelector('.cancel-checkout-modal-btn').addEventListener('click', () => modal.remove());
-        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-        const priceInput = modal.querySelector('#checkout-modal-price-cents');
-        const payLabelInput = modal.querySelector('#checkout-modal-pay-button-label');
-        const sellerIdInput = modal.querySelector('#checkout-modal-seller-id');
-        const tokenInput = modal.querySelector('#checkout-modal-token');
-        const enabledCheckbox = modal.querySelector('#checkout-modal-enabled');
-        const testBtn = modal.querySelector('#checkout-modal-test-btn');
-        const testResult = modal.querySelector('#checkout-test-result');
-        try {
-            const res = await fetch(`${API_URL}/api/checkout/config/${itemId}`, { headers: getHeaders() });
-            if (res.ok) {
-                const data = await res.json();
-                const c = data.config || {};
-                enabledCheckbox.checked = !!c.checkout_enabled;
-                const priceReais = c.price_cents != null ? (Number(c.price_cents) / 100) : '';
-                priceInput.value = priceReais === '' ? '' : String(priceReais);
-                payLabelInput.value = c.pay_button_label || 'Pagamento';
-                sellerIdInput.value = c.pagbank_seller_id || '';
-            }
-        } catch (e) {
-            console.warn('Erro ao carregar config checkout:', e);
-        }
-        testBtn.addEventListener('click', async () => {
-            testResult.textContent = '';
-            const sid = (sellerIdInput.value || '').trim();
-            const tok = (tokenInput.value || '').trim();
-            if (!sid) {
-                testResult.textContent = 'Preencha o Identificador para marketplace.';
-                testResult.style.color = '#f59e0b';
-                return;
-            }
-            testBtn.disabled = true;
-            testResult.textContent = 'Testando...';
-            testResult.style.color = 'var(--text-dark, #A1A1A1)';
-            try {
-                const res = await fetch(`${API_URL}/api/checkout/test-connection`, {
-                    method: 'POST',
-                    headers: getHeaders(),
-                    body: JSON.stringify({
-                        profile_item_id: itemId,
-                        pagbank_seller_id: sid,
-                        pagbank_access_token: tok
-                    })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (data.ok) {
-                    testResult.textContent = 'Conexão OK';
-                    testResult.style.color = '#22c55e';
-                } else {
-                    testResult.textContent = data.message || 'Falha na conexão';
-                    testResult.style.color = '#ef4444';
-                }
-            } catch (err) {
-                testResult.textContent = 'Erro de rede';
-                testResult.style.color = '#ef4444';
-            }
-            testBtn.disabled = false;
-        });
-        modal.querySelector('.save-checkout-modal-btn').addEventListener('click', async () => {
-            const enabled = enabledCheckbox.checked;
-            let priceCents = 0;
-            const priceVal = (priceInput.value || '').replace(',', '.').trim();
-            if (priceVal && !isNaN(parseFloat(priceVal))) {
-                priceCents = Math.round(parseFloat(priceVal) * 100);
-            }
-            const payLabel = (payLabelInput.value || '').trim() || 'Pagamento';
-            const sellerId = (sellerIdInput.value || '').trim() || null;
-            const token = (tokenInput.value || '').trim() || undefined;
-            const payload = {
-                checkout_enabled: enabled,
-                price_cents: priceCents,
-                pay_button_label: payLabel,
-                pagbank_seller_id: sellerId || undefined
-            };
-            if (token) payload.pagbank_access_token = token;
-            try {
-                const res = await fetch(`${API_URL}/api/checkout/config/${itemId}`, {
-                    method: 'PUT',
-                    headers: getHeaders(),
-                    body: JSON.stringify(payload)
-                });
-                if (res.ok) {
-                    testResult.textContent = 'Salvo com sucesso.';
-                    testResult.style.color = '#22c55e';
-                    setTimeout(() => modal.remove(), 800);
-                } else {
-                    const err = await res.json().catch(() => ({}));
-                    alert(err.message || err.error || 'Erro ao salvar.');
-                }
-            } catch (err) {
-                alert('Erro ao salvar: ' + (err.message || 'conexão'));
-            }
-        });
+        alert('Checkout/pagamento online não está disponível.');
     }
-    
+
     // Função para abrir modal de Lista de Convidados
     async function openGuestListModal() {
         const modal = document.createElement('div');

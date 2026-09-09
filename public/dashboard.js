@@ -1,5 +1,6 @@
+var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando... v2026-08-13-banner-url-models');
+    __ckDashLog('Dashboard iniciando... v2026-08-13-banner-url-models');
 
     // Handler global de erros não capturados
     window.addEventListener('error', (event) => {
@@ -336,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cached = requestCache.get(cacheKey);
 
             if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-                console.log(`Usando cache para: ${url}`);
+                __ckDashLog(`Usando cache para: ${url}`);
                 return cached.response.clone();
             }
         }
@@ -348,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            console.log(` Fazendo requisição para: ${url}`);
+            __ckDashLog(` Fazendo requisição para: ${url}`);
 
             // Cria um AbortController para timeout
             const controller = new AbortController();
@@ -395,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            console.log(`Requisição bem-sucedida para: ${url}`);
+            __ckDashLog(`Requisição bem-sucedida para: ${url}`);
             return response;
 
         } catch (error) {
@@ -433,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error('O arquivo deve ter no máximo 10MB');
         }
 
-        console.log(`?o Iniciando upload do PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        __ckDashLog(`?o Iniciando upload do PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
         if (progressCallback) {
             progressCallback('Enviando para servidor...');
@@ -449,11 +450,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            console.log(`?o¡ Resposta do servidor: ${response.status} ${response.statusText}`);
+            __ckDashLog(`?o¡ Resposta do servidor: ${response.status} ${response.statusText}`);
 
             // Verifica se a resposta é JSON válida
             const contentType = response.headers.get('content-type');
-            console.log(`?o— Content-Type da resposta: ${contentType}`);
+            __ckDashLog(`?o— Content-Type da resposta: ${contentType}`);
 
             if (!contentType || !contentType.includes('application/json')) {
                 const responseText = await response.text();
@@ -479,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(result.message || `Erro do servidor: ${response.status}`);
             }
 
-            console.log(`✓ Upload do PDF bem-sucedido:`, result);
+            __ckDashLog(`✓ Upload do PDF bem-sucedido:`, result);
 
             if (progressCallback) {
                 progressCallback('Arquivo Carregado!');
@@ -507,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNf—AO DE TESTE PARA VERIFICAR ENDPOINT ---
     async function testPDFEndpoint() {
-        console.log(' Testando conectividade com o servidor...');
+        __ckDashLog(' Testando conectividade com o servidor...');
 
         try {
             // Testa um endpoint que sabemos que existe
@@ -519,17 +520,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            console.log(` Teste de conectividade: ${testResponse.status} ${testResponse.statusText}`);
+            __ckDashLog(` Teste de conectividade: ${testResponse.status} ${testResponse.statusText}`);
 
             if (testResponse.ok) {
-                console.log('✓ Servidor está funcionando');
+                __ckDashLog('✓ Servidor está funcionando');
                 return {
                     server: true,
                     status: testResponse.status,
                     message: 'Servidor funcionando normalmente'
                 };
             } else {
-                console.log('âš ï¸ Servidor com problemas');
+                __ckDashLog('âš ï¸ Servidor com problemas');
                 return {
                     server: false,
                     status: testResponse.status,
@@ -607,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanDescription = description.trim().substring(0, 25);
         const cleanAmount = amount ? parseFloat(amount).toFixed(2) : '0.00';
 
-        console.log(' Gerando código PIX com dados:', {
+        __ckDashLog(' Gerando código PIX com dados:', {
             pixKeyOriginal: pixKey,
             pixKeyFormatted: cleanPixKey,
             name: cleanName,
@@ -656,8 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const crc = calculateCRC16(emvString + '6304');
         emvString += '6304' + crc;
 
-        console.log('?o Código EMV final:', emvString);
-        console.log('?o Tamanho:', emvString.length);
+        __ckDashLog('?o Código EMV final:', emvString);
+        __ckDashLog('?o Tamanho:', emvString.length);
 
         return emvString;
     }
@@ -925,40 +926,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNf—AO DE TESTE E DEBUG PARA PIX ---
     function testPixCode(pixKey, recipientName, amount = null, description = '') {
-        console.log(' Testando código PIX...');
-        console.log('?o— Dados de entrada:');
-        console.log('- Chave PIX:', pixKey);
-        console.log('- Nome:', recipientName);
-        console.log('- Valor:', amount);
-        console.log('- Descrição:', description);
+        __ckDashLog(' Testando código PIX...');
+        __ckDashLog('?o— Dados de entrada:');
+        __ckDashLog('- Chave PIX:', pixKey);
+        __ckDashLog('- Nome:', recipientName);
+        __ckDashLog('- Valor:', amount);
+        __ckDashLog('- Descrição:', description);
 
         try {
             const pixCode = generatePixEMVCode(pixKey, recipientName, amount, description);
-            console.log('✓ Código EMV gerado:', pixCode);
-            console.log('?o Tamanho do código:', pixCode.length);
+            __ckDashLog('✓ Código EMV gerado:', pixCode);
+            __ckDashLog('?o Tamanho do código:', pixCode.length);
 
             // Verificar se começa com 000201
             if (pixCode.startsWith('000201')) {
-                console.log('✓ Código começa corretamente com 000201');
+                __ckDashLog('✓ Código começa corretamente com 000201');
             } else {
-                console.log('ERRO: Código não começa com 000201');
+                __ckDashLog('ERRO: Código não começa com 000201');
             }
 
             // Verificar se termina com CRC válido
             const crc = pixCode.slice(-4);
-            console.log(' CRC calculado:', crc);
+            __ckDashLog(' CRC calculado:', crc);
 
             // Verificar estrutura básica
             if (pixCode.includes('BR.GOV.BCB.PIX')) {
-                console.log('✓ Contém identificador BR.GOV.BCB.PIX');
+                __ckDashLog('✓ Contém identificador BR.GOV.BCB.PIX');
             } else {
-                console.log('ERRO: Não contém BR.GOV.BCB.PIX');
+                __ckDashLog('ERRO: Não contém BR.GOV.BCB.PIX');
             }
 
             if (pixCode.includes(pixKey)) {
-                console.log('✓ Contém chave PIX');
+                __ckDashLog('✓ Contém chave PIX');
             } else {
-                console.log('ERRO: Não contém chave PIX');
+                __ckDashLog('ERRO: Não contém chave PIX');
             }
 
             return pixCode;
@@ -971,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para testar com dados reais do cliente
     function testClientPix() {
-        console.log(' Testando com dados reais do cliente...');
+        __ckDashLog(' Testando com dados reais do cliente...');
         return testPixCode(
             '1119478723275204000053039865802BR',
             'ASSEMBLEIA DE DEUS CHAMA',
@@ -982,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para testar celular
     function testCelularPix(celular) {
-        console.log('?o± Testando PIX com celular:', celular);
+        __ckDashLog('?o± Testando PIX com celular:', celular);
         return testPixCode(
             celular,
             'TESTE CELULAR',
@@ -1127,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const STATUS_CHECK_COOLDOWN = 5000; // 5 segundos
 
             if (lastStatusCheck && (now - parseInt(lastStatusCheck)) < STATUS_CHECK_COOLDOWN) {
-                console.log('⏳ Cooldown ativo para status. Usando dados locais.');
+                __ckDashLog('⏳ Cooldown ativo para status. Usando dados locais.');
                 return JSON.parse(localStorage.getItem('conectaKingUser'));
             }
 
@@ -1156,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem('conectaKingUser', JSON.stringify(freshUser));
 
-            console.log('[fetchAndUpdateUserStatus] Status do usuário atualizado:', {
+            __ckDashLog('[fetchAndUpdateUserStatus] Status do usuário atualizado:', {
                 email: freshUser.email,
                 hasFinance: freshUser.hasFinance,
                 hasContract: freshUser.hasContract,
@@ -1166,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Aplicar visibilidade dos módulos imediatamente
             if (typeof window.applyModulesVisibility === 'function') {
-                console.log('[fetchAndUpdateUserStatus] Aplicando visibilidade dos módulos...');
+                __ckDashLog('[fetchAndUpdateUserStatus] Aplicando visibilidade dos módulos...');
                 window.applyModulesVisibility(freshUser);
             } else {
                 console.warn('[fetchAndUpdateUserStatus] window.applyModulesVisibility não está disponível ainda');
@@ -1303,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Função para salvar o formato do avatar
     async function saveAvatarFormat(format) {
         try {
-            console.log('Salvando formato do avatar:', format);
+            __ckDashLog('Salvando formato do avatar:', format);
             const response = await safeFetch(`${API_URL}/api/profile/avatar-format`, {
                 method: 'PUT',
                 headers: {
@@ -1331,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 applyAvatarFormatToPreview(SELECTORS.previewAvatar, format);
             }
 
-            console.log('Formato do avatar salvo com sucesso:', format);
+            __ckDashLog('Formato do avatar salvo com sucesso:', format);
 
         } catch (error) {
             console.error('Erro ao salvar formato do avatar:', error);
@@ -1397,7 +1398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.querySelector(`.duplicate-item-btn[data-item-id="${itemId}"], .module-action-btn.duplicate[data-item-id="${itemId}"]`);
         const origTitle = btn?.getAttribute?.('title');
         const url = `${typeof API_URL !== 'undefined' ? API_URL : window.API_URL || ''}/api/profile/items/${itemId}/duplicate`;
-        console.log(' Duplicando módulo:', itemId, '', url);
+        __ckDashLog(' Duplicando módulo:', itemId, '', url);
         try {
             if (btn) {
                 btn.disabled = true;
@@ -1417,7 +1418,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Sucesso (2xx): sempre recarregar o perfil completo para trazer digital_form_data (perguntas, fotos, etc.) do novo item
             const newItem = result?.id != null ? result : (result?.item || result?.data);
-            if (newItem?.id != null) console.log('Módulo duplicado com id:', newItem.id);
+            if (newItem?.id != null) __ckDashLog('Módulo duplicado com id:', newItem.id);
             const doRefresh = typeof fetchProfileData === 'function' ? fetchProfileData : (typeof window.fetchProfileData === 'function' ? window.fetchProfileData : null);
             if (doRefresh) {
                 await doRefresh(true);
@@ -1454,11 +1455,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isTemporary || isUnsaved) {
             // Item temporário: apenas remover do DOM e dos dados locais
-            console.log(`'️ Removendo item temporário ${itemId} (não salvo no servidor)...`);
+            __ckDashLog(`'️ Removendo item temporário ${itemId} (não salvo no servidor)...`);
 
             if (itemEl) {
                 itemEl.remove();
-                console.log(`Item temporário ${itemId} removido do DOM`);
+                __ckDashLog(`Item temporário ${itemId} removido do DOM`);
             }
 
             // Remover dos dados locais também
@@ -1466,24 +1467,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
             }
 
-            console.log(`Item temporário ${itemId} removido completamente (não era necessário salvar no servidor)`);
+            __ckDashLog(`Item temporário ${itemId} removido completamente (não era necessário salvar no servidor)`);
             return; // Não fazer requisição ao servidor
         }
 
         try {
-            console.log(`'️ Tentando deletar item ${itemId} do servidor...`);
-            console.log(`Y"< URL da requisição: ${API_URL}/api/profile/items/${itemId}`);
+            __ckDashLog(`'️ Tentando deletar item ${itemId} do servidor...`);
+            __ckDashLog(`Y"< URL da requisição: ${API_URL}/api/profile/items/${itemId}`);
 
             // Atualizar headers antes de fazer a requisição
             const currentHeaders = getHeaders();
-            console.log(`Headers da requisição:`, Object.keys(currentHeaders));
+            __ckDashLog(`Headers da requisição:`, Object.keys(currentHeaders));
 
             const response = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
                 method: 'DELETE',
                 headers: currentHeaders
             });
 
-            console.log(`Resposta do servidor:`, {
+            __ckDashLog(`Resposta do servidor:`, {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok
@@ -1491,7 +1492,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Se receber 401, tentar renovar token e tentar novamente
             if (response.status === 401) {
-                console.log('Token expirado ao deletar, tentando renovar...');
+                __ckDashLog('Token expirado ao deletar, tentando renovar...');
                 try {
                     await refreshAccessToken();
                     const newHeaders = getHeaders();
@@ -1505,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const result = await retryResponse.json();
-                    console.log(`Resposta do servidor:`, result);
+                    __ckDashLog(`Resposta do servidor:`, result);
 
                     // Remover visualmente o item IMEDIATAMENTE
                     let itemEl = document.querySelector(`.module-item[data-id="${itemId}"]`);
@@ -1517,9 +1518,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (itemEl) {
-                        console.log(`'️ Removendo item ${itemId} do DOM...`);
+                        __ckDashLog(`'️ Removendo item ${itemId} do DOM...`);
                         itemEl.remove();
-                        console.log(`Item ${itemId} removido do DOM imediatamente`);
+                        __ckDashLog(`Item ${itemId} removido do DOM imediatamente`);
                     } else {
                         console.warn(`Item ${itemId} não encontrado no DOM`);
                     }
@@ -1530,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
                         const removed = initialLength > window.currentProfileData.items.length;
                         if (removed) {
-                            console.log(`Item ${itemId} removido dos dados locais (currentProfileData)`);
+                            __ckDashLog(`Item ${itemId} removido dos dados locais (currentProfileData)`);
                         } else {
                             console.warn(`Item ${itemId} não encontrado nos dados locais`);
                         }
@@ -1538,8 +1539,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // IMPORTANTE: NÃO recarregar dados após deletar!
                     // O item foi removido do servidor e do DOM. Não fazer fetchProfileData aqui.
-                    console.log(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
-                    console.log(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
+                    __ckDashLog(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
+                    __ckDashLog(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
                     return;
                 } catch (refreshError) {
                     console.error('Erro ao renovar token:', refreshError);
@@ -1560,7 +1561,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`Resposta do servidor:`, result);
+            __ckDashLog(`Resposta do servidor:`, result);
 
             // Remover visualmente o item IMEDIATAMENTE do DOM
             // Tentar múltiplos seletores para garantir que encontramos o elemento
@@ -1573,10 +1574,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (itemEl) {
-                console.log(`'️ Removendo item ${itemId} do DOM imediatamente...`);
+                __ckDashLog(`'️ Removendo item ${itemId} do DOM imediatamente...`);
                 // Remover imediatamente sem animação
                 itemEl.remove();
-                console.log(`Item ${itemId} removido do DOM`);
+                __ckDashLog(`Item ${itemId} removido do DOM`);
             } else {
                 console.warn(`Item ${itemId} não encontrado no DOM`);
             }
@@ -1587,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.currentProfileData.items = window.currentProfileData.items.filter(item => String(item.id) !== String(itemId));
                 const removed = initialLength > window.currentProfileData.items.length;
                 if (removed) {
-                    console.log(`Item ${itemId} removido dos dados locais (currentProfileData)`);
+                    __ckDashLog(`Item ${itemId} removido dos dados locais (currentProfileData)`);
                 } else {
                     console.warn(`Item ${itemId} não encontrado nos dados locais`);
                 }
@@ -1597,8 +1598,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // O item foi removido do servidor e do DOM. Não fazer fetchProfileData aqui
             // porque isso pode trazer o item de volta se houver algum problema de sincronização.
             // O usuário pode clicar em "Publicar alterações" depois se quiser sincronizar.
-            console.log(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
-            console.log(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
+            __ckDashLog(`Módulo ${itemId} deletado com sucesso do servidor, removido do DOM e dos dados locais`);
+            __ckDashLog(`Y' Nota: Clique em "Publicar alterações" para sincronizar todas as mudanças`);
         } catch (error) {
             console.error('Erro ao deletar item:', error);
             console.error('Stack trace:', error.stack);
@@ -1635,7 +1636,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // IMPORTANTE: sales_page salva DIRETAMENTE no servidor (não espera "Publicar alterações")
             if (itemType === 'sales_page') {
-                console.log(` [TOGGLE] Sales_page ${itemId} - salvando diretamente no servidor: ${isActive ? 'ativado' : 'desativado'}`);
+                __ckDashLog(` [TOGGLE] Sales_page ${itemId} - salvando diretamente no servidor: ${isActive ? 'ativado' : 'desativado'}`);
 
                 // Salvar diretamente no servidor
                 const response = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
@@ -1663,14 +1664,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                console.log(`Sales_page ${itemId} salvo no servidor: ${isActive ? 'ativado' : 'desativado'}`);
+                __ckDashLog(`Sales_page ${itemId} salvo no servidor: ${isActive ? 'ativado' : 'desativado'}`);
                 return;
             }
 
             // Para outros módulos: salvar APENAS localmente (frontend)
             // O botão "Publicar alterações" é que salva no servidor
-            console.log(` [TOGGLE] Atualizando status do módulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
-            console.log(`Y' Nota: Clique em "Publicar alterações" para salvar esta mudança no servidor`);
+            __ckDashLog(` [TOGGLE] Atualizando status do módulo ${itemId} apenas localmente: ${isActive ? 'ativado' : 'desativado'}`);
+            __ckDashLog(`Y' Nota: Clique em "Publicar alterações" para salvar esta mudança no servidor`);
 
             // Atualizar visualmente apenas localmente
             itemEl.dataset.isActive = isActive;
@@ -1686,14 +1687,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemIndex = window.currentProfileData.items.findIndex(item => String(item.id) === String(itemId));
                 if (itemIndex !== -1) {
                     window.currentProfileData.items[itemIndex].is_active = isActive;
-                    console.log(`Status do módulo ${itemId} atualizado localmente nos dados do perfil`);
+                    __ckDashLog(`Status do módulo ${itemId} atualizado localmente nos dados do perfil`);
                 }
             }
 
             // Atualizar preview local
             updateLivePreviewFromForm();
 
-            console.log(`Status do módulo ${itemId} atualizado localmente. Clique em "Publicar alterações" para salvar no servidor.`);
+            __ckDashLog(`Status do módulo ${itemId} atualizado localmente. Clique em "Publicar alterações" para salvar no servidor.`);
 
             // NÃO fazer requisição ao servidor aqui - isso será feito quando o usuário clicar em "Publicar alterações"
             return;
@@ -1738,7 +1739,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        console.log(` Atualizando item ${itemId} (${itemType}) na interface usando dados da API...`);
+        __ckDashLog(` Atualizando item ${itemId} (${itemType}) na interface usando dados da API...`);
 
         // Preparar timestamp para evitar cache de imagens
         const imageUrlWithTimestamp = apiResult.image_url ? `${apiResult.image_url}?t=${Date.now()}` : '';
@@ -1963,11 +1964,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemIndex = window.currentProfileData.items.findIndex(item => String(item.id) === String(itemId));
             if (itemIndex !== -1) {
                 window.currentProfileData.items[itemIndex] = { ...window.currentProfileData.items[itemIndex], ...apiResult };
-                console.log(`Dados do item ${itemId} atualizados em currentProfileData`);
+                __ckDashLog(`Dados do item ${itemId} atualizados em currentProfileData`);
             }
         }
 
-        console.log(`Item ${itemId} atualizado na interface em tempo real (todos os campos visíveis)`);
+        __ckDashLog(`Item ${itemId} atualizado na interface em tempo real (todos os campos visíveis)`);
     }
 
     // Função para sincronizar dados do modal para o item da lista antes de salvar
@@ -1982,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itemType = itemEl.dataset.itemType;
 
-        console.log(` Sincronizando dados do modal para item ${itemId} (${itemType}) antes de salvar`);
+        __ckDashLog(` Sincronizando dados do modal para item ${itemId} (${itemType}) antes de salvar`);
 
         // Aplicar as mesmas atualizações que o botão "Salvar Alterações" do modal faz
         // IMPORTANTE: Usar querySelector com data-editing-id para pegar apenas o valor do modal deste item específico
@@ -2131,14 +2132,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const newMsg = msgInputModal?.value?.trim() || '';
             const newImg = imageInputModal?.value?.trim() || '';
 
-            console.log(` [BANNER] Sincronizando imagem do modal para item ${itemId}:`, newImg);
+            __ckDashLog(` [BANNER] Sincronizando imagem do modal para item ${itemId}:`, newImg);
 
             if (nameInputList) nameInputList.value = newName;
             if (destInputList) destInputList.value = newDest;
             if (msgHiddenList) msgHiddenList.value = newMsg;
             if (imageInputList) {
                 imageInputList.value = newImg;
-                console.log(`[BANNER] Campo .item-image-url-input atualizado na lista:`, newImg);
+                __ckDashLog(`[BANNER] Campo .item-image-url-input atualizado na lista:`, newImg);
             }
             if (thumbList && newImg) {
                 thumbList.src = newImg;
@@ -2343,7 +2344,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Os campos principais já estão sincronizados acima
         }
 
-        console.log(`Dados sincronizados do modal para item ${itemId}`);
+        __ckDashLog(`Dados sincronizados do modal para item ${itemId}`);
     }
 
     if (window.DashboardCore) {
@@ -2357,7 +2358,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Salvar banner usando rota específica
     async function saveBannerItem(itemId) {
-        console.log(`Salvando banner ${itemId} via rota específica...`);
+        __ckDashLog(`Salvando banner ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
@@ -2425,7 +2426,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (idx !== -1) window.currentProfileData.items[idx] = createdItem;
             }
 
-            console.log(`[BANNER] Item temporário ${currentId} criado no servidor com ID ${newId}`);
+            __ckDashLog(`[BANNER] Item temporário ${currentId} criado no servidor com ID ${newId}`);
             return newId;
         }
 
@@ -2458,7 +2459,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalValue = imageInputModal.value.trim();
             if (modalValue && !modalValue.includes('placeholder') && !modalValue.startsWith('data:image/svg')) {
                 imageUrl = modalValue;
-                console.log(`[BANNER] Image URL capturado do campo #edit-image-url do modal:`, imageUrl);
+                __ckDashLog(`[BANNER] Image URL capturado do campo #edit-image-url do modal:`, imageUrl);
             }
         }
 
@@ -2467,7 +2468,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bannerPreview = document.getElementById('edit-banner-preview');
             if (bannerPreview && bannerPreview.src && !bannerPreview.src.includes('placeholder') && !bannerPreview.src.startsWith('data:image/svg')) {
                 imageUrl = bannerPreview.src;
-                console.log(`[BANNER] Image URL capturado do preview #edit-banner-preview:`, imageUrl);
+                __ckDashLog(`[BANNER] Image URL capturado do preview #edit-banner-preview:`, imageUrl);
             }
         }
 
@@ -2478,7 +2479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const listValue = listImageInput.value.trim();
                 if (listValue && !listValue.includes('placeholder') && !listValue.startsWith('data:image/svg')) {
                     imageUrl = listValue;
-                    console.log(`[BANNER] Image URL capturado do campo .item-image-url-input da lista:`, imageUrl);
+                    __ckDashLog(`[BANNER] Image URL capturado do campo .item-image-url-input da lista:`, imageUrl);
                 }
             }
         }
@@ -2488,7 +2489,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const thumbPreview = itemEl.querySelector('.banner-preview-thumb');
             if (thumbPreview && thumbPreview.src && !thumbPreview.src.includes('placeholder') && !thumbPreview.src.startsWith('data:image/svg')) {
                 imageUrl = thumbPreview.src;
-                console.log(`[BANNER] Image URL capturado do preview .banner-preview-thumb da lista:`, imageUrl);
+                __ckDashLog(`[BANNER] Image URL capturado do preview .banner-preview-thumb da lista:`, imageUrl);
             }
         }
 
@@ -2498,7 +2499,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const originalData = JSON.parse(itemEl.dataset.originalData);
                 if (originalData.image_url && !originalData.image_url.includes('placeholder') && !originalData.image_url.startsWith('data:image/svg')) {
                     imageUrl = originalData.image_url.trim();
-                    console.log(`[BANNER] Image URL capturado do originalData:`, imageUrl);
+                    __ckDashLog(`[BANNER] Image URL capturado do originalData:`, imageUrl);
                 }
             } catch (e) {
                 console.warn('Erro ao parsear originalData:', e);
@@ -2506,7 +2507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Log detalhado de todas as tentativas
-        console.log(`[BANNER] Resumo da captura de image_url para item ${realItemId}:`, {
+        __ckDashLog(`[BANNER] Resumo da captura de image_url para item ${realItemId}:`, {
             campoModal: imageInputModal?.value || 'não encontrado',
             previewModal: document.getElementById('edit-banner-preview')?.src || 'não encontrado',
             campoLista: itemEl.querySelector('.item-image-url-input')?.value || 'não encontrado',
@@ -2537,8 +2538,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`[BANNER] image_url FINAL que será enviado:`, finalUpdateData.image_url || 'null');
-        console.log(`[BANNER] Dados completos para rota específica:`, finalUpdateData);
+        __ckDashLog(`[BANNER] image_url FINAL que será enviado:`, finalUpdateData.image_url || 'null');
+        __ckDashLog(`[BANNER] Dados completos para rota específica:`, finalUpdateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/banner/${realItemId}`, {
@@ -2553,13 +2554,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`Banner ${realItemId} salvo com sucesso via rota específica.`);
-            console.log(`[BANNER] image_url salvo no banco:`, result.image_url ? result.image_url.substring(0, 50) + '...' : 'null');
+            __ckDashLog(`Banner ${realItemId} salvo com sucesso via rota específica.`);
+            __ckDashLog(`[BANNER] image_url salvo no banco:`, result.image_url ? result.image_url.substring(0, 50) + '...' : 'null');
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(realItemId, result, 'banner');
 
-            console.log(`Banner ${realItemId} salvo e interface atualizada em tempo real`);
+            __ckDashLog(`Banner ${realItemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
             console.error(`Erro ao salvar banner ${realItemId} via rota específica:`, error);
             throw error;
@@ -2568,7 +2569,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Salvar link personalizado usando rota específica
     async function saveLinkItem(itemId) {
-        console.log(`Salvando link ${itemId} via rota específica...`);
+        __ckDashLog(`Salvando link ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
@@ -2600,7 +2601,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`Dados para rota específica do link:`, updateData);
+        __ckDashLog(`Dados para rota específica do link:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/link/${itemId}`, {
@@ -2615,12 +2616,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`Link ${itemId} salvo com sucesso via rota específica.`);
+            __ckDashLog(`Link ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'link');
 
-            console.log(`Link ${itemId} salvo e interface atualizada em tempo real`);
+            __ckDashLog(`Link ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
             console.error(`Erro ao salvar link ${itemId} via rota específica:`, error);
             throw error;
@@ -2629,7 +2630,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Salvar carousel usando rota específica
     async function saveCarouselItem(itemId) {
-        console.log(`Salvando carousel ${itemId} via rota específica...`);
+        __ckDashLog(`Salvando carousel ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
@@ -2659,7 +2660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`Dados para rota específica do carousel:`, updateData);
+        __ckDashLog(`Dados para rota específica do carousel:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/carousel/${itemId}`, {
@@ -2674,12 +2675,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`Carousel ${itemId} salvo com sucesso via rota específica.`);
+            __ckDashLog(`Carousel ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'carousel');
 
-            console.log(`Carousel ${itemId} salvo e interface atualizada em tempo real`);
+            __ckDashLog(`Carousel ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
             console.error(`Erro ao salvar carousel ${itemId} via rota específica:`, error);
             throw error;
@@ -2688,7 +2689,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Salvar PIX usando rota específica
     async function savePixItem(itemId) {
-        console.log(`Salvando PIX ${itemId} via rota específica...`);
+        __ckDashLog(`Salvando PIX ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
@@ -2722,7 +2723,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`Dados para rota específica do PIX:`, updateData);
+        __ckDashLog(`Dados para rota específica do PIX:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/pix/${itemId}`, {
@@ -2737,12 +2738,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`PIX ${itemId} salvo com sucesso via rota específica.`);
+            __ckDashLog(`PIX ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'pix');
 
-            console.log(`PIX ${itemId} salvo e interface atualizada em tempo real`);
+            __ckDashLog(`PIX ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
             console.error(`Erro ao salvar PIX ${itemId} via rota específica:`, error);
             throw error;
@@ -2751,7 +2752,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Salvar PDF usando rota específica
     async function savePdfItem(itemId) {
-        console.log(`Salvando PDF ${itemId} via rota específica...`);
+        __ckDashLog(`Salvando PDF ${itemId} via rota específica...`);
         // Atualizar HEADERS antes de fazer a requisição
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
@@ -2779,7 +2780,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log(`Dados para rota específica do PDF:`, updateData);
+        __ckDashLog(`Dados para rota específica do PDF:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/pdf/${itemId}`, {
@@ -2794,12 +2795,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`PDF ${itemId} salvo com sucesso via rota específica.`);
+            __ckDashLog(`PDF ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'pdf');
 
-            console.log(`PDF ${itemId} salvo e interface atualizada em tempo real`);
+            __ckDashLog(`PDF ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
             console.error(`Erro ao salvar PDF ${itemId} via rota específica:`, error);
             throw error;
@@ -2808,7 +2809,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Salvar Formulário King usando rota específica
     async function saveDigitalFormItem(itemId) {
-        console.log(`Salvando Formulário King ${itemId} via rota específica...`);
+        __ckDashLog(`Salvando Formulário King ${itemId} via rota específica...`);
         HEADERS = getHeaders();
         const itemEl = document.querySelector(`.item[data-id='${itemId}'], .module-item[data-id='${itemId}']`);
         if (!itemEl) {
@@ -2867,7 +2868,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateData.image_url = updateData.banner_image_url;
         }
 
-        console.log(`Dados para rota específica do Formulário King:`, updateData);
+        __ckDashLog(`Dados para rota específica do Formulário King:`, updateData);
 
         try {
             const response = await fetch(`${API_URL}/api/profile/items/digital_form/${itemId}`, {
@@ -2882,12 +2883,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await response.json();
-            console.log(`Formulário King ${itemId} salvo com sucesso via rota específica.`);
+            __ckDashLog(`Formulário King ${itemId} salvo com sucesso via rota específica.`);
 
             // Atualizar item na lista usando dados retornados pela API (em tempo real)
             await updateItemFromApiResponse(itemId, result, 'digital_form');
 
-            console.log(`Formulário King ${itemId} salvo e interface atualizada em tempo real`);
+            __ckDashLog(`Formulário King ${itemId} salvo e interface atualizada em tempo real`);
         } catch (error) {
             console.error(`Erro ao salvar Formulário King ${itemId} via rota específica:`, error);
             throw error;
@@ -3117,11 +3118,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Atualizar ambos para garantir que estão sincronizados
         if (jsonInputModal) {
             jsonInputModal.value = jsonValue;
-            console.log(`[CARROSSEL] JSON do modal atualizado: ${realImages.length} imagem(ns)`);
+            __ckDashLog(`[CARROSSEL] JSON do modal atualizado: ${realImages.length} imagem(ns)`);
         }
         if (jsonInputItem) {
             jsonInputItem.value = jsonValue;
-            console.log(`[CARROSSEL] JSON do item atualizado: ${realImages.length} imagem(ns)`);
+            __ckDashLog(`[CARROSSEL] JSON do item atualizado: ${realImages.length} imagem(ns)`);
         }
 
         if (!jsonInputModal && !jsonInputItem) {
@@ -3166,7 +3167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.DashboardCore) window.DashboardCore.handleShareImageUpload = function () { return handleShareImageUpload.apply(null, arguments); };
     async function handleShareImageUpload(imageBlob) {
         try {
-            console.log('Iniciando upload da imagem de compartilhamento...');
+            __ckDashLog('Iniciando upload da imagem de compartilhamento...');
 
             // Obter autorização para upload
             const authResponse = await safeFetch(`${API_URL}/api/upload/auth`, {
@@ -3187,7 +3188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('URL de upload não recebida');
             }
 
-            console.log('Autorização obtida, fazendo upload...');
+            __ckDashLog('Autorização obtida, fazendo upload...');
 
             // Fazer upload para Cloudflare
             const formData = new FormData();
@@ -3204,17 +3205,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const uploadData = await uploadResponse.json();
-            console.log('Upload para Cloudflare concluído:', uploadData);
+            __ckDashLog('Upload para Cloudflare concluído:', uploadData);
 
             const accountHash = "MBdqwyqeFtFBvKiQjgzjtQ";
             const finalUrl = (uploadData.url || uploadData.imageUrl) || (uploadData.result && uploadData.result.id ? `https://imagedelivery.net/${accountHash}/${uploadData.result.id}/public` : '');
             if (!finalUrl) {
                 throw new Error('Resposta do servidor de upload inválida. Tente novamente.');
             }
-            console.log('URL final gerada:', finalUrl);
+            __ckDashLog('URL final gerada:', finalUrl);
 
             // Salvar no servidor
-            console.log('Salvando URL no servidor...');
+            __ckDashLog('Salvando URL no servidor...');
             const saveResponse = await safeFetch(`${API_URL}/api/profile/share-image`, {
                 method: 'PUT',
                 headers: {
@@ -3238,7 +3239,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const saveData = await saveResponse.json();
-            console.log('Imagem salva com sucesso:', saveData);
+            __ckDashLog('Imagem salva com sucesso:', saveData);
 
             alert('Imagem de compartilhamento salva com sucesso!');
 
@@ -3355,7 +3356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Se forceRefresh for true, SEMPRE forçar atualização imediata
             if (forceRefresh) {
-                console.log(' FOR?ANDO atualização imediata (ignorando cooldown e requisições em andamento)...');
+                __ckDashLog(' FOR?ANDO atualização imediata (ignorando cooldown e requisições em andamento)...');
                 // Limpar promise anterior se existir para forçar nova requisição
                 profileFetchPromise = null;
                 lastProfileFetch = 0; // Resetar cooldown completamente
@@ -3365,14 +3366,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Verificar se há requisição em andamento apenas se não for forçado
                 if (profileFetchPromise) {
-                    console.log('⏳ Aguardando requisição em andamento...');
+                    __ckDashLog('⏳ Aguardando requisição em andamento...');
                     return await profileFetchPromise;
                 }
 
                 // Verificar cooldown apenas se não for forçado
                 if ((now - lastProfileFetch) < PROFILE_FETCH_COOLDOWN) {
                     const waitSeconds = Math.ceil((PROFILE_FETCH_COOLDOWN - (now - lastProfileFetch)) / 1000);
-                    console.log(`⏳ Cooldown ativo. Aguarde ${waitSeconds} segundos.`);
+                    __ckDashLog(`⏳ Cooldown ativo. Aguarde ${waitSeconds} segundos.`);
                     // Não fazer a requisição, apenas retornar silenciosamente
                     return;
                 }
@@ -3399,7 +3400,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             // Se receber 401, tenta renovar o token
                             if (response.status === 401) {
-                                console.log('Token expirado, tentando renovar...');
+                                __ckDashLog('Token expirado, tentando renovar...');
                                 try {
                                     await refreshAccessToken();
                                     response = await safeFetch(`${API_URL}/api/profile`, {
@@ -3455,8 +3456,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             // Log para debug - ver o que está sendo retornado
-            console.log('Dados recebidos da API:', data);
-            console.log('Estrutura dos dados:', {
+            __ckDashLog('Dados recebidos da API:', data);
+            __ckDashLog('Estrutura dos dados:', {
                 hasData: !!data,
                 hasDetails: !!data?.details,
                 hasItems: !!data?.items,
@@ -3501,19 +3502,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 profileData.items = [];
             }
 
-            console.log('Dados validados com sucesso. Renderizando editor...');
-            console.log(`Y"S Total de itens para renderizar: ${profileData.items?.length || 0}`);
+            __ckDashLog('Dados validados com sucesso. Renderizando editor...');
+            __ckDashLog(`Y"S Total de itens para renderizar: ${profileData.items?.length || 0}`);
             if (profileData.items && profileData.items.length > 0) {
-                console.log(`Y"< IDs dos itens:`, profileData.items.map(item => `${item.id} (${item.item_type})`).join(', '));
+                __ckDashLog(`Y"< IDs dos itens:`, profileData.items.map(item => `${item.id} (${item.item_type})`).join(', '));
             }
 
             // IMPORTANTE: Atualizar window.currentProfileData para garantir que está sincronizado
             window.currentProfileData = profileData;
             currentProfileData = profileData;
 
-            console.log('window.currentProfileData atualizado com', profileData.items?.length || 0, 'itens');
+            __ckDashLog('window.currentProfileData atualizado com', profileData.items?.length || 0, 'itens');
             if (profileData.items && profileData.items.length > 0) {
-                console.log('Y"< Itens atualizados:', profileData.items.map(item => ({
+                __ckDashLog('Y"< Itens atualizados:', profileData.items.map(item => ({
                     id: item.id,
                     type: item.item_type,
                     hasImage: !!item.image_url,
@@ -3523,9 +3524,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Renderizar editor com dados validados
             try {
-                console.log('YZ Chamando renderEditor...');
+                __ckDashLog('YZ Chamando renderEditor...');
                 renderEditor(profileData);
-                console.log('renderEditor concluído com sucesso');
+                __ckDashLog('renderEditor concluído com sucesso');
 
                 reconcileModulesListWithProfileData(profileData);
             } catch (renderError) {
@@ -3591,11 +3592,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        console.log('Carregando produtos para itemId:', itemId);
+        __ckDashLog('Carregando produtos para itemId:', itemId);
         
         try {
             const response = await safeFetch(`${API_URL}/api/profile/items/${itemId}/products`, { headers: HEADERS });
-            console.log('Resposta da API:', response.status, response.statusText);
+            __ckDashLog('Resposta da API:', response.status, response.statusText);
             
             if (!response.ok) {
                 const errorText = await response.text();
@@ -3604,9 +3605,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const data = await response.json();
-            console.log('Dados recebidos da API:', data);
+            __ckDashLog('Dados recebidos da API:', data);
             const products = data.products || [];
-            console.log('Produtos processados:', products.length);
+            __ckDashLog('Produtos processados:', products.length);
             
             // Atualizar contador no display do item
             const itemEl = document.querySelector(`[data-id="${itemId}"]`);
@@ -3617,14 +3618,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            console.log('Elemento productsListEl encontrado:', productsListEl);
-            console.log('Tentando renderizar produtos. Quantidade:', products.length);
+            __ckDashLog('Elemento productsListEl encontrado:', productsListEl);
+            __ckDashLog('Tentando renderizar produtos. Quantidade:', products.length);
             
             if (products.length === 0) {
-                console.log('Nenhum produto encontrado, exibindo mensagem vazia');
+                __ckDashLog('Nenhum produto encontrado, exibindo mensagem vazia');
                 productsListEl.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Nenhum produto cadastrado ainda.</p>';
             } else {
-                console.log('Renderizando produtos no HTML...');
+                __ckDashLog('Renderizando produtos no HTML...');
                 // Exibir contador acima da lista
                 const productsHTML = `
                     <div style="margin-bottom: 15px; padding: 10px; background: var(--background-color, #0D0D0F); border-radius: 6px; border: 1px solid var(--border-color, #2C2C2F);">
@@ -3656,9 +3657,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         `).join('')}
                     </div>
                 `;
-                console.log('HTML gerado, definindo innerHTML...');
+                __ckDashLog('HTML gerado, definindo innerHTML...');
                 productsListEl.innerHTML = productsHTML;
-                console.log('innerHTML definido com sucesso');
+                __ckDashLog('innerHTML definido com sucesso');
             }
             
             // Adicionar event listeners
@@ -3936,8 +3937,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     image_url: imageUrl || null 
                 };
                 
-                console.log(`Y' Salvando produto:`, { itemId, productId, requestBody, method, url });
-                console.log(`Headers:`, HEADERS);
+                __ckDashLog(`Y' Salvando produto:`, { itemId, productId, requestBody, method, url });
+                __ckDashLog(`Headers:`, HEADERS);
                 
                 const response = await safeFetch(url, {
                     method,
@@ -3959,7 +3960,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 const result = await response.json();
-                console.log('Produto salvo com sucesso:', result);
+                __ckDashLog('Produto salvo com sucesso:', result);
                 
                 // Verificar se o produto foi realmente salvo
                 if (!result.product && !result.message) {
@@ -3972,9 +3973,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Aguardar um pouco antes de recarregar para garantir que o backend processou
                 setTimeout(async () => {
                     try {
-                        console.log(` Recarregando produtos após salvar produto para catálogo ${itemId}...`);
+                        __ckDashLog(` Recarregando produtos após salvar produto para catálogo ${itemId}...`);
                         await loadProductsForCatalog(itemId);
-                        console.log('Produtos recarregados com sucesso');
+                        __ckDashLog('Produtos recarregados com sucesso');
                     } catch (err) {
                         console.error('Erro ao recarregar produtos após salvar:', err);
                     }
@@ -4047,7 +4048,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.__dashboardMain = null;
 
     async function main() {
-        console.log(' Iniciando função main()...');
+        __ckDashLog(' Iniciando função main()...');
         setupEventListeners();
         // Re-ligar após splits (idempotente) — cobre race com defer
         setTimeout(function () {
@@ -4067,7 +4068,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const empresaTab = document.querySelector('.sidebar-tab[data-tab="times"]');
             if (empresaTab) {
                 empresaTab.style.display = showEmpresa ? 'flex' : 'none';
-                console.log(showEmpresa ? 'Aba "Empresa" visível (ADM, modo empresa ou plano com Modo Empresa)' : 'Aba "Empresa" oculta');
+                __ckDashLog(showEmpresa ? 'Aba "Empresa" visível (ADM, modo empresa ou plano com Modo Empresa)' : 'Aba "Empresa" oculta');
             }
 
             const admLink = document.getElementById('adm-link');
@@ -4103,7 +4104,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Perfil e status em paralelo (antes o painel esperava o perfil inteiro para só depois pedir o plano)
         const profilePromise = fetchProfileData().then(function () {
-            console.log('fetchProfileData() concluído com sucesso');
+            __ckDashLog('fetchProfileData() concluído com sucesso');
         }).catch(function (error) {
             console.error('Erro ao carregar dados do perfil:', error);
             if (error && error.status !== 429) {
@@ -4154,7 +4155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             applyEmpresaTabAndControls(updatedUser);
 
             // Aplicar visibilidade dos módulos (Gestão Financeira, Contratos, Agenda)
-            console.log('[Dashboard] Aplicando visibilidade dos módulos para:', {
+            __ckDashLog('[Dashboard] Aplicando visibilidade dos módulos para:', {
                 email: updatedUser.email,
                 hasFinance: updatedUser.hasFinance,
                 hasContract: updatedUser.hasContract,
@@ -4211,7 +4212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 e.stopPropagation();
             }
-            console.log('Abrindo menu mobile');
+            __ckDashLog('Abrindo menu mobile');
             if (sidebar) {
                 sidebar.classList.add('mobile-open');
                 document.body.classList.add('mobile-menu-open');
@@ -4227,7 +4228,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 e.stopPropagation();
             }
-            console.log('Fechando menu mobile');
+            __ckDashLog('Fechando menu mobile');
             if (sidebar) {
                 sidebar.classList.remove('mobile-open');
                 document.body.classList.remove('mobile-menu-open');
@@ -4365,7 +4366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        console.log('Menu mobile inicializado com sucesso!');
+        __ckDashLog('Menu mobile inicializado com sucesso!');
     }
 
     // Inicializar menu mobile

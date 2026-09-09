@@ -486,7 +486,7 @@
         <div class="ks-row">
           <div class="ks-field">
             <label>Nome do projeto</label>
-            <input id="ks-new-name" type="text" placeholder="Ex: Casamento Joo & Maria" />
+            <input id="ks-new-name" type="text" placeholder="Ex: Casamento João & Maria" />
           </div>
         </div>
         <div class="ks-row">
@@ -500,13 +500,13 @@
               <option value="Eventos">Eventos</option>
               <option value="Newborn">Newborn</option>
               <option value="Gestante">Gestante</option>
-              <option value="Famlia">Famlia</option>
+              <option value="Família">Família</option>
               <option value="Formatura">Formatura</option>
               <option value="Batizado">Batizado</option>
               <option value="Moda / Editorial">Moda / Editorial</option>
               <option value="Produto / Still">Produto / Still</option>
               <option value="Esportes">Esportes</option>
-              <option value="Arquitetura / Imveis">Arquitetura / Imveis</option>
+              <option value="Arquitetura / Imóveis">Arquitetura / Imóveis</option>
               <option value="__outra__">Outra (digitar abaixo)</option>
             </select>
             <input id="ks-new-category-custom" type="text" placeholder="Digite a categoria" autocomplete="off" style="display:none;margin-top:8px;width:100%;box-sizing:border-box" />
@@ -591,8 +591,8 @@
     </div>
   </div>
 
-  <script src="/config.js?v=2026-09-09-no-render2"></script>
-  <script src="/kingSelectionEdit.js?v=2026-09-09-cleanUrls1"></script>
+  <script src="/config.js?v=2026-09-09-ux1"></script>
+  <script src="/kingSelectionEdit.js?v=2026-09-09-ux1"></script>
 </body>
 </html>
 
