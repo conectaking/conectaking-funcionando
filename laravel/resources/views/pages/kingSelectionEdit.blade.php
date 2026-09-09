@@ -591,8 +591,8 @@
     </div>
   </div>
 
-  <script src="/config.js?v=2026-03-23-anticache-a1"></script>
-  <script src="/kingSelectionEdit.js?v=2026-04-22-paid-event-access"></script>
+  <script src="/config.js?v=2026-09-09-no-render2"></script>
+  <script src="/kingSelectionEdit.js?v=2026-09-09-no-render2"></script>
 </body>
 </html>
 

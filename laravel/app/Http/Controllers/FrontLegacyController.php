@@ -67,6 +67,8 @@ class FrontLegacyController extends Controller
             var finalUrl = url;
             if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
               finalUrl = url.indexOf('http') === 0 ? url : apiBase.replace(/\/$/, '') + (url.indexOf('/') === 0 ? url : '/' + url);
+            } else if (url && /conectaking-api\.onrender\.com/i.test(url) && url.indexOf('/api/') !== -1) {
+              finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
             } else if (url && url.indexOf('conectaking.com.br') !== -1 && url.indexOf('/api/') !== -1) {
               finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
             }
@@ -174,9 +176,20 @@ class FrontLegacyController extends Controller
         return response()->file($file, [
             'Content-Type' => $mime,
             'X-Conecta-Engine' => 'laravel',
-            'Cache-Control' => str_ends_with($mime, 'html; charset=UTF-8')
-                ? 'no-cache, no-store, must-revalidate'
-                : 'public, max-age=3600',
+            'Cache-Control' => $this->cacheControlFor($file, $mime),
         ]);
+    }
+
+    private function cacheControlFor(string $file, string $mime): string
+    {
+        $base = strtolower(basename($file));
+        // config.js / api-config não podem ficar presos no CDN com API antiga (Render).
+        if ($base === 'config.js' || $base === 'api-config.js' || str_ends_with($base, 'kingselectionedit.js')) {
+            return 'no-cache, no-store, must-revalidate, max-age=0';
+        }
+
+        return str_ends_with($mime, 'html; charset=UTF-8')
+            ? 'no-cache, no-store, must-revalidate'
+            : 'public, max-age=3600';
     }
 }
