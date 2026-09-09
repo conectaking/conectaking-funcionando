@@ -46,12 +46,12 @@
             <div id="message" class="message"></div>
             
             <p class="auth-link" style="margin-top: 20px; margin-bottom: 8px;">
-                <a href="/recuperar-senha.html" style="color: #ffd700; text-decoration: none; font-weight: 600;">
+                <a href="/recuperar-senha" style="color: #ffd700; text-decoration: none; font-weight: 600;">
                     <i class="fas fa-key"></i> Esqueceu sua senha?
                 </a>
             </p>
             
-            <p class="auth-link">Não tem uma conta? <a href="/registro.html">Crie a sua</a></p>
+            <p class="auth-link">Não tem uma conta? <a href="/registro">Crie a sua</a></p>
         </div>
     </div>
 
@@ -164,11 +164,11 @@
                         }
 
                         async function warmUpApi(apiBase) {
-                            // Ajuda muito quando o Render "dorme" e a primeira chamada falha/timeout
+                            // Ping leve do /health (útil em cold start local)
                             try {
                                 await fetchWithTimeout(apiBase + '/health', { method: 'GET', cache: 'no-store' }, 8000);
                             } catch (e) {
-                                // Ignorar: apenas tentativa de aquecimento
+                                // Ignorar
                             }
                         }
 
@@ -279,9 +279,9 @@
                                     }
                                 }
                                 try {
-                                    return new URL('dashboard.html', window.location.href).href;
+                                    return new URL('/dashboard', window.location.origin).href;
                                 } catch (e3) {
-                                    return 'dashboard.html';
+                                    return '/dashboard';
                                 }
                             }
                             setTimeout(function () {
@@ -307,7 +307,7 @@
                         
                         let errorMessage = 'Não foi possível conectar ao servidor.';
                         if (error && error.name === 'AbortError') {
-                            errorMessage = 'Tempo limite excedido. O servidor pode estar ?oacordando—. Aguarde alguns segundos e tente novamente.';
+                            errorMessage = 'Tempo limite excedido. O servidor pode estar a demorar a responder. Aguarde alguns segundos e tente novamente.';
                         } else if (error && error.message && error.message.toLowerCase().includes('fetch')) {
                             errorMessage = 'Não foi possível conectar à API. Pode ser instabilidade momentânea. Tente novamente em alguns segundos.';
                         } else if (error.message) {

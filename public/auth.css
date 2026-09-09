@@ -1,0 +1,148 @@
+
+
+/* Remove a imagem de fundo antiga e usa a cor padrão do seu site */
+.auth-background {
+    background-color: var(--preto-fundo);
+}
+
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+/* O card principal, agora alinhado com o estilo do dashboard */
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    background-color: var(--preto-card);
+    border: 1px solid var(--borda-suave);
+    border-radius: 16px;
+    padding: 40px;
+    animation: fadeIn-Up 0.6s ease-out;
+}
+
+/* Cabeçalho com o logo e textos */
+.auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.auth-logo {
+    width: 80px;
+    height: auto;
+    margin-bottom: 16px;
+}
+
+.auth-header h2 { /* Título secundário (ex: CONECTA KING) */
+    color: var(--dourado-principal);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.auth-header h1 { /* Título principal (ex: Bem Vindo) */
+    color: var(--branco-texto);
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 8px 0;
+}
+
+.auth-header p {
+    color: var(--cinza-texto);
+    opacity: 0.8;
+}
+
+/* Campos de formulário com o estilo do seu site */
+.input-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: var(--cinza-texto);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--preto-fundo); /* Fundo escuro */
+    border: 1px solid var(--borda-suave);
+    border-radius: 8px;
+    color: var(--branco-texto); /* Texto claro */
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--dourado-principal);
+    box-shadow: 0 0 0 3px rgba(255, 199, 0, 0.2);
+}
+
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 16px;
+    color: #6B7280;
+    cursor: pointer;
+}
+
+/* Botão de submit com o estilo da marca */
+.btn-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    margin-top: 8px;
+    color: #000;
+    background-color: var(--dourado-principal);
+    transition: all 0.2s ease;
+}
+
+.btn-submit:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+/* Mensagens de feedback e link inferior */
+.message {
+    text-align: center;
+    padding-top: 16px;
+    font-weight: 600;
+}
+.message.success { color: #2ecc71; }
+.message.error { color: #e74c3c; }
+
+.auth-link {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 0.9rem;
+}
+.auth-link a {
+    color: var(--dourado-principal);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* Animação de entrada */
+@keyframes fadeIn-Up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

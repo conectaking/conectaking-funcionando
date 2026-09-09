@@ -1348,21 +1348,20 @@
         // Detectar URL da API - mesma lgica do dashboard
         let API_URL = window.location.origin;
         
-        // Se estiver em localhost com porta 5500 (Live Server), usar porta 5000 (servidor Express padrão)
+        // Se estiver em localhost com porta 5500 (Live Server), apontar para FrankenPHP :8080
         if (API_URL.includes('127.0.0.1:5500') || API_URL.includes('localhost:5500')) {
             const protocol = window.location.protocol;
             const hostname = window.location.hostname;
-            // Usar porta 5000 (porta padrão do Express neste projeto)
-            API_URL = `${protocol}//${hostname}:5000`;
-            console.log('?x Live Server detectado. Redirecionando para servidor Express na porta 5000.');
+            API_URL = `${protocol}//${hostname}:8080`;
+            console.log('Live Server detectado. Usando Laravel/FrankenPHP na porta 8080.');
         }
         
-        // Se estiver em produo, usar a URL da API configurada
+        // Em produção, mesma origem (www)
         if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
             API_URL = 'https://www.conectaking.com.br';
         }
         
-        console.log('?xR? API URL configurada:', API_URL);
+        console.log('API URL configurada:', API_URL);
         
         // Tornar API_URL disponível globalmente para planRenderer.js
         window.API_URL = API_URL;
@@ -1507,7 +1506,7 @@
                             <ol style="color: rgba(245, 245, 245, 0.9); line-height: 1.8; padding-left: 20px;">
                                 <li>Abra um terminal na pasta do projeto</li>
                                 <li>Execute: <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">docker compose up</code></li>
-                                <li>Aguarde a mensagem "Servidor rodando na porta 5000"</li>
+                                <li>Aguarde o health em <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">http://localhost:8080/health</code></li>
                                 <li>Recarregue esta página</li>
                             </ol>
                             <p style="color: rgba(245, 245, 245, 0.7); font-size: 0.9rem; margin-top: 12px;">
@@ -1517,7 +1516,7 @@
                     `;
                 } else if (error.message.includes('404')) {
                     errorMessage = 'Servidor não encontrado.';
-                    instructions = '<p style="color: rgba(245, 245, 245, 0.7); margin-top: 12px;">Certifique-se de que o servidor Express est rodando na porta 5000.</p>';
+                    instructions = '<p style="color: rgba(245, 245, 245, 0.7); margin-top: 12px;">Certifique-se de que o Laravel está a correr em <code>http://localhost:8080</code>.</p>';
                 } else {
                     errorMessage += 'Por favor, recarregue a página.';
                 }
