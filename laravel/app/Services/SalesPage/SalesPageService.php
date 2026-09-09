@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
- * CRUD das páginas de vendas (modules/salesPage). Produtos e analytics continuam no Node.
+ * CRUD das páginas de vendas (porte Laravel de modules/salesPage).
+ * Produtos e analytics: controllers/services Laravel (`SalesPageProduct*`, `SalesPageAnalytics*`).
  */
 class SalesPageService
 {
