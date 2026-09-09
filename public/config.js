@@ -1,6 +1,6 @@
-﻿// Configuracao da API (auto: producao por padrao) — VPS Hetzner, sem Render
+﻿// Configuracao da API (auto: producao por padrao) — VPS / mesma origem
 (function () {
-    function isRenderHost(hostname) {
+    function isStaleRemoteApiHost(hostname) {
         return /\.onrender\.com$/i.test(String(hostname || '')) || String(hostname || '').toLowerCase() === 'onrender.com';
     }
 
@@ -9,14 +9,14 @@
             const raw = String(url || '').trim().replace(/\/$/, '');
             if (!raw || !/^https?:\/\//i.test(raw)) return '';
             const h = new URL(raw).hostname.toLowerCase();
-            if (isRenderHost(h)) return '';
+            if (isStaleRemoteApiHost(h)) return '';
             return raw;
         } catch (e) {
             return '';
         }
     }
 
-    // Limpa restos de API no Render guardados no browser (causa CORS no KS).
+    // Limpa bases de API antigas guardadas no browser (causam CORS no KS).
     try {
         ['apiBase', 'API_BASE', 'API_URL', 'conecta_api_origin'].forEach(function (k) {
             var v = localStorage.getItem(k);
@@ -28,7 +28,7 @@
     const PROD_BASE_URL = (function () {
         try {
             const host = String(location.hostname || '').toLowerCase();
-            if (isRenderHost(host)) return 'https://www.conectaking.com.br';
+            if (isStaleRemoteApiHost(host)) return 'https://www.conectaking.com.br';
             if (host === 'conectaking.com.br' || host === 'www.conectaking.com.br' || host.endsWith('.conectaking.com.br') || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) {
                 return String(location.origin).replace(/\/$/, '');
             }
@@ -51,7 +51,7 @@
             }
             if (isLocalHost(host)) {
                 const port = String(location.port || '');
-                if (port === '5000' || port === '80' || port === '') return true;
+                if (port === '8080' || port === '80' || port === '') return true;
             }
         } catch (e) {}
         return false;
@@ -74,6 +74,7 @@
             if (localStorage.getItem('useLocalApi') === 'true') return true;
             if (typeof location !== 'undefined') {
                 const port = String(location.port || '');
+                // Servidor estático local (ex. :5500) → forçar API local
                 if (port === '5500' || port === '5501') return true;
             }
             if (isSelfHostedApi()) {
@@ -116,7 +117,7 @@
     if (typeof window !== 'undefined') {
         window.API_CONFIG = API_CONFIG;
         var resolvedBase = sanitizeApiBase(window.API_BASE) || sanitizeApiBase(window.API_URL) || API_CONFIG.baseURL;
-        // Em dominio ConectaKing, forçar mesma origem (ignora localStorage/API antiga do Render).
+        // Em dominio ConectaKing, forçar mesma origem (ignora localStorage/API antiga).
         if (isSelfHostedApi() && !isLocalHost(String(location.hostname || ''))) {
             resolvedBase = String(location.origin).replace(/\/$/, '');
         }
@@ -134,7 +135,7 @@
             function shouldRewriteToSameOrigin(absUrl) {
                 if (!sameOriginBase) return false;
                 if (typeof absUrl !== 'string' || !absUrl) return false;
-                // Sempre redirecionar Render → mesma origem
+                // Restos de API remota antiga → mesma origem
                 if (/conectaking-api\.onrender\.com/i.test(absUrl) && absUrl.indexOf('/api/') !== -1) return true;
                 if (!apiBase || apiBase === sameOriginBase) return false;
                 if (absUrl.indexOf(apiBase + '/api/') !== 0) return false;

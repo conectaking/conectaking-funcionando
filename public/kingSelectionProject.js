@@ -1,13 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
   const KS_API_FALLBACK = 'https://www.conectaking.com.br';
   function resolveKingApiBase() {
-    // Produção ConectaKing: sempre mesma origem (nunca Render).
+    // Produção ConectaKing: sempre mesma origem.
     try {
       const h = String(window.location.hostname || '').toLowerCase();
       if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br' || h.endsWith('.conectaking.com.br')) {
         return String(window.location.origin).replace(/\/$/, '');
       }
     } catch (_) { /* fallback abaixo */ }
+    const here = String(window.location.hostname || '').toLowerCase();
     const tryList = [
       window.API_URL,
       window.API_BASE,
@@ -19,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!raw || !/^https?:\/\//i.test(raw)) continue;
       try {
         const h = new URL(raw).hostname.toLowerCase();
-        if (h.includes('onrender.com')) continue;
+        const ok = h === 'localhost' || h === '127.0.0.1' || h.endsWith('conectaking.com.br') || h === here;
+        if (!ok) continue;
         return raw;
       } catch (_) { /* próximo */ }
     }

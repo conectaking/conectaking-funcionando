@@ -1,4 +1,4 @@
-/** Pasta base para login/dashboard quando o site corre em subpath (ex.: Live Server em —/public_html/). */
+/** Pasta base para login/dashboard quando o site corre em subpath (ex. pasta public/). */
 function ksStaticPageBaseDir() {
   const path = window.location.pathname || '';
   if (/\/kingSelectionEdit\.html$/i.test(path)) {
@@ -13,9 +13,9 @@ function ksStaticPageBaseDir() {
 
 function ksAppPage(name) {
   const h = String(window.location.hostname || '').toLowerCase();
-  const isLiveDev = (h === '127.0.0.1' || h === 'localhost');
+  const isLocalDev = (h === '127.0.0.1' || h === 'localhost');
   const base = name.replace(/\.html$/i, '');
-  if (isLiveDev) return `${ksStaticPageBaseDir()}${base}.html`;
+  if (isLocalDev) return `${ksStaticPageBaseDir()}${base}.html`;
   return `/${base}`;
 }
 
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sp = new URLSearchParams(window.location.search || '');
     const q = (sp.get('api') || '').toLowerCase() === 'local' ? '?api=local' : '';
     const h = (window.location.hostname || '').toLowerCase();
-    // Em produção (Apache) a URL limpa /kingSelection serve este app; no Live Server isso dá "Cannot GET"
+    // Em produção a URL limpa /kingSelection serve este app; em localhost mantém o .html
     if (h !== '127.0.0.1' && h !== 'localhost') {
       window.location.replace(`${window.location.origin}/kingSelection${q}`);
       return;
@@ -36,8 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const h = String(window.location.hostname || '').toLowerCase();
     if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br' || h.endsWith('.conectaking.com.br')) {
       API_URL = String(window.location.origin).replace(/\/$/, '');
-    } else if (/onrender\.com/i.test(API_URL)) {
-      API_URL = 'https://www.conectaking.com.br';
+    } else {
+      try {
+        const apiHost = new URL(API_URL).hostname.toLowerCase();
+        const ok = apiHost === 'localhost' || apiHost === '127.0.0.1' || apiHost.endsWith('conectaking.com.br') || apiHost === h;
+        if (!ok) API_URL = 'https://www.conectaking.com.br';
+      } catch (_) {
+        API_URL = 'https://www.conectaking.com.br';
+      }
     }
     window.API_URL = API_URL;
     window.API_BASE = API_URL;
@@ -415,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
           q.set('galleryId', String(g.id));
           if (apiLocal) q.set('api', 'local');
           const h = (window.location.hostname || '').toLowerCase();
-          // Live Server: ficheiro .html; produção: /kingSelection?galleryId=
+          // Localhost: ficheiro .html; produção: /kingSelection?galleryId=
           if (h === '127.0.0.1' || h === 'localhost') {
             window.location.href = `kingSelectionProject.html?${q.toString()}`;
           } else {

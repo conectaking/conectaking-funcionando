@@ -6,7 +6,7 @@
 (function() {
     'use strict';
 
-    // Namespace isolado (usa window.API_URL atual para funcionar com Live Server :5500 ? API :5000)
+    // Namespace isolado (usa window.API_URL atual)
     const LinkLimitsModule = {
         get API_URL() { return window.API_URL || ''; },
         limitsData: null,

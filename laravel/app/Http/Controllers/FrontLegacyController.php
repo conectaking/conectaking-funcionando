@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Serve assets estáticos do painel (JS/CSS/imagens em LEGACY_PUBLIC_PATH / public).
+ * Serve assets estáticos do painel a partir de public/ (LEGACY_PUBLIC_PATH).
  */
 class FrontLegacyController extends Controller
 {
@@ -67,10 +67,14 @@ class FrontLegacyController extends Controller
             var finalUrl = url;
             if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
               finalUrl = url.indexOf('http') === 0 ? url : apiBase.replace(/\/$/, '') + (url.indexOf('/') === 0 ? url : '/' + url);
-            } else if (url && /conectaking-api\.onrender\.com/i.test(url) && url.indexOf('/api/') !== -1) {
-              finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
-            } else if (url && url.indexOf('conectaking.com.br') !== -1 && url.indexOf('/api/') !== -1) {
-              finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
+            } else if (url && url.indexOf('/api/') !== -1 && /^https?:\/\//i.test(url) && url.indexOf(apiBase) !== 0) {
+              try {
+                var uh = new URL(url).hostname.toLowerCase();
+                // Mesma-origem: hosts do produto + restos de API antiga em cache
+                if (uh.indexOf('conectaking.com.br') !== -1 || uh === 'cnking.bio' || uh === 'www.cnking.bio' || /\.onrender\.com$/i.test(uh)) {
+                  finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
+                }
+              } catch (e) {}
             }
             var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking.com.br') !== -1)) || (url && url.indexOf('/api/') === 0);
             if (isApiUrl) {
@@ -144,9 +148,7 @@ class FrontLegacyController extends Controller
         $out = [];
         foreach ([
             env('LEGACY_PUBLIC_PATH'),
-            env('LEGACY_PUBLIC_HTML_PATH'),
             public_path(),
-            public_path('shell'),
         ] as $p) {
             $p = $p ? rtrim(str_replace('\\', '/', (string) $p), '/') : '';
             if ($p !== '' && is_dir($p)) {
@@ -183,7 +185,7 @@ class FrontLegacyController extends Controller
     private function cacheControlFor(string $file, string $mime): string
     {
         $base = strtolower(basename($file));
-        // config.js / api-config não podem ficar presos no CDN com API antiga (Render).
+        // config.js / api-config não podem ficar presos no CDN com base de API antiga.
         if ($base === 'config.js' || $base === 'api-config.js' || str_ends_with($base, 'kingselectionedit.js')) {
             return 'no-cache, no-store, must-revalidate, max-age=0';
         }

@@ -6,7 +6,7 @@
 
   const KS_FALLBACK_API_ORIGIN = 'https://www.conectaking.com.br';
 
-  /** API KS: mesma origem em produção; nunca Render (CORS). */
+  /** API KS: mesma origem em produção; ignora bases remotas obsoletas. */
   function resolveKsApiBase() {
     try {
       const h = String(window.location.hostname || '').toLowerCase();
@@ -15,6 +15,7 @@
       }
     } catch (_) { /* fallback abaixo */ }
     const fallback = KS_FALLBACK_API_ORIGIN;
+    const here = String(window.location.hostname || '').toLowerCase();
     const tryList = [
       typeof window !== 'undefined' ? window.API_URL : '',
       typeof window !== 'undefined' ? window.API_BASE : '',
@@ -25,7 +26,8 @@
       if (!raw || !/^https?:\/\//i.test(raw)) continue;
       try {
         const h = new URL(raw).hostname.toLowerCase();
-        if (h.includes('onrender.com')) continue;
+        const ok = h === 'localhost' || h === '127.0.0.1' || h.endsWith('conectaking.com.br') || h === here;
+        if (!ok) continue;
         return raw;
       } catch (_) { /* próximo */ }
     }

@@ -22,14 +22,12 @@
         // Em produção/VPS: sempre mesma origem
         if (isProdHost) window.API_BASE = window.location.origin || prodApiBase;
         window.API_URL = window.API_BASE;
-        window.USE_LOCAL_API_5000 = false;
         if (isProdHost) {
           try { localStorage.removeItem('useLocalApi'); } catch (e) {}
         }
       } catch (e) {
         window.API_BASE = window.API_BASE || window.API_URL || 'https://www.conectaking.com.br';
         window.API_URL = window.API_URL || window.API_BASE;
-        window.USE_LOCAL_API_5000 = false;
       }
     })();
   </script>

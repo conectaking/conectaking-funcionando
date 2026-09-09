@@ -17,7 +17,7 @@
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <!-- Versão atualizada para forçar reload - Hostinger cache - v2025-01-31-04 -->
+    <!-- Cache-bust CSS - v2025-01-31-04 -->
     <link rel="stylesheet" href="style.css?v=2025-01-31-04">
     <link rel="stylesheet" href="dashboard.css?v=2025-01-31-04">
     <link rel="stylesheet" href="salesPageEdit.css?v=2025-01-31-04">
@@ -654,7 +654,7 @@
             profileId: null
         };
     </script>
-    <!-- Versão atualizada para forçar reload - Hostinger cache - v2025-01-31-04 -->
+    <!-- Cache-bust scripts - v2025-01-31-04 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script src="suggestionModal.js?v=2025-01-31-04"></script>
     <script src="textSuggestions.js?v=2025-01-31-04"></script>

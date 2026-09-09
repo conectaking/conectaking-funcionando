@@ -491,7 +491,7 @@
         fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ lastDocumentId: parseInt(id, 10) || id }), credentials: 'include' }).catch(function() {});
     }
 
-    // Sem token: manda para login Laravel (sem redirect Node :5000)
+    // Sem token: manda para login Laravel
     (function checkOrigin() {
         try {
             var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;

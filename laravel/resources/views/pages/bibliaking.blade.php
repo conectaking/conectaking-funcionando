@@ -19,9 +19,8 @@
             } catch (e) {}
             if (!api) {
                 var loc = window.location;
-                var path = loc.pathname || '';
                 var localHost = loc.hostname === '127.0.0.1' || loc.hostname === 'localhost';
-                if (localHost && (loc.port === '5500' || path.indexOf('public_html') !== -1)) {
+                if (localHost && (loc.port === '5500' || loc.port === '5501' || loc.port === '3000')) {
                     api = loc.protocol + '//' + loc.hostname + ':8080';
                 } else {
                     api = (loc.origin || '').replace(/\/$/, '');

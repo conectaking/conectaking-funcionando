@@ -27,7 +27,8 @@
         opts = opts || {};
         var url = (typeof input === 'string' ? input : (input && input.url) || '').toString();
         var apiBase = getApiBase().toString().replace(/\/$/, '');
-        var isApiRequest = (url.indexOf(apiBase) === 0) || (url.indexOf('conectaking-api.onrender.com') !== -1) ||
+        var isApiRequest = (url.indexOf(apiBase) === 0) ||
+            (url.indexOf('conectaking.com.br') !== -1 && url.indexOf('/api/') !== -1) ||
             (url.indexOf('/api/') === 0 && url.length > 4);
 
         if (isApiRequest) {

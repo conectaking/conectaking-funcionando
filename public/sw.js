@@ -8,8 +8,7 @@
  * Este ficheiro NO regista listener de "fetch": os pedidos HTTP seguem o comportamento
  * normal do browser. Mantm-se s install/activate para substituir SW problemtico apdeploy.
  *
- * Deploy: copiar para a raiz do site (mesmo stio que index/dashboard), p.ex. Hostinger:
- *   /public_html/sw.js
+ * Deploy: servir na raiz do site (mesmo sítio que index/dashboard), p.ex. public/sw.js.
  * Depois: recarregar o site com "Hard reload" ou Application > Service Workers > Unregister (uma vez).
  */
 

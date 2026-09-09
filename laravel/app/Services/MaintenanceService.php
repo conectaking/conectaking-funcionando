@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Manutenção diária (paridade com server.js + utils/cleanup.js do Node).
+ * Manutenção diária (comandos schedule Laravel).
  */
 class MaintenanceService
 {

@@ -40,15 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    /** Login/painel na mesma pasta (Live Server usa .html; Laravel/prod usa rota limpa). */
+    /** Login/painel na mesma pasta (localhost usa .html; Laravel/prod usa rota limpa). */
     function sameFolderPage(file) {
         try {
             var h = (typeof window !== 'undefined' && window.location && window.location.hostname)
                 ? String(window.location.hostname).toLowerCase()
                 : '';
-            var isLiveDev = (h === '127.0.0.1' || h === 'localhost');
+            var isLocalDev = (h === '127.0.0.1' || h === 'localhost');
             var name = String(file || '');
-            if (!isLiveDev) {
+            if (!isLocalDev) {
                 name = name.replace(/\.html$/i, '');
                 if (name && name.indexOf('/') === -1 && name.indexOf('?') === -1 && name.indexOf('#') === -1) {
                     return new URL('/' + name, window.location.origin).href;
@@ -80,25 +80,25 @@ document.addEventListener('DOMContentLoaded', () => {
         (localStorage.getItem('useLocalApi') === 'true')
     );
     const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const useLocalApi5000 = typeof window !== 'undefined' && window.USE_LOCAL_API_5000 === true && isLocalhost;
     const inheritedApi = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL))
         ? String(window.API_BASE || window.API_URL).replace(/\/$/, '')
         : '';
     const sameOrigin = (typeof window !== 'undefined' && window.location && window.location.origin)
         ? String(window.location.origin).replace(/\/$/, '')
         : '';
-    const computedLocal = (isLocalhost && String(window.location.port || '') === '5000')
+    const localPort = isLocalhost ? String(window.location.port || '') : '';
+    const computedLocal = (isLocalhost && (localPort === '8080' || localPort === '80' || localPort === ''))
         ? sameOrigin
-        : (window.API_CONFIG?.baseURL || `http://${window.location.hostname}:5000`);
+        : (window.API_CONFIG?.baseURL || `http://${window.location.hostname}:8080`);
     const computedProd = isProdHost ? (sameOrigin || 'https://www.conectaking.com.br') : 'https://www.conectaking.com.br';
-    // Nunca usar http://dominio:5000 em producao
+    // Nunca herdar API Node antiga (:5000) em producao
     if (inheritedApi && /:5000$/i.test(inheritedApi) && isProdHost) {
         try { window.API_BASE = computedProd; window.API_URL = computedProd; } catch (e) {}
     }
     const safeInherited = (inheritedApi && /^https?:\/\//i.test(inheritedApi) && !(isProdHost && /:5000$/i.test(inheritedApi)))
         ? inheritedApi
         : '';
-    const explicitLocalApi = !!(useLocalApi5000 || (useLocalApi && isLocalhost));
+    const explicitLocalApi = !!(useLocalApi && isLocalhost);
     let API_URL = safeInherited
         ? safeInherited
         : (explicitLocalApi ? computedLocal : computedProd);
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function kingSelectionAdminUrl() {
         var params = new URLSearchParams();
         try {
-            if (window.USE_LOCAL_API_5000 || localStorage.getItem('useLocalApi') === 'true') {
+            if (localStorage.getItem('useLocalApi') === 'true') {
                 params.set('api', 'local');
             }
         } catch (e) {}
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         params.set('v', '2026-09-09-cleanUrls1');
         var q = '?' + params.toString();
         var h = (typeof window !== 'undefined' && window.location && window.location.hostname) ? String(window.location.hostname).toLowerCase() : '';
-        // Live Server / dev sem Apache: não existe rewrite /kingSelection — usar o HTML direto
+        // Localhost sem rewrite /kingSelection — usar o HTML direto
         if (h === '127.0.0.1' || h === 'localhost') {
             return 'kingSelectionEdit.html' + q;
         }

@@ -140,7 +140,7 @@
 })();
 
 /**
- * Pedidos de edição (modo público) — embutido em loose-photos.js para Hostinger sem HTML novo.
+ * Pedidos de edição (modo público) — embutido em loose-photos.js (sem HTML novo).
  */
 (function () {
   'use strict';

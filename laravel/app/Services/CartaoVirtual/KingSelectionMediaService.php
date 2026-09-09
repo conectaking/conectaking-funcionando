@@ -538,15 +538,13 @@ class KingSelectionMediaService
         foreach ([
             base_path('../public/'.$fileName),
             base_path('../public/'.$alt),
+            public_path($fileName),
+            public_path($alt),
             '/opt/conectaking/public/'.$fileName,
             '/opt/conectaking/public/'.$alt,
-            base_path('../public_html/'.$fileName),
             base_path('../'.$fileName),
-            base_path('../public_html/'.$alt),
             base_path('../'.$alt),
-            '/opt/conectaking/public_html/'.$fileName,
             '/opt/conectaking/'.$fileName,
-            '/opt/conectaking/public_html/'.$alt,
             '/opt/conectaking/'.$alt,
         ] as $abs) {
             if (is_file($abs)) {

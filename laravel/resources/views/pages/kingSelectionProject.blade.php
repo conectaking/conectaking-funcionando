@@ -2676,7 +2676,7 @@
           </div>
 
           <div id="ks-links-local-wrap" class="mt-4 ks-field hidden">
-            <label>URL neste ambiente (teste no Live Server / localhost)</label>
+            <label>URL neste ambiente (teste em localhost)</label>
             <p class="text-xs ks-muted mt-1 mb-0">Só aparece quando é diferente do link de produção acima.</p>
             <div class="flex gap-2 mt-2 flex-wrap items-stretch">
               <input type="text" readonly id="ks-links-local-url" class="ks-input flex-1 min-w-[min(100%,280px)]" />

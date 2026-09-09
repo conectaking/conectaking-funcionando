@@ -1348,12 +1348,12 @@
         // Detectar URL da API - mesma lógica do dashboard
         let API_URL = window.location.origin;
         
-        // Se estiver em localhost com porta 5500 (Live Server), apontar para FrankenPHP :8080
+        // Se estiver em localhost com porta estática (:5500), apontar para FrankenPHP :8080
         if (API_URL.includes('127.0.0.1:5500') || API_URL.includes('localhost:5500')) {
             const protocol = window.location.protocol;
             const hostname = window.location.hostname;
             API_URL = `${protocol}//${hostname}:8080`;
-            console.log('Live Server detectado. Usando Laravel/FrankenPHP na porta 8080.');
+            console.log('Servidor estático local detectado. Usando Laravel/FrankenPHP na porta 8080.');
         }
         
         // Em produção, mesma origem (www)

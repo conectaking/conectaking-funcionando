@@ -6,8 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 
 /**
- * Ponte entre o front legado e o Blade: se existir `pages.{nome}` renderiza Blade,
- * senão cai no HTML de public/ ou public_html/ (FrontLegacyController).
+ * Ponte Blade ↔ estáticos: se existir `pages.{nome}` renderiza Blade,
+ * senão serve ficheiros de public/ via FrontLegacyController (LEGACY_PUBLIC_PATH).
  *
  * Permite converter as páginas uma a uma sem tocar nas rotas.
  */

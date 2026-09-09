@@ -256,7 +256,7 @@
                                 console.log('Dados do usuário salvos:', data.user);
                             }
                             
-                            // Mesma pasta que /login (evita 404 no mobile com /public_html/ ou /login/)
+                            // Mesma pasta que /login (evita 404 no mobile com /login/)
                             const params = new URLSearchParams(window.location.search);
                             const returnUrl = params.get('returnUrl');
                             function postLoginTarget() {

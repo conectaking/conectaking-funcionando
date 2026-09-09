@@ -34,7 +34,7 @@ function getDefaultSalesWhatsAppNumber(plan = null) {
     // Prioridade:
     // 1) Número vindo do plano (API)
     // 2) Número global configurado no front
-    // 3) Número hardcoded do projeto (mesmo do banner de renovação em `public_html/global.js`)
+    // 3) Número hardcoded do projeto (mesmo do banner de renovação em global.js)
     const fromPlan = plan?.whatsapp_number ? String(plan.whatsapp_number) : '';
     const fromWindow =
         (typeof window !== 'undefined' && (window.CONTACT_WHATSAPP_NUMBER || window.CONECTAKING_WHATSAPP_NUMBER))

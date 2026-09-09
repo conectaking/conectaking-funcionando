@@ -32,15 +32,14 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 | Item | Porquê |
 |---|---|
 | `public/` | **Canónico** — JS/CSS/imagens do painel (montado em `/legacy/public`) |
-| `public_html/` | Arquivo local legado (já **não montado** em Docker) |
 | `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge, não monólito Node) |
 | `data/bible` | JSON bíblia |
 | `migrations/*.sql` | Histórico do schema Postgres |
 
-Deploy limpo (sem `docker cp`): `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
+Deploy limpo: `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
 
-Limpeza pós-migração (feita): scripts `tmp-*`/`patch-admin-*`, pasta `Checkout/` vazia, Blade órfã `kingSelection.blade.php`, stubs PHP Hostinger KS, `.git` aninhado em `public_html`, env `MERCADOPAGO_*` no compose, UI PagBank no editor de forms, links quebrados Recibos (`recibos-/orcamentos`), assets críticos em `public/`, mount `public_html` desligado.
+Residuais antigos removidos: pasta `public_html/`, rotas `/l/*`, mount Docker legado, guards/comentários Hostinger/Render/:5000, shell dashboard duplicado.
 
-Padrão Laravel+Blade: páginas em `resources/views/pages/*.blade.php`; APIs em `routes/web.php`; assets browser em `public/` (não Node). Checkout/gateway fora de escopo (HTTP 410).
+Ainda intencional (não é Node): front JS do painel em `public/` + `FrontLegacyController` (serve assets); auth JWT do painel; Worker R2.
 
-Não há container `api` Express. Não reintroduzir checkout/gateway sem pedido explícito.
+Não reintroduzir checkout/gateway sem pedido explícito.

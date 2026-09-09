@@ -1766,7 +1766,7 @@
             try { localStorage.removeItem('useLocalApi'); localStorage.setItem('useProductionApi', 'true'); } catch (e) {}
             wantLocal = false;
           }
-          // Local: preferir mesma origem (FrankenPHP :8080). Live Server :5500 → :8080
+          // Local: preferir mesma origem (FrankenPHP :8080); portas estáticas → :8080
           var localApiBase = sameOrigin;
           if (isLocalHost && (port === '5500' || port === '3000' || port === '5173')) {
             localApiBase = 'http://' + (host || 'localhost') + ':8080';
@@ -1775,11 +1775,9 @@
           window.API_BASE = (wantLocal || isLocalHost) ? localApiBase : prodApiBase;
           if (isProdHost) window.API_BASE = sameOrigin || prodApiBase;
           window.API_URL = window.API_BASE;
-          window.USE_LOCAL_API_5000 = false;
         } catch (e) {
           window.API_BASE = window.API_BASE || window.API_URL || (window.location && window.location.origin) || 'https://www.conectaking.com.br';
           window.API_URL = window.API_URL || window.API_BASE;
-          window.USE_LOCAL_API_5000 = false;
         }
       })();
     </script>

@@ -16,7 +16,7 @@
 
   function isKingSelectionPhotographerUi() {
     var path = (location.pathname || '/').toLowerCase();
-    // Hostinger: /kingSelectionProject.html?itemId=… (URL real do utilizador)
+    // URL real: /kingSelectionProject.html?itemId=… (ou rota limpa)
     if (path.indexOf('kingselectionproject') !== -1) return true;
     if (path.indexOf('kingselectionedit') !== -1) return true;
     var clean = path.replace(/\/+$/, '') || '/';

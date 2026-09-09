@@ -1,6 +1,6 @@
 /**
  * Botão «Enviar para edição» no cliente — só quando o fotógrafo ativou na galeria pública.
- * Funciona na Hostinger com kingSelectionCliente.js antigo em cache.
+ * Patch para kingSelectionCliente.js antigo em cache.
  */
 (function () {
   'use strict';

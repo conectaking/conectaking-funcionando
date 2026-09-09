@@ -35,7 +35,6 @@ Caddy do host faz TLS e `reverse_proxy 127.0.0.1:8080`.
 |---|---|
 | `laravel/` | Aplicação PHP (rotas, Blade, services, jobs) |
 | `public/` | Assets estáticos canónicos (JS/CSS/imagens) |
-| `public_html/` | Arquivo legado local (não usado no Docker) |
 | `migrations/` | SQL histórico do schema Postgres |
 | `data/bible/` | Dados bíblia (JSON) |
 | `cf-worker-kingselection-r2/` | Cloudflare Worker R2 (upload KS) |
