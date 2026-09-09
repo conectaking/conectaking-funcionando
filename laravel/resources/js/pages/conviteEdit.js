@@ -1,6 +1,6 @@
 /** conviteEdit — Vite entry (extracted inline) */
 (function() {
-  const API = (window.API_URL || window.API_BASE || 'https://www.conectaking.com.br').replace(/\/$/, '');
+  const API = (window.API_URL || window.API_BASE || window.location.origin).replace(/\/$/, '');
   const qs = new URLSearchParams(location.search);
   const itemId = qs.get('itemId');
   const token = localStorage.getItem('conectaKingToken');

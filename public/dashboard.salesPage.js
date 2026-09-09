@@ -64,7 +64,7 @@
                 
                 // Usar URL completa do servidor de produção
                 // A rota pública está no mesmo servidor da API
-                const baseUrl = 'https://www.conectaking.com.br';
+                const baseUrl = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 
                 // Se estiver em DRAFT, usar token de preview
                 // Rota: /:profile_slug/loja/:itemId

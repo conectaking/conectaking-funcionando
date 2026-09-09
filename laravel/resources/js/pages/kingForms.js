@@ -3,14 +3,7 @@ import '@legacy/dashboard.css';
 (function () {
             var host = (window.location && window.location.hostname || '').toLowerCase();
             var sameOrigin = (window.location && window.location.origin) || '';
-            var API_URL = window.API_BASE || window.API_URL || '';
-            if (!API_URL) {
-                if (host.endsWith('conectaking.com.br') || host === 'cnking.bio' || host === 'www.cnking.bio' || host === 'localhost' || host === '127.0.0.1') {
-                    API_URL = sameOrigin;
-                } else {
-                    API_URL = 'https://www.conectaking.com.br';
-                }
-            }
+            var API_URL = window.API_BASE || window.API_URL || sameOrigin || 'https://www.conectaking.com.br';
             if (typeof window !== 'undefined') { window.API_URL = API_URL; window.API_BASE = API_URL; }
             var params = new URLSearchParams(window.location.search);
             var editId = params.get('edit');
@@ -76,6 +69,7 @@ import '@legacy/dashboard.css';
                             card.innerHTML = '<div class="kf-card-title"><i class="fas fa-file-signature"></i><span>' + escapeHtml(title) + '</span></div>' +
                                 '<div class="kf-card-actions">' +
                                 '<a href="/kingForms?edit=' + encodeURIComponent(item.id) + '" class="kf-btn kf-btn-secondary"><i class="fas fa-pencil-alt"></i> Editar</a>' +
+                                '<a href="/responsesList?itemId=' + encodeURIComponent(item.id) + '" class="kf-btn kf-btn-secondary"><i class="fas fa-inbox"></i> Respostas</a>' +
                                 '<button type="button" class="kf-btn kf-btn-danger kf-btn-delete" data-item-id="' + encodeURIComponent(item.id) + '" title="Apagar formulário"><i class="fas fa-trash-alt"></i> Apagar</button>' +
                                 '</div>';
                             list.appendChild(card);

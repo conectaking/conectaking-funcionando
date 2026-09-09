@@ -2,8 +2,8 @@
 import '@legacy/css/recibos-modulo-mobile.css';
 
 (function () {
-            var prod = 'https://www.conectaking.com.br';
-            window.CONECTAKING_API_BASE = window.CONECTAKING_API_BASE || prod;
+            var origin = (window.location && window.location.origin) || 'https://www.conectaking.com.br';
+            window.CONECTAKING_API_BASE = window.CONECTAKING_API_BASE || window.API_BASE || origin;
             window.API_BASE = window.API_BASE || window.CONECTAKING_API_BASE;
         })();
 
