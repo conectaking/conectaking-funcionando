@@ -221,13 +221,14 @@ class AdminOverviewService
             'notUsedToday' => $notUsedToday,
             'activeUsersCount' => count($active),
             'expiredUsersCount' => count($expired),
+            // Contagens completas; listas capadas para não full-dump no painel
             'usersActivity' => array_map(static function (array $u) use ($baseRow, $isExpired): array {
                 return $baseRow($u) + [
                     'usedToday' => (bool) ($u['used_today'] ?? false),
                     'isExpired' => $isExpired($u),
                 ];
-            }, $usersActivity),
-            'activeUsersList' => array_map($baseRow, $active),
+            }, array_slice($usersActivity, 0, 100)),
+            'activeUsersList' => array_map($baseRow, array_slice($active, 0, 100)),
             'expiredUsersList' => array_map(static function (array $u) use ($baseRow): array {
                 $exp = $u['subscription_expires_at'] ?? null;
                 $daysExpired = $exp
@@ -235,7 +236,7 @@ class AdminOverviewService
                     : null;
 
                 return $baseRow($u) + ['daysExpired' => $daysExpired];
-            }, $expired),
+            }, array_slice($expired, 0, 100)),
         ];
     }
 
@@ -248,13 +249,22 @@ class AdminOverviewService
             return [];
         }
 
+        // Agrega analytics_events uma vez (evita 3 subqueries correlacionadas por user)
         return $this->rows(
             "SELECT u.id, u.email, p.display_name, u.profile_slug,
-                    COALESCE((SELECT COUNT(*) FROM analytics_events WHERE user_id = u.id AND event_type = 'view'), 0) AS total_views,
-                    COALESCE((SELECT COUNT(*) FROM analytics_events WHERE user_id = u.id AND event_type = 'click'), 0) AS total_clicks,
-                    (SELECT MAX(created_at) FROM analytics_events WHERE user_id = u.id AND event_type = 'view') AS last_view_date
+                    COALESCE(a.total_views, 0) AS total_views,
+                    COALESCE(a.total_clicks, 0) AS total_clicks,
+                    a.last_view_date
              FROM users u
              LEFT JOIN user_profiles p ON u.id = p.user_id
+             LEFT JOIN (
+                 SELECT user_id,
+                        COUNT(*) FILTER (WHERE event_type = 'view') AS total_views,
+                        COUNT(*) FILTER (WHERE event_type = 'click') AS total_clicks,
+                        MAX(created_at) FILTER (WHERE event_type = 'view') AS last_view_date
+                 FROM analytics_events
+                 GROUP BY user_id
+             ) a ON a.user_id = u.id
              ORDER BY total_views DESC"
         );
     }

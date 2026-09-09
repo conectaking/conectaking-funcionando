@@ -1744,7 +1744,11 @@ class FinanceService
         $y = (int) date('Y');
         $from = $dateFrom ?: "{$y}-01-01";
         $to = $dateTo ?: "{$y}-12-31";
-        $sql = "SELECT category_id, amount FROM finance_transactions
+        // Agrega no SQL (evita dump de até 10k linhas + reduce em PHP)
+        $sql = "SELECT category_id,
+                       COALESCE(SUM(amount), 0) AS total,
+                       COUNT(*)::int AS count
+                FROM finance_transactions
                 WHERE user_id = ? AND status = 'PAID'
                   AND transaction_date >= ?::date AND transaction_date <= ?::date";
         $params = [$userId, $from, $to];
@@ -1752,25 +1756,18 @@ class FinanceService
             $sql .= ' AND type = ?';
             $params[] = strtoupper($type);
         }
-        $sql .= ' LIMIT 10000';
+        $sql .= ' GROUP BY category_id ORDER BY total DESC';
         $rows = DB::select($sql, $params);
-        $map = [];
-        foreach ($rows as $t) {
-            $catId = $t->category_id ?? 'sem_categoria';
-            $key = (string) $catId;
-            if (! isset($map[$key])) {
-                $map[$key] = [
-                    'category_id' => $t->category_id,
-                    'category_name' => $t->category_id ? 'Categoria' : 'Sem categoria',
-                    'total' => 0.0,
-                    'count' => 0,
-                ];
-            }
-            $map[$key]['total'] += (float) $t->amount;
-            $map[$key]['count'] += 1;
-        }
+        $map = array_map(static function ($t): array {
+            return [
+                'category_id' => $t->category_id,
+                'category_name' => $t->category_id ? 'Categoria' : 'Sem categoria',
+                'total' => (float) $t->total,
+                'count' => (int) $t->count,
+            ];
+        }, $rows);
 
-        return $this->ok(array_values($map));
+        return $this->ok($map);
     }
 
     /**

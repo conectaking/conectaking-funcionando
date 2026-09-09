@@ -774,16 +774,35 @@ class GuestListAdminService
                 'updated_count' => 0,
             ]];
         }
+        $ids = array_map(static fn ($g) => (int) $g->id, $rows);
+        $totalWithoutQr = count($ids);
         $updated = 0;
-        foreach ($rows as $g) {
+        // Um UPDATE set-based por lote (evita N+1 de UPDATE por convidado)
+        foreach (array_chunk($ids, 200) as $chunk) {
+            $values = [];
+            $params = [];
+            foreach ($chunk as $id) {
+                $values[] = '(?::bigint, ?::text)';
+                $params[] = $id;
+                $params[] = bin2hex(random_bytes(32));
+            }
+            $params[] = $owned['guest_list_item_id'];
             try {
-                DB::update(
-                    'UPDATE guests SET qr_token = ?, qr_code_generated_at = NOW() WHERE id = ?',
-                    [bin2hex(random_bytes(32)), $g->id]
+                $updated += DB::update(
+                    'UPDATE guests AS g
+                     SET qr_token = v.token, qr_code_generated_at = NOW()
+                     FROM (VALUES '.implode(',', $values).') AS v(id, token)
+                     WHERE g.id = v.id
+                       AND g.guest_list_id = ?
+                       AND (g.qr_token IS NULL OR g.qr_token = \'\')',
+                    $params
                 );
-                $updated++;
             } catch (\Throwable $e) {
-                Log::warning('guestList.generateAllQr', ['guest' => $g->id, 'error' => $e->getMessage()]);
+                Log::warning('guestList.generateAllQr', [
+                    'list' => $owned['guest_list_item_id'],
+                    'chunk_size' => count($chunk),
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -791,7 +810,7 @@ class GuestListAdminService
             'success' => true,
             'message' => "QR Codes gerados para {$updated} convidado(s)",
             'updated_count' => $updated,
-            'total_without_qr' => count($rows),
+            'total_without_qr' => $totalWithoutQr,
         ]];
     }
 

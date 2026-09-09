@@ -191,10 +191,16 @@ class KingDocsController extends Controller
     {
         if (isset($r['buffer'])) {
             $filename = rawurlencode((string) ($r['filename'] ?? 'file'));
+            $buffer = (string) $r['buffer'];
 
-            return response($r['buffer'], $r['status'] ?? 200, [
+            return response($buffer, $r['status'] ?? 200, [
                 'Content-Type' => $r['mime'] ?? 'application/octet-stream',
                 'Content-Disposition' => $disposition.'; filename="'.$filename.'"',
+                'Content-Length' => (string) strlen($buffer),
+                // Cache curto no browser/proxy autenticado: reabrir o mesmo ficheiro no viewer
+                // evita re-download completo durante a sessão de edição (docs privados).
+                'Cache-Control' => 'private, max-age=60',
+                'Accept-Ranges' => 'none',
                 'X-Conecta-Engine' => 'laravel',
             ]);
         }
