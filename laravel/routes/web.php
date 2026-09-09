@@ -23,11 +23,7 @@ use App\Http\Controllers\CartaoVirtual\VcardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return response()->json([
-        'app' => 'conectaking-laravel',
-        'module' => 'cartao-virtual',
-        'status' => 'ok',
-    ]);
+    return app(\App\Http\Controllers\LegacyPageController::class)->show(request(), 'index');
 });
 
 Route::get('/up', function () {
