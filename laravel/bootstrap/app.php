@@ -322,6 +322,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'l/api/admin/default-branding',
             'api/admin/plans/*',
             'l/api/admin/plans/*',
+            // Painel ADM (JWT + middleware admin; front legado sem CSRF token)
+            'api/admin',
+            'api/admin/*',
+            'l/api/admin',
+            'l/api/admin/*',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,
