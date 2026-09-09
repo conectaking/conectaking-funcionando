@@ -2205,7 +2205,7 @@
           <div class="hidden mt-2 text-sm text-amber-800" id="ks-r2-loading"><i class="fas fa-spinner fa-spin"></i> Lendo arquivos no Cloudflare R2â€¦ pode levar alguns minutos em galerias grandes.</div>
 
           <div class="mt-6">
-            <div class="font-extrabold text-slate-900">Seus projetos (King Selection Ã— R2)</div>
+            <div class="font-extrabold text-slate-900">Seus projetos (King Selection × R2)</div>
             <p class="text-xs ks-muted mt-1">Cada linha é um projeto ativo no banco. Pastas internas mostram subpastas dentro de <code class="text-xs">galleries/ID/</code>.</p>
             <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80">
               <table class="ks-r2-table w-full text-sm">
@@ -2231,7 +2231,7 @@
 
           <div class="mt-8">
             <div class="font-extrabold text-slate-900">Pastas órfãs (projeto já excluído no King Selection)</div>
-            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto não está mais no banco â€” candidatas Ã  limpeza.</p>
+            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto não está mais no banco â€” candidatas à limpeza.</p>
             <div class="mt-3 overflow-x-auto rounded-xl border border-red-200/60">
               <table class="ks-r2-table w-full text-sm">
                 <thead>
@@ -2324,7 +2324,7 @@
               <select class="ks-input mt-2" id="f-idioma">
                 <option value="pt-BR">Português (BR)</option>
                 <option value="en">English</option>
-                <option value="es">EspaÃ±ol</option>
+                <option value="es">Español</option>
               </select>
             </div>
             <div class="ks-field md:col-span-2">
@@ -2697,7 +2697,7 @@
 
           <div class="mt-5 ks-field">
             <label>Mensagem completa (edite livremente â€” WhatsApp ou e-mail)</label>
-            <p class="text-xs ks-muted mt-1 mb-0">Com <b>acesso privado</b> e <b>um</b> cliente na lista, o modelo automático inclui <b>e-mail e senha</b>. Em <b>autocadastro</b> ou <b>fotos vendidas</b>, a mensagem automática leva só o link. Pode editar Ã  vontade. <b>Restaurar modelo</b> recalcula a partir das configurações atuais.</p>
+            <p class="text-xs ks-muted mt-1 mb-0">Com <b>acesso privado</b> e <b>um</b> cliente na lista, o modelo automático inclui <b>e-mail e senha</b>. Em <b>autocadastro</b> ou <b>fotos vendidas</b>, a mensagem automática leva só o link. Pode editar à vontade. <b>Restaurar modelo</b> recalcula a partir das configurações atuais.</p>
             <textarea id="ks-links-full-msg" class="ks-input mt-2" rows="11"
               style="font-size:13px;line-height:1.45;resize:vertical"></textarea>
             <div class="flex gap-2 mt-3 flex-wrap items-center">
