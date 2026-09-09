@@ -1621,12 +1621,12 @@
     <script src="js/dashboard-sortable.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-save.js?v=2026-09-09-syncModal1" defer></script>
     <script src="js/dashboard-upload.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-edit-modal.js?v=2026-09-08-globals1" defer></script>
+    <script src="js/dashboard-edit-modal.js?v=2026-09-09-cleanUrls1" defer></script>
     <script src="js/dashboard-qr.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-assinatura.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-listeners.js?v=2026-09-09-cleanUrls1" defer></script>
     <script src="js/dashboard-separacao.js?v=2026-09-08-globals1" defer></script>
-    <script src="js/dashboard-forms-editor.js?v=2026-09-08-globals1" defer></script>
+    <script src="js/dashboard-forms-editor.js?v=2026-09-09-cleanUrls1" defer></script>
     <script src="js/dashboard-info.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-kingDocs-nav.js?v=2026-09-08-globals1" defer></script>
     <script src="js/dashboard-personalizar.js?v=2026-09-08-globals1" defer></script>
