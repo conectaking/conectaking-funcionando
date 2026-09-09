@@ -1,0 +1,7 @@
+/**
+ * King Forms editor — Vite entry (legacy public/ + boot Blade).
+ */
+import '@legacy/js/image-crop-modal.js';
+import '@legacy/js/upload-auth-helper.js';
+import '@legacy/formPageEdit.js';
+import './formPageEdit-boot.js';

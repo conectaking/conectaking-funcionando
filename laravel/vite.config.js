@@ -20,6 +20,8 @@ export default defineConfig({
                 'resources/js/pages/recuperar-senha.js',
                 'resources/js/pages/resetar-senha.js',
                 'resources/js/pages/dashboard.js',
+                'resources/js/pages/kingForms.js',
+                'resources/js/pages/formPageEdit.js',
             ],
             refresh: true,
         }),
