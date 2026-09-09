@@ -1,4 +1,5 @@
-# Produção no VPS (Hetzner) — API só em localhost; Caddy faz 80/443
+# Produção no VPS (Hetzner) — só Laravel (FrankenPHP) + Postgres.
+# Caddy do host: reverse_proxy 127.0.0.1:8080
 # Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
 services:
@@ -21,47 +22,7 @@ services:
     networks:
       - cknet
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: conectaking-api
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      laravel:
-        condition: service_started
-    env_file:
-      - .env.prod
-    environment:
-      PORT: "5000"
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-conectaking}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-conectaking}
-      DATABASE_SSL: "false"
-      LARAVEL_CARD_ENABLED: "${LARAVEL_CARD_ENABLED:-true}"
-      LARAVEL_CARD_PUBLIC: "${LARAVEL_CARD_PUBLIC:-false}"
-      LARAVEL_CARD_SLUGS: "${LARAVEL_CARD_SLUGS:-}"
-      LARAVEL_CARD_APIS: "${LARAVEL_CARD_APIS:-true}"
-      LARAVEL_PROFILE_API: "${LARAVEL_PROFILE_API:-false}"
-      LARAVEL_UPLOAD_API: "${LARAVEL_UPLOAD_API:-false}"
-      LARAVEL_SATELLITES: "${LARAVEL_SATELLITES:-false}"
-      LARAVEL_ADMIN_BIBLE: "${LARAVEL_ADMIN_BIBLE:-}"
-      LARAVEL_KS: "${LARAVEL_KS:-false}"
-      LARAVEL_KS_SLUGS: "${LARAVEL_KS_SLUGS:-}"
-      LARAVEL_HOST: laravel
-      LARAVEL_PORT: "8080"
-      LARAVEL_DASHBOARD: "${LARAVEL_DASHBOARD:-true}"
-      LEGACY_PUBLIC_PATH: /legacy/public
-      LEGACY_PUBLIC_HTML_PATH: /legacy/public_html
-    ports:
-      - "127.0.0.1:5000:5000"
-    volumes:
-      - api_uploads:/app/uploads
-    networks:
-      - cknet
-
-  # Cartão virtual (migração gradual) — rotas /l/card/{slug} e /l/api/card/{slug}
+  # Edge app: FrankenPHP classic (HTTP :8080). TLS fica no Caddy do host.
   laravel:
     build:
       context: ./laravel
@@ -89,7 +50,6 @@ services:
       SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
-      NODE_INTERNAL_URL: http://api:5000
       JWT_SECRET: ${JWT_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       RECIBO_OCR_AI: ${RECIBO_OCR_AI:-auto}
@@ -105,7 +65,6 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@conectaking.com.br}
       SMTP_SECURE: ${SMTP_SECURE:-false}
-      # APIs residuais migradas do Node (inquiry, payment, push)
       EMAIL_HOST: ${EMAIL_HOST:-}
       EMAIL_PORT: ${EMAIL_PORT:-}
       EMAIL_USER: ${EMAIL_USER:-}
@@ -118,6 +77,7 @@ services:
       MERCADOPAGO_BACK_URL_PENDING: ${MERCADOPAGO_BACK_URL_PENDING:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-}
+      SERVER_NAME: ":8080"
     ports:
       - "127.0.0.1:8080:8080"
     volumes:

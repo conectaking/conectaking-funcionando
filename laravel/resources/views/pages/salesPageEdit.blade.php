@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>Editar Página de Vendas - Conecta King</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Versão atualizada para forçar reload - Hostinger cache - v2025-01-31-04 -->
+    <link rel="stylesheet" href="style.css?v=2025-01-31-04">
+    <link rel="stylesheet" href="dashboard.css?v=2025-01-31-04">
+    <link rel="stylesheet" href="salesPageEdit.css?v=2025-01-31-04">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+
+    <!-- CSS CRÍTICO INLINE PARA MOBILE - Garantir scroll funcionando -->
+    <style>
+        /* Override crítico para mobile - sempre aplicar */
+        @media (max-width: 768px) {
+            html.sales-page-edit-page,
+            html:has(body.sales-page-edit-page),
+            html {
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                height: 100% !important;
+                -webkit-overflow-scrolling: touch !important;
+                position: relative !important;
+            }
+
+            body.sales-page-edit-page {
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
+                height: 100vh !important;
+                min-height: 100vh !important;
+                max-height: 100vh !important;
+                position: fixed !important;
+                width: 100% !important;
+                top: 0 !important;
+                left: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            body.sales-page-edit-page .dashboard-layout {
+                height: 100vh !important;
+                min-height: 100vh !important;
+                max-height: 100vh !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
+                position: relative !important;
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .sales-page-edit-content {
+                padding: 1rem !important;
+                overflow-y: scroll !important;
+                overflow-x: hidden !important;
+                flex: 1 1 auto !important;
+                height: 0 !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                position: relative !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding-bottom: 3rem !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overscroll-behavior: contain !important;
+                scroll-behavior: smooth !important;
+                /* Scrollbar visível */
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 199, 0, 0.5) transparent;
+            }
+
+            .sales-page-edit-content::-webkit-scrollbar {
+                width: 8px !important;
+                display: block !important;
+            }
+
+            .sales-page-edit-content::-webkit-scrollbar-track {
+                background: transparent !important;
+            }
+
+            .sales-page-edit-content::-webkit-scrollbar-thumb {
+                background: rgba(255, 199, 0, 0.5) !important;
+                border-radius: 4px !important;
+            }
+
+            .tab-content.active {
+                display: block !important;
+                visibility: visible !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                overflow-y: visible !important;
+                overflow-x: hidden !important;
+                opacity: 1 !important;
+                position: relative !important;
+                left: 0 !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 0 2rem 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            #tab-products.active,
+            #tab-analytics.active {
+                min-height: fit-content !important;
+                height: auto !important;
+                overflow: visible !important;
+                padding-bottom: 4rem !important;
+                margin-bottom: 2rem !important;
+            }
+
+            #tab-products.active .products-list,
+            #tab-analytics.active .analytics-section,
+            #tab-analytics.active .analytics-metrics {
+                overflow: visible !important;
+                min-height: auto !important;
+                height: auto !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            /* BLOQUEAR ABSOLUTAMENTE QUALQUER TENTATIVA DE DRAG/REORDENAÇÃO NO MOBILE */
+            .products-list {
+                touch-action: pan-y !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+
+            .products-list * {
+                touch-action: pan-y !important;
+            }
+
+            /* Garantir que imagens permitam apenas scroll */
+            .product-card-edit,
+            .product-card-image,
+            .product-card-image img {
+                touch-action: pan-y !important;
+                -webkit-user-drag: none !important;
+                user-drag: none !important;
+                -webkit-touch-callout: none !important;
+                -webkit-user-select: none !important;
+                user-select: none !important;
+                pointer-events: auto !important;
+                cursor: default !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sales-page-edit-content {
+                overflow-y: scroll !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+
+            /* Regras ainda mais específicas para mobile pequeno */
+            .product-card-edit,
+            .product-card-image,
+            .product-card-image img {
+                touch-action: pan-y !important;
+                -webkit-user-drag: none !important;
+                user-drag: none !important;
+            }
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
+    <!-- Cache Buster - Força limpeza de cache automaticamente -->
+    <script src="cache-buster.js"></script>
+</head>
+<body class="sales-page-edit-page">
+    <div class="dashboard-layout">
+        <!-- Header Fixo -->
+        <header class="sales-page-edit-header">
+            <div class="header-content">
+                <button class="btn-back" id="btn-back-to-dashboard">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+                </button>
+                <h1 class="page-title" id="page-title">Editar Página de Vendas</h1>
+                <div class="header-actions">
+                    <button class="btn-save" id="btn-save-all">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navegação por Abas -->
+        <nav class="sales-page-tabs">
+            <button class="tab-btn active" data-tab="config">
+                <i class="fas fa-cog"></i> Configurações
+            </button>
+            <button class="tab-btn" data-tab="products">
+                <i class="fas fa-box"></i> Produtos <span class="badge" id="products-count-badge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="analytics">
+                <i class="fas fa-chart-line"></i> Analytics
+            </button>
+            <button class="tab-btn" data-tab="preview">
+                <i class="fas fa-eye"></i> Preview
+            </button>
+        </nav>
+
+        <!-- Conteúdo das Abas -->
+        <main class="sales-page-edit-content">
+            <!-- Aba Configurações -->
+            <div class="tab-content active" id="tab-config">
+                <div class="config-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-store"></i> Informações da Loja
+                    </h2>
+                    <div class="form-group">
+                        <label for="store-title">Título da Loja *</label>
+                        <input type="text" id="store-title" class="form-input" placeholder="Ex: Minha Loja de Vendas" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="store-description">Descrição da Loja</label>
+                        <div class="suggestions-container" id="store-description-container">
+                            <textarea id="store-description" class="form-textarea" rows="3" placeholder="Descreva sua loja..."></textarea>
+                            <div class="suggestions-buttons-group">
+                                <button type="button" class="btn-suggestions" id="btn-store-description-suggestions">
+                                    <i class="fas fa-magic"></i> Gerar Sugestão
+                                </button>
+                                <button type="button" class="btn-more-suggestions" id="btn-more-store-description" style="display: none;">
+                                    <i class="fas fa-sync-alt"></i> Mais Sugestões
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-palette"></i> Personalização Visual
+                    </h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="theme-select">Tema</label>
+                            <select id="theme-select" class="form-select">
+                                <option value="dark">Escuro</option>
+                                <option value="light">Claro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="background-color">Cor de Fundo</label>
+                            <div class="color-input-group">
+                                <input type="color" id="background-color" class="color-picker" value="#0D0D0F">
+                                <input type="text" id="background-color-text" class="form-input color-text" value="#0D0D0F">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="text-color">Cor do Texto</label>
+                            <div class="color-input-group">
+                                <input type="color" id="text-color" class="color-picker" value="#ECECEC">
+                                <input type="text" id="text-color-text" class="form-input color-text" value="#ECECEC">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="button-color">Cor do Botão</label>
+                            <div class="color-input-group">
+                                <input type="color" id="button-color" class="color-picker" value="#FFC700">
+                                <input type="text" id="button-color-text" class="form-input color-text" value="#FFC700">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="background-image-url">Imagem de Fundo (opcional)</label>
+                        <div class="image-upload-group">
+                            <input type="hidden" id="background-image-url" class="form-input">
+                            <button type="button" class="btn-upload" id="btn-upload-background-image">
+                                <i class="fas fa-upload"></i> Fazer Upload da Imagem
+                            </button>
+                        </div>
+                        <div class="image-preview" id="background-image-preview"></div>
+                        <small class="form-help">Faça upload de uma imagem para usar como fundo da sua loja</small>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-mobile-alt"></i> Botão do Módulo
+                    </h2>
+                    <div class="form-group">
+                        <label for="button-text">Texto do Botão *</label>
+                        <input type="text" id="button-text" class="form-input" placeholder="Ex: Minha Loja de Vendas" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="button-logo-url">Mudar Logo</label>
+                        <div class="image-upload-group">
+                            <input type="hidden" id="button-logo-url" class="form-input">
+                            <button type="button" class="btn-upload" id="btn-upload-logo">
+                                <i class="fas fa-upload"></i> Fazer Upload da Logo
+                            </button>
+                        </div>
+                        <div class="image-preview" id="logo-preview"></div>
+                        <small class="form-help">Faça upload da logo que aparecerá no botão do módulo</small>
+                    </div>
+                    <div class="form-group" id="logo-size-group" style="display: none;">
+                        <label for="button-logo-size">Tamanho da Logo (em pixels)</label>
+                        <div class="input-group range-slider" style="margin-bottom: 15px;">
+                            <div class="range-slider-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label style="margin: 0; color: var(--text, #ECECEC);">Tamanho: <span id="logo-size-value">24</span>px</label>
+                                <input type="number" id="button-logo-size" class="form-input" value="24" min="20" max="600" step="1" style="width: 80px; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color, #2C2C2F); background: var(--card-background-color, #1C1C21); color: var(--text, #ECECEC); text-align: center;">
+                            </div>
+                            <input type="range" id="button-logo-size-slider" value="24" min="20" max="600" step="5" style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: var(--text-dark, #A1A1A1);">
+                                <span>20px</span>
+                                <span>600px</span>
+                            </div>
+                        </div>
+                        <small class="form-help">Ajuste o tamanho da logo que aparecerá no botão do módulo no cartão público</small>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-id-card"></i> Formato no Cartão
+                    </h2>
+                    <p class="form-help" style="margin-bottom: 12px;">Como a página de vendas aparece no seu cartão virtual (igual ao King Forms).</p>
+                    <div class="form-group">
+                        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="card-display-format" value="button" id="card-format-button" checked>
+                                <span>Botão</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="card-display-format" value="banner" id="card-format-banner">
+                                <span>Banner</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="card-banner-image-group" style="display: none;">
+                        <label>Imagem do Banner (no cartão)</label>
+                        <div class="image-upload-group">
+                            <input type="hidden" id="card-banner-image-url" class="form-input">
+                            <button type="button" class="btn-upload" id="btn-upload-card-banner">
+                                <i class="fas fa-upload"></i> Fazer Upload do Banner
+                            </button>
+                        </div>
+                        <div class="image-preview" id="card-banner-preview"></div>
+                        <small class="form-help">Imagem que aparecerá no cartão quando o formato for Banner</small>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h2 class="section-title">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </h2>
+                    <div class="form-group">
+                        <label for="whatsapp-number">Número do WhatsApp *</label>
+                        <input type="tel" id="whatsapp-number" class="form-input" placeholder="5511999999999" required>
+                        <small class="form-help">Apenas números, com código do país (ex: 5511999999999)</small>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-search"></i> SEO (Otimização para Buscas)
+                    </h2>
+                    <div class="form-group">
+                        <label for="meta-title">Meta Título</label>
+                        <div class="suggestions-container" id="meta-title-container">
+                            <input type="text" id="meta-title" class="form-input" placeholder="Título para compartilhamento">
+                            <div class="suggestions-buttons-group">
+                                <button type="button" class="btn-suggestions" id="btn-meta-title-suggestions">
+                                    <i class="fas fa-magic"></i> Gerar Sugestão
+                                </button>
+                                <button type="button" class="btn-more-suggestions" id="btn-more-meta-title" style="display: none;">
+                                    <i class="fas fa-sync-alt"></i> Mais Sugestões
+                                </button>
+                            </div>
+                        </div>
+                        <small class="form-help">Título que aparece quando sua loja  compartilhada em redes sociais</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="meta-description">Meta Descrição</label>
+                        <div class="suggestions-container" id="meta-description-container">
+                            <textarea id="meta-description" class="form-textarea" rows="2" placeholder="Descrição para compartilhamento"></textarea>
+                            <div class="suggestions-buttons-group">
+                                <button type="button" class="btn-suggestions" id="btn-meta-description-suggestions">
+                                    <i class="fas fa-magic"></i> Gerar Sugestão
+                                </button>
+                                <button type="button" class="btn-more-suggestions" id="btn-more-meta-description" style="display: none;">
+                                    <i class="fas fa-sync-alt"></i> Mais Sugestões
+                                </button>
+                            </div>
+                        </div>
+                        <small class="form-help">Descrição que aparece quando sua loja  compartilhada em redes sociais</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="meta-image-url">Imagem para Compartilhamento</label>
+                        <div class="image-upload-group">
+                            <input type="hidden" id="meta-image-url" class="form-input">
+                            <button type="button" class="btn-upload" id="btn-upload-meta-image">
+                                <i class="fas fa-upload"></i> Fazer Upload da Imagem
+                            </button>
+                        </div>
+                        <div class="image-preview" id="meta-image-preview"></div>
+                        <small class="form-help">Imagem que aparece quando sua loja  compartilhada em redes sociais (WhatsApp, Facebook, etc.). Esta imagem  usada para criar uma prévia visual atraente do seu link.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Produtos -->
+            <div class="tab-content" id="tab-products">
+                <div class="products-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-box"></i> Produtos <span class="products-count">(<span id="products-count">0</span>/50)</span>
+                    </h2>
+                    <div class="products-header-actions">
+                        <div class="view-controls-edit">
+                            <div class="view-mode-controls-edit">
+                                <button class="view-btn-edit active" data-mode="grid" title="Modo Miniatura">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                                <button class="view-btn-edit" data-mode="list" title="Modo Lista">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                            <div class="view-size-controls-edit">
+                                <button class="size-btn-edit active" data-size="small" title="Pequeno">
+                                    <i class="fas fa-square" style="font-size: 0.7rem;"></i>
+                                </button>
+                                <button class="size-btn-edit" data-size="medium" title="Médio">
+                                    <i class="fas fa-square" style="font-size: 0.85rem;"></i>
+                                </button>
+                                <button class="size-btn-edit" data-size="large" title="Grande">
+                                    <i class="fas fa-square" style="font-size: 1rem;"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn-add-product" id="btn-add-product">
+                            <i class="fas fa-plus"></i> Adicionar Produto
+                        </button>
+                    </div>
+                </div>
+
+                <div class="products-filter-tabs">
+                    <button class="filter-tab active" data-filter="all">
+                        <i class="fas fa-th"></i> Todos
+                    </button>
+                    <button class="filter-tab" data-filter="oferta">
+                        <i class="fas fa-tag"></i> Oferta
+                    </button>
+                    <button class="filter-tab" data-filter="destaque">
+                        <i class="fas fa-star"></i> Destaque
+                    </button>
+                    <button class="filter-tab" data-filter="novo">
+                        <i class="fas fa-sparkles"></i> Novidade
+                    </button>
+                </div>
+
+                <div class="products-list" id="products-list" data-view-mode="grid" data-card-size="small" data-filter="all">
+                    <div class="empty-state" id="products-empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <p>Nenhum produto cadastrado ainda.</p>
+                        <button class="btn-primary" id="btn-add-first-product">
+                            <i class="fas fa-plus"></i> Adicionar Primeiro Produto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Analytics -->
+            <div class="tab-content" id="tab-analytics">
+                <div class="analytics-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-line"></i> Analytics
+                    </h2>
+                    <select class="period-select" id="analytics-period">
+                        <option value="7">últimos 7 dias</option>
+                        <option value="30" selected>últimos 30 dias</option>
+                        <option value="90">últimos 90 dias</option>
+                        <option value="all">Todo o período</option>
+                    </select>
+                </div>
+
+                <!-- Métricas Gerais -->
+                <div class="analytics-metrics">
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="metric-page-views">0</div>
+                            <div class="metric-label">Visualizações</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="fas fa-mouse-pointer"></i>
+                        </div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="metric-product-clicks">0</div>
+                            <div class="metric-label">Cliques em Produtos</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="metric-add-to-cart">0</div>
+                            <div class="metric-label">Adicionados ao Carrinho</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="metric-checkout-clicks">0</div>
+                            <div class="metric-label">Checkouts (WhatsApp)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Funil de Vendas -->
+                <div class="analytics-section">
+                    <h3 class="subsection-title">Funil de Vendas</h3>
+                    <div class="funnel-container" id="funnel-container">
+                        <div class="funnel-step">
+                            <div class="funnel-label">Visualizações da Página</div>
+                            <div class="funnel-bar">
+                                <div class="funnel-fill" id="funnel-page-views" style="width: 100%"></div>
+                            </div>
+                            <div class="funnel-value" id="funnel-page-views-value">0</div>
+                        </div>
+                        <div class="funnel-step">
+                            <div class="funnel-label">Visualizações de Produtos</div>
+                            <div class="funnel-bar">
+                                <div class="funnel-fill" id="funnel-product-views" style="width: 0%"></div>
+                            </div>
+                            <div class="funnel-value" id="funnel-product-views-value">0 <span class="funnel-percent">(0%)</span></div>
+                        </div>
+                        <div class="funnel-step">
+                            <div class="funnel-label">Cliques em Produtos</div>
+                            <div class="funnel-bar">
+                                <div class="funnel-fill" id="funnel-product-clicks" style="width: 0%"></div>
+                            </div>
+                            <div class="funnel-value" id="funnel-product-clicks-value">0 <span class="funnel-percent">(0%)</span></div>
+                        </div>
+                        <div class="funnel-step">
+                            <div class="funnel-label">Adicionados ao Carrinho</div>
+                            <div class="funnel-bar">
+                                <div class="funnel-fill" id="funnel-add-to-cart" style="width: 0%"></div>
+                            </div>
+                            <div class="funnel-value" id="funnel-add-to-cart-value">0 <span class="funnel-percent">(0%)</span></div>
+                        </div>
+                        <div class="funnel-step">
+                            <div class="funnel-label">Checkouts (WhatsApp)</div>
+                            <div class="funnel-bar">
+                                <div class="funnel-fill" id="funnel-checkout" style="width: 0%"></div>
+                            </div>
+                            <div class="funnel-value" id="funnel-checkout-value">0 <span class="funnel-percent">(0%)</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranking de Produtos -->
+                <div class="analytics-section">
+                    <h3 class="subsection-title">Ranking de Produtos</h3>
+                    <div class="products-ranking" id="products-ranking">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-bar"></i>
+                            <p>Nenhum dado de analytics disponível ainda.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Preview -->
+            <div class="tab-content" id="tab-preview">
+                <div class="preview-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-eye"></i> Preview da Página
+                    </h2>
+                    <div class="preview-actions">
+                        <button class="btn-secondary" id="btn-refresh-preview">
+                            <i class="fas fa-sync-alt"></i> Atualizar Preview
+                        </button>
+                        <a href="#" target="_blank" class="btn-primary" id="btn-open-preview">
+                            <i class="fas fa-external-link-alt"></i> Abrir em Nova Aba
+                        </a>
+                    </div>
+                </div>
+                <div class="preview-container">
+                    <iframe id="preview-iframe" src="about:blank" frameborder="0"></iframe>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Produto -->
+    <div class="modal" id="product-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="product-modal-title">Adicionar Produto</h3>
+                <button class="modal-close" id="product-modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="product-modal-body">
+                <!-- Conteúdo será inserido via JS -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="product-modal-cancel">Cancelar</button>
+                <button class="btn-primary" id="product-modal-save">Salvar Produto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Crop para Logo -->
+    <div id="cropper-modal" class="modal-overlay">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h4>Enquadrar Logo</h4>
+            </div>
+            <div class="modal-body cropper-body">
+                <div class="cropper-container">
+                    <img id="image-to-crop" src="">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-crop-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="crop-and-upload-btn" class="btn btn-primary">Enquadrar e Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts - upload-auth-helper primeiro para incluir token em todos os fetch (evita 401 no upload) -->
+    <script src="js/upload-auth-helper.js"></script>
+    <script>
+        // Dados globais
+        window.SALES_PAGE_EDIT_DATA = {
+            itemId: null,
+            salesPageId: null,
+            profileId: null
+        };
+    </script>
+    <!-- Versão atualizada para forçar reload - Hostinger cache - v2025-01-31-04 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <script src="suggestionModal.js?v=2025-01-31-04"></script>
+    <script src="textSuggestions.js?v=2025-01-31-04"></script>
+    <script src="dashboard.modals.js?v=2025-01-31-04"></script>
+    <script src="dashboard.salesPage.js?v=2025-01-31-04"></script>
+    <script src="dashboard.products.js?v=2025-01-31-04"></script>
+    <script src="dashboard.analytics.js?v=2025-01-31-04"></script>
+    <script src="salesPageEdit.js?v=2025-01-31-04"></script>
+
+    <!-- Script para forçar limpeza de cache e garantir comportamento mobile -->
+    <script>
+        // Forçar limpeza de cache
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+
+        // Garantir que Sortable nunca seja usado no mobile
+        (function() {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile && window.Sortable) {
+                // Sobrescrever Sortable no mobile para garantir que não seja usado
+                const originalSortable = window.Sortable;
+                window.Sortable = function() {
+                    console.log('?? Sortable bloqueado no mobile - scroll deve funcionar normalmente');
+                    return {
+                        destroy: function() {},
+                        option: function() {},
+                        el: null
+                    };
+                };
+                // Copiar métodos estéticos se existirem
+                Object.keys(originalSortable).forEach(key => {
+                    if (typeof originalSortable[key] === 'function') {
+                        window.Sortable[key] = function() {
+                            console.log('?? Sortable.' + key + ' bloqueado no mobile');
+                        };
+                    }
+                });
+            }
+        })();
+
+        // Garantir scroll nas imagens dos produtos no mobile - FORÇAR COMPORTAMENTO
+        function forceMobileScrollBehavior() {
+            const isMobile = window.innerWidth <= 768;
+            if (!isMobile) return;
+
+            // Função para aplicar regras em elementos
+            function applyScrollRules(element) {
+                if (!element) return;
+                
+                // Remover qualquer evento de drag
+                element.ondragstart = function() { return false; };
+                element.ondrag = function() { return false; };
+                element.ondragend = function() { return false; };
+                element.ondragenter = function() { return false; };
+                element.ondragleave = function() { return false; };
+                element.ondragover = function() { return false; };
+                element.ondrop = function() { return false; };
+                
+                // Garantir touch-action via style inline (mais forte que CSS)
+                element.style.setProperty('touch-action', 'pan-y', 'important');
+                element.style.setProperty('-webkit-touch-callout', 'none', 'important');
+                element.style.setProperty('-webkit-user-select', 'none', 'important');
+                element.style.setProperty('user-select', 'none', 'important');
+                element.style.setProperty('-webkit-user-drag', 'none', 'important');
+                element.style.setProperty('user-drag', 'none', 'important');
+                element.style.setProperty('cursor', 'default', 'important');
+                
+                // Adicionar listeners passivos para scroll (remover anteriores primeiro)
+                element.removeEventListener('touchstart', function() {}, { passive: true });
+                element.removeEventListener('touchmove', function() {}, { passive: true });
+                
+                element.addEventListener('touchstart', function(e) {
+                    // Permitir scroll - não fazer nada
+                }, { passive: true });
+                
+                element.addEventListener('touchmove', function(e) {
+                    // Permitir scroll - não prevenir default
+                }, { passive: true });
+            }
+
+            // Aplicar imediatamente
+            const productCards = document.querySelectorAll('.product-card-edit, .product-card-image, .product-card-image img, .products-list');
+            productCards.forEach(applyScrollRules);
+
+            // Observar mudanças no DOM (quando produtos são carregados)
+            const observer = new MutationObserver(function(mutations) {
+                const newCards = document.querySelectorAll('.product-card-edit, .product-card-image, .product-card-image img');
+                newCards.forEach(applyScrollRules);
+            });
+
+            const productsList = document.getElementById('products-list');
+            if (productsList) {
+                observer.observe(productsList, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
+            // Aplicar novamente após delay para garantir
+            setTimeout(function() {
+                const allCards = document.querySelectorAll('.product-card-edit, .product-card-image, .product-card-image img, .products-list');
+                allCards.forEach(applyScrollRules);
+            }, 500);
+
+            setTimeout(function() {
+                const allCards = document.querySelectorAll('.product-card-edit, .product-card-image, .product-card-image img, .products-list');
+                allCards.forEach(applyScrollRules);
+            }, 1500);
+        }
+
+        // Executar imediatamente e após DOM carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', forceMobileScrollBehavior);
+        } else {
+            forceMobileScrollBehavior();
+        }
+
+        // Executar também após um delay para garantir
+        setTimeout(forceMobileScrollBehavior, 100);
+        setTimeout(forceMobileScrollBehavior, 500);
+        setTimeout(forceMobileScrollBehavior, 2000);
+    </script>
+</body>
+</html>
+

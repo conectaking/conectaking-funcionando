@@ -10,8 +10,23 @@ O único bloqueio funcional que resta é o painel **admin de estudos bíblicos p
 (7 rotas, ver [Gaps](#gaps-reais-que-sobram)). Se esse painel puder ficar indisponível por uns dias,
 o cutover pode ser feito já.
 
-Hoje o Node só continua no caminho porque o Caddy faz `reverse_proxy 127.0.0.1:5000` e o Express
-decide, rota a rota, o que reencaminha para o Laravel (`middleware/laravelProxy.js`).
+O Caddy do host já aponta para `127.0.0.1:8080` (Fase 2 feita) e o container `api` está parado, por
+isso o `middleware/laravelProxy.js` deixou de estar no caminho — o Laravel responde a tudo.
+
+---
+
+## Edge HTTP: FrankenPHP classic
+
+O container `laravel` corre **FrankenPHP em modo classic** (`frankenphp run --config /app/Caddyfile`),
+não Octane/worker. Um binário só: sem nginx, sem php-fpm, sem `artisan serve`.
+
+- `laravel/Caddyfile`: `auto_https off`, `admin off`, `root * /app/public`, `php_server` em `:8080`
+- **TLS fica no Caddy do host** — o container é HTTP puro e continua exposto só em `127.0.0.1:8080`
+- Cada request arranca o framework do zero (igual a php-fpm), logo não há estado partilhado entre
+  requests. É o passo intermédio deliberado: quando o app for para Forge/Octane, muda-se o modo do
+  FrankenPHP sem trocar de imagem nem de servidor
+- Extensões via `install-php-extensions`: `pdo_pgsql pgsql zip gd opcache`.
+  OCR continua a depender de `poppler-utils` + `tesseract-ocr(-por)` instalados por apt
 
 ---
 
@@ -32,6 +47,9 @@ de `laravel/routes/web.php`): **todos os prefixos do Express existem no Laravel*
 - Checkout KingForms/PagBank: **fora de escopo** (não no Laravel; APIs/página removidas)
 - Painel admin: overview, `advanced-stats`, `analytics/*`, planos, **users e codes completos**
 - Edge: `/health`, `/api/public-api-url`, `/api-config.js`, estáticos `public/` e `public_html/`
+- Blade: **35 páginas** em `resources/views/pages/` — auth, dashboard, King Selection, editores de
+  satélite, King Docs, documentos/finanças, institucional e admin. Só `checkoutConfig` continua a ser
+  servido como HTML estático (ver [Front](#3-front-em-html-legado--fechado-exceto-checkoutconfig))
 
 ### Fechado nesta rodada
 
@@ -43,6 +61,7 @@ de `laravel/routes/web.php`): **todos os prefixos do Express existem no Laravel*
 | **B16 — mutações admin** | `users`: dashboard, `manage`, `update-role`, `PUT /users/{id}`, `DELETE`, auto-delete (config + execute). `codes`: `generate-manual`, `generate-batch`, `generate-code` (legado), `PUT`/`DELETE /codes/{code}`, auto-delete. Mesmo envelope do `utils/responseFormatter.js`. |
 | **B16 — leituras que faltavam** | `advanced-stats`, `analytics/users`, `analytics/user/{id}/details`. |
 | **Checkout HTML** | Removido do Laravel (fora de escopo PagBank). Página `/…/checkout` responde **410**. |
+| **Front em Blade** | Mais 29 páginas HTML viraram `resources/views/pages/*.blade.php` (King Selection, editores de satélite, King Docs, documentos/orçamentos, institucional, admin). Total: 35. Conversão verificada byte-a-byte com o Blade real; `checkoutConfig` ficou de fora (PagBank). |
 | **Edge** | `/api/public-api-url` e `/api-config.js` não existiam no Laravel. O `api-config.js` é servido byte-a-byte igual ao do Express (conferido por `scripts/tmp-check-api-config.php`) — sem ele o dashboard perde o `API_BASE` e o patch de `fetch()`. |
 
 ---
@@ -68,11 +87,68 @@ Laravel. Portanto **não há nada a migrar** e nada bloqueia o cutover. Reforça
 Se um dia for preciso enviar de facto, é preciso Web Push completo em PHP (JWT VAPID ES256 + ECDH
 P-256 + HKDF + AES-128-GCM). Recomendação: usar `minishlink/web-push` em vez de escrever à mão.
 
-### 3. Front ainda em HTML legado (não bloqueia)
+### 3. Front em HTML legado — **fechado, exceto `checkoutConfig`**
 
-O Laravel já **serve** os HTML de `public/`/`public_html/` tal como o Express. Converter para Blade
-(login, dashboard, kingSelection*, kingDocs*, admin-*, etc.) é trabalho paralelo — o critério para
-"sem Node" é a casca HTTP, não o template.
+**35 páginas** vivem agora em `resources/views/pages/*.blade.php`. Só sobra uma página servida como
+ficheiro estático: `checkoutConfig` (PagBank fora de escopo).
+
+| Grupo | Páginas |
+|---|---|
+| Auth + conta | `login`, `registro`, `recuperar-senha`, `resetar-senha`, `conta`, `dashboard` |
+| King Selection | `kingSelection`, `kingSelectionEdit`, `kingSelectionProject`, `kingSelectionCliente`, `kingSelectionGallery`, `kingSelectionReview`, `kingSelectionSuccess` |
+| Editores de satélite | `formPageEdit`, `salesPageEdit`, `guestListEdit`, `conviteEdit`, `responsesList` |
+| King Docs / Forms | `kingDocs`, `kingDocsShare`, `kingForms` |
+| Documentos / finanças | `documentos-preview`, `documentos-ver`, `orcamentos`, `recibos-orcamentos`, `zerar-mes` |
+| Institucional / bíblia | `index`, `termos`, `privacidade`, `bible`, `bibliaking`, `arquetipo-resultados` |
+| Admin | `admin-planos`, `admin-devocionais-365`, `admin-prosperidade-31` |
+
+`recuperar-senha` e `resetar-senha` vieram dos EJS `views/recuperarSenha.ejs` /
+`views/resetarSenha.ejs` e usam Blade a sério (`@php`, `{{ $faviconUrl }}`). Todas as outras são o
+HTML legado **byte-a-byte**: um documento completo com `<!DOCTYPE>` dentro do `.blade.php`, que é
+Blade válido.
+
+O `LegacyPageController` é a ponte: renderiza `pages.{nome}` se a view existir e, se não existir, cai
+no `FrontLegacyController::page` (HTML de `public/`/`public_html/`). As páginas convertidas saíram do
+array `$legacyPages` de `routes/web.php` e entraram em `$bladePages`, que aponta para o
+`LegacyPageController` e regista também as variantes `/l/…`.
+
+#### Como converter (e por que não parte nada)
+
+`scripts/tmp-html-to-blade.php` gera o `.blade.php` e `scripts/tmp-verify-blade-pages.php` confirma o
+resultado bootando o Laravel a sério. Ambos correm sem PHP local:
+
+```bash
+docker run --rm -v "$PWD:/repo" -w /repo php:8.4-cli php scripts/tmp-html-to-blade.php <nome> …
+docker run --rm -v "$PWD:/repo" -w /repo php:8.4-cli php scripts/tmp-verify-blade-pages.php
+```
+
+O conversor tenta três estratégias por página e **só escreve o ficheiro quando o compilador Blade
+devolve exatamente os bytes do HTML de origem**:
+
+1. **cópia crua** — funcionou em 28 das 29 páginas desta rodada. Blade deixa `@media`, `@keyframes`
+   e emails intactos porque só compila diretivas que existem;
+2. **escape** de `@` → `@@` e de `{{` / `{!!` → `@{{` / `@{!!`;
+3. **`@verbatim`** a envolver o documento — necessário só em `kingSelectionProject`.
+
+A fonte é escolhida por `laravel/public/shell/` → `public/` → `public_html/`. `public/` vem antes de
+`public_html/` de propósito: é essa a ordem do `FrontLegacyController` em produção
+(`LEGACY_PUBLIC_PATH=/legacy/public`), logo o Blade fica com o mesmo ficheiro que já era servido.
+Isso só importou em duas páginas — `kingSelectionProject` e `recibos-orcamentos`, onde `public/` está
+mais recente; nas restantes os dois diretórios são idênticos.
+
+`guestListEditManage` **não existe** em nenhum dos diretórios (o ficheiro parecido é
+`guestListEditKingForms.html`, que não tinha rota), por isso não foi convertido.
+
+O verificador reporta `recuperar-senha` como "diferente" e `resetar-senha` como "sem HTML de origem":
+é esperado, são as duas que vieram de EJS — `public_html/recuperar-senha.html` é um stub antigo de
+1 KB sem relação com a página atual.
+
+⚠️ Os HTML de `public/`, `public_html/` e `laravel/public/shell/` continuam no repo, mas para as 35
+páginas acima **já não são o que é servido** — a fonte de verdade passou a ser
+`resources/views/pages/*.blade.php`. Quem editar só o HTML (ou usar os `scripts/tmp-deploy-*.sh`) não
+vai ver a alteração no site. Eles ainda servem `checkoutConfig`, os assets (`.js`/`.css`/imagens) e
+as páginas sem rota própria (`dashboard-recibos-orcamentos`, `clientes-recibos-orcamentos`,
+`configuracoes-recibos-orcamentos`, `guestListEditKingForms`, …).
 
 ---
 

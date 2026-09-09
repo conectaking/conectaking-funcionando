@@ -1,10 +1,11 @@
-FROM php:8.4-cli-bookworm
+FROM dunglas/frankenphp:php8.4-bookworm
 
+# Extensões PHP (install-php-extensions vem na imagem FrankenPHP)
+RUN install-php-extensions pdo_pgsql pgsql zip gd opcache
+
+# poppler-utils + tesseract: OCR de documentos/comprovantes
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git unzip libpq-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-        poppler-utils tesseract-ocr tesseract-ocr-por \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_pgsql pgsql zip gd \
+        git unzip poppler-utils tesseract-ocr tesseract-ocr-por \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -29,6 +30,9 @@ ENV SESSION_DRIVER=file
 ENV CACHE_STORE=file
 ENV QUEUE_CONNECTION=sync
 
+# HTTP puro: o Caddy do host termina TLS e faz reverse_proxy para :8080
+ENV SERVER_NAME=:8080
+
 EXPOSE 8080
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+CMD ["frankenphp", "run", "--config", "/app/Caddyfile"]

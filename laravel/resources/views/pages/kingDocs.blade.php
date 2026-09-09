@@ -1,0 +1,3682 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>King Docs — Conecta King</title>
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        var host = (window.location.hostname || 'localhost').toLowerCase();
+        var isLocalHost = host === 'localhost' || host === '127.0.0.1';
+        var isProdHost = host === 'conectaking.com.br' || host.endsWith('.conectaking.com.br') || host === 'cnking.bio' || host === 'www.cnking.bio';
+        var wantLocal =
+          !isProdHost && (
+            (params.get('api') || '').toLowerCase() === 'local' ||
+            (typeof localStorage !== 'undefined' && localStorage.getItem('useLocalApi') === 'true')
+          );
+        var localApiBase = 'http://' + host + ':5000';
+        var prodApiBase = isProdHost ? (window.location.origin || 'https://www.conectaking.com.br') : 'https://www.conectaking.com.br';
+        window.API_BASE = wantLocal && isLocalHost ? localApiBase : prodApiBase;
+        window.API_URL = window.API_BASE;
+        window.USE_LOCAL_API_5000 = !!(wantLocal && isLocalHost);
+        if (isProdHost) {
+          try { localStorage.removeItem('useLocalApi'); } catch (e) {}
+        }
+      } catch (e) {
+        window.API_BASE = window.API_BASE || window.API_URL || 'https://www.conectaking.com.br';
+        window.API_URL = window.API_URL || window.API_BASE;
+        window.USE_LOCAL_API_5000 = false;
+      }
+    })();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; --bad:#c0392b; --banner-bg:#e8f0ea; --hero-name-bg:#faf9f7; --trust-bg:#faf9f7; --summary-bg:#faf9f7; }
+    body.kd-theme-dark {
+      --bg:#121814; --card:#1a221c; --ink:#e8ebe9; --muted:#9ca8a2; --accent:#7bc99a; --border:#2f3d35; --bad:#e57373;
+      --banner-bg:#1a2e22; --hero-name-bg:#222b26; --trust-bg:#1e2621; --summary-bg:#1e2621;
+    }
+    body.kd-theme-dark .banner { border-color: var(--accent); }
+    body.kd-theme-dark .tab { background: var(--card); }
+    body.kd-theme-dark .tab.active { background: #243028; }
+    body.kd-theme-dark .btn.secondary { background: #2a332e; color: var(--ink); }
+    body.kd-theme-dark .linkbox { background: #222b26; color: var(--ink); }
+    body.kd-theme-dark .doc-card { background: #1e2a22; border-color: var(--accent); }
+    body.kd-theme-dark .doc-card.selected { background: #243528; }
+    body.kd-theme-dark .kd-load-overlay { background: rgba(18,24,20,.88); }
+    * { box-sizing: border-box; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); padding:1rem 0 3rem; }
+    .wrap { width: 100%; max-width: min(100%, 1680px); margin: 0 auto; padding: 0 clamp(0.65rem, 2.5vw, 2rem); box-sizing: border-box; }
+    /* Só a barra de atalhos fica fixa ao scroll (banner, ajuda e nome rolam) */
+    .kd-sticky-atalhos-bar {
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      margin: 0 0 0.85rem;
+      padding: .25rem 0 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 6px 20px rgba(0,0,0,.06);
+    }
+    .kd-sticky-atalhos-inner {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0 0 14px 14px;
+      padding: .55rem .75rem .7rem;
+      box-shadow: 0 3px 16px rgba(0,0,0,.04);
+    }
+    .kd-hero-card--top {
+      margin-bottom: 0;
+      border-radius: 16px 16px 0 0;
+      border-bottom: none;
+      padding-bottom: 1.35rem;
+      box-shadow: 0 2px 14px rgba(0,0,0,.05);
+    }
+    .kd-page-body { padding-top: .25rem; }
+    .kd-top-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .kd-top-bar--minimal { justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+    .kd-top-bar-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .kd-back-dashboard {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .45rem .85rem; font-size: .78rem; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--card); color: var(--ink);
+      text-decoration: none; font-weight: 600; white-space: nowrap;
+    }
+    .kd-back-dashboard:hover { border-color: var(--accent); color: var(--accent); }
+    .banner { background: var(--banner-bg); border: 1px dashed var(--accent); color: var(--accent); padding: .65rem .9rem; border-radius: 8px; font-size: .82rem; margin: 0; flex: 1; min-width: min(100%, 240px); }
+    .kd-help { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 .85rem; margin-bottom: 1rem; font-size: .82rem; }
+    .kd-help summary { cursor: pointer; padding: .65rem 0; font-weight: 600; color: var(--accent); list-style: none; }
+    .kd-help summary::-webkit-details-marker { display: none; }
+    .kd-help[open] summary { border-bottom: 1px solid var(--border); margin-bottom: .5rem; }
+    .kd-help ul { margin: 0 0 .75rem; padding-left: 1.15rem; color: var(--muted); line-height: 1.5; }
+    .kd-theme-btn { white-space: nowrap; padding: .45rem .85rem; font-size: .78rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--ink); cursor: pointer; font-family: inherit; font-weight: 600; }
+    .kd-theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+    h1 { font-size: 1.45rem; margin: 0 0 .35rem; }
+    .sub { color: var(--muted); font-size: .85rem; margin-bottom: 1.2rem; }
+    .tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tab { padding: .45rem .9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: .82rem; color: var(--ink); }
+    .tab.active { border-color: var(--accent); background: var(--banner-bg); color: var(--accent); font-weight: 600; }
+    .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+    .panel.active { display: block; }
+    .group { margin-bottom: 1.2rem; }
+    .group h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 .6rem; }
+    details.kd-collapsible { border: 1px solid var(--border); border-radius: 10px; margin-bottom: .75rem; background: var(--card); }
+    details.kd-collapsible summary { cursor: pointer; padding: .65rem .85rem; font-size: .78rem; font-weight: 700; color: var(--accent); letter-spacing: .04em; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    details.kd-collapsible summary::-webkit-details-marker { display: none; }
+    details.kd-collapsible summary::after { content: ''; font-size: .7rem; opacity: .7; }
+    details.kd-collapsible[open] summary::after { transform: rotate(180deg); }
+    details.kd-collapsible .kd-collapsible-body { padding: 0 .85rem .85rem; }
+    .row { display: grid; grid-template-columns: 140px 1fr; gap: .5rem; align-items: center; margin-bottom: .45rem; font-size: .88rem; }
+    .row label { color: var(--muted); font-size: .78rem; }
+    input[type=text], input[type=password], input[type=number], select {
+      width: 100%; padding: .45rem .55rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;
+    }
+    .btn { display:inline-block; padding: .5rem 1rem; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; font-size: .85rem; }
+    .btn.secondary { background: #eee; color: var(--ink); }
+    .btn.bad { background: var(--bad); }
+    .btn-row { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0 1rem; align-items: center; }
+    .preset-row { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 1rem; }
+    .preset-row .btn { font-size: .78rem; padding: .35rem .65rem; }
+    .file-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem 0; border-bottom: 1px solid var(--border); font-size: .85rem; }
+    .share-grid { font-size: .82rem; }
+    /* Cartões por categoria (estilo mockup) */
+    .kd-share-cat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: .85rem; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,.04); }
+    .kd-share-cat-head { display: flex; align-items: center; gap: .5rem; padding: .55rem .75rem; background: var(--trust-bg); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .kd-share-cat-bulk { display: inline-flex; gap: .35rem; flex-wrap: wrap; align-items: center; margin-left: auto; }
+    .doc-card--add-type { border-style: dashed; opacity: .95; }
+    .kd-share-cat-ico { font-size: 1.25rem; line-height: 1; }
+    .kd-share-cat-title { flex: 1; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+    .kd-link-btn { background: none; border: none; color: var(--accent); font-size: .72rem; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; font-family: inherit; padding: .2rem 0; }
+    .kd-link-btn:hover { text-decoration: underline; }
+    .kd-share-cat-body {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+      gap: 10px;
+      padding: .65rem .75rem .85rem;
+    }
+    @media (max-width: 520px) {
+      .kd-share-cat-body { grid-template-columns: 1fr; }
+    }
+    .kd-share-field-card {
+      border: 1px solid #3d5c45;
+      border-radius: 8px;
+      background: #e8f5ea;
+      padding: .55rem .45rem .65rem;
+      display: flex;
+      flex-direction: column;
+      gap: .45rem;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .kd-share-field-card:hover { box-shadow: 0 2px 8px rgba(45,90,61,.12); }
+    body.kd-theme-dark .kd-share-field-card {
+      background: #1e2a22;
+      border-color: var(--accent);
+    }
+    .kd-share-field-card-head {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: .3rem;
+    }
+    .kd-share-field-card-ico { font-size: 1.65rem; line-height: 1; }
+    .kd-share-field-main { justify-content: center; flex-wrap: wrap; gap: .3rem; width: 100%; text-align: center; }
+    .kd-share-field-name {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      line-height: 1.25;
+    }
+    .kd-share-field-card .kd-field-adv {
+      margin: 0;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: .35rem;
+    }
+    .kd-field-block { padding: .35rem 0; border-bottom: 1px solid var(--border); }
+    .kd-field-block:last-child { border-bottom: none; }
+    .kd-share-field-card.kd-field-block { padding: 0; border-bottom: none; }
+    .kd-field-main { display: flex; align-items: flex-start; gap: .5rem; cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--ink); }
+    .kd-field-main input { margin-top: .2rem; }
+    .kd-field-adv { margin: .4rem 0 0 1.5rem; display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; font-size: .74rem; color: var(--muted); }
+    .kd-mini { display: inline-flex; align-items: center; gap: .25rem; cursor: pointer; font-weight: 500; }
+    .kd-field-adv select { max-width: 200px; font-size: .78rem; }
+    .kd-custom-atalhos { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-top: .65rem; padding-top: .65rem; border-top: 1px dashed var(--border); }
+    .kd-custom-atalhos .atalhos-title { width: 100%; margin-bottom: 0 !important; }
+    .btn-atalho .kd-atalho-img { width: 1.15rem; height: 1.15rem; border-radius: 4px; object-fit: cover; vertical-align: middle; }
+    .err { color: var(--bad); font-size: .85rem; margin: .5rem 0; }
+    .okmsg { color: var(--accent); font-size: .85rem; margin: .5rem 0; }
+    .linkbox { word-break: break-all; background: #f0f0ec; padding: .6rem; border-radius: 8px; font-size: .78rem; margin: .5rem 0; }
+    code { font-size: .78rem; }
+    .share-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
+    /* Aba Documentos: uma coluna — pré-visualização de ficheiros + resumo no mesmo bloco */
+    .share-layout.kd-docs-unified-layout { grid-template-columns: 1fr !important; gap: 1rem !important; }
+    .atalhos-block { margin: 0.35rem 0 0.25rem; }
+    .atalhos-block .atalhos-title { font-size: .65rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: .35rem; display: block; }
+    .atalhos-btns { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+    .btn-atalho { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .75rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; color: var(--ink); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s, color .15s; }
+    .btn-atalho:hover { background: #e8f0ea; border-color: var(--accent); color: var(--accent); }
+    .btn-atalho.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    body.kd-theme-dark .btn-atalho:not(.active) {
+      background: #243028;
+      color: var(--ink);
+      border-color: var(--border);
+    }
+    body.kd-theme-dark .btn-atalho:not(.active):hover {
+      background: #2d3d34;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    body.kd-theme-dark .btn-atalho.active {
+      background: var(--accent);
+      color: #0d120f;
+      border-color: var(--accent);
+    }
+    .mini-actions { font-size: .78rem; margin-top: .5rem; color: var(--muted); }
+    .mini-actions button { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 0 .25rem; font: inherit; }
+    .kd-atalho-item { display: inline-flex; align-items: center; gap: .25rem; flex-wrap: nowrap; }
+    .kd-atalho-cog { font-size: .72rem !important; padding: .28rem .45rem !important; min-width: auto; line-height: 1; border-radius: 8px; }
+    .kd-docs-unified-layout { align-items: start; }
+    .kd-docs-left-col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+    .kd-doc-vault-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: start;
+      margin-top: .5rem;
+    }
+    @media (max-width: 959px) {
+      .kd-doc-vault-row { gap: .75rem; }
+    }
+    @media (min-width: 960px) {
+      .kd-doc-vault-row {
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 400px);
+        gap: 1.1rem;
+      }
+    }
+    .kd-doc-vault-grid-col { min-width: 0; }
+    .kd-doc-vault-preview-col {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    }
+    @media (min-width: 960px) {
+      .kd-doc-vault-preview-col {
+        position: sticky;
+        top: 1rem;
+        align-self: start;
+        max-height: calc(100vh - 4rem);
+      }
+    }
+    .kd-doc-vault-preview-col .preview-header--vault {
+      border-radius: 0;
+      border: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .kd-doc-vault-preview-col .doc-preview-body--inline.kd-preview-files-scroll {
+      flex: 0 1 auto;
+      min-height: 140px;
+      max-height: min(42vh, 380px);
+      overflow-y: auto;
+      border: none;
+      border-radius: 0;
+    }
+    .kd-preview-resumo-block {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-top: 1px solid var(--border);
+    }
+    .preview-header--resumo {
+      background: var(--accent);
+      color: #fff;
+      padding: .45rem .65rem;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .preview-header--resumo .badge {
+      font-size: .65rem;
+      background: rgba(255,255,255,.25);
+      padding: .15rem .45rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .kd-preview-resumo-body {
+      font-size: .8rem;
+      max-height: min(36vh, 300px);
+      overflow-y: auto;
+      padding: .6rem .75rem .75rem;
+    }
+    .kd-preview-resumo-body .preview-sec h4 { font-size: .62rem; }
+    .kd-doc-vault-preview-col .doc-preview-actions {
+      flex-shrink: 0;
+    }
+    .kd-preview-partilhar-hint {
+      margin: 0;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      font-size: .72rem;
+    }
+    .kd-share-hint-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin: 0 0 .75rem;
+    }
+    .kd-share-hint-row .kd-share-summary { flex: 1; min-width: 200px; margin: 0; }
+    .preview-header--vault { background: var(--trust-bg); color: var(--ink); border: 1px solid var(--border); border-radius: 8px 8px 0 0; padding: .45rem .65rem; font-size: .72rem; font-weight: 700; }
+    .doc-preview-body--inline { max-height: min(40vh, 360px); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 8px 8px; }
+    .kd-modal-box.kd-modal-box--xlarge { max-width: min(96vw, 720px); max-height: min(92vh, 900px); display: flex; flex-direction: column; }
+    .kd-sc-modal-scroll { max-height: min(50vh, 420px); overflow-y: auto; padding-right: .35rem; margin-bottom: .5rem; border: 1px solid var(--border); border-radius: 10px; padding: .65rem; background: var(--trust-bg); }
+    .kd-share-quick-actions { flex-direction: column; align-items: stretch !important; }
+    .kd-share-quick-actions .kd-share-quick-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+    .preview-de-envio { position: sticky; top: .75rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
+    @media (min-width: 960px) {
+      .preview-de-envio { top: 1rem; max-height: calc(100vh - 2rem); display: flex; flex-direction: column; }
+      .preview-de-envio .preview-body { flex: 1; min-height: 0; }
+    }
+    .preview-de-envio .preview-header { background: var(--accent); color: #fff; padding: .55rem .75rem; font-size: .72rem; font-weight: 700; letter-spacing: .06em; display: flex; justify-content: space-between; align-items: center; }
+    .preview-de-envio .preview-header .badge { font-size: .65rem; background: rgba(255,255,255,.25); padding: .15rem .45rem; border-radius: 999px; font-weight: 600; }
+    .preview-body { padding: .65rem .75rem; max-height: min(55vh, 420px); overflow-y: auto; font-size: .8rem; }
+    .preview-sec { margin-bottom: .75rem; }
+    .preview-sec h4 { font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); margin: 0 0 .35rem; }
+    .preview-line { padding: .2rem 0; border-bottom: 1px solid #f0ede8; word-break: break-word; }
+    .preview-line .pl { color: var(--muted); font-size: .72rem; display: block; }
+    .preview-line .pv { color: var(--ink); }
+    .preview-line--merged { padding: .45rem 0 .55rem; border-bottom: 1px solid #f0ede8; }
+    .preview-line--merged > .pl { font-weight: 700; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: .35rem; }
+    .pv-merge { display: flex; flex-direction: column; gap: .3rem; }
+    .pv-row { display: grid; grid-template-columns: 76px 1fr; gap: .4rem; font-size: .78rem; align-items: start; }
+    .pv-sub { color: var(--muted); font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; padding-top: .1rem; }
+    .kd-share-vault-hint { font-size: .62rem; color: var(--muted); margin: .35rem 0 0; line-height: 1.4; }
+    .preview-empty { color: var(--muted); font-size: .82rem; padding: .5rem 0; }
+    .preview-footer-msg { background: #e8f0ea; color: var(--accent); padding: .45rem .65rem; font-size: .75rem; display: flex; align-items: center; gap: .35rem; }
+    .preview-de-envio .btn-clear { width: 100%; margin: 0; border-radius: 0 0 11px 11px; border: none; border-top: 1px solid var(--border); padding: .55rem; font-size: .8rem; }
+    /* Documentos — pré-visualização ao lado (aba Documentos) */
+    .doc-browse-layout { align-items: stretch; }
+    .doc-vault-preview .preview-body { min-height: 180px; }
+    .doc-preview-img { display: block; max-width: 100%; height: auto; border-radius: 8px; }
+    .doc-preview-iframe { width: 100%; min-height: 260px; border: 0; border-radius: 8px; background: #1a1a1a; }
+    body.kd-theme-dark .doc-preview-iframe { background: #0d0d0d; }
+    .doc-preview-actions { padding: .65rem .75rem; border-top: 1px solid var(--border); background: var(--trust-bg); }
+    .doc-preview-actions .doc-preview-actions-row { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin-bottom: .55rem; }
+    .doc-preview-actions .doc-preview-actions-row:last-child { margin-bottom: 0; }
+    .doc-preview-actions .kd-doc-act-row--wrap .btn.secondary { font-size: .74rem; padding: .32rem .5rem; }
+    .doc-preview-actions .doc-act-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); width: 100%; margin-bottom: .15rem; }
+    .doc-preview-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .doc-preview-stack-item { border: 1px solid var(--border); border-radius: 10px; padding: .5rem; margin-bottom: .75rem; background: var(--card); }
+    .doc-preview-stack-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; margin-bottom: .4rem; }
+    .doc-preview-stack-title { font-size: .82rem; font-weight: 700; color: var(--ink); letter-spacing: .02em; }
+    .doc-preview-sel-chip { font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; background: #e8f0ea; color: var(--accent); padding: .2rem .45rem; border-radius: 6px; border: 1px solid rgba(45,90,61,.25); }
+    body.kd-theme-dark .doc-preview-sel-chip { background: #243528; border-color: rgba(123,201,154,.35); }
+    .doc-preview-stack-item h4 { margin: 0 0 .4rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+    .doc-preview-stack-item:last-child { margin-bottom: 0; }
+    .kd-custom-doctypes { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border); }
+    .kd-custom-doctype-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .65rem; }
+    .kd-custom-doctype-form input[type=text] { max-width: 220px; }
+    .kd-cdt-list { list-style: none; margin: 0; padding: 0; font-size: .82rem; }
+    .kd-cdt-item { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; padding: .4rem 0; border-bottom: 1px solid var(--border); }
+    .kd-cdt-item .btn { font-size: .74rem; padding: .28rem .55rem; }
+    .kd-cdt-empty { color: var(--muted); font-size: .8rem; padding: .25rem 0; }
+    .kd-cdt-ico { font-size: 1.2rem; }
+    .kd-filter-links { margin-bottom: .65rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .kd-filter-links input { max-width: 220px; }
+    .kd-dados-saved-hint { font-size: .74rem; color: var(--muted); margin: -.5rem 0 .75rem; }
+    .kd-hero-name-hint { text-align: center; font-size: .72rem; color: var(--muted); margin: -.35rem 0 .5rem; }
+    .kd-hero-dirty-banner { max-width: 560px; margin: 0 auto .65rem; }
+    .kd-dados-field { margin-bottom: .65rem; }
+    .kd-dados-field .row { margin-bottom: .35rem; }
+    .kd-dados-doc-row { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin: 0 0 0 140px; font-size: .78rem; }
+    @media (max-width: 520px) {
+      .kd-dados-doc-row { margin-left: 0; }
+    }
+    .kd-dados-doc-status { color: var(--muted); flex: 1; min-width: 120px; }
+    .kd-dados-doc-status.has-file { color: var(--accent); font-weight: 600; }
+    .kd-field-mode-picker { margin-top: 0 !important; padding: .35rem .25rem 0; justify-content: center; }
+    .kd-field-mode-picker .kd-mini { font-size: .78rem; font-weight: 600; color: var(--ink); }
+    .kd-share-field-card-head .kd-share-field-name { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .kd-dirty-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem; padding: .65rem .85rem; margin-bottom: 1rem; border-radius: 10px; border: 1px solid rgba(234, 179, 8, 0.55); background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #78350f; font-size: .84rem; font-weight: 600; }
+    body.kd-theme-dark .kd-dirty-banner { background: linear-gradient(135deg, #2a2418 0%, #3d3420 100%); color: #fde68a; border-color: rgba(250, 204, 21, 0.35); }
+    .kd-share-quick-actions { padding: .55rem .75rem; border-top: 1px solid var(--border); background: var(--trust-bg); display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+    .kd-share-quick-actions .kd-hint-inline { font-size: .72rem; color: var(--muted); flex: 1; min-width: 140px; }
+    .doc-preview-stack-item--draggable { cursor: grab; }
+    .doc-preview-stack-item--draggable:active { cursor: grabbing; }
+    .doc-preview-stack-item--dragging { opacity: 0.55; }
+    .doc-preview-stack-item--drag-over { box-shadow: 0 0 0 2px var(--accent); background: rgba(45, 90, 61, 0.06); }
+    .doc-preview-drag-hint { font-size: .65rem; color: rgba(255,255,255,.85); font-weight: 500; margin-left: .35rem; }
+    .kd-cdt-emoji-wrap { position: relative; display: inline-flex; align-items: center; gap: .35rem; }
+    .kd-cdt-emoji-pop { position: absolute; left: 0; top: 100%; margin-top: 4px; z-index: 400; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: .5rem; box-shadow: 0 12px 40px rgba(0,0,0,.12); max-width: min(280px, 92vw); max-height: 220px; overflow: auto; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+    .kd-cdt-emoji-pop[hidden] { display: none !important; }
+    .kd-cdt-emoji-pop .kd-emoji-opt { font-size: 1.1rem; padding: .25rem; border: none; background: transparent; cursor: pointer; border-radius: 6px; line-height: 1; }
+    .kd-cdt-emoji-pop .kd-emoji-opt:hover { background: var(--trust-bg); }
+    .links-actions { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+    .links-actions .btn { font-size: .72rem; padding: .28rem .5rem; }
+    .kd-links-bulk { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin-bottom: .65rem; }
+    .kd-links-bulk .kd-links-bulk-hint { margin: 0; font-size: .74rem; color: var(--muted); flex: 1; min-width: 200px; }
+    #links-list table input[type="checkbox"] { cursor: pointer; width: 1.05rem; height: 1.05rem; vertical-align: middle; }
+    .kd-links-col-actions { display: flex; flex-direction: column; gap: .35rem; align-items: stretch; }
+    .panel.active { box-shadow: 0 2px 24px rgba(0,0,0,.06); }
+    body.kd-theme-dark .panel.active { box-shadow: 0 2px 28px rgba(0,0,0,.35); }
+    .doc-card--browse { cursor: pointer; text-align: center; }
+    /* Documentos — grelha tipo cartões */
+    .doc-panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1rem 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,.06); margin-bottom: 1.25rem; }
+    .doc-badge { display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .35rem .85rem; border-radius: 999px; border: 1px solid var(--border); background: #faf9f7; font-size: .68rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 auto 1rem; width: fit-content; text-transform: uppercase; }
+    .doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 640px) { .doc-grid { grid-template-columns: repeat(2, 1fr); } }
+    .doc-card { border: 1px solid #3d5c45; border-radius: 8px; background: #e8f5ea; padding: .75rem .5rem; text-align: center; cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; font: inherit; color: inherit; width: 100%; }
+    .doc-card:hover { box-shadow: 0 2px 8px rgba(45,90,61,.12); }
+    .doc-card.doc-card--browse.doc-card--active { background: #d4edda; border-color: #2d5a3d; box-shadow: 0 0 0 2px var(--accent); }
+    .doc-card.doc-card--browse.doc-card--active:hover {
+      background: #ecf6d4;
+      border-color: #6b8f3a;
+      box-shadow: 0 0 0 2px var(--accent), 0 4px 16px rgba(234, 179, 8, 0.42);
+    }
+    body.kd-theme-dark .doc-card.doc-card--browse.doc-card--active:hover {
+      background: #2a3828;
+      box-shadow: 0 0 0 2px var(--accent), 0 4px 18px rgba(250, 204, 21, 0.25);
+    }
+    .doc-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .doc-card.selected { background: #d4edda; border-color: #2d5a3d; }
+    .doc-card .dc-icon { font-size: 1.75rem; line-height: 1; margin-bottom: .35rem; }
+    .doc-card .dc-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); margin-bottom: .4rem; line-height: 1.25; }
+    .doc-card .dc-status { font-size: .7rem; color: #2d5a3d; font-weight: 600; }
+    .doc-card:not(.selected) .dc-status { color: var(--muted); font-weight: 500; }
+    .doc-card .dc-date { font-size: .62rem; color: var(--muted); margin-top: .25rem; }
+    .doc-grid--unified { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 640px) { .doc-grid--unified { grid-template-columns: repeat(2, 1fr); } }
+    .kd-grid-section-label {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: .65rem 0 .15rem;
+      padding: .35rem 0 .2rem;
+      border-bottom: 1px dashed var(--border);
+    }
+    .kd-grid-section-label:first-of-type { margin-top: 0; }
+    .kd-grid-section-label span { font-size: 1.1rem; line-height: 1; }
+    .doc-card--share {
+      cursor: default;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 132px;
+      padding: .85rem .5rem .7rem;
+    }
+    .doc-card--share.doc-card--on { background: #d4edda; border-color: #2d5a3d; box-shadow: 0 0 0 2px rgba(45,90,61,.25); }
+    .doc-card--share.doc-card--has-file:not(.doc-card--on) { background: #eef6f0; border-color: #5a8f6a; }
+    .doc-card--share .dc-val-hint {
+      font-size: .62rem;
+      color: var(--muted);
+      margin: 0 .15rem .3rem;
+      line-height: 1.25;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .doc-card--share .dc-modes { display: flex; flex-wrap: wrap; gap: .35rem .5rem; justify-content: center; margin: .4rem 0 .2rem; width: 100%; }
+    .doc-card--share .kd-sc-mode { display: inline-flex; align-items: center; gap: .2rem; font-size: .66rem; font-weight: 600; color: var(--ink); cursor: pointer; margin: 0; }
+    .doc-card--share .kd-sc-mode input { margin: 0; width: .95rem; height: .95rem; accent-color: var(--accent); }
+    .kd-docs-share-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; margin: 0 0 .75rem; }
+    .kd-docs-share-toolbar .kd-share-summary { margin: 0; flex: 1; min-width: 180px; }
+    body.kd-theme-dark .doc-card .dc-status { color: var(--accent); }
+    body.kd-theme-dark .doc-badge { background: #243028; color: var(--muted); border-color: var(--border); }
+    .doc-fallback-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 1rem 0 .5rem; }
+    /* Painel pessoal — topo */
+    .kd-hero-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.25rem 1.35rem; box-shadow: 0 4px 24px rgba(0,0,0,.07); margin-bottom: 1.25rem; }
+    .kd-hero-top { text-align: center; margin-bottom: 1.15rem; }
+    .kd-hero-badge { display: inline-block; background: var(--accent); color: #fff; font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .38rem 1rem; border-radius: 999px; margin-bottom: .95rem; font-family: 'DM Sans', sans-serif; }
+    .kd-hero-name { display: block; width: 100%; max-width: 560px; margin: 0 auto .55rem; text-align: center; font-family: 'Source Serif 4', Georgia, serif; font-size: clamp(1.65rem, 4vw, 2.2rem); font-weight: 700; color: var(--ink); border: none; border-bottom: 2px solid transparent; background: transparent; padding: .25rem .6rem; border-radius: 6px; transition: background .15s, border-color .15s; }
+    .kd-hero-name:hover { background: var(--hero-name-bg); }
+    .kd-hero-name:focus { outline: none; border-bottom-color: var(--accent); background: var(--hero-name-bg); }
+    .kd-hero-name::placeholder { color: #9a9590; font-weight: 600; }
+    .kd-hero-sub { margin: 0 auto; font-size: .88rem; color: var(--muted); max-width: 26rem; line-height: 1.45; }
+    .kd-hero-atalhos { text-align: left; border-top: none; padding-top: 0; margin-top: 0; }
+    .kd-hero-atalhos .atalhos-block { margin: 0; }
+    /* Toasts */
+    #kd-toast-host { position: fixed; bottom: 1rem; right: clamp(0.5rem, 2vw, 1.25rem); left: auto; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; pointer-events: none; max-width: min(420px, calc(100vw - 1.5rem)); margin: 0; }
+    .kd-toast { pointer-events: auto; background: var(--ink); color: #fff; padding: .55rem .8rem; border-radius: 10px; font-size: .82rem; box-shadow: 0 8px 32px rgba(0,0,0,.18); animation: kdToastIn .22s ease; max-width: 100%; line-height: 1.35; }
+    .kd-toast.kd-toast--ok { background: var(--accent); }
+    .kd-toast.kd-toast--err { background: #a33030; }
+    .kd-toast.kd-toast--neutral { background: #3a3632; }
+    @keyframes kdToastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    /* Carregamento inicial */
+    .kd-load-overlay { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(247,244,239,.82); backdrop-filter: blur(4px); align-items: center; justify-content: center; flex-direction: column; gap: .75rem; }
+    body.kd-app-loading .kd-load-overlay { display: flex; }
+    .kd-load-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: kdSpin .7s linear infinite; }
+    @keyframes kdSpin { to { transform: rotate(360deg); } }
+    .kd-load-text { font-size: .88rem; color: var(--muted); }
+    /* Partilha — destaque + confiança */
+    .kd-share-head { border-left: 4px solid var(--accent); padding-left: .85rem; margin-bottom: 1rem; }
+    .kd-share-head h2 { font-size: 1.05rem; margin: 0 0 .35rem; font-weight: 700; color: var(--ink); }
+    .kd-trust-strip { background: var(--trust-bg); border: 1px solid var(--border); border-radius: 10px; padding: .75rem .9rem; margin-bottom: 1rem; font-size: .8rem; color: var(--muted); line-height: 1.5; }
+    .kd-trust-strip strong { display: block; color: var(--accent); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem; }
+    .kd-trust-strip ul { margin: 0; padding-left: 1.1rem; }
+    .kd-share-summary { margin: 0 0 .9rem; font-size: .84rem; color: var(--muted); padding: .55rem .65rem; border-radius: 8px; background: var(--summary-bg); border: 1px dashed var(--border); }
+    .kd-share-summary.kd-share-summary--ok { border-color: #b8d4c0; background: var(--banner-bg); color: var(--accent); }
+    .kd-models-bar { background: var(--trust-bg); border: 1px solid var(--border); border-radius: 10px; padding: .75rem .9rem; margin-bottom: 1rem; }
+    .kd-models-bar .kd-models-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: .5rem; display: block; }
+    .kd-models-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .5rem; }
+    .kd-models-row input[type=text] { max-width: 160px; }
+    .kd-models-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .kd-chip { display: inline-flex; align-items: center; gap: .25rem; padding: .28rem .55rem; border-radius: 999px; border: 1px solid var(--border); background: var(--card); font-size: .74rem; }
+    .kd-chip button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: .72rem; padding: 0 .2rem; font-weight: 700; }
+    .kd-hint { font-size: .75rem; color: var(--muted); margin: .25rem 0 0; line-height: 1.4; }
+    .kd-modal { display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; padding: 1rem; }
+    .kd-modal.kd-modal--open { display: flex; }
+    .kd-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+    .kd-modal-box { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; max-width: 320px; width: 100%; box-shadow: 0 16px 48px rgba(0,0,0,.2); }
+    .kd-modal-box.kd-modal-box--wide { max-width: 420px; }
+    .kd-modal-box h3 { margin: 0 0 .5rem; font-size: 1rem; }
+    .kd-modal-field { margin-bottom: .75rem; }
+    .kd-modal-field label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: .28rem; font-weight: 600; }
+    .kd-modal-field input[type=text], .kd-modal-field select { width: 100%; }
+    .kd-modal-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+    .kd-sc-actions { width: 100%; align-items: center; }
+    .kd-sc-actions-fill { flex: 1; min-width: .5rem; }
+    /* Seletor de emoji no modal de atalho */
+    .kd-sc-emoji-field { position: relative; z-index: 2; }
+    .kd-emoji-picker-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .kd-emoji-preview {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 2.5rem; height: 2.5rem; font-size: 1.5rem; line-height: 1;
+      background: var(--trust-bg); border: 1px solid var(--border); border-radius: 10px;
+    }
+    .kd-emoji-toggle { font-size: .78rem; }
+    .kd-emoji-popover {
+      position: absolute; left: 0; right: 0; top: 100%; margin-top: .4rem;
+      padding: .65rem; background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.18); z-index: 5;
+      max-height: min(240px, 45vh); overflow-y: auto;
+    }
+    .kd-emoji-popover[hidden] { display: none !important; }
+    .kd-emoji-popover-hint { font-size: .72rem; color: var(--muted); margin: 0 0 .5rem; }
+    .kd-emoji-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(2.35rem, 1fr)); gap: .35rem;
+    }
+    .kd-emoji-opt {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 2.35rem; padding: .2rem; font-size: 1.35rem; line-height: 1;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--trust-bg);
+      cursor: pointer; font-family: inherit;
+      transition: background .12s, border-color .12s, transform .1s;
+    }
+    .kd-emoji-opt:hover, .kd-emoji-opt:focus-visible {
+      background: var(--banner-bg); border-color: var(--accent); outline: none;
+    }
+    .kd-emoji-opt:active { transform: scale(0.96); }
+    .kd-emoji-manual-wrap { margin-top: .65rem; padding-top: .55rem; border-top: 1px dashed var(--border); }
+    .kd-emoji-manual-wrap label { font-size: .72rem; margin-bottom: .25rem; display: block; }
+    .kd-emoji-manual-input { width: 100%; font-size: .9rem; }
+    #kd-qr-wrap { display: flex; justify-content: center; margin: 1rem 0; min-height: 200px; align-items: center; }
+    #kd-qr-wrap canvas { border-radius: 8px; }
+    .kd-badge { display: inline-block; font-size: .65rem; padding: .2rem .45rem; border-radius: 6px; font-weight: 600; }
+    .kd-badge-ok { background: #e8f0ea; color: var(--accent); }
+    .kd-badge-muted { background: #eceae7; color: var(--muted); }
+    .kd-badge-bad { background: #fde8e8; color: #922b21; }
+    .file-list-skel .skel-line { height: 10px; background: linear-gradient(90deg, #eceae7 0%, #f5f3ef 50%, #eceae7 100%); background-size: 200% 100%; animation: kdSkel 1.2s ease infinite; border-radius: 4px; margin-bottom: .5rem; }
+    @keyframes kdSkel { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="kd-top-bar kd-top-bar--minimal">
+      <a href="dashboard.html" class="kd-back-dashboard" id="kd-back-dashboard" title="Voltar ao painel principal">— Painel principal</a>
+      <div class="kd-top-bar-actions">
+        <button type="button" class="kd-theme-btn" id="kd-theme-toggle" title="Alternar tema claro/escuro">Tema escuro</button>
+      </div>
+    </div>
+
+    <section class="kd-hero-card kd-hero-card--top" aria-label="Painel pessoal">
+      <div class="kd-hero-top">
+        <div class="kd-hero-badge">Painel pessoal</div>
+        <label class="visually-hidden" for="sh-name">Nome a mostrar no link</label>
+        <input type="text" id="sh-name" class="kd-hero-name" placeholder="Seu nome" autocomplete="name"/>
+        <div id="kd-hero-dirty-banner" class="kd-dirty-banner kd-hero-dirty-banner" hidden>
+          <span>Tens alterações por guardar no servidor.</span>
+          <button type="button" class="btn" id="kd-hero-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar no servidor</button>
+        </div>
+        <p class="kd-hero-name-hint">O nome do topo e «Nome Completo» ficam iguais. Clica <strong>Guardar no servidor</strong> para gravar.</p>
+        <p class="kd-hero-sub">Selecione o que quiser compartilhar e copie com um clique</p>
+      </div>
+    </section>
+
+    <div class="kd-sticky-atalhos-bar">
+      <div class="kd-sticky-atalhos-inner">
+        <div class="kd-hero-atalhos">
+        <div class="atalhos-block">
+          <span class="atalhos-title">Atalhos</span>
+          <div class="atalhos-btns" id="kd-atalhos-merged">
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="festa" title="Morada, WhatsApp e RG (ficheiro do cofre)">Y Festa em Casa</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="festa" aria-label="Personalizar Festa em Casa" title="Personalizar">oZ</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="receberPf" title="Nome, CPF e dados bancários PF">Y' Receber PF</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPf" aria-label="Personalizar Receber PF" title="Personalizar">oZ</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="receberPj" title="Empresa + dados bancários PJ">Y Receber PJ</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPj" aria-label="Personalizar Receber PJ" title="Personalizar">oZ</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="correspondencia" title="Nome e morada para envio">Correspondência</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="correspondencia" aria-label="Personalizar Correspondência" title="Personalizar">oZ</button>
+            </span>
+            <span class="kd-atalho-item">
+              <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">Y"" Enviar NF</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="enviarNf" aria-label="Personalizar Enviar NF" title="Personalizar">oZ</button>
+            </span>
+            <span id="kd-custom-atalhos-inner" class="atalhos-btns" style="display:contents"></span>
+            <button type="button" class="btn secondary" id="btn-add-custom-atalho" style="font-size:.78rem;padding:.38rem .75rem;border-radius:999px">+ Criar atalho</button>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kd-page-body">
+    <p class="sub" id="auth-hint"></p>
+
+    <div class="tabs" id="kd-tabs" role="tablist" aria-label="Secções King Docs">
+      <button type="button" class="tab active" role="tab" aria-selected="true" aria-controls="p-dados" id="tab-p-dados" data-panel="p-dados">Dados</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-docs" id="tab-p-docs" data-panel="p-docs">Documentos</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="p-partilha" id="tab-p-partilha" data-panel="p-partilha">Partilhar</button>
+    </div>
+
+    <div id="p-dados" class="panel active" role="tabpanel" aria-labelledby="tab-p-dados"></div>
+    <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
+
+    <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
+      <p class="sub">Todos os itens no <strong>mesmo estilo de cartão</strong> (ícone grande, como RG e CNH). Marca <strong>Texto</strong> e/ou <strong>Foto/PDF</strong>. Preenche os valores na aba <strong>Dados</strong>.</p>
+      <div class="share-layout kd-docs-unified-layout doc-browse-layout">
+        <div class="kd-docs-left-col">
+          <div class="doc-panel-card">
+            <div class="doc-badge" role="status"><span aria-hidden="true">Y"<</span> O que incluir no link</div>
+            <div class="kd-docs-share-toolbar">
+              <p class="kd-share-summary" id="share-confirm-hint">Marca Texto e/ou Foto/PDF nos cartões; o resumo aparece à direita.</p>
+              <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar seleção</button>
+            </div>
+            <div class="kd-doc-vault-row">
+              <div class="kd-doc-vault-grid-col">
+                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Secções: documentos, dados pessoais, contato, morada, etc. — cada um com o seu ícone. <strong>z. Novo tipo</strong> em <strong>Dados</strong>.</p>
+                <div id="doc-browse-root" class="doc-grid"></div>
+              </div>
+              <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
+                <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
+                <div id="doc-preview-body" class="preview-body doc-preview-body--inline kd-preview-files-scroll">
+                  <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
+                </div>
+                <div class="kd-preview-resumo-block">
+                  <div class="preview-header preview-header--resumo">Resumo do link <span id="preview-count" class="badge">0 itens</span></div>
+                  <div id="share-preview-body" class="kd-preview-resumo-body"><p class="preview-empty">Marca Texto e/ou Foto/PDF nos cartões à esquerda.</p></div>
+                </div>
+                <p class="preview-footer-msg kd-preview-partilhar-hint"><span>o"</span> Isto é só visualização. O URL gera-se na aba <strong>Partilhar</strong> (ou com os botões de link abaixo).</p>
+                <div class="doc-preview-actions" id="doc-preview-actions">
+                  <div class="doc-preview-actions-row">
+                    <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled title="Limpa só a escolha dos cartões de documento à esquerda">Limpar cartões</button>
+                    <button type="button" class="btn" id="btn-doc-copy-link" disabled title="Cria o link e copia — inclui tudo o que marcaste">Copiar link único</button>
+                  </div>
+                  <div class="doc-preview-actions-row kd-doc-act-row--wrap">
+                    <button type="button" class="btn secondary" id="btn-doc-copy-plain" disabled title="Texto do resumo: nome, campos e referências a ficheiros">Copiar mensagem (tudo)</button>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-textonly" disabled title="Só linhas de texto dos campos (sem lista de anexos)">Copiar só texto</button>
+                    <button type="button" class="btn secondary" id="btn-doc-copy-with-img" disabled title="Requer foto no topo (aba Partilhar). Se o browser não suportar, usa o botão WhatsApp abaixo">Copiar com imagem</button>
+                  </div>
+                  <div class="doc-preview-actions-row kd-doc-act-row--wrap">
+                    <button type="button" class="btn secondary" id="btn-doc-wa-link" disabled title="Abre o WhatsApp só com o URL da partilha">WhatsApp · só link</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-text" disabled title="Mensagem só com texto (sem URL)">WhatsApp · só texto</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-text-img" disabled title="No telemóvel abre o menu Partilhar com imagem + texto. No PC o WhatsApp Web não anexa imagem pelo browser — usa PDF ou envia a foto à parte.">WhatsApp · texto + imagem</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-list" disabled title="Link único + lista dos nomes dos ficheiros escolhidos nos cartões">WhatsApp · link + lista</button>
+                    <button type="button" class="btn secondary" id="btn-doc-wa-sep" disabled title="Um URL diferente para cada ficheiro dos cartões (sem misturar num só link)">WhatsApp · um link por ficheiro</button>
+                  </div>
+                  <div class="doc-preview-actions-row">
+                    <button type="button" class="btn secondary" id="btn-doc-pdf-dl" disabled title="PDF com texto, foto e documentos — igual ao resumo completo">PDF · descarregar</button>
+                    <button type="button" class="btn secondary" id="btn-doc-pdf-share" disabled title="Partilha o mesmo PDF completo (telefone: menu nativo)">PDF · enviar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="share-table-wrap" hidden aria-hidden="true" style="display:none"></div>
+    <div id="extra-docs-wrap" hidden aria-hidden="true" style="display:none"></div>
+
+    <div id="p-partilha" class="panel" role="tabpanel" aria-labelledby="tab-p-partilha">
+      <div class="kd-share-head">
+        <h2>Partilhar</h2>
+        <p class="sub" style="margin-bottom:0">Aqui envias a <strong>foto do topo do link</strong> (upload — fica no cofre), defines <strong>prazo</strong>, <strong>senha</strong> e <strong>limite de vistas</strong>, geras o URL e geres a <strong>lista dos teus links</strong>. O que vai no link escolhes em <strong>Documentos</strong>.</p>
+      </div>
+      <div class="kd-trust-strip" role="note">
+        <strong>Antes de gerar</strong>
+        <ul>
+          <li>Escolhe os campos em <strong>Documentos</strong> — o resumo aparece no mesmo painel que a pré-visualização dos ficheiros.</li>
+          <li>Quem receber abre no <strong>browser</strong> (telefone ou PC).</li>
+          <li>Depois de gerado, revoga ou exclui na <strong>lista abaixo</strong>.</li>
+        </ul>
+      </div>
+
+      <div class="kd-models-bar">
+        <span class="kd-models-title">Os teus modelos <span style="font-weight:400;text-transform:none;letter-spacing:0">(guardados neste dispositivo)</span></span>
+        <div class="kd-models-row">
+          <input type="text" id="kd-model-name" placeholder="Nome do modelo" maxlength="40" aria-label="Nome do modelo"/>
+          <button type="button" class="btn secondary" id="btn-save-model">Guardar seleção atual</button>
+        </div>
+        <div class="kd-models-chips" id="kd-models-chips"></div>
+      </div>
+
+      <div class="doc-panel-card" style="margin-top:1rem">
+        <div class="doc-badge" role="status"><span aria-hidden="true">T️</span> Opções do link</div>
+        <p class="sub" style="margin-top:.5rem">Foto do topo do link (upload), tempo de vida e proteção; depois gera o link.</p>
+        <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
+          <label>Foto no link</label>
+          <div>
+            <input type="hidden" id="sh-profile-file-id" value=""/>
+            <input type="file" id="sh-profile-file" accept="image/*"/>
+            <p class="kd-hint" style="margin:.35rem 0 0">A imagem é guardada no cofre (tipo <strong>FOTO PESSOAL</strong>) e aparece no topo da partilha — não precisas de URL.</p>
+            <div id="sh-profile-preview-wrap" style="display:none;margin-top:.5rem"></div>
+            <button type="button" class="btn secondary" id="sh-profile-clear" style="display:none;margin-top:.4rem;font-size:.78rem">Remover foto do link</button>
+          </div>
+        </div>
+        <div style="display:grid; gap:.6rem; max-width: 420px;">
+          <div class="row" style="grid-template-columns: 160px 1fr;">
+            <label>Expira em (horas)</label>
+            <input type="number" id="sh-hours" value="24" min="1" max="720"/>
+          </div>
+          <div class="row" style="grid-template-columns: 160px 1fr;">
+            <label>Senha (opcional)</label>
+            <input type="password" id="sh-pass" placeholder="Vazio = sem senha"/>
+          </div>
+          <div class="row" style="grid-template-columns: 160px 1fr; align-items: start;">
+            <label>Máx. visualizações</label>
+            <div>
+              <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1" aria-describedby="hint-maxv"/>
+              <p class="kd-hint" id="hint-maxv">Coloca <strong>1</strong> para um link de <strong>uso único</strong> (fecha após a primeira abertura bem-sucedida).</p>
+            </div>
+          </div>
+        </div>
+        <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link seguro</button></p>
+        <div id="share-out"></div>
+      </div>
+
+      <div class="doc-panel-card" style="margin-top:1.25rem">
+        <div class="doc-badge" role="status"><span aria-hidden="true">Y"-</span> Os meus links</div>
+        <p class="sub" style="margin-top:.5rem">Copia, partilha, <strong>revoga</strong> (invalida) ou <strong>exclui</strong> (remove da lista). <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
+        <div class="kd-links-bulk">
+          <button type="button" class="btn secondary" id="btn-links-revoke-sel">Revogar selecionados</button>
+          <button type="button" class="btn bad" id="btn-links-delete-sel">Excluir selecionados</button>
+          <p class="kd-links-bulk-hint">Marca as linhas à esquerda. <strong>Revogar</strong> mantém o registo como revogado; <strong>Excluir</strong> apaga o registo (não volta a aparecer).</p>
+        </div>
+        <div class="kd-filter-links">
+          <label for="links-filter" class="visually-hidden">Filtrar lista</label>
+          <input type="search" id="links-filter" placeholder="Filtrar por ID, estado ou data—" autocomplete="off"/>
+        </div>
+        <div id="links-list"></div>
+      </div>
+    </div>
+    </div>
+
+    <div id="kd-load-overlay" class="kd-load-overlay" aria-hidden="true" aria-busy="true">
+      <div class="kd-load-spinner" aria-hidden="true"></div>
+      <p class="kd-load-text">A carregar o teu cofre—</p>
+    </div>
+    <div id="kd-toast-host" aria-live="polite" aria-relevant="additions"></div>
+
+    <div id="kd-qr-modal" class="kd-modal" aria-hidden="true">
+      <div class="kd-modal-backdrop" id="kd-qr-backdrop"></div>
+      <div class="kd-modal-box" role="dialog" aria-modal="true" aria-labelledby="kd-qr-title">
+        <h3 id="kd-qr-title">QR Code do link</h3>
+        <p class="sub" style="margin:0 0 .5rem">Escaneia com o telemóvel. Trata o link como confidencial.</p>
+        <div id="kd-qr-wrap"></div>
+        <p style="margin:0"><button type="button" class="btn secondary" id="kd-qr-close">Fechar</button></p>
+      </div>
+    </div>
+
+    <div id="kd-shortcut-modal" class="kd-modal" aria-hidden="true">
+      <div class="kd-modal-backdrop" id="kd-shortcut-backdrop"></div>
+      <div class="kd-modal-box kd-modal-box--wide kd-modal-box--xlarge" role="dialog" aria-modal="true" aria-labelledby="kd-shortcut-title">
+        <h3 id="kd-shortcut-title">Novo atalho</h3>
+        <p class="sub" style="margin:0 0 .75rem">Define o <strong>nome</strong> e o que entra no atalho (campos e documentos). Isto fica guardado neste dispositivo.</p>
+        <input type="hidden" id="kd-sc-edit-id" value=""/>
+        <div class="kd-modal-field">
+          <label for="kd-sc-name">Nome do atalho</label>
+          <input type="text" id="kd-sc-name" maxlength="32" placeholder="Ex.: Meu cliente X"/>
+        </div>
+        <div class="kd-modal-field kd-sc-emoji-field">
+          <label for="kd-emoji-toggle">Ícone</label>
+          <div class="kd-emoji-picker-row">
+            <span class="kd-emoji-preview" id="kd-sc-emoji-preview" title="Ícone escolhido">Y"O</span>
+            <input type="hidden" id="kd-sc-emoji" value="Y"O"/>
+            <button type="button" class="btn secondary kd-emoji-toggle" id="kd-emoji-toggle" aria-expanded="false" aria-controls="kd-emoji-popover">Escolher ícone—</button>
+          </div>
+          <div id="kd-emoji-popover" class="kd-emoji-popover" hidden>
+            <p class="kd-emoji-popover-hint">Escolhe um emoji abaixo ou escreve/cola outro no fim.</p>
+            <div class="kd-emoji-grid" id="kd-emoji-grid" role="listbox" aria-label="Emojis para o atalho"></div>
+            <div class="kd-emoji-manual-wrap">
+              <label for="kd-sc-emoji-manual">Outro emoji (colar ou teclado)</label>
+              <input type="text" id="kd-sc-emoji-manual" class="kd-emoji-manual-input" maxlength="8" placeholder="ex.: ⭐ ou combinação" autocomplete="off"/>
+            </div>
+          </div>
+        </div>
+        <div class="kd-modal-field">
+          <label for="kd-sc-img">Foto / ícone (opcional, máx. ~80 KB)</label>
+          <input type="file" id="kd-sc-img" accept="image/*"/>
+        </div>
+        <p class="group" style="margin:.5rem 0 .35rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">O que o atalho inclui (texto / ficheiro por campo)</p>
+        <div class="kd-sc-modal-scroll" id="kd-sc-modal-scroll">
+          <div class="share-grid" id="kd-sc-share-grid"></div>
+          <h3 class="group" style="margin-top:.85rem;font-size:.78rem;">Documentos extra (só ficheiro)</h3>
+          <div id="kd-sc-extra-docs"></div>
+        </div>
+        <p class="kd-hint" style="margin:.35rem 0 0">Ao abrir, copiamos a seleção atual da página para editares. Podes <strong>substituir tudo</strong> marcando outra combinação.</p>
+        <div class="kd-modal-actions kd-sc-actions">
+          <button type="button" class="btn bad" id="kd-sc-delete" hidden>Excluir</button>
+          <span class="kd-sc-actions-fill" aria-hidden="true"></span>
+          <button type="button" class="btn secondary" id="kd-sc-cancel">Cancelar</button>
+          <button type="button" class="btn" id="kd-sc-save">Guardar atalho</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+(function(){
+  function apiBase() {
+    if (typeof window.API_BASE === 'string' && window.API_BASE) return window.API_BASE.replace(/\/$/, '');
+    if (typeof window.API_URL === 'string' && window.API_URL) return window.API_URL.replace(/\/$/, '');
+    return '';
+  }
+  function api(path) { return apiBase() + path; }
+  function getToken() {
+    try {
+      return localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || sessionStorage.getItem('token') || '';
+    } catch (e) { return ''; }
+  }
+  function authHeaders() {
+    const t = getToken();
+    const h = { 'Content-Type': 'application/json' };
+    if (t) h['Authorization'] = 'Bearer ' + t;
+    return h;
+  }
+
+  /** Cada toast tem o seu próprio temporizador (evita que vários toasts fiquem presos quando clearTimeout cancelava o anterior). */
+  var KD_TOAST_MS = 2000;
+  function showToast(message, variant) {
+    var host = document.getElementById('kd-toast-host');
+    if (!host) return;
+    var el = document.createElement('div');
+    el.setAttribute('role', 'status');
+    el.className = 'kd-toast' + (variant === 'ok' ? ' kd-toast--ok' : variant === 'err' ? ' kd-toast--err' : ' kd-toast--neutral');
+    el.textContent = message;
+    host.appendChild(el);
+    while (host.children.length > 5) {
+      try { host.removeChild(host.firstChild); } catch (e) { break; }
+    }
+    setTimeout(function () {
+      el.style.opacity = '0';
+      el.style.transition = 'opacity .18s ease';
+      setTimeout(function () { try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 200);
+    }, KD_TOAST_MS);
+  }
+
+  function setAppLoading(on) {
+    if (on) {
+      document.body.classList.add('kd-app-loading');
+      var o = document.getElementById('kd-load-overlay');
+      if (o) o.setAttribute('aria-hidden', 'false');
+    } else {
+      document.body.classList.remove('kd-app-loading');
+      var o2 = document.getElementById('kd-load-overlay');
+      if (o2) o2.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  var THEME_KEY = 'kingDocs_theme';
+  function applyTheme(dark) {
+    document.body.classList.toggle('kd-theme-dark', !!dark);
+    var btn = document.getElementById('kd-theme-toggle');
+    if (btn) btn.textContent = dark ? 'Tema claro' : 'Tema escuro';
+    try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch (e) {}
+  }
+  function initTheme() {
+    try {
+      applyTheme(localStorage.getItem(THEME_KEY) === 'dark');
+    } catch (e) { applyTheme(false); }
+  }
+
+  var MODELS_KEY = 'kingDocs_models_v1';
+  function loadModels() {
+    try {
+      var raw = localStorage.getItem(MODELS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveModels(arr) {
+    try { localStorage.setItem(MODELS_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function shareFieldBlockIn(rootEl, fk) {
+    if (!rootEl) return null;
+    var found = null;
+    rootEl.querySelectorAll('.kd-field-block[data-fk]').forEach(function (b) {
+      if (b.getAttribute('data-fk') === fk) found = b;
+    });
+    return found;
+  }
+  function shareFieldBlock(fk) {
+    var w = document.getElementById('share-table-wrap');
+    return shareFieldBlockIn(w, fk);
+  }
+  function fieldBlockIncluded(block) {
+    if (!block) return false;
+    var st = block.querySelector('.st');
+    var sf = block.querySelector('.sf');
+    return !!(st && st.checked) || !!(sf && sf.checked);
+  }
+  function fieldBlockFid(block) {
+    if (!block) return '';
+    var el = block.querySelector('.st') || block.querySelector('.sf');
+    return el ? el.getAttribute('data-fid') : '';
+  }
+  function collectShareState() {
+    return {
+      pairs: collectCurrentPresetPairs(),
+      hours: document.getElementById('sh-hours') ? document.getElementById('sh-hours').value : ''
+    };
+  }
+  function collectShareStateFrom(fieldRoot, extraRoot) {
+    var rows = [];
+    if (fieldRoot) {
+      fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (tr) {
+        var fk = tr.getAttribute('data-fk');
+        var fid = fieldBlockFid(tr);
+        if (!fid) return;
+        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
+        rows.push({
+          fk: fk,
+          st: !!(st && st.checked),
+          sf: !!(sf && sf.checked),
+          incl: fieldBlockIncluded(tr)
+        });
+      });
+    }
+    var extraFileIds = [];
+    if (extraRoot) {
+      extraRoot.querySelectorAll('.xd-check:checked').forEach(function (ch) {
+        var id = ch.getAttribute('data-fid');
+        var lab = extraRoot.querySelector('.xd-label[data-fid="' + id + '"]');
+        extraFileIds.push({ id: id, label: lab ? lab.value : '' });
+      });
+    }
+    return { rows: rows, extraFileIds: extraFileIds, hours: document.getElementById('sh-hours') ? document.getElementById('sh-hours').value : '' };
+  }
+  function applyShareState(state) {
+    if (!state) return;
+    clearAtalhoActive();
+    clearAllShareCards();
+    if (state.pairs && state.pairs.length) {
+      state.pairs.forEach(function (entry) { applyPresetToShareCard(entry); });
+    } else if (state.rows) {
+      applyShareStateToRoots(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), state, false);
+    }
+    if (state.hours != null && document.getElementById('sh-hours')) document.getElementById('sh-hours').value = state.hours;
+    syncDocPreviewFromShareCards();
+    updateSharePreview();
+  }
+  function applyShareStateToRoots(fieldRoot, extraRoot, state, runPreview) {
+    if (!state || !state.rows) return;
+    clearAtalhoActive();
+    if (fieldRoot) {
+      fieldRoot.querySelectorAll('.kd-field-block[data-fk]').forEach(function (tr) {
+        var fk = tr.getAttribute('data-fk');
+        var saved = state.rows.find(function (r) { return r.fk === fk; });
+        var fid = fieldBlockFid(tr);
+        if (!fid) return;
+        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
+        if (!saved) {
+          if (st) st.checked = false;
+          if (sf) sf.checked = false;
+          return;
+        }
+        if (st) st.checked = saved.st != null ? !!saved.st : !!saved.incl;
+        if (sf) sf.checked = !!saved.sf;
+        if (saved.incl && saved.st == null && saved.sf == null) {
+          if (st) st.checked = true;
+        }
+      });
+    }
+    if (extraRoot) {
+      extraRoot.querySelectorAll('.xd-check').forEach(function (ch) { ch.checked = false; });
+      (state.extraFileIds || []).forEach(function (ex) {
+        var ch = extraRoot.querySelector('.xd-check[data-fid="' + ex.id + '"]');
+        if (ch) ch.checked = true;
+        var lab = extraRoot.querySelector('.xd-label[data-fid="' + ex.id + '"]');
+        if (lab && ex.label != null) lab.value = ex.label;
+      });
+    }
+    if (state.hours != null && document.getElementById('sh-hours')) document.getElementById('sh-hours').value = state.hours;
+    if (runPreview) updateSharePreview();
+  }
+  function renderModelsChips() {
+    var el = document.getElementById('kd-models-chips');
+    if (!el) return;
+    var arr = loadModels();
+    el.innerHTML = arr.map(function (m, i) {
+      return '<span class="kd-chip">' + escapeHtml(m.name) +
+        ' <button type="button" data-apply="' + i + '">Aplicar</button>' +
+        ' <button type="button" data-del="' + i + '" aria-label="Remover modelo"></button></span>';
+    }).join('');
+    el.querySelectorAll('[data-apply]').forEach(function (b) {
+      b.onclick = function () {
+        var list = loadModels();
+        var m = list[parseInt(this.getAttribute('data-apply'), 10)];
+        if (m && m.state) applyShareState(m.state);
+        showToast('Modelo aplicado.', 'ok');
+      };
+    });
+    el.querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = function () {
+        var list = loadModels();
+        list.splice(parseInt(this.getAttribute('data-del'), 10), 1);
+        saveModels(list);
+        renderModelsChips();
+        showToast('Modelo removido.', 'neutral');
+      };
+    });
+  }
+
+  function formatShortDate(d) {
+    if (!d || isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function latestForDocType(docType) {
+    var t = String(docType).trim();
+    var best = null;
+    filesList.forEach(function (f) {
+      if (String(f.doc_type || '').trim() !== t || !f.created_at) return;
+      var d = new Date(f.created_at);
+      if (!best || d > best) best = d;
+    });
+    return best;
+  }
+  /** ltimo ficheiro deste tipo (para pré-visualização / link rápido) */
+  function getLatestFileForDocType(docType) {
+    var t = String(docType).trim();
+    var best = null;
+    filesList.forEach(function (f) {
+      if (String(f.doc_type || '').trim() !== t) return;
+      var d = f.created_at ? new Date(f.created_at).getTime() : 0;
+      var bd = best && best.created_at ? new Date(best.created_at).getTime() : 0;
+      if (!best || d > bd) best = f;
+    });
+    return best;
+  }
+  /** Foto redonda no topo do link (Partilhar ou último FOTO PESSOAL no cofre) */
+  function resolveProfileImageFileIdForShare() {
+    var el = document.getElementById('sh-profile-file-id');
+    if (el && el.value) {
+      var n = parseInt(el.value, 10);
+      if (Number.isFinite(n)) return n;
+    }
+    var f = getLatestFileForDocType('FOTO PESSOAL');
+    return f ? f.id : null;
+  }
+  function isFotoPessoalFileId(fileId) {
+    if (fileId == null || !Number.isFinite(parseInt(fileId, 10))) return false;
+    var f = filesList.find(function (x) { return x.id === parseInt(fileId, 10); });
+    return !!(f && normalizeDocTypeKey(f.doc_type) === normalizeDocTypeKey('FOTO PESSOAL'));
+  }
+
+  /** Cartões «Documentos»: docType enviado no upload (tem de bater com a lista de ficheiros) */
+  const DOC_CARD_PRESETS = [
+    { docType: 'RG', label: 'RG', icon: 'Y' },
+    { docType: 'CNH', label: 'CNH', icon: 'Ys-' },
+    { docType: 'FOTO PESSOAL', label: 'Foto pessoal', icon: '' },
+    { docType: 'CARTfO DO CNPJ', label: 'Cartão do CNPJ', icon: 'Y"<' },
+    { docType: 'CONTRATO SOCIAL', label: 'Contrato social', icon: '' },
+    { docType: 'INSC. ESTADUAL', label: 'Insc. estadual', icon: 'Y>️' },
+    { docType: 'INSC. MUNICIPAL', label: 'Insc. municipal', icon: 'YT️' },
+    { docType: 'CERTIDfO DE NASCIMENTO', label: 'Certidão de nascimento', icon: 'Y"o' },
+    { docType: 'CERTIDfO DE CASAMENTO', label: 'Certidão de casamento', icon: 'Y''' },
+    { docType: 'CERTIDfO DOS FILHOS', label: 'Certidão dos filhos', icon: 'Y'—Y'—Y'' }
+  ];
+  let pendingDocType = '';
+  var docPreviewBlobUrls = {};
+  var docPreviewSelectedTypes = [];
+  var docPreviewRefreshGen = 0;
+
+  function revokeDocPreviewBlobAll() {
+    Object.keys(docPreviewBlobUrls).forEach(function (k) {
+      try { URL.revokeObjectURL(docPreviewBlobUrls[k]); } catch (e) {}
+    });
+    docPreviewBlobUrls = {};
+  }
+  async function quickShareVaultFile(fileId, label) {
+    var body = {
+      expiresInHours: 72,
+      password: '',
+      maxViews: '',
+      selection: {
+        displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
+        profileImageUrl: '',
+        profileImageFileId: (function () {
+          var el = document.getElementById('sh-profile-file-id');
+          if (!el || !el.value) return null;
+          var n = parseInt(el.value, 10);
+          return Number.isFinite(n) ? n : null;
+        })(),
+        sections: [],
+        extraDocs: [{ fileId: parseInt(fileId, 10), label: label || 'Documento' }]
+      }
+    };
+    var r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (!r.ok) {
+      showToast('Não foi possível criar o link.', 'err');
+      return null;
+    }
+    var j = await r.json();
+    var d = j.data || {};
+    return window.location.origin + (d.shareUrl || '');
+  }
+  /** Secções a partir dos cartões unificados (#doc-browse-root) */
+  function buildShareSectionsAndExtraFromTable() {
+    const sections = [];
+    const sectionMap = {};
+    const extraDocs = [];
+    const usedFileIds = new Set();
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var st = card.querySelector('.kd-sc-st');
+      var sf = card.querySelector('.kd-sc-sf');
+      var wantText = !!(st && st.checked);
+      var wantFile = !!(sf && sf.checked);
+      if (!wantText && !wantFile) return;
+      var gid = card.getAttribute('data-gid') || '';
+      var key = card.getAttribute('data-key') || '';
+      var docType = card.getAttribute('data-doc-type') || '';
+      if (gid && key) {
+        var gInfo = GROUPS.find(function (x) { return x.id === gid; });
+        var title = gInfo ? gInfo.title : 'Outros';
+        if (!sectionMap[title]) sectionMap[title] = [];
+        var dtHint = fieldKeyToDocTypeHint(key, gid);
+        var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
+        var vaultFile = wantFile && canon ? (getLatestFileForDocType(canon) || findFileForFieldHint(gid, key)) : null;
+        if (vaultFile) usedFileIds.add(vaultFile.id);
+        sectionMap[title].push({
+          group: gid,
+          key: key,
+          label: key,
+          showText: wantText,
+          showFile: !!(wantFile && vaultFile),
+          fileId: vaultFile ? vaultFile.id : null
+        });
+      } else if (docType && wantFile) {
+        var f = getLatestFileForDocType(docType);
+        if (f && !usedFileIds.has(f.id)) {
+          usedFileIds.add(f.id);
+          extraDocs.push({ fileId: f.id, label: docTypeLabel(docType) });
+        }
+      }
+    });
+    Object.keys(sectionMap).forEach(function (title) {
+      if (sectionMap[title].length) sections.push({ title: title, rows: sectionMap[title] });
+    });
+    return { sections: sections, extraDocs: extraDocs };
+  }
+  function fileIdsUsedInSections(sections) {
+    var used = new Set();
+    (sections || []).forEach(function (sec) {
+      (sec.rows || []).forEach(function (row) {
+        if (row.fileId != null) used.add(parseInt(row.fileId, 10));
+      });
+    });
+    return used;
+  }
+  /** Um único payload: textos do perfil + ficheiros ligados aos campos + cartões de documento + «documentos extra» */
+  function buildUnifiedShareSelection() {
+    var built = buildShareSectionsAndExtraFromTable();
+    var sections = built.sections;
+    var extraDocs = built.extraDocs.slice();
+    var profileImageFileId = resolveProfileImageFileIdForShare();
+    if (profileImageFileId != null && !Number.isFinite(profileImageFileId)) profileImageFileId = null;
+    var hid = document.getElementById('sh-profile-file-id');
+    if (hid && profileImageFileId) hid.value = String(profileImageFileId);
+    extraDocs = extraDocs.filter(function (ed) {
+      var fid = parseInt(ed.fileId, 10);
+      if (profileImageFileId && fid === profileImageFileId) return false;
+      return !isFotoPessoalFileId(fid);
+    });
+    sections = sections.map(function (sec) {
+      return {
+        title: sec.title,
+        rows: (sec.rows || []).filter(function (row) {
+          if (!row.fileId) return true;
+          var fid = parseInt(row.fileId, 10);
+          if (profileImageFileId && fid === profileImageFileId) return false;
+          return !isFotoPessoalFileId(fid);
+        })
+      };
+    }).filter(function (sec) { return (sec.rows || []).length > 0; });
+    return {
+      displayName: (document.getElementById('sh-name') && document.getElementById('sh-name').value) || '',
+      profileImageUrl: '',
+      profileImageFileId: profileImageFileId,
+      sections: sections,
+      extraDocs: extraDocs
+    };
+  }
+  function hasUnifiedShareContent(sel) {
+    if (!sel) return false;
+    if (sel.profileImageFileId != null && Number.isFinite(parseInt(sel.profileImageFileId, 10))) return true;
+    if (sel.extraDocs && sel.extraDocs.length) return true;
+    if (sel.sections && sel.sections.some(function (s) { return (s.rows || []).length; })) return true;
+    return false;
+  }
+  async function postKingDocsShare(body) {
+    var r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (!r.ok) {
+      showToast('Não foi possível criar o link.', 'err');
+      return null;
+    }
+    var j = await r.json();
+    var d = j.data || {};
+    return window.location.origin + (d.shareUrl || '');
+  }
+  /** Link único King Docs: mesmo URL para texto + ficheiros (usa seleção actual da página) */
+  async function quickShareVaultMulti() {
+    var selection = buildUnifiedShareSelection();
+    if (!hasUnifiedShareContent(selection)) return null;
+    var body = {
+      expiresInHours: 72,
+      password: '',
+      maxViews: '',
+      selection: selection
+    };
+    return postKingDocsShare(body);
+  }
+  function getSelectedExtraDocs() {
+    return buildShareSectionsAndExtraFromTable().extraDocs || [];
+  }
+  function syncDocPreviewFromShareCards() {
+    var types = [];
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var sf = card.querySelector('.kd-sc-sf');
+      if (!sf || !sf.checked) return;
+      var dt = card.getAttribute('data-doc-type');
+      if (dt && fileExistsForDocType(dt)) types.push(dt);
+    });
+    docPreviewSelectedTypes = types;
+    refreshDocVaultPreview();
+  }
+  /** Ícone próprio por campo (cartão igual aos tipos de documento) */
+  var FIELD_ICONS = {
+    'pessoal|Nome Completo': 'Y'',
+    'pessoal|Data de Nasc.': 'YZ,',
+    'pessoal|RG': 'Y',
+    'pessoal|CPF': 'Y?"',
+    'contato|WhatsApp': '',
+    'contato|E-mail': 'o?️',
+    'contato|Instagram': '',
+    'endereco|Rua': 'Y>️',
+    'endereco|Bairro': 'Y~️',
+    'endereco|Cidade': 'YT️',
+    'endereco|CEP': '',
+    'financeiro|PIX (CPF)': 'Y'',
+    'financeiro|Banco': 'Y',
+    'financeiro|Agência': 'Y>️',
+    'financeiro|Conta': 'Y'',
+    'empresa|Razão Social': 'Y',
+    'empresa|CNPJ': 'Y"<',
+    'empresa|IE': 'Y>️',
+    'empresa|C.C.M': 'Y"'',
+    'empresa|E-mail': 'o?️',
+    'empresa|Site': 'YO',
+    'empresa|Endereço': '',
+    'empresa|Bairro': 'Y~️',
+    'empresa|Cidade': 'YT️',
+    'empresa|CEP': '',
+    'financeiropj|PIX (CNPJ)': 'Y'',
+    'financeiropj|Favorecido': 'Y'',
+    'financeiropj|Banco': 'Y',
+    'financeiropj|Agência': 'Y>️',
+    'financeiropj|Conta': 'Y''
+  };
+  function iconForField(groupId, key, fallbackIcon) {
+    var fk = String(groupId || '') + '|' + String(key || '');
+    if (FIELD_ICONS[fk]) return FIELD_ICONS[fk];
+    return fallbackIcon || 'Y"<';
+  }
+  function buildShareSections() {
+    var coveredFields = {};
+    var sections = [];
+    var docItems = [];
+    var presets = getDocCardPresetsMerged().slice();
+    presets.sort(function (a, b) {
+      var af = normalizeDocTypeKey(a.docType) === normalizeDocTypeKey('FOTO PESSOAL');
+      var bf = normalizeDocTypeKey(b.docType) === normalizeDocTypeKey('FOTO PESSOAL');
+      if (af && !bf) return -1;
+      if (bf && !af) return 1;
+      return 0;
+    });
+    presets.forEach(function (p) {
+      var pair = fieldPairForDocType(p.docType);
+      if (pair) coveredFields[pair[0] + '|' + pair[1]] = true;
+      docItems.push({
+        docType: p.docType,
+        label: p.label,
+        icon: p.icon,
+        group: pair ? pair[0] : null,
+        key: pair ? pair[1] : null
+      });
+    });
+    if (docItems.length) {
+      sections.push({ title: 'Documentos e fotos', icon: 'Y"Z', items: docItems });
+    }
+    GROUPS.forEach(function (g) {
+      var items = [];
+      g.keys.forEach(function (k) {
+        var fk = g.id + '|' + k;
+        if (coveredFields[fk]) return;
+        items.push({
+          docType: fieldKeyToDocTypeHint(k, g.id) ? vaultDocTypeKeyForHint(fieldKeyToDocTypeHint(k, g.id)) : null,
+          label: k,
+          icon: iconForField(g.id, k, g.icon),
+          group: g.id,
+          key: k
+        });
+      });
+      if (items.length) sections.push({ title: g.title, icon: g.icon, items: items });
+    });
+    return sections;
+  }
+  function buildShareItemsList() {
+    var all = [];
+    buildShareSections().forEach(function (s) {
+      (s.items || []).forEach(function (it) { all.push(it); });
+    });
+    return all;
+  }
+  function renderShareCardHtml(it) {
+    ensureFieldData();
+    var hasFile = it.docType && fileExistsForDocType(it.docType);
+    var canFile = !!it.docType;
+    var showText = !!(it.group && it.key);
+    var dtAttr = it.docType ? ' data-doc-type="' + escapeAttr(it.docType) + '"' : '';
+    var gAttr = it.group ? ' data-gid="' + escapeAttr(it.group) + '"' : '';
+    var kAttr = it.key ? ' data-key="' + escapeAttr(it.key) + '"' : '';
+    var modes = '';
+    if (canFile) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-sf"/> Foto/PDF</label>';
+    if (showText) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-st"/> Texto</label>';
+    var valHint = '';
+    if (it.group && it.key && fieldData[it.group] && String(fieldData[it.group][it.key] || '').trim()) {
+      var v = String(fieldData[it.group][it.key]).trim();
+      valHint = '<div class="dc-val-hint" title="' + escapeAttr(v) + '">' + escapeHtml(v.length > 32 ? v.slice(0, 32) + '—' : v) + '</div>';
+    }
+    var status = '';
+    var dateLine = '';
+    if (hasFile) {
+      status = 'o" Ver pré-visualização';
+      var lastD = latestForDocType(it.docType);
+      if (lastD) dateLine = '<div class="dc-date">ltimo: ' + escapeHtml(formatShortDate(lastD)) + '</div>';
+    } else if (canFile) {
+      status = 'Envia em Dados';
+    } else if (valHint) {
+      status = 'o" Texto preenchido';
+    } else {
+      status = 'Marca Texto';
+    }
+    var cls = 'doc-card doc-card--share doc-card--browse';
+    if (hasFile) cls += ' doc-card--has-file';
+    return '<div class="' + cls + '"' + dtAttr + gAttr + kAttr + '>' +
+      '<div class="dc-icon" aria-hidden="true">' + (it.icon || 'Y"<') + '</div>' +
+      '<div class="dc-title">' + escapeHtml(it.label) + '</div>' +
+      valHint +
+      '<div class="dc-modes">' + modes + '</div>' +
+      '<div class="dc-status">' + escapeHtml(status) + '</div>' +
+      dateLine +
+      '</div>';
+  }
+  function findShareCard(gid, key, docType) {
+    var root = document.getElementById('doc-browse-root');
+    if (!root) return null;
+    if (docType) {
+      var canon = vaultDocTypeKeyForHint(docType);
+      var cards = root.querySelectorAll('.doc-card--share[data-doc-type]');
+      for (var i = 0; i < cards.length; i++) {
+        if (normalizeDocTypeKey(cards[i].getAttribute('data-doc-type')) === normalizeDocTypeKey(canon || docType)) return cards[i];
+      }
+    }
+    if (gid && key) {
+      return root.querySelector('.doc-card--share[data-gid="' + gid + '"][data-key="' + key + '"]');
+    }
+    return null;
+  }
+  function setShareCardModes(gid, key, docType, wantText, wantFile) {
+    var card = findShareCard(gid, key, docType);
+    if (!card) return;
+    var st = card.querySelector('.kd-sc-st');
+    var sf = card.querySelector('.kd-sc-sf');
+    if (st) st.checked = !!wantText;
+    if (sf) sf.checked = !!wantFile;
+    card.classList.toggle('doc-card--on', !!(wantText || wantFile));
+  }
+  function clearAllShareCards() {
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var st = card.querySelector('.kd-sc-st');
+      var sf = card.querySelector('.kd-sc-sf');
+      if (st) st.checked = false;
+      if (sf) sf.checked = false;
+      card.classList.remove('doc-card--on');
+    });
+    docPreviewSelectedTypes = [];
+    revokeDocPreviewBlobAll();
+  }
+  function applyPresetToShareCard(entry) {
+    if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.extraDoc) {
+      setShareCardModes(null, null, String(entry.extraDoc), false, true);
+      return;
+    }
+    if (!Array.isArray(entry) || entry.length < 2) return;
+    var g = entry[0];
+    var k = entry[1];
+    var mode = entry.length >= 3 ? entry[2] : 't';
+    var m = normalizePresetMode(mode);
+    var dt = fieldKeyToDocTypeHint(k, g);
+    var wantT = (m === 't' || m === 'b');
+    var wantF = (m === 'f' || m === 'b');
+    setShareCardModes(g, k, dt, wantT, wantF);
+    if (wantF && dt) ensureVaultDocTypeSelectedForField(g, k);
+  }
+  function getProfileImageFileIdForUi() {
+    return resolveProfileImageFileIdForShare();
+  }
+  function updateUnifiedActionButtons() {
+    var hasShare = hasUnifiedShareContent(buildUnifiedShareSelection());
+    var preview = collectSharePreviewData();
+    var hasPreviewContent = !!(preview && preview.count > 0);
+    var hasProfImg = !!getProfileImageFileIdForUi();
+    var hasDocSel = document.querySelectorAll('#doc-browse-root .doc-card--share.doc-card--on').length > 0;
+    var extraSep = getSelectedExtraDocs();
+    ['btn-doc-copy-plain', 'btn-doc-copy-textonly', 'btn-doc-wa-text', 'btn-doc-wa-text-img'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = !hasPreviewContent;
+    });
+    var elCopyImg = document.getElementById('btn-doc-copy-with-img');
+    if (elCopyImg) elCopyImg.disabled = !hasPreviewContent || !hasProfImg;
+    ['btn-doc-copy-link', 'btn-doc-wa-link', 'btn-doc-wa-list', 'btn-doc-pdf-dl', 'btn-doc-pdf-share'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = !hasShare;
+    });
+    var clr = document.getElementById('btn-doc-clear-sel');
+    if (clr) clr.disabled = !hasDocSel;
+    var waSep = document.getElementById('btn-doc-wa-sep');
+    if (waSep) waSep.disabled = !extraSep.length;
+  }
+  function ensurePdfLib() {
+    return new Promise(function (resolve, reject) {
+      if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) return resolve(PDFLib);
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+      s.onload = function () {
+        if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) resolve(PDFLib);
+        else reject(new Error('pdf-lib'));
+      };
+      s.onerror = function () { reject(new Error('pdf-lib')); };
+      document.head.appendChild(s);
+    });
+  }
+  async function appendFileToUnifiedPdf(pdfDoc, PDFLibMod, f) {
+    var PDFDocument = PDFLibMod.PDFDocument;
+    var pageW = 595.28;
+    var pageH = 841.89;
+    var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
+    if (!res.ok) return;
+    var blob = await res.blob();
+    var mime = (f.mime || '').toLowerCase();
+    var ab = await blob.arrayBuffer();
+    try {
+      if (mime.indexOf('image/jpeg') === 0 || mime === 'image/jpg') {
+        var jpg = await pdfDoc.embedJpg(ab);
+        var page = pdfDoc.addPage([pageW, pageH]);
+        var sc = jpg.scaleToFit(pageW - 40, pageH - 40);
+        page.drawImage(jpg, { x: (pageW - sc.width) / 2, y: (pageH - sc.height) / 2, width: sc.width, height: sc.height });
+      } else if (mime.indexOf('image/png') === 0) {
+        var png = await pdfDoc.embedPng(ab);
+        var page2 = pdfDoc.addPage([pageW, pageH]);
+        var sc2 = png.scaleToFit(pageW - 40, pageH - 40);
+        page2.drawImage(png, { x: (pageW - sc2.width) / 2, y: (pageH - sc2.height) / 2, width: sc2.width, height: sc2.height });
+      } else if (mime.indexOf('pdf') >= 0) {
+        var srcPdf = await PDFDocument.load(ab);
+        var copied = await pdfDoc.copyPages(srcPdf, srcPdf.getPageIndices());
+        copied.forEach(function (pg) { pdfDoc.addPage(pg); });
+      } else {
+        var page3 = pdfDoc.addPage([pageW, pageH]);
+        var font3 = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+        page3.drawText('Formato não incluído no PDF: ' + String(f.doc_type || mime).slice(0, 120), { x: 40, y: pageH - 60, size: 11, font: font3 });
+      }
+    } catch (e) {
+      var pageE = pdfDoc.addPage([pageW, pageH]);
+      var fontE = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+      pageE.drawText('Erro ao incluir: ' + String(f.doc_type || ''), { x: 40, y: pageH - 60, size: 11, font: fontE });
+    }
+  }
+  /** PDF = textos da mesma seleção do link + todos os ficheiros (perfil, campos, extras, cartões). */
+  async function buildMergedPdfBlob() {
+    var sel = buildUnifiedShareSelection();
+    if (!hasUnifiedShareContent(sel)) return null;
+    var PDFLibMod = await ensurePdfLib();
+    var PDFDocument = PDFLibMod.PDFDocument;
+    var pdfDoc = await PDFDocument.create();
+    var pageW = 595.28;
+    var pageH = 841.89;
+    var font = await pdfDoc.embedFont(PDFLibMod.StandardFonts.Helvetica);
+    var textLines = ['King Docs — resumo da partilha', ''];
+    if (sel.displayName) textLines.push('Nome: ' + sel.displayName);
+    (sel.sections || []).forEach(function (sec) {
+      textLines.push('');
+      textLines.push('— ' + (sec.title || 'Secção') + ' —');
+      (sec.rows || []).forEach(function (row) {
+        if (!row.showText) return;
+        var g = row.group;
+        var k = row.key;
+        var val = '';
+        if (g && k && fieldData[g] && fieldData[g][k] != null) val = String(fieldData[g][k]);
+        textLines.push((row.label || k || '') + ': ' + val);
+      });
+    });
+    var page = pdfDoc.addPage([pageW, pageH]);
+    var y = pageH - 48;
+    textLines.forEach(function (line) {
+      var t = String(line).replace(/\r/g, '');
+      for (var o = 0; o < t.length; o += 88) {
+        var chunk = t.slice(o, o + 88);
+        if (y < 44) {
+          page = pdfDoc.addPage([pageW, pageH]);
+          y = pageH - 48;
+        }
+        page.drawText(chunk, { x: 40, y: y, size: 10, font: font });
+        y -= 12;
+      }
+    });
+    var orderedIds = [];
+    var seen = new Set();
+    function pushId(id) {
+      id = parseInt(id, 10);
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      orderedIds.push(id);
+    }
+    if (sel.profileImageFileId) pushId(sel.profileImageFileId);
+    (sel.sections || []).forEach(function (sec) {
+      (sec.rows || []).forEach(function (row) {
+        if (row.showFile && row.fileId) pushId(row.fileId);
+      });
+    });
+    (sel.extraDocs || []).forEach(function (ed) { pushId(ed.fileId); });
+    for (var i = 0; i < orderedIds.length; i++) {
+      var fid = orderedIds[i];
+      var f = filesList.find(function (x) { return x.id === fid; });
+      if (f) await appendFileToUnifiedPdf(pdfDoc, PDFLibMod, f);
+    }
+    var out = await pdfDoc.save();
+    return new Blob([out], { type: 'application/pdf' });
+  }
+  async function refreshDocVaultPreview() {
+    var gen = ++docPreviewRefreshGen;
+    var bodyEl = document.getElementById('doc-preview-body');
+    var badgeEl = document.getElementById('doc-preview-sel-badge');
+    if (!bodyEl) return;
+
+    var types = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
+    docPreviewSelectedTypes = types.slice();
+
+    if (badgeEl) {
+      if (types.length) {
+        badgeEl.style.display = '';
+        badgeEl.textContent = types.length === 1 ? '1 selecionado' : types.length + ' selecionados';
+      } else {
+        badgeEl.style.display = 'none';
+        badgeEl.textContent = '';
+      }
+    }
+    var dragHintEl = document.getElementById('doc-preview-drag-hint');
+    if (dragHintEl) dragHintEl.style.display = types.length > 1 ? '' : 'none';
+
+    revokeDocPreviewBlobAll();
+    if (gen !== docPreviewRefreshGen) return;
+
+    if (!types.length) {
+      bodyEl.innerHTML = '<p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>';
+      updateUnifiedActionButtons();
+      return;
+    }
+    updateUnifiedActionButtons();
+    bodyEl.innerHTML = '<p class="kd-hint">A carregar—</p>';
+    try {
+      var frag = document.createDocumentFragment();
+      for (var ti = 0; ti < types.length; ti++) {
+        if (gen !== docPreviewRefreshGen) return;
+        var docType = types[ti];
+        var f = getLatestFileForDocType(docType);
+        if (!f) continue;
+        var res = await fetch(api('/api/king-docs/files/' + f.id + '/download'), { headers: authHeaders() });
+        if (gen !== docPreviewRefreshGen) return;
+        if (!res.ok) {
+          var errDiv = document.createElement('div');
+          errDiv.className = 'doc-preview-stack-item';
+          errDiv.innerHTML = '<div class="doc-preview-stack-head"><span class="doc-preview-stack-title">' + escapeHtml(docTypeLabel(docType)) + '</span><span class="doc-preview-sel-chip">Selecionado</span></div><p class="err">Não foi possível carregar.</p>';
+          frag.appendChild(errDiv);
+          continue;
+        }
+        var blob = await res.blob();
+        if (gen !== docPreviewRefreshGen) return;
+        var url = URL.createObjectURL(blob);
+        docPreviewBlobUrls[docType] = url;
+        var mime = (f.mime || '').toLowerCase();
+        var wrap = document.createElement('div');
+        wrap.className = 'doc-preview-stack-item';
+        var head = document.createElement('div');
+        head.className = 'doc-preview-stack-head';
+        var title = document.createElement('span');
+        title.className = 'doc-preview-stack-title';
+        title.textContent = docTypeLabel(docType);
+        var chip = document.createElement('span');
+        chip.className = 'doc-preview-sel-chip';
+        chip.textContent = 'Selecionado';
+        head.appendChild(title);
+        head.appendChild(chip);
+        wrap.appendChild(head);
+        var meta = document.createElement('p');
+        meta.className = 'sub';
+        meta.style.margin = '0 0 .45rem';
+        meta.textContent = '#' + f.id + ' · ' + (f.doc_type || '') + ' · ' + (f.mime || '');
+        wrap.appendChild(meta);
+        if (mime.indexOf('image/') === 0) {
+          var img = document.createElement('img');
+          img.className = 'doc-preview-img';
+          img.draggable = false;
+          img.alt = f.doc_type || '';
+          img.src = url;
+          wrap.appendChild(img);
+        } else if (mime.indexOf('pdf') >= 0) {
+          var iframe = document.createElement('iframe');
+          iframe.className = 'doc-preview-iframe';
+          iframe.title = 'PDF';
+          iframe.src = url;
+          wrap.appendChild(iframe);
+        } else {
+          var p = document.createElement('p');
+          p.className = 'sub';
+          p.textContent = 'Pré-visualização limitada. Gera link ou PDF.';
+          wrap.appendChild(p);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = (f.original_name || 'documento').replace(/[\\/]/g, '');
+          a.className = 'btn secondary';
+          a.textContent = 'Descarregar';
+          wrap.appendChild(a);
+        }
+        wrap.classList.add('doc-preview-stack-item--draggable');
+        wrap.setAttribute('draggable', 'true');
+        wrap.dataset.docType = docType;
+        wrap.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('application/x-kd-doctype', docType);
+          e.dataTransfer.effectAllowed = 'move';
+          wrap.classList.add('doc-preview-stack-item--dragging');
+        });
+        wrap.addEventListener('dragend', function () {
+          wrap.classList.remove('doc-preview-stack-item--dragging');
+          if (bodyEl) bodyEl.querySelectorAll('.doc-preview-stack-item--drag-over').forEach(function (n) { n.classList.remove('doc-preview-stack-item--drag-over'); });
+        });
+        wrap.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        });
+        wrap.addEventListener('dragenter', function (e) {
+          e.preventDefault();
+          wrap.classList.add('doc-preview-stack-item--drag-over');
+        });
+        wrap.addEventListener('dragleave', function (e) {
+          if (!wrap.contains(e.relatedTarget)) wrap.classList.remove('doc-preview-stack-item--drag-over');
+        });
+        wrap.addEventListener('drop', function (e) {
+          e.preventDefault();
+          wrap.classList.remove('doc-preview-stack-item--drag-over');
+          var from = e.dataTransfer.getData('application/x-kd-doctype');
+          if (from && from !== docType) reorderDocPreviewTypes(from, docType);
+        });
+        frag.appendChild(wrap);
+      }
+      if (gen !== docPreviewRefreshGen) return;
+      bodyEl.innerHTML = '';
+      bodyEl.appendChild(frag);
+    } catch (err) {
+      if (gen !== docPreviewRefreshGen) return;
+      bodyEl.innerHTML = '<p class="err">Erro ao carregar a pré-visualização.</p>';
+      updateUnifiedActionButtons();
+    }
+  }
+  function reorderDocPreviewTypes(fromDt, toDt) {
+    var a = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
+    var fromI = a.indexOf(fromDt);
+    var toI = a.indexOf(toDt);
+    if (fromI < 0 || toI < 0 || fromI === toI) return;
+    var item = a.splice(fromI, 1)[0];
+    toI = a.indexOf(toDt);
+    a.splice(toI, 0, item);
+    docPreviewSelectedTypes = a;
+    renderDocBrowseCards();
+    refreshDocVaultPreview();
+  }
+  function toggleDocBrowse(docType) {
+    var dt = String(docType).trim();
+    if (!fileExistsForDocType(dt)) {
+      showToast('Este documento ainda não está no cofre. Envia na aba Dados.', 'neutral');
+      return;
+    }
+    var ix = docPreviewSelectedTypes.indexOf(dt);
+    if (ix >= 0) {
+      docPreviewSelectedTypes.splice(ix, 1);
+      if (docPreviewBlobUrls[dt]) {
+        try { URL.revokeObjectURL(docPreviewBlobUrls[dt]); } catch (e) {}
+        delete docPreviewBlobUrls[dt];
+      }
+    } else {
+      docPreviewSelectedTypes.push(dt);
+    }
+    renderDocBrowseCards();
+    refreshDocVaultPreview();
+    updateSharePreview();
+  }
+  function openQrModal(url) {
+    var modal = document.getElementById('kd-qr-modal');
+    var wrap = document.getElementById('kd-qr-wrap');
+    if (!modal || !wrap) return;
+    wrap.innerHTML = '';
+    modal.classList.add('kd-modal--open');
+    modal.setAttribute('aria-hidden', 'false');
+    function draw() {
+      if (typeof QRCode === 'undefined') {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        s.onload = function () { draw(); };
+        document.head.appendChild(s);
+        return;
+      }
+      var canvas = document.createElement('canvas');
+      var dark = document.body.classList.contains('kd-theme-dark');
+      QRCode.toCanvas(canvas, url, {
+        width: 220,
+        margin: 2,
+        color: { dark: dark ? '#e8ebe9' : '#1a1714', light: dark ? '#1a221c' : '#ffffff' }
+      }, function (err) {
+        if (err) {
+          wrap.textContent = 'Não foi possível gerar o QR.';
+          return;
+        }
+        wrap.appendChild(canvas);
+      });
+    }
+    draw();
+  }
+  function closeQrModal() {
+    var modal = document.getElementById('kd-qr-modal');
+    if (modal) {
+      modal.classList.remove('kd-modal--open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    var w = document.getElementById('kd-qr-wrap');
+    if (w) w.innerHTML = '';
+  }
+  function openShortcutModal(editId) {
+    var m = document.getElementById('kd-shortcut-modal');
+    if (m) {
+      m.classList.add('kd-modal--open');
+      m.setAttribute('aria-hidden', 'false');
+    }
+    var editEl = document.getElementById('kd-sc-edit-id');
+    if (editEl) editEl.value = editId || '';
+    setShortcutDeleteVisible(!!editId);
+    var titleEl = document.getElementById('kd-shortcut-title');
+    if (titleEl) titleEl.textContent = editId ? 'Editar atalho' : 'Novo atalho';
+    var nameEl = document.getElementById('kd-sc-name');
+    if (nameEl) nameEl.value = '';
+    setShortcutEmoji('Y"O');
+    closeEmojiPopover();
+    var img = document.getElementById('kd-sc-img');
+    if (img) img.value = '';
+    if (editId) {
+      var arr = loadCustomShortcuts();
+      var it = arr.find(function (x) { return x.id === editId; });
+      if (it) {
+        if (nameEl) nameEl.value = it.name || '';
+        setShortcutEmoji(it.icon || 'Y"O');
+        if (it.pairs && it.pairs.length) {
+          renderShareTableInto('kd-sc-share-grid', 'msc');
+          renderExtraDocsInto('kd-sc-extra-docs');
+          clearModalShareRoots();
+          it.pairs.forEach(function (entry) {
+            var fr = document.getElementById('kd-sc-share-grid');
+            var er = document.getElementById('kd-sc-extra-docs');
+            applyOnePresetEntryIn(fr, er, entry);
+          });
+        } else if (it.presetKey && PRESETS[it.presetKey]) {
+          renderShareTableInto('kd-sc-share-grid', 'msc');
+          renderExtraDocsInto('kd-sc-extra-docs');
+          clearModalShareRoots();
+          PRESETS[it.presetKey].forEach(function (entry) {
+            applyOnePresetEntryIn(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), entry);
+          });
+        } else {
+          syncModalShareFromMain();
+        }
+      } else {
+        syncModalShareFromMain();
+      }
+    } else {
+      syncModalShareFromMain();
+    }
+  }
+  function clearModalShareRoots() {
+    var fr = document.getElementById('kd-sc-share-grid');
+    var er = document.getElementById('kd-sc-extra-docs');
+    if (fr) {
+      fr.querySelectorAll('.st').forEach(function (c) { c.checked = false; });
+      fr.querySelectorAll('.sf').forEach(function (c) { c.checked = false; });
+    }
+    if (er) er.querySelectorAll('.xd-check').forEach(function (c) { c.checked = false; });
+  }
+  function syncModalShareFromMain() {
+    var st = collectShareState();
+    renderShareTableInto('kd-sc-share-grid', 'msc');
+    renderExtraDocsInto('kd-sc-extra-docs');
+    applyShareStateToRoots(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), st, false);
+  }
+  function setShortcutDeleteVisible(show) {
+    var delBtn = document.getElementById('kd-sc-delete');
+    if (!delBtn) return;
+    if (show) delBtn.removeAttribute('hidden');
+    else delBtn.setAttribute('hidden', '');
+  }
+  function closeShortcutModal() {
+    closeEmojiPopover();
+    setShortcutDeleteVisible(false);
+    var m = document.getElementById('kd-shortcut-modal');
+    if (m) {
+      m.classList.remove('kd-modal--open');
+      m.setAttribute('aria-hidden', 'true');
+    }
+  }
+  const GROUPS = [
+    { id: 'pessoal', title: 'Dados pessoais', icon: 'Y', keys: ['Nome Completo','Data de Nasc.','RG','CPF'] },
+    { id: 'contato', title: 'Contato', icon: '', keys: ['WhatsApp','E-mail','Instagram'] },
+    { id: 'endereco', title: 'Endereço pessoal', icon: '', keys: ['Rua','Bairro','Cidade','CEP'] },
+    { id: 'financeiro', title: 'Financeiro & PIX (PF)', icon: 'Y'', keys: ['PIX (CPF)','Banco','Agência','Conta'] },
+    { id: 'empresa', title: 'Dados da empresa', icon: 'Y', keys: ['Razão Social','CNPJ','IE','C.C.M','E-mail','Site','Endereço','Bairro','Cidade','CEP'] },
+    { id: 'financeiropj', title: 'Financeiro & PIX (PJ)', icon: 'Y', keys: ['PIX (CNPJ)','Favorecido','Banco','Agência','Conta'] }
+  ];
+  var CUSTOM_SHORTCUTS_KEY = 'kingDocs_custom_atalhos_v1';
+
+  /** Atalhos rápidos: [groupId, key] ou [groupId, key, modo] — modo t=texto, f=ficheiro (foto/PDF), b=ambos */
+  const PRESETS = {
+    festa: [
+      ['endereco', 'Rua', 't'], ['endereco', 'Bairro', 't'], ['endereco', 'Cidade', 't'], ['endereco', 'CEP', 't'],
+      ['contato', 'WhatsApp', 't'],
+      ['pessoal', 'RG', 'f'],
+    ],
+    receberPf: [
+      ['pessoal', 'Nome Completo', 't'], ['pessoal', 'CPF', 't'],
+      ['financeiro', 'PIX (CPF)', 't'], ['financeiro', 'Banco', 't'], ['financeiro', 'Agência', 't'], ['financeiro', 'Conta', 't'],
+    ],
+    receberPj: [
+      ['empresa', 'Razão Social', 't'], ['empresa', 'CNPJ', 't'],
+      ['financeiropj', 'PIX (CNPJ)', 't'], ['financeiropj', 'Favorecido', 't'], ['financeiropj', 'Banco', 't'], ['financeiropj', 'Agência', 't'], ['financeiropj', 'Conta', 't'],
+    ],
+    correspondencia: [
+      ['pessoal', 'Nome Completo', 't'], ['endereco', 'Rua', 't'], ['endereco', 'Bairro', 't'], ['endereco', 'Cidade', 't'], ['endereco', 'CEP', 't'],
+    ],
+    enviarNf: [
+      ['empresa', 'Razão Social', 't'], ['empresa', 'CNPJ', 't'], ['empresa', 'IE', 't'], ['empresa', 'C.C.M', 't'], ['empresa', 'E-mail', 't'],
+      ['empresa', 'Endereço', 't'], ['empresa', 'Bairro', 't'], ['empresa', 'Cidade', 't'], ['empresa', 'CEP', 't'],
+    ],
+  };
+
+  /** Nome e ícone sugeridos ao personalizar um atalho fixo (oZ) */
+  var PRESET_BAR_META = {
+    festa: { name: 'Festa em Casa', emoji: 'Y' },
+    receberPf: { name: 'Receber PF', emoji: 'Y'' },
+    receberPj: { name: 'Receber PJ', emoji: 'Y' },
+    correspondencia: { name: 'Correspondência', emoji: '' },
+    enviarNf: { name: 'Enviar NF', emoji: 'Y""' },
+  };
+  function openShortcutModalFromPreset(presetId) {
+    var list = PRESETS[presetId];
+    if (!list) return;
+    var m = document.getElementById('kd-shortcut-modal');
+    if (m) {
+      m.classList.add('kd-modal--open');
+      m.setAttribute('aria-hidden', 'false');
+    }
+    var editEl = document.getElementById('kd-sc-edit-id');
+    if (editEl) editEl.value = '';
+    setShortcutDeleteVisible(false);
+    var titleEl = document.getElementById('kd-shortcut-title');
+    if (titleEl) titleEl.textContent = 'Personalizar atalho';
+    var meta = PRESET_BAR_META[presetId] || { name: String(presetId), emoji: 'Y"O' };
+    var nameEl = document.getElementById('kd-sc-name');
+    if (nameEl) nameEl.value = meta.name;
+    setShortcutEmoji(meta.emoji);
+    closeEmojiPopover();
+    var img = document.getElementById('kd-sc-img');
+    if (img) img.value = '';
+    renderShareTableInto('kd-sc-share-grid', 'msc');
+    renderExtraDocsInto('kd-sc-extra-docs');
+    clearModalShareRoots();
+    list.forEach(function (entry) {
+      applyOnePresetEntryIn(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'), entry);
+    });
+  }
+
+  function normalizePresetMode(m) {
+    var s = String(m == null ? 't' : m).toLowerCase();
+    if (s === 'text' || s === 'txt') return 't';
+    if (s === 'file' || s === 'foto' || s === 'ficheiro') return 'f';
+    if (s === 'both' || s === 'b' || s === 'tf' || s === 'ambos') return 'b';
+    if (s === 't' || s === 'f' || s === 'b') return s;
+    return 't';
+  }
+  function fieldKeyToDocTypeHint(key, g) {
+    var k = String(key || '');
+    var gg = String(g || '');
+    if (gg === 'pessoal') {
+      if (k === 'RG') return 'RG';
+      if (k === 'CPF') return 'CPF';
+    }
+    if (gg === 'empresa') {
+      if (k === 'CNPJ') return 'CARTfO DO CNPJ';
+      if (k === 'IE') return 'INSC. ESTADUAL';
+    }
+    return k;
+  }
+  function findFileForFieldHint(g, k) {
+    var hint = fieldKeyToDocTypeHint(k, g);
+    var f = getLatestFileForDocType(hint);
+    if (f) return f;
+    f = getLatestFileForDocType(k);
+    if (f) return f;
+    var want = normalizeDocTypeKey(hint);
+    var best = null;
+    filesList.forEach(function (x) {
+      if (normalizeDocTypeKey(x.doc_type) === want) best = x;
+    });
+    return best;
+  }
+  function fieldPairForDocType(dt) {
+    var d = normalizeDocTypeKey(dt);
+    var map = [
+      ['RG', ['pessoal', 'RG']],
+      ['CPF', ['pessoal', 'CPF']],
+      ['CARTfO DO CNPJ', ['empresa', 'CNPJ']],
+      ['CARTAO DO CNPJ', ['empresa', 'CNPJ']],
+      ['INSC. ESTADUAL', ['empresa', 'IE']],
+    ];
+    for (var i = 0; i < map.length; i++) {
+      if (normalizeDocTypeKey(map[i][0]) === d) return map[i][1];
+    }
+    return null;
+  }
+  function applyFieldModeToBlock(block, mode) {
+    var m = normalizePresetMode(mode);
+    var fid = fieldBlockFid(block);
+    var st = block.querySelector('.st[data-fid="' + fid + '"]');
+    var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
+    var fk = block.getAttribute('data-fk') || '';
+    var parts = fk.split('|');
+    var g = parts[0];
+    var k = parts.slice(1).join('|');
+    var wantT = (m === 't' || m === 'b');
+    var wantF = (m === 'f' || m === 'b');
+    if (st) st.checked = wantT;
+    if (sf) sf.checked = wantF;
+    if (wantF) ensureVaultDocTypeSelectedForField(g, k);
+  }
+  function applyExtraDocPresetEntry(docType, extraRootEl) {
+    var root = extraRootEl || document.getElementById('extra-docs-wrap');
+    if (!root) root = document;
+    var dt = String(docType || '').trim();
+    if (!dt) return;
+    var f = getLatestFileForDocType(dt);
+    if (!f) {
+      var want = normalizeDocTypeKey(dt);
+      filesList.forEach(function (x) {
+        if (!f && normalizeDocTypeKey(x.doc_type) === want) f = x;
+      });
+    }
+    if (!f) return;
+    var ch = root.querySelector('.xd-check[data-fid="' + f.id + '"]');
+    if (!ch) return;
+    ch.checked = true;
+    var lab = root.querySelector('.xd-label[data-fid="' + f.id + '"]');
+    if (lab && !String(lab.value || '').trim()) {
+      var preset = DOC_CARD_PRESETS.find(function (p) { return normalizeDocTypeKey(p.docType) === normalizeDocTypeKey(f.doc_type); });
+      lab.value = preset ? preset.label : (f.doc_type || 'Documento');
+    }
+  }
+  function applyOnePresetEntryIn(fieldRoot, extraRoot, entry) {
+    if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.extraDoc) {
+      applyExtraDocPresetEntry(String(entry.extraDoc), extraRoot);
+      return;
+    }
+    if (!Array.isArray(entry) || entry.length < 2) return;
+    var g = entry[0];
+    var k = entry[1];
+    var mode = entry.length >= 3 ? entry[2] : 't';
+    var fk = g + '|' + k;
+    var block = shareFieldBlockIn(fieldRoot, fk);
+    if (!block) return;
+    applyFieldModeToBlock(block, mode);
+  }
+  function applyOnePresetEntry(entry) {
+    var w = document.getElementById('share-table-wrap');
+    var ex = document.getElementById('extra-docs-wrap');
+    applyOnePresetEntryIn(w, ex, entry);
+  }
+  function applyDocTypeQuick(docType) {
+    ensureFieldData();
+    var dt = String(docType || '').trim();
+    if (!dt) return;
+    var pair = fieldPairForDocType(dt);
+    if (pair) {
+      setShareCardModes(pair[0], pair[1], dt, false, true);
+      if (!findFileForFieldHint(pair[0], pair[1])) {
+        showToast('Envia o ficheiro «' + dt + '» na aba Dados antes de partilhar.', 'neutral');
+      } else {
+        showToast('Marcado: Foto/PDF no cartão «' + docTypeLabel(dt) + '».', 'ok');
+      }
+    } else {
+      setShareCardModes(null, null, dt, false, true);
+      if (!fileExistsForDocType(dt)) {
+        showToast('Ainda não tens este tipo no cofre. Envia na aba Dados.', 'neutral');
+        return;
+      }
+      showToast('Marcado: Foto/PDF no cartão.', 'ok');
+    }
+    clearAtalhoActive();
+    syncDocPreviewFromShareCards();
+    updateSharePreview();
+  }
+
+  let fieldData = {};
+  let filesList = [];
+  var vaultDirty = false;
+  var VAULT_META_KEY = '_meta';
+
+  function getVaultMeta() {
+    ensureFieldData();
+    if (!fieldData[VAULT_META_KEY] || typeof fieldData[VAULT_META_KEY] !== 'object') fieldData[VAULT_META_KEY] = {};
+    return fieldData[VAULT_META_KEY];
+  }
+  function getDisplayName() {
+    return String((getVaultMeta().displayName != null ? getVaultMeta().displayName : '') || '').trim();
+  }
+  function setDisplayName(name) {
+    getVaultMeta().displayName = String(name || '').trim();
+  }
+  function applyDisplayNameToHero() {
+    var el = document.getElementById('sh-name');
+    if (!el) return;
+    var dn = getDisplayName();
+    var nc = fieldData.pessoal && String(fieldData.pessoal['Nome Completo'] || '').trim();
+    var finalName = dn || nc;
+    if (!finalName) return;
+    el.value = finalName;
+    setDisplayName(finalName);
+    if (!fieldData.pessoal) fieldData.pessoal = {};
+    fieldData.pessoal['Nome Completo'] = finalName;
+  }
+  function syncHeroNameToForm(name) {
+    var v = String(name || '').trim();
+    setDisplayName(v);
+    if (!fieldData.pessoal) fieldData.pessoal = {};
+    fieldData.pessoal['Nome Completo'] = v;
+    var ncInp = document.querySelector('#p-dados input[data-g="pessoal"][data-k="Nome Completo"]');
+    if (ncInp && ncInp.value !== v) ncInp.value = v;
+  }
+  function collectFieldDataFromDom() {
+    ensureFieldData();
+    var panel = document.getElementById('p-dados');
+    if (!panel) return;
+    panel.querySelectorAll('input[data-g][data-k]').forEach(function (inp) {
+      var g = inp.getAttribute('data-g');
+      var k = inp.getAttribute('data-k');
+      if (!fieldData[g]) fieldData[g] = {};
+      fieldData[g][k] = inp.value;
+    });
+  }
+  function syncNamesBeforeSave() {
+    collectFieldDataFromDom();
+    var hero = document.getElementById('sh-name');
+    var heroVal = hero ? String(hero.value || '').trim() : '';
+    var ncVal = fieldData.pessoal && String(fieldData.pessoal['Nome Completo'] || '').trim();
+    var finalName = heroVal || ncVal;
+    if (finalName) {
+      setDisplayName(finalName);
+      if (!fieldData.pessoal) fieldData.pessoal = {};
+      fieldData.pessoal['Nome Completo'] = finalName;
+      if (hero && hero.value !== finalName) hero.value = finalName;
+    }
+  }
+  function vaultHasSavedName() {
+    if (getDisplayName()) return true;
+    return !!(fieldData.pessoal && String(fieldData.pessoal['Nome Completo'] || '').trim());
+  }
+  function dadosDocStatusHtml(docType) {
+    var dt = vaultDocTypeKeyForHint(docType);
+    if (!dt) return '';
+    var has = fileExistsForDocType(dt);
+    var last = latestForDocType(dt);
+    var cls = 'kd-dados-doc-status' + (has ? ' has-file' : '');
+    var txt = has
+      ? ('o" ' + escapeHtml(docTypeLabel(dt)) + ' no cofre' + (last ? ' · ' + escapeHtml(formatShortDate(last)) : ''))
+      : ('Sem ficheiro — envia foto ou PDF');
+    return '<span class="' + cls + '" data-doc-type="' + escapeAttr(dt) + '">' + txt + '</span>';
+  }
+  function bindDadosUploadButtons(root) {
+    if (!root) return;
+    root.querySelectorAll('.kd-dados-upload-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        pendingDocType = this.getAttribute('data-doc-type') || '';
+        var hid = document.getElementById('doc-file-hidden');
+        if (hid) { hid.value = ''; hid.click(); }
+      };
+    });
+  }
+  function refreshDadosFieldDocStatuses() {
+    document.querySelectorAll('.kd-dados-doc-status[data-doc-type]').forEach(function (span) {
+      var dt = span.getAttribute('data-doc-type');
+      var has = fileExistsForDocType(dt);
+      var last = latestForDocType(dt);
+      span.className = 'kd-dados-doc-status' + (has ? ' has-file' : '');
+      span.textContent = has
+        ? ('o" ' + docTypeLabel(dt) + ' no cofre' + (last ? ' · ' + formatShortDate(last) : ''))
+        : 'Sem ficheiro — envia foto ou PDF';
+    });
+  }
+
+  function setVaultDirty(on) {
+    vaultDirty = !!on;
+    var heroBar = document.getElementById('kd-hero-dirty-banner');
+    if (heroBar) heroBar.hidden = !vaultDirty;
+    var dadosBar = document.getElementById('kd-dados-dirty-banner');
+    if (dadosBar) dadosBar.hidden = !vaultDirty;
+  }
+
+  function ensureFieldData() {
+    GROUPS.forEach(g => {
+      if (!fieldData[g.id]) fieldData[g.id] = {};
+      g.keys.forEach(k => { if (fieldData[g.id][k] == null) fieldData[g.id][k] = ''; });
+    });
+  }
+
+  function renderDados() {
+    ensureFieldData();
+    const el = document.getElementById('p-dados');
+    var vaultHint = formatVaultSavedHint();
+    let html = '<div id="kd-dados-dirty-banner" class="kd-dirty-banner" ' + (vaultDirty ? '' : 'hidden') + '><span>Tens alterações por guardar no servidor.</span><button type="button" class="btn" id="kd-dados-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar no servidor</button></div>';
+    html += '<p class="sub">Preenche texto e envia documentos no mesmo sítio. <strong>Guardar no servidor</strong> grava tudo (nome, campos e documentos). Depois escolhe o que partilhar em <strong>Documentos</strong>.</p>';
+    if (vaultHint) html += '<p class="kd-dados-saved-hint">' + escapeHtml(vaultHint) + '</p>';
+    html += '<div class="btn-row">';
+    html += '<button type="button" class="btn" id="btn-save-vault">Guardar no servidor</button>';
+    html += '<button type="button" class="btn secondary" id="btn-import-profile">Importar do perfil (cartão)</button>';
+    html += '<button type="button" class="btn secondary" id="btn-export-pdf">Exportar PDF</button>';
+    html += '</div>';
+    GROUPS.forEach(g => {
+      html += '<details class="kd-collapsible" open><summary>' + escapeHtml(g.title) + '</summary><div class="kd-collapsible-body">';
+      g.keys.forEach(k => {
+        const v = (fieldData[g.id] && fieldData[g.id][k]) || '';
+        const docHint = fieldKeyToDocTypeHint(k, g.id);
+        const canonDt = docHint ? vaultDocTypeKeyForHint(docHint) : null;
+        if (canonDt) {
+          html += '<div class="kd-dados-field">';
+          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '" data-k="' + escapeHtml(k) + '" value="' + escapeAttr(v) + '"/></div>';
+          html += '<div class="kd-dados-doc-row">' + dadosDocStatusHtml(docHint);
+          html += '<button type="button" class="btn secondary kd-dados-upload-btn" data-doc-type="' + escapeAttr(canonDt) + '" style="font-size:.76rem;padding:.35rem .65rem">Enviar foto/PDF</button></div>';
+          html += '</div>';
+        } else {
+          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '" data-k="' + escapeHtml(k) + '" value="' + escapeAttr(v) + '"/></div>';
+        }
+      });
+      html += '</div></details>';
+    });
+    html += '<details class="kd-collapsible" open><summary>Documentos no cofre (enviar ficheiros)</summary><div class="kd-collapsible-body">';
+    html += '<p class="sub" style="margin-top:0">Cada cartão abre o explorador para esse tipo. Depois marca o que queres partilhar em <strong>Documentos</strong>.</p>';
+    html += '<div class="doc-panel-card"><div class="doc-badge" role="status"><span aria-hidden="true">Y"Z</span> Enviar ao cofre</div>';
+    html += '<div id="doc-upload-root" class="doc-grid"></div>';
+    html += '<div class="kd-custom-doctypes" id="kd-custom-doctypes-wrap">';
+    html += '<p class="group" style="margin:0 0 .5rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Tipos extra (nome + ícone)</p>';
+    html += '<div class="kd-custom-doctype-form" style="position:relative">';
+    html += '<input type="text" id="kd-cdt-label" placeholder="Nome (ex.: Passaporte)" maxlength="60"/>';
+    html += '<span class="kd-cdt-emoji-wrap"><input type="text" id="kd-cdt-icon" maxlength="8" value="Y"Z" style="max-width:3.2rem"/>';
+    html += '<button type="button" class="btn secondary" id="kd-cdt-emoji-btn" style="padding:.35rem .5rem;font-size:1rem">Y~?</button>';
+    html += '<div id="kd-cdt-emoji-pop" class="kd-cdt-emoji-pop" hidden></div></span>';
+    html += '<button type="button" class="btn secondary" id="kd-cdt-add">Adicionar tipo</button></div>';
+    html += '<ul id="kd-cdt-list" class="kd-cdt-list"></ul></div></div>';
+    html += '<p class="doc-fallback-title">Outro documento</p>';
+    html += '<input type="file" id="up-file"/><input type="text" id="up-type" placeholder="Tipo" style="max-width:220px;margin-left:.5rem"/>';
+    html += '<button type="button" class="btn" id="up-btn">Enviar</button>';
+    html += '<div id="file-list" style="margin-top:1rem"></div></div></details>';
+    el.innerHTML = html;
+    document.getElementById('btn-save-vault').onclick = saveVault;
+    var qSave = document.getElementById('kd-dados-save-quick');
+    if (qSave) qSave.onclick = function () { saveVault(); };
+    document.getElementById('btn-import-profile').onclick = importFromProfile;
+    document.getElementById('btn-export-pdf').onclick = exportVaultPdf;
+    bindDadosUploadButtons(el);
+    initKdCdtEmojiPicker();
+    renderCustomDocTypesList();
+    bindCustomDocTypeAdd();
+    renderDocUploadCards();
+    el.querySelectorAll('input[data-g]').forEach(inp => {
+      function syncField() {
+        const g = inp.getAttribute('data-g');
+        const k = inp.getAttribute('data-k');
+        if (!fieldData[g]) fieldData[g] = {};
+        fieldData[g][k] = inp.value;
+        if (g === 'pessoal' && k === 'Nome Completo') syncHeroNameToForm(inp.value);
+        setVaultDirty(true);
+      }
+      inp.addEventListener('input', syncField);
+      inp.addEventListener('change', syncField);
+    });
+    var upBtn = document.getElementById('up-btn');
+    if (upBtn) upBtn.onclick = async function () {
+      const inp = document.getElementById('up-file');
+      if (!inp || !inp.files || !inp.files[0]) { showToast('Escolhe um ficheiro primeiro.', 'neutral'); return; }
+      var ok = await uploadKingDocFile(inp.files[0], document.getElementById('up-type').value || 'documento');
+      if (!ok) { showToast('Erro no upload.', 'err'); return; }
+      inp.value = '';
+      showToast('Ficheiro enviado.', 'ok');
+      loadFiles();
+    };
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/"/g, '&quot;');
+  }
+
+  var KD_EMOJI_PICKER = (
+    'Y"O ⭐ o Y' YZ Y? YZ ❤️ Y'> Y's Y'T Y'o Y ' +
+    'Y Y YZ? YZS Y ~. YZ, YZ YZ ' +
+    'Y' Y' Y' Y Y"S Y"^ Y"? Y' Y ' +
+    'Y Y Y>️ YT️ Ys- o^️ Yss ' +
+    'Y"" Y"f Y"Z Y"< o?️ ' +
+    'Y' Y' Y Y"z Y' YO ' +
+    'Y Y?" ,️ Y"' ' +
+    'Ys? O " Y' Y"' Y>️ YZ YY'Z'
+  ).trim().split(/\s+/);
+
+  function setShortcutEmoji(ch, skipManual) {
+    var raw = ch != null ? String(ch) : '';
+    var v = raw.trim().slice(0, 8);
+    if (!v) v = 'Y"O';
+    var hid = document.getElementById('kd-sc-emoji');
+    var prev = document.getElementById('kd-sc-emoji-preview');
+    var manual = document.getElementById('kd-sc-emoji-manual');
+    if (hid) hid.value = v;
+    if (prev) prev.textContent = v;
+    if (manual && !skipManual) manual.value = v;
+  }
+  function closeEmojiPopover() {
+    var pop = document.getElementById('kd-emoji-popover');
+    var toggle = document.getElementById('kd-emoji-toggle');
+    if (pop) pop.setAttribute('hidden', '');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+  function initKdEmojiPicker() {
+    var grid = document.getElementById('kd-emoji-grid');
+    var toggle = document.getElementById('kd-emoji-toggle');
+    var pop = document.getElementById('kd-emoji-popover');
+    var manual = document.getElementById('kd-sc-emoji-manual');
+    if (!grid) return;
+    grid.innerHTML = KD_EMOJI_PICKER.map(function (emo) {
+      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '" title="' + escapeAttr(emo) + '" aria-label="' + escapeAttr(emo) + '">' + emo + '</button>';
+    }).join('');
+    grid.querySelectorAll('.kd-emoji-opt').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        setShortcutEmoji(this.getAttribute('data-emoji') || this.textContent);
+        closeEmojiPopover();
+      };
+    });
+    if (toggle && pop) {
+      toggle.onclick = function (e) {
+        e.stopPropagation();
+        if (pop.hasAttribute('hidden')) {
+          pop.removeAttribute('hidden');
+          toggle.setAttribute('aria-expanded', 'true');
+        } else {
+          closeEmojiPopover();
+        }
+      };
+    }
+    if (manual) {
+      manual.addEventListener('input', function () {
+        var v = this.value.trim().slice(0, 8) || 'Y"O';
+        var hid = document.getElementById('kd-sc-emoji');
+        var prev = document.getElementById('kd-sc-emoji-preview');
+        if (hid) hid.value = v;
+        if (prev) prev.textContent = v;
+      });
+    }
+    document.addEventListener('click', function (e) {
+      if (!pop || pop.hasAttribute('hidden')) return;
+      var t = e.target;
+      if (pop.contains(t) || (toggle && toggle.contains(t))) return;
+      closeEmojiPopover();
+    });
+  }
+
+  function initKdCdtEmojiPicker() {
+    var grid = document.getElementById('kd-cdt-emoji-pop');
+    var btn = document.getElementById('kd-cdt-emoji-btn');
+    var iconInp = document.getElementById('kd-cdt-icon');
+    if (!grid || !btn || !KD_EMOJI_PICKER.length) return;
+    grid.innerHTML = KD_EMOJI_PICKER.map(function (emo) {
+      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '" aria-label="' + escapeAttr(emo) + '">' + emo + '</button>';
+    }).join('');
+    grid.querySelectorAll('.kd-emoji-opt').forEach(function (b) {
+      b.onclick = function (ev) {
+        ev.stopPropagation();
+        var ch = (this.getAttribute('data-emoji') || this.textContent || '').trim().slice(0, 8);
+        if (iconInp) iconInp.value = ch || 'Y"Z';
+        grid.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', 'false');
+      };
+    });
+    btn.onclick = function (ev) {
+      ev.stopPropagation();
+      if (grid.hasAttribute('hidden')) {
+        grid.removeAttribute('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      } else {
+        grid.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    };
+    document.addEventListener('click', function cdtEmojiDocClick(ev) {
+      if (grid.hasAttribute('hidden')) return;
+      if (grid.contains(ev.target) || btn.contains(ev.target)) return;
+      grid.setAttribute('hidden', '');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  async function loadVault() {
+    const tok = getToken();
+    if (!tok) {
+      document.getElementById('auth-hint').textContent = 'Inicia sessão no Conecta King e abre esta página a partir do painel (com token guardado).';
+      return;
+    }
+    document.getElementById('auth-hint').textContent = '';
+    setAppLoading(true);
+    try {
+      const r = await fetch(api('/api/king-docs/vault'), { headers: authHeaders() });
+      if (r.status === 403) {
+        document.getElementById('auth-hint').textContent = 'O módulo King Docs não está disponível no teu plano.';
+        return;
+      }
+      if (!r.ok) {
+        document.getElementById('auth-hint').textContent = 'Não foi possível carregar o cofre. Atualiza a página ou tenta mais tarde.';
+        showToast('Erro ao carregar o cofre.', 'err');
+        return;
+      }
+      const j = await r.json();
+      const d = j.data && j.data.fieldData;
+      if (d && typeof d === 'object') fieldData = d;
+      ensureFieldData();
+      setVaultDirty(false);
+      applyDisplayNameToHero();
+      renderDados();
+      renderUnifiedShareCards();
+      await loadFiles();
+      await loadLinks();
+    } finally {
+      setAppLoading(false);
+    }
+  }
+
+  async function saveVault() {
+    syncNamesBeforeSave();
+    var btns = [
+      document.getElementById('btn-save-vault'),
+      document.getElementById('kd-dados-save-quick'),
+      document.getElementById('kd-hero-save-quick')
+    ];
+    btns.forEach(function (b) { if (b) { b.disabled = true; b.textContent = 'A guardar—'; } });
+    try {
+      const r = await fetch(api('/api/king-docs/vault'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fieldData }) });
+      const j = await r.json().catch(function () { return {}; });
+      if (!r.ok || j.success === false) {
+        showToast((j && j.message) || 'Não foi possível guardar no servidor. Tenta outra vez.', 'err');
+        return;
+      }
+      if (j.data && j.data.fieldData && typeof j.data.fieldData === 'object') fieldData = j.data.fieldData;
+      ensureFieldData();
+      try { localStorage.setItem(VAULT_SAVED_AT_KEY, String(Date.now())); } catch (e) {}
+      setVaultDirty(false);
+      applyDisplayNameToHero();
+      showToast('Guardado no servidor.', 'ok');
+      renderDados();
+      renderUnifiedShareCards();
+    } catch (e) {
+      showToast('Erro de rede ao guardar. Verifica a ligação.', 'err');
+    } finally {
+      btns.forEach(function (b) {
+        if (!b) return;
+        b.disabled = false;
+        if (b.id === 'btn-save-vault') b.textContent = 'Guardar no servidor';
+        else b.textContent = 'Guardar no servidor';
+      });
+    }
+  }
+
+  async function importFromProfile() {
+    const r = await fetch(api('/api/king-docs/vault/import-profile'), { method: 'POST', headers: authHeaders() });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { showToast(j.message || 'Não foi possível importar o perfil.', 'err'); return; }
+    const d = j.data && j.data.fieldData;
+    if (d && typeof d === 'object') fieldData = d;
+    ensureFieldData();
+    setVaultDirty(false);
+    applyDisplayNameToHero();
+    renderDados();
+    renderUnifiedShareCards();
+    showToast(j.message || 'Dados do perfil importados.', 'ok');
+  }
+
+  async function exportVaultPdf() {
+    const r = await fetch(api('/api/king-docs/vault/export-pdf'), { headers: { Authorization: 'Bearer ' + getToken() } });
+    if (!r.ok) { showToast('Erro ao gerar o PDF.', 'err'); return; }
+    const blob = await r.blob();
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = u;
+    a.download = 'king-docs-cofre.pdf';
+    a.click();
+    URL.revokeObjectURL(u);
+    showToast('PDF exportado — backup do cofre descarregado.', 'ok');
+  }
+
+  function fileExistsForDocType(docType) {
+    const t = String(docType).trim();
+    return filesList.some(function (f) { return String(f.doc_type || '').trim() === t; });
+  }
+
+  var CUSTOM_DOC_TYPES_KEY = 'kingDocs_custom_doc_types_v1';
+  var VAULT_SAVED_AT_KEY = 'kingDocs_vault_saved_hint_v1';
+  function loadCustomDocTypes() {
+    try {
+      var raw = localStorage.getItem(CUSTOM_DOC_TYPES_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter(function (x) { return x && String(x.docType || '').trim(); }) : [];
+    } catch (e) { return []; }
+  }
+  function saveCustomDocTypes(arr) {
+    try { localStorage.setItem(CUSTOM_DOC_TYPES_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function normalizeDocTypeKey(s) {
+    return String(s || '').trim().toUpperCase().slice(0, 80);
+  }
+  function getDocCardPresetsMerged() {
+    var seen = {};
+    var out = [];
+    DOC_CARD_PRESETS.forEach(function (p) {
+      seen[p.docType] = true;
+      out.push({ docType: p.docType, label: p.label, icon: p.icon, isCustom: false });
+    });
+    loadCustomDocTypes().forEach(function (c) {
+      var dt = normalizeDocTypeKey(c.docType);
+      if (!dt || seen[dt]) return;
+      seen[dt] = true;
+      out.push({
+        docType: dt,
+        label: String(c.label || dt).trim().slice(0, 60),
+        icon: (String(c.icon || 'Y"Z').trim().slice(0, 8) || 'Y"Z'),
+        isCustom: true
+      });
+    });
+    if (filesList && filesList.length) {
+      filesList.forEach(function (f) {
+        var raw = String(f.doc_type || '').trim();
+        if (!raw) return;
+        if (seen[raw]) return;
+        seen[raw] = true;
+        out.push({ docType: raw, label: raw, icon: 'Y""', isCustom: true, orphan: true });
+      });
+    }
+    return out;
+  }
+  function docTypeLabel(docType) {
+    var t = String(docType || '').trim();
+    var merged = getDocCardPresetsMerged();
+    var p = merged.find(function (x) { return x.docType === t; });
+    return p ? p.label : t;
+  }
+  /** Alinha o hint do campo (ex. RG) ao docType dos cartões (maiúsculas / acentos) */
+  function vaultDocTypeKeyForHint(hint) {
+    if (!hint) return null;
+    var h = String(hint).trim();
+    var merged = getDocCardPresetsMerged();
+    var found = merged.find(function (x) {
+      return normalizeDocTypeKey(x.docType) === normalizeDocTypeKey(h);
+    });
+    return found ? found.docType : h;
+  }
+  function docTypeSelectedInVault(dt) {
+    if (!dt) return false;
+    var card = findShareCard(null, null, dt);
+    if (!card) return false;
+    var sf = card.querySelector('.kd-sc-sf');
+    return !!(sf && sf.checked);
+  }
+  function ensureVaultDocTypeSelectedForField(g, k) {
+    var raw = fieldKeyToDocTypeHint(k, g);
+    if (!raw) return;
+    setShareCardModes(g, k, raw, false, true);
+    syncDocPreviewFromShareCards();
+  }
+  function formatVaultSavedHint() {
+    try {
+      var raw = localStorage.getItem(VAULT_SAVED_AT_KEY);
+      if (!raw) return '';
+      var d = new Date(parseInt(raw, 10));
+      if (isNaN(d.getTime())) return '';
+      return 'ltima gravação neste dispositivo: ' + d.toLocaleString('pt-BR');
+    } catch (e) { return ''; }
+  }
+  function renderCustomDocTypesList() {
+    var ul = document.getElementById('kd-cdt-list');
+    if (!ul) return;
+    var arr = loadCustomDocTypes();
+    if (!arr.length) {
+      ul.innerHTML = '<li class="kd-cdt-empty">Nenhum tipo extra. Usa o formulário acima.</li>';
+      return;
+    }
+    ul.innerHTML = arr.map(function (c, i) {
+      return '<li class="kd-cdt-item"><span class="kd-cdt-ico" aria-hidden="true">' + escapeHtml(String(c.icon || 'Y"Z').slice(0, 8)) + '</span> <strong>' + escapeHtml(String(c.label || '').slice(0, 60)) + '</strong> <code style="font-size:.72rem;opacity:.85">' + escapeHtml(normalizeDocTypeKey(c.docType)) + '</code> ' +
+        '<button type="button" class="btn secondary btn-kd-cdt-rem" data-i="' + i + '">Remover</button></li>';
+    }).join('');
+    ul.querySelectorAll('.btn-kd-cdt-rem').forEach(function (b) {
+      b.onclick = function () {
+        var ix = parseInt(this.getAttribute('data-i'), 10);
+        var a = loadCustomDocTypes();
+        if (ix < 0 || ix >= a.length) return;
+        a.splice(ix, 1);
+        saveCustomDocTypes(a);
+        renderCustomDocTypesList();
+        renderDocCards();
+      };
+    });
+  }
+
+  function renderDocUploadCards() {
+    var root = document.getElementById('doc-upload-root');
+    if (!root) return;
+    var html = getDocCardPresetsMerged().map(function (p) {
+      var sel = fileExistsForDocType(p.docType);
+      var cls = 'doc-card' + (sel ? ' selected' : '');
+      var lastD = latestForDocType(p.docType);
+      var dateLine = lastD ? '<div class="dc-date">ltimo envio: ' + escapeHtml(formatShortDate(lastD)) + '</div>' : '';
+      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '" title="Enviar ' + escapeAttr(p.label) + '">' +
+        '<div class="dc-icon" aria-hidden="true">' + p.icon + '</div>' +
+        '<div class="dc-title">' + escapeHtml(p.label) + '</div>' +
+        '<div class="dc-status">' + (sel ? 'o" No cofre' : 'Toca para enviar') + '</div>' +
+        dateLine +
+        '</button>';
+    }).join('');
+    root.innerHTML = html;
+    root.querySelectorAll('.doc-card[data-doc-type]').forEach(function (btn) {
+      btn.onclick = function () {
+        pendingDocType = this.getAttribute('data-doc-type') || '';
+        var hid = document.getElementById('doc-file-hidden');
+        if (hid) { hid.value = ''; hid.click(); }
+      };
+    });
+  }
+  function renderUnifiedShareCards() {
+    var root = document.getElementById('doc-browse-root');
+    if (!root) return;
+    root.className = 'doc-grid doc-grid--unified';
+    var addCard = '<button type="button" class="doc-card doc-card--browse doc-card--add-type" id="btn-kd-browse-new-type" title="Criar outro tipo de documento (nome + ícone)">' +
+      '<div class="dc-icon" aria-hidden="true">z.</div>' +
+      '<div class="dc-title">Novo tipo</div>' +
+      '<div class="dc-status">Criar + ícone</div></button>';
+    var html = addCard;
+    buildShareSections().forEach(function (sec) {
+      html += '<div class="kd-grid-section-label" role="heading" aria-level="3">' +
+        '<span aria-hidden="true">' + (sec.icon || 'Y"<') + '</span> ' + escapeHtml(sec.title) + '</div>';
+      (sec.items || []).forEach(function (it) {
+        html += renderShareCardHtml(it);
+      });
+    });
+    root.innerHTML = html;
+    var btnNew = document.getElementById('btn-kd-browse-new-type');
+    if (btnNew) {
+      btnNew.onclick = function (e) {
+        e.preventDefault();
+        var tab = document.getElementById('tab-p-dados');
+        if (tab) tab.click();
+        var el = document.getElementById('kd-custom-doctypes-wrap');
+        if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e2) {} }
+        var inp = document.getElementById('kd-cdt-label');
+        if (inp) inp.focus();
+      };
+    }
+    root.querySelectorAll('.doc-card--share').forEach(function (card) {
+      card.querySelectorAll('.kd-sc-st, .kd-sc-sf').forEach(function (inp) {
+        inp.addEventListener('change', function () {
+          var st = card.querySelector('.kd-sc-st');
+          var sf = card.querySelector('.kd-sc-sf');
+          card.classList.toggle('doc-card--on', !!((st && st.checked) || (sf && sf.checked)));
+          clearAtalhoActive();
+          syncDocPreviewFromShareCards();
+          updateSharePreview();
+        });
+      });
+    });
+    syncDocPreviewFromShareCards();
+  }
+  function renderDocBrowseCards() {
+    renderUnifiedShareCards();
+  }
+  function renderDocCards() {
+    renderDocUploadCards();
+    renderUnifiedShareCards();
+    if (docPreviewSelectedTypes.length) {
+      var pruned = docPreviewSelectedTypes.filter(function (dt) { return fileExistsForDocType(dt); });
+      if (pruned.length !== docPreviewSelectedTypes.length) {
+        docPreviewSelectedTypes = pruned;
+        revokeDocPreviewBlobAll();
+      }
+      refreshDocVaultPreview();
+    }
+  }
+
+  async function uploadKingDocFile(file, docTypeLabel) {
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('docType', docTypeLabel || 'documento');
+    var r = await fetch(api('/api/king-docs/files'), { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }, body: fd });
+    return r.ok;
+  }
+
+  async function loadFiles() {
+    const r = await fetch(api('/api/king-docs/files'), { headers: authHeaders() });
+    if (!r.ok) return;
+    const j = await r.json();
+    filesList = (j.data && j.data.files) || [];
+    renderDocCards();
+    const el = document.getElementById('file-list');
+    if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa a aba <strong>Dados</strong> (secção Documentos) para enviar o primeiro.</p>'; renderUnifiedShareCards(); refreshDadosFieldDocStatuses(); return; }
+    el.innerHTML = filesList.map(f => {
+      var dt = f.created_at ? formatShortDate(new Date(f.created_at)) : '';
+      return '<div class="file-row"><span>#' + f.id + ' — ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
+        (dt ? ' <span style="opacity:.78;font-size:.78rem">· ' + escapeHtml(dt) + '</span>' : '') +
+        '</span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>';
+    }).join('');
+    el.querySelectorAll('.btn-del-file').forEach(b => {
+      b.onclick = async function() {
+        if (!confirm('Apagar este ficheiro do cofre?')) return;
+        const id = this.getAttribute('data-id');
+        await fetch(api('/api/king-docs/files/' + id), { method: 'DELETE', headers: authHeaders() });
+        showToast('Ficheiro removido do cofre.', 'ok');
+        loadFiles();
+      };
+    });
+    renderUnifiedShareCards();
+    var hidPf = document.getElementById('sh-profile-file-id');
+    if (hidPf && !String(hidPf.value || '').trim()) {
+      var pfLatest = getLatestFileForDocType('FOTO PESSOAL');
+      if (pfLatest) hidPf.value = String(pfLatest.id);
+    }
+    refreshProfilePhotoPreview();
+    refreshDadosFieldDocStatuses();
+  }
+
+  function clearAtalhoActive() {
+    document.querySelectorAll('.btn-atalho[data-preset]').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelectorAll('.btn-atalho[data-custom-id]').forEach(function (b) { b.classList.remove('active'); });
+  }
+
+  function collectCurrentPresetPairsFrom(fieldRoot, extraRoot) {
+    var pairs = [];
+    var useRoot = fieldRoot;
+    if (!useRoot || useRoot.id === 'share-table-wrap') useRoot = document.getElementById('doc-browse-root');
+    if (useRoot) {
+      useRoot.querySelectorAll('.doc-card--share').forEach(function (card) {
+        var st = card.querySelector('.kd-sc-st');
+        var sf = card.querySelector('.kd-sc-sf');
+        var wantT = !!(st && st.checked);
+        var wantF = !!(sf && sf.checked);
+        if (!wantT && !wantF) return;
+        var gid = card.getAttribute('data-gid') || '';
+        var key = card.getAttribute('data-key') || '';
+        var docType = card.getAttribute('data-doc-type') || '';
+        if (gid && key) {
+          var mode = wantT && wantF ? 'b' : (wantF ? 'f' : 't');
+          pairs.push([gid, key, mode]);
+        } else if (docType && wantF) {
+          pairs.push({ extraDoc: docType });
+        }
+      });
+    }
+    return pairs;
+  }
+  function collectCurrentPresetPairs() {
+    return collectCurrentPresetPairsFrom(document.getElementById('doc-browse-root'), null);
+  }
+
+  function loadCustomShortcuts() {
+    try {
+      var raw = localStorage.getItem(CUSTOM_SHORTCUTS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveCustomShortcuts(arr) {
+    try { localStorage.setItem(CUSTOM_SHORTCUTS_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function renderCustomShortcuts() {
+    var host = document.getElementById('kd-custom-atalhos-inner');
+    if (!host) return;
+    var arr = loadCustomShortcuts();
+    if (!arr.length) { host.innerHTML = ''; return; }
+    host.innerHTML = arr.map(function (it) {
+      var img = it.imageDataUrl ? '<img src="' + escapeAttr(it.imageDataUrl) + '" alt="" class="kd-atalho-img"/>' : '<span aria-hidden="true">' + escapeHtml(it.icon || 'Y"O') + '</span>';
+      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '">' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">oZ</button></span>';
+    }).join('');
+    host.querySelectorAll('[data-custom-id]').forEach(function (btn) {
+      btn.onclick = function () { applyCustomShortcut(this.getAttribute('data-custom-id')); };
+    });
+    host.querySelectorAll('[data-edit-id]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openShortcutModal(this.getAttribute('data-edit-id'));
+      };
+    });
+  }
+  function applyCustomShortcut(id) {
+    var arr = loadCustomShortcuts();
+    var it = arr.find(function (x) { return x.id === id; });
+    if (!it) return;
+    ensureFieldData();
+    clearAllShareCards();
+    var list = it.pairs && it.pairs.length ? it.pairs : (it.presetKey && PRESETS[it.presetKey] ? PRESETS[it.presetKey] : null);
+    if (!list) return;
+    list.forEach(function (entry) { applyPresetToShareCard(entry); });
+    clearAtalhoActive();
+    var b = document.querySelector('.btn-atalho[data-custom-id="' + id + '"]');
+    if (b) b.classList.add('active');
+    syncDocPreviewFromShareCards();
+    updateSharePreview();
+  }
+
+  function applyPreset(presetId) {
+    const list = PRESETS[presetId];
+    if (!list) return;
+    ensureFieldData();
+    clearAllShareCards();
+    list.forEach(function (entry) { applyPresetToShareCard(entry); });
+    clearAtalhoActive();
+    var activeBtn = document.querySelector('.btn-atalho[data-preset="' + presetId + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+    syncDocPreviewFromShareCards();
+    updateSharePreview();
+  }
+
+  function collectSharePreviewData() {
+    ensureFieldData();
+    const sections = {};
+    let count = 0;
+
+    document.querySelectorAll('#doc-browse-root .doc-card--share').forEach(function (card) {
+      var st = card.querySelector('.kd-sc-st');
+      var sf = card.querySelector('.kd-sc-sf');
+      var wantText = !!(st && st.checked);
+      var wantFile = !!(sf && sf.checked);
+      if (!wantText && !wantFile) return;
+      var gid = card.getAttribute('data-gid') || '';
+      var key = card.getAttribute('data-key') || '';
+      var docType = card.getAttribute('data-doc-type') || '';
+      var label = card.querySelector('.dc-title') ? card.querySelector('.dc-title').textContent : '';
+      if (gid && key) {
+        var val = (fieldData[gid] && fieldData[gid][key] != null) ? String(fieldData[gid][key]) : '';
+        var valDisp = val.trim() ? val : '(vazio)';
+        var gInfo = GROUPS.find(function (x) { return x.id === gid; });
+        var title = gInfo ? gInfo.title : 'Outros';
+        if (!sections[title]) sections[title] = [];
+        var dtHint = fieldKeyToDocTypeHint(key, gid);
+        var canon = dtHint ? vaultDocTypeKeyForHint(dtHint) : null;
+        var fn = wantFile && canon ? (getLatestFileForDocType(canon) || findFileForFieldHint(gid, key)) : null;
+        var fileLabel = fn ? ('#' + fn.id + ' ' + (fn.doc_type || '')) : '';
+        if (wantText && fn) {
+          sections[title].push({ kind: 'merged', label: key, val: valDisp, fileLabel: fileLabel });
+          count++;
+        } else if (wantText) {
+          sections[title].push({ kind: 'text', label: key, val: valDisp });
+          count++;
+        } else if (fn) {
+          sections[title].push({ kind: 'file', label: key, fileLabel: fileLabel });
+          count++;
+        }
+      } else if (docType && wantFile) {
+        var f = getLatestFileForDocType(docType);
+        if (!f) return;
+        if (!sections['Documentos']) sections['Documentos'] = [];
+        sections['Documentos'].push({
+          kind: 'vault',
+          label: label || docTypeLabel(docType),
+          fileLabel: '#' + f.id + ' ' + (f.doc_type || ''),
+          docType: docType
+        });
+        count++;
+      }
+    });
+
+    var showName = document.getElementById('sh-name') && document.getElementById('sh-name').value.trim();
+    var pfId = document.getElementById('sh-profile-file-id') && document.getElementById('sh-profile-file-id').value.trim();
+    var showPhoto = !!pfId;
+    if (showName) count++;
+    if (showPhoto) count++;
+    return { sections: sections, count: count, showName: showName, showPhoto: showPhoto, showPhotoIsFile: showPhoto };
+  }
+
+  function formatSharePreviewPlainText(data) {
+    if (!data || !data.count) return '';
+    var lines = [];
+    lines.push('King Docs — resumo do conteúdo do link');
+    lines.push('');
+    if (data.showName) {
+      lines.push('Nome no topo: ' + data.showName);
+      lines.push('');
+    }
+    if (data.showPhoto) {
+      lines.push('Foto no topo: imagem enviada para o cofre.');
+      lines.push('');
+    }
+    Object.keys(data.sections).forEach(function (title) {
+      lines.push('' + title);
+      data.sections[title].forEach(function (item) {
+        if (item.kind === 'merged') {
+          lines.push('  — ' + item.label + ': ' + item.val + ' | ficheiro: ' + item.fileLabel);
+        } else if (item.kind === 'text') lines.push('  — ' + item.label + ': ' + item.val);
+        else if (item.kind === 'file') lines.push('  — ' + item.label + ' (ficheiro): ' + item.fileLabel);
+        else if (item.kind === 'vault') lines.push('  — ' + item.label + ': ' + item.fileLabel);
+        else lines.push('  — Documento extra: ' + item.label);
+      });
+      lines.push('');
+    });
+    return lines.join('\n').trim();
+  }
+
+  function formatSharePreviewPlainTextTextOnly(data) {
+    if (!data || !data.count) return '';
+    var lines = [];
+    lines.push('King Docs — só campos de texto');
+    lines.push('');
+    if (data.showName) {
+      lines.push('Nome no topo: ' + data.showName);
+      lines.push('');
+    }
+    Object.keys(data.sections).forEach(function (title) {
+      var items = (data.sections[title] || []).filter(function (item) {
+        return item.kind === 'text' || item.kind === 'merged';
+      });
+      if (!items.length) return;
+      lines.push('' + title);
+      items.forEach(function (item) {
+        if (item.kind === 'merged') lines.push('  — ' + item.label + ': ' + item.val);
+        else lines.push('  — ' + item.label + ': ' + item.val);
+      });
+      lines.push('');
+    });
+    return lines.join('\n').trim();
+  }
+
+  function updateSharePreview() {
+    const out = document.getElementById('share-preview-body');
+    const badge = document.getElementById('preview-count');
+    if (!out || !badge) return;
+    const data = collectSharePreviewData();
+    const count = data.count;
+
+    badge.textContent = count + ' itens';
+    var hintEl = document.getElementById('share-confirm-hint');
+    if (hintEl) {
+      if (count === 0) {
+        hintEl.textContent = 'Marca Texto e/ou Foto/PDF nos cartões; o link gera-se na aba «Partilhar».';
+        hintEl.classList.remove('kd-share-summary--ok');
+      } else {
+        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o resumo no painel acima; na aba «Partilhar» usa «Gerar link seguro» quando estiver correto.';
+        hintEl.classList.add('kd-share-summary--ok');
+      }
+    }
+    if (count === 0) {
+      out.innerHTML = '<p class="preview-empty">Marca Texto e/ou Foto/PDF nos cartões à esquerda.</p>';
+      updateUnifiedActionButtons();
+      return;
+    }
+
+    var html = '';
+    if (data.showName || data.showPhoto) {
+      html += '<div class="preview-sec"><h4>No topo do link</h4>';
+      if (data.showName) html += '<div class="preview-line"><span class="pl">Nome</span><span class="pv">' + escapeHtml(data.showName) + '</span></div>';
+      if (data.showPhoto) html += '<div class="preview-line"><span class="pl">Foto no topo</span><span class="pv">Imagem do cofre (enviada por ti)</span></div>';
+      html += '</div>';
+    }
+    Object.keys(data.sections).forEach(function (title) {
+      html += '<div class="preview-sec"><h4>' + escapeHtml(title) + '</h4>';
+      data.sections[title].forEach(function (item) {
+        if (item.kind === 'merged') {
+          html += '<div class="preview-line preview-line--merged"><span class="pl">' + escapeHtml(item.label) + '</span><div class="pv-merge">';
+          html += '<div class="pv-row"><span class="pv-sub">Texto</span><span class="pv">' + escapeHtml(item.val) + '</span></div>';
+          html += '<div class="pv-row"><span class="pv-sub">Ficheiro</span><span class="pv">' + escapeHtml(item.fileLabel) + '</span></div>';
+          html += '</div></div>';
+        } else if (item.kind === 'text') {
+          html += '<div class="preview-line"><span class="pl">' + escapeHtml(item.label) + '</span><span class="pv">' + escapeHtml(item.val) + '</span></div>';
+        } else if (item.kind === 'file' || item.kind === 'vault') {
+          html += '<div class="preview-line preview-line--merged"><span class="pl">' + escapeHtml(item.label) + '</span><div class="pv-merge">';
+          html += '<div class="pv-row"><span class="pv-sub">Ficheiro</span><span class="pv">' + escapeHtml(item.fileLabel) + '</span></div></div></div>';
+        } else {
+          html += '<div class="preview-line"><span class="pl">Anexo</span><span class="pv">' + escapeHtml(item.label) + '</span></div>';
+        }
+      });
+      html += '</div>';
+    });
+    out.innerHTML = html;
+    updateUnifiedActionButtons();
+  }
+
+  function renderShareTableInto(wrapId, idPrefix) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    let idx = 0;
+    let html = '';
+    GROUPS.forEach(function (g) {
+      html += '<div class="kd-share-cat" data-gid="' + escapeAttr(g.id) + '">';
+      html += '<div class="kd-share-cat-head">';
+      html += '<span class="kd-share-cat-ico" aria-hidden="true">' + (g.icon || 'Y"<') + '</span>';
+      html += '<span class="kd-share-cat-title">' + escapeHtml(g.title) + '</span>';
+      html += '<span class="kd-share-cat-bulk">';
+      html += '<button type="button" class="kd-link-btn" data-select-all-gid="' + escapeAttr(g.id) + '">Selecionar todos</button>';
+      html += '<button type="button" class="kd-link-btn" data-clear-all-gid="' + escapeAttr(g.id) + '">Limpar todos</button>';
+      html += '</span>';
+      html += '</div><div class="kd-share-cat-body">';
+      g.keys.forEach(function (k) {
+        const fid = idPrefix + (idx++);
+        const fk = g.id + '|' + k;
+        html += '<div class="kd-field-block kd-share-field-card" data-fk="' + escapeAttr(fk) + '">';
+        html += '<div class="kd-share-field-card-head">';
+        html += '<span class="kd-share-field-card-ico" aria-hidden="true">' + (g.icon || 'Y"<') + '</span>';
+        html += '<span class="kd-share-field-name">' + escapeHtml(k) + '</span>';
+        html += '</div>';
+        html += '<div class="kd-field-adv kd-field-mode-picker">';
+        html += '<label class="kd-mini"><input type="checkbox" class="st" data-fid="' + fid + '"/> Texto</label>';
+        html += '<label class="kd-mini"><input type="checkbox" class="sf" data-fid="' + fid + '"/> Foto / PDF</label>';
+        html += '</div></div>';
+      });
+      html += '</div></div>';
+    });
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('[data-select-all-gid]').forEach(function (btn) {
+      btn.onclick = function () {
+        var gid = this.getAttribute('data-select-all-gid');
+        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
+        if (!cat) return;
+        cat.querySelectorAll('.kd-field-block .st').forEach(function (c) { c.checked = true; });
+        cat.querySelectorAll('.kd-field-block .sf').forEach(function (c) { c.checked = true; });
+        clearAtalhoActive();
+        if (idPrefix === 'f') updateSharePreview();
+      };
+    });
+    wrap.querySelectorAll('[data-clear-all-gid]').forEach(function (btn) {
+      btn.onclick = function () {
+        var gid = this.getAttribute('data-clear-all-gid');
+        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
+        if (!cat) return;
+        cat.querySelectorAll('.kd-field-block .st').forEach(function (c) { c.checked = false; });
+        cat.querySelectorAll('.kd-field-block .sf').forEach(function (c) { c.checked = false; });
+        clearAtalhoActive();
+        if (idPrefix === 'f') updateSharePreview();
+      };
+    });
+    wrap.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.classList) return;
+      if (!t.classList.contains('st') && !t.classList.contains('sf')) return;
+      if (t.classList.contains('sf') && t.checked) {
+        var block = t.closest('.kd-field-block');
+        if (block) {
+          var fk = block.getAttribute('data-fk') || '';
+          var parts = fk.split('|');
+          ensureVaultDocTypeSelectedForField(parts[0], parts.slice(1).join('|'));
+        }
+      }
+      clearAtalhoActive();
+      if (idPrefix === 'f') updateSharePreview();
+    });
+    if (idPrefix === 'f') updateSharePreview();
+  }
+  function renderShareTable() {
+    renderUnifiedShareCards();
+  }
+
+  function renderExtraDocsInto(wrapId) {
+    const w = document.getElementById(wrapId);
+    if (!w) return;
+    if (!filesList.length) { w.innerHTML = '<p class="sub">Sem ficheiros.</p>'; return; }
+    w.innerHTML = filesList.map(function (f) {
+      return '<div class="row" style="grid-template-columns:1fr 120px;"><label><input type="checkbox" class="xd-check" data-fid="' + f.id + '"/> #' + f.id + ' ' + escapeHtml(f.doc_type) + '</label><input type="text" class="xd-label" data-fid="' + f.id + '" placeholder="Rótulo"/></div>';
+    }).join('');
+  }
+  function renderExtraDocs() {
+    renderExtraDocsInto('extra-docs-wrap');
+    updateSharePreview();
+  }
+
+  document.getElementById('doc-file-hidden').addEventListener('change', async function () {
+    var inp = this;
+    if (!inp.files || !inp.files[0] || !pendingDocType) { pendingDocType = ''; inp.value = ''; return; }
+    var ok = await uploadKingDocFile(inp.files[0], pendingDocType);
+    pendingDocType = '';
+    inp.value = '';
+    if (!ok) { showToast('Erro ao enviar o ficheiro. Tenta outra vez.', 'err'); return; }
+    showToast('Documento guardado no cofre.', 'ok');
+    loadFiles();
+  });
+
+  document.getElementById('btn-create-link').onclick = async function() {
+    var selection = buildUnifiedShareSelection();
+    if (!hasUnifiedShareContent(selection)) {
+      showToast('Marca campos ou documentos na aba Documentos antes de gerar o link.', 'neutral');
+      return;
+    }
+    const body = {
+      expiresInHours: parseInt(document.getElementById('sh-hours').value, 10) || 24,
+      password: document.getElementById('sh-pass').value || '',
+      maxViews: document.getElementById('sh-maxv').value || '',
+      selection: selection
+    };
+    const r = await fetch(api('/api/king-docs/shares'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    const out = document.getElementById('share-out');
+    if (!r.ok) {
+      out.innerHTML = '<p class="err">Não foi possível criar o link.</p>';
+      showToast('Erro ao criar o link. Verifica a rede ou tenta mais tarde.', 'err');
+      return;
+    }
+    const j = await r.json();
+    const d = j.data || {};
+    const fullUrl = window.location.origin + (d.shareUrl || '');
+    out.innerHTML = '<p class="okmsg">Link criado — já podes copiar, mostrar QR ou enviar por WhatsApp.</p><div class="linkbox">' + escapeHtml(fullUrl) + '</div><p class="btn-row"><button type="button" class="btn secondary" id="btn-copy-link">Copiar URL</button> <button type="button" class="btn secondary" id="btn-qr-link">QR Code</button> <button type="button" class="btn secondary" id="btn-wa-link">WhatsApp</button></p>';
+    showToast('Link gerado com sucesso.', 'ok');
+    document.getElementById('btn-copy-link').onclick = function() {
+      navigator.clipboard.writeText(fullUrl).then(function() { showToast('URL copiada para a área de transferência.', 'ok'); });
+    };
+    document.getElementById('btn-qr-link').onclick = function() { openQrModal(fullUrl); };
+    document.getElementById('btn-wa-link').onclick = function() {
+      const msg = encodeURIComponent('Segue o link confidencial (King Docs):\n' + fullUrl);
+      window.open('https://wa.me/?text=' + msg, '_blank', 'noopener,noreferrer');
+    };
+    loadLinks();
+  };
+
+  function shareLinkStatusBadge(s) {
+    if (s.revoked_at) return '<span class="kd-badge kd-badge-bad">Revogado</span>';
+    var exp = s.expires_at ? new Date(s.expires_at) : null;
+    if (exp && !isNaN(exp.getTime()) && exp.getTime() < Date.now()) return '<span class="kd-badge kd-badge-muted">Expirado</span>';
+    return '<span class="kd-badge kd-badge-ok">Ativo</span>';
+  }
+
+  function getSelectedShareIds() {
+    var ids = [];
+    document.querySelectorAll('#links-list .links-sel:checked').forEach(function (cb) {
+      var id = parseInt(cb.getAttribute('data-id'), 10);
+      if (id) ids.push(id);
+    });
+    return ids;
+  }
+
+  async function loadLinks() {
+    const el = document.getElementById('links-list');
+    const r = await fetch(api('/api/king-docs/shares'), { headers: authHeaders() });
+    if (!r.ok) { el.innerHTML = '<p class="err">Não foi possível carregar a lista de links.</p>'; showToast('Erro ao listar os links.', 'err'); return; }
+    const j = await r.json();
+    const arr = (j.data && j.data.shares) || [];
+    if (!arr.length) { el.innerHTML = '<p class="sub">Ainda não criaste nenhum link. Escolhe dados em <strong>Documentos</strong> e gera o URL na aba <strong>Partilhar</strong>.</p>'; return; }
+    el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th style="width:2.2rem"><input type="checkbox" id="links-sel-all" title="Selecionar todos"/></th><th>ID</th><th>Estado</th><th>Ações</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th>Gestão</th></tr>' +
+      arr.map(s => {
+        const u = window.location.origin + '/kingDocsShare.html?t=' + encodeURIComponent(s.token);
+        return '<tr><td><input type="checkbox" class="links-sel" data-id="' + s.id + '" aria-label="Selecionar link #' + s.id + '"/></td><td>' + s.id + '</td><td>' + shareLinkStatusBadge(s) + '</td><td class="links-actions"><a class="btn secondary" href="' + escapeAttr(u) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block;font-size:.72rem;padding:.28rem .5rem">Abrir</a> <button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar</button> <button type="button" class="btn secondary btn-qr-row" data-u="' + escapeAttr(u) + '">QR</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td class="kd-links-col-actions"><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button><button type="button" class="btn secondary btn-del-perm" data-id="' + s.id + '">Excluir</button></td></tr>';
+      }).join('') + '</table>';
+    el.querySelectorAll('.btn-copyt').forEach(b => {
+      b.onclick = function() { navigator.clipboard.writeText(this.getAttribute('data-u')); showToast('URL copiada.', 'ok'); };
+    });
+    el.querySelectorAll('.btn-qr-row').forEach(function (b) {
+      b.onclick = function () { openQrModal(this.getAttribute('data-u')); };
+    });
+    el.querySelectorAll('.btn-rev').forEach(b => {
+      b.onclick = async function() {
+        if (!confirm('Revogar este link? O URL deixa de funcionar, mas o registo continua na lista como «Revogado».')) return;
+        await fetch(api('/api/king-docs/shares/' + this.getAttribute('data-id')), { method: 'DELETE', headers: authHeaders() });
+        showToast('Link revogado.', 'ok');
+        loadLinks();
+      };
+    });
+    el.querySelectorAll('.btn-del-perm').forEach(function (b) {
+      b.onclick = async function () {
+        if (!confirm('Excluir este registo da lista? O link deixa de existir no teu histórico (ação definitiva).')) return;
+        var id = this.getAttribute('data-id');
+        var r = await fetch(api('/api/king-docs/shares/' + id + '/permanent'), { method: 'DELETE', headers: authHeaders() });
+        if (!r.ok) { showToast('Não foi possível excluir.', 'err'); return; }
+        showToast('Link excluído da lista.', 'ok');
+        loadLinks();
+      };
+    });
+    var selAll = document.getElementById('links-sel-all');
+    if (selAll) {
+      selAll.checked = false;
+      selAll.onchange = function () {
+        var on = selAll.checked;
+        el.querySelectorAll('.links-sel').forEach(function (cb) { cb.checked = on; });
+      };
+    }
+    (function bindLinksFilterOnce() {
+      var inp = document.getElementById('links-filter');
+      if (!inp || inp._kdBound) return;
+      inp._kdBound = true;
+      inp.addEventListener('input', function () {
+        var q = (inp.value || '').toLowerCase().trim();
+        var table = document.querySelector('#links-list table');
+        if (!table) return;
+        var rows = table.querySelectorAll('tr');
+        rows.forEach(function (tr, i) {
+          if (i === 0) return;
+          tr.style.display = !q || (tr.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+        });
+      });
+    })();
+  }
+
+  document.getElementById('btn-links-revoke-sel').onclick = async function () {
+    var ids = getSelectedShareIds();
+    if (!ids.length) { showToast('Seleciona pelo menos um link.', 'neutral'); return; }
+    if (!confirm('Revogar ' + ids.length + ' link(s)? O URL deixa de funcionar; os registos ficam como «Revogado» na lista.')) return;
+    for (var i = 0; i < ids.length; i++) {
+      var r = await fetch(api('/api/king-docs/shares/' + ids[i]), { method: 'DELETE', headers: authHeaders() });
+      if (!r.ok) { showToast('Erro ao revogar o link #' + ids[i], 'err'); loadLinks(); return; }
+    }
+    showToast(ids.length === 1 ? 'Link revogado.' : 'Links revogados.', 'ok');
+    loadLinks();
+  };
+  document.getElementById('btn-links-delete-sel').onclick = async function () {
+    var ids = getSelectedShareIds();
+    if (!ids.length) { showToast('Seleciona pelo menos um link.', 'neutral'); return; }
+    if (!confirm('Excluir DEFINITIVAMENTE ' + ids.length + ' registo(s)? Deixam de aparecer nesta lista.')) return;
+    for (var i = 0; i < ids.length; i++) {
+      var r = await fetch(api('/api/king-docs/shares/' + ids[i] + '/permanent'), { method: 'DELETE', headers: authHeaders() });
+      if (!r.ok) { showToast('Erro ao excluir o link #' + ids[i], 'err'); loadLinks(); return; }
+    }
+    showToast(ids.length === 1 ? 'Link excluído da lista.' : 'Links excluídos da lista.', 'ok');
+    loadLinks();
+  };
+
+  function clearShareFieldSelection() {
+    clearAtalhoActive();
+    clearAllShareCards();
+    updateSharePreview();
+  }
+  document.getElementById('btn-share-fields-clear').onclick = clearShareFieldSelection;
+
+  document.querySelector('.wrap').addEventListener('click', function (e) {
+    var editPreset = e.target && e.target.closest && e.target.closest('[data-edit-preset]');
+    if (editPreset) {
+      e.preventDefault();
+      e.stopPropagation();
+      openShortcutModalFromPreset(editPreset.getAttribute('data-edit-preset'));
+      return;
+    }
+    var btn = e.target && e.target.closest && e.target.closest('.btn-atalho[data-preset]');
+    if (!btn) return;
+    e.preventDefault();
+    applyPreset(btn.getAttribute('data-preset'));
+  });
+  document.getElementById('p-docs').addEventListener('change', function () {
+    clearAtalhoActive();
+    updateSharePreview();
+  });
+  document.getElementById('sh-name').addEventListener('input', function () {
+    syncHeroNameToForm(this.value);
+    setVaultDirty(true);
+    updateSharePreview();
+  });
+  var heroSaveBtn = document.getElementById('kd-hero-save-quick');
+  if (heroSaveBtn) heroSaveBtn.onclick = function () { saveVault(); };
+  function refreshProfilePhotoPreview() {
+    var wrap = document.getElementById('sh-profile-preview-wrap');
+    var clearBtn = document.getElementById('sh-profile-clear');
+    var fidEl = document.getElementById('sh-profile-file-id');
+    if (!fidEl || !wrap) return;
+    var id = parseInt(fidEl.value, 10);
+    if (!id) {
+      wrap.style.display = 'none';
+      wrap.innerHTML = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      return;
+    }
+    var f = filesList.find(function (x) { return x.id === id; });
+    if (!f || String(f.mime || '').indexOf('image/') !== 0) {
+      wrap.style.display = 'none';
+      if (clearBtn) clearBtn.style.display = '';
+      return;
+    }
+    wrap.style.display = '';
+    if (clearBtn) clearBtn.style.display = '';
+    wrap.innerHTML = '<p class="kd-hint" style="margin:0 0 .35rem">Pré-visualização</p><img alt="" style="max-width:140px;max-height:140px;border-radius:10px;border:1px solid var(--border);object-fit:cover"/>';
+    var img = wrap.querySelector('img');
+    fetch(api('/api/king-docs/files/' + id + '/download'), { headers: authHeaders() }).then(function (r) {
+      return r.ok ? r.blob() : null;
+    }).then(function (blob) {
+      if (!blob || !img) return;
+      img.src = URL.createObjectURL(blob);
+    });
+  }
+  var shProf = document.getElementById('sh-profile-file');
+  if (shProf) {
+    shProf.addEventListener('change', async function () {
+      if (!this.files || !this.files[0]) return;
+      showToast('A enviar foto—', 'neutral');
+      var ok = await uploadKingDocFile(this.files[0], 'FOTO PESSOAL');
+      this.value = '';
+      if (!ok) { showToast('Erro ao enviar a foto.', 'err'); return; }
+      await loadFiles();
+      var latest = getLatestFileForDocType('FOTO PESSOAL');
+      if (latest) {
+        var hid = document.getElementById('sh-profile-file-id');
+        if (hid) hid.value = String(latest.id);
+        refreshProfilePhotoPreview();
+        updateSharePreview();
+      }
+    });
+  }
+  var shClr = document.getElementById('sh-profile-clear');
+  if (shClr) {
+    shClr.onclick = function () {
+      var hid = document.getElementById('sh-profile-file-id');
+      if (hid) hid.value = '';
+      refreshProfilePhotoPreview();
+      updateSharePreview();
+    };
+  }
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(function (x) {
+        x.classList.remove('active');
+        x.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+      this.classList.add('active');
+      this.setAttribute('aria-selected', 'true');
+      document.getElementById(this.getAttribute('data-panel')).classList.add('active');
+      var panelId = this.getAttribute('data-panel');
+      if (panelId === 'p-partilha') { updateSharePreview(); loadLinks(); }
+      if (panelId === 'p-docs') {
+        renderUnifiedShareCards();
+        updateSharePreview();
+      }
+    });
+  });
+  document.getElementById('btn-doc-clear-sel').onclick = function () {
+    clearAllShareCards();
+    updateSharePreview();
+  };
+  function bindCustomDocTypeAdd() {
+    var addBtn = document.getElementById('kd-cdt-add');
+    if (!addBtn) return;
+    addBtn.onclick = function () {
+    var labelEl = document.getElementById('kd-cdt-label');
+    var iconEl = document.getElementById('kd-cdt-icon');
+    var label = labelEl && labelEl.value.trim();
+    var icon = (iconEl && iconEl.value ? iconEl.value : 'Y"Z').trim().slice(0, 8) || 'Y"Z';
+    if (!label) { showToast('Escreve um nome para o tipo.', 'neutral'); return; }
+    var dt = normalizeDocTypeKey(label);
+    if (!dt) { showToast('Nome inválido.', 'neutral'); return; }
+    if (DOC_CARD_PRESETS.some(function (p) { return p.docType === dt; })) {
+      showToast('Já existe um cartão padrão com esse nome.', 'neutral');
+      return;
+    }
+    var arr = loadCustomDocTypes();
+    if (arr.some(function (x) { return normalizeDocTypeKey(x.docType) === dt; })) {
+      showToast('Esse tipo extra já existe.', 'neutral');
+      return;
+    }
+    arr.push({ docType: dt, label: label.slice(0, 60), icon: icon });
+    saveCustomDocTypes(arr);
+    if (labelEl) labelEl.value = '';
+    renderCustomDocTypesList();
+    renderDocCards();
+    showToast('Tipo criado. Clica no cartão «Enviar ao cofre» para enviar.', 'ok');
+    };
+  }
+  document.getElementById('btn-doc-copy-link').onclick = async function () {
+    var url = await quickShareVaultMulti();
+    if (!url) {
+      showToast('Marca documentos nos cartões ou campos em «Incluir no link» (e nome no topo, se quiseres).', 'neutral');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link único copiado.', 'ok');
+    } catch (e) {
+      showToast(url, 'neutral');
+    }
+    loadLinks();
+  };
+  document.getElementById('btn-doc-wa-link').onclick = async function () {
+    var url = await quickShareVaultMulti();
+    if (!url) {
+      showToast('Marca documentos ou campos para incluir no link.', 'neutral');
+      return;
+    }
+    window.open('https://wa.me/?text=' + encodeURIComponent(url), '_blank', 'noopener,noreferrer');
+    loadLinks();
+  };
+  document.getElementById('btn-doc-copy-plain').onclick = function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainText(data);
+    if (!t) { showToast('Marca campos ou documentos em «Incluir no link».', 'neutral'); return; }
+    navigator.clipboard.writeText(t).then(function () { showToast('Mensagem copiada (tudo).', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
+  };
+  document.getElementById('btn-doc-copy-textonly').onclick = function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainTextTextOnly(data);
+    if (!t) { showToast('Marca campos de texto em «Incluir no link».', 'neutral'); return; }
+    navigator.clipboard.writeText(t).then(function () { showToast('Só texto copiado.', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
+  };
+  document.getElementById('btn-doc-copy-with-img').onclick = async function () {
+    var data = collectSharePreviewData();
+    var text = formatSharePreviewPlainText(data);
+    if (!text) { showToast('Sem resumo para copiar.', 'neutral'); return; }
+    var fid = getProfileImageFileIdForUi();
+    if (!fid) { showToast('Envia a foto em Partilhar — Foto no link.', 'neutral'); return; }
+    try {
+      var r = await fetch(api('/api/king-docs/files/' + fid + '/download'), { headers: authHeaders() });
+      if (!r.ok) throw new Error('x');
+      var blob = await r.blob();
+      var mime = blob.type || 'image/jpeg';
+      if (mime.indexOf('image/') !== 0) {
+        await navigator.clipboard.writeText(text);
+        showToast('Ficheiro não é imagem — copiei só o texto.', 'neutral');
+        return;
+      }
+      if (typeof ClipboardItem === 'undefined') {
+        showToast('Este browser não copia imagem — usa «WhatsApp · texto + imagem».', 'neutral');
+        return;
+      }
+      var plain = new Blob([text], { type: 'text/plain' });
+      var item = new ClipboardItem((function () {
+        var o = { 'text/plain': plain };
+        o[mime] = blob;
+        return o;
+      })());
+      await navigator.clipboard.write([item]);
+      showToast('Texto e imagem copiados.', 'ok');
+    } catch (e) {
+      showToast('Não foi possível copiar a imagem — usa «WhatsApp · texto + imagem».', 'neutral');
+    }
+  };
+  document.getElementById('btn-doc-wa-text').onclick = function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainTextTextOnly(data);
+    if (!t) { showToast('Marca campos de texto primeiro.', 'neutral'); return; }
+    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+  };
+  document.getElementById('btn-doc-wa-text-img').onclick = async function () {
+    var data = collectSharePreviewData();
+    var t = formatSharePreviewPlainText(data);
+    if (!t) { showToast('Marca conteúdo no resumo primeiro.', 'neutral'); return; }
+    var fid = getProfileImageFileIdForUi();
+    if (!fid) {
+      window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+      showToast('Sem foto no topo — enviei só o texto. Adiciona foto em Partilhar.', 'neutral');
+      return;
+    }
+    var r = await fetch(api('/api/king-docs/files/' + fid + '/download'), { headers: authHeaders() });
+    if (!r.ok) {
+      window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+      showToast('Não foi possível carregar a foto — só texto.', 'err');
+      return;
+    }
+    var rawBlob = await r.blob();
+    var hdr = (r.headers.get('Content-Type') || '').split(';')[0].trim();
+    var mime = rawBlob.type && rawBlob.type.indexOf('image/') === 0 ? rawBlob.type : (hdr.indexOf('image/') === 0 ? hdr : 'image/jpeg');
+    var imgBlob = new Blob([rawBlob], { type: mime });
+    var ext = mime.indexOf('png') >= 0 ? 'png' : 'jpeg';
+    var file = new File([imgBlob], 'king-docs-foto.' + ext, { type: mime });
+
+    /** wa.me só envia texto — imagem tem de ir por partilha nativa ou área de transferência */
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: t, files: [file] });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+      try {
+        await navigator.share({ files: [file], title: 'King Docs', text: t });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+      try {
+        await navigator.share({ files: [file] });
+        try {
+          await navigator.clipboard.writeText(t);
+          showToast('Imagem enviada — texto copiado; cola na mensagem no WhatsApp.', 'ok');
+        } catch (e2) {
+          showToast('Imagem enviada — escreve o texto na mensagem.', 'neutral');
+        }
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        var plain = new Blob([t], { type: 'text/plain' });
+        var item = new ClipboardItem((function () {
+          var o = { 'text/plain': plain };
+          o[mime] = imgBlob;
+          return o;
+        })());
+        await navigator.clipboard.write([item]);
+        window.open('https://wa.me/', '_blank', 'noopener,noreferrer');
+        showToast('Texto e imagem na área de transferência — no WhatsApp mantém premido e cola, ou cola a imagem e depois o texto.', 'ok');
+        return;
+      }
+    } catch (e) {
+      /* continua */
+    }
+    try {
+      await navigator.clipboard.writeText(t);
+      window.open('https://wa.me/', '_blank', 'noopener,noreferrer');
+      showToast('Texto copiado. Abre a galeria e envia a foto manualmente (Partilhar — Foto no link).', 'neutral');
+    } catch (e2) {
+      window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
+      showToast('Só foi possível enviar texto pelo link. Usa «PDF · enviar» ou envia a foto à parte.', 'neutral');
+    }
+  };
+  document.getElementById('btn-doc-wa-list').onclick = async function () {
+    var extra = getSelectedExtraDocs();
+    var url = await quickShareVaultMulti();
+    if (!url) {
+      showToast('Marca documentos ou campos para incluir no link.', 'neutral');
+      return;
+    }
+    var lines = extra.map(function (e, i) { return (i + 1) + '. ' + e.label; }).join('\n');
+    var text = (lines ? 'Lista dos ficheiros no link:\n' + lines + '\n\n' : '') + 'Link (tudo no mesmo URL):\n' + url;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
+    loadLinks();
+  };
+  document.getElementById('btn-doc-wa-sep').onclick = async function () {
+    var extra = getSelectedExtraDocs();
+    if (!extra.length) return;
+    var parts = [];
+    for (var i = 0; i < extra.length; i++) {
+      var ed = extra[i];
+      var u = await quickShareVaultFile(ed.fileId, ed.label);
+      if (u) parts.push(ed.label + ':\n' + u);
+    }
+    if (!parts.length) return;
+    var text = 'Documentos (King Docs)\n\n' + parts.join('\n\n');
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
+    loadLinks();
+  };
+  document.getElementById('btn-doc-pdf-dl').onclick = async function () {
+    try {
+      showToast('A gerar PDF—', 'neutral');
+      var blob = await buildMergedPdfBlob();
+      if (!blob) { showToast('Marca o que queres partilhar em «Incluir no link» (textos, foto, documentos).', 'neutral'); return; }
+      var u = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = u;
+      a.download = 'king-docs-documentos.pdf';
+      a.click();
+      URL.revokeObjectURL(u);
+      showToast('PDF descarregado.', 'ok');
+    } catch (e) {
+      showToast('Erro ao gerar PDF.', 'err');
+    }
+  };
+  document.getElementById('btn-doc-pdf-share').onclick = async function () {
+    try {
+      var blob = await buildMergedPdfBlob();
+      if (!blob) { showToast('Marca o que queres partilhar em «Incluir no link».', 'neutral'); return; }
+      var file = new File([blob], 'king-docs-documentos.pdf', { type: 'application/pdf' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'King Docs', text: 'PDF com texto, foto e documentos (resumo completo).' });
+      } else if (navigator.share) {
+        await navigator.share({ title: 'King Docs', text: 'PDF King Docs (resumo completo). Se não anexar, usa «PDF · descarregar».' });
+      } else {
+        var u = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = u;
+        a.download = 'king-docs-documentos.pdf';
+        a.click();
+        URL.revokeObjectURL(u);
+        showToast('PDF descarregado — envia manualmente pelo WhatsApp.', 'neutral');
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      showToast('Não foi possível partilhar o PDF.', 'err');
+    }
+  };
+
+  document.getElementById('kd-theme-toggle').onclick = function () {
+    applyTheme(!document.body.classList.contains('kd-theme-dark'));
+  };
+  document.getElementById('btn-save-model').onclick = function () {
+    var nameEl = document.getElementById('kd-model-name');
+    var name = nameEl && nameEl.value.trim();
+    if (!name) { showToast('Escreve um nome para o modelo.', 'neutral'); return; }
+    var arr = loadModels();
+    if (arr.length >= 12) { showToast('Limite de 12 modelos neste dispositivo. Remove um antes.', 'neutral'); return; }
+    arr.push({ name: name, state: collectShareState(), savedAt: Date.now() });
+    saveModels(arr);
+    if (nameEl) nameEl.value = '';
+    renderModelsChips();
+    showToast('Modelo guardado neste dispositivo.', 'ok');
+  };
+  document.getElementById('kd-qr-close').onclick = closeQrModal;
+  document.getElementById('kd-qr-backdrop').onclick = closeQrModal;
+  document.getElementById('btn-add-custom-atalho').onclick = function () { openShortcutModal(); };
+  document.getElementById('kd-sc-cancel').onclick = closeShortcutModal;
+  document.getElementById('kd-shortcut-backdrop').onclick = closeShortcutModal;
+  document.getElementById('kd-sc-delete').onclick = function () {
+    var editId = (document.getElementById('kd-sc-edit-id') && document.getElementById('kd-sc-edit-id').value || '').trim();
+    if (!editId) return;
+    if (!window.confirm('Excluir este atalho? Esta ação não pode ser desfeita.')) return;
+    var arr = loadCustomShortcuts();
+    var ix = arr.findIndex(function (x) { return x.id === editId; });
+    if (ix < 0) { showToast('Atalho não encontrado.', 'err'); return; }
+    arr.splice(ix, 1);
+    saveCustomShortcuts(arr);
+    renderCustomShortcuts();
+    clearAtalhoActive();
+    closeShortcutModal();
+    showToast('Atalho excluído.', 'ok');
+  };
+  document.getElementById('kd-sc-save').onclick = function () {
+    var name = document.getElementById('kd-sc-name').value.trim();
+    if (!name) { showToast('Escreve um nome para o atalho.', 'neutral'); return; }
+    var emoji = (document.getElementById('kd-sc-emoji').value || 'Y"O').trim().slice(0, 8) || 'Y"O';
+    var imgInput = document.getElementById('kd-sc-img');
+    var editId = (document.getElementById('kd-sc-edit-id') && document.getElementById('kd-sc-edit-id').value || '').trim();
+    function pushItem(imgData) {
+      var pairs = collectCurrentPresetPairsFrom(document.getElementById('kd-sc-share-grid'), document.getElementById('kd-sc-extra-docs'));
+      if (!pairs.length) { showToast('Marca pelo menos um campo ou documento extra na grelha acima.', 'neutral'); return; }
+      var arr = loadCustomShortcuts();
+      if (editId) {
+        var ix = arr.findIndex(function (x) { return x.id === editId; });
+        if (ix < 0) { showToast('Atalho não encontrado.', 'err'); return; }
+        var prev = arr[ix];
+        var next = { id: editId, name: name, icon: emoji, pairs: pairs };
+        if (imgData) next.imageDataUrl = imgData;
+        else if (prev.imageDataUrl) next.imageDataUrl = prev.imageDataUrl;
+        arr[ix] = next;
+        saveCustomShortcuts(arr);
+        renderCustomShortcuts();
+        closeShortcutModal();
+        showToast('Atalho atualizado.', 'ok');
+        return;
+      }
+      if (arr.length >= 24) { showToast('Limite de 24 atalhos personalizados.', 'neutral'); return; }
+      var item = { id: 'c' + Date.now(), name: name, icon: emoji, pairs: pairs };
+      if (imgData) item.imageDataUrl = imgData;
+      arr.push(item);
+      saveCustomShortcuts(arr);
+      renderCustomShortcuts();
+      closeShortcutModal();
+      showToast('Atalho guardado neste dispositivo.', 'ok');
+    }
+    var f = imgInput && imgInput.files && imgInput.files[0];
+    if (f) {
+      if (f.size > 96000) { showToast('Imagem demasiado grande (máx. ~80 KB).', 'err'); return; }
+      var fr = new FileReader();
+      fr.onload = function () { pushItem(String(fr.result || '')); };
+      fr.readAsDataURL(f);
+    } else {
+      pushItem('');
+    }
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var cdtPop = document.getElementById('kd-cdt-emoji-pop');
+    if (cdtPop && !cdtPop.hasAttribute('hidden')) {
+      cdtPop.setAttribute('hidden', '');
+      var cdtBtn = document.getElementById('kd-cdt-emoji-btn');
+      if (cdtBtn) cdtBtn.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    var scOpen = document.getElementById('kd-shortcut-modal') && document.getElementById('kd-shortcut-modal').classList.contains('kd-modal--open');
+    var qrOpen = document.getElementById('kd-qr-modal') && document.getElementById('kd-qr-modal').classList.contains('kd-modal--open');
+    if (scOpen) { closeShortcutModal(); return; }
+    if (qrOpen) { closeQrModal(); return; }
+    closeQrModal();
+    closeShortcutModal();
+    var pDocs = document.getElementById('p-docs');
+    if (pDocs && pDocs.classList.contains('active') && docPreviewSelectedTypes.length) {
+      var btnClear = document.getElementById('btn-doc-clear-sel');
+      if (btnClear) btnClear.click();
+    }
+  });
+
+  async function loadProfileHints() {
+    const tok = getToken();
+    if (!tok) return;
+    if (vaultHasSavedName()) return;
+    try {
+      const r = await fetch(api('/api/account/status'), { headers: authHeaders() });
+      if (!r.ok) return;
+      const u = await r.json();
+      var hero = document.getElementById('sh-name');
+      if (!hero || hero.value.trim()) return;
+      if (u.name) {
+        hero.value = u.name;
+        syncHeroNameToForm(u.name);
+      }
+    } catch (e) {}
+  }
+
+  initTheme();
+  renderModelsChips();
+  renderCustomShortcuts();
+  initKdEmojiPicker();
+  initKdCdtEmojiPicker();
+  renderCustomDocTypesList();
+  renderDocCards();
+  updateUnifiedActionButtons();
+  loadVault().then(loadProfileHints);
+})();
+  </script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poltica de Privacidade - Conecta King</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        h2 {
+            color: #1e40af;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        ul {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .last-updated {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e5e5;
+        }
+        .contact {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        .contact strong {
+            color: #1e40af;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Voltar para página inicial</a>
+        
+        <h1>Poltica de Privacidade</h1>
+        <p><strong>Conecta King</strong></p>
+        
+        <p class="last-updated">ltima atualizao: 22 de janeiro de 2026</p>
+
+        <h2>1. Introduo</h2>
+        <p>
+            Esta Poltica de Privacidade descreve como o Conecta King ("n", "nosso" ou "aplicativo") 
+            coleta, usa e protege suas informaes quando você utiliza nosso servio de Agenda Inteligente 
+            integrado com o Google Calendar.
+        </p>
+
+        <h2>2. Informações que Coletamos</h2>
+        <p>Quando você utiliza a integrao com Google Calendar, coletamos as seguintes informaes:</p>
+        <ul>
+            <li><strong>Dados do Google Calendar:</strong> Acesso para criar, visualizar e gerenciar eventos em seu calendrio</li>
+            <li><strong>Informações de Agendamento:</strong> Nome, email, telefone e outras informaes fornecidas durante o agendamento</li>
+            <li><strong>Dados de Autenticao:</strong> Tokens de acesso OAuth do Google (criptografados e armazenados de forma segura)</li>
+            <li><strong>Informações de Uso:</strong> Logs de atividades relacionadas aos agendamentos</li>
+        </ul>
+
+        <h2>3. Como Usamos suas Informações</h2>
+        <p>Utilizamos suas informaes exclusivamente para:</p>
+        <ul>
+            <li>Criar e gerenciar eventos de agendamento no Google Calendar</li>
+            <li>Verificar disponibilidade de horrios</li>
+            <li>Enviar convites de calendrio para você e seus clientes</li>
+            <li>Gerar links do Google Meet para reunies online</li>
+            <li>Melhorar nossos servios e experincia do usuário</li>
+        </ul>
+
+        <h2>4. Compartilhamento de Informações</h2>
+        <p>
+            <strong>Não compartilhamos, vendemos ou alugamos suas informaes pessoais para terceiros.</strong>
+        </p>
+        <p>
+            Seus dados são compartilhados apenas quando necessrio para:
+        </p>
+        <ul>
+            <li>Fornecer o servio de agendamento (criar eventos no Google Calendar)</li>
+            <li>Cumprir obrigaes legais</li>
+            <li>Proteger nossos direitos e segurana</li>
+        </ul>
+
+        <h2>5. Segurana dos Dados</h2>
+        <p>
+            Implementamos medidas de segurana tcnicas e organizacionais para proteger suas informaes:
+        </p>
+        <ul>
+            <li>Criptografia de tokens OAuth usando chaves seguras</li>
+            <li>Acesso restrito aos dados apenas para funcionrios autorizados</li>
+            <li>Monitoramento contnuo de segurana</li>
+            <li>Backup regular dos dados</li>
+        </ul>
+
+        <h2>6. Seus Direitos</h2>
+        <p>Você tem o direito de:</p>
+        <ul>
+            <li>Acessar suas informaes pessoais</li>
+            <li>Corrigir dados incorretos</li>
+            <li>Solicitar a exclusão de seus dados</li>
+            <li>Revogar o acesso ao Google Calendar a qualquer momento</li>
+            <li>Exportar seus dados</li>
+        </ul>
+
+        <h2>7. Reteno de Dados</h2>
+        <p>
+            Mantemos suas informaes apenas pelo tempo necessrio para fornecer nossos servios 
+            ou conforme exigido por lei. Quando você revoga o acesso ao Google Calendar, 
+            removemos seus tokens de autenticao imediatamente.
+        </p>
+
+        <h2>8. Cookies e Tecnologias Similares</h2>
+        <p>
+            Utilizamos cookies e tecnologias similares para melhorar sua experincia, 
+            autenticao e funcionalidade do serviVocê pode gerenciar suas preferncias 
+            de cookies atravdas configurações do navegador.
+        </p>
+
+        <h2>9. Alteraes nesta Poltica</h2>
+        <p>
+            Podemos atualizar esta Poltica de Privacidade periodicamente. 
+            Notificaremos você sobre mudanas significativas atravdo email cadastrado 
+            ou por meio de aviso em nosso aplicativo.
+        </p>
+
+        <h2>10. Contato</h2>
+        <div class="contact">
+            <p>
+                Se você tiver dvidas sobre esta Poltica de Privacidade ou sobre como tratamos seus dados, 
+                entre em contato conosco:
+            </p>
+            <p>
+                <strong>Email:</strong> conectaking@gmail.com<br>
+                <strong>Servio:</strong> Conecta King - Agenda Inteligente
+            </p>
+        </div>
+
+        <p class="last-updated">
+             2026 Conecta King. Todos os direitos reservados.
+        </p>
+    </div>
+</body>
+</html>

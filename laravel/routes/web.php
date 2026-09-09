@@ -1390,36 +1390,35 @@ Route::post('/l/api/auth/refresh', [\App\Http\Controllers\Auth\AuthController::c
 Route::post('/api/auth/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->middleware('throttle:30,1');
 Route::post('/l/api/auth/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->middleware('throttle:30,1');
 
-Route::get('/login', [\App\Http\Controllers\DashboardShellController::class, 'login']);
-Route::get('/login.html', [\App\Http\Controllers\DashboardShellController::class, 'login']);
-Route::get('/l/login', [\App\Http\Controllers\DashboardShellController::class, 'login']);
-Route::get('/l/login.html', [\App\Http\Controllers\DashboardShellController::class, 'login']);
-Route::get('/dashboard', [\App\Http\Controllers\DashboardShellController::class, 'dashboard']);
-Route::get('/dashboard.html', [\App\Http\Controllers\DashboardShellController::class, 'dashboard']);
-Route::get('/l/dashboard', [\App\Http\Controllers\DashboardShellController::class, 'dashboard']);
-Route::get('/l/dashboard.html', [\App\Http\Controllers\DashboardShellController::class, 'dashboard']);
-
-
-// Front legado (HTML/JS) — até Blade full; necessário para desligar Node
-$legacyPages = [
+// Páginas já convertidas para Blade (resources/views/pages/*.blade.php).
+// O LegacyPageController renderiza o Blade quando existe e cai no HTML legado quando não existe.
+$bladePages = [
+    'login', 'dashboard', 'registro', 'recuperar-senha', 'resetar-senha', 'conta',
     'kingSelection', 'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
     'kingSelectionGallery', 'kingSelectionReview', 'kingSelectionSuccess',
-    'registro', 'recuperar-senha', 'resetar-senha', 'conta', 'index',
-    'formPageEdit', 'salesPageEdit', 'guestListEdit', 'guestListEditManage',
-    'kingDocs', 'kingDocsShare', 'kingForms', 'bible', 'bibliaking',
+    'formPageEdit', 'salesPageEdit', 'guestListEdit',
+    'kingDocs', 'kingDocsShare', 'kingForms',
     'documentos-preview', 'documentos-ver', 'orcamentos', 'recibos-orcamentos',
-    'checkoutConfig', 'termos', 'privacidade', 'admin-planos',
-    'admin-devocionais-365', 'admin-prosperidade-31', 'responsesList', 'conviteEdit',
-    'zerar-mes', 'arquetipo-resultados',
+    'termos', 'privacidade', 'index', 'bible', 'bibliaking',
+    'admin-planos', 'admin-devocionais-365', 'admin-prosperidade-31',
+    'responsesList', 'conviteEdit', 'zerar-mes', 'arquetipo-resultados',
 ];
-foreach ($legacyPages as $pageName) {
-    Route::get('/'.$pageName, function () use ($pageName) {
-        return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), $pageName);
-    });
-    Route::get('/'.$pageName.'.html', function () use ($pageName) {
-        return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), $pageName.'.html');
-    });
+foreach ($bladePages as $pageName) {
+    $handler = function () use ($pageName) {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show(request(), $pageName);
+    };
+    Route::get('/'.$pageName, $handler);
+    Route::get('/'.$pageName.'.html', $handler);
+    Route::get('/l/'.$pageName, $handler);
+    Route::get('/l/'.$pageName.'.html', $handler);
 }
+
+
+// checkoutConfig / PagBank — fora de escopo (não Blade, não API)
+Route::get('/checkoutConfig', fn () => response('Checkout/PagBank não está disponível.', 410));
+Route::get('/checkoutConfig.html', fn () => response('Checkout/PagBank não está disponível.', 410));
+Route::get('/l/checkoutConfig', fn () => response('Checkout/PagBank não está disponível.', 410));
+Route::get('/l/checkoutConfig.html', fn () => response('Checkout/PagBank não está disponível.', 410));
 Route::get('/config.js', function () {
     return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), 'config.js');
 });
