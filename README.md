@@ -14,12 +14,21 @@ docker compose --env-file .env.docker up --build
 
 ## Produção (VPS)
 
+Rebuild limpo (recomendado — sem `docker cp`):
+
+```bash
+# no PC: gerar tarball laravel/ + public/ + public_html/ + docker-compose.prod.yml
+# no VPS:
+bash /tmp/deploy-vps-rebuild.sh   # scripts/deploy-vps-rebuild.sh
+```
+
+Ou só rebuild local no servidor:
+
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
 Caddy do host faz TLS e `reverse_proxy 127.0.0.1:8080`.
-
 ## Estrutura
 
 | Caminho | Função |
