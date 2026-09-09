@@ -140,8 +140,8 @@
     </div>
   </div>
 
-  <script src="config.js"></script>
-  <script src="kingSelectionGallery.js?v=2026-03-09-03"></script>
+  <script src="/config.js?v=2026-09-09-vite1"></script>
+  @vite(['resources/js/pages/kingSelectionGallery.js'])
 </body>
 </html>
 

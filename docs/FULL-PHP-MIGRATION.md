@@ -43,9 +43,9 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 
 - Build no Docker (context raiz) → `laravel/public/build`
 - Auth em Vite: login, registro, recuperar-senha, resetar-senha
-- **Dashboard** + **King Forms** (`kingForms`, `formPageEdit`) em Vite via `@legacy`
+- **Dashboard** + **King Forms** + **King Selection** (edit/project/cliente/gallery/review) em Vite via `@legacy`
 - CSS ainda em `public/` (style/dashboard/auth)
-- Próximos: King Selection / admin
+- Próximo: **Admin**
 
 Deploy limpo: `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
 

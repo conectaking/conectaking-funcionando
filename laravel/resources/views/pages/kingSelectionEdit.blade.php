@@ -591,8 +591,8 @@
     </div>
   </div>
 
-  <script src="/config.js?v=2026-09-09-ux1"></script>
-  <script src="/kingSelectionEdit.js?v=2026-09-09-ux1"></script>
+  <script src="/config.js?v=2026-09-09-vite1"></script>
+  @vite(['resources/js/pages/kingSelectionEdit.js'])
 </body>
 </html>
 
