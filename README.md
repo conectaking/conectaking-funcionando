@@ -36,5 +36,6 @@ Caddy do host faz TLS e `reverse_proxy 127.0.0.1:8080`.
 ## Notas
 
 - Páginas de app vivem em `laravel/resources/views/pages/*.blade.php`.
-- Checkout/PagBank está **fora de escopo** (HTTP 410).
+- Checkout / PagBank / Mercado Pago estão **fora de escopo** (HTTP 410).
 - Crons: `php artisan schedule:work` no entrypoint do container (+ cron host opcional).
+- Detalhe da migração: `docs/FULL-PHP-MIGRATION.md`.
