@@ -141,6 +141,57 @@ class ModulesService
         ]];
     }
 
+    /**
+     * Público (landing): subset de módulos para o planRenderer da index.
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function planAvailabilityPublic(): array
+    {
+        $types = [
+            'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
+            'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
+            'spotify', 'linkedin', 'pinterest',
+            'link', 'portfolio', 'banner', 'carousel', 'texto_com_botao',
+            'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
+            'finance',
+            'modo_empresa', 'branding', 'bible', 'location',
+            'recibos_orcamentos',
+        ];
+
+        $modulesMap = [];
+        try {
+            if (! Schema::hasTable('module_plan_availability')) {
+                return ['status' => 200, 'body' => ['success' => true, 'modules' => []]];
+            }
+            $placeholders = implode(',', array_fill(0, count($types), '?'));
+            $rows = DB::select(
+                "SELECT id, module_type, plan_code, is_available
+                 FROM module_plan_availability
+                 WHERE module_type IN ($placeholders)
+                 ORDER BY module_type, plan_code",
+                $types
+            );
+            foreach ($rows as $r) {
+                $type = (string) $r->module_type;
+                if (! isset($modulesMap[$type])) {
+                    $modulesMap[$type] = ['module_type' => $type, 'plans' => []];
+                }
+                $modulesMap[$type]['plans'][(string) $r->plan_code] = [
+                    'is_available' => filter_var($r->is_available ?? false, FILTER_VALIDATE_BOOLEAN),
+                    'id' => $r->id ?? null,
+                ];
+            }
+        } catch (\Throwable) {
+            return ['status' => 500, 'body' => ['success' => false, 'error' => 'Erro ao buscar módulos', 'modules' => []]];
+        }
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'modules' => array_values($modulesMap),
+        ]];
+    }
+
     private function normalize(string $code): string
     {
         $c = strtolower(trim($code));

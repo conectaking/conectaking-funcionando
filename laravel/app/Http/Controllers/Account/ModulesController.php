@@ -27,4 +27,11 @@ class ModulesController extends Controller
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function planAvailabilityPublic()
+    {
+        $r = $this->modules->planAvailabilityPublic();
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
 }

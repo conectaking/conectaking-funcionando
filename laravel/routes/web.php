@@ -1213,6 +1213,9 @@ Route::middleware(['jwt', 'module:king_docs'])->group(function () use ($kd) {
     Route::delete('/l/api/king-docs/shares/{id}', [$kd, 'revokeShare'])->whereNumber('id');
 });
 
+Route::get('/api/modules/plan-availability-public', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailabilityPublic']);
+Route::get('/l/api/modules/plan-availability-public', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailabilityPublic']);
+
 Route::middleware('admin')->group(function () {
     Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
     Route::get('/l/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
