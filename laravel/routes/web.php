@@ -1425,3 +1425,10 @@ Route::get('/{asset}', [\App\Http\Controllers\FrontLegacyController::class, 'pag
     ->where('asset', '.*\\.(js|css|map|png|jpg|jpeg|webp|svg|woff2?|ttf|ico|json)$');
 Route::get('/l/loja/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
+
+// Cartão público: tag.conectaking.com.br/{slug} e www/.../{slug}
+Route::get('/{slug}', function (\Illuminate\Http\Request $request, string $slug) {
+    $request->headers->set('X-Conecta-Card-Public', '1');
+
+    return app(CardPublicController::class)->show($request, $slug);
+})->where('slug', $cardSlug);

@@ -16,6 +16,10 @@ class CartaoPublicService
     private const RESERVED = [
         'privacidade', 'termos', 'recuperar-senha', 'resetar-senha',
         'esqueci-senha', 'forgot', 'l', 'api', 'dashboard', 'login', 'admin',
+        'form', 'forms', 'biblia', 'bible', 'produto', 'product', 'king-selection',
+        'kingselection', 'upload', 'uploads', 'vcard', 'log', 'card', 'download',
+        'health', 'static', 'js', 'css', 'img', 'assets', 'public', 'loja', 'up',
+        'portaria', 'guest-list', 'kingdocs', 'documentos', 'checkoutconfig',
     ];
 
     /**
