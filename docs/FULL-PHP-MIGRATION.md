@@ -42,8 +42,9 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 ### Vite (em curso)
 
 - Build no Docker (stage Node) → `laravel/public/build`
-- Página **login** já usa `@vite(['resources/js/pages/login.js'])`; CSS ainda em `public/style.css` + `public/auth.css`
-- Próximos: `registro`, `recuperar-senha`, depois dashboard/módulos
+- Auth em Vite: **login**, **registro**, **recuperar-senha**, **resetar-senha**
+- CSS auth ainda em `public/style.css` + `public/auth.css` (ou inline nas páginas de senha)
+- Próximo: dashboard / módulos do painel
 
 Deploy limpo: `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
 

@@ -90,49 +90,6 @@
         </form>
         <div class="back"><a href="/"><i class="fas fa-arrow-left"></i> Voltar ao início</a></div>
     </div>
-    <script>
-        (function() {
-            const form = document.getElementById('form');
-            const msg = document.getElementById('msg');
-            const btn = document.getElementById('btn');
-            const emailInput = document.getElementById('email');
-
-            function showMsg(text, isError) {
-                msg.textContent = text;
-                msg.className = 'msg ' + (isError ? 'error' : 'success');
-                msg.style.display = 'block';
-            }
-
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const email = emailInput.value.trim();
-                if (!email) { showMsg('Informe seu e-mail.', true); return; }
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-                msg.style.display = 'none';
-
-                try {
-                    const res = await fetch('/api/password/forgot', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email })
-                    });
-                    const data = await res.json().catch(function() { return {}; });
-
-                    if (res.ok && data.success) {
-                        showMsg('Se o e-mail existir, você receberá instruções para recuperar sua senha. Verifique sua caixa de entrada e spam.', false);
-                        form.reset();
-                    } else {
-                        showMsg(data.message || 'Ocorreu um erro. Tente novamente mais tarde.', true);
-                    }
-                } catch (err) {
-                    showMsg('Erro de conexão. Verifique sua internet e tente novamente.', true);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar link de recuperação';
-                }
-            });
-        })();
-    </script>
+    @vite(['resources/js/pages/recuperar-senha.js'])
 </body>
 </html>

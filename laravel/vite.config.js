@@ -8,8 +8,10 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
-                // Páginas migradas (JS do painel legado → Vite)
                 'resources/js/pages/login.js',
+                'resources/js/pages/registro.js',
+                'resources/js/pages/recuperar-senha.js',
+                'resources/js/pages/resetar-senha.js',
             ],
             refresh: true,
         }),
