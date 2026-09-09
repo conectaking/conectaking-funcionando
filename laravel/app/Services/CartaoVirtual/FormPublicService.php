@@ -117,9 +117,9 @@ class FormPublicService
              FROM profile_items pi
              JOIN users u ON u.id = pi.user_id
              WHERE pi.id = ? AND pi.item_type IN ('digital_form','guest_list') AND pi.is_active = true
-               AND (u.profile_slug = ? OR u.id = ? OR ? = 'form')
+               AND (u.profile_slug = ? OR u.id = ?)
              LIMIT 1",
-            [$id, $slug, $slug, $slug]
+            [$id, $slug, $slug]
         );
         if (!$item) {
             return ['status' => 404, 'body' => ['success' => false, 'message' => 'Formulário não encontrado.']];

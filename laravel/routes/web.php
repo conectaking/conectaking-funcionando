@@ -218,7 +218,9 @@ Route::middleware('jwt')->group(function () {
 // Satélites públicos (form / bíblia / loja)
 Route::get('/form/{slug}', [SatellitePublicController::class, 'formByToken'])->where('slug', $cardSlug);
 Route::get('/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
-Route::post('/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::post('/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])
+    ->where(['slug' => $cardSlug, 'itemId' => '[0-9]+'])
+    ->middleware('throttle:20,1');
 Route::get('/{slug}/form/{itemId}/success', [SatellitePublicController::class, 'formSuccess'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 // Checkout / PagBank / Mercado Pago — fora de escopo
 Route::get('/{slug}/form/{itemId}/checkout', function () {

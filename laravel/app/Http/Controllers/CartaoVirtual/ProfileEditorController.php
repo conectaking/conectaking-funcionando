@@ -52,6 +52,11 @@ class ProfileEditorController extends Controller
                 ->header('Expires', '0')
                 ->header('X-Profile-Updated-At', (string) $ts)
                 ->header('X-Conecta-Engine', 'laravel');
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422)->header('X-Conecta-Engine', 'laravel');
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('profile.saveAll', ['error' => $e->getMessage()]);
 

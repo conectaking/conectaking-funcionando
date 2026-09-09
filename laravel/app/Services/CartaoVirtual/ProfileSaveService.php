@@ -13,6 +13,18 @@ class ProfileSaveService
 {
     private const PROTECTED_TYPES = ['sales_page', 'king_selection', 'bible', 'wifi'];
 
+    /** Slugs que colidem com rotas/páginas do sistema. */
+    private const RESERVED_SLUGS = [
+        'api', 'admin', 'login', 'dashboard', 'registro', 'conta', 'health',
+        'form', 'forms', 'bible', 'bibliaking', 'card', 'build', 'legacy',
+        'kingforms', 'kingselection', 'kingdocs', 'kingdocsshare',
+        'responseslist', 'salespageedit', 'formpageedit', 'guestlistedit',
+        'recibos-orcamentos', 'orcamentos', 'documentos-preview', 'documentos-ver',
+        'config', 'upload', 'assets', 'css', 'js', 'static', 'public',
+        'termos', 'privacidade', 'recuperar-senha', 'resetar-senha',
+        'www', 'wwws', 'mail', 'ftp', 'null', 'undefined',
+    ];
+
     /** @var list<string>|null */
     private static ?array $profileItemColumns = null;
 
@@ -93,8 +105,41 @@ class ProfileSaveService
 
         $slug = $get('profile_slug', 'profileSlug');
         if (is_string($slug) && $slug !== '') {
-            DB::update('UPDATE users SET profile_slug = ? WHERE id = ?', [$slug, $userId]);
+            $normalized = $this->normalizeAndValidateSlug($slug, $userId);
+            DB::update('UPDATE users SET profile_slug = ? WHERE id = ?', [$normalized, $userId]);
         }
+    }
+
+    /**
+     * Normaliza e valida slug (formato, reservados, unicidade).
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function normalizeAndValidateSlug(string $raw, string $userId): string
+    {
+        $slug = Str::lower(trim($raw));
+        $slug = preg_replace('/[^a-z0-9_-]+/', '-', $slug) ?? '';
+        $slug = trim($slug, '-_');
+
+        if ($slug === '' || strlen($slug) < 2 || strlen($slug) > 48) {
+            throw new \InvalidArgumentException('O link do cartão deve ter entre 2 e 48 caracteres (letras, números, - ou _).');
+        }
+        if (preg_match('/^[0-9]+$/', $slug)) {
+            throw new \InvalidArgumentException('O link do cartão não pode ser só números.');
+        }
+        if (in_array($slug, self::RESERVED_SLUGS, true) || str_starts_with($slug, 'admin')) {
+            throw new \InvalidArgumentException('Este link do cartão está reservado. Escolha outro.');
+        }
+
+        $taken = DB::selectOne(
+            'SELECT id FROM users WHERE LOWER(profile_slug) = LOWER(?) AND id <> ? LIMIT 1',
+            [$slug, $userId]
+        );
+        if ($taken) {
+            throw new \InvalidArgumentException('Este link do cartão já está em uso. Escolha outro.');
+        }
+
+        return $slug;
     }
 
     /**
@@ -208,8 +253,6 @@ class ProfileSaveService
 
         $savedIds = [];
         $salesPageNew = [];
-        $maxId = (int) (DB::selectOne('SELECT COALESCE(MAX(id), 0) AS max_id FROM profile_items')->max_id ?? 0);
-        $maxIdToSet = $maxId;
 
         foreach ($items as $item) {
             if (!is_array($item)) {
@@ -218,6 +261,7 @@ class ProfileSaveService
             $type = (string) ($item['item_type'] ?? 'link');
             $hasValidId = isset($item['id']) && is_numeric($item['id']) && (int) $item['id'] > 0;
             $itemId = $hasValidId ? (int) $item['id'] : null;
+            // Só atualiza se o ID já pertence a este utilizador (nunca forçar ID novo / setval)
             $exists = $itemId && isset($existingIds[$itemId]);
 
             if ($type === 'sales_page') {
@@ -234,11 +278,8 @@ class ProfileSaveService
                     );
                     $savedIds[$itemId] = true;
                 } else {
-                    $newId = $this->insertSalesPageStub($userId, $item, $itemId, $cols);
+                    $newId = $this->insertSalesPageStub($userId, $item, $cols);
                     $savedIds[$newId] = true;
-                    if ($itemId && $itemId > $maxIdToSet) {
-                        $maxIdToSet = $itemId;
-                    }
                     $salesPageNew[] = ['id' => $newId, 'item' => $item];
                 }
                 continue;
@@ -250,15 +291,12 @@ class ProfileSaveService
                 $this->updateItem($userId, $itemId, $item, $dest, $cols);
                 $savedIds[$itemId] = true;
             } else {
-                $newId = $this->insertItem($userId, $item, $dest, $itemId, $cols);
+                $newId = $this->insertItem($userId, $item, $dest, $cols);
                 $savedIds[$newId] = true;
-                if ($itemId && $itemId > $maxIdToSet) {
-                    $maxIdToSet = $itemId;
-                }
             }
         }
 
-        // Deletes com proteções (paridade Node)
+        // Deletes: remove o que não veio no payload, exceto tipos protegidos
         $candidateIds = array_keys(array_diff_key($existingIds, $savedIds));
         $toDelete = $candidateIds;
         if ($candidateIds !== []) {
@@ -271,23 +309,6 @@ class ProfileSaveService
                 $protectedIds[(int) $p->id] = true;
             }
             $toDelete = array_values(array_filter($candidateIds, static fn ($id) => !isset($protectedIds[$id])));
-
-            if (count($toDelete) > 2 && count($savedIds) <= 6) {
-                $rows = DB::select(
-                    'SELECT id, item_type FROM profile_items WHERE user_id = ? AND id IN ('.$this->intList($toDelete).')',
-                    [$userId]
-                );
-                $keep = [];
-                foreach ($rows as $r) {
-                    $t = strtolower((string) ($r->item_type ?? ''));
-                    if (!in_array($t, ['banner', 'carousel', 'banner_carousel'], true)) {
-                        $keep[(int) $r->id] = true;
-                    }
-                }
-                if ($keep !== []) {
-                    $toDelete = array_values(array_filter($toDelete, static fn ($id) => !isset($keep[$id])));
-                }
-            }
         }
 
         if ($toDelete !== []) {
@@ -295,14 +316,6 @@ class ProfileSaveService
                 'DELETE FROM profile_items WHERE user_id = ? AND id IN ('.$this->intList($toDelete).')',
                 [$userId]
             );
-        }
-
-        if ($maxIdToSet > $maxId) {
-            try {
-                DB::select('SELECT setval(\'profile_items_id_seq\', GREATEST(COALESCE((SELECT MAX(id) FROM profile_items), 0), ?), true)', [$maxIdToSet]);
-            } catch (\Throwable $e) {
-                // ignore
-            }
         }
 
         foreach ($salesPageNew as $sp) {
@@ -366,22 +379,14 @@ class ProfileSaveService
      * @param  array<string, mixed>  $item
      * @param  list<string>  $cols
      */
-    private function insertItem(string $userId, array $item, mixed $dest, ?int $forcedId, array $cols): int
+    private function insertItem(string $userId, array $item, mixed $dest, array $cols): int
     {
-        $fields = $forcedId
-            ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active']
-            : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
-        $vals = $forcedId
-            ? [
-                $forcedId, $userId, $item['item_type'] ?? 'link', $item['title'] ?? null, $dest,
-                $item['image_url'] ?? null, $item['icon_class'] ?? null, $item['display_order'] ?? 0,
-                array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
-            ]
-            : [
-                $userId, $item['item_type'] ?? 'link', $item['title'] ?? null, $dest,
-                $item['image_url'] ?? null, $item['icon_class'] ?? null, $item['display_order'] ?? 0,
-                array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
-            ];
+        $fields = ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+        $vals = [
+            $userId, $item['item_type'] ?? 'link', $item['title'] ?? null, $dest,
+            $item['image_url'] ?? null, $item['icon_class'] ?? null, $item['display_order'] ?? 0,
+            array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
+        ];
 
         foreach (['pix_key', 'recipient_name', 'pix_description', 'pdf_url', 'whatsapp_message', 'aspect_ratio'] as $opt) {
             if (in_array($opt, $cols, true)) {
@@ -417,20 +422,13 @@ class ProfileSaveService
      * @param  array<string, mixed>  $item
      * @param  list<string>  $cols
      */
-    private function insertSalesPageStub(string $userId, array $item, ?int $forcedId, array $cols): int
+    private function insertSalesPageStub(string $userId, array $item, array $cols): int
     {
-        $fields = $forcedId
-            ? ['id', 'user_id', 'item_type', 'display_order', 'is_active']
-            : ['user_id', 'item_type', 'display_order', 'is_active'];
-        $vals = $forcedId
-            ? [
-                $forcedId, $userId, 'sales_page', $item['display_order'] ?? 0,
-                array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
-            ]
-            : [
-                $userId, 'sales_page', $item['display_order'] ?? 0,
-                array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
-            ];
+        $fields = ['user_id', 'item_type', 'display_order', 'is_active'];
+        $vals = [
+            $userId, 'sales_page', $item['display_order'] ?? 0,
+            array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
+        ];
         $ph = implode(',', array_fill(0, count($vals), '?'));
         $row = DB::selectOne(
             'INSERT INTO profile_items ('.implode(',', $fields).") VALUES ($ph) RETURNING id",
