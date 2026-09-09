@@ -35,4 +35,7 @@ ENV SERVER_NAME=:8080
 
 EXPOSE 8080
 
-CMD ["frankenphp", "run", "--config", "/app/Caddyfile"]
+COPY docker-entrypoint.sh /usr/local/bin/conectaking-entrypoint.sh
+RUN chmod +x /usr/local/bin/conectaking-entrypoint.sh
+
+CMD ["/usr/local/bin/conectaking-entrypoint.sh"]

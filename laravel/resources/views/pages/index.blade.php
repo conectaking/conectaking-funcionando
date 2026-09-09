@@ -1506,7 +1506,7 @@
                             </p>
                             <ol style="color: rgba(245, 245, 245, 0.9); line-height: 1.8; padding-left: 20px;">
                                 <li>Abra um terminal na pasta do projeto</li>
-                                <li>Execute: <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">node server.js</code></li>
+                                <li>Execute: <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">docker compose up</code></li>
                                 <li>Aguarde a mensagem "Servidor rodando na porta 5000"</li>
                                 <li>Recarregue esta página</li>
                             </ol>

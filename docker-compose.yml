@@ -1,8 +1,8 @@
-# Conecta King — ambiente local (pré-visualizar no PC antes de subir)
+# Conecta King — local (só PHP): Postgres + Laravel/FrankenPHP
 # Uso: docker compose --env-file .env.docker up --build
 #
-# Painel: http://localhost:5000/dashboard.html?api=local
-# Health: http://localhost:5000/health
+# App:   http://localhost:8080
+# Health: http://localhost:8080/health
 
 services:
   db:
@@ -23,41 +23,8 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: conectaking-api
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      laravel:
-        condition: service_started
-    env_file:
-      - .env.docker
-    environment:
-      PORT: "5000"
-      NODE_ENV: ${NODE_ENV:-development}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-conectaking}:${POSTGRES_PASSWORD:-conectaking}@db:5432/${POSTGRES_DB:-conectaking}
-      DATABASE_SSL: "false"
-      JWT_SECRET: ${JWT_SECRET:-conectaking-local-dev-secret-change-me}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
-      LARAVEL_CARD_ENABLED: "${LARAVEL_CARD_ENABLED:-true}"
-      LARAVEL_CARD_PUBLIC: "${LARAVEL_CARD_PUBLIC:-false}"
-      LARAVEL_CARD_SLUGS: "${LARAVEL_CARD_SLUGS:-}"
-      LARAVEL_CARD_APIS: "${LARAVEL_CARD_APIS:-true}"
-      LARAVEL_PROFILE_API: "${LARAVEL_PROFILE_API:-false}"
-      LARAVEL_HOST: laravel
-      LARAVEL_PORT: "8080"
-    ports:
-      # Host:Container — container sempre escuta 5000
-      - "${PORT:-5000}:5000"
-    volumes:
-      # Persist uploads locais entre restarts (opcional)
-      - api_uploads:/app/uploads
+    networks:
+      - cknet
 
   laravel:
     build:
@@ -72,7 +39,7 @@ services:
       APP_NAME: ConectaKing
       APP_ENV: local
       APP_DEBUG: "true"
-      APP_URL: http://localhost:5000
+      APP_URL: http://localhost:8080
       APP_KEY: ${LARAVEL_APP_KEY:-base64:3H0rHGsdLIL0QfFRj6GitJ4WgjxMlzq9YsdYJocJ7Go=}
       LOG_CHANNEL: stderr
       DB_CONNECTION: pgsql
@@ -84,11 +51,30 @@ services:
       SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
-      NODE_INTERNAL_URL: http://api:5000
       JWT_SECRET: ${JWT_SECRET:-conectaking-local-dev-secret-change-me}
+      LEGACY_PUBLIC_PATH: /legacy/public
+      LEGACY_PUBLIC_HTML_PATH: /legacy/public_html
+      KS_UPLOADS_PATH: /shared/uploads
+      SERVER_NAME: ":8080"
     ports:
       - "${LARAVEL_PORT:-8080}:8080"
+    volumes:
+      - api_uploads:/shared/uploads
+      - ./public:/legacy/public:ro
+      - ./public_html:/legacy/public_html:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - cknet
 
 volumes:
   pgdata:
   api_uploads:
+
+networks:
+  cknet:
+    driver: bridge

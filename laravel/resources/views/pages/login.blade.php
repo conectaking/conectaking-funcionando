@@ -74,7 +74,7 @@
                 if (hintEl && isLocal && (reason === 'refresh_500' || reason === 'localhost_401')) {
                     hintEl.style.display = 'block';
                     hintEl.innerHTML = reason === 'refresh_500'
-                        ? '<strong>KingBrief no localhost:</strong> O servidor devolveu erro 500 ao renovar o token. Faça login abaixo. Se continuar voltando aqui: (1) Backend deve estar rodando na porta 5000. (2) Rode no projeto: <code>node scripts/run-migration-001-refresh-tokens.js</code>. (3) Reinicie o backend e faça login de novo.'
+                        ? '<strong>KingBrief no localhost:</strong> O servidor devolveu erro 500 ao renovar o token. Faça login abaixo. Confirme que o Laravel está no ar (<code>/health</code>) e tente de novo.'
                         : '<strong>KingBrief no localhost:</strong> Sessão inválida ou expirada. Faça login. Se o problema repetir, rode a migration 001 (refresh_tokens), reinicie o backend e entre de novo.';
                 }
                 

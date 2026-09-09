@@ -1400,9 +1400,35 @@ $ksPhotographerPage = function () {
 
     return app(\App\Http\Controllers\LegacyPageController::class)->show($request, $page);
 };
-foreach (['/kingSelection', '/kingSelection.html', '/l/kingSelection', '/l/kingSelection.html'] as $ksPath) {
+foreach ([
+    '/kingSelection', '/kingSelection.html', '/l/kingSelection', '/l/kingSelection.html',
+    '/kingselection', '/kingselection.html', '/l/kingselection', '/l/kingselection.html',
+    '/mr/kingSelection', '/mr/kingselection',
+] as $ksPath) {
     Route::get($ksPath, $ksPhotographerPage);
 }
+
+// Aliases legados Ring/King Selection → rotas canónicas
+$ksQs = static fn () => (($q = request()->getQueryString()) ? '?'.$q : '');
+foreach (['/kingSelectionEdit', '/kingSelectionEdit.html', '/kingselectionedit', '/kingselectionedit.html', '/ringsselectionedit', '/ringsselectionedit.html'] as $p) {
+    Route::get($p, fn () => redirect('/kingSelection'.$ksQs(), 302));
+}
+foreach ([
+    '/kingselectionproject', '/kingselectionproject.html',
+    '/ringsselectionproject', '/ringsselectionproject.html',
+    '/mr/kingselectionproject', '/mr/ringsselectionproject',
+] as $p) {
+    Route::get($p, function () use ($ksPhotographerPage) {
+        // Com galleryId serve o projeto; sem, a lista (igual ao Node)
+        return $ksPhotographerPage();
+    });
+}
+Route::get('/ringsselection/{slug}', [\App\Http\Controllers\CartaoVirtual\KingSelectionPublicController::class, 'show'])
+    ->where('slug', $cardSlug);
+Route::get('/mr/ringsselection/{slug}', [\App\Http\Controllers\CartaoVirtual\KingSelectionPublicController::class, 'show'])
+    ->where('slug', $cardSlug);
+Route::get('/mr/kingSelection/{slug}', [\App\Http\Controllers\CartaoVirtual\KingSelectionPublicController::class, 'show'])
+    ->where('slug', $cardSlug);
 
 $bladePages = [
     'login', 'dashboard', 'registro', 'recuperar-senha', 'resetar-senha', 'conta',
@@ -1411,6 +1437,7 @@ $bladePages = [
     'formPageEdit', 'salesPageEdit', 'guestListEdit',
     'kingDocs', 'kingDocsShare', 'kingForms',
     'documentos-preview', 'documentos-ver', 'orcamentos', 'recibos-orcamentos',
+    'dashboard-recibos-orcamentos', 'clientes-recibos-orcamentos', 'configuracoes-recibos-orcamentos',
     'termos', 'privacidade', 'index', 'bible', 'bibliaking',
     'admin-planos', 'admin-devocionais-365', 'admin-prosperidade-31',
     'responsesList', 'conviteEdit', 'zerar-mes', 'arquetipo-resultados',

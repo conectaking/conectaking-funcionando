@@ -3,7 +3,6 @@
 namespace App\Services\CartaoVirtual;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Services\CartaoVirtual\VerseOfDayService;
 
@@ -351,36 +350,9 @@ class CartaoPublicService
     private function fetchVerseOfDay(string $translation = 'nvi'): ?array
     {
         try {
-            $local = app(VerseOfDayService::class)->forCard($translation ?: 'nvi');
-            if ($local) {
-                return $local;
-            }
+            return app(VerseOfDayService::class)->forCard($translation ?: 'nvi');
         } catch (\Throwable $e) {
             Log::warning('cartao.verse_of_day.local', ['error' => $e->getMessage()]);
-        }
-
-        // Fallback: Node interno (se JSON ainda não estiver no container)
-        try {
-            $base = rtrim((string) env('NODE_INTERNAL_URL', 'http://api:5000'), '/');
-            $res = Http::timeout(4)->get($base.'/api/bible/verse-of-day', [
-                'translation' => $translation ?: 'nvi',
-            ]);
-            if (!$res->ok()) {
-                return null;
-            }
-            $json = $res->json();
-            $data = is_array($json) ? ($json['data'] ?? null) : null;
-            if (!is_array($data) || empty($data['texto'])) {
-                return null;
-            }
-
-            return [
-                'ref' => $data['ref'] ?? 'Versículo do Dia',
-                'texto' => $data['texto'] ?? '',
-                'reflexao' => $data['reflexao'] ?? null,
-            ];
-        } catch (\Throwable $e) {
-            Log::warning('cartao.verse_of_day', ['error' => $e->getMessage()]);
 
             return null;
         }

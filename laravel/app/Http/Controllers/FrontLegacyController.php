@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Serve HTML/JS legado (public + public_html) até virarem Blade — necessário para matar o Node.
+ * Serve assets estáticos legados (JS/CSS/imagens em public + public_html).
  */
 class FrontLegacyController extends Controller
 {
@@ -29,7 +29,7 @@ class FrontLegacyController extends Controller
         ], $dbOk ? 200 : 503)->header('X-Conecta-Engine', 'laravel');
     }
 
-    /** Base pública da API para o dashboard fora do domínio principal (server.js). */
+    /** Base pública da API (mesmo host / FrankenPHP). */
     public function publicApiUrl()
     {
         $base = rtrim(trim((string) (env('API_URL') ?: 'https://www.conectaking.com.br')), '/');
@@ -41,7 +41,7 @@ class FrontLegacyController extends Controller
 
     /**
      * `api-config.js`: define `API_BASE` e faz patch ao `fetch()` para anexar o Bearer
-     * e reescrever `/api/*` para esta instância. Byte-a-byte igual ao do Express.
+     * e reescrever `/api/*` para esta instância.
      */
     public function apiConfigJs(Request $request)
     {
