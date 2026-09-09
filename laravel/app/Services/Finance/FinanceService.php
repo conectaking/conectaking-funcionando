@@ -96,6 +96,12 @@ class FinanceService
      */
     public function kingData(string $userId, ?int $profileId): array
     {
+        $pid = $profileId !== null ? (string) $profileId : '';
+        $fromItems = $this->loadKingDataFromItems($userId, $pid);
+        if ($fromItems !== null) {
+            return ['status' => 200, 'body' => ['success' => true, 'data' => $fromItems, 'error' => null, 'message' => null]];
+        }
+
         if (! Schema::hasTable('finance_king_sync')) {
             return ['status' => 200, 'body' => [
                 'success' => true,
@@ -104,7 +110,6 @@ class FinanceService
                 'message' => null,
             ]];
         }
-        $pid = $profileId !== null ? (string) $profileId : '';
         $row = DB::selectOne(
             'SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1',
             [$userId, $pid]
@@ -116,6 +121,10 @@ class FinanceService
                 $data = $this->normalizeKingData($decoded);
             }
         }
+        // Migração gradual: materializa blob → linhas na primeira leitura.
+        if ($this->kingDataHasAnyItems($data)) {
+            $this->syncKingItems($userId, $pid, $data);
+        }
 
         return ['status' => 200, 'body' => ['success' => true, 'data' => $data, 'error' => null, 'message' => null]];
     }
@@ -126,8 +135,8 @@ class FinanceService
      */
     public function saveKingData(string $userId, array $payload): array
     {
-        if (! Schema::hasTable('finance_king_sync')) {
-            return ['status' => 503, 'body' => ['success' => false, 'message' => 'Tabela finance_king_sync indisponível.']];
+        if (! Schema::hasTable('finance_king_sync') && ! Schema::hasTable('finance_king_items')) {
+            return ['status' => 503, 'body' => ['success' => false, 'message' => 'Armazenamento King Finance indisponível.']];
         }
         $profileId = isset($payload['profile_id']) && $payload['profile_id'] !== '' && $payload['profile_id'] !== null
             ? (string) (int) $payload['profile_id']
@@ -136,7 +145,6 @@ class FinanceService
         if (! is_array($raw)) {
             $raw = [];
         }
-        // Não persistir chaves de envelope (profile_id etc.) dentro do blob.
         unset($raw['profile_id'], $raw['user_id'], $raw['success'], $raw['error'], $raw['message']);
         $data = $this->normalizeKingData($raw);
         $json = json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -146,30 +154,153 @@ class FinanceService
                 'message' => 'Dados King Finance demasiado grandes. Reduza itens e tente de novo.',
             ]];
         }
-        try {
-            DB::statement(
-                'INSERT INTO finance_king_sync (user_id, profile_id, data, updated_at)
-                 VALUES (?, ?, ?::jsonb, NOW())
-                 ON CONFLICT (user_id, profile_id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()',
-                [$userId, $profileId, $json]
-            );
-        } catch (\Throwable $e) {
-            Log::warning('finance.kingData.save', ['error' => $e->getMessage()]);
-            $n = DB::update(
-                'UPDATE finance_king_sync SET data = ?::jsonb, updated_at = NOW() WHERE user_id = ? AND profile_id = ?',
-                [$json, $userId, $profileId]
-            );
-            if ($n < 1) {
-                DB::table('finance_king_sync')->insert([
-                    'user_id' => $userId,
-                    'profile_id' => $profileId,
-                    'data' => $json,
-                    'updated_at' => now(),
-                ]);
+
+        $this->syncKingItems($userId, $profileId, $data);
+
+        if (Schema::hasTable('finance_king_sync')) {
+            try {
+                DB::statement(
+                    'INSERT INTO finance_king_sync (user_id, profile_id, data, updated_at)
+                     VALUES (?, ?, ?::jsonb, NOW())
+                     ON CONFLICT (user_id, profile_id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()',
+                    [$userId, $profileId, $json]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('finance.kingData.save', ['error' => $e->getMessage()]);
+                $n = DB::update(
+                    'UPDATE finance_king_sync SET data = ?::jsonb, updated_at = NOW() WHERE user_id = ? AND profile_id = ?',
+                    [$json, $userId, $profileId]
+                );
+                if ($n < 1) {
+                    DB::table('finance_king_sync')->insert([
+                        'user_id' => $userId,
+                        'profile_id' => $profileId,
+                        'data' => $json,
+                        'updated_at' => now(),
+                    ]);
+                }
             }
         }
 
         return ['status' => 200, 'body' => ['success' => true, 'data' => $data, 'error' => null, 'message' => 'OK']];
+    }
+
+    /**
+     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list}|null
+     */
+    private function loadKingDataFromItems(string $userId, string $profileId): ?array
+    {
+        if (! Schema::hasTable('finance_king_items')) {
+            return null;
+        }
+        $count = (int) (DB::selectOne(
+            'SELECT COUNT(*)::int AS c FROM finance_king_items WHERE user_id = ? AND profile_id = ?',
+            [$userId, $profileId]
+        )->c ?? 0);
+        if ($count < 1) {
+            return null;
+        }
+        $rows = DB::select(
+            'SELECT kind, item_key, payload FROM finance_king_items
+             WHERE user_id = ? AND profile_id = ?
+             ORDER BY kind ASC, item_key ASC',
+            [$userId, $profileId]
+        );
+        $data = $this->emptyKingData();
+        foreach ($rows as $row) {
+            $kind = (string) ($row->kind ?? '');
+            if (! isset($data[$kind])) {
+                continue;
+            }
+            $payload = $row->payload ?? null;
+            if (is_string($payload)) {
+                $payload = json_decode($payload, true);
+            }
+            if (! is_array($payload)) {
+                $payload = [];
+            }
+            if (! isset($payload['id']) || $payload['id'] === '' || $payload['id'] === null) {
+                $payload['id'] = (string) ($row->item_key ?? '');
+            }
+            $data[$kind][] = $payload;
+        }
+
+        return $this->normalizeKingData($data);
+    }
+
+    /**
+     * @param  array{dividas:list, terceiros:list, trabalhos:list, bens:list}  $data
+     */
+    private function syncKingItems(string $userId, string $profileId, array $data): void
+    {
+        if (! Schema::hasTable('finance_king_items')) {
+            return;
+        }
+        try {
+            DB::transaction(function () use ($userId, $profileId, $data) {
+                foreach (['dividas', 'terceiros', 'trabalhos', 'bens'] as $kind) {
+                    $list = is_array($data[$kind] ?? null) ? $data[$kind] : [];
+                    $keys = [];
+                    foreach ($list as $i => $item) {
+                        if (! is_array($item)) {
+                            continue;
+                        }
+                        $key = $this->kingItemKey($item, (int) $i);
+                        $keys[] = $key;
+                        $payloadJson = json_encode($item, JSON_UNESCAPED_UNICODE) ?: '{}';
+                        DB::statement(
+                            'INSERT INTO finance_king_items (user_id, profile_id, kind, item_key, payload, updated_at)
+                             VALUES (?, ?, ?, ?, ?::jsonb, NOW())
+                             ON CONFLICT (user_id, profile_id, kind, item_key)
+                             DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()',
+                            [$userId, $profileId, $kind, $key, $payloadJson]
+                        );
+                    }
+                    if ($keys === []) {
+                        DB::delete(
+                            'DELETE FROM finance_king_items WHERE user_id = ? AND profile_id = ? AND kind = ?',
+                            [$userId, $profileId, $kind]
+                        );
+                    } else {
+                        $ph = implode(',', array_fill(0, count($keys), '?'));
+                        $params = array_merge([$userId, $profileId, $kind], $keys);
+                        DB::delete(
+                            "DELETE FROM finance_king_items WHERE user_id = ? AND profile_id = ? AND kind = ? AND item_key NOT IN ({$ph})",
+                            $params
+                        );
+                    }
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::warning('finance.kingItems.sync', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * @param  array<string,mixed>  $item
+     */
+    private function kingItemKey(array $item, int $index): string
+    {
+        $id = $item['id'] ?? null;
+        if ($id !== null && $id !== '') {
+            return substr((string) $id, 0, 80);
+        }
+
+        return substr('i'.$index.'_'.sha1((string) json_encode($item)), 0, 80);
+    }
+
+    /**
+     * @param  array{dividas:list, terceiros:list, trabalhos:list, bens:list}  $data
+     */
+    private function kingDataHasAnyItems(array $data): bool
+    {
+        foreach (['dividas', 'terceiros', 'trabalhos', 'bens'] as $k) {
+            if (! empty($data[$k]) && is_array($data[$k])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
