@@ -56,7 +56,7 @@ $userId = '[A-Za-z0-9_-]+';
 
 Route::get('/api/profile/import-form-info', [ProfileFormExtrasController::class, 'importFormInfo']);
 
-// Paths públicos / editor (proxy Node encaminha o path original)
+// Paths públicos / editor
 Route::get('/card/{slug}', [CardPublicController::class, 'show'])->where('slug', $cardSlug);
 Route::get('/api/card/{slug}', [CardPublicController::class, 'api'])->where('slug', $cardSlug);
 Route::get('/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])->where('itemId', '[0-9]+');
@@ -691,7 +691,7 @@ Route::middleware('admin')->group(function () {
     }
 });
 
-// ---------- APIs residuais do Node (fatias B7 / B9–B15) ----------
+// ---------- APIs migradas (fatias B7 / B9–B15) ----------
 
 // Proxy de imagem OG (público)
 $imageProxy = \App\Http\Controllers\Media\ImageProxyController::class;
