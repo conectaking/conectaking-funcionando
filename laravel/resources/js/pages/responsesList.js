@@ -1,7 +1,7 @@
 /** responsesList — Vite entry (extracted inline) */
 import '@legacy/dashboard.css';
 
-const API_URL = 'https://www.conectaking.com.br';
+const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
         const urlParams = new URLSearchParams(window.location.search);
         const itemId = urlParams.get('itemId');
         
@@ -1545,7 +1545,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             // Obter domínio base (usar API URL para links públicos)
-            const baseUrl = 'https://www.conectaking.com.br';
+            const baseUrl = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             
             // Atualizar os inputs com os links
             const linkCadastro = document.getElementById('link-cadastro');
@@ -1805,7 +1805,7 @@ const API_URL = 'https://www.conectaking.com.br';
             
             try {
                 const headers = getHeaders();
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
                 
                 const response = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
                     method: 'PUT',
@@ -1883,7 +1883,7 @@ const API_URL = 'https://www.conectaking.com.br';
             
             try {
                 const headers = getHeaders();
-                const API_URL = 'https://www.conectaking.com.br';
+                const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
                 
                 const response = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
                     headers: headers
@@ -1956,7 +1956,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             
             // Mostrar loading
             container.innerHTML = '<p style="color: #A1A1A1; text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Carregando links personalizados...</p>';
@@ -2058,7 +2058,7 @@ const API_URL = 'https://www.conectaking.com.br';
                 return;
             }
             
-            const baseUrl = 'https://www.conectaking.com.br';
+            const baseUrl = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             const urlParams = new URLSearchParams(window.location.search);
             const itemId = urlParams.get('itemId');
             const slug = guestListTokens?.profile_slug || 'usuario';
@@ -2471,7 +2471,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             
             // Mostrar loading no botão
             const button = event ? event.target.closest('button') : null;
@@ -2582,7 +2582,7 @@ const API_URL = 'https://www.conectaking.com.br';
             
             // Buscar dados do link
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             const urlParams = new URLSearchParams(window.location.search);
             const itemId = urlParams.get('itemId');
             
@@ -2878,7 +2878,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             
             // Mostrar loading no botão
             const button = event ? event.target.closest('button') : null;
@@ -2978,7 +2978,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             const urlParams = new URLSearchParams(window.location.search);
             const itemId = urlParams.get('itemId');
             
@@ -3168,7 +3168,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             const urlParams = new URLSearchParams(window.location.search);
             const itemId = urlParams.get('itemId');
             
@@ -3323,7 +3323,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             
             // Buscar estado atual do link
             const urlParams = new URLSearchParams(window.location.search);
@@ -3416,7 +3416,7 @@ const API_URL = 'https://www.conectaking.com.br';
             }
             
             const headers = getHeaders();
-            const API_URL = 'https://www.conectaking.com.br';
+            const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
             
             // Mostrar loading no botão
             const button = event ? event.target.closest('button') : null;
@@ -3706,7 +3706,7 @@ const API_URL = 'https://www.conectaking.com.br';
                 }
                 
                 // Definir baseUrl (mesmo usado em displayPublicLinks)
-                const baseUrl = 'https://www.conectaking.com.br';
+                const baseUrl = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
                 
                 // Recarregar dados da lista para obter o slug atualizado
                 const listInfoRes2 = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
@@ -4609,9 +4609,7 @@ const API_URL = 'https://www.conectaking.com.br';
             // Construir URL da página de personalização
             // IMPORTANTE: O middleware protectUser aceita token via query string (req.query.token)
             // Precisamos passar o token na URL para garantir autenticação no iframe
-            const apiBaseUrl = window.location.hostname.includes('localhost') 
-                ? window.location.origin 
-                : 'https://www.conectaking.com.br';
+            const apiBaseUrl = (window.API_BASE || window.API_URL || window.location.origin || '').replace(/\/$/, '');
             
             // Passar token via query string - o middleware protectUser aceita isso
             // Se não tiver token, ainda tentar carregar (pode funcionar se houver cookie de sessão)

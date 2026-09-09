@@ -127,7 +127,7 @@
             <div class="font-extrabold" id="ks-total-photos">0 fotos</div>
           </div>
           <div class="flex items-center justify-between">
-            <div class="text-white/70 font-semibold"><i class="far fa-circle-check"></i> Seleção mnima</div>
+            <div class="text-white/70 font-semibold"><i class="far fa-circle-check"></i> Seleção mínima</div>
             <div class="font-extrabold" id="ks-min-sel">Livre</div>
           </div>
           <div class="flex items-center justify-between">

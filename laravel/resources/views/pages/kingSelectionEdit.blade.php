@@ -552,11 +552,11 @@
             <input id="ks-new-max" type="number" inputmode="numeric" min="0" value="0" />
           </div>
           <div class="ks-field">
-            <label>Seleção mnima (0 = livre)</label>
+            <label>Seleção mínima (0 = livre)</label>
             <input id="ks-new-min" type="number" inputmode="numeric" min="0" value="0" />
           </div>
         </div>
-        <div class="ks-small" style="margin-bottom:10px">Se "Seleção mnima" não existir no banco ainda, tudo funciona como "Livre" (opcional rodar a migration depois).</div>
+        <div class="ks-small" style="margin-bottom:10px">Se "Seleção mínima" não existir no banco ainda, tudo funciona como "Livre" (opcional rodar a migration depois).</div>
         <div class="ks-field" style="flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap">
           <input type="checkbox" id="ks-new-watermark" checked style="width:18px;height:18px;accent-color:var(--ks-accent)" />
           <label for="ks-new-watermark" style="margin:0;text-transform:none;letter-spacing:normal;font-weight:800;font-size:13px;color:var(--ks-text)">Aplicar marca d'gua nas fotos desta galeria</label>

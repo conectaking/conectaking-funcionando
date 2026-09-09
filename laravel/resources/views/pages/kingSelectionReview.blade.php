@@ -67,7 +67,7 @@
           <div class="font-extrabold">Resumo do pedido</div>
           <div class="mt-4 space-y-2 text-sm">
             <div class="flex items-center justify-between">
-              <span class="text-white/60">Seleção mnima</span>
+              <span class="text-white/60">Seleção mínima</span>
               <span class="font-extrabold" id="ks-min">Livre</span>
             </div>
             <div class="flex items-center justify-between">

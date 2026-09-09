@@ -1111,7 +1111,7 @@
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
         <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1;">
             <h3 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3vw, 2.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);">
-                Profissionais de sucesso não trocam cartes.<br>Eles trocam conexes.
+                Profissionais de sucesso não trocam cartes.<br>Eles trocam conexões.
             </h3>
             <a href="#planos" class="btn btn-primary" style="animation: glow 2s ease-in-out infinite;">
                 <i class="fas fa-rocket"></i> Quero Minha Conexo Agora
@@ -1148,7 +1148,7 @@
                         <i class="fas fa-chart-line"></i>
                     </div>
                     <h3 style="text-align: center; color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif;">3. Converta</h3>
-                    <p style="text-align: center; color: rgba(245, 245, 245, 0.8);">Transforme contatos em clientes e conexes</p>
+                    <p style="text-align: center; color: rgba(245, 245, 245, 0.8);">Transforme contatos em clientes e conexões</p>
                     </div>
                 </div>
             </div>
@@ -1198,7 +1198,7 @@
                         <i class="fas fa-sync-alt"></i>
                     </div>
                     <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Atualizaes Ilimitadas</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Mude links, adicione informaes e atualize seu perfil quantas vezes precisar, sem custos extras.</p>
+                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Mude links, adicione informações e atualize seu perfil quantas vezes precisar, sem custos extras.</p>
                 </div>
                 <div class="card fade-in" style="animation: float 4.8s ease-in-out infinite; animation-delay: 0.6s;">
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.4s ease-in-out infinite;">
@@ -1212,14 +1212,14 @@
                         <i class="fas fa-network-wired"></i>
                     </div>
                     <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Centralizao Total da Presença Digital</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Todos os seus links, redes sociais e informaes em um nico lugar profissional.</p>
+                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Todos os seus links, redes sociais e informações em um único lugar profissional.</p>
                 </div>
                 <div class="card fade-in" style="animation: float 5.5s ease-in-out infinite; animation-delay: 1s;">
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.8s ease-in-out infinite;">
                         <i class="fas fa-shield-alt"></i>
                     </div>
                     <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Segurana e Privacidade</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Tecnologia NFC confivel e segura. Você controla o que compartilha.</p>
+                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Tecnologia NFC confiável e segura. Você controla o que compartilha.</p>
                 </div>
             </div>
         </div>
@@ -1230,10 +1230,10 @@
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
         <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1;">
             <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--white); margin-bottom: 1.5rem; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); position: relative; display: inline-block;">
-                Pare de perder oportunidades.<br>Comece a criar conexes que vendem.
+                Pare de perder oportunidades.<br>Comece a criar conexões que vendem.
             </h2>
             <p style="font-size: 1.2rem; color: rgba(245, 245, 245, 0.9); margin-bottom: 2rem;">
-                Junte-se a centenas de profissionais que j esto revolucionando seu networking
+                Junte-se a centenas de profissionais que já estão revolucionando seu networking
             </p>
             <a href="#planos" class="btn btn-primary btn-lg" style="animation: glow 2s ease-in-out infinite;">
                 <i class="fas fa-rocket"></i> Quero Transformar Meu Networking Agora
@@ -1284,7 +1284,7 @@
                             </div>
                     <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
                         <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
-                            O ConectaKing oferece planos anuais e mensais. Você escolhe o formato de pagamento que melhor se adapta ao seu negócio. Todas as atualizaes esto includas no perodo contratado.
+                            O ConectaKing oferece planos anuais e mensais. Você escolhe o formato de pagamento que melhor se adapta ao seu negócio. Todas as atualizações esto incluídas no período contratado.
                         </div>
                     </div>
                             </div>
@@ -1306,7 +1306,7 @@
                     </div>
                     <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
                         <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
-                            Sim, quantas vezes quiser. Você pode atualizar seus links, informaes e personalizao a qualquer momento, sem custos adicionais.
+                            Sim, quantas vezes quiser. Você pode atualizar seus links, informações e personalização a qualquer momento, sem custos adicionais.
                             </div>
                         </div>
                     </div>
@@ -1317,7 +1317,7 @@
                     </div>
                     <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
                         <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
-                            Sim. O ConectaKing usa tecnologia NFC confivel e segura. Você tem controle total sobre o que compartilha e todas as informaes são protegidas.
+                            Sim. O ConectaKing usa tecnologia NFC confiável e segura. Você tem controle total sobre o que compartilha e todas as informações são protegidas.
                             </div>
                         </div>
                     </div>
@@ -1333,7 +1333,7 @@
                 Não espere mais.<br>Comece a vender hoje.
             </h2>
             <p style="font-size: 1.3rem; color: rgba(245, 245, 245, 0.9); margin-bottom: 2.5rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.8;">
-                Cada dia sem o ConectaKing  um dia perdido de conexes e vendas. Garanta seu lugar entre os profissionais que esto dominando o networking digital.
+                Cada dia sem o ConectaKing é um dia perdido de conexões e vendas. Garanta seu lugar entre os profissionais que estão dominando o networking digital.
             </p>
             <a href="#planos" class="btn btn-primary btn-lg" style="font-size: 1.2rem; padding: 22px 50px; animation: glow 2s ease-in-out infinite;">
                 <i class="fas fa-crown"></i> Quero Meu ConectaKing Agora

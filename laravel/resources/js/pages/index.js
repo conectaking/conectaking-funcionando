@@ -67,9 +67,9 @@ import '@legacy/js/planRenderer.js';
                     'carousel': 'Carrossel',
                     'sales_page': 'Loja Virtual',
                     'digital_form': 'King Forms',
-                    'portfolio': 'Portflio',
+                    'portfolio': 'Portfólio',
                     'banner': 'Banner',
-                    'finance': 'Gesto Financeira',
+                    'finance': 'Gestão Financeira',
                     'contract': 'Contratos',
                     'agenda': 'Agenda Inteligente'
                 };
@@ -98,7 +98,7 @@ import '@legacy/js/planRenderer.js';
         // Carregar planos - mesma lógica do dashboard
         async function loadPlans() {
             try {
-                console.log('?x? Tentando carregar planos de:', `${API_URL}/api/subscription/plans-public`);
+                console.log(' Tentando carregar planos de:', `${API_URL}/api/subscription/plans-public`);
                 
                 // Criar timeout manual para compatibilidade
                 const controller = new AbortController();
@@ -116,7 +116,7 @@ import '@legacy/js/planRenderer.js';
                 
                 clearTimeout(timeoutId);
                 
-                console.log('?x? Resposta recebida:', response.status, response.statusText);
+                console.log(' Resposta recebida:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -129,7 +129,7 @@ import '@legacy/js/planRenderer.js';
                 if (data.success && data.plans && data.plans.length > 0) {
                     // Filtrar planos: excluir King Essential (king_base)
                     const filteredPlans = data.plans.filter(plan => plan.plan_code !== 'king_base');
-                    console.log(`?x9 Planos filtrados: ${filteredPlans.length} planos (excludo: King Essential)`);
+                    console.log(` Planos filtrados: ${filteredPlans.length} planos (excludo: King Essential)`);
                     
                     // Usar função compartilhada se disponível (garante sincronizao com dashboard)
                     if (typeof window.renderPlansShared === 'function') {
@@ -282,18 +282,18 @@ import '@legacy/js/planRenderer.js';
                         </div>
                         <p class="plan-description">${plan.description || ''}</p>
                         <ul class="plan-features">
-                            ${features.can_edit_logo ? '<li><i class="fas fa-check"></i> Logomarca editvel</li>' : '<li><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4);"></i> Logomarca não editvel</li>'}
+                            ${features.can_edit_logo ? '<li><i class="fas fa-check"></i> Logomarca editável</li>' : '<li><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4);"></i> Logomarca não editável</li>'}
                             ${features.max_profiles ? `<li><i class="fas fa-check"></i> ${features.max_profiles} perfil(is)</li>` : ''}
                             ${features.is_enterprise ? '<li><i class="fas fa-check"></i> Modo Empresarial</li>' : ''}
                             
                             ${isStart ? `
                             <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 199, 0, 0.2);">
-                                <strong style="color: var(--yellow-primary); font-size: 0.95rem;">?S Você tem acesso a todos os módulos menos esses que esto abaixo:</strong>
+                                <strong style="color: var(--yellow-primary); font-size: 0.95rem;">• Você tem acesso a todos os módulos, menos estes que estão abaixo:</strong>
                             </li>
                             <li style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 199, 0, 0.1);">
-                                <strong style="color: rgba(245, 245, 245, 0.6); font-size: 0.9rem;">?S Não Includo:</strong>
+                                <strong style="color: rgba(245, 245, 245, 0.6); font-size: 0.9rem;">• Não Incluído:</strong>
                             </li>
-                            ${!features.can_edit_logo ? '<li style="padding-left: 8px; opacity: 0.6;"><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4); margin-right: 8px;"></i> Logomarca editvel</li>' : ''}
+                            ${!features.can_edit_logo ? '<li style="padding-left: 8px; opacity: 0.6;"><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4); margin-right: 8px;"></i> Logomarca editável</li>' : ''}
                             ${modules.unavailable.map(module => `<li style="padding-left: 8px; opacity: 0.6;"><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4); margin-right: 8px;"></i> ${module}</li>`).join('')}
                             <li style="padding-left: 8px; opacity: 0.8; margin-top: 8px; color: var(--yellow-primary);">
                                 <i class="fas fa-gift" style="color: var(--yellow-primary); margin-right: 8px;"></i> <strong>Bnus:</strong> Link Personalizado
@@ -302,7 +302,7 @@ import '@legacy/js/planRenderer.js';
                             
                             ${isPrime && modules.available.length > 0 ? `
                             <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 199, 0, 0.2);">
-                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">?S Módulos Includos:</strong>
+                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">• Módulos Incluídos:</strong>
                             </li>
                             ${modules.available.map(module => `<li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> ${module}</li>`).join('')}
                             <li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> Link Personalizado</li>
@@ -310,7 +310,7 @@ import '@legacy/js/planRenderer.js';
                             
                             ${isCorporate ? `
                             <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 199, 0, 0.2);">
-                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">?S Todos os Módulos Disponveis:</strong>
+                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">• Todos os Módulos Disponíveis:</strong>
                             </li>
                             ${modules.available.length > 0 ? modules.available.map(module => `<li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> ${module}</li>`).join('') : ''}
                             <li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> Link Personalizado</li>

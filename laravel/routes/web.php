@@ -3,6 +3,7 @@
 use App\Http\Controllers\CartaoVirtual\AnalyticsLogController;
 use App\Http\Controllers\CartaoVirtual\BibleAdminBookStudyController;
 use App\Http\Controllers\CartaoVirtual\BibleAdminDev365Controller;
+use App\Http\Controllers\CartaoVirtual\BibleConfigController;
 use App\Http\Controllers\CartaoVirtual\BibleProsperidadeAdminController;
 use App\Http\Controllers\CartaoVirtual\BibleProgressController;
 use App\Http\Controllers\CartaoVirtual\BiblePublicController;
@@ -87,6 +88,10 @@ Route::get('/api/bible/devotional/read-status', [BiblePublicController::class, '
 Route::get('/api/bible/my-progress', [BibleProgressController::class, 'myProgress'])->middleware('jwt');
 Route::post('/api/bible/mark-read', [BibleProgressController::class, 'markRead'])->middleware('jwt');
 Route::post('/api/bible/reset-progress', [BibleProgressController::class, 'reset'])->middleware('jwt');
+Route::get('/api/bible/config/{itemId}', [BibleConfigController::class, 'show'])
+    ->middleware('jwt')->where('itemId', '[0-9]+');
+Route::put('/api/bible/config/{itemId}', [BibleConfigController::class, 'update'])
+    ->middleware('jwt')->where('itemId', '[0-9]+');
 Route::get('/guest-list/register/{token}', [GuestListPublicController::class, 'registerPage'])->where('token', $cardSlug);
 Route::post('/api/guest-lists/public/register/{token}', [GuestListPublicController::class, 'registerSubmit'])->where('token', $cardSlug);
 Route::get('/guest-list/confirm/{identifier}', [GuestListPublicController::class, 'confirmPage'])->where('identifier', $cardSlug);
