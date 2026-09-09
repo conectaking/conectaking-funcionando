@@ -7371,7 +7371,7 @@ window.showAdminVerSenhasModal = async function () {
                 <h2 style="color: var(--finance-text-primary); font-size: 1.35rem; font-weight: 700; margin: 0 0 20px 0;">
                     <i class="fas fa-list" style="color: #8b5cf6; margin-right: 10px;"></i>Senhas de zerar mês (Gestão Financeira)
                 </h2>
-                <p style="color: var(--finance-text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Clientes que usam Gestão Financeira e sua senha para "Zerar mês". Padrão: 1212.</p>
+                <p style="color: var(--finance-text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Clientes com Gestão Financeira. Senhas personalizadas não são exibidas em claro — apenas se usam o padrão 1212 ou não.</p>
                 <div style="max-height: 400px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
@@ -7386,7 +7386,7 @@ window.showAdminVerSenhasModal = async function () {
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                                 <td style="padding: 12px; color: var(--finance-text-primary);">${(r.full_name || '-').replace(/</g, '&lt;')}</td>
                                 <td style="padding: 12px; color: var(--finance-text-secondary); font-size: 0.9rem;">${(r.email || '-').replace(/</g, '&lt;')}</td>
-                                <td style="padding: 12px; color: #8b5cf6; font-weight: 600;">${(r.senha || '1212').replace(/</g, '&lt;')}</td>
+                                <td style="padding: 12px; color: #8b5cf6; font-weight: 600;">${(r.password_label || (r.uses_default_password !== false ? 'Padrão (1212)' : 'Personalizada')).replace(/</g, '&lt;')}</td>
                             </tr>
                             `).join('')}
                         </tbody>

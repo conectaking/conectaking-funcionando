@@ -115,7 +115,7 @@ class KingSelectionZipService
     /**
      * @param  array<string,mixed>  $payload
      * @param  array<string,mixed>  $body
-     * @return array{status:int, body?:array<string,mixed>, binary?:string, filename?:string, entries?:int}
+     * @return array{status:int, body?:array<string,mixed>, binary?:string, zip_path?:string, filename?:string, entries?:int}
      */
     public function downloadZip(array $payload, array $body, ?string $ip, ?string $userAgent): array
     {
@@ -172,15 +172,15 @@ class KingSelectionZipService
             if ($appendable === []) {
                 return ['status' => 409, 'body' => ['message' => 'As fotos aprovadas em modo editado ainda não possuem arquivo enviado.']];
             }
-            $builtZip = $this->buildZipBinary($appendable);
-            if ($builtZip['entries'] < 1) {
+            $builtZip = $this->buildZipFile($appendable);
+            if ($builtZip['entries'] < 1 || ($builtZip['path'] ?? '') === '') {
                 return ['status' => 404, 'body' => ['message' => 'Nenhuma foto com arquivo disponível para o ZIP.']];
             }
             $this->auditZipDownloads($galleryId, $cid, $appendable, $ip, $userAgent);
 
             return [
                 'status' => 200,
-                'binary' => $builtZip['binary'],
+                'zip_path' => $builtZip['path'],
                 'filename' => $zipNameBase.'_aprovadas'.$partLabel.'.zip',
                 'entries' => $builtZip['entries'],
             ];
@@ -227,14 +227,14 @@ class KingSelectionZipService
                     'source_path' => $fp,
                 ];
             }
-            $builtZip = $this->buildZipBinary($appendable);
-            if ($builtZip['entries'] < 1) {
+            $builtZip = $this->buildZipFile($appendable);
+            if ($builtZip['entries'] < 1 || ($builtZip['path'] ?? '') === '') {
                 return ['status' => 404, 'body' => ['message' => 'Nenhuma foto com arquivo disponível para o ZIP.']];
             }
 
             return [
                 'status' => 200,
-                'binary' => $builtZip['binary'],
+                'zip_path' => $builtZip['path'],
                 'filename' => $zipNameBase.'_galeria'.$partLabel.'.zip',
                 'entries' => $builtZip['entries'],
             ];
@@ -422,19 +422,19 @@ class KingSelectionZipService
 
     /**
      * @param  list<array{photo_id:int, selection_batch:?int, original_name:string, source_path:string}>  $appendable
-     * @return array{binary:string, entries:int}
+     * @return array{path:string, entries:int}
      */
-    private function buildZipBinary(array $appendable): array
+    private function buildZipFile(array $appendable): array
     {
         $tmp = tempnam(sys_get_temp_dir(), 'kszip');
         if ($tmp === false) {
-            return ['binary' => '', 'entries' => 0];
+            return ['path' => '', 'entries' => 0];
         }
         $zipPath = $tmp.'.zip';
         @unlink($tmp);
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            return ['binary' => '', 'entries' => 0];
+            return ['path' => '', 'entries' => 0];
         }
         $used = [];
         $entries = 0;
@@ -445,13 +445,17 @@ class KingSelectionZipService
             }
             $fname = $this->uniqueZipName($item['original_name'], $item['photo_id'], $used);
             $zip->addFromString($fname, $buf);
+            unset($buf);
             $entries++;
         }
         $zip->close();
-        $binary = is_file($zipPath) ? (string) file_get_contents($zipPath) : '';
-        @unlink($zipPath);
+        if ($entries < 1 || ! is_file($zipPath)) {
+            @unlink($zipPath);
 
-        return ['binary' => $binary, 'entries' => $entries];
+            return ['path' => '', 'entries' => 0];
+        }
+
+        return ['path' => $zipPath, 'entries' => $entries];
     }
 
     /**

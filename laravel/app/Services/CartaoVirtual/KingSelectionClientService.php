@@ -425,38 +425,17 @@ class KingSelectionClientService
         $content = $this->public->galleryContent((string) $g->slug);
         $photos = [];
         $folders = [];
+        $folderLayout = strtolower(trim((string) ($g->client_folder_layout ?? 'folders'))) === 'flat' ? 'flat' : 'folders';
         if (($content['status'] ?? 0) === 200) {
             $photos = $content['body']['gallery']['photos'] ?? [];
             $folders = $content['body']['gallery']['folders'] ?? [];
+            $folderLayout = (string) ($content['body']['gallery']['client_folder_layout'] ?? $folderLayout);
         } else {
-            // galeria não-pública: listar fotos direto
-            try {
-                $rows = DB::select(
-                    'SELECT id, original_name, "order", folder_id FROM king_photos WHERE gallery_id = ? ORDER BY "order" ASC, id ASC',
-                    [$galleryId]
-                );
-                foreach ($rows as $p) {
-                    $photos[] = [
-                        'id' => (int) $p->id,
-                        'original_name' => (string) ($p->original_name ?? ''),
-                        'order' => (int) ($p->order ?? 0),
-                        'folder_id' => isset($p->folder_id) && $p->folder_id !== null ? (int) $p->folder_id : null,
-                    ];
-                }
-            } catch (\Throwable) {
-                $rows = DB::select(
-                    'SELECT id, original_name, "order" FROM king_photos WHERE gallery_id = ? ORDER BY "order" ASC, id ASC',
-                    [$galleryId]
-                );
-                foreach ($rows as $p) {
-                    $photos[] = [
-                        'id' => (int) $p->id,
-                        'original_name' => (string) ($p->original_name ?? ''),
-                        'order' => (int) ($p->order ?? 0),
-                        'folder_id' => null,
-                    ];
-                }
-            }
+            // Galeria não-pública: carregar mídia em chunks (mesma lógica do público).
+            $media = $this->public->loadClientMedia($galleryId, $folderLayout);
+            $photos = $media['photos'];
+            $folders = $media['folders'];
+            $folderLayout = $media['folder_layout'];
         }
 
         $accessMode = KsAccess::normAccessMode($g->access_mode ?? 'private');
@@ -476,7 +455,7 @@ class KingSelectionClientService
             'face_recognition_enabled' => !empty($g->face_recognition_enabled ?? false),
             'access_mode' => $accessMode,
             'allow_self_signup' => !empty($g->allow_self_signup ?? false),
-            'client_folder_layout' => strtolower(trim((string) ($g->client_folder_layout ?? 'folders'))) === 'flat' ? 'flat' : 'folders',
+            'client_folder_layout' => $folderLayout,
             'tutorial_video_url' => !empty($g->tutorial_video_url ?? null) ? trim((string) $g->tutorial_video_url) : null,
             'photos' => $photos,
             'folders' => $folders,

@@ -3,6 +3,7 @@
 namespace App\Services\Finance;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -1330,9 +1331,9 @@ class FinanceService
      */
     public function zerarSenhaStatus(string $userId): array
     {
-        $senha = $this->zerarSenhaEffective($userId);
+        $stored = $this->zerarSenhaStored($userId);
 
-        return $this->ok(['hasCustomPassword' => $senha !== '1212']);
+        return $this->ok(['hasCustomPassword' => $this->zerarSenhaIsCustom($stored)]);
     }
 
     /**
@@ -1374,7 +1375,7 @@ class FinanceService
              VALUES (?, ?, NOW())
              ON CONFLICT (user_id) DO UPDATE SET senha = EXCLUDED.senha, updated_at = NOW()
              RETURNING *',
-            [$userId, (string) $new]
+            [$userId, Hash::make((string) $new)]
         );
 
         return $this->ok(null, 'Senha de zerar mês alterada com sucesso.');
@@ -1431,7 +1432,7 @@ class FinanceService
         }
         $rows = DB::select(
             "SELECT u.id AS user_id, u.email, u.name AS full_name,
-                    COALESCE(fz.senha, '1212') AS senha
+                    fz.senha AS senha_stored
              FROM users u
              INNER JOIN (
                 SELECT user_id FROM finance_transactions
@@ -1443,7 +1444,16 @@ class FinanceService
              ORDER BY u.name, u.email"
         );
 
-        return $this->ok(array_map(static fn ($r) => (array) $r, $rows));
+        return $this->ok(array_map(function ($r) {
+            $arr = (array) $r;
+            $stored = isset($arr['senha_stored']) ? (string) $arr['senha_stored'] : '';
+            unset($arr['senha_stored'], $arr['senha']);
+            $usesDefault = ! $this->zerarSenhaIsCustom($stored === '' ? null : $stored);
+            $arr['uses_default_password'] = $usesDefault;
+            $arr['password_label'] = $usesDefault ? 'Padrão (1212)' : 'Personalizada';
+
+            return $arr;
+        }, $rows));
     }
 
     /**
@@ -1721,19 +1731,50 @@ class FinanceService
         return $user ? filter_var($user->is_admin ?? false, FILTER_VALIDATE_BOOLEAN) : false;
     }
 
-    private function zerarSenhaEffective(string $userId): string
+    private function zerarSenhaStored(string $userId): ?string
     {
         if (! Schema::hasTable('finance_zerar_senha')) {
-            return '1212';
+            return null;
         }
         $row = DB::selectOne('SELECT senha FROM finance_zerar_senha WHERE user_id = ? LIMIT 1', [$userId]);
+        if (! $row || $row->senha === null || $row->senha === '') {
+            return null;
+        }
 
-        return ($row && $row->senha !== null && $row->senha !== '') ? (string) $row->senha : '1212';
+        return (string) $row->senha;
+    }
+
+    private function zerarSenhaIsHash(string $value): bool
+    {
+        return str_starts_with($value, '$2y$')
+            || str_starts_with($value, '$2a$')
+            || str_starts_with($value, '$2b$')
+            || str_starts_with($value, '$argon2');
+    }
+
+    private function zerarSenhaIsCustom(?string $stored): bool
+    {
+        if ($stored === null || $stored === '' || $stored === '1212') {
+            return false;
+        }
+        if ($this->zerarSenhaIsHash($stored)) {
+            return ! Hash::check('1212', $stored);
+        }
+
+        return true;
     }
 
     private function verifyZerarSenha(string $userId, string $senha): bool
     {
-        return $this->zerarSenhaEffective($userId) === (string) $senha;
+        $stored = $this->zerarSenhaStored($userId);
+        if ($stored === null || $stored === '') {
+            return hash_equals('1212', (string) $senha);
+        }
+        if ($this->zerarSenhaIsHash($stored)) {
+            return Hash::check((string) $senha, $stored);
+        }
+
+        return hash_equals($stored, (string) $senha);
     }
 
     /**

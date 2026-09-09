@@ -10,6 +10,129 @@ use Illuminate\Support\Facades\Log;
  */
 class KingSelectionPublicService
 {
+    private const PHOTO_PAGE_SIZE = 500;
+
+    /**
+     * Lista fotos em páginas (evita um único SELECT gigante).
+     * Sem $limit: carrega tudo em chunks de PHOTO_PAGE_SIZE.
+     *
+     * @return array{photos:list<array{id:int,original_name:string,order:int,folder_id:?int}>, total:int, hasMore:bool, limit:?int, offset:int}
+     */
+    public function listPhotosForGallery(int $galleryId, ?int $limit = null, int $offset = 0): array
+    {
+        $offset = max(0, $offset);
+        $total = 0;
+        try {
+            $total = (int) (DB::selectOne(
+                'SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id = ?',
+                [$galleryId]
+            )->c ?? 0);
+        } catch (\Throwable) {
+            return ['photos' => [], 'total' => 0, 'hasMore' => false, 'limit' => $limit, 'offset' => $offset];
+        }
+
+        if ($limit !== null && $limit > 0) {
+            $limit = min(max(1, $limit), 1000);
+            $photos = $this->fetchPhotoPage($galleryId, $limit, $offset);
+
+            return [
+                'photos' => $photos,
+                'total' => $total,
+                'hasMore' => ($offset + count($photos)) < $total,
+                'limit' => $limit,
+                'offset' => $offset,
+            ];
+        }
+
+        $photos = [];
+        for ($off = 0; $off < $total; $off += self::PHOTO_PAGE_SIZE) {
+            foreach ($this->fetchPhotoPage($galleryId, self::PHOTO_PAGE_SIZE, $off) as $p) {
+                $photos[] = $p;
+            }
+        }
+
+        return [
+            'photos' => $photos,
+            'total' => $total,
+            'hasMore' => false,
+            'limit' => null,
+            'offset' => 0,
+        ];
+    }
+
+    /**
+     * Fotos + pastas prontas para o cliente (público ou autenticado).
+     *
+     * @return array{photos:list<array<string,mixed>>, folders:list<array<string,mixed>>, folder_layout:string}
+     */
+    public function loadClientMedia(int $galleryId, string $folderLayout = 'folders'): array
+    {
+        $folderLayout = strtolower(trim($folderLayout)) === 'flat' ? 'flat' : 'folders';
+        $this->healOrphanFolderIds($galleryId);
+        $listed = $this->listPhotosForGallery($galleryId);
+        $photos = $listed['photos'];
+        $folders = $folderLayout === 'flat' ? [] : $this->listFoldersForGallery($galleryId);
+        if ($folderLayout === 'flat') {
+            $photos = array_map(static function (array $p) {
+                $p['folder_id'] = null;
+
+                return $p;
+            }, $photos);
+        } else {
+            $folders = $this->prepareClientFolders($folders, $photos);
+            $photos = $this->sanitizePhotoFolderIds($photos, $folders);
+        }
+
+        return ['photos' => $photos, 'folders' => $folders, 'folder_layout' => $folderLayout];
+    }
+
+    /**
+     * @return list<array{id:int,original_name:string,order:int,folder_id:?int}>
+     */
+    private function fetchPhotoPage(int $galleryId, int $limit, int $offset): array
+    {
+        $photos = [];
+        try {
+            $rows = DB::select(
+                'SELECT id, original_name, "order", folder_id
+                 FROM king_photos WHERE gallery_id = ?
+                 ORDER BY "order" ASC, id ASC
+                 LIMIT ? OFFSET ?',
+                [$galleryId, $limit, $offset]
+            );
+            foreach ($rows as $p) {
+                $photos[] = [
+                    'id' => (int) $p->id,
+                    'original_name' => (string) ($p->original_name ?? ''),
+                    'order' => (int) ($p->order ?? 0),
+                    'folder_id' => isset($p->folder_id) && $p->folder_id !== null ? (int) $p->folder_id : null,
+                ];
+            }
+        } catch (\Throwable) {
+            try {
+                $rows = DB::select(
+                    'SELECT id, original_name, "order"
+                     FROM king_photos WHERE gallery_id = ?
+                     ORDER BY "order" ASC, id ASC
+                     LIMIT ? OFFSET ?',
+                    [$galleryId, $limit, $offset]
+                );
+                foreach ($rows as $p) {
+                    $photos[] = [
+                        'id' => (int) $p->id,
+                        'original_name' => (string) ($p->original_name ?? ''),
+                        'order' => (int) ($p->order ?? 0),
+                        'folder_id' => null,
+                    ];
+                }
+            } catch (\Throwable $e2) {
+                Log::warning('ks.fetchPhotoPage', ['error' => $e2->getMessage()]);
+            }
+        }
+
+        return $photos;
+    }
+
     /**
      * @return array{status:int, body:array<string,mixed>}
      */
@@ -186,10 +309,11 @@ class KingSelectionPublicService
 
     /**
      * Conteúdo completo da galeria em modo público (fotos + pastas).
+     * Com $limit: página de fotos + metadados de total/hasMore.
      *
      * @return array{status:int, body:array<string,mixed>}
      */
-    public function galleryContent(string $slug): array
+    public function galleryContent(string $slug, ?int $limit = null, int $offset = 0): array
     {
         $slug = trim($slug);
         if ($slug === '') {
@@ -231,53 +355,37 @@ class KingSelectionPublicService
         }
 
         $folderLayout = strtolower(trim((string) ($g->client_folder_layout ?? 'folders'))) === 'flat' ? 'flat' : 'folders';
+        $offset = max(0, $offset);
 
-        $this->healOrphanFolderIds((int) $g->id);
+        if ($limit !== null && $limit > 0) {
+            $this->healOrphanFolderIds((int) $g->id);
+            $listed = $this->listPhotosForGallery((int) $g->id, $limit, $offset);
+            $photos = $listed['photos'];
+            $folders = [];
+            if ($folderLayout === 'flat') {
+                $photos = array_map(static function (array $p) {
+                    $p['folder_id'] = null;
 
-        $photos = [];
-        try {
-            $rows = DB::select(
-                'SELECT id, original_name, "order", folder_id
-                 FROM king_photos WHERE gallery_id = ? ORDER BY "order" ASC, id ASC',
-                [$g->id]
-            );
-            foreach ($rows as $p) {
-                $photos[] = [
-                    'id' => (int) $p->id,
-                    'original_name' => (string) ($p->original_name ?? ''),
-                    'order' => (int) ($p->order ?? 0),
-                    'folder_id' => isset($p->folder_id) && $p->folder_id !== null ? (int) $p->folder_id : null,
-                ];
+                    return $p;
+                }, $photos);
+            } else {
+                $folders = array_values(array_filter(
+                    $this->listFoldersForGallery((int) $g->id),
+                    static fn (array $f) => ((int) ($f['photo_count'] ?? 0)) > 0
+                ));
+                $photos = $this->sanitizePhotoFolderIds($photos, $folders);
             }
-        } catch (\Throwable) {
-            try {
-                $rows = DB::select(
-                    'SELECT id, original_name, "order" FROM king_photos WHERE gallery_id = ? ORDER BY "order" ASC, id ASC',
-                    [$g->id]
-                );
-                foreach ($rows as $p) {
-                    $photos[] = [
-                        'id' => (int) $p->id,
-                        'original_name' => (string) ($p->original_name ?? ''),
-                        'order' => (int) ($p->order ?? 0),
-                        'folder_id' => null,
-                    ];
-                }
-            } catch (\Throwable $e2) {
-                Log::warning('ks.galleryContent.photos', ['error' => $e2->getMessage()]);
-            }
-        }
-
-        $folders = $folderLayout === 'flat' ? [] : $this->listFoldersForGallery((int) $g->id);
-        if ($folderLayout === 'flat') {
-            $photos = array_map(static function (array $p) {
-                $p['folder_id'] = null;
-
-                return $p;
-            }, $photos);
+            $totalPhotos = $listed['total'];
+            $hasMore = $listed['hasMore'];
+            $effectiveLimit = $listed['limit'];
         } else {
-            $folders = $this->prepareClientFolders($folders, $photos);
-            $photos = $this->sanitizePhotoFolderIds($photos, $folders);
+            $media = $this->loadClientMedia((int) $g->id, $folderLayout);
+            $photos = $media['photos'];
+            $folders = $media['folders'];
+            $folderLayout = $media['folder_layout'];
+            $totalPhotos = count($photos);
+            $hasMore = false;
+            $effectiveLimit = null;
         }
 
         $gallery = [
@@ -295,6 +403,10 @@ class KingSelectionPublicService
             'photos' => $photos,
             'folders' => $folders,
             'locked' => true,
+            'photos_total' => $totalPhotos,
+            'photos_has_more' => $hasMore,
+            'photos_offset' => $offset,
+            'photos_limit' => $effectiveLimit,
         ];
 
         return [
@@ -303,6 +415,8 @@ class KingSelectionPublicService
                 'success' => true,
                 'gallery' => $gallery,
                 'selectedPhotoIds' => [],
+                'photosTotal' => $totalPhotos,
+                'photosHasMore' => $hasMore,
             ],
         ];
     }

@@ -107,7 +107,10 @@ class KingSelectionPublicController extends Controller
     public function galleryContent(Request $request)
     {
         $slug = trim((string) $request->query('slug', ''));
-        $result = $this->ks->galleryContent($slug);
+        $limitRaw = $request->query('limit');
+        $limit = ($limitRaw !== null && $limitRaw !== '') ? (int) $limitRaw : null;
+        $offset = max(0, (int) $request->query('offset', 0));
+        $result = $this->ks->galleryContent($slug, $limit, $offset);
 
         return response()->json($result['body'], $result['status'])
             ->header('X-Conecta-Engine', 'laravel');

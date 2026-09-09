@@ -128,6 +128,7 @@ class KingSelectionAdminService
             $gid = (int) $g->id;
             $photos = $photosByGallery[$gid] ?? [];
             $row = (array) $g;
+            unset($row['senha_hash'], $row['senha_enc']);
             $row['photos'] = $photos;
             $row['status'] = $statusAgg[$gid] ?? $g->status;
             $row['selected_count'] = $selectionStats[$gid]['selected_count'] ?? 0;
@@ -277,9 +278,14 @@ class KingSelectionAdminService
             $this->ensurePrimaryClient((array) $gallery, $nomeCliente);
         }
 
+        $gallerySafe = $gallery ? (array) $gallery : null;
+        if (is_array($gallerySafe)) {
+            unset($gallerySafe['senha_hash'], $gallerySafe['senha_enc']);
+        }
+
         return ['status' => 201, 'body' => array_filter([
             'success' => true,
-            'gallery' => $gallery,
+            'gallery' => $gallerySafe,
             'client_password' => $clientPasswordResponse,
             'access_type' => $accessType,
             'data_trabalho' => Schema::hasColumn('king_galleries', 'data_trabalho') ? $dataTrabalho : null,
@@ -339,10 +345,22 @@ class KingSelectionAdminService
             $hasCover ? 'is_cover' : 'FALSE AS is_cover',
             $hasFolder ? 'folder_id' : 'NULL::INTEGER AS folder_id',
         ];
-        $photos = DB::select(
-            'SELECT '.implode(', ', $photoCols).' FROM king_photos WHERE gallery_id = ? ORDER BY "order" ASC, id ASC',
+        $photos = [];
+        $photoTotal = (int) (DB::selectOne(
+            'SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id = ?',
             [$galleryId]
-        );
+        )->c ?? 0);
+        $pageSize = 500;
+        for ($off = 0; $off < $photoTotal; $off += $pageSize) {
+            $page = DB::select(
+                'SELECT '.implode(', ', $photoCols).' FROM king_photos WHERE gallery_id = ?
+                 ORDER BY "order" ASC, id ASC LIMIT ? OFFSET ?',
+                [$galleryId, $pageSize, $off]
+            );
+            foreach ($page as $row) {
+                $photos[] = $row;
+            }
+        }
 
         $hasSelClient = Schema::hasColumn('king_selections', 'client_id');
         $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
@@ -422,6 +440,7 @@ class KingSelectionAdminService
 
         $statusSummary = $this->aggregateStatusFromClients($clients);
         $galleryOut = (array) $g;
+        unset($galleryOut['senha_hash'], $galleryOut['senha_enc']);
         $galleryOut['status'] = $statusSummary ?? $g->status;
         $galleryOut['photos'] = $photos;
         $galleryOut['selectedPhotoIds'] = $selectedPhotoIds;

@@ -32,8 +32,13 @@ class CardPublicController extends Controller
                 ->view('cartao.public', array_merge($result['data'], [
                     'laravel_preview' => ! $publicMode,
                 ]))
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0')
-                ->header('Pragma', 'no-cache')
+                ->header(
+                    'Cache-Control',
+                    $publicMode
+                        ? 'public, max-age=30, stale-while-revalidate=60'
+                        : 'no-cache, no-store, must-revalidate, private, max-age=0'
+                )
+                ->header('Pragma', $publicMode ? 'cache' : 'no-cache')
                 ->header('X-Conecta-Engine', 'laravel')
                 ->header('X-Conecta-Card-Public', $publicMode ? '1' : '0'),
             default => response('Not found', 404),

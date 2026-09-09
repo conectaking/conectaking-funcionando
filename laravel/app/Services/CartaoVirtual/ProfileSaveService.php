@@ -5,6 +5,7 @@ namespace App\Services\CartaoVirtual;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Services\CartaoVirtual\CartaoPublicService;
 
 /**
  * PUT /api/profile/save-all — paridade Node (informações + tema + itens).
@@ -52,6 +53,7 @@ class ProfileSaveService
                 [$userId]
             );
             $now = (int) round(microtime(true) * 1000);
+            CartaoPublicService::forgetCardCache($userId);
 
             return [
                 'success' => true,

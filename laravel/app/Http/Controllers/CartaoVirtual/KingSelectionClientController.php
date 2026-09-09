@@ -250,17 +250,34 @@ class KingSelectionClientController extends Controller
             $request->ip(),
             (string) $request->userAgent()
         );
-        if (($r['status'] ?? 500) !== 200 || empty($r['binary'])) {
+        if (($r['status'] ?? 500) !== 200) {
             return response()->json($r['body'] ?? ['message' => 'Erro'], (int) ($r['status'] ?? 500))
                 ->header('X-Conecta-Engine', 'laravel');
         }
 
-        return response($r['binary'], 200)
-            ->header('Content-Type', 'application/zip')
-            ->header('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0')
-            ->header('Pragma', 'no-cache')
-            ->header('Content-Disposition', 'attachment; filename="'.($r['filename'] ?? 'fotos.zip').'"')
-            ->header('X-KS-Zip-Entries', (string) ($r['entries'] ?? 0))
+        $zipPath = (string) ($r['zip_path'] ?? '');
+        $filename = (string) ($r['filename'] ?? 'fotos.zip');
+        if ($zipPath !== '' && is_file($zipPath)) {
+            return response()->download($zipPath, $filename, [
+                'Content-Type' => 'application/zip',
+                'Cache-Control' => 'private, no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'X-KS-Zip-Entries' => (string) ($r['entries'] ?? 0),
+                'X-Conecta-Engine' => 'laravel',
+            ])->deleteFileAfterSend(true);
+        }
+
+        if (! empty($r['binary'])) {
+            return response($r['binary'], 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache')
+                ->header('Content-Disposition', 'attachment; filename="'.$filename.'"')
+                ->header('X-KS-Zip-Entries', (string) ($r['entries'] ?? 0))
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()->json(['message' => 'ZIP vazio'], 500)
             ->header('X-Conecta-Engine', 'laravel');
     }
 

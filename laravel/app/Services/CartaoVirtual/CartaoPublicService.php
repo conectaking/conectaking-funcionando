@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\CartaoVirtual\VerseOfDayService;
@@ -59,19 +60,65 @@ class CartaoPublicService
             return ['type' => 'inactive'];
         }
 
-        $profile = $this->loadProfile((string) $user->id);
-        if (!$profile) {
+        $userId = (string) $user->id;
+        $slugKey = $slug !== '' ? $slug : $raw;
+
+        $loadCore = function () use ($userId, $slugKey): ?array {
+            $profile = $this->loadProfile($userId);
+            if (! $profile) {
+                return null;
+            }
+            $items = $this->loadItems($userId, $slugKey);
+            $verseOfDay = null;
+            $verseDisplay = ['position' => 'top', 'size' => 'normal'];
+            $bibleMeta = null;
+            foreach ($items as $it) {
+                if (($it['item_type'] ?? '') === 'bible') {
+                    $bibleMeta = $it['bible_data'] ?? null;
+                    break;
+                }
+            }
+            if (is_array($bibleMeta) && ($bibleMeta['is_visible'] ?? true) !== false) {
+                $pos = (string) ($bibleMeta['verse_position'] ?? 'top');
+                $size = (string) ($bibleMeta['verse_size'] ?? 'normal');
+                $verseDisplay = [
+                    'position' => $pos === 'bottom' ? 'bottom' : 'top',
+                    'size' => in_array($size, ['small', 'xsmall'], true) ? $size : 'normal',
+                ];
+                $verseOfDay = $this->fetchVerseOfDay((string) ($bibleMeta['translation_code'] ?? 'nvi'));
+            }
+
+            return [
+                'profile' => $profile,
+                'items' => $items,
+                'verseOfDay' => $verseOfDay,
+                'verseDisplay' => $verseDisplay,
+            ];
+        };
+
+        $core = $publicMode
+            ? Cache::remember(self::cardCacheKey($userId), 45, $loadCore)
+            : $loadCore();
+
+        if (! is_array($core) || empty($core['profile'])) {
+            if ($publicMode) {
+                Cache::forget(self::cardCacheKey($userId));
+            }
+
             return ['type' => 'notFound', 'message' => '404 - Perfil não configurado'];
         }
 
-        $items = $this->loadItems((string) $user->id, $slug !== '' ? $slug : $raw);
+        $profile = $core['profile'];
+        $items = $core['items'] ?? [];
+        $verseOfDay = $core['verseOfDay'] ?? null;
+        $verseDisplay = $core['verseDisplay'] ?? ['position' => 'top', 'size' => 'normal'];
         $details = (array) $profile;
         $details['logo_spacing'] = $this->normalizeLogoSpacing($details['logo_spacing'] ?? 'center');
         $details['button_content_align'] = $this->normalizeAlign($details['button_content_align'] ?? 'center');
         $details['button_color_rgb'] = $this->hexToRgb($details['button_color'] ?? null);
         $details['card_color_rgb'] = $this->hexToRgb($details['card_background_color'] ?? null);
         if (empty($details['profile_slug'])) {
-            $details['profile_slug'] = $slug !== '' ? $slug : $raw;
+            $details['profile_slug'] = $slugKey;
         }
 
         // Mapa a partir do item location (como no cartão Node)
@@ -80,26 +127,6 @@ class CartaoPublicService
                 $details['map_url'] = $it['map_url'];
                 break;
             }
-        }
-
-        // Bíblia: versículo do dia (não aparece como botão na lista)
-        $verseOfDay = null;
-        $verseDisplay = ['position' => 'top', 'size' => 'normal'];
-        $bibleMeta = null;
-        foreach ($items as $it) {
-            if (($it['item_type'] ?? '') === 'bible') {
-                $bibleMeta = $it['bible_data'] ?? null;
-                break;
-            }
-        }
-        if (is_array($bibleMeta) && ($bibleMeta['is_visible'] ?? true) !== false) {
-            $pos = (string) ($bibleMeta['verse_position'] ?? 'top');
-            $size = (string) ($bibleMeta['verse_size'] ?? 'normal');
-            $verseDisplay = [
-                'position' => $pos === 'bottom' ? 'bottom' : 'top',
-                'size' => in_array($size, ['small', 'xsmall'], true) ? $size : 'normal',
-            ];
-            $verseOfDay = $this->fetchVerseOfDay((string) ($bibleMeta['translation_code'] ?? 'nvi'));
         }
 
         $itemsForLinks = array_values(array_filter(
@@ -146,13 +173,23 @@ class CartaoPublicService
                 'ogDescription' => $ogDescription,
                 'profile_slug' => $profileSlug,
                 'identifier' => $raw,
-                'user_id' => (string) $user->id,
+                'user_id' => $userId,
                 'laravel_preview' => true,
                 'alignValue' => $alignValue,
                 'buttonAlign' => $buttonAlign,
                 'logoAlign' => $logoAlign,
             ],
         ];
+    }
+
+    public static function cardCacheKey(string $userId): string
+    {
+        return 'card:core:v1:'.$userId;
+    }
+
+    public static function forgetCardCache(string $userId): void
+    {
+        Cache::forget(self::cardCacheKey($userId));
     }
 
     /**
