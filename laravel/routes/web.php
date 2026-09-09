@@ -817,8 +817,8 @@ $ksPhotographerPage = function () {
     return app(\App\Http\Controllers\LegacyPageController::class)->show($request, $page);
 };
 foreach ([
-    '/kingSelection', '/kingSelection.html', '/l/kingSelection', '/l/kingSelection.html',
-    '/kingselection', '/kingselection.html', '/l/kingselection', '/l/kingselection.html',
+    '/kingSelection', '/kingSelection.html',
+    '/kingselection', '/kingselection.html',
     '/mr/kingSelection', '/mr/kingselection',
 ] as $ksPath) {
     Route::get($ksPath, $ksPhotographerPage);
