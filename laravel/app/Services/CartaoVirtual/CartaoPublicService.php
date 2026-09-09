@@ -273,6 +273,14 @@ class CartaoPublicService
             );
         }
 
+        $itemIds = [];
+        foreach ($rows as $row) {
+            if (!empty($row->id)) {
+                $itemIds[] = $row->id;
+            }
+        }
+        $maps = $this->prefetchItemEnrichmentMaps($itemIds);
+
         $out = [];
         foreach ($rows as $row) {
             $item = (array) $row;
@@ -284,13 +292,13 @@ class CartaoPublicService
             }
 
             if ($type === 'bible') {
-                $item['bible_data'] = $this->enrichBible($item);
+                $item['bible_data'] = $this->enrichBible($item, $maps);
                 $out[] = $item;
                 continue;
             }
 
             if ($type === 'king_selection') {
-                $item = array_merge($item, $this->enrichKingSelection($item));
+                $item = array_merge($item, $this->enrichKingSelection($item, $maps));
                 if (empty($item['ks_public_url']) || $item['ks_public_url'] === '#') {
                     continue;
                 }
@@ -302,7 +310,7 @@ class CartaoPublicService
             }
 
             if ($type === 'location') {
-                $item = array_merge($item, $this->enrichLocation($item));
+                $item = array_merge($item, $this->enrichLocation($item, $maps));
             }
 
             if ($type === 'banner') {
@@ -318,15 +326,15 @@ class CartaoPublicService
             }
 
             if ($type === 'sales_page') {
-                $item = array_merge($item, $this->enrichSalesPage($item, $profileSlug));
+                $item = array_merge($item, $this->enrichSalesPage($item, $profileSlug, $maps));
             }
 
             if ($type === 'digital_form' || $type === 'guest_list') {
-                $item = array_merge($item, $this->enrichDigitalForm($item, $profileSlug));
+                $item = array_merge($item, $this->enrichDigitalForm($item, $profileSlug, $maps));
             }
 
             if ($type === 'guest_list') {
-                $item = array_merge($item, $this->enrichGuestList($item));
+                $item = array_merge($item, $this->enrichGuestList($item, $maps));
                 // Preferir formulário digital convertido quando existir
                 if (!empty($item['digital_form_data']) && !empty($item['active_cadastro_link_slug'])) {
                     $item['item_type'] = 'digital_form';
@@ -335,7 +343,7 @@ class CartaoPublicService
             }
 
             if ($type === 'product_catalog') {
-                $item = array_merge($item, $this->enrichProductCatalog($item));
+                $item = array_merge($item, $this->enrichProductCatalog($item, $maps));
             }
 
             if ($type === 'carousel') {
@@ -371,6 +379,200 @@ class CartaoPublicService
     }
 
     /**
+     * Prefetch related rows for all profile_items in a few batch queries (no per-item N+1).
+     *
+     * @param  list<mixed>  $itemIds
+     * @return array{
+     *     bible: array<string, object>,
+     *     king_galleries: array<string, object>,
+     *     sales_pages: array<string, object>,
+     *     location: array<string, object>,
+     *     digital_forms: array<string, object>,
+     *     guest_lists: array<string, object>,
+     *     cadastro_slugs: array<string, string>,
+     *     guest_stats: array<string, array<string, int>>,
+     *     products: array<string, list<object>>
+     * }
+     */
+    private function prefetchItemEnrichmentMaps(array $itemIds): array
+    {
+        $maps = [
+            'bible' => [],
+            'king_galleries' => [],
+            'sales_pages' => [],
+            'location' => [],
+            'digital_forms' => [],
+            'guest_lists' => [],
+            'cadastro_slugs' => [],
+            'guest_stats' => [],
+            'products' => [],
+        ];
+
+        if ($itemIds === []) {
+            return $maps;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($itemIds), '?'));
+
+        try {
+            $rows = DB::select(
+                "SELECT * FROM bible_items WHERE profile_item_id IN ({$placeholders})",
+                $itemIds
+            );
+            foreach ($rows as $r) {
+                $key = (string) $r->profile_item_id;
+                if (!isset($maps['bible'][$key])) {
+                    $maps['bible'][$key] = $r;
+                }
+            }
+        } catch (\Throwable $e) {
+            // table may be missing
+        }
+
+        try {
+            $rows = DB::select(
+                "SELECT DISTINCT ON (profile_item_id) profile_item_id, slug, is_published, status, nome_projeto
+                 FROM king_galleries
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY profile_item_id, updated_at DESC NULLS LAST, id DESC",
+                $itemIds
+            );
+            foreach ($rows as $r) {
+                $maps['king_galleries'][(string) $r->profile_item_id] = $r;
+            }
+        } catch (\Throwable $e) {
+            // table may be missing
+        }
+
+        try {
+            $rows = DB::select(
+                "SELECT * FROM sales_pages WHERE profile_item_id IN ({$placeholders})",
+                $itemIds
+            );
+            foreach ($rows as $r) {
+                $key = (string) $r->profile_item_id;
+                if (!isset($maps['sales_pages'][$key])) {
+                    $maps['sales_pages'][$key] = $r;
+                }
+            }
+        } catch (\Throwable $e) {
+            // table may be missing
+        }
+
+        try {
+            $rows = DB::select(
+                "SELECT address, address_formatted, latitude, longitude, place_name, profile_item_id
+                 FROM location_items WHERE profile_item_id IN ({$placeholders})",
+                $itemIds
+            );
+            foreach ($rows as $r) {
+                $key = (string) $r->profile_item_id;
+                if (!isset($maps['location'][$key])) {
+                    $maps['location'][$key] = $r;
+                }
+            }
+        } catch (\Throwable $e) {
+            // table may be missing
+        }
+
+        try {
+            $rows = DB::select(
+                "SELECT DISTINCT ON (profile_item_id) *
+                 FROM digital_form_items
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY profile_item_id, COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC",
+                $itemIds
+            );
+            foreach ($rows as $r) {
+                $maps['digital_forms'][(string) $r->profile_item_id] = $r;
+            }
+        } catch (\Throwable $e) {
+            // table may be missing
+        }
+
+        try {
+            $rows = DB::select(
+                "SELECT * FROM guest_list_items WHERE profile_item_id IN ({$placeholders})",
+                $itemIds
+            );
+            foreach ($rows as $r) {
+                $key = (string) $r->profile_item_id;
+                if (!isset($maps['guest_lists'][$key])) {
+                    $maps['guest_lists'][$key] = $r;
+                }
+            }
+        } catch (\Throwable $e) {
+            // table may be missing
+        }
+
+        $guestListIds = [];
+        foreach ($maps['guest_lists'] as $gl) {
+            if (!empty($gl->id)) {
+                $guestListIds[] = $gl->id;
+            }
+        }
+
+        if ($guestListIds !== []) {
+            $glPlaceholders = implode(',', array_fill(0, count($guestListIds), '?'));
+
+            try {
+                $rows = DB::select(
+                    "SELECT guest_list_item_id, slug FROM cadastro_links
+                     WHERE guest_list_item_id IN ({$glPlaceholders})
+                       AND is_active_for_profile = TRUE
+                       AND (expires_at IS NULL OR expires_at > NOW())
+                       AND (max_uses = 999999 OR current_uses < max_uses)",
+                    $guestListIds
+                );
+                foreach ($rows as $r) {
+                    $key = (string) $r->guest_list_item_id;
+                    if (!isset($maps['cadastro_slugs'][$key]) && !empty($r->slug)) {
+                        $maps['cadastro_slugs'][$key] = (string) $r->slug;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // table may be missing
+            }
+
+            try {
+                $rows = DB::select(
+                    "SELECT guest_list_id,
+                            COUNT(*)::int AS total_count,
+                            COUNT(*) FILTER (WHERE status = 'registered')::int AS registered_count,
+                            COUNT(*) FILTER (WHERE status = 'confirmed')::int AS confirmed_count,
+                            COUNT(*) FILTER (WHERE status = 'checked_in')::int AS checked_in_count
+                     FROM guests
+                     WHERE guest_list_id IN ({$glPlaceholders})
+                     GROUP BY guest_list_id",
+                    $guestListIds
+                );
+                foreach ($rows as $r) {
+                    $maps['guest_stats'][(string) $r->guest_list_id] = (array) $r;
+                }
+            } catch (\Throwable $e) {
+                // table may be missing
+            }
+        }
+
+        try {
+            $rows = DB::select(
+                "SELECT * FROM product_catalog_items
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY display_order ASC, created_at ASC",
+                $itemIds
+            );
+            foreach ($rows as $r) {
+                $key = (string) $r->profile_item_id;
+                $maps['products'][$key][] = $r;
+            }
+        } catch (\Throwable $e) {
+            // table may be missing
+        }
+
+        return $maps;
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     private function fetchVerseOfDay(string $translation = 'nvi'): ?array
@@ -386,12 +588,14 @@ class CartaoPublicService
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $maps
      * @return array<string, mixed>
      */
-    private function enrichBible(array $item): array
+    private function enrichBible(array $item, array $maps): array
     {
         try {
-            $row = DB::selectOne('SELECT * FROM bible_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
+            $key = (string) ($item['id'] ?? '');
+            $row = $maps['bible'][$key] ?? null;
             if ($row) {
                 $data = (array) $row;
                 // Postgres bool pode vir como string
@@ -415,19 +619,14 @@ class CartaoPublicService
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $maps
      * @return array<string, mixed>
      */
-    private function enrichKingSelection(array $item): array
+    private function enrichKingSelection(array $item, array $maps): array
     {
         try {
-            $g = DB::selectOne(
-                'SELECT slug, is_published, status, nome_projeto
-                 FROM king_galleries
-                 WHERE profile_item_id = ?
-                 ORDER BY updated_at DESC NULLS LAST, id DESC
-                 LIMIT 1',
-                [$item['id'] ?? null]
-            );
+            $key = (string) ($item['id'] ?? '');
+            $g = $maps['king_galleries'][$key] ?? null;
             if (!$g || empty($g->slug)) {
                 return ['ks_public_url' => '#', 'title' => ($item['title'] ?? null) ?: 'King Selection'];
             }
@@ -446,12 +645,14 @@ class CartaoPublicService
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $maps
      * @return array<string, mixed>
      */
-    private function enrichSalesPage(array $item, string $profileSlug): array
+    private function enrichSalesPage(array $item, string $profileSlug, array $maps): array
     {
         try {
-            $sp = DB::selectOne('SELECT * FROM sales_pages WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
+            $key = (string) ($item['id'] ?? '');
+            $sp = $maps['sales_pages'][$key] ?? null;
             if (!$sp) {
                 return [
                     'sales_page_slug' => null,
@@ -484,16 +685,14 @@ class CartaoPublicService
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $maps
      * @return array<string, mixed>
      */
-    private function enrichLocation(array $item): array
+    private function enrichLocation(array $item, array $maps): array
     {
         try {
-            $loc = DB::selectOne(
-                'SELECT address, address_formatted, latitude, longitude, place_name
-                 FROM location_items WHERE profile_item_id = ? LIMIT 1',
-                [$item['id'] ?? null]
-            );
+            $key = (string) ($item['id'] ?? '');
+            $loc = $maps['location'][$key] ?? null;
             if (!$loc) {
                 return ['map_url' => null, 'title' => ($item['title'] ?? null) ?: 'Ver no Mapa'];
             }
@@ -507,9 +706,12 @@ class CartaoPublicService
                 $mapUrl = 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($addr);
             }
 
+            $locData = (array) $loc;
+            unset($locData['profile_item_id']);
+
             return [
                 'map_url' => $mapUrl,
-                'location_data' => (array) $loc,
+                'location_data' => $locData,
                 'title' => ($item['title'] ?? null) ?: 'Ver no Mapa',
             ];
         } catch (\Throwable $e) {
@@ -519,9 +721,10 @@ class CartaoPublicService
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $maps
      * @return array<string, mixed>
      */
-    private function enrichDigitalForm(array $item, string $profileSlug): array
+    private function enrichDigitalForm(array $item, string $profileSlug, array $maps): array
     {
         $title = trim((string) ($item['title'] ?? ''));
         if ($title === '') {
@@ -531,13 +734,8 @@ class CartaoPublicService
         $activeSlug = null;
 
         try {
-            $df = DB::selectOne(
-                'SELECT * FROM digital_form_items
-                 WHERE profile_item_id = ?
-                 ORDER BY COALESCE(updated_at, \'1970-01-01\'::timestamp) DESC, id DESC
-                 LIMIT 1',
-                [$item['id'] ?? null]
-            );
+            $key = (string) ($item['id'] ?? '');
+            $df = $maps['digital_forms'][$key] ?? null;
             if ($df) {
                 $formData = (array) $df;
                 if ($title === 'Formulário' && !empty($formData['form_title'])) {
@@ -549,23 +747,10 @@ class CartaoPublicService
         }
 
         try {
-            $gli = DB::selectOne(
-                'SELECT id FROM guest_list_items WHERE profile_item_id = ? LIMIT 1',
-                [$item['id'] ?? null]
-            );
+            $key = (string) ($item['id'] ?? '');
+            $gli = $maps['guest_lists'][$key] ?? null;
             if ($gli && !empty($gli->id)) {
-                $link = DB::selectOne(
-                    'SELECT slug FROM cadastro_links
-                     WHERE guest_list_item_id = ?
-                       AND is_active_for_profile = TRUE
-                       AND (expires_at IS NULL OR expires_at > NOW())
-                       AND (max_uses = 999999 OR current_uses < max_uses)
-                     LIMIT 1',
-                    [$gli->id]
-                );
-                if ($link && !empty($link->slug)) {
-                    $activeSlug = (string) $link->slug;
-                }
+                $activeSlug = $maps['cadastro_slugs'][(string) $gli->id] ?? null;
             }
         } catch (\Throwable $e) {
             // ignore
@@ -589,28 +774,28 @@ class CartaoPublicService
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $maps
      * @return array<string, mixed>
      */
-    private function enrichGuestList(array $item): array
+    private function enrichGuestList(array $item, array $maps): array
     {
         try {
-            $gl = DB::selectOne('SELECT * FROM guest_list_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
+            $key = (string) ($item['id'] ?? '');
+            $gl = $maps['guest_lists'][$key] ?? null;
             if (!$gl) {
                 return ['guest_list_data' => null];
             }
             $data = (array) $gl;
             try {
-                $stats = DB::selectOne(
-                    'SELECT COUNT(*)::int AS total_count,
-                            COUNT(*) FILTER (WHERE status = \'registered\')::int AS registered_count,
-                            COUNT(*) FILTER (WHERE status = \'confirmed\')::int AS confirmed_count,
-                            COUNT(*) FILTER (WHERE status = \'checked_in\')::int AS checked_in_count
-                     FROM guests WHERE guest_list_id = ?',
-                    [$gl->id]
-                );
-                $data['stats'] = $stats ? (array) $stats : [
-                    'total_count' => 0, 'registered_count' => 0, 'confirmed_count' => 0, 'checked_in_count' => 0,
-                ];
+                $stats = $maps['guest_stats'][(string) $gl->id] ?? null;
+                if ($stats) {
+                    unset($stats['guest_list_id']);
+                    $data['stats'] = $stats;
+                } else {
+                    $data['stats'] = [
+                        'total_count' => 0, 'registered_count' => 0, 'confirmed_count' => 0, 'checked_in_count' => 0,
+                    ];
+                }
             } catch (\Throwable $e) {
                 $data['stats'] = [
                     'total_count' => 0, 'registered_count' => 0, 'confirmed_count' => 0, 'checked_in_count' => 0,
@@ -630,17 +815,14 @@ class CartaoPublicService
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $maps
      * @return array<string, mixed>
      */
-    private function enrichProductCatalog(array $item): array
+    private function enrichProductCatalog(array $item, array $maps): array
     {
         try {
-            $rows = DB::select(
-                'SELECT * FROM product_catalog_items
-                 WHERE profile_item_id = ?
-                 ORDER BY display_order ASC, created_at ASC',
-                [$item['id'] ?? null]
-            );
+            $key = (string) ($item['id'] ?? '');
+            $rows = $maps['products'][$key] ?? [];
 
             return [
                 'products' => array_map(static fn ($r) => (array) $r, $rows),

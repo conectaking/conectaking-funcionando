@@ -42,11 +42,20 @@ class ProfileEditorService
             [$userId]
         );
 
+        $ids = [];
+        foreach ($rows as $row) {
+            if (!empty($row->id)) {
+                $ids[] = $row->id;
+            }
+        }
+
+        $maps = $this->loadEnrichmentMaps($ids);
+
         $items = [];
         foreach ($rows as $index => $row) {
             $item = (array) $row;
             $type = (string) ($item['item_type'] ?? 'link');
-            $item = array_merge($item, $this->enrichEditorItem($item, $type));
+            $item = array_merge($item, $this->enrichEditorItem($item, $type, $maps));
             $items[] = [
                 ...$item,
                 'id' => $item['id'] ?? null,
@@ -65,51 +74,173 @@ class ProfileEditorService
     }
 
     /**
-     * @param  array<string, mixed>  $item
-     * @return array<string, mixed>
+     * @param  list<string|int>  $profileItemIds
+     * @return array{
+     *   digital_form: array<string, array<string, mixed>>,
+     *   contract: array<string, array<string, mixed>>,
+     *   guest_list: array<string, array<string, mixed>>,
+     *   bible: array<string, array<string, mixed>>,
+     *   location: array<string, array<string, mixed>>
+     * }
      */
-    private function enrichEditorItem(array $item, string $type): array
+    private function loadEnrichmentMaps(array $profileItemIds): array
     {
+        $maps = [
+            'digital_form' => [],
+            'contract' => [],
+            'guest_list' => [],
+            'bible' => [],
+            'location' => [],
+        ];
+
+        if ($profileItemIds === []) {
+            return $maps;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($profileItemIds), '?'));
+
         try {
-            if ($type === 'digital_form') {
-                $df = DB::selectOne(
-                    'SELECT * FROM digital_form_items
-                     WHERE profile_item_id = ?
-                     ORDER BY COALESCE(updated_at, \'1970-01-01\'::timestamp) DESC, id DESC
-                     LIMIT 1',
-                    [$item['id'] ?? null]
-                );
-                $data = $df ? (array) $df : ['form_fields' => []];
+            $digitalForms = DB::select(
+                "SELECT DISTINCT ON (profile_item_id) *
+                 FROM digital_form_items
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY profile_item_id,
+                          COALESCE(updated_at, '1970-01-01'::timestamp) DESC,
+                          id DESC",
+                $profileItemIds
+            );
+            foreach ($digitalForms as $row) {
+                $data = (array) $row;
+                $key = (string) ($data['profile_item_id'] ?? '');
+                if ($key === '') {
+                    continue;
+                }
                 if (isset($data['form_fields']) && is_string($data['form_fields'])) {
                     $parsed = json_decode($data['form_fields'], true);
                     $data['form_fields'] = is_array($parsed) ? $parsed : [];
                 } elseif (!isset($data['form_fields']) || !is_array($data['form_fields'])) {
                     $data['form_fields'] = [];
                 }
+                $maps['digital_form'][$key] = $data;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('profile.editor.enrich.batch', ['type' => 'digital_form', 'error' => $e->getMessage()]);
+        }
+
+        try {
+            $contracts = DB::select(
+                "SELECT DISTINCT ON (profile_item_id) *
+                 FROM contract_items
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY profile_item_id, id DESC",
+                $profileItemIds
+            );
+            foreach ($contracts as $row) {
+                $data = (array) $row;
+                $key = (string) ($data['profile_item_id'] ?? '');
+                if ($key !== '') {
+                    $maps['contract'][$key] = $data;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('profile.editor.enrich.batch', ['type' => 'contract', 'error' => $e->getMessage()]);
+        }
+
+        try {
+            $guestLists = DB::select(
+                "SELECT DISTINCT ON (profile_item_id) *
+                 FROM guest_list_items
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY profile_item_id,
+                          COALESCE(updated_at, '1970-01-01'::timestamp) DESC,
+                          id DESC",
+                $profileItemIds
+            );
+            foreach ($guestLists as $row) {
+                $data = (array) $row;
+                $key = (string) ($data['profile_item_id'] ?? '');
+                if ($key !== '') {
+                    $maps['guest_list'][$key] = $data;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('profile.editor.enrich.batch', ['type' => 'guest_list', 'error' => $e->getMessage()]);
+        }
+
+        try {
+            $bibles = DB::select(
+                "SELECT DISTINCT ON (profile_item_id) *
+                 FROM bible_items
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY profile_item_id, id DESC",
+                $profileItemIds
+            );
+            foreach ($bibles as $row) {
+                $data = (array) $row;
+                $key = (string) ($data['profile_item_id'] ?? '');
+                if ($key !== '') {
+                    $maps['bible'][$key] = $data;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('profile.editor.enrich.batch', ['type' => 'bible', 'error' => $e->getMessage()]);
+        }
+
+        try {
+            $locations = DB::select(
+                "SELECT DISTINCT ON (profile_item_id)
+                        profile_item_id, address, address_formatted, latitude, longitude, place_name
+                 FROM location_items
+                 WHERE profile_item_id IN ({$placeholders})
+                 ORDER BY profile_item_id, id DESC",
+                $profileItemIds
+            );
+            foreach ($locations as $row) {
+                $data = (array) $row;
+                $key = (string) ($data['profile_item_id'] ?? '');
+                if ($key === '') {
+                    continue;
+                }
+                unset($data['profile_item_id']);
+                $maps['location'][$key] = $data;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('profile.editor.enrich.batch', ['type' => 'location', 'error' => $e->getMessage()]);
+        }
+
+        return $maps;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  array{
+     *   digital_form: array<string, array<string, mixed>>,
+     *   contract: array<string, array<string, mixed>>,
+     *   guest_list: array<string, array<string, mixed>>,
+     *   bible: array<string, array<string, mixed>>,
+     *   location: array<string, array<string, mixed>>
+     * }  $maps
+     * @return array<string, mixed>
+     */
+    private function enrichEditorItem(array $item, string $type, array $maps): array
+    {
+        try {
+            $id = (string) ($item['id'] ?? '');
+
+            if ($type === 'digital_form') {
+                $data = $maps['digital_form'][$id] ?? ['form_fields' => []];
 
                 return ['digital_form_data' => $data];
             }
             if ($type === 'contract') {
-                $c = DB::selectOne('SELECT * FROM contract_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
-
-                return ['contract_data' => $c ? (array) $c : []];
+                return ['contract_data' => $maps['contract'][$id] ?? []];
             }
             if ($type === 'guest_list') {
-                $g = DB::selectOne(
-                    'SELECT * FROM guest_list_items
-                     WHERE profile_item_id = ?
-                     ORDER BY COALESCE(updated_at, \'1970-01-01\'::timestamp) DESC, id DESC
-                     LIMIT 1',
-                    [$item['id'] ?? null]
-                );
-
-                return ['guest_list_data' => $g ? (array) $g : []];
+                return ['guest_list_data' => $maps['guest_list'][$id] ?? []];
             }
             if ($type === 'bible') {
-                $b = DB::selectOne('SELECT * FROM bible_items WHERE profile_item_id = ? LIMIT 1', [$item['id'] ?? null]);
-
                 return [
-                    'bible_data' => $b ? (array) $b : [
+                    'bible_data' => $maps['bible'][$id] ?? [
                         'translation_code' => 'nvi',
                         'is_visible' => true,
                         'verse_position' => 'top',
@@ -118,13 +249,7 @@ class ProfileEditorService
                 ];
             }
             if ($type === 'location') {
-                $loc = DB::selectOne(
-                    'SELECT address, address_formatted, latitude, longitude, place_name
-                     FROM location_items WHERE profile_item_id = ? LIMIT 1',
-                    [$item['id'] ?? null]
-                );
-
-                return ['location_data' => $loc ? (array) $loc : null];
+                return ['location_data' => $maps['location'][$id] ?? null];
             }
         } catch (\Throwable $e) {
             Log::warning('profile.editor.enrich', ['type' => $type, 'error' => $e->getMessage()]);

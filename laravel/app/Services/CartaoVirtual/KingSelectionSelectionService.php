@@ -61,6 +61,15 @@ class KingSelectionSelectionService
         $hasSk = Schema::hasColumn('king_selections', 'session_key');
         $anonSk = ($ctx['sk'] && $hasSk) ? $ctx['sk'] : null;
 
+        // Contar antes de inserir: se já existe = toggle off (ok); se novo = respeitar máximo
+        $already = $this->selectionRowExists($galleryId, $photoId, $ctx['cid'], $anonSk);
+        if (! $already) {
+            $limitErr = $this->assertCanAddSelections($g, $galleryId, $ctx['cid'], $anonSk, 1);
+            if ($limitErr !== null) {
+                return $limitErr;
+            }
+        }
+
         try {
             if ($ctx['cid']) {
                 $exists = $hasBatch
@@ -236,6 +245,16 @@ class KingSelectionSelectionService
                 return ['status' => 200, 'body' => ['success' => true]];
             }
 
+            $current = $this->countClientSelections($galleryId, $ctx['cid'], $anonSk);
+            $alreadySelected = $this->countAlreadySelectedAmong($galleryId, $ctx['cid'], $anonSk, $validIds);
+            $toAdd = count($validIds) - $alreadySelected;
+            if ($toAdd > 0) {
+                $limitErr = $this->assertCanAddSelections($g, $galleryId, $ctx['cid'], $anonSk, $toAdd, $current);
+                if ($limitErr !== null) {
+                    return $limitErr;
+                }
+            }
+
             $this->bulkSelect($galleryId, $ctx['cid'], $anonSk, $validIds, $round, $hasBatch);
 
             return ['status' => 200, 'body' => ['success' => true]];
@@ -282,7 +301,14 @@ class KingSelectionSelectionService
         $hasClients = Schema::hasTable('king_gallery_clients');
         $hasClientStatus = $hasClients && Schema::hasColumn('king_gallery_clients', 'status');
 
-        // Promo pública: exige cupom validado no cliente (sem PagBank).
+        $anonSk = ($sk && $hasSkCol) ? $sk : null;
+        $selCount = $this->countClientSelections($galleryId, $cid, $anonSk);
+        $boundsErr = $this->assertFinalizeBounds($g, $selCount);
+        if ($boundsErr !== null) {
+            return $boundsErr;
+        }
+
+        // Promo pública: exige cupom validado no cliente.
         if ($accessMode === 'public' && Schema::hasColumn('king_galleries', 'promo_enabled') && ! empty($g->promo_enabled ?? false)) {
             $promoOk = false;
             if ($cid && Schema::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
@@ -333,18 +359,28 @@ class KingSelectionSelectionService
                     $vals
                 );
             } else {
+                // Sem clientId: feedback só desta sessão anónima — nunca de toda a galeria
                 if ($feedback !== '') {
-                    DB::update(
-                        'UPDATE king_selections SET feedback_cliente = ? WHERE gallery_id = ?',
-                        [mb_substr($feedback, 0, 2000), $galleryId]
-                    );
+                    $fb = mb_substr($feedback, 0, 2000);
+                    if ($anonSk) {
+                        DB::update(
+                            'UPDATE king_selections SET feedback_cliente = ? WHERE gallery_id = ? AND client_id IS NULL AND session_key = ?',
+                            [$fb, $galleryId, $anonSk]
+                        );
+                    } else {
+                        DB::update(
+                            'UPDATE king_selections SET feedback_cliente = ? WHERE gallery_id = ? AND client_id IS NULL AND (session_key IS NULL OR session_key = \'\')',
+                            [$fb, $galleryId]
+                        );
+                    }
                 }
-                DB::update('UPDATE king_galleries SET status = ?, updated_at = NOW() WHERE id = ?', ['revisao', $galleryId]);
+                // Só marca a galeria em revisão em modo privado single-client (sem tabela de clientes)
+                if (! $hasClients || $accessMode === 'private') {
+                    DB::update('UPDATE king_galleries SET status = ?, updated_at = NOW() WHERE id = ?', ['revisao', $galleryId]);
+                }
             }
 
-            $count = $cid
-                ? (int) (DB::selectOne('SELECT COUNT(*)::int AS cnt FROM king_selections WHERE gallery_id = ? AND client_id = ?', [$galleryId, $cid])->cnt ?? 0)
-                : (int) (DB::selectOne('SELECT COUNT(*)::int AS cnt FROM king_selections WHERE gallery_id = ?', [$galleryId])->cnt ?? 0);
+            $count = $selCount;
 
             $clientDisplayName = null;
             if ($cid && $hasClients) {
@@ -755,7 +791,8 @@ class KingSelectionSelectionService
         try {
             return DB::selectOne(
                 'SELECT id, status, access_mode, allow_self_signup, promo_enabled, nome_projeto,
-                        thank_you_title, thank_you_message, thank_you_image_url, thank_you_photographer_name
+                        thank_you_title, thank_you_message, thank_you_image_url, thank_you_photographer_name,
+                        total_fotos_contratadas, min_selections
                  FROM king_galleries WHERE id = ? LIMIT 1',
                 [$galleryId]
             );
@@ -764,6 +801,107 @@ class KingSelectionSelectionService
 
             return DB::selectOne('SELECT id, status FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
         }
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}|null
+     */
+    private function assertCanAddSelections(object $g, int $galleryId, ?int $cid, ?string $anonSk, int $adding, ?int $current = null): ?array
+    {
+        $max = (int) ($g->total_fotos_contratadas ?? 0);
+        if ($max < 1) {
+            return null;
+        }
+        $count = $current ?? $this->countClientSelections($galleryId, $cid, $anonSk);
+        if ($count + $adding > $max) {
+            return ['status' => 409, 'body' => [
+                'message' => "Você pode selecionar no máximo {$max} foto(s). Remova alguma antes de adicionar.",
+                'max' => $max,
+                'current' => $count,
+            ]];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}|null
+     */
+    private function assertFinalizeBounds(object $g, int $count): ?array
+    {
+        $min = Schema::hasColumn('king_galleries', 'min_selections')
+            ? (int) ($g->min_selections ?? 0)
+            : 0;
+        $max = (int) ($g->total_fotos_contratadas ?? 0);
+
+        if ($min > 0 && $count < $min) {
+            return ['status' => 400, 'body' => [
+                'message' => "Selecione pelo menos {$min} foto(s) antes de enviar.",
+                'min' => $min,
+                'current' => $count,
+            ]];
+        }
+        if ($max > 0 && $count > $max) {
+            return ['status' => 400, 'body' => [
+                'message' => "A seleção tem {$count} foto(s), mas o máximo é {$max}. Remova o excesso.",
+                'max' => $max,
+                'current' => $count,
+            ]];
+        }
+        if ($count < 1) {
+            return ['status' => 400, 'body' => ['message' => 'Selecione ao menos uma foto antes de enviar.']];
+        }
+
+        return null;
+    }
+
+    private function countClientSelections(int $galleryId, ?int $cid, ?string $anonSk): int
+    {
+        if ($cid) {
+            return (int) (DB::selectOne(
+                'SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id = ?',
+                [$galleryId, $cid]
+            )->c ?? 0);
+        }
+        if ($anonSk && Schema::hasColumn('king_selections', 'session_key')) {
+            return (int) (DB::selectOne(
+                'SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id IS NULL AND session_key = ?',
+                [$galleryId, $anonSk]
+            )->c ?? 0);
+        }
+
+        return (int) (DB::selectOne(
+            'SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id IS NULL AND (session_key IS NULL OR session_key = \'\')',
+            [$galleryId]
+        )->c ?? 0);
+    }
+
+    /**
+     * @param  list<int>  $photoIds
+     */
+    private function countAlreadySelectedAmong(int $galleryId, ?int $cid, ?string $anonSk, array $photoIds): int
+    {
+        if ($photoIds === []) {
+            return 0;
+        }
+        $ph = $this->placeholders(count($photoIds));
+        if ($cid) {
+            return (int) (DB::selectOne(
+                "SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id = ? AND photo_id IN ($ph)",
+                array_merge([$galleryId, $cid], $photoIds)
+            )->c ?? 0);
+        }
+        if ($anonSk && Schema::hasColumn('king_selections', 'session_key')) {
+            return (int) (DB::selectOne(
+                "SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id IS NULL AND session_key = ? AND photo_id IN ($ph)",
+                array_merge([$galleryId, $anonSk], $photoIds)
+            )->c ?? 0);
+        }
+
+        return (int) (DB::selectOne(
+            "SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id IS NULL AND (session_key IS NULL OR session_key = '') AND photo_id IN ($ph)",
+            array_merge([$galleryId], $photoIds)
+        )->c ?? 0);
     }
 
     private function isLocked(object $g, ?int $cid): bool
