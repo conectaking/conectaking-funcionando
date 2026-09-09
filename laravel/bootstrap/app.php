@@ -178,6 +178,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->encryptCookies(except: [
             'ks_client_token',
+            'token',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,

@@ -54,7 +54,11 @@ class GuestListCustomizeController extends Controller
         }
 
         $data = $result['data'];
-        $data['token'] = $request->query('token') ?: $request->cookie('token') ?: '';
+        $data['token'] = $request->cookie('token') ?: '';
+        $auth = $request->header('Authorization', '');
+        if ($data['token'] === '' && is_string($auth) && str_starts_with($auth, 'Bearer ')) {
+            $data['token'] = trim(substr($auth, 7));
+        }
 
         return response()
             ->view($result['view'], $data)

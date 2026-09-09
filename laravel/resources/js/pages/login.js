@@ -183,6 +183,10 @@ import '@legacy/auth.css';
 
           if (data.token) {
             localStorage.setItem('conectaKingToken', data.token);
+            try {
+              const secure = location.protocol === 'https:' ? '; Secure' : '';
+              document.cookie = `token=${encodeURIComponent(data.token)}; Path=/; SameSite=Lax${secure}`;
+            } catch (_) {}
           }
           if (data.refreshToken) {
             localStorage.setItem('conectaKingRefreshToken', data.refreshToken);

@@ -4692,19 +4692,18 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 // O backend pode aceitar autenticação via cookie
             }
             
-            // Construir URL da página de personalização
-            // IMPORTANTE: O middleware protectUser aceita token via query string (req.query.token)
-            // Precisamos passar o token na URL para garantir autenticação no iframe
+            // Cookie SameSite (iframe não pode mandar Authorization no documento HTML)
+            try {
+                if (token) {
+                    var secure = location.protocol === 'https:' ? '; Secure' : '';
+                    document.cookie = 'token=' + encodeURIComponent(token) + '; Path=/; SameSite=Lax' + secure;
+                }
+            } catch (e) {}
             const apiBaseUrl = (window.API_BASE || window.API_URL || window.location.origin || '').replace(/\/$/, '');
+            const customizeUrl = `${apiBaseUrl}/api/guest-lists/${currentItemId}/customize-portaria`;
             
-            // Passar token via query string - o middleware protectUser aceita isso
-            // Se não tiver token, ainda tentar carregar (pode funcionar se houver cookie de sessão)
-            const customizeUrl = token 
-                ? `${apiBaseUrl}/api/guest-lists/${currentItemId}/customize-portaria?token=${encodeURIComponent(token)}`
-                : `${apiBaseUrl}/api/guest-lists/${currentItemId}/customize-portaria`;
-            
-            console.log('Y"" [CUSTOMIZE_PORTARIA] Carregando iframe:', {
-                url: customizeUrl.replace(token || '', 'TOKEN_REDACTED'),
+            console.log('[CUSTOMIZE_PORTARIA] Carregando iframe:', {
+                url: customizeUrl,
                 itemId: currentItemId,
                 hasToken: !!token,
                 apiBaseUrl: apiBaseUrl

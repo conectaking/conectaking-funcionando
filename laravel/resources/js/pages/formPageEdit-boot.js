@@ -262,13 +262,15 @@
                                             return;
                                         }
                                         
-                                        // Same-origin (Laravel local ou produção)
+                                        // Cookie SameSite para o documento HTML (sem ?token= na URL)
+                                        try {
+                                            const secure = location.protocol === 'https:' ? '; Secure' : '';
+                                            document.cookie = `token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
+                                        } catch (_) {}
                                         const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
+                                        const url = `${apiBaseUrl}/api/guest-lists/${id}/customize-portaria`;
                                         
-                                        // Passar token via query string para autenticação
-                                        const url = `${apiBaseUrl}/api/guest-lists/${id}/customize-portaria?token=${encodeURIComponent(token)}`;
-                                        
-                                        console.log('Y"- Abrindo página de personalização da portaria');
+                                        console.log('Abrindo página de personalização da portaria');
                                         window.open(url, '_blank');
                                     });
                                 }

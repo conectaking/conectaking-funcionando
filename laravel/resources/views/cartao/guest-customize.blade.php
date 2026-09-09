@@ -124,8 +124,9 @@
     try {
       var headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
       if (token) headers['Authorization'] = 'Bearer ' + token;
-      var res = await fetch(saveUrl + (token ? ('?token=' + encodeURIComponent(token)) : ''), {
+      var res = await fetch(saveUrl, {
         method: 'PUT',
+        credentials: 'include',
         headers: headers,
         body: JSON.stringify(body)
       });
