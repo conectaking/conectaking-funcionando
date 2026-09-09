@@ -850,7 +850,7 @@ Route::get('/config.js', function () {
     return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), 'config.js');
 });
 Route::get('/{asset}', [\App\Http\Controllers\FrontLegacyController::class, 'page'])
-    ->where('asset', '.*\\.(js|css|map|png|jpg|jpeg|webp|svg|woff2?|ttf|ico|json)$');
+    ->where('asset', '^(?!build/).+\\.(js|css|map|png|jpg|jpeg|webp|svg|woff2?|ttf|ico|json)$');
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
 
 // Cartão público: tag.conectaking.com.br/{slug} e www/.../{slug}

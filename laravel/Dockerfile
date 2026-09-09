@@ -1,3 +1,13 @@
+# ---- assets (Vite) ----
+FROM node:22-bookworm-slim AS assets
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+COPY vite.config.js ./
+COPY resources ./resources
+RUN npm run build
+
+# ---- app (FrankenPHP) ----
 FROM dunglas/frankenphp:php8.4-bookworm
 
 # Extensões PHP (install-php-extensions vem na imagem FrankenPHP)
@@ -20,6 +30,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 
 COPY . .
+COPY --from=assets /app/public/build /app/public/build
 
 RUN rm -f .env .env.backup \
     && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php \

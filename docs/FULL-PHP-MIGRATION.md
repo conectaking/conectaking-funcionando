@@ -39,10 +39,12 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 | `data/bible` | JSON bíblia |
 | `migrations/*.sql` | Histórico do schema Postgres |
 
+### Vite (em curso)
+
+- Build no Docker (stage Node) → `laravel/public/build`
+- Página **login** já usa `@vite(['resources/js/pages/login.js'])`; CSS ainda em `public/style.css` + `public/auth.css`
+- Próximos: `registro`, `recuperar-senha`, depois dashboard/módulos
+
 Deploy limpo: `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
-
-### Próximo salto (opcional, grande)
-
-Mover o front de `public/` para Vite + `laravel/public` / componentes Blade — não é limpeza residual; é refactor de frontend.
 
 Não reintroduzir checkout/gateway sem pedido explícito.
