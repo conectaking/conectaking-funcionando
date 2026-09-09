@@ -608,6 +608,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     limit: responsesPayload.limit ?? 100,
                     offset: responsesPayload.offset ?? 0,
                     hasMore: !!responsesPayload.hasMore,
+                    itemId: String(itemId),
                 };
                 
                 const formData = await formRes.json();
@@ -657,6 +658,8 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 } else {
                     console.warn('[loadFormResponsesData] setupTabs não é uma função');
                 }
+
+                syncFormResponsesLoadMoreBtn();
                 
                 // Esconder loading e mostrar conteúdo
                 const loadingEl = document.getElementById('loading');
@@ -682,6 +685,79 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                         </button>
                     </div>
                 `;
+            }
+        }
+
+        function syncFormResponsesLoadMoreBtn() {
+            const meta = window.__formResponsesMeta || {};
+            let wrap = document.getElementById('form-responses-load-more-wrap');
+            const listParent = document.getElementById('items-list')?.parentElement;
+            if (!listParent) return;
+            if (!wrap) {
+                wrap = document.createElement('div');
+                wrap.id = 'form-responses-load-more-wrap';
+                wrap.style.cssText = 'text-align:center;padding:16px 0 8px;';
+                listParent.appendChild(wrap);
+            }
+            if (!meta.hasMore) {
+                wrap.innerHTML = '';
+                wrap.style.display = 'none';
+                return;
+            }
+            wrap.style.display = 'block';
+            const loaded = Array.isArray(allData) ? allData.length : 0;
+            const total = Number(meta.total || loaded);
+            wrap.innerHTML = `
+                <button type="button" id="form-responses-load-more" style="padding:12px 22px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(74,144,226,0.15);color:#ECECEC;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-plus"></i> Carregar mais respostas (${loaded} de ${total})
+                </button>`;
+            const btn = document.getElementById('form-responses-load-more');
+            if (btn) btn.onclick = () => loadMoreFormResponses();
+        }
+
+        async function loadMoreFormResponses() {
+            const meta = window.__formResponsesMeta || {};
+            if (!meta.hasMore || !meta.itemId) return;
+            const btn = document.getElementById('form-responses-load-more');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A carregar…';
+            }
+            try {
+                const headersForFetch = getHeaders();
+                const nextOffset = Number(meta.offset || 0) + Number(meta.limit || 100);
+                const limit = Number(meta.limit || 100);
+                const res = await cachedFetch(
+                    `${API_URL}/api/profile/items/digital_form/${meta.itemId}/responses?mode=lead&limit=${limit}&offset=${nextOffset}&_nc=${Date.now()}`,
+                    { headers: headersForFetch }
+                );
+                if (!res.ok) throw new Error('Falha ao carregar mais respostas');
+                const payload = await res.json();
+                const chunk = Array.isArray(payload)
+                    ? payload
+                    : (payload.responses || payload.data || []);
+                const seen = new Set((allData || []).map((r) => String(r.id ?? r.response_id ?? '')));
+                chunk.forEach((r) => {
+                    const id = String(r.id ?? r.response_id ?? '');
+                    if (id && seen.has(id)) return;
+                    if (id) seen.add(id);
+                    allData.push(r);
+                });
+                window.__formResponsesMeta = {
+                    ...meta,
+                    total: payload.total ?? meta.total,
+                    limit: payload.limit ?? limit,
+                    offset: payload.offset ?? nextOffset,
+                    hasMore: !!payload.hasMore,
+                };
+                if (typeof renderFormResponsesData === 'function') renderFormResponsesData();
+                syncFormResponsesLoadMoreBtn();
+            } catch (e) {
+                console.error('[loadMoreFormResponses]', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tentar novamente';
+                }
             }
         }
         
@@ -1212,7 +1288,9 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
 
             ensureLeadToolbar();
 
-            const total = allData.length;
+            const loaded = allData.length;
+            const serverTotal = Number(window.__formResponsesMeta?.total);
+            const total = Number.isFinite(serverTotal) && serverTotal > 0 ? serverTotal : loaded;
             const today = new Date().toISOString().split('T')[0];
             const weekAgo = new Date();
             weekAgo.setDate(weekAgo.getDate() - 7);
@@ -1248,7 +1326,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                         <i class="fas fa-user-plus" style="font-size: 1.5rem;"></i>
                         <div class="stat-value">${total}</div>
                     </div>
-                    <div class="stat-label">Clientes captados</div>
+                    <div class="stat-label">Clientes captados${serverTotal > loaded ? ` (${loaded} carregados)` : ''}</div>
                 </div>
                 <div class="stat-card blue">
                     <div class="stat-content">
@@ -1342,8 +1420,10 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
 
             __leadFilteredCache = filtered;
             window.__leadFilteredCache = filtered;
-            setLeadResultCount(filtered.length, allData.length);
+            const serverTotal = Number(window.__formResponsesMeta?.total);
+            setLeadResultCount(filtered.length, Number.isFinite(serverTotal) && serverTotal > 0 ? serverTotal : allData.length);
             renderFormResponseItems(filtered);
+            syncFormResponsesLoadMoreBtn();
         }
 
         // Renderizar itens de Captação de Clientes

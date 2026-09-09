@@ -103,6 +103,11 @@
             <div id="lista-documentos" class="space-y-2 max-h-96 overflow-y-auto">
                 <!-- preenchido via JS -->
             </div>
+            <div id="docs-load-more-wrap" class="pt-3 text-center hidden">
+                <button type="button" id="btn-docs-load-more" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-border-dark text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-black/40 transition-colors">
+                    Carregar mais
+                </button>
+            </div>
             <p id="empty-docs" class="text-slate-500 text-sm hidden">Nenhum documento ainda. Crie um recibo ou orçamento acima.</p>
         </section>
     </div>
