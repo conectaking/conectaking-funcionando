@@ -38,9 +38,10 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 | `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge) |
 | `data/bible`, `migrations/*.sql` | Dados / histórico schema |
 | Font Awesome e CDNs (Chart, Cropper…) | Externos de propósito |
-| `recibos-modulo-nav.js` | Clássico (`data-active` via `document.currentScript`) |
+| `recibos-modulo-nav.js` | Clássico (`data-active` via `document.currentScript`); hrefs limpos `/…` |
 | `admin-prosperidade-31` | Redirect para `#prosperidade` |
 | CSS perfil público (`css/profile.css` etc.) | Cartão/satélite, não painel Blade |
+| Aliases `/*.html` em `web.php` | Compat bookmarks antigos; JS novo usa rotas limpas |
 
 ### Vite (páginas — concluído)
 

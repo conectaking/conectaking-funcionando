@@ -21,11 +21,11 @@
     if (document.getElementById('recibos-bottom-nav')) return;
 
     var items = [
-        { id: 'painel', href: 'dashboard-recibos-orcamentos.html', icon: 'dashboard', label: 'Painel' },
-        { id: 'recibo', href: 'dashboard-recibos-orcamentos.html?abrir=recibo', icon: 'receipt_long', label: 'Recibos' },
-        { id: 'orcamento', href: 'dashboard-recibos-orcamentos.html?abrir=orcamento', icon: 'request_quote', label: 'Orçam.' },
-        { id: 'clientes', href: 'clientes-recibos-orcamentos.html', icon: 'people', label: 'Clientes' },
-        { id: 'config', href: 'configuracoes-recibos-orcamentos.html', icon: 'settings', label: 'Config' }
+        { id: 'painel', href: '/dashboard-recibos-orcamentos', icon: 'dashboard', label: 'Painel' },
+        { id: 'recibo', href: '/dashboard-recibos-orcamentos?abrir=recibo', icon: 'receipt_long', label: 'Recibos' },
+        { id: 'orcamento', href: '/dashboard-recibos-orcamentos?abrir=orcamento', icon: 'request_quote', label: 'Orçam.' },
+        { id: 'clientes', href: '/clientes-recibos-orcamentos', icon: 'people', label: 'Clientes' },
+        { id: 'config', href: '/configuracoes-recibos-orcamentos', icon: 'settings', label: 'Config' }
     ];
 
     var nav = document.createElement('nav');

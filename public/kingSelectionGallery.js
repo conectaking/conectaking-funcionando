@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const slug = (qs.get('slug') || '').trim();
   if (!slug) {
     alert('Link inválido (faltou ?slug=...)');
-    location.href = 'kingSelection.html';
+    location.href = '/kingSelection';
     return;
   }
 
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   advanceBtn?.addEventListener('click', () => {
-    location.href = `kingSelectionReview.html?slug=${encodeURIComponent(slug)}`;
+    location.href = `/kingSelectionReview?slug=${encodeURIComponent(slug)}`;
   });
 
   document.getElementById('ks-btn-selecionar-mais')?.addEventListener('click', (e) => {

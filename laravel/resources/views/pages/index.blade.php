@@ -1295,7 +1295,7 @@
                         </div>
                     <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
                         <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
-                            Sim. O ConectaKing usa tecnologia NFC, disponível na maioria dos smartphones modernos (Android e iPhone). Não  necessrio instalar nenhum aplicativo.
+                            Sim. O ConectaKing usa tecnologia NFC, disponível na maioria dos smartphones modernos (Android e iPhone). Não é necessário instalar nenhum aplicativo.
                     </div>
                             </div>
                         </div>

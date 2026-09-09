@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const qs = new URLSearchParams(location.search || '');
   const slug = (qs.get('slug') || '').trim();
   if (!slug) {
-    location.href = 'kingSelection.html';
+    location.href = '/kingSelection';
     return;
   }
 
@@ -31,14 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearLink = document.getElementById('ks-r-clear');
   const sairLink = document.getElementById('ks-r-sair');
 
-  const galleryUrl = `kingSelectionGallery.html?slug=${encodeURIComponent(slug)}`;
+  const galleryUrl = `/kingSelectionGallery?slug=${encodeURIComponent(slug)}`;
   backEl.href = galleryUrl;
   if (clearLink) clearLink.href = galleryUrl;
   if (sairLink) sairLink.href = galleryUrl;
 
   const btnSelecionarMais = document.getElementById('ks-btn-selecionar-mais');
   const btnSelecionarMaisSide = document.getElementById('ks-btn-selecionar-mais-side');
-  const galleryReviewUrl = `kingSelectionGallery.html?slug=${encodeURIComponent(slug)}`;
+  const galleryReviewUrl = `/kingSelectionGallery?slug=${encodeURIComponent(slug)}`;
   if (btnSelecionarMais) btnSelecionarMais.href = galleryReviewUrl;
   if (btnSelecionarMaisSide) btnSelecionarMaisSide.href = galleryReviewUrl;
 
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         thankYouImg.classList.add('hidden');
       }
     }
-    if (thankYouHome) thankYouHome.href = `kingSelectionGallery.html?slug=${encodeURIComponent(slug)}`;
+    if (thankYouHome) thankYouHome.href = `/kingSelectionGallery?slug=${encodeURIComponent(slug)}`;
     if (thankYouEl) {
       thankYouEl.classList.remove('hidden');
       thankYouEl.setAttribute('aria-hidden', 'false');
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         showedThankYou = true;
       } else {
-        location.href = `kingSelectionSuccess.html?slug=${encodeURIComponent(slug)}`;
+        location.href = `/kingSelectionSuccess?slug=${encodeURIComponent(slug)}`;
       }
     } catch (e) {
       showError(e.message || 'Erro ao finalizar');

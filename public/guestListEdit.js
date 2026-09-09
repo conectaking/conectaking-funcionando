@@ -19,16 +19,16 @@ function goBack() {
     
     if (itemId) {
         // Se estiver na visualização de uma lista, voltar para a listagem
-        window.location.href = 'guestListEdit.html' + (formItemId ? `?formItemId=${formItemId}` : '');
+        window.location.href = '/guestListEdit' + (formItemId ? `?formItemId=${formItemId}` : '');
     } else if (formItemId) {
         // Se estiver na listagem e vier do formPageEdit, voltar para lá
-        window.location.href = `formPageEdit.html?itemId=${formItemId}`;
+        window.location.href = `/formPageEdit?itemId=${formItemId}`;
     } else {
         // Caso contrário, tentar usar history.back() ou ir para dashboard
         if (window.history.length > 1) {
             window.history.back();
         } else {
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard';
         }
     }
 }
@@ -239,7 +239,7 @@ function renderAllLists(lists) {
                                 </p>
                             ` : ''}
                         </div>
-                        <button onclick="window.location.href='guestListEdit.html?itemId=${list.profile_item_id || list.id}${formItemId ? '&formItemId=' + formItemId : ''}'" class="btn btn-primary" style="padding: 10px 20px;">
+                        <button onclick="window.location.href='/guestListEdit?itemId=${list.profile_item_id || list.id}${formItemId ? '&formItemId=' + formItemId : ''}'" class="btn btn-primary" style="padding: 10px 20px;">
                             <i class="fas fa-edit"></i> Gerenciar
                         </button>
                     </div>
@@ -435,7 +435,7 @@ async function createNewGuestList() {
         const itemId = newItem.id;
         
         // Redirecionar para editar a lista
-        window.location.href = `guestListEdit.html?itemId=${itemId}${formItemId ? '&formItemId=' + formItemId : ''}`;
+        window.location.href = `/guestListEdit?itemId=${itemId}${formItemId ? '&formItemId=' + formItemId : ''}`;
         
     } catch (error) {
         console.error('Erro ao criar lista:', error);
@@ -2494,7 +2494,7 @@ async function deleteGuestList() {
         if (response.ok) {
             alert('Lista deletada com sucesso');
             // Voltar para a listagem de todas as listas
-            window.location.href = 'guestListEdit.html';
+            window.location.href = '/guestListEdit';
         } else {
             const error = await response.json().catch(() => ({ message: 'Erro ao deletar lista' }));
             throw new Error(error.message);

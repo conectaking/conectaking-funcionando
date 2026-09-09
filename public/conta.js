@@ -1,11 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('conectaKingToken');
     if (!token) {
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
     }
 
-    const API_URL = 'https://www.conectaking.com.br';
+    const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
     const HEADERS_JSON = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
     const HEADERS_AUTH = { 'Authorization': `Bearer ${token}` };
 
@@ -93,7 +93,7 @@ async function loadSubscriptionData() {
         } else {
             planNameEl.textContent = 'Free';
             planStatusEl.textContent = 'N/A';
-            planDetailsEl.innerHTML = 'Faça um upgrade para ter acesso a todos os recursos. <a href="/index.html#planos">Ver Planos</a>';
+            planDetailsEl.innerHTML = 'Faça um upgrade para ter acesso a todos os recursos. <a href="/#planos">Ver Planos</a>';
         }
     } catch (error) {
         console.error('Erro ao carregar assinatura:', error);

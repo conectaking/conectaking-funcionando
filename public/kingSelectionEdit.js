@@ -420,13 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (itemId) q.set('itemId', String(itemId));
           q.set('galleryId', String(g.id));
           if (apiLocal) q.set('api', 'local');
-          const h = (window.location.hostname || '').toLowerCase();
-          // Localhost: ficheiro .html; produção: /kingSelection?galleryId=
-          if (h === '127.0.0.1' || h === 'localhost') {
-            window.location.href = `kingSelectionProject.html?${q.toString()}`;
-          } else {
-            window.location.href = `/kingSelection?${q.toString()}`;
-          }
+          // Sempre rota limpa Laravel (/kingSelection?galleryId=)
+          window.location.href = `/kingSelection?${q.toString()}`;
         }
       });
     });

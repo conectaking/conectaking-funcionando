@@ -1934,7 +1934,7 @@
     if (!arr.length) { host.innerHTML = ''; return; }
     host.innerHTML = arr.map(function (it) {
       var img = it.imageDataUrl ? '' + escapeAttr(it.imageDataUrl) + '" alt="" class="kd-atalho-img"/>' : '<span aria-hidden="true">' + escapeHtml(it.icon || '') + '</span>';
-      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">oZ</button></span>';
+      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">⚙</button></span>';
     }).join('');
     host.querySelectorAll('[data-custom-id]').forEach(function (btn) {
       btn.onclick = function () { applyCustomShortcut(this.getAttribute('data-custom-id')); };
@@ -2297,7 +2297,7 @@
     if (!arr.length) { el.innerHTML = '<p class="sub">Ainda não criaste nenhum link. Escolhe dados em <strong>Documentos</strong> e gera o URL na aba <strong>Partilhar</strong>.</p>'; return; }
     el.innerHTML = '<table style="width:100%;font-size:.85rem;border-collapse:collapse"><tr><th style="width:2.2rem"><input type="checkbox" id="links-sel-all" title="Selecionar todos"/></th><th>ID</th><th>Estado</th><th>Ações</th><th>Criado</th><th>Expira</th><th>Vistas</th><th>Senha</th><th>Gestão</th></tr>' +
       arr.map(s => {
-        const u = window.location.origin + '/kingDocsShare.html?t=' + encodeURIComponent(s.token);
+        const u = window.location.origin + '/kingDocsShare?t=' + encodeURIComponent(s.token);
         return '<tr><td><input type="checkbox" class="links-sel" data-id="' + s.id + '" aria-label="Selecionar link #' + s.id + '' + s.id + '</td><td>' + shareLinkStatusBadge(s) + '</td><td class="links-actions"><a class="btn secondary" href="' + escapeAttr(u) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block;font-size:.72rem;padding:.28rem .5rem">Abrir</a> <button type="button" class="btn secondary btn-copyt" data-u="' + escapeAttr(u) + '">Copiar</button> <button type="button" class="btn secondary btn-qr-row" data-u="' + escapeAttr(u) + '">QR</button></td><td>' + (s.created_at || '').slice(0,16) + '</td><td>' + (s.expires_at ? s.expires_at.slice(0,16) : '') + '</td><td>' + s.view_count + (s.max_views != null ? ' / ' + s.max_views : '') + '</td><td>' + (s.has_password ? 'sim' : 'não') + '</td><td class="kd-links-col-actions"><button type="button" class="btn bad btn-rev" data-id="' + s.id + '">Revogar</button><button type="button" class="btn secondary btn-del-perm" data-id="' + s.id + '">Excluir</button></td></tr>';
       }).join('') + '</table>';
     el.querySelectorAll('.btn-copyt').forEach(b => {

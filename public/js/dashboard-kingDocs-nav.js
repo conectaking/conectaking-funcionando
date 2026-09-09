@@ -104,7 +104,7 @@
 
     function createLink(cloneClassFrom) {
         var link = document.createElement('a');
-        link.href = '/kingDocs.html';
+        link.href = '/kingDocs';
         link.setAttribute('data-module', 'king_docs');
         link.setAttribute('data-king-docs-injected', '1');
         link.textContent = 'King Docs';

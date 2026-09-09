@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleLogout = () => {
         localStorage.removeItem('conectaKingToken');
         localStorage.removeItem('conectaKingUser');
-        window.location.href = 'index.html';
+        window.location.href = '/';
     };
 
     const applyTheme = (theme) => {
@@ -39,7 +39,7 @@ const updateNavUI = (user) => {
         if (loggedOutState) loggedOutState.style.display = 'none';
         if (loggedInState) loggedInState.style.display = 'flex';
 
-        const meuPainelBtn = document.querySelector('.logged-in-state a[href="dashboard.html"]');
+        const meuPainelBtn = document.querySelector('.logged-in-state a[href="/dashboard"], .logged-in-state a[href="dashboard.html"]');
         
         if (meuPainelBtn) {
             if (user.accountType === 'free') {

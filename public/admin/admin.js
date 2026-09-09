@@ -15,11 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // GUARDA DE SEGURAN?A
     if (!token || !user || !user.isAdmin) {
         alert('Acesso negado.');
-        window.location.href = '../index.html';
+        window.location.href = '/';
         return;
     }
 
-    const API_URL = 'https://www.conectaking.com.br/api/admin';
+    const API_BASE = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
+    const API_URL = API_BASE + '/api/admin';
     const HEADERS = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
     // Função para testar conectividade com a API
@@ -97,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Logomarca padrão (ADM): upload em vez de URL ---
-    const API_BASE = API_URL.replace(/\/api\/admin\/?$/, '');
     function updateDefaultLogoPreview() {
         const urlInput = document.getElementById('default-logo-url');
         const url = (urlInput && urlInput.value) ? urlInput.value.trim() : '';
@@ -272,14 +272,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             localStorage.clear();
-            window.location.href = '../index.html';
+            window.location.href = '/';
         });
     }
 
     const logoutAdminBtn = document.getElementById('logout-admin-btn');
     if (logoutAdminBtn) {
         logoutAdminBtn.addEventListener('click', () => {
-            window.location.href = '../dashboard.html';
+            window.location.href = '/dashboard';
         });
     }
 

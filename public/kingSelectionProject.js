@@ -37,10 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function kingSelectionPainelUrl() {
     const apiLocal = (qs.get('api') || '').toLowerCase() === 'local';
     const q = apiLocal ? '?api=local' : '';
-    const h = (window.location.hostname || '').toLowerCase();
-    if (h === '127.0.0.1' || h === 'localhost') {
-      return `kingSelectionEdit.html${q}`;
-    }
     return `/kingSelection${q}`;
   }
 

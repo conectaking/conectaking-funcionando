@@ -588,24 +588,24 @@
           <span class="atalhos-title">Atalhos</span>
           <div class="atalhos-btns" id="kd-atalhos-merged">
             <span class="kd-atalho-item">
-              <button type="button" class="btn-atalho" data-preset="festa" title="Morada, WhatsApp e RG (ficheiro do cofre)">Y Festa em Casa</button>
-              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="festa" aria-label="Personalizar Festa em Casa" title="Personalizar">oZ</button>
+              <button type="button" class="btn-atalho" data-preset="festa" title="Morada, WhatsApp e RG (ficheiro do cofre)">Festa em Casa</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="festa" aria-label="Personalizar Festa em Casa" title="Personalizar">⚙</button>
             </span>
             <span class="kd-atalho-item">
-              <button type="button" class="btn-atalho" data-preset="receberPf" title="Nome, CPF e dados bancários PF">Y' Receber PF</button>
-              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPf" aria-label="Personalizar Receber PF" title="Personalizar">oZ</button>
+              <button type="button" class="btn-atalho" data-preset="receberPf" title="Nome, CPF e dados bancários PF">Receber PF</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPf" aria-label="Personalizar Receber PF" title="Personalizar">⚙</button>
             </span>
             <span class="kd-atalho-item">
-              <button type="button" class="btn-atalho" data-preset="receberPj" title="Empresa + dados bancários PJ">Y Receber PJ</button>
-              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPj" aria-label="Personalizar Receber PJ" title="Personalizar">oZ</button>
+              <button type="button" class="btn-atalho" data-preset="receberPj" title="Empresa + dados bancários PJ">Receber PJ</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="receberPj" aria-label="Personalizar Receber PJ" title="Personalizar">⚙</button>
             </span>
             <span class="kd-atalho-item">
               <button type="button" class="btn-atalho" data-preset="correspondencia" title="Nome e morada para envio">Correspondência</button>
-              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="correspondencia" aria-label="Personalizar Correspondência" title="Personalizar">oZ</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="correspondencia" aria-label="Personalizar Correspondência" title="Personalizar">⚙</button>
             </span>
             <span class="kd-atalho-item">
-              <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">Y"" Enviar NF</button>
-              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="enviarNf" aria-label="Personalizar Enviar NF" title="Personalizar">oZ</button>
+              <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">Enviar NF</button>
+              <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="enviarNf" aria-label="Personalizar Enviar NF" title="Personalizar">⚙</button>
             </span>
             <span id="kd-custom-atalhos-inner" class="atalhos-btns" style="display:contents"></span>
             <button type="button" class="btn secondary" id="btn-add-custom-atalho" style="font-size:.78rem;padding:.38rem .75rem;border-radius:999px">+ Criar atalho</button>
