@@ -31,15 +31,15 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 
 | Item | Porquê |
 |---|---|
-| `public/` | **Canónico** — JS/CSS/imagens do painel |
-| `public_html/` | Espelho legado (fallback). Já quase desligável: assets críticos estão em `public/` |
+| `public/` | **Canónico** — JS/CSS/imagens do painel (montado em `/legacy/public`) |
+| `public_html/` | Arquivo local legado (já **não montado** em Docker) |
 | `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge, não monólito Node) |
 | `data/bible` | JSON bíblia |
 | `migrations/*.sql` | Histórico do schema Postgres |
 
-Deploy limpo (sem `docker cp`): `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `public_html/` + `docker-compose.prod.yml`.
+Deploy limpo (sem `docker cp`): `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
 
-Limpeza pós-migração (feita): scripts `tmp-*`/`patch-admin-*`, pasta `Checkout/` vazia, Blade órfã `kingSelection.blade.php`, stubs PHP Hostinger KS, `.git` aninhado em `public_html`, env `MERCADOPAGO_*` no compose, UI PagBank no editor de forms, links quebrados Recibos (`recibos-/orcamentos`), assets críticos copiados para `public/`.
+Limpeza pós-migração (feita): scripts `tmp-*`/`patch-admin-*`, pasta `Checkout/` vazia, Blade órfã `kingSelection.blade.php`, stubs PHP Hostinger KS, `.git` aninhado em `public_html`, env `MERCADOPAGO_*` no compose, UI PagBank no editor de forms, links quebrados Recibos (`recibos-/orcamentos`), assets críticos em `public/`, mount `public_html` desligado.
 
 Padrão Laravel+Blade: páginas em `resources/views/pages/*.blade.php`; APIs em `routes/web.php`; assets browser em `public/` (não Node). Checkout/gateway fora de escopo (HTTP 410).
 

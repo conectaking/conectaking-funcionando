@@ -268,9 +268,9 @@ class PersonalizarLinkService
     private function resolveLogoPath(): ?string
     {
         $candidates = [
-            base_path('../public_html/logo.png'),
             base_path('../public/logo.png'),
             public_path('logo.png'),
+            base_path('../public_html/logo.png'),
             base_path('../logo.png'),
         ];
         foreach ($candidates as $p) {

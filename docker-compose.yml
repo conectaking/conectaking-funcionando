@@ -53,7 +53,6 @@ services:
       QUEUE_CONNECTION: sync
       JWT_SECRET: ${JWT_SECRET:-conectaking-local-dev-secret-change-me}
       LEGACY_PUBLIC_PATH: /legacy/public
-      LEGACY_PUBLIC_HTML_PATH: /legacy/public_html
       KS_UPLOADS_PATH: /shared/uploads
       SERVER_NAME: ":8080"
     ports:
@@ -61,7 +60,6 @@ services:
     volumes:
       - api_uploads:/shared/uploads
       - ./public:/legacy/public:ro
-      - ./public_html:/legacy/public_html:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || exit 1"]
       interval: 15s

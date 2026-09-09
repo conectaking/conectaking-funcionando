@@ -536,6 +536,10 @@ class KingSelectionMediaService
             ? 'marca_dagua_kingselection_horizontal.png'
             : 'marca_dagua_kingselection_vertical.png';
         foreach ([
+            base_path('../public/'.$fileName),
+            base_path('../public/'.$alt),
+            '/opt/conectaking/public/'.$fileName,
+            '/opt/conectaking/public/'.$alt,
             base_path('../public_html/'.$fileName),
             base_path('../'.$fileName),
             base_path('../public_html/'.$alt),

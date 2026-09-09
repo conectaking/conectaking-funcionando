@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Serve assets estáticos legados (JS/CSS/imagens em public + public_html).
+ * Serve assets estáticos do painel (JS/CSS/imagens em LEGACY_PUBLIC_PATH / public).
  */
 class FrontLegacyController extends Controller
 {

@@ -17,7 +17,7 @@ docker compose --env-file .env.docker up --build
 Rebuild limpo (recomendado — sem `docker cp`):
 
 ```bash
-# no PC: gerar tarball laravel/ + public/ + public_html/ + docker-compose.prod.yml
+# no PC: gerar tarball laravel/ + public/ + docker-compose.prod.yml
 # no VPS:
 bash /tmp/deploy-vps-rebuild.sh   # scripts/deploy-vps-rebuild.sh
 ```
@@ -34,8 +34,8 @@ Caddy do host faz TLS e `reverse_proxy 127.0.0.1:8080`.
 | Caminho | Função |
 |---|---|
 | `laravel/` | Aplicação PHP (rotas, Blade, services, jobs) |
-| `public/` | Assets estáticos (JS/CSS/imagens) montados no container |
-| `public_html/` | Espelho de assets no VPS (legado Hostinger) |
+| `public/` | Assets estáticos canónicos (JS/CSS/imagens) |
+| `public_html/` | Arquivo legado local (não usado no Docker) |
 | `migrations/` | SQL histórico do schema Postgres |
 | `data/bible/` | Dados bíblia (JSON) |
 | `cf-worker-kingselection-r2/` | Cloudflare Worker R2 (upload KS) |

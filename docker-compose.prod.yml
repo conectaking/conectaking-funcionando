@@ -58,7 +58,6 @@ services:
       BIBLE_AI_URL: ${BIBLE_AI_URL:-}
       KS_UPLOADS_PATH: /shared/uploads
       LEGACY_PUBLIC_PATH: /legacy/public
-      LEGACY_PUBLIC_HTML_PATH: /legacy/public_html
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -78,8 +77,6 @@ services:
     volumes:
       - api_uploads:/shared/uploads
       - ./public:/legacy/public:ro
-      # public_html: espelho legado (fallback). Canónico = ./public
-      - ./public_html:/legacy/public_html:ro
     # FrankenPHP image healthchecka :2019/metrics (admin off) — usar /health na app
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || exit 1"]

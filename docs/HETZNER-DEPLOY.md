@@ -19,7 +19,7 @@ curl -sS http://127.0.0.1:8080/health
 ## Volumes
 
 - `./public` → `/legacy/public` (JS/CSS)  
-- `./public_html` → `/legacy/public_html` (espelho assets)  
+- `./public` → `/legacy/public` (assets canónicos)
 - volume `api_uploads` → `/shared/uploads`
 
 ## Scheduler
