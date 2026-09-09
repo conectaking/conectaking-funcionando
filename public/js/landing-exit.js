@@ -1,6 +1,6 @@
 ﻿/**
  * Landing / index: mostra "Sair" no header quando há sessão (token), para trocar de conta.
- * Incluir no index.html antes de </body>:
+ * Incluir no / antes de </body>:
  *   <script src="js/landing-exit.js?v=2026-04-23" defer></script>
  * Opcional: <span id="landing-sair-slot"></span> no header — o botão é inserido aqui.
  */
@@ -47,7 +47,7 @@
         var base = apiBase();
         function go() {
             clearAuthLocal();
-            window.location.href = 'index.html';
+            window.location.href = '/';
         }
         if (rt) {
             fetch(base + '/api/auth/logout', {

@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const token = localStorage.getItem('conectaKingToken') || '';
   if (!token) {
-    window.location.href = `login.html?returnUrl=${encodeURIComponent(window.location.href)}`;
+    window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
     return;
   }
   const HEADERS = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
@@ -4397,7 +4397,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('conectaKingToken');
       localStorage.removeItem('conectaKingRefreshToken');
       localStorage.removeItem('conectaKingUser');
-      window.location.href = `login.html?returnUrl=${encodeURIComponent(window.location.href)}`;
+      window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
       return;
     }
     if (!res.ok) throw new Error(data.message || 'Erro ao carregar galeria');
@@ -7388,7 +7388,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Botão "Painel" (dashboard principal)
   btnPanel?.addEventListener('click', (e) => {
     e.preventDefault();
-    window.location.href = '/dashboard.html';
+    window.location.href = '/dashboard';
   });
 
   // Botão "Excluir projeto" (remove galeria + todas as fotos do R2)

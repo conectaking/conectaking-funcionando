@@ -11,6 +11,14 @@ function ksStaticPageBaseDir() {
   return i > 0 ? path.slice(0, i + 1) : '/';
 }
 
+function ksAppPage(name) {
+  const h = String(window.location.hostname || '').toLowerCase();
+  const isLiveDev = (h === '127.0.0.1' || h === 'localhost');
+  const base = name.replace(/\.html$/i, '');
+  if (isLiveDev) return `${ksStaticPageBaseDir()}${base}.html`;
+  return `/${base}`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (/kingSelectionEdit\.html/i.test(window.location.pathname)) {
     const sp = new URLSearchParams(window.location.search || '');
@@ -44,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     || localStorage.getItem('jwt')
     || '';
   if (!token) {
-    window.location.href = `${ksStaticPageBaseDir()}login.html?returnUrl=${encodeURIComponent(window.location.href)}`;
+    window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
     return;
   }
   const HEADERS = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -527,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('conectaKingRefreshToken');
       localStorage.removeItem('conectaKingUser');
       alert('Sessão expirada. Faça login novamente.');
-      window.location.href = `${ksStaticPageBaseDir()}login.html?returnUrl=${encodeURIComponent(window.location.href)}`;
+      window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
       return;
     }
     if (!res.ok) throw new Error(data.message || 'Erro ao carregar galerias');
@@ -656,7 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('ks-back-btn').addEventListener('click', () => {
-    window.location.href = `${ksStaticPageBaseDir()}dashboard.html`;
+    window.location.href = ksAppPage('dashboard');
   });
   document.getElementById('ks-new-btn').addEventListener('click', async () => {
     openNewModal();

@@ -1086,7 +1086,7 @@ function renderEditor(profileData) {
         <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
             <i class="fas fa-envelope-open-text" style="font-size: 3rem; color: var(--dourado-principal, #FFC700); margin-bottom: 1rem;"></i>
             <p>Clique em "Salvar" e depois em "Editar" para personalizar o convite.</p>
-            <a href="conviteEdit.html?itemId=${item.id}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.75rem;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir editor de convite</a>
+            <a href="/conviteEdit?itemId=${item.id}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.75rem;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir editor de convite</a>
         </div>
         <input type="hidden" class="item-title-input" value="${item.title || conviteData.subtitulo || 'Convite'}">
     `;
@@ -1099,7 +1099,7 @@ function renderEditor(profileData) {
         <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
             <i class="fas fa-bible" style="font-size: 3rem; color: var(--dourado-principal, #FFC700); margin-bottom: 1rem;"></i>
             <p>Clique em "Salvar" e depois em "Editar" para configurar tradução e preferências.</p>
-            <a href="bibliaking.html" target="_blank" rel="noopener" onclick="try { sessionStorage.setItem('bible_item_id', '${item.id}'); sessionStorage.setItem('bible_panel_item_id', '${item.id}'); } catch(e) {}" style="display:inline-block;margin-top:0.75rem;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir configurações da Bíblia</a>
+            <a href="/bibliaking" target="_blank" rel="noopener" onclick="try { sessionStorage.setItem('bible_item_id', '${item.id}'); sessionStorage.setItem('bible_panel_item_id', '${item.id}'); } catch(e) {}" style="display:inline-block;margin-top:0.75rem;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir configurações da Bíblia</a>
         </div>
         <input type="hidden" class="item-title-input" value="${item.title || 'Bíblia'}">
     `;
@@ -1179,7 +1179,7 @@ function renderEditor(profileData) {
                         <input type="checkbox" class="module-toggle-input" ${isActive ? 'checked' : ''} data-item-id="${item.id}">
                         <span class="module-toggle-slider"></span>
                     </label>
-                    <a href="kingForms.html?edit=${encodeURIComponent(item.id)}" target="_blank" class="module-action-btn king-forms-config-btn" title="Editar King Forms" data-item-id="${item.id}" aria-label="Editar King Forms"><i class="fas fa-pen"></i></a>`
+                    <a href="/kingForms?edit=${encodeURIComponent(item.id)}" target="_blank" class="module-action-btn king-forms-config-btn" title="Editar King Forms" data-item-id="${item.id}" aria-label="Editar King Forms"><i class="fas fa-pen"></i></a>`
                 : `<label class="module-toggle" title="Desativar">
                         <input type="checkbox" class="module-toggle-input" ${isActive ? 'checked' : ''} data-item-id="${item.id}">
                         <span class="module-toggle-slider"></span>

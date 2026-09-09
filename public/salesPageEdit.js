@@ -195,14 +195,14 @@
 
         if (!currentItemId) {
             alert('Erro: ID do item não encontrado na URL.');
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard';
             return;
         }
         
         // IMPORTANTE: Verificar se o itemId é temporário (não salvo ainda)
         if (currentItemId.toString().startsWith('temp_')) {
             alert('Este módulo ainda não foi salvo. Por favor, clique em "Publicar alterações" no dashboard primeiro para salvar o módulo antes de editá-lo.');
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard';
             return;
         }
 
@@ -303,7 +303,7 @@
         // Botão voltar
         if (btnBack) {
             btnBack.addEventListener('click', () => {
-                window.location.href = 'dashboard.html';
+                window.location.href = '/dashboard';
             });
         }
 
@@ -715,7 +715,7 @@
                     localStorage.removeItem(`salesPage_pendingChanges_${currentItemId}`);
                     
                     alert(`Erro: O item ${currentItemId} não foi encontrado no servidor. Ele pode ter sido deletado ou ainda não foi salvo. Redirecionando para o dashboard...`);
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                     return;
                 }
                 const errorText = await itemResponse.text();
@@ -736,13 +736,13 @@
             
             if (!itemData) {
                 alert('Erro: Dados do item não encontrados. Redirecionando para o dashboard...');
-                window.location.href = 'dashboard.html';
+                window.location.href = '/dashboard';
                 return;
             }
             
             if (itemData.item_type !== 'sales_page') {
                 alert('Este item não é uma página de vendas.');
-                window.location.href = 'dashboard.html';
+                window.location.href = '/dashboard';
                 return;
             }
 

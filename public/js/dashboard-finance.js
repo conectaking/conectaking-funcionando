@@ -830,7 +830,7 @@ window.initFinancePane = async function () {
             window._financeActiveTab = tabId;
             try { localStorage.setItem('finance_active_tab', tabId); } catch (e) { }
             try {
-                const newUrl = (window.location.pathname || 'dashboard.html') + '#finance-pane-tab-' + tabId;
+                const newUrl = (window.location.pathname || '/dashboard') + '#finance-pane-tab-' + tabId;
                 if (typeof window.history !== 'undefined' && typeof window.history.replaceState === 'function') {
                     window.history.replaceState(null, '', newUrl);
                 }
@@ -7282,7 +7282,7 @@ window.confirmZerarMesAcesso = async function () {
             return;
         }
         document.getElementById('zerar-mes-modal')?.remove();
-        window.location.href = `zerar-mes.html?month=${month}&year=${year}`;
+        window.location.href = `/zerar-mes?month=${month}&year=${year}`;
     } catch (e) {
         alert('Erro de conexão: ' + e.message);
     }

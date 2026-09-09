@@ -170,9 +170,9 @@ async function openEditModal(itemEl) {
         }
 
         if (itemType === 'sales_page') {
-            window.location.href = `salesPageEdit.html?itemId=${itemId}`;
+            window.location.href = `/salesPageEdit?itemId=${itemId}`;
         } else if (itemType === 'guest_list') {
-            window.location.href = `guestListEdit.html?itemId=${itemId}`;
+            window.location.href = `/guestListEdit?itemId=${itemId}`;
         } else if (itemType === 'contract' || itemType === 'agenda' || itemType === 'kingbrief' || itemType === 'king_bolao') {
             alert('Este módulo foi descontinuado e já não está disponível.');
             return;
@@ -185,13 +185,13 @@ async function openEditModal(itemEl) {
                 window.location.href = '/kingSelection';
             }
         } else if (itemType === 'convite') {
-            window.location.href = `conviteEdit.html?itemId=${itemId}`;
+            window.location.href = `/conviteEdit?itemId=${itemId}`;
         } else if (itemType === 'bible') {
             try {
                 sessionStorage.setItem('bible_item_id', String(itemId));
                 sessionStorage.setItem('bible_panel_item_id', String(itemId));
             } catch (e) {}
-            window.location.href = 'bibliaking.html';
+            window.location.href = '/bibliaking';
         }
         return;
     }

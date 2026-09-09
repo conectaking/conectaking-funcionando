@@ -351,8 +351,8 @@ document.addEventListener('click', (e) => {
         });
 
         if (itemId) {
-            console.log('[DASHBOARD] Redirecionando para formPageEdit.html com itemId:', itemId);
-            window.location.href = `formPageEdit.html?itemId=${itemId}`;
+            console.log('[DASHBOARD] Redirecionando para /formPageEdit com itemId:', itemId);
+            window.location.href = `/formPageEdit?itemId=${itemId}`;
         } else {
             console.error('[DASHBOARD] itemId não encontrado no botão btn-edit-form-page');
             alert('Erro: ID do formulário não encontrado. Por favor, recarregue a página e tente novamente.');
@@ -510,7 +510,7 @@ async function loadGuestLists() {
 // Abrir editor de lista de convidados
 function openGuestListEditor(profileItemId) {
     // O profileItemId é o ID da profile_items, que é o que precisamos para a página de edição
-    window.location.href = `guestListEdit.html?itemId=${profileItemId}`;
+    window.location.href = `/guestListEdit?itemId=${profileItemId}`;
 }
 
 // Listener para botão "Nova Lista"

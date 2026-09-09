@@ -35,14 +35,25 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('conectaKingUser', JSON.stringify(testUser));
     } else if (user.accountType === 'free') {
         alert('Acesso negado. Faça um upgrade do seu plano para acessar o dashboard.');
-        window.location.href = 'index.html#planos';
+        window.location.href = '/#planos';
         return;
     }
 
-    /** Login/painel na mesma pasta do HTML atual (Hostinger public_html/, mobile, Live Server). */
+    /** Login/painel na mesma pasta (Live Server usa .html; Laravel/prod usa rota limpa). */
     function sameFolderPage(file) {
         try {
-            return new URL(file, window.location.href).href;
+            var h = (typeof window !== 'undefined' && window.location && window.location.hostname)
+                ? String(window.location.hostname).toLowerCase()
+                : '';
+            var isLiveDev = (h === '127.0.0.1' || h === 'localhost');
+            var name = String(file || '');
+            if (!isLiveDev) {
+                name = name.replace(/\.html$/i, '');
+                if (name && name.indexOf('/') === -1 && name.indexOf('?') === -1 && name.indexOf('#') === -1) {
+                    return new URL('/' + name, window.location.origin).href;
+                }
+            }
+            return new URL(name, window.location.href).href;
         } catch (e) {
             return file;
         }
@@ -106,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {}
         // Anti-cache: garante refresh da versão nova no browser normal
-        params.set('v', '2026-09-09-no-render2');
+        params.set('v', '2026-09-09-cleanUrls1');
         var q = '?' + params.toString();
         var h = (typeof window !== 'undefined' && window.location && window.location.hostname) ? String(window.location.hostname).toLowerCase() : '';
         // Live Server / dev sem Apache: não existe rewrite /kingSelection — usar o HTML direto
@@ -213,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let cleanSearch = (window.location.search || '').replace(/^\?/, '').split('&').filter(function (p) { return !p.startsWith('import_form='); }).join('&');
                 if (cleanSearch) cleanSearch = '?' + cleanSearch;
                 history.replaceState({}, '', window.location.pathname + cleanSearch);
-                window.location.href = 'formPageEdit.html?itemId=' + newId;
+                window.location.href = '/formPageEdit?itemId=' + newId;
             } catch (e) {
                 alert('Erro ao importar: ' + (e.message || 'tente novamente.'));
             }
@@ -4136,7 +4147,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (updatedUser.accountType === 'free') {
                 alert('Acesso negado. Faça um upgrade do seu plano para acessar o dashboard.');
-                window.location.href = 'index.html#planos';
+                window.location.href = '/#planos';
                 return;
             }
 

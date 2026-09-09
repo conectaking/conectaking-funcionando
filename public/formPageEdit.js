@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             alert('ID do formulário não encontrado na URL.\n\nPor favor, acesse o formulário através do dashboard.\n\nRedirecionando...');
             setTimeout(() => {
-                window.location.href = 'dashboard.html';
+                window.location.href = '/dashboard';
             }, 2000);
             return;
         }
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('O [LOAD] IDs disponíveis:', data.items?.map(i => `${i.id} (${i.item_type})`) || []);
                 alert(`Formulário com ID ${currentItemId} não encontrado.\n\nVerifique se você tem permissão para editar este formulário.\n\nRedirecionando...`);
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                 }, 2500);
                 return;
             }
@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('O [LOAD] Item encontrado mas não é do tipo digital_form ou guest_list:', item.item_type);
                 alert('O item selecionado não é um formulário digital ou lista de convidados.\n\nRedirecionando...');
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/dashboard';
                 }, 2000);
                 return;
             }
@@ -1791,7 +1791,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
                 const itemId = typeof currentItemId !== 'undefined' ? currentItemId : (window.currentItemId || null);
                 if (itemId) {
-                    window.location.href = 'checkoutConfig.html?itemId=' + itemId;
+                    window.location.href = '/checkoutConfig?itemId=' + itemId;
                 } else {
                     alert('Salve o formulário antes de configurar o checkout.');
                 }
@@ -1830,9 +1830,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const currentItemId = urlParams.get('itemId');
                 if (currentItemId) {
-                    window.location.href = `guestListEdit.html?formItemId=${currentItemId}`;
+                    window.location.href = `/guestListEdit?formItemId=${currentItemId}`;
                 } else {
-                    window.location.href = 'guestListEdit.html';
+                    window.location.href = '/guestListEdit';
                 }
             }
         }
@@ -1889,7 +1889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Redirecionar para página completa de Envios|Listas
                 if (currentItemId) {
-                    window.location.href = `responsesList.html?itemId=${currentItemId}`;
+                    window.location.href = `/responsesList?itemId=${currentItemId}`;
                 } else {
                     alert('Salve o formulário antes de visualizar os envios/listas');
                 }
@@ -2042,7 +2042,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 window.location.reload();
                             }
                         } else {
-                            window.location.href = 'formPageEdit.html?itemId=' + (impData.id || impData.itemId);
+                            window.location.href = '/formPageEdit?itemId=' + (impData.id || impData.itemId);
                         }
                     } catch (err) {
                         alert(err.message || 'Erro ao importar.');
@@ -2191,7 +2191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         <!-- Botões de ação -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
-                            <button onclick="window.location.href='guestListEdit.html?itemId=${currentItemId}&mode=manage';" style="padding: 14px 20px; background: linear-gradient(135deg, var(--dourado-principal, #FFC700), #FFD700); color: #000; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button onclick="window.location.href='/guestListEdit?itemId=${currentItemId}&mode=manage';" style="padding: 14px 20px; background: linear-gradient(135deg, var(--dourado-principal, #FFC700), #FFD700); color: #000; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <i class="fas fa-users"></i> Gerenciar Convidados
                             </button>
                             <button onclick="window.open('${publicViewLink}', '_blank');" style="padding: 14px 20px; background: rgba(74,144,226,0.2); color: #4A90E2; border: 2px solid #4A90E2; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -6458,7 +6458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     modal.remove();
                     const confirmRedirect = confirm('Lista de Convidados é um módulo especial. Você será redirecionado para o dashboard para criar uma lista de convidados. Deseja continuar?');
                     if (confirmRedirect) {
-                        window.location.href = 'dashboard.html#guest-list-editor';
+                        window.location.href = '/dashboard#guest-list-editor';
                     }
                     return;
                 }
@@ -8179,7 +8179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #FF9800;"></i>
                         <h4 style="color: var(--text, #ECECEC); margin-bottom: 12px;">Sessão expirada</h4>
                         <p>Por favor, faça login novamente.</p>
-                        <button onclick="window.location.href='login.html'; modal.remove();" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">
+                        <button onclick="window.location.href='/login'; modal.remove();" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">
                             Ir para Login
                         </button>
                     </div>
@@ -8221,7 +8221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fas fa-users" style="font-size: 64px; margin-bottom: 20px; opacity: 0.3; color: var(--dourado-principal, #FFC700);"></i>
                         <h4 style="color: var(--text, #ECECEC); margin-bottom: 12px; font-size: 24px;">Nenhuma lista criada ainda</h4>
                         <p style="margin-bottom: 32px; font-size: 16px; color: var(--text-dark, #A1A1A1);">Crie uma lista de convidados no dashboard para começar a gerenciar convidados, confirmações e presenças.</p>
-                        <button onclick="const modalEl = document.querySelector('.guest-list-modal'); if(modalEl) modalEl.remove(); window.location.href='dashboard.html#guest-list-editor';" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">
+                        <button onclick="const modalEl = document.querySelector('.guest-list-modal'); if(modalEl) modalEl.remove(); window.location.href='/dashboard#guest-list-editor';" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">
                             <i class="fas fa-plus"></i> Ir para Dashboard
                         </button>
                     </div>
@@ -8292,7 +8292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </p>
                                 ` : ''}
                             </div>
-                            <button onclick="const modalEl = document.querySelector('.guest-list-modal'); if(modalEl) modalEl.remove(); window.location.href='guestListEdit.html?itemId=${list.id}';" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                            <button onclick="const modalEl = document.querySelector('.guest-list-modal'); if(modalEl) modalEl.remove(); window.location.href='/guestListEdit?itemId=${list.id}';" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">
                                 <i class="fas fa-edit"></i> Gerenciar
                             </button>
                         </div>
@@ -13432,16 +13432,16 @@ function handleGuestListClick(event) {
         }
         
         // Sempre redirecionar para a página de listas
-        console.log('Y"" Redirecionando para guestListEdit.html...', { currentItemId });
+        console.log('Y"" Redirecionando para /guestListEdit...', { currentItemId });
         if (currentItemId) {
-            window.location.href = `guestListEdit.html?formItemId=${currentItemId}`;
+            window.location.href = `/guestListEdit?formItemId=${currentItemId}`;
         } else {
-            window.location.href = 'guestListEdit.html';
+            window.location.href = '/guestListEdit';
         }
     } catch (error) {
         console.error('O Erro em handleGuestListClick:', error);
         // Fallback simples
-        window.location.href = 'guestListEdit.html';
+        window.location.href = '/guestListEdit';
     }
 }
 

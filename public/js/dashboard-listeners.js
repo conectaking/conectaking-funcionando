@@ -182,7 +182,7 @@ function _setupEventListenersBody() {
 
                 // Se clicou diretamente no header ou em área vazia (não em botões/links)
                 if (!clickedButton && !clickedLink && (target === contentHeader || target.classList.contains('content-header'))) {
-                    window.location.href = 'index.html';
+                    window.location.href = '/';
                 }
             }
         });
@@ -1056,7 +1056,7 @@ function _setupEventListenersBody() {
                         if (slug) {
                             window.location.href = `${env.API_URL}/${encodeURIComponent(slug)}/biblia`;
                         } else {
-                            window.location.href = 'bibliaking.html';
+                            window.location.href = '/bibliaking';
                         }
                     } catch (err) {
                         alert(err.message || 'Erro ao abrir Bíblia.');
@@ -1093,12 +1093,12 @@ function _setupEventListenersBody() {
                         targetPane.style.display = 'flex';
                         if (targetId === 'king-forms-pane') {
                             var kfIframe = document.getElementById('king-forms-iframe');
-                            if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = 'kingForms.html';
+                            if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = '/kingForms';
                         }
                         // contratos/agenda/meu-site descontinuados — ignorar
                     }
                     // Atualizar URL com o hash do painel para que, ao atualizar a página, permaneça na mesma seção
-                    const basePath = window.location.pathname || 'dashboard.html';
+                    const basePath = window.location.pathname || '/dashboard';
                     let newHash = targetId;
                     if (targetId === 'finance-pane') {
                         const curHash = (window.location.hash || '').replace(/^#/, '');
@@ -1140,7 +1140,7 @@ function _setupEventListenersBody() {
 
             if (tabType === 'times') {
                 // Navegar para o painel empresarial
-                window.location.href = 'business/index.html';
+                window.location.href = '/business';
             } else {
                 // Mostrar perfil pessoal
                 showPersonalProfile();
@@ -2545,7 +2545,7 @@ function _setupEventListenersBody() {
                 else if (saved) hash = '#' + saved;
             } catch (e) { }
             if (hash && hash !== '#') {
-                try { window.history.replaceState(null, '', (window.location.pathname || 'dashboard.html') + hash); } catch (e) { }
+                try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + hash); } catch (e) { }
             }
         }
         if (!hash || hash === '#') return;
@@ -2581,7 +2581,7 @@ function _setupEventListenersBody() {
 
                 else if (targetId === 'king-forms-pane') {
                     var kfIframe = document.getElementById('king-forms-iframe');
-                    if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = 'kingForms.html';
+                    if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = '/kingForms';
                 }
             } else {
                 mainNavLink.click();
