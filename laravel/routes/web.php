@@ -39,6 +39,18 @@ Route::post('/api/password/forgot', [\App\Http\Controllers\Auth\PasswordControll
     ->middleware('throttle:10,1');
 Route::post('/api/password/reset', [\App\Http\Controllers\Auth\PasswordController::class, 'reset'])
     ->middleware('throttle:10,1');
+
+// Compat: bookmarks antigos /l/... -> path canónico (antes dos catch-alls /{slug}/...)
+Route::any('/l/{path}', function (\Illuminate\Http\Request $request, string $path) {
+    $target = '/'.ltrim($path, '/');
+    $qs = $request->getQueryString();
+    if ($qs) {
+        $target .= '?'.$qs;
+    }
+
+    return redirect($target, 301);
+})->where('path', '.*');
+
 $cardSlug = '[A-Za-z0-9._-]+';
 $userId = '[A-Za-z0-9_-]+';
 
@@ -817,7 +829,7 @@ foreach ($bladePages as $pageName) {
     };
     Route::get('/'.$pageName, $handler);
     Route::get('/'.$pageName.'.html', $handler);
-        }
+}
 
 // /admin/ (trailing slash) — mesmo painel Blade
 foreach (['/admin/'] as $adminSlash) {
@@ -842,14 +854,4 @@ Route::get('/{slug}', function (\Illuminate\Http\Request $request, string $slug)
 
     return app(CardPublicController::class)->show($request, $slug);
 })->where('slug', $cardSlug);
-
-// Compat: bookmarks antigos /l/... -> canonical path (301)
-Route::any('/l/{path}', function (\Illuminate\Http\Request $request, string $path) {
-    $target = '/'.ltrim($path, '/');
-    $qs = $request->getQueryString();
-    if ($qs) {
-        $target .= '?'.$qs;
-    }
-    return redirect($target, 301);
-})->where('path', '.*');
 
