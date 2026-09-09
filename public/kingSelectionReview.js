@@ -15,6 +15,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` };
+  (function syncKsAuthCookie() {
+    try {
+      const secure = location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `ks_client_token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
+    } catch (_) {}
+  })();
+  function previewUrl(photoId) {
+    return `${API_URL}/api/king-selection/client/photos/${photoId}/preview?slug=${encodeURIComponent(slug)}`;
+  }
 
   const titleEl = document.getElementById('ks-r-title');
   const backEl = document.getElementById('ks-back');
@@ -91,7 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchObjectUrl(url) {
     const key = String(url || '');
     if (_objUrls.has(key)) return _objUrls.get(key);
-    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+    const res = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    });
     if (!res.ok) {
       const t = await res.text().catch(() => '');
       throw new Error(t || `Falha ao carregar imagem (${res.status})`);
@@ -173,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (emptyEl) emptyEl.classList.add('hidden');
     if (gridEl) {
       gridEl.innerHTML = selectedPhotos.map(p => {
-        const imgSrc = `${API_URL}/api/king-selection/client/photos/${p.id}/preview?token=${encodeURIComponent(token)}&slug=${encodeURIComponent(slug)}`;
+        const imgSrc = previewUrl(p.id);
         return `
           <div class="rounded-xl overflow-hidden border border-white/10 bg-white/5 shadow-sm">
             <img loading="lazy"
@@ -239,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (vMeta) vMeta.textContent = `${_viewerIndex + 1}/${_selectedPhotos.length}`;
     if (vPrev) vPrev.disabled = _viewerIndex <= 0;
     if (vNext) vNext.disabled = _viewerIndex >= _selectedPhotos.length - 1;
-    const url = `${API_URL}/api/king-selection/client/photos/${p.id}/preview?token=${encodeURIComponent(token)}&slug=${encodeURIComponent(slug)}`;
+    const url = previewUrl(p.id);
     if (vImg) {
       vImg.setAttribute('data-src', url);
       await setImgFromApi(vImg);

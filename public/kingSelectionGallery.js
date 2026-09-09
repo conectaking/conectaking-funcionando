@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` };
+  (function syncKsAuthCookie() {
+    try {
+      const secure = location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `ks_client_token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
+    } catch (_) {}
+  })();
+  function previewUrl(photoId) {
+    return `${API_URL}/api/king-selection/client/photos/${photoId}/preview?slug=${encodeURIComponent(slug)}`;
+  }
   const grid = document.getElementById('ks-grid');
   const titleEl = document.getElementById('ks-g-title');
   const countEl = document.getElementById('ks-count');
@@ -44,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutBtn?.addEventListener('click', () => {
     if (!confirm('Sair desta galeria?')) return;
     try { localStorage.removeItem(tokenKey); } catch (_) {}
+    try { document.cookie = 'ks_client_token=; Path=/; Max-Age=0; SameSite=Lax'; } catch (_) {}
     location.href = `kingSelection/${encodeURIComponent(slug)}`;
   });
 
@@ -75,7 +85,12 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchObjectUrl(url) {
     const key = String(url || '');
     if (_objUrls.has(key)) return _objUrls.get(key);
-    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+    const res = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    });
     if (!res.ok) {
       const t = await res.text().catch(() => '');
       throw new Error(t || `Falha ao carregar imagem (${res.status})`);
@@ -171,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     grid.innerHTML = photos.map(p => {
       const isSel = selected.has(p.id);
-      const imgSrc = `${API_URL}/api/king-selection/client/photos/${p.id}/preview?token=${encodeURIComponent(token)}&slug=${encodeURIComponent(slug)}`;
+      const imgSrc = previewUrl(p.id);
       return `
         <div
           class="group relative rounded-xl overflow-hidden border ${isSel ? 'border-yellow-400 ring-2 ring-yellow-400/30' : 'border-white/10'} bg-white/5 shadow-sm hover:shadow-md transition"
@@ -300,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
       vToggle.title = locked ? 'Seleção já enviada' : '';
     }
 
-    const url = `${API_URL}/api/king-selection/client/photos/${p.id}/preview?token=${encodeURIComponent(token)}&slug=${encodeURIComponent(slug)}`;
+    const url = previewUrl(p.id);
     if (vImg) {
       vImg.setAttribute('data-src', url);
       // carregar via blob (reutiliza loader)
