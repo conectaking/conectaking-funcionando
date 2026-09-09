@@ -2172,7 +2172,7 @@
         </div>
     </div>
     
-    <script src="formPageEdit.js?v=2026-09-07-utf8clean"></script>
+    <script src="formPageEdit.js?v=2026-09-09-nocart"></script>
     <script>
         // Implementação segura de showSuccessMessage para evitar recursão infinita
         (function() {
