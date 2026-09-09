@@ -31,23 +31,25 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 
 | Item | Porquê |
 |---|---|
-| `public/` | **Canónico** — JS/CSS/imagens do painel (montado em `/legacy/public`) |
-| `FrontLegacyController` | Serve assets de `public/` + `api-config.js` / health |
+| `public/` JS/CSS fonte | Canónico para alias `@legacy` no Vite (build empacota) |
+| `FrontLegacyController` | Serve imagens/static de `public/` + `api-config.js` / health |
 | Auth JWT custom | Contrato do painel (não Sanctum) |
-| Guards `onrender` / `:5000` em `config.js` / `dashboard.js` | Defesa contra API antiga em cache/localStorage |
-| `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge, não monólito Node) |
-| `data/bible` | JSON bíblia |
-| `migrations/*.sql` | Histórico do schema Postgres |
+| Guards `onrender` / `:5000` | Defesa contra API antiga em cache/localStorage |
+| `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge) |
+| `data/bible`, `migrations/*.sql` | Dados / histórico schema |
+| Font Awesome e CDNs (Chart, Cropper…) | Externos de propósito |
+| `recibos-modulo-nav.js` | Clássico (`data-active` via `document.currentScript`) |
+| `admin-prosperidade-31` | Redirect para `#prosperidade` |
+| CSS perfil público (`css/profile.css` etc.) | Cartão/satélite, não painel Blade |
 
-### Vite
+### Vite (páginas — concluído)
 
 - Build no Docker (context raiz) → `laravel/public/build`
-- Auth em Vite: login, registro, recuperar-senha, resetar-senha
-- **Dashboard** + **King Forms** + **King Selection** (edit/project/cliente/gallery/review) em Vite via `@legacy`
-- **Admin**: `admin.js` (via `@legacy`), `admin-planos.js`, `admin-devocionais-365.js` (inline extraído)
-- **Conta** + **salesPageEdit** + **guestListEdit** em Vite via `@legacy`
-- CSS ainda em `public/` (style/dashboard/auth/admin)
-- `admin-prosperidade-31` fica redirect para `#prosperidade` (sem entry Vite)
+- **JS** de todas as Blades de produto (auth → painel → KS → forms → admin → recibos → docs → kingDocs…)
+- **CSS** legado empacotado via `import '@legacy/*.css'` nas entries (style, auth, dashboard, admin, salesPageEdit, ui, recibos-mobile, profile-wifi)
+- Font Awesome / CDNs / `recibos-modulo-nav.js` continuam clássicos
+- `admin-prosperidade-31` = redirect (sem entry)
+- Corrigido `admin.css` (bloco órfão / `}` extra em `.stats-grid`)
 
 Deploy limpo: `scripts/deploy-vps-rebuild.sh` + tarball `laravel/` + `public/` + `docker-compose.prod.yml`.
 

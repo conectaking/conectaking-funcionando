@@ -39,6 +39,21 @@ curl -sS -o /dev/null -w 'salesPageEdit:%{http_code}\n' http://127.0.0.1:8080/sa
 curl -sS http://127.0.0.1:8080/salesPageEdit | grep -oE 'build/assets/salesPageEdit-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/sales_vite:/'
 curl -sS -o /dev/null -w 'guestListEdit:%{http_code}\n' http://127.0.0.1:8080/guestListEdit
 curl -sS http://127.0.0.1:8080/guestListEdit | grep -oE 'build/assets/guestListEdit-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/guest_vite:/'
+curl -sS -o /dev/null -w 'index:%{http_code}\n' http://127.0.0.1:8080/
+curl -sS http://127.0.0.1:8080/ | grep -oE 'build/assets/index-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/index_vite:/'
+curl -sS -o /dev/null -w 'responsesList:%{http_code}\n' http://127.0.0.1:8080/responsesList
+curl -sS http://127.0.0.1:8080/responsesList | grep -oE 'build/assets/responsesList-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/responses_vite:/'
+curl -sS -o /dev/null -w 'recibos:%{http_code}\n' http://127.0.0.1:8080/recibos-orcamentos
+curl -sS -o /dev/null -w 'doc-preview:%{http_code}\n' http://127.0.0.1:8080/documentos-preview
+curl -sS -o /dev/null -w 'conviteEdit:%{http_code}\n' http://127.0.0.1:8080/conviteEdit
+curl -sS -o /dev/null -w 'kingDocs:%{http_code}\n' http://127.0.0.1:8080/kingDocs
+curl -sS http://127.0.0.1:8080/kingDocs | grep -oE 'build/assets/kingDocs-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/kingDocs_vite:/'
+curl -sS -o /dev/null -w 'bible:%{http_code}\n' http://127.0.0.1:8080/bible
+curl -sS -o /dev/null -w 'zerar-mes:%{http_code}\n' http://127.0.0.1:8080/zerar-mes
+curl -sS -o /dev/null -w 'ks-success:%{http_code}\n' http://127.0.0.1:8080/kingSelectionSuccess
+curl -sS http://127.0.0.1:8080/login | grep -oE 'build/assets/(style|auth)-[A-Za-z0-9_-]+\.css' | head -3 | sed 's/^/login_css:/'
+curl -sS http://127.0.0.1:8080/dashboard | grep -oE 'build/assets/dashboard-[A-Za-z0-9_-]+\.css' | head -2 | sed 's/^/dash_css:/'
+curl -sS http://127.0.0.1:8080/admin | grep -oE 'build/assets/admin-[A-Za-z0-9_-]+\.css' | head -1 | sed 's/^/admin_css:/'
 curl -sS -o /dev/null -w 'login:%{http_code}\n' http://127.0.0.1:8080/login
 curl -sS -o /dev/null -w 'dashboard:%{http_code}\n' http://127.0.0.1:8080/dashboard
 curl -sS -o /dev/null -w 'checkout:%{http_code}\n' http://127.0.0.1:8080/checkoutConfig

@@ -1,3 +1,5 @@
+import '@legacy/style.css';
+import '@legacy/auth.css';
 import { getApiBase } from './auth-api.js';
 
 document.addEventListener('DOMContentLoaded', () => {

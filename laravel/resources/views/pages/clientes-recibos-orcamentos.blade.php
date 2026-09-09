@@ -4,15 +4,12 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Clientes — Recibos e Orçamentos | ConectaKing</title>
-    <script src="https://www.conectaking.com.br/api-config.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
-    <script>
-        tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#EAB308", "background-dark": "#0A0A0A", "card-dark": "#171717", "border-dark": "#262626" }, fontFamily: { display: ["Inter", "sans-serif"] } } } };
-    </script>
-    <link rel="stylesheet" href="css/recibos-modulo-mobile.css"/>
+    
     <style> body { font-family: 'Inter', sans-serif; } </style>
+    @vite(['resources/js/pages/clientes-recibos-orcamentos.js'])
 </head>
 <body class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
@@ -93,78 +90,8 @@
         <p class="mt-6 text-slate-500 text-sm">No <a href="dashboard-recibos-orcamentos" class="text-primary font-medium hover:underline">painel</a>, escolha <a href="dashboard-recibos-orcamentos?abrir=recibo" class="text-primary font-medium hover:underline">Recibo</a> ou <a href="dashboard-recibos-orcamentos?abrir=orcamento" class="text-primary font-medium hover:underline">Orçamento</a> para criar novo ou continuar um existente. Ao editar, digite o nome do cliente para buscar na lista.</p>
     </div>
 </main>
-<script>
-(function() {
-    var CLIENTES_KEY = 'recibosOrcamentosClientes';
 
-    function getClientes() {
-        try {
-            var s = localStorage.getItem(CLIENTES_KEY);
-            return s ? JSON.parse(s) : [];
-        } catch (e) { return []; }
-    }
-
-    function saveClientes(list) {
-        try {
-            localStorage.setItem(CLIENTES_KEY, JSON.stringify(list));
-        } catch (e) { alert('Erro ao salvar.'); }
-    }
-
-    function renderLista() {
-        var list = getClientes();
-        var container = document.getElementById('lista-clientes');
-        var empty = document.getElementById('empty-clientes');
-        container.innerHTML = '';
-        if (!list.length) {
-            empty.classList.remove('hidden');
-            return;
-        }
-        empty.classList.add('hidden');
-        list.forEach(function(c, i) {
-            var tr = document.createElement('div');
-            tr.className = 'flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-black/40';
-            tr.innerHTML = '<div><span class="font-medium dark:text-white">' + escapeHtml(c.nome || '') + '</span><span class="text-slate-500 text-sm ml-2">' + escapeHtml(c.cpf_cnpj || '') + '</span></div>' +
-                '<button type="button" class="btn-excluir text-red-500 hover:text-red-400 text-sm" data-i="' + i + '" title="Excluir"><span class="material-icons-outlined text-base">delete</span></button>';
-            container.appendChild(tr);
-            tr.querySelector('.btn-excluir').onclick = function() {
-                if (confirm('Excluir este cliente?')) {
-                    var arr = getClientes();
-                    arr.splice(parseInt(this.dataset.i, 10), 1);
-                    saveClientes(arr);
-                    renderLista();
-                }
-            };
-        });
-    }
-
-    function escapeHtml(s) {
-        if (!s) return '';
-        var div = document.createElement('div');
-        div.textContent = s;
-        return div.innerHTML;
-    }
-
-    document.getElementById('form-cliente').onsubmit = function(e) {
-        e.preventDefault();
-        var nome = document.querySelector('#form-cliente input[name="nome"]').value.trim();
-        if (!nome) return;
-        var cliente = {
-            nome: nome,
-            cpf_cnpj: (document.querySelector('#form-cliente input[name="cpf_cnpj"]').value || '').trim(),
-            endereco: (document.querySelector('#form-cliente input[name="endereco"]').value || '').trim(),
-            contato: (document.querySelector('#form-cliente input[name="contato"]').value || '').trim()
-        };
-        var list = getClientes();
-        list.push(cliente);
-        saveClientes(list);
-        renderLista();
-        this.reset();
-        document.getElementById('cliente-nome').focus();
-    };
-
-    renderLista();
-})();
-</script>
-<script src="js/recibos-modulo-nav.js" data-active="clientes"></script>
+<script src="/js/recibos-modulo-nav.js" data-active="clientes"></script>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
 </body>
 </html>

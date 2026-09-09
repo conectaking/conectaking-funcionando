@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <link rel="stylesheet" href="dashboard.css">
     <!-- IMPORTAR TODOS OS ESTILOS DO FORM EDIT -->
     <style>
         
@@ -1410,6 +1409,7 @@
             }
         }
     </style>
+    @vite(['resources/js/pages/guestListEdit.js'])
 </head>
 <body class="form-edit-page form-edit-page-body">
     <!-- Se houver itemId na URL, redirecionar para usar /formPageEdit com parmetro guestList -->
@@ -1802,7 +1802,6 @@
     </script>
     
     <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/guestListEdit.js'])
 </body>
 </html>
 

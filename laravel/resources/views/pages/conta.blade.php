@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
-    <link rel="stylesheet" href="style.css?v=2025-12-23-02">
+        @vite(['resources/js/pages/conta.js'])
 </head>
 <body>
     <header class="main-header">
@@ -128,6 +128,5 @@
     </main>
     
     <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/conta.js'])
 </body>
 </html>

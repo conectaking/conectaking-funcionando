@@ -1,3 +1,5 @@
+import '@legacy/style.css';
+import '@legacy/dashboard.css';
 (function () {
             var host = (window.location && window.location.hostname || '').toLowerCase();
             var sameOrigin = (window.location && window.location.origin) || '';

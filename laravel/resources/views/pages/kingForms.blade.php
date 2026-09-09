@@ -6,8 +6,6 @@
     <title>King Forms - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/style.css?v=2025-01-31-01">
-    <link rel="stylesheet" href="/dashboard.css?v=2025-01-31-01">
     <script src="/config.js?v=2026-09-09-vite1"></script>
     @vite(['resources/js/pages/kingForms.js'])
     <style>

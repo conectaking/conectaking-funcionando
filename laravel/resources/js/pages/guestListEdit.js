@@ -2,6 +2,8 @@
  * Lista de convidados — Vite entry.
  * formPageEdit + integração; guestListEdit.js só em modo manage / sem itemId.
  */
+import '@legacy/dashboard.css';
+
 import '@legacy/formPageEdit.js';
 import '@legacy/guestListEditKingFormsIntegration.js';
 

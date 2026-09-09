@@ -10,7 +10,6 @@
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="/dashboard.css?v=2026-04-13-kingselection-root">
   <style>
     :root{
       --ks-accent:#facc15;
@@ -379,6 +378,7 @@
       padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
     }
   </style>
+    @vite(['resources/js/pages/kingSelectionEdit.js'])
 </head>
 <body>
   <div class="ks-header">
@@ -592,7 +592,6 @@
   </div>
 
   <script src="/config.js?v=2026-09-09-vite1"></script>
-  @vite(['resources/js/pages/kingSelectionEdit.js'])
 </body>
 </html>
 

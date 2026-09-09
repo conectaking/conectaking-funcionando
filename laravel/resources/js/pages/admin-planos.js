@@ -1,3 +1,4 @@
+import '@legacy/assets/css/ui.css';
 (function () {
   var apiBase = (window.API_BASE || window.API_URL || '').replace(/\/$/, '');
   var token = typeof localStorage !== 'undefined' ? localStorage.getItem('conectaKingToken') : null;

@@ -8,8 +8,8 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/admin/admin.css?v=2026-09-09-ops1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @vite(['resources/js/pages/admin.js'])
 </head>
 <body>
     <div class="admin-layout">
@@ -825,6 +825,5 @@
         </div>
     </div>
     <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/admin.js'])
 </body>
 </html>

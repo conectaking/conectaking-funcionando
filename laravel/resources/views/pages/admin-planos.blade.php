@@ -4,7 +4,6 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Planos (ADM) - Conecta King</title>
-  <link rel="stylesheet" href="/assets/css/ui.css"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
   <style>
     .ap-wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
@@ -24,6 +23,7 @@
     .ap-message.error { background: rgba(227, 93, 106, 0.15); color: var(--danger); }
     .ap-hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
   </style>
+    @vite(['resources/js/pages/admin-planos.js'])
 </head>
 <body class="kb-body">
   <header class="kb-header">
@@ -72,6 +72,5 @@
   </main>
 
   <script src="/config.js?v=2026-09-09-vite1"></script>
-  @vite(['resources/js/pages/admin-planos.js'])
 </body>
 </html>

@@ -2,6 +2,10 @@
  * Página de vendas (editor) — Vite entry.
  * CDN Chart/Sortable/Cropper e config.js ficam no Blade.
  */
+import '@legacy/style.css';
+import '@legacy/dashboard.css';
+import '@legacy/salesPageEdit.css';
+
 import '@legacy/js/upload-auth-helper.js';
 import '@legacy/suggestionModal.js';
 import '@legacy/textSuggestions.js';

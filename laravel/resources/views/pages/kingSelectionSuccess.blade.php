@@ -19,11 +19,9 @@
       </a>
     </div>
   </div>
-  <script>
-    const qs = new URLSearchParams(location.search||'');
-    const slug = qs.get('slug') || '';
-    document.getElementById('ks-home').href = `kingSelection/${encodeURIComponent(slug)}`;
-  </script>
+  
+    <script src="/config.js?v=2026-09-09-vite1"></script>
+    @vite(['resources/js/pages/kingSelectionSuccess.js'])
 </body>
 </html>
 

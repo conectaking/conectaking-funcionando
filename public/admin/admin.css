@@ -273,9 +273,6 @@ h2::after {
     gap: 24px;
     margin-bottom: 40px;
 }
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
 .stat-card {
     background: var(--gradient-card);
     padding: 28px;

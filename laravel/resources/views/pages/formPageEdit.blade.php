@@ -11,7 +11,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="/dashboard.css?v=2026-09-09-vite1">
     <script src="/config.js?v=2026-09-09-vite1"></script>
     <style>
         * {
@@ -1901,6 +1900,7 @@
             }
         }
     </style>
+    @vite(['resources/js/pages/formPageEdit.js'])
 </head>
 <body class="form-edit-page form-edit-page-body">
     <div class="form-edit-header">
@@ -2171,7 +2171,6 @@
         </div>
     </div>
     
-    @vite(['resources/js/pages/formPageEdit.js'])
 </body>
 </html>
 

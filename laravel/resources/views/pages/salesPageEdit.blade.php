@@ -18,9 +18,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <!-- Cache-bust CSS - v2025-01-31-04 -->
-    <link rel="stylesheet" href="style.css?v=2025-01-31-04">
-    <link rel="stylesheet" href="dashboard.css?v=2025-01-31-04">
-    <link rel="stylesheet" href="salesPageEdit.css?v=2025-01-31-04">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
 
     <!-- CSS CRÍTICO INLINE PARA MOBILE - Garantir scroll funcionando -->
@@ -180,9 +177,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    
-    <!-- Cache Buster - Força limpeza de cache automaticamente -->
-    <script src="cache-buster.js"></script>
+    @vite(['resources/js/pages/salesPageEdit.js'])
 </head>
 <body class="sales-page-edit-page">
     <div class="dashboard-layout">
@@ -654,9 +649,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/salesPageEdit.js'])
-
-    <!-- Script para forçar limpeza de cache e garantir comportamento mobile -->
+<!-- Script para forçar limpeza de cache e garantir comportamento mobile -->
     <script>
         // Forçar limpeza de cache
         if ('serviceWorker' in navigator) {

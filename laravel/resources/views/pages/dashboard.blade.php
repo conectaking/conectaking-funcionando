@@ -35,8 +35,6 @@
     <meta http-equiv="Expires" content="0">
 
     <!-- Cache-buster para CSS - Atualizado para forçar reload -->
-    <link rel="stylesheet" href="/style.css?v=2025-01-31-01">
-    <link rel="stylesheet" href="/dashboard.css?v=2026-09-06-cropper-fit">
     <style>
         .qr-art-hint { color: var(--text-dark, #A1A1A1); font-size: 13px; line-height: 1.45; margin: 0 0 14px; }
         .qr-theme-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -54,7 +52,6 @@
         #qr-art-canvas { width: min(100%, 340px); height: auto; border-radius: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.45); background: #111; }
         #share-qr-art-card { position: relative; }
     </style>
-    <link rel="stylesheet" href="/css/profile-wifi.css?v=2026-05-19-wifi-qr-popup">
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
     <script>
     (function (w) {
@@ -152,7 +149,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-</head><body><script type="text/javascript">
+    @vite(['resources/js/pages/dashboard.js'])
+</head>
+<body>
+<script type="text/javascript">
 // REMOVER IMEDIATAMENTE qualquer texto "image.png" que seja filho direto do body
 (function() {
     function removeBodyTextNodes() {
@@ -1585,8 +1585,7 @@
     })();
     </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    @vite(['resources/js/pages/dashboard.js'])
-    <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
+<div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
         <div class="wifi-modal-content">
             <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
             <h4 id="wifi-modal-title">Conectar ao Wi‑Fi</h4>
