@@ -80,7 +80,7 @@
       -webkit-backdrop-filter: blur(14px)
     }
 
-    /* Mais espaÃ§o Ãºtil no desktop (menos â€œpreto vazioâ€ nas laterais) */
+    /* Mais espaço útil no desktop (menos â€œpreto vazioâ€ nas laterais) */
     .ks-wrap {
       max-width: min(1920px, 98vw);
       width: 100%;
@@ -90,7 +90,7 @@
       z-index: 1;
     }
 
-    /* ForÃ§a Tailwind "text-slate-900" ficar claro no tema escuro */
+    /* Força Tailwind "text-slate-900" ficar claro no tema escuro */
     .text-slate-900 {
       color: #f8fafc !important
     }
@@ -127,7 +127,7 @@
       border-color: var(--ks-line) !important
     }
 
-    /* Modal â€œDados do clienteâ€: .bg-white global Ã© escuro; forÃ§ar cartÃ£o claro + texto escuro */
+    /* Modal â€œDados do clienteâ€: .bg-white global é escuro; forçar cartão claro + texto escuro */
     #ks-act-contact-modal .ks-modal-light {
       background: #f8fafc !important;
       color: #0f172a !important;
@@ -204,7 +204,7 @@
       overflow: hidden;
     }
 
-    /* Fotos: evita â€œsegundaâ€ rolagem interna; a pÃ¡gina rola naturalmente */
+    /* Fotos: evita â€œsegundaâ€ rolagem interna; a página rola naturalmente */
     .ks-card[data-pane="photos"] {
       overflow: visible;
     }
@@ -241,7 +241,7 @@
       max-width: 220px;
     }
 
-    /* Menu de abas do projeto (Atividadesâ€¦ Marca dâ€™Ã¡gua): no mobile a pÃ¡gina rola por fora â€” sem coluna presa */
+    /* Menu de abas do projeto (Atividadesâ€¦ Marca dâ€™água): no mobile a página rola por fora â€” sem coluna presa */
     .ks-card.ks-card--side-nav {
       overflow: visible;
     }
@@ -311,7 +311,7 @@
       box-shadow: 0 0 0 3px rgba(250, 204, 21, .12)
     }
 
-    /* Modal exportar: leitura nÃ­tida (evita textarea â€œbrancaâ€ / texto ilegÃ­vel) */
+    /* Modal exportar: leitura nítida (evita textarea â€œbrancaâ€ / texto ilegível) */
     #ks-export-modal textarea.ks-export-ta,
     #ks-export-modal textarea#ks-export-filter-input {
       background: rgba(6, 6, 6, .94) !important;
@@ -441,7 +441,7 @@
       overflow: visible
     }
 
-    /* a mÃ­dia (foto) continua recortada */
+    /* a mídia (foto) continua recortada */
     .ks-photo-media {
       border-radius: 14px;
       overflow: hidden;
@@ -581,7 +581,7 @@
       color: #dc2626
     }
 
-    /* seleÃ§Ã£o estilo Alboom (cÃ­rculo no topo) */
+    /* seleção estilo Alboom (círculo no topo) */
     .ks-selbtn {
       width: 30px;
       height: 30px;
@@ -609,7 +609,7 @@
       font-size: 14px
     }
 
-    /* legenda do arquivo (nÃ£o cortar tanto) */
+    /* legenda do arquivo (não cortar tanto) */
     .ks-cap {
       padding: 8px 10px 10px 10px;
       font-size: 11px;
@@ -633,7 +633,7 @@
       vertical-align: baseline;
     }
 
-    /* Barra de aÃ§Ãµes ao selecionar fotos (tema escuro, alto contraste) */
+    /* Barra de ações ao selecionar fotos (tema escuro, alto contraste) */
     .ks-selected-bar {
       display: none;
       align-items: center;
@@ -670,7 +670,7 @@
       display: block
     }
 
-    /* PrÃ©vias retrato/paisagem: preenchem o moldura (crop visual), sem â€œfaixasâ€ pretas */
+    /* Prévias retrato/paisagem: preenchem o moldura (crop visual), sem â€œfaixasâ€ pretas */
     .ks-wm-preview-frame {
       width: 100%;
       position: relative;
@@ -785,7 +785,7 @@
       overflow: hidden
     }
 
-    /* Ãrea de envio fica visÃ­vel no topo ao descer a grelha de fotos */
+    /* Área de envio fica visível no topo ao descer a grelha de fotos */
     .ks-photos-upload-sticky {
       position: sticky;
       top: 8px;
@@ -821,7 +821,7 @@
     /* Upload "bolinha" moderna */
     /* Upload overlay (escuro, sem â€œbranco do ladoâ€) */
     .ks-bubble {
-      /* Ancorado no topo do drop: visÃ­vel sem rolar quando hÃ¡ muitas fotos */
+      /* Ancorado no topo do drop: visível sem rolar quando há muitas fotos */
       position: absolute;
       left: 14px;
       right: auto;
@@ -939,7 +939,7 @@
     }
 
     /* ======================================================
-       Upload overlay (estilo Alboom): cobre a Ã¡rea de Fotos
+       Upload overlay (estilo Alboom): cobre a área de Fotos
        ====================================================== */
     .ks-upload-ov {
       position: fixed;
@@ -1601,7 +1601,7 @@
       color: #fff
     }
 
-    /* manter coerÃªncia com o menu premium (nÃ£o escurecer aqui) */
+    /* manter coerência com o menu premium (não escurecer aqui) */
     .ks-menu {
       background: rgba(255, 255, 255, .96) !important;
       border-color: rgba(0, 0, 0, .10) !important
@@ -1690,7 +1690,7 @@
       background: #000
     }
 
-    /* BotÃµes compactos Ã­cone-only */
+    /* Botões compactos ícone-only */
     #btn-reset-pass {
       min-width: 48px
     }
@@ -1720,7 +1720,7 @@
         padding: 14px
       }
 
-      /* BotÃµes do topo: alinhados em grelha no mobile */
+      /* Botões do topo: alinhados em grelha no mobile */
       #ks-back,
       #ks-panel,
       #ks-share,
@@ -1800,7 +1800,7 @@
         padding: 10px
       }
 
-      /* CabeÃ§alho do cliente nÃ£o pode â€œapertarâ€/cortar */
+      /* Cabeçalho do cliente não pode â€œapertarâ€/cortar */
       .ks-abo-client {
         padding: 12px
       }
@@ -1825,7 +1825,7 @@
         min-width: calc(50% - 6px)
       }
 
-      /* KPIs: 3 colunas no mobile fica ilegÃ­vel */
+      /* KPIs: 3 colunas no mobile fica ilegível */
       .ks-abo-kpi {
         grid-template-columns: repeat(2, minmax(0, 1fr))
       }
@@ -1852,7 +1852,7 @@
         -webkit-overflow-scrolling: touch
       }
 
-      /* Menu de aÃ§Ãµes nÃ£o pode ser cortado no mobile */
+      /* Menu de ações não pode ser cortado no mobile */
       .ks-abo-client {
         overflow: visible
       }
@@ -1888,7 +1888,7 @@
         padding: 12px
       }
 
-      /* Finalizar + exportar: coluna em ecrÃ£s estreitos (evita â€œFINALIZâ€¦â€) */
+      /* Finalizar + exportar: coluna em ecrãs estreitos (evita â€œFINALIZâ€¦â€) */
       .ks-abo-actions {
         flex-direction: column;
         align-items: stretch
@@ -1952,7 +1952,7 @@
       <div class="ks-nav flex items-center gap-2">
         <a href="#" id="ks-nav-projects" class="active">Meus projetos</a>
         <a href="#" id="ks-nav-clients">Clientes</a>
-        <a href="#" id="ks-nav-settings">ConfiguraÃ§Ãµes</a>
+        <a href="#" id="ks-nav-settings">Configurações</a>
       </div>
     </div>
   </div>
@@ -1981,7 +1981,7 @@
           <a href="#" data-tab="photos"><i class="fas fa-images"></i> Fotos</a>
           <a href="#" data-tab="facial"><i class="fas fa-face-smile"></i> Reconhecimento Facial</a>
           <a href="#" data-tab="details"><i class="fas fa-pen"></i> Dados da galeria de fotos</a>
-          <a href="#" id="ks-link-config-finalizacao" title="Configurar tÃ­tulo, mensagem e imagem da tela de obrigado"><i class="fas fa-hand-holding-heart"></i> PÃ¡gina de finalizaÃ§Ã£o</a>
+          <a href="#" id="ks-link-config-finalizacao" title="Configurar título, mensagem e imagem da tela de obrigado"><i class="fas fa-hand-holding-heart"></i> Página de finalização</a>
           <a href="#" data-tab="privacy"><i class="fas fa-lock"></i> Acesso e privacidade</a>
           <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
           <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
@@ -1989,8 +1989,8 @@
           <a href="#" data-tab="link-cover"><i class="fas fa-image"></i> Capa do link</a>
           <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
           <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
-          <a href="#" data-tab="image-quality"><i class="fas fa-expand"></i> ResoluÃ§Ã£o da foto</a>
-          <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'Ã¡gua</a>
+          <a href="#" data-tab="image-quality"><i class="fas fa-expand"></i> Resolução da foto</a>
+          <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
         </div>
       </div>
 
@@ -2021,10 +2021,10 @@
                 </div>
                 <div class="flex flex-wrap gap-2 items-center">
                   <label for="ks-activity-pay-filter" class="text-[10px] uppercase tracking-widest font-extrabold text-slate-500 whitespace-nowrap">Pagamento</label>
-                  <select id="ks-activity-pay-filter" class="ks-input text-xs py-1.5 px-2 rounded-lg flex-1 min-w-[min(100%,200px)] max-w-[280px]" title="Filtrar por situaÃ§Ã£o de pagamento (modo Fotos vendidas)">
+                  <select id="ks-activity-pay-filter" class="ks-input text-xs py-1.5 px-2 rounded-lg flex-1 min-w-[min(100%,200px)] max-w-[280px]" title="Filtrar por situação de pagamento (modo Fotos vendidas)">
                     <option value="all">Todos</option>
-                    <option value="paid">JÃ¡ pagou (confirmado)</option>
-                    <option value="unpaid">Ainda nÃ£o pagou / pendente</option>
+                    <option value="paid">Já pagou (confirmado)</option>
+                    <option value="unpaid">Ainda não pagou / pendente</option>
                     <option value="courtesy">Cortesia</option>
                   </select>
                 </div>
@@ -2035,7 +2035,7 @@
                 <div id="ks-activity-list-andamento"></div>
               </div>
               <div class="ks-abo-group">
-                <div class="ks-abo-ghead"><span>Em revisÃ£o</span><span class="ks-abo-count"
+                <div class="ks-abo-ghead"><span>Em revisão</span><span class="ks-abo-count"
                     id="ks-activity-count-revisao">0</span></div>
                 <div id="ks-activity-list-revisao"></div>
               </div>
@@ -2078,37 +2078,37 @@
                       <div class="ks-act-split">
                         <button class="ks-btn ks-btn-primary" id="ks-act-main"><i class="fas fa-flag-checkered"></i>
                           Finalizar</button>
-                        <button class="ks-btn" id="ks-act-more" title="Mais aÃ§Ãµes"><i
+                        <button class="ks-btn" id="ks-act-more" title="Mais ações"><i
                             class="fas fa-chevron-down"></i></button>
                       </div>
                       <button type="button" class="ks-btn" id="ks-act-open-round" data-ks-open-round
-                        title="Com o cliente em revisÃ£o: abre nova seleÃ§Ã£o para ele escolher mais fotos sem perder as jÃ¡ enviadas.">
-                        <i class="fas fa-layer-group"></i> Nova seleÃ§Ã£o
+                        title="Com o cliente em revisão: abre nova seleção para ele escolher mais fotos sem perder as já enviadas.">
+                        <i class="fas fa-layer-group"></i> Nova seleção
                       </button>
                       <button type="button" class="ks-btn" id="ks-act-clear-review" data-ks-clear-review
-                        title="Apaga as fotos em revisÃ£o do cliente selecionado (nÃ£o apaga o projeto).">
-                        <i class="fas fa-trash"></i> Excluir revisÃ£o
+                        title="Apaga as fotos em revisão do cliente selecionado (não apaga o projeto).">
+                        <i class="fas fa-trash"></i> Excluir revisão
                       </button>
                       <button type="button" class="ks-btn" id="ks-act-delete-current-round"
-                        title="Apaga apenas a rodada atual (mantÃ©m o cadastro do cliente).">
-                        <i class="fas fa-layer-group"></i> Excluir sÃ³ rodada
+                        title="Apaga apenas a rodada atual (mantém o cadastro do cliente).">
+                        <i class="fas fa-layer-group"></i> Excluir só rodada
                       </button>
                       <button type="button" class="ks-btn" id="ks-act-delete-round-client"
                         title="Apaga a rodada atual e exclui o cadastro do cliente nesta galeria.">
                         <i class="fas fa-user-slash"></i> Excluir rodada + cadastro
                       </button>
                       <div class="text-xs ks-muted" style="line-height:1.4;margin-top:6px">
-                        <b>Excluir sÃ³ rodada:</b> remove apenas a seleÃ§Ã£o atual. &nbsp;|&nbsp;
-                        <b>Excluir rodada + cadastro:</b> remove seleÃ§Ã£o e cadastro do cliente.
+                        <b>Excluir só rodada:</b> remove apenas a seleção atual. &nbsp;|&nbsp;
+                        <b>Excluir rodada + cadastro:</b> remove seleção e cadastro do cliente.
                       </div>
                       <button class="ks-btn" id="ks-open-export"><i class="fas fa-file-export"></i> Exportar</button>
                       <div class="ks-menu ks-act-menu" id="ks-act-menu">
-                        <button type="button" id="ks-act-open-round-dd" data-ks-open-round><i class="fas fa-layer-group"></i> Nova seleÃ§Ã£o</button>
-                        <button type="button" id="ks-act-clear-review-dd" data-ks-clear-review><i class="fas fa-trash"></i> Excluir revisÃ£o</button>
+                        <button type="button" id="ks-act-open-round-dd" data-ks-open-round><i class="fas fa-layer-group"></i> Nova seleção</button>
+                        <button type="button" id="ks-act-clear-review-dd" data-ks-clear-review><i class="fas fa-trash"></i> Excluir revisão</button>
                         <button id="ks-act-finalize"><i class="fas fa-flag-checkered"></i> Finalizar</button>
                         <button id="ks-act-reactivate"><i class="fas fa-rotate-left"></i> Reativar</button>
                         <button id="ks-act-share"><i class="fas fa-share"></i> Compartilhar</button>
-                        <button type="button" id="ks-act-delete-client" class="danger" title="Exclui o cadastro do cliente nesta galeria (remove seleÃ§Ãµes/liberaÃ§Ãµes vinculadas).">
+                        <button type="button" id="ks-act-delete-client" class="danger" title="Exclui o cadastro do cliente nesta galeria (remove seleções/liberações vinculadas).">
                           <i class="fas fa-user-slash"></i> Excluir cliente
                         </button>
                       </div>
@@ -2122,7 +2122,7 @@
                   <h4>Resumo das atividades</h4>
                   <div class="ks-abo-kpi">
                     <div class="k">
-                      <div class="l">InÃ­cio</div>
+                      <div class="l">Início</div>
                       <div class="v" id="ks-updated-at">-</div>
                     </div>
                     <div class="k">
@@ -2146,31 +2146,31 @@
               <div class="ks-abo-box ks-abo-tabsbox" style="padding:0">
                 <div class="ks-abo-tabs">
                   <div class="ks-abo-tab active" data-abo-tab="photos">Fotos selecionadas</div>
-                  <div class="ks-abo-tab" data-abo-tab="comments">ComentÃ¡rios</div>
+                  <div class="ks-abo-tab" data-abo-tab="comments">Comentários</div>
                 </div>
                 <div class="ks-abo-pane" data-abo-pane="photos">
                   <div class="hidden flex-wrap items-center gap-3 mb-3 px-3 pt-3 border-b border-slate-200/80 pb-3"
                     id="ks-activity-batch-toolbar">
-                    <label for="ks-activity-batch-filter" class="text-sm font-extrabold text-slate-800 shrink-0">Ver seleÃ§Ã£o</label>
+                    <label for="ks-activity-batch-filter" class="text-sm font-extrabold text-slate-800 shrink-0">Ver seleção</label>
                     <select id="ks-activity-batch-filter" class="ks-input max-w-md min-w-[200px]"
-                      title="Mostrar sÃ³ as fotos desta rodada ou todas">
+                      title="Mostrar só as fotos desta rodada ou todas">
                       <option value="all">Todas as rodadas</option>
                     </select>
                     <button type="button" class="ks-btn hidden border-red-400/60 text-red-600" id="ks-activity-delete-batch"
-                      title="Apaga todas as fotos desta rodada sÃ³ para o cliente selecionado (testes ou envio errado)">Excluir esta rodada</button>
+                      title="Apaga todas as fotos desta rodada só para o cliente selecionado (testes ou envio errado)">Excluir esta rodada</button>
                     <button type="button" class="ks-btn hidden" id="ks-activity-reactivate-batch"
                       title="Reativa esta rodada para o cliente voltar a selecionar nela">Reativar esta rodada</button>
                     <button type="button" class="ks-btn hidden" id="ks-activity-open-next-round"
-                      title="Abre uma nova seleÃ§Ã£o sem mexer nas fotos desta rodada">Nova seleÃ§Ã£o</button>
+                      title="Abre uma nova seleção sem mexer nas fotos desta rodada">Nova seleção</button>
                     <button type="button" class="ks-btn hidden" id="ks-activity-sales-approve-all"
-                      title="Aprova todas as fotos desta seleÃ§Ã£o para download original (modo Fotos vendidas por evento)."><i class="fas fa-check-double"></i> Aprovar todas</button>
-                    <span class="text-xs ks-muted leading-snug">A contagem em â€œSelecionadasâ€ segue este filtro. Exportar usa o mesmo critÃ©rio ao abrir o modal.</span>
+                      title="Aprova todas as fotos desta seleção para download original (modo Fotos vendidas por evento)."><i class="fas fa-check-double"></i> Aprovar todas</button>
+                    <span class="text-xs ks-muted leading-snug">A contagem em â€œSelecionadasâ€ segue este filtro. Exportar usa o mesmo critério ao abrir o modal.</span>
                   </div>
                   <div class="ks-abo-photos" id="ks-activity-selected-photos"></div>
                   <div class="ks-abo-empty hidden" id="ks-activity-selected-empty">Nenhuma foto selecionada ainda</div>
                 </div>
                 <div class="ks-abo-pane hidden" data-abo-pane="comments">
-                  <div class="ks-abo-empty" id="ks-activity-comments-box">Nenhum comentÃ¡rio</div>
+                  <div class="ks-abo-empty" id="ks-activity-comments-box">Nenhum comentário</div>
                 </div>
               </div>
             </div>
@@ -2178,17 +2178,17 @@
 
         </div>
 
-        <!-- Cloudflare R2 (inventÃ¡rio e limpeza) -->
+        <!-- Cloudflare R2 (inventário e limpeza) -->
         <div class="ks-card p-5 hidden" data-pane="r2">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div class="font-extrabold text-slate-900 text-lg"><i class="fas fa-cloud"></i> Cloudflare R2</div>
-              <p class="text-sm ks-muted mt-1 max-w-2xl">Compare seus projetos no King Selection com as pastas e arquivos no armazenamento. Identifique projetos excluÃ­dos ou fotos Ã³rfÃ£s antes de limpar.</p>
+              <p class="text-sm ks-muted mt-1 max-w-2xl">Compare seus projetos no King Selection com as pastas e arquivos no armazenamento. Identifique projetos excluídos ou fotos órfãs antes de limpar.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button type="button" class="ks-btn" id="ks-r2-refresh"><i class="fas fa-rotate"></i> Atualizar inventÃ¡rio</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2-dry"><i class="fas fa-search"></i> Verificar Ã³rfÃ£os</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)"><i class="fas fa-broom"></i> Limpar R2 (sÃ³ Ã³rfÃ£os)</button>
+              <button type="button" class="ks-btn" id="ks-r2-refresh"><i class="fas fa-rotate"></i> Atualizar inventário</button>
+              <button type="button" class="ks-btn" id="btn-cleanup-r2-dry"><i class="fas fa-search"></i> Verificar órfãos</button>
+              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
             </div>
           </div>
 
@@ -2196,17 +2196,17 @@
             <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Arquivos no R2</div><div class="font-extrabold text-lg" id="ks-r2-stat-total">â€”</div></div>
             <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Tamanho total</div><div class="font-extrabold text-lg" id="ks-r2-stat-size">â€”</div></div>
             <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Referenciados no BD</div><div class="font-extrabold text-lg" id="ks-r2-stat-ref">â€”</div></div>
-            <div class="ks-card p-3 border border-amber-300/70 bg-amber-50/90"><div class="text-xs text-amber-900/80">Ã“rfÃ£os no R2</div><div class="font-extrabold text-lg text-amber-900" id="ks-r2-stat-orphans">â€”</div></div>
+            <div class="ks-card p-3 border border-amber-300/70 bg-amber-50/90"><div class="text-xs text-amber-900/80">Órfãos no R2</div><div class="font-extrabold text-lg text-amber-900" id="ks-r2-stat-orphans">â€”</div></div>
             <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Seus projetos</div><div class="font-extrabold text-lg" id="ks-r2-stat-projects">â€”</div></div>
-            <div class="ks-card p-3 border border-red-200/80 bg-red-50/80"><div class="text-xs text-red-800/80">Pastas de projetos excluÃ­dos</div><div class="font-extrabold text-lg text-red-800" id="ks-r2-stat-deleted">â€”</div></div>
+            <div class="ks-card p-3 border border-red-200/80 bg-red-50/80"><div class="text-xs text-red-800/80">Pastas de projetos excluídos</div><div class="font-extrabold text-lg text-red-800" id="ks-r2-stat-deleted">â€”</div></div>
           </div>
 
-          <p class="text-xs ks-muted mt-3" id="ks-r2-generated">Clique em Â«Atualizar inventÃ¡rioÂ» para carregar pastas, datas e comparaÃ§Ã£o com o banco.</p>
+          <p class="text-xs ks-muted mt-3" id="ks-r2-generated">Clique em Â«Atualizar inventárioÂ» para carregar pastas, datas e comparação com o banco.</p>
           <div class="hidden mt-2 text-sm text-amber-800" id="ks-r2-loading"><i class="fas fa-spinner fa-spin"></i> Lendo arquivos no Cloudflare R2â€¦ pode levar alguns minutos em galerias grandes.</div>
 
           <div class="mt-6">
             <div class="font-extrabold text-slate-900">Seus projetos (King Selection Ã— R2)</div>
-            <p class="text-xs ks-muted mt-1">Cada linha Ã© um projeto ativo no banco. Pastas internas mostram subpastas dentro de <code class="text-xs">galleries/ID/</code>.</p>
+            <p class="text-xs ks-muted mt-1">Cada linha é um projeto ativo no banco. Pastas internas mostram subpastas dentro de <code class="text-xs">galleries/ID/</code>.</p>
             <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80">
               <table class="ks-r2-table w-full text-sm">
                 <thead>
@@ -2215,9 +2215,9 @@
                     <th>ID</th>
                     <th>Fotos no BD</th>
                     <th>Arquivos R2</th>
-                    <th>Ã“rfÃ£os</th>
+                    <th>Órfãos</th>
                     <th>Tamanho R2</th>
-                    <th>Ãšltimo upload</th>
+                    <th>Último upload</th>
                     <th>Pastas</th>
                     <th>Status</th>
                   </tr>
@@ -2230,8 +2230,8 @@
           </div>
 
           <div class="mt-8">
-            <div class="font-extrabold text-slate-900">Pastas Ã³rfÃ£s (projeto jÃ¡ excluÃ­do no King Selection)</div>
-            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto nÃ£o estÃ¡ mais no banco â€” candidatas Ã  limpeza.</p>
+            <div class="font-extrabold text-slate-900">Pastas órfãs (projeto já excluído no King Selection)</div>
+            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto não está mais no banco â€” candidatas Ã  limpeza.</p>
             <div class="mt-3 overflow-x-auto rounded-xl border border-red-200/60">
               <table class="ks-r2-table w-full text-sm">
                 <thead>
@@ -2239,7 +2239,7 @@
                     <th>Pasta R2</th>
                     <th>Arquivos</th>
                     <th>Tamanho</th>
-                    <th>Ãšltimo upload</th>
+                    <th>Último upload</th>
                     <th>Subpastas</th>
                   </tr>
                 </thead>
@@ -2251,8 +2251,8 @@
           </div>
 
           <div class="mt-8">
-            <div class="font-extrabold text-slate-900">Arquivos Ã³rfÃ£os (amostra)</div>
-            <p class="text-xs ks-muted mt-1">Arquivos no R2 sem referÃªncia no banco (atÃ© 250 na lista). Use Â«Limpar R2Â» para remover todos os Ã³rfÃ£os de uma vez.</p>
+            <div class="font-extrabold text-slate-900">Arquivos órfãos (amostra)</div>
+            <p class="text-xs ks-muted mt-1">Arquivos no R2 sem referência no banco (até 250 na lista). Use Â«Limpar R2Â» para remover todos os órfãos de uma vez.</p>
             <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80 max-h-96 overflow-y-auto">
               <table class="ks-r2-table w-full text-sm">
                 <thead>
@@ -2290,24 +2290,24 @@
                 <option value="Eventos">Eventos</option>
                 <option value="Newborn">Newborn</option>
                 <option value="Gestante">Gestante</option>
-                <option value="FamÃ­lia">FamÃ­lia</option>
+                <option value="Família">Família</option>
                 <option value="Formatura">Formatura</option>
                 <option value="Batizado">Batizado</option>
                 <option value="Moda / Editorial">Moda / Editorial</option>
                 <option value="Produto / Still">Produto / Still</option>
                 <option value="Esportes">Esportes</option>
-                <option value="Arquitetura / ImÃ³veis">Arquitetura / ImÃ³veis</option>
+                <option value="Arquitetura / Imóveis">Arquitetura / Imóveis</option>
                 <option value="_outro">Outra (digitar abaixo)</option>
               </select>
               <input class="ks-input mt-2 hidden" id="f-categoria-outro" placeholder="Digite a categoria"
                 style="margin-top:8px" />
             </div>
             <div class="ks-field">
-              <label>Limite de seleÃ§Ã£o (0 = livre)</label>
-              <input class="ks-input mt-2" id="f-max-selections" type="number" min="0" placeholder="0 = livre" title="Igual ao campo ao criar a galeria (mÃ¡x. de fotos selecionÃ¡veis)" />
+              <label>Limite de seleção (0 = livre)</label>
+              <input class="ks-input mt-2" id="f-max-selections" type="number" min="0" placeholder="0 = livre" title="Igual ao campo ao criar a galeria (máx. de fotos selecionáveis)" />
             </div>
             <div class="ks-field">
-              <label>SeleÃ§Ã£o mÃ­nima (0 = livre)</label>
+              <label>Seleção mínima (0 = livre)</label>
               <input class="ks-input mt-2" id="f-min-selections" type="number" min="0" placeholder="0 = livre" />
             </div>
             <div class="ks-field">
@@ -2322,7 +2322,7 @@
             <div class="ks-field">
               <label>Idioma</label>
               <select class="ks-input mt-2" id="f-idioma">
-                <option value="pt-BR">PortuguÃªs (BR)</option>
+                <option value="pt-BR">Português (BR)</option>
                 <option value="en">English</option>
                 <option value="es">EspaÃ±ol</option>
               </select>
@@ -2335,8 +2335,8 @@
               <div class="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-1">Cliente(s) e acesso</div>
               <p class="text-xs text-slate-500 mb-3 leading-relaxed">
                 Cadastre quem pode entrar na galeria. No modo <b>Privado</b>, cada cliente usa <b>e-mail e senha</b> na tela de login.
-                Nos modos <b>pÃºblico</b>, <b>visitante</b> ou <b>fotos vendidas</b>, o cadastro tambÃ©m serve para identificar quem selecionou ou comprou.
-                VocÃª pode criar a galeria vazia e adicionar clientes depois.
+                Nos modos <b>público</b>, <b>visitante</b> ou <b>fotos vendidas</b>, o cadastro também serve para identificar quem selecionou ou comprou.
+                Você pode criar a galeria vazia e adicionar clientes depois.
               </p>
               <div class="flex flex-wrap items-center gap-2 mb-4">
                 <button type="button" class="ks-btn ks-btn-primary" id="ks-details-client-add"><i class="fas fa-user-plus"></i> Adicionar novo cliente</button>
@@ -2373,13 +2373,13 @@
               <input type="radio" name="access_mode" value="paid_event_photos" class="mt-1" />
               <div>
                 <div class="font-extrabold">Fotos vendidas</div>
-                <div class="text-sm ks-muted">Ativa fluxo comercial: pacotes, comprovante PIX, aprovaÃ§Ã£o por foto e aba de downloads liberados.</div>
+                <div class="text-sm ks-muted">Ativa fluxo comercial: pacotes, comprovante PIX, aprovação por foto e aba de downloads liberados.</div>
               </div>
             </label>
             <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
               <input type="radio" name="access_mode" value="public" class="mt-1" />
               <div>
-                <div class="font-extrabold">PÃºblico</div>
+                <div class="font-extrabold">Público</div>
                 <div class="text-sm ks-muted">Qualquer pessoa com o link pode acessar a galeria.</div>
               </div>
             </label>
@@ -2394,12 +2394,12 @@
           <div class="font-extrabold text-slate-900">Fotos vendidas</div>
           <div class="text-sm ks-muted mt-2">Configure PIX, pacotes e aprove os downloads por cliente/rodada. Este fluxo funciona apenas no modo de acesso <b>Fotos vendidas</b>.</div>
           <div class="text-xs mt-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 px-3 py-2">
-            No modo <b>Fotos vendidas</b>, o download pago/aprovado em alta qualidade <b>nÃ£o depende</b> da opÃ§Ã£o geral <b>PermissÃ£o de download</b>.
+            No modo <b>Fotos vendidas</b>, o download pago/aprovado em alta qualidade <b>não depende</b> da opção geral <b>Permissão de download</b>.
           </div>
 
           <div id="ks-sales-disabled-note" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 hidden">
-            Este painel estÃ¡ oculto porque a galeria nÃ£o estÃ¡ no modo <b>Fotos vendidas</b>.
-            VÃ¡ em <b>Acesso e privacidade</b>, marque essa modalidade e clique em <b>Salvar</b>.
+            Este painel está oculto porque a galeria não está no modo <b>Fotos vendidas</b>.
+            Vá em <b>Acesso e privacidade</b>, marque essa modalidade e clique em <b>Salvar</b>.
           </div>
 
           <div id="ks-sales-wrap" class="mt-4 space-y-4">
@@ -2417,7 +2417,7 @@
                   <div class="text-xs text-amber-200 uppercase tracking-widest font-extrabold">Falta receber (estimado)</div>
                   <button type="button" class="mt-1 w-full min-w-0 text-left rounded-lg border border-transparent hover:border-amber-400/50 hover:bg-amber-500/15 transition px-1 py-0.5" id="ks-sales-dash-missing-btn" data-sales-dash-detail="missing" title="Ver onde ainda falta">
                     <div class="text-xl min-[480px]:text-2xl font-black text-amber-100 leading-tight break-words" id="ks-sales-dash-missing">R$ 0,00</div>
-                    <div class="text-[10px] text-amber-200/90 mt-0.5" id="ks-sales-dash-missing-period">No perÃ­odo: semana</div>
+                    <div class="text-[10px] text-amber-200/90 mt-0.5" id="ks-sales-dash-missing-period">No período: semana</div>
                   </button>
                 </div>
                 <div class="rounded-xl border border-fuchsia-500/40 bg-fuchsia-500/10 p-3 min-w-0">
@@ -2428,34 +2428,34 @@
                   </button>
                 </div>
                 <div class="rounded-xl border border-sky-400/45 bg-sky-400/10 p-3 min-w-0">
-                  <div class="text-xs text-sky-200 uppercase tracking-widest font-extrabold">Clientes com pendÃªncia</div>
+                  <div class="text-xs text-sky-200 uppercase tracking-widest font-extrabold">Clientes com pendência</div>
                   <div class="text-xl min-[480px]:text-2xl font-black text-sky-100 break-words" id="ks-sales-dash-clients-pending">0</div>
                 </div>
                 <div class="rounded-xl border border-violet-400/45 bg-violet-400/10 p-3 min-w-0">
-                  <div class="text-xs text-violet-200 uppercase tracking-widest font-extrabold">SessÃµes pendentes</div>
+                  <div class="text-xs text-violet-200 uppercase tracking-widest font-extrabold">Sessões pendentes</div>
                   <div class="text-xl min-[480px]:text-2xl font-black text-violet-100 break-words" id="ks-sales-dash-rounds-pending">0</div>
                 </div>
               </div>
               <div class="mt-3 rounded-xl border border-amber-300/35 bg-amber-400/10 p-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div class="text-xs text-amber-100 uppercase tracking-widest font-extrabold">Top pendÃªncias</div>
+                  <div class="text-xs text-amber-100 uppercase tracking-widest font-extrabold">Top pendências</div>
                   <div class="flex items-center gap-2">
                     <select id="ks-sales-top-pending-period" class="ks-input" style="min-width:120px;padding:4px 8px;font-size:12px;line-height:1.2">
                       <option value="today">Hoje</option>
                       <option value="week" selected>Semana</option>
-                      <option value="month">MÃªs</option>
+                      <option value="month">Mês</option>
                     </select>
                     <div class="text-[11px] text-amber-200">Quem mais falta receber</div>
                   </div>
                 </div>
                 <div id="ks-sales-top-pending" class="mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 text-sm text-slate-100">
-                  <div class="text-xs text-slate-300">Nenhuma pendÃªncia no momento.</div>
+                  <div class="text-xs text-slate-300">Nenhuma pendência no momento.</div>
                 </div>
               </div>
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-white p-4">
-              <div class="font-extrabold text-slate-900">ConfiguraÃ§Ã£o PIX</div>
+              <div class="font-extrabold text-slate-900">Configuração PIX</div>
               <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label class="flex items-center gap-2">
                   <input type="checkbox" id="ks-sales-pix-enabled" />
@@ -2464,43 +2464,43 @@
                 <div></div>
                 <div class="ks-field">
                   <label>Chave PIX</label>
-                  <input class="ks-input mt-2" id="ks-sales-pix-key" placeholder="CPF, e-mail, telefone ou chave aleatÃ³ria" />
+                  <input class="ks-input mt-2" id="ks-sales-pix-key" placeholder="CPF, e-mail, telefone ou chave aleatória" />
                 </div>
                 <div class="ks-field">
                   <label>Favorecido</label>
                   <input class="ks-input mt-2" id="ks-sales-pix-holder" placeholder="Nome do favorecido" />
                 </div>
                 <div class="ks-field md:col-span-2">
-                  <label>InstruÃ§Ãµes para pagamento</label>
-                  <textarea class="ks-input mt-2" id="ks-sales-pix-instructions" style="min-height:90px" placeholder="Ex.: Envie o comprovante logo apÃ³s o pagamento para liberar o download."></textarea>
+                  <label>Instruções para pagamento</label>
+                  <textarea class="ks-input mt-2" id="ks-sales-pix-instructions" style="min-height:90px" placeholder="Ex.: Envie o comprovante logo após o pagamento para liberar o download."></textarea>
                   <div class="mt-2">
-                    <button class="ks-btn" id="ks-sales-pix-generate" type="button"><i class="fas fa-wand-magic-sparkles"></i> Gerar instruÃ§Ã£o automÃ¡tica</button>
+                    <button class="ks-btn" id="ks-sales-pix-generate" type="button"><i class="fas fa-wand-magic-sparkles"></i> Gerar instrução automática</button>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="rounded-2xl border border-slate-700 bg-slate-900/85 p-4 text-slate-100">
-              <div class="font-extrabold text-slate-100">Pacotes e precificaÃ§Ã£o</div>
+              <div class="font-extrabold text-slate-100">Pacotes e precificação</div>
               <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div class="ks-field">
                   <label class="text-slate-300">Regra acima do pacote</label>
                   <select class="ks-input mt-2" id="ks-sales-over-limit">
-                    <option value="allow_and_warn">Permitir e avisar negociaÃ§Ã£o</option>
+                    <option value="allow_and_warn">Permitir e avisar negociação</option>
                     <option value="block_selection">Bloquear acima do limite</option>
-                    <option value="allow_extra_per_photo">Permitir com foto extra automÃ¡tica</option>
+                    <option value="allow_extra_per_photo">Permitir com foto extra automática</option>
                   </select>
                 </div>
                 <div class="ks-field">
-                  <label class="text-slate-300">Modo de preÃ§o</label>
+                  <label class="text-slate-300">Modo de preço</label>
                   <select class="ks-input mt-2" id="ks-sales-price-mode">
-                    <option value="best_price_auto">Melhor preÃ§o automÃ¡tico (pacotes + desconto)</option>
+                    <option value="best_price_auto">Melhor preço automático (pacotes + desconto)</option>
                     <option value="packages_only">Somente pacotes</option>
                     <option value="packages_plus_unit">Pacotes + valor por foto extra</option>
                   </select>
                 </div>
                 <div class="ks-field">
-                  <label class="text-slate-300">Valor unitÃ¡rio (R$)</label>
+                  <label class="text-slate-300">Valor unitário (R$)</label>
                   <input class="ks-input mt-2" id="ks-sales-unit-price" type="text" inputmode="decimal" placeholder="Ex.: 400,00" />
                 </div>
               </div>
@@ -2512,7 +2512,7 @@
             </div>
 
             <div class="rounded-2xl border border-slate-700 bg-slate-900/85 p-4 text-slate-100">
-              <div class="font-extrabold text-slate-100">Comprovantes e aprovaÃ§Ã£o</div>
+              <div class="font-extrabold text-slate-100">Comprovantes e aprovação</div>
               <div class="mt-3 hidden">
                 <div class="ks-field">
                   <label>Cliente</label>
@@ -2529,7 +2529,7 @@
                       <option value="all">Tudo</option>
                       <option value="received">Com valor recebido</option>
                       <option value="missing">Com falta a receber</option>
-                      <option value="courtesy">Cortesias / abenÃ§oados</option>
+                      <option value="courtesy">Cortesias / abençoados</option>
                     </select>
                   </div>
                 </div>
@@ -2548,10 +2548,10 @@
               <div id="ks-sales-terms-panel" class="mt-3 rounded-xl border border-slate-600 bg-slate-950/60 p-3">
                 <div class="font-extrabold text-slate-100 text-sm">Valores combinados (esta rodada)</div>
                 <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                  A <b>soma pelos pacotes</b> segue a mesma regra do pagamento no app do cliente. O <b>total acordado</b> substitui essa soma no saldo. Preencha <b>valor restante</b>, <b>parcelas</b> e <b>dias</b> para exibir o plano no status acima; o recebido em dinheiro continua em <b>Pagamento confirmado</b> e nos demais botÃµes.
+                  A <b>soma pelos pacotes</b> segue a mesma regra do pagamento no app do cliente. O <b>total acordado</b> substitui essa soma no saldo. Preencha <b>valor restante</b>, <b>parcelas</b> e <b>dias</b> para exibir o plano no status acima; o recebido em dinheiro continua em <b>Pagamento confirmado</b> e nos demais botões.
                 </p>
                 <div class="mt-2 rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2">
-                  <div class="text-[10px] text-emerald-300/90 uppercase font-extrabold tracking-wide">ReferÃªncia (soma pelas fotos)</div>
+                  <div class="text-[10px] text-emerald-300/90 uppercase font-extrabold tracking-wide">Referência (soma pelas fotos)</div>
                   <div id="ks-sales-terms-photo-ref" class="text-emerald-100 font-bold text-sm mt-1">â€”</div>
                   <div id="ks-sales-terms-cupom-note" class="text-[10px] text-slate-500 mt-1 hidden"></div>
                 </div>
@@ -2584,18 +2584,18 @@
               </div>
               <div class="mt-3 flex items-center gap-2 flex-wrap">
                 <button class="ks-btn" id="ks-sales-payment-confirm" type="button"><i class="fas fa-check"></i> Pagamento confirmado</button>
-                <button class="ks-btn" id="ks-sales-payment-adiantamento" type="button" style="border-color:rgba(45,212,191,.7);background:rgba(13,148,136,.16);color:#ccfbf1;font-weight:800" title="Registra um pagamento parcial: soma ao recebido nesta rodada atÃ© quitar o combinado (sem substituir o acumulado)."><i class="fas fa-coins"></i> Registrar adiantamento</button>
+                <button class="ks-btn" id="ks-sales-payment-adiantamento" type="button" style="border-color:rgba(45,212,191,.7);background:rgba(13,148,136,.16);color:#ccfbf1;font-weight:800" title="Registra um pagamento parcial: soma ao recebido nesta rodada até quitar o combinado (sem substituir o acumulado)."><i class="fas fa-coins"></i> Registrar adiantamento</button>
                 <button class="ks-btn" id="ks-sales-payment-courtesy-rest" type="button" style="border-color:rgba(167,139,250,.75);background:rgba(139,92,246,.18);color:#ede9fe;font-weight:800" title="Abonar o que falta como cortesia e encerrar o pacote"><i class="fas fa-hand-holding-heart"></i> Cortesia no restante</button>
                 <button class="ks-btn" id="ks-sales-payment-fix-amount" type="button"><i class="fas fa-pen"></i> Corrigir valor pago</button>
                 <button class="ks-btn" id="ks-sales-payment-reject" type="button"><i class="fas fa-xmark"></i> Recusar comprovante</button>
                 <button class="ks-btn" id="ks-sales-payment-pending" type="button"><i class="fas fa-rotate-left"></i> Comprovante em espera</button>
-                <button class="ks-btn" id="ks-sales-payment-undo-confirm" type="button" style="border-color:rgba(251,191,36,.75);background:rgba(245,158,11,.14);color:#fef3c7;font-weight:800" title="Zera recebido/cortesia e volta a aguardar comprovante (desfaz confirmaÃ§Ã£o por engano)"><i class="fas fa-undo"></i> Desfazer confirmaÃ§Ã£o</button>
-                <button class="ks-btn" id="ks-sales-payment-bless" type="button" style="background:rgba(139,92,246,.22);border-color:rgba(167,139,250,.85);color:#ede9fe;font-weight:900"><i class="fas fa-gift"></i> AbenÃ§oado (sem pagamento)</button>
+                <button class="ks-btn" id="ks-sales-payment-undo-confirm" type="button" style="border-color:rgba(251,191,36,.75);background:rgba(245,158,11,.14);color:#fef3c7;font-weight:800" title="Zera recebido/cortesia e volta a aguardar comprovante (desfaz confirmação por engano)"><i class="fas fa-undo"></i> Desfazer confirmação</button>
+                <button class="ks-btn" id="ks-sales-payment-bless" type="button" style="background:rgba(139,92,246,.22);border-color:rgba(167,139,250,.85);color:#ede9fe;font-weight:900"><i class="fas fa-gift"></i> Abençoado (sem pagamento)</button>
                 <button class="ks-btn" id="ks-sales-open-proof" type="button"><i class="fas fa-image"></i> Ver comprovante</button>
                 <button class="ks-btn" id="ks-sales-open-client-whats" type="button" style="background:rgba(16,185,129,.20);border-color:rgba(16,185,129,.68);color:#d1fae5;font-weight:900"><i class="fab fa-whatsapp"></i> WhatsApp do cliente</button>
-                <button class="ks-btn" id="ks-sales-photos-all-pending" type="button" style="border-color:rgba(245,158,11,.65);background:rgba(234,179,8,.14);color:#fde68a;font-weight:800"><i class="fas fa-hourglass-half"></i> Aguardando liberaÃ§Ã£o (todas)</button>
+                <button class="ks-btn" id="ks-sales-photos-all-pending" type="button" style="border-color:rgba(245,158,11,.65);background:rgba(234,179,8,.14);color:#fde68a;font-weight:800"><i class="fas fa-hourglass-half"></i> Aguardando liberação (todas)</button>
                 <button class="ks-btn" id="ks-sales-approve-all" type="button"><i class="fas fa-check-double"></i> Aprovar todas (original)</button>
-                <p class="text-xs text-slate-400 mt-2 max-w-3xl leading-relaxed" id="ks-sales-payment-extra-hint"><b>Pagamento confirmado:</b> pergunta se soma ou substitui o acumulado. <b>Registrar adiantamento:</b> sÃ³ soma ao recebido (pagamento parcial atÃ© quitar). Entrada e parcelas do restante ficam em <b>Valores combinados</b>. <b>Cortesia no restante:</b> abona o saldo. <b>Comprovante em espera / Desfazer:</b> como antes.</p>
+                <p class="text-xs text-slate-400 mt-2 max-w-3xl leading-relaxed" id="ks-sales-payment-extra-hint"><b>Pagamento confirmado:</b> pergunta se soma ou substitui o acumulado. <b>Registrar adiantamento:</b> só soma ao recebido (pagamento parcial até quitar). Entrada e parcelas do restante ficam em <b>Valores combinados</b>. <b>Cortesia no restante:</b> abona o saldo. <b>Comprovante em espera / Desfazer:</b> como antes.</p>
               </div>
               <div id="ks-sales-proof-panel" class="mt-3 rounded-xl border border-slate-700 bg-slate-900/70 p-3 hidden">
                 <div id="ks-sales-proof-meta" class="text-xs ks-muted"></div>
@@ -2609,17 +2609,17 @@
             </div>
 
             <div>
-              <button class="ks-btn ks-btn-primary" id="ks-sales-save"><i class="fas fa-save"></i> Salvar configuraÃ§Ã£o comercial</button>
+              <button class="ks-btn ks-btn-primary" id="ks-sales-save"><i class="fas fa-save"></i> Salvar configuração comercial</button>
             </div>
           </div>
         </div>
 
-        <!-- Cupom (vendas ou pÃºblico + download) -->
+        <!-- Cupom (vendas ou público + download) -->
         <div class="ks-card p-5 hidden" data-pane="promo">
           <div class="font-extrabold text-slate-900">Cupom e redes sociais</div>
-          <p class="text-sm ks-muted mt-2 max-w-3xl">Ative para o cliente seguir seus perfis, validar um cÃ³digo e liberar downloads (marcados). DisponÃ­vel no modo <b>Fotos vendidas</b> ou em <b>Acesso pÃºblico</b> quando <b>Download</b> estÃ¡ permitido.</p>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Ative para o cliente seguir seus perfis, validar um código e liberar downloads (marcados). Disponível no modo <b>Fotos vendidas</b> ou em <b>Acesso público</b> quando <b>Download</b> está permitido.</p>
           <div id="ks-promo-disabled-note" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 hidden">
-            Use em <b>Fotos vendidas</b> ou em <b>Acesso pÃºblico</b> com <b>Download</b> ativo (aba Download).
+            Use em <b>Fotos vendidas</b> ou em <b>Acesso público</b> com <b>Download</b> ativo (aba Download).
           </div>
           <div id="ks-promo-wrap" class="mt-4 space-y-4">
             <label class="inline-flex items-center gap-2">
@@ -2628,7 +2628,7 @@
             </label>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div class="ks-field">
-                <label>CÃ³digo do cupom</label>
+                <label>Código do cupom</label>
                 <input type="text" class="ks-input mt-2" id="ks-promo-code" placeholder="Ex.: VERAO2026" maxlength="80" autocomplete="off" />
               </div>
               <div class="ks-field">
@@ -2639,14 +2639,14 @@
               <div class="ks-field">
                 <label id="ks-promo-free-label">Fotos isentas pelo cupom (no valor estimado)</label>
                 <input type="number" min="1" max="50" class="ks-input mt-2" id="ks-promo-free-photos" value="1" />
-                <p id="ks-promo-free-hint-sales" class="text-xs ks-muted mt-1 max-w-xl">Quantas fotos entram <strong>de graÃ§a</strong> no cÃ¡lculo do total (pacotes/preÃ§o unitÃ¡rio). Ex.: 12 escolhidas com isenÃ§Ã£o 1 â†’ o cliente vÃª o preÃ§o como se fossem 11 cobradas. A <strong>aprovaÃ§Ã£o</strong> de cada foto (cortesia, pago, PIX) continua normal no seu painel.</p>
-                <p id="ks-promo-free-hint-public" class="text-xs ks-muted mt-1 max-w-xl hidden">Limite de <strong>fotos para baixar</strong> apÃ³s validar o cupom e seguir as redes (entre 1 e todas as selecionadas, atÃ© o nÃºmero que definir aqui).</p>
+                <p id="ks-promo-free-hint-sales" class="text-xs ks-muted mt-1 max-w-xl">Quantas fotos entram <strong>de graça</strong> no cálculo do total (pacotes/preço unitário). Ex.: 12 escolhidas com isenção 1 â†’ o cliente vê o preço como se fossem 11 cobradas. A <strong>aprovação</strong> de cada foto (cortesia, pago, PIX) continua normal no seu painel.</p>
+                <p id="ks-promo-free-hint-public" class="text-xs ks-muted mt-1 max-w-xl hidden">Limite de <strong>fotos para baixar</strong> após validar o cupom e seguir as redes (entre 1 e todas as selecionadas, até o número que definir aqui).</p>
               </div>
             </div>
             <div class="ks-field">
-              <label>InstruÃ§Ãµes (opcional)</label>
-              <textarea class="ks-input mt-2" id="ks-promo-instructions" rows="3" placeholder="Texto exibido ao cliente acima dos botÃµes de rede social."></textarea>
-              <button type="button" class="ks-btn mt-2" id="ks-promo-gen-instructions" title="Gera um texto padrÃ£o com cÃ³digo, isenÃ§Ã£o e redes">
+              <label>Instruções (opcional)</label>
+              <textarea class="ks-input mt-2" id="ks-promo-instructions" rows="3" placeholder="Texto exibido ao cliente acima dos botões de rede social."></textarea>
+              <button type="button" class="ks-btn mt-2" id="ks-promo-gen-instructions" title="Gera um texto padrão com código, isenção e redes">
                 <i class="fas fa-wand-magic-sparkles"></i> Gerar texto sugerido
               </button>
             </div>
@@ -2664,7 +2664,7 @@
         <!-- Link do cliente / compartilhar -->
         <div class="ks-card p-5 hidden" data-pane="links">
           <div class="font-extrabold text-slate-900">Link e compartilhamento</div>
-          <p class="text-sm ks-muted mt-2 max-w-3xl">Use o link de produÃ§Ã£o para o cliente. Abra numa nova aba para testar com o e-mail e a senha. Copie sÃ³ o link ou a mensagem completa â€” o que clicar em <b>Compartilhar</b> no topo abre esta aba.</p>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Use o link de produção para o cliente. Abra numa nova aba para testar com o e-mail e a senha. Copie só o link ou a mensagem completa â€” o que clicar em <b>Compartilhar</b> no topo abre esta aba.</p>
 
           <div class="mt-5 ks-field">
             <label>Link da galeria (cliente â€” URL de partilha)</label>
@@ -2677,7 +2677,7 @@
 
           <div id="ks-links-local-wrap" class="mt-4 ks-field hidden">
             <label>URL neste ambiente (teste no Live Server / localhost)</label>
-            <p class="text-xs ks-muted mt-1 mb-0">SÃ³ aparece quando Ã© diferente do link de produÃ§Ã£o acima.</p>
+            <p class="text-xs ks-muted mt-1 mb-0">Só aparece quando é diferente do link de produção acima.</p>
             <div class="flex gap-2 mt-2 flex-wrap items-stretch">
               <input type="text" readonly id="ks-links-local-url" class="ks-input flex-1 min-w-[min(100%,280px)]" />
               <button type="button" class="ks-btn" id="ks-links-copy-local"><i class="fas fa-copy"></i> Copiar</button>
@@ -2688,8 +2688,8 @@
           <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
             <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">Mensagem personalizada para compartilhar (opcional)</div>
             <textarea id="ks-links-custom-message" class="ks-input mt-2" rows="4"
-              placeholder="Ex.: OlÃ¡! Segue o link da sua galeria. Qualquer dÃºvida, me chame no WhatsApp."></textarea>
-            <p class="text-xs ks-muted mt-2 mb-0">Se preencher, essa mensagem aparece no final do texto quando a mensagem completa estÃ¡ no <b>modo automÃ¡tico</b> (ver abaixo). As alteraÃ§Ãµes sÃ£o salvas automaticamente.</p>
+              placeholder="Ex.: Olá! Segue o link da sua galeria. Qualquer dúvida, me chame no WhatsApp."></textarea>
+            <p class="text-xs ks-muted mt-2 mb-0">Se preencher, essa mensagem aparece no final do texto quando a mensagem completa está no <b>modo automático</b> (ver abaixo). As alterações são salvas automaticamente.</p>
             <div class="mt-3 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-links-ai-custom" title="Usar a IA do sistema (OpenAI) para sugerir um texto curto"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
@@ -2697,12 +2697,12 @@
 
           <div class="mt-5 ks-field">
             <label>Mensagem completa (edite livremente â€” WhatsApp ou e-mail)</label>
-            <p class="text-xs ks-muted mt-1 mb-0">Com <b>acesso privado</b> e <b>um</b> cliente na lista, o modelo automÃ¡tico inclui <b>e-mail e senha</b>. Em <b>autocadastro</b> ou <b>fotos vendidas</b>, a mensagem automÃ¡tica leva sÃ³ o link. Pode editar Ã  vontade. <b>Restaurar modelo</b> recalcula a partir das configuraÃ§Ãµes atuais.</p>
+            <p class="text-xs ks-muted mt-1 mb-0">Com <b>acesso privado</b> e <b>um</b> cliente na lista, o modelo automático inclui <b>e-mail e senha</b>. Em <b>autocadastro</b> ou <b>fotos vendidas</b>, a mensagem automática leva só o link. Pode editar Ã  vontade. <b>Restaurar modelo</b> recalcula a partir das configurações atuais.</p>
             <textarea id="ks-links-full-msg" class="ks-input mt-2" rows="11"
               style="font-size:13px;line-height:1.45;resize:vertical"></textarea>
             <div class="flex gap-2 mt-3 flex-wrap items-center">
               <button type="button" class="ks-btn" id="ks-links-ai-full" title="Usar a IA do sistema (OpenAI) para gerar a mensagem completa"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
-              <button type="button" class="ks-btn" id="ks-links-full-reset" title="Substituir pelo modelo automÃ¡tico (nome do projeto + link + opcional)"><i class="fas fa-rotate-left"></i> Restaurar modelo</button>
+              <button type="button" class="ks-btn" id="ks-links-full-reset" title="Substituir pelo modelo automático (nome do projeto + link + opcional)"><i class="fas fa-rotate-left"></i> Restaurar modelo</button>
               <button type="button" class="ks-btn ks-btn-primary" id="ks-links-copy-full"><i class="fas fa-copy"></i> Copiar mensagem completa</button>
               <button type="button" class="ks-btn" id="ks-links-whats"><i class="fab fa-whatsapp"></i> Abrir WhatsApp Web</button>
             </div>
@@ -2712,7 +2712,7 @@
         <!-- Capa do link -->
         <div class="ks-card p-5 hidden" data-pane="link-cover">
           <div class="font-extrabold text-slate-900">Capa do link</div>
-          <p class="text-sm ks-muted mt-2 max-w-3xl">VocÃª pode escolher uma foto da galeria ou enviar uma imagem externa sÃ³ para a capa do link.</p>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Você pode escolher uma foto da galeria ou enviar uma imagem externa só para a capa do link.</p>
 
           <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
             <div class="flex flex-wrap gap-2 items-center">
@@ -2723,9 +2723,9 @@
 
             <div class="mt-4">
               <div class="ks-field">
-                <label>PrÃ©-visualizaÃ§Ã£o</label>
+                <label>Pré-visualização</label>
                 <div class="rounded-lg overflow-hidden border border-slate-200 bg-black/70 mt-2">
-                  <img id="ks-link-cover-preview" alt="PrÃ©via da capa do link" style="width:100%;height:220px;object-fit:contain;background:#0b0b0b;display:block" />
+                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:220px;object-fit:contain;background:#0b0b0b;display:block" />
                 </div>
                 <div id="ks-link-cover-current-source" class="text-xs ks-muted mt-2">Origem atual: foto da galeria</div>
               </div>
@@ -2744,7 +2744,7 @@
                 <div id="ks-link-cover-grid" class="ks-link-cover-picker-grid grid grid-cols-2 md:grid-cols-3 gap-2"></div>
                 <div class="mt-3 flex flex-wrap gap-2 items-center">
                   <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-picker-apply"><i class="fas fa-check"></i> Usar foto selecionada</button>
-                  <span class="text-xs ks-muted">Essa capa serÃ¡ usada na prÃ©via do link da galeria (WhatsApp, etc.). Se nÃ£o houver capa ou o arquivo nÃ£o carregar, o sistema usa uma imagem padrÃ£o para a miniatura.</span>
+                  <span class="text-xs ks-muted">Essa capa será usada na prévia do link da galeria (WhatsApp, etc.). Se não houver capa ou o arquivo não carregar, o sistema usa uma imagem padrão para a miniatura.</span>
                 </div>
               </div>
             </div>
@@ -2752,69 +2752,69 @@
 
           <div class="mt-6 rounded-xl border border-amber-500/35 bg-amber-950/20 p-4">
             <div class="text-xs font-extrabold text-amber-100/90 tracking-widest uppercase mb-2">Mensagens WhatsApp Â· Fotos e vendas</div>
-            <p class="text-sm text-amber-50/90 mt-1 max-w-3xl">Textos usados no botÃ£o <b>WhatsApp do cliente</b> (aba <b>Fotos e vendas</b>), conforme a situaÃ§Ã£o. Ao abrir o WhatsApp, o sistema preenche com o modelo correspondente e os cÃ³digos abaixo.</p>
-            <p class="text-xs text-amber-100/75 mt-2 max-w-3xl"><code class="text-amber-200/95">{{nome}}</code> nome do cliente Â· <code class="text-amber-200/95">{{link}}</code> link pÃºblico da galeria Â· <code class="text-amber-200/95">{{galeria}}</code> nome do evento ou projeto. No texto vocÃª pode usar <span class="whitespace-nowrap">*asteriscos*</span> para negrito no WhatsApp.</p>
+            <p class="text-sm text-amber-50/90 mt-1 max-w-3xl">Textos usados no botão <b>WhatsApp do cliente</b> (aba <b>Fotos e vendas</b>), conforme a situação. Ao abrir o WhatsApp, o sistema preenche com o modelo correspondente e os códigos abaixo.</p>
+            <p class="text-xs text-amber-100/75 mt-2 max-w-3xl"><code class="text-amber-200/95">{{nome}}</code> nome do cliente Â· <code class="text-amber-200/95">{{link}}</code> link público da galeria Â· <code class="text-amber-200/95">{{galeria}}</code> nome do evento ou projeto. No texto você pode usar <span class="whitespace-nowrap">*asteriscos*</span> para negrito no WhatsApp.</p>
             <label class="mt-4 block font-semibold text-sm text-slate-100">1 Â· Falta pagamento (PIX pendente ou saldo em aberto)</label>
-            <textarea id="ks-sales-wa-tpl-pending" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: OlÃ¡, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <textarea id="ks-sales-wa-tpl-pending" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-pending" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
             <label class="mt-4 block font-semibold text-sm text-slate-100">2 Â· Comprovante recusado â€” pedir novo envio</label>
-            <textarea id="ks-sales-wa-tpl-rejected" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: OlÃ¡, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <textarea id="ks-sales-wa-tpl-rejected" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-rejected" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
-            <label class="mt-4 block font-semibold text-sm text-slate-100">3 Â· Pagamento ok â€” aguardando <i>sua</i> aprovaÃ§Ã£o das fotos</label>
-            <textarea id="ks-sales-wa-tpl-awaiting" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: OlÃ¡, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <label class="mt-4 block font-semibold text-sm text-slate-100">3 Â· Pagamento ok â€” aguardando <i>sua</i> aprovação das fotos</label>
+            <textarea id="ks-sales-wa-tpl-awaiting" class="ks-input mt-2 font-mono text-sm" rows="5" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-awaiting" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
             <label class="mt-4 block font-semibold text-sm text-slate-100">4 Â· Tudo certo â€” fotos aprovadas (liberar download)</label>
-            <textarea id="ks-sales-wa-tpl-approved" class="ks-input mt-2 font-mono text-sm" rows="6" placeholder="Ex.: OlÃ¡, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
+            <textarea id="ks-sales-wa-tpl-approved" class="ks-input mt-2 font-mono text-sm" rows="6" placeholder="Ex.: Olá, {{nome}}! â€¦ {{link}} â€¦ {{galeria}}"></textarea>
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-approved" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
             <div class="mt-4 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn ks-btn-primary" id="ks-sales-wa-tpl-save"><i class="fas fa-save"></i> Salvar textos de vendas</button>
-              <button type="button" class="ks-btn" id="ks-sales-wa-tpl-reset" title="Apaga os textos personalizados e volta aos modelos padrÃ£o do sistema (grava no servidor)."><i class="fas fa-rotate-left"></i> Usar padrÃµes do sistema</button>
+              <button type="button" class="ks-btn" id="ks-sales-wa-tpl-reset" title="Apaga os textos personalizados e volta aos modelos padrão do sistema (grava no servidor)."><i class="fas fa-rotate-left"></i> Usar padrões do sistema</button>
             </div>
-            <p class="text-xs ks-muted mt-2 max-w-3xl"><b>Por caixa:</b> apague o texto, salve e aquele campo volta ao padrÃ£o. <b>Tudo de uma vez:</b> use o botÃ£o &quot;Usar padrÃµes do sistema&quot;.</p>
+            <p class="text-xs ks-muted mt-2 max-w-3xl"><b>Por caixa:</b> apague o texto, salve e aquele campo volta ao padrão. <b>Tudo de uma vez:</b> use o botão &quot;Usar padrões do sistema&quot;.</p>
           </div>
         </div>
 
         <!-- Suporte WhatsApp -->
         <div class="ks-card p-5 hidden" data-pane="support">
           <div class="font-extrabold text-slate-900">Suporte WhatsApp</div>
-          <p class="text-sm ks-muted mt-2 max-w-3xl">Configure aqui o botÃ£o de suporte que aparece para o cliente dentro da galeria. Assim fica fÃ¡cil para ele te chamar para confirmar pagamento, pedir liberaÃ§Ã£o ou tirar dÃºvidas.</p>
+          <p class="text-sm ks-muted mt-2 max-w-3xl">Configure aqui o botão de suporte que aparece para o cliente dentro da galeria. Assim fica fácil para ele te chamar para confirmar pagamento, pedir liberação ou tirar dúvidas.</p>
 
           <div class="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
-            <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">BotÃ£o flutuante no cliente</div>
+            <div class="text-xs font-extrabold ks-muted tracking-widest uppercase mb-3">Botão flutuante no cliente</div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <label>WhatsApp de suporte (com DDD / paÃ­s)
+              <label>WhatsApp de suporte (com DDD / país)
                 <input type="text" id="ks-support-whatsapp" class="ks-input mt-2" placeholder="Ex.: 5511999999999" />
               </label>
-              <label>Texto do botÃ£o (opcional)
+              <label>Texto do botão (opcional)
                 <input type="text" id="ks-support-label" class="ks-input mt-2" placeholder="Ex.: Suporte no WhatsApp" />
               </label>
             </div>
             <div class="mt-3">
               <div class="flex flex-wrap items-end justify-between gap-2">
-                <label class="block flex-1 min-w-0">Mensagem padrÃ£o (opcional)</label>
+                <label class="block flex-1 min-w-0">Mensagem padrão (opcional)</label>
                 <button type="button" class="ks-btn shrink-0" id="ks-support-ai" title="Gera um texto cordial com IA (OpenAI). Configure OPENAI_API_KEY no servidor.">
                   <i class="fas fa-wand-magic-sparkles"></i> Gerar com a IA
                 </button>
               </div>
               <textarea id="ks-support-message" class="ks-input mt-2 w-full" rows="3"
-                placeholder="Ex.: OlÃ¡! Preciso de ajuda com minha seleÃ§Ã£o de fotos."></textarea>
-              <p class="text-xs ks-muted mt-1 max-w-3xl">A mensagem prÃ©-preenche o WhatsApp quando o cliente toca em suporte. A IA usa o mesmo serviÃ§o OpenAI do resto do King Selection (chave no servidor).</p>
+                placeholder="Ex.: Olá! Preciso de ajuda com minha seleção de fotos."></textarea>
+              <p class="text-xs ks-muted mt-1 max-w-3xl">A mensagem pré-preenche o WhatsApp quando o cliente toca em suporte. A IA usa o mesmo serviço OpenAI do resto do King Selection (chave no servidor).</p>
             </div>
             <div class="mt-3 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn ks-btn-primary" id="ks-support-save"><i class="fas fa-save"></i> Salvar suporte WhatsApp</button>
-              <span class="text-xs ks-muted">Esse nÃºmero serÃ¡ usado no botÃ£o de suporte exibido ao cliente.</span>
+              <span class="text-xs ks-muted">Esse número será usado no botão de suporte exibido ao cliente.</span>
             </div>
           </div>
 
-          <p class="text-sm ks-muted mt-4 max-w-3xl">As mensagens do botÃ£o <b>WhatsApp do cliente</b> na aba <b>Fotos e vendas</b> sÃ£o editÃ¡veis na aba <b>Capa do link</b>, junto com a capa da prÃ©via do link.</p>
+          <p class="text-sm ks-muted mt-4 max-w-3xl">As mensagens do botão <b>WhatsApp do cliente</b> na aba <b>Fotos e vendas</b> são editáveis na aba <b>Capa do link</b>, junto com a capa da prévia do link.</p>
         </div>
 
         <!-- Clients -->
@@ -2884,13 +2884,13 @@
               </div>
             </div>
 
-            <!-- Dicas / aÃ§Ãµes rÃ¡pidas -->
+            <!-- Dicas / ações rápidas -->
             <div class="lg:col-span-1">
               <div class="rounded-2xl border border-slate-200 bg-white p-5">
                 <div class="font-extrabold text-slate-900">Dicas</div>
                 <div class="text-sm ks-muted mt-2">
                   - Use <b>Compartilhar</b> para copiar a mensagem pronta do WhatsApp.<br />
-                  - Clique no <b>olhinho</b> para revelar a senha (se disponÃ­vel).<br />
+                  - Clique no <b>olhinho</b> para revelar a senha (se disponível).<br />
                   - Para gerar uma nova senha, use <b>Editar</b>.
                 </div>
               </div>
@@ -2906,11 +2906,11 @@
               <input type="checkbox" id="d-allow" />
               <div>
                 <div class="font-extrabold">Permitir o download das fotos</div>
-                <div class="text-sm ks-muted">Libera botÃ£o de download (previews com marca dâ€™Ã¡gua).</div>
+                <div class="text-sm ks-muted">Libera botão de download (previews com marca dâ€™água).</div>
               </div>
             </label>
             <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-              <div class="font-extrabold text-sm">OrganizaÃ§Ã£o para o cliente</div>
+              <div class="font-extrabold text-sm">Organização para o cliente</div>
               <label class="flex items-start gap-3">
                 <input type="radio" name="ks_client_folder_layout" id="ks-dl-layout-folders" value="folders" class="mt-1" />
                 <div>
@@ -2922,15 +2922,15 @@
                 <input type="radio" name="ks_client_folder_layout" id="ks-dl-layout-flat" value="flat" class="mt-1" />
                 <div>
                   <div class="font-semibold text-sm">Fotos soltas</div>
-                  <div class="text-xs ks-muted">Sem lista de pastas â€” sÃ³ a grelha (Ãºtil quando subiu sÃ³ fotos).</div>
+                  <div class="text-xs ks-muted">Sem lista de pastas â€” só a grelha (útil quando subiu só fotos).</div>
                 </div>
               </label>
             </div>
             <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
               <input type="checkbox" id="ks-client-entry-splash" class="mt-1" />
               <div>
-                <div class="font-extrabold">Capa ao abrir (modo pÃºblico)</div>
-                <div class="text-sm ks-muted">Mostra a imagem da <strong>capa do link</strong> em ecrÃ£ cheio antes da galeria (estilo app). Configure a capa na aba <strong>Capa do link</strong>.</div>
+                <div class="font-extrabold">Capa ao abrir (modo público)</div>
+                <div class="text-sm ks-muted">Mostra a imagem da <strong>capa do link</strong> em ecrã cheio antes da galeria (estilo app). Configure a capa na aba <strong>Capa do link</strong>.</div>
               </div>
             </label>
             <div class="mt-4">
@@ -2941,20 +2941,20 @@
 
         <!-- Watermark -->
         <div class="ks-card p-5 hidden" data-pane="watermark">
-          <div class="font-extrabold text-slate-900">Marca d'Ã¡gua</div>
+          <div class="font-extrabold text-slate-900">Marca d'água</div>
           <div class="mt-4 space-y-3">
             <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white">
               <input type="radio" name="wm_mode" value="none" class="mt-1" />
               <div>
-                <div class="font-extrabold">Sem marca dâ€™Ã¡gua</div>
-                <div class="text-sm ks-muted">Desativa a marca dâ€™Ã¡gua (nÃ£o recomendado).</div>
+                <div class="font-extrabold">Sem marca dâ€™água</div>
+                <div class="text-sm ks-muted">Desativa a marca dâ€™água (não recomendado).</div>
               </div>
             </label>
             <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 bg-white" id="wm-mode-ck-wrap">
               <input type="radio" name="wm_mode" value="tile_dense" class="mt-1" id="wm-mode-ck" />
               <div>
-                <div class="font-extrabold">Marca dâ€™Ã¡gua da Conecta King</div>
-                <div class="text-sm ks-muted">Quando o cliente nÃ£o envia marca prÃ³pria, usa automaticamente a logomarca
+                <div class="font-extrabold">Marca dâ€™água da Conecta King</div>
+                <div class="text-sm ks-muted">Quando o cliente não envia marca própria, usa automaticamente a logomarca
                   oficial da Conecta King.</div>
               </div>
             </label>
@@ -2962,29 +2962,29 @@
               id="wm-mode-logo-wrap">
               <input type="radio" name="wm_mode" value="logo" class="mt-1" id="wm-mode-logo" />
               <div>
-                <div class="font-extrabold">Sua marca dâ€™Ã¡gua personalizada</div>
-                <div class="text-sm ks-muted">Usa a marca dâ€™Ã¡gua que vocÃª enviou (a miniatura aparece lÃ¡ embaixo).</div>
+                <div class="font-extrabold">Sua marca dâ€™água personalizada</div>
+                <div class="text-sm ks-muted">Usa a marca dâ€™água que você enviou (a miniatura aparece lá embaixo).</div>
               </div>
             </label>
 
             <div class="rounded-xl border border-zinc-600 bg-black p-4 text-zinc-100">
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <div class="font-extrabold text-white">PrÃ©-visualizaÃ§Ã£o (tempo real)</div>
-                  <div class="text-sm text-zinc-400">Mostra como o cliente verÃ¡ a marca dâ€™Ã¡gua.</div>
+                  <div class="font-extrabold text-white">Pré-visualização (tempo real)</div>
+                  <div class="text-sm text-zinc-400">Mostra como o cliente verá a marca dâ€™água.</div>
                 </div>
                 <div class="text-xs text-zinc-400 font-extrabold" id="wm-current"></div>
               </div>
 
-              <div class="mt-3 text-xs text-zinc-400"><strong class="text-zinc-200">Preencher</strong>: escala forte + <strong class="text-zinc-200">esticar</strong> largura/altura (cobre a foto, tipo papel de parede â€œpreencherâ€). <strong class="text-zinc-200">Ajustar</strong>: escala contida + <strong class="text-zinc-200">100% esticar</strong> + posiÃ§Ã£o ao centro (tipo â€œajustarâ€ sem cortar o desenho da marca). Tamanho retrato/paisagem continua separado nos sliders.</div>
+              <div class="mt-3 text-xs text-zinc-400"><strong class="text-zinc-200">Preencher</strong>: escala forte + <strong class="text-zinc-200">esticar</strong> largura/altura (cobre a foto, tipo papel de parede â€œpreencherâ€). <strong class="text-zinc-200">Ajustar</strong>: escala contida + <strong class="text-zinc-200">100% esticar</strong> + posição ao centro (tipo â€œajustarâ€ sem cortar o desenho da marca). Tamanho retrato/paisagem continua separado nos sliders.</div>
 
               <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="rounded-xl border border-zinc-700 bg-black p-3">
                   <div class="text-sm font-extrabold text-white">Foto vertical (retrato)</div>
-                  <div class="text-xs text-zinc-400 mt-1">PrÃ©via em 3:4 â€” como em fotos em pÃ©.</div>
+                  <div class="text-xs text-zinc-400 mt-1">Prévia em 3:4 â€” como em fotos em pé.</div>
                   <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--portrait mt-2">
                     <div class="ks-wm-ph" id="wm-ph-p">Adicione fotos para ver o preview</div>
-                    <img id="wm-preview-portrait" class="hidden" alt="preview marca dâ€™Ã¡gua retrato" />
+                    <img id="wm-preview-portrait" class="hidden" alt="preview marca dâ€™água retrato" />
                   </div>
                   <div class="mt-2 flex items-center justify-between gap-2">
                     <div class="text-xs font-extrabold text-zinc-200">Tamanho no retrato</div>
@@ -2992,7 +2992,7 @@
                   </div>
                   <input id="wm-scale-p" class="ks-range mt-2 ks-range-on-dark" type="range" min="10" max="500" step="1" value="120" />
                   <div class="mt-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-zinc-200">RotaÃ§Ã£o (retrato)</div>
+                    <div class="text-xs font-extrabold text-zinc-200">Rotação (retrato)</div>
                     <div class="text-xs text-zinc-400 font-extrabold" id="wm-rotate-p-val">0Â°</div>
                   </div>
                   <input type="hidden" id="wm-rotate-p" value="0" />
@@ -3003,12 +3003,12 @@
                     <button type="button" class="ks-btn ks-wm-rot-btn text-[10px] px-1 py-2" data-wm-rotate-p="270" title="270Â°">270Â°</button>
                   </div>
                   <div class="mt-2 grid grid-cols-2 gap-1.5">
-                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-p" title="Preencher â€” escala forte (cobre a Ã¡rea)">Preencher</button>
+                    <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fill-p" title="Preencher â€” escala forte (cobre a área)">Preencher</button>
                     <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-p" title="Ajustar â€” escala mais contida">Ajustar</button>
                   </div>
                   <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
-                    <div class="text-xs font-extrabold text-zinc-200">Mosaico â€” sÃ³ em fotos verticais</div>
-                    <div class="text-[11px] text-zinc-500">PosiÃ§Ã£o vertical do padrÃ£o (cima / centro / baixo)</div>
+                    <div class="text-xs font-extrabold text-zinc-200">Mosaico â€” só em fotos verticais</div>
+                    <div class="text-[11px] text-zinc-500">Posição vertical do padrão (cima / centro / baixo)</div>
                     <div class="grid grid-cols-3 gap-1.5">
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-top-p" title="Cima">Cima</button>
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-v-p" title="Centro vertical">Centro</button>
@@ -3043,10 +3043,10 @@
                 </div>
                 <div class="rounded-xl border border-zinc-700 bg-black p-3">
                   <div class="text-sm font-extrabold text-white">Foto horizontal (paisagem)</div>
-                  <div class="text-xs text-zinc-400 mt-1">PrÃ©via em 16:9 â€” como em fotos deitadas.</div>
+                  <div class="text-xs text-zinc-400 mt-1">Prévia em 16:9 â€” como em fotos deitadas.</div>
                   <div class="ks-wm-frame ks-wm-preview-frame ks-wm-preview-frame--landscape mt-2">
                     <div class="ks-wm-ph" id="wm-ph-l">Adicione fotos para ver o preview</div>
-                    <img id="wm-preview-landscape" class="hidden" alt="preview marca dâ€™Ã¡gua paisagem" />
+                    <img id="wm-preview-landscape" class="hidden" alt="preview marca dâ€™água paisagem" />
                   </div>
                   <div class="mt-2 flex items-center justify-between gap-2">
                     <div class="text-xs font-extrabold text-zinc-200">Tamanho na paisagem</div>
@@ -3054,7 +3054,7 @@
                   </div>
                   <input id="wm-scale-l" class="ks-range mt-2 ks-range-on-dark" type="range" min="10" max="500" step="1" value="120" />
                   <div class="mt-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-extrabold text-zinc-200">RotaÃ§Ã£o (paisagem)</div>
+                    <div class="text-xs font-extrabold text-zinc-200">Rotação (paisagem)</div>
                     <div class="text-xs text-zinc-400 font-extrabold" id="wm-rotate-l-val">0Â°</div>
                   </div>
                   <input type="hidden" id="wm-rotate-l" value="0" />
@@ -3069,8 +3069,8 @@
                     <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-fit-l" title="Ajustar">Ajustar</button>
                   </div>
                   <div class="mt-4 pt-3 border-t border-zinc-700 space-y-3">
-                    <div class="text-xs font-extrabold text-zinc-200">Mosaico â€” sÃ³ em fotos horizontais</div>
-                    <div class="text-[11px] text-zinc-500">PosiÃ§Ã£o horizontal do padrÃ£o (esquerda / centro / direita)</div>
+                    <div class="text-xs font-extrabold text-zinc-200">Mosaico â€” só em fotos horizontais</div>
+                    <div class="text-[11px] text-zinc-500">Posição horizontal do padrão (esquerda / centro / direita)</div>
                     <div class="grid grid-cols-3 gap-1.5">
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-left-l" title="Esquerda">Esquerda</button>
                       <button type="button" class="ks-btn text-[10px] px-1 py-2" id="btn-wm-align-center-h-l" title="Centro">Centro</button>
@@ -3107,18 +3107,18 @@
 
               <div class="mt-5">
                 <div class="flex items-center justify-between gap-2">
-                  <div class="text-sm font-extrabold text-white">TransparÃªncia (opacidade)</div>
+                  <div class="text-sm font-extrabold text-white">Transparência (opacidade)</div>
                   <div class="text-xs text-zinc-400 font-extrabold" id="wm-opacity-val">12%</div>
                 </div>
                 <input id="wm-opacity" class="ks-range mt-2 ks-range-on-dark" type="range" min="0" max="100" step="1" value="12" />
-                <div class="text-xs text-zinc-400 mt-2">0% = quase nÃ£o aparece. 100% = bem forte.</div>
+                <div class="text-xs text-zinc-400 mt-2">0% = quase não aparece. 100% = bem forte.</div>
               </div>
 
             </div>
 
             <div class="rounded-xl border border-zinc-700 bg-black p-4 text-zinc-100">
-              <div class="font-extrabold text-white">Marca dâ€™Ã¡gua atual</div>
-              <div class="text-sm text-zinc-400 mt-1">Mostra a marca dâ€™Ã¡gua que estÃ¡ valendo (padrÃ£o Conecta King ou personalizada).</div>
+              <div class="font-extrabold text-white">Marca dâ€™água atual</div>
+              <div class="text-sm text-zinc-400 mt-1">Mostra a marca dâ€™água que está valendo (padrão Conecta King ou personalizada).</div>
               <div id="wm-file-defaults" class="mt-3 flex flex-wrap gap-4 items-start">
                 <div class="text-xs text-zinc-400 max-w-[220px]">
                   <div class="font-extrabold text-white mb-2" id="wm-file-ph">Marca Conecta King (fixa â€” retrato e paisagem)</div>
@@ -3136,7 +3136,7 @@
                       </div>
                     </div>
                   </div>
-                  <p class="mt-2 text-zinc-500">SÃ£o os mesmos ficheiros usados na prÃ©-visualizaÃ§Ã£o e nas exportaÃ§Ãµes quando nÃ£o envia marca prÃ³pria.</p>
+                  <p class="mt-2 text-zinc-500">São os mesmos ficheiros usados na pré-visualização e nas exportações quando não envia marca própria.</p>
                 </div>
               </div>
               <div id="wm-file-custom-wrap" class="mt-3 hidden">
@@ -3166,7 +3166,7 @@
               <input type="file" id="wm-file-l" accept="image/png,image/jpeg,image/webp" class="hidden" />
               <button type="button" class="ks-btn" id="btn-upload-wm-p"><i class="fas fa-upload"></i> Enviar retrato</button>
               <button type="button" class="ks-btn" id="btn-upload-wm-l"><i class="fas fa-upload"></i> Enviar paisagem</button>
-              <button class="ks-btn" id="btn-remove-wm-logo"><i class="fas fa-trash"></i> Remover marca dâ€™Ã¡gua</button>
+              <button class="ks-btn" id="btn-remove-wm-logo"><i class="fas fa-trash"></i> Remover marca dâ€™água</button>
               <button class="ks-btn ks-btn-primary" id="btn-save-wm"><i class="fas fa-save"></i> Salvar</button>
             </div>
             <div class="text-xs ks-muted">Dica: envie um PNG com fundo transparente.</div>
@@ -3178,8 +3178,8 @@
           <div class="font-extrabold text-slate-900">Reconhecimento Facial</div>
           <div class="mt-4 space-y-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5">
-              <div class="font-extrabold text-slate-900">ConfiguraÃ§Ãµes de IA</div>
-              <div class="text-sm ks-muted mt-1">Controle como a inteligÃªncia artificial trabalha nesta galeria.</div>
+              <div class="font-extrabold text-slate-900">Configurações de IA</div>
+              <div class="text-sm ks-muted mt-1">Controle como a inteligência artificial trabalha nesta galeria.</div>
 
               <div class="mt-4 flex items-center justify-between gap-4">
                 <div>
@@ -3196,7 +3196,7 @@
 
               <div class="mt-6 flex flex-wrap gap-2">
                 <button class="ks-btn ks-btn-primary" id="btn-save-facial-config"><i class="fas fa-save"></i> Salvar
-                  ConfiguraÃ§Ã£o</button>
+                  Configuração</button>
                 <button class="ks-btn" id="btn-process-facial-all"><i class="fas fa-wand-magic-sparkles"></i> Processar
                   Todas as Fotos</button>
               </div>
@@ -3216,44 +3216,44 @@
           </div>
         </div>
 
-        <!-- ResoluÃ§Ã£o (preview/download cliente) -->
+        <!-- Resolução (preview/download cliente) -->
         <div class="ks-card p-5 hidden" data-pane="image-quality">
-          <div class="font-extrabold text-slate-900">ResoluÃ§Ã£o da foto (cliente)</div>
+          <div class="font-extrabold text-slate-900">Resolução da foto (cliente)</div>
           <div class="mt-2 text-sm ks-muted max-w-3xl">
-            Define o tamanho mÃ¡ximo do lado longo das imagens com marca dâ€™Ã¡gua que o visitante vÃª e baixa na galeria.
-            PadrÃ£o recomendado para economia de banda: <strong>fraca</strong>. Altere antes de divulgar o link.
+            Define o tamanho máximo do lado longo das imagens com marca dâ€™água que o visitante vê e baixa na galeria.
+            Padrão recomendado para economia de banda: <strong>fraca</strong>. Altere antes de divulgar o link.
           </div>
           <div class="mt-5 space-y-3 max-w-xl">
             <label class="flex items-start gap-3 cursor-pointer rounded-xl border border-slate-200 bg-white p-4 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/40">
               <input type="radio" name="ks-client-img-q" id="ks-imgq-low" value="low" class="mt-1" checked />
               <div>
                 <div class="font-extrabold text-slate-900">Fraca (~1200 px)</div>
-                <div class="text-sm ks-muted">Carrega rÃ¡pido; qualidade JPEG moderada.</div>
+                <div class="text-sm ks-muted">Carrega rápido; qualidade JPEG moderada.</div>
               </div>
             </label>
             <label class="flex items-start gap-3 cursor-pointer rounded-xl border border-slate-200 bg-white p-4 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/40">
               <input type="radio" name="ks-client-img-q" id="ks-imgq-hd" value="hd" class="mt-1" />
               <div>
                 <div class="font-extrabold text-slate-900">HD (~2400 px)</div>
-                <div class="text-sm ks-muted">Boa para telas grandes e impressÃ£o leve.</div>
+                <div class="text-sm ks-muted">Boa para telas grandes e impressão leve.</div>
               </div>
             </label>
             <label class="flex items-start gap-3 cursor-pointer rounded-xl border border-slate-200 bg-white p-4 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/40">
               <input type="radio" name="ks-client-img-q" id="ks-imgq-max" value="max" class="mt-1" />
               <div>
-                <div class="font-extrabold text-slate-900">MÃ¡xima (~5000 px)</div>
+                <div class="font-extrabold text-slate-900">Máxima (~5000 px)</div>
                 <div class="text-sm ks-muted">Arquivos maiores; mais banda e processamento no servidor.</div>
               </div>
             </label>
           </div>
           <div class="mt-6 flex flex-wrap gap-2">
-            <button type="button" class="ks-btn ks-btn-primary" id="btn-save-image-quality"><i class="fas fa-save"></i> Salvar resoluÃ§Ã£o</button>
+            <button type="button" class="ks-btn ks-btn-primary" id="btn-save-image-quality"><i class="fas fa-save"></i> Salvar resolução</button>
           </div>
         </div>
 
         <!-- Photos -->
         <div class="ks-card p-5 hidden" data-pane="photos">
-          <!-- Overlay de upload (cobre toda a Ã¡rea de Fotos) -->
+          <!-- Overlay de upload (cobre toda a área de Fotos) -->
           <div class="ks-upload-ov hidden" id="ks-upload-ov" aria-hidden="true">
             <div class="ks-upload-card" role="status" aria-live="polite">
               <div class="ks-ring" aria-hidden="true">
@@ -3289,7 +3289,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div class="min-w-0">
                   <div class="font-extrabold text-slate-900">Arraste e solte suas fotos aqui</div>
-                  <div class="text-sm ks-muted mt-1">VocÃª pode selecionar dezenas de fotos. Durante o envio aparece uma
+                  <div class="text-sm ks-muted mt-1">Você pode selecionar dezenas de fotos. Durante o envio aparece uma
                     bolinha com o progresso.</div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -3298,8 +3298,8 @@
                     fotos</button>
                 </div>
               </div>
-              <div class="mt-3 text-xs ks-muted">Dica: se der erro, normalmente Ã© permissÃ£o no Cloudflare ou limite
-                temporÃ¡rio (aguarde alguns segundos).</div>
+              <div class="mt-3 text-xs ks-muted">Dica: se der erro, normalmente é permissão no Cloudflare ou limite
+                temporário (aguarde alguns segundos).</div>
 
               <!-- Bolinha de progresso -->
               <div class="ks-bubble hidden" id="ks-bubble">
@@ -3324,10 +3324,10 @@
           </div>
           </div>
 
-          <!-- barra de seleÃ§Ã£o (igual Alboom) -->
+          <!-- barra de seleção (igual Alboom) -->
           <div class="mt-4 ks-selected-bar" id="p-selected-bar">
             <button class="ks-btn" id="p-select-all"><i class="fas fa-check-double"></i> Selecionar tudo</button>
-            <button class="ks-btn" id="p-clear-sel"><i class="fas fa-xmark"></i> Limpar seleÃ§Ã£o</button>
+            <button class="ks-btn" id="p-clear-sel"><i class="fas fa-xmark"></i> Limpar seleção</button>
             <div class="ks-mini"><b id="p-selected-count">0</b> foto(s) selecionada(s)</div>
             <div class="flex items-center gap-2">
               <button class="ks-btn" id="p-download-sel"><i class="fas fa-download"></i> Baixar selecionadas</button>
@@ -3353,12 +3353,12 @@
             <div class="lg:col-span-10 min-w-0">
               <div class="mt-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 w-full min-w-0" id="p-grid"></div>
               <div class="mt-4 flex items-center justify-between gap-3 flex-wrap" id="p-pager">
-                <div class="text-xs ks-muted" id="p-page-label">PÃ¡gina 1/1</div>
+                <div class="text-xs ks-muted" id="p-page-label">Página 1/1</div>
                 <div class="flex items-center gap-2">
                   <button class="ks-btn" type="button" id="p-page-prev"><i class="fas fa-chevron-left"></i>
                     Anterior</button>
                   <div class="flex items-center gap-1 flex-wrap" id="p-page-numbers"></div>
-                  <button class="ks-btn" type="button" id="p-page-next">PrÃ³xima <i
+                  <button class="ks-btn" type="button" id="p-page-next">Próxima <i
                       class="fas fa-chevron-right"></i></button>
                 </div>
               </div>
@@ -3389,7 +3389,7 @@
         style="touch-action:pan-y pinch-zoom">
         <button class="absolute left-3 top-1/2 -translate-y-1/2 ks-ico z-10" id="p-viewer-prev" title="Anterior"><i
             class="fas fa-chevron-left"></i></button>
-        <button class="absolute right-3 top-1/2 -translate-y-1/2 ks-ico z-10" id="p-viewer-next" title="PrÃ³xima"><i
+        <button class="absolute right-3 top-1/2 -translate-y-1/2 ks-ico z-10" id="p-viewer-next" title="Próxima"><i
             class="fas fa-chevron-right"></i></button>
         <img id="p-viewer-img" src="" alt="foto"
           style="max-width:100%;max-height:72vh;width:auto;height:auto;object-fit:contain;display:block;touch-action:none"
@@ -3486,7 +3486,7 @@
           <button class="ks-btn" id="ks-client-share-whats"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button>
           <button class="ks-btn"
             onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('ks-client-share-link')?.textContent||'')"><i
-              class="fas fa-link"></i> Copiar sÃ³ o link</button>
+              class="fas fa-link"></i> Copiar só o link</button>
         </div>
       </div>
     </div>
@@ -3537,9 +3537,9 @@
         <button id="ks-export-close" class="text-slate-500 hover:text-slate-900"><i class="fas fa-times"></i></button>
       </div>
       <div class="p-5">
-        <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2">SeleÃ§Ã£o (lote)</div>
-        <select id="ks-export-batch" class="ks-input mb-4" title="Exportar sÃ³ fotos escolhidas nesta seleÃ§Ã£o (lote)">
-          <option value="all">Todas as seleÃ§Ãµes</option>
+        <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2">Seleção (lote)</div>
+        <select id="ks-export-batch" class="ks-input mb-4" title="Exportar só fotos escolhidas nesta seleção (lote)">
+          <option value="all">Todas as seleções</option>
         </select>
         <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2">O que incluir na lista</div>
         <div class="flex flex-col gap-2 text-sm text-slate-700">
@@ -3549,23 +3549,23 @@
           </label>
           <label class="flex items-start gap-2 cursor-pointer">
             <input type="radio" name="ks-export-scope" id="ks-export-scope-filter" value="filter" class="mt-1" />
-            <span>SÃ³ as que eu indicar abaixo (nÃºmeros ou cÃ³digo tipo <code class="text-xs bg-slate-100 px-1 rounded">ADR0003</code>)</span>
+            <span>Só as que eu indicar abaixo (números ou código tipo <code class="text-xs bg-slate-100 px-1 rounded">ADR0003</code>)</span>
           </label>
         </div>
         <p id="ks-export-all-hint" class="text-xs text-slate-500 mt-2 leading-relaxed min-h-[1.25rem]"></p>
         <div id="ks-export-filter-block" class="hidden mt-3">
           <textarea id="ks-export-filter-input" class="ks-input" rows="3"
-            placeholder="IDs do sistema (ex.: 1642) ou cÃ³digo no ficheiro (3, ADR0003) â€” vÃ­rgula ou linha"
+            placeholder="IDs do sistema (ex.: 1642) ou código no ficheiro (3, ADR0003) â€” vírgula ou linha"
             style="font-size:13px"></textarea>
           <div class="mt-2 flex flex-wrap gap-2 items-center">
             <button type="button" id="ks-export-filter-apply" class="ks-btn flex items-center gap-2">
               <i class="fas fa-search" aria-hidden="true"></i> Aplicar filtro
             </button>
-            <span class="text-xs text-slate-500">Atualiza a lista para copiar (tambÃ©m atualiza ao digitar).</span>
+            <span class="text-xs text-slate-500">Atualiza a lista para copiar (também atualiza ao digitar).</span>
           </div>
           <p id="ks-export-filter-hint" class="text-xs text-slate-500 mt-2 leading-relaxed"></p>
         </div>
-        <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mt-4 mb-2">Formato da cÃ³pia</div>
+        <div class="text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mt-4 mb-2">Formato da cópia</div>
         <div class="flex gap-2 flex-wrap">
           <button type="button" class="ks-btn" data-exp="lightroom">Lightroom</button>
           <button type="button" class="ks-btn" data-exp="finder">Finder (Mac)</button>
@@ -3587,7 +3587,7 @@
         <button type="button" class="ks-btn" id="ks-dupe-close" title="Fechar"><i class="fas fa-times"></i></button>
       </div>
       <div class="ks-dupe-body">
-        <div class="hint" id="ks-dupe-hint">Encontramos fotos com o mesmo cÃ³digo/nome jÃ¡ existente nesta galeria.</div>
+        <div class="hint" id="ks-dupe-hint">Encontramos fotos com o mesmo código/nome já existente nesta galeria.</div>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div class="rounded-2xl border border-white/10 bg-black/35 overflow-hidden">
             <div
@@ -3604,7 +3604,7 @@
           <div class="rounded-2xl border border-white/10 bg-black/35 overflow-hidden">
             <div
               class="px-4 py-3 border-b border-white/10 text-xs font-extrabold tracking-[0.18em] uppercase text-white/70">
-              Nova (que vocÃª selecionou)</div>
+              Nova (que você selecionou)</div>
             <div class="p-3">
               <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40" style="aspect-ratio: 4 / 3;">
                 <img id="ks-dupe-img-new" alt="nova foto" decoding="async" fetchpriority="low"

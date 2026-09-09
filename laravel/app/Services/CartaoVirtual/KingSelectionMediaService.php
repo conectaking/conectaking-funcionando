@@ -29,6 +29,7 @@ class KingSelectionMediaService
      */
     public function coverJpeg(string $slug, int $maxSide = 1400): array
     {
+        $this->bumpImageMemory();
         $buf = $this->fetchCoverBuffer($slug);
         if ($buf === null) {
             return ['status' => 404, 'message' => 'Sem capa'];
@@ -46,6 +47,7 @@ class KingSelectionMediaService
      */
     public function ogImageJpeg(string $slug): array
     {
+        $this->bumpImageMemory();
         $buf = $this->fetchCoverBuffer($slug);
         if ($buf === null) {
             $buf = $this->fallbackOgBuffer($slug);
@@ -54,6 +56,7 @@ class KingSelectionMediaService
             return ['status' => 404, 'message' => 'Sem imagem'];
         }
         $img = @imagecreatefromstring($buf);
+        unset($buf);
         if ($img === false) {
             $fb = $this->fallbackOgBuffer($slug);
 
@@ -92,11 +95,13 @@ class KingSelectionMediaService
      */
     public function previewFromStoragePath(string $path, bool $thumb = false, ?array $watermark = null): array
     {
+        $this->bumpImageMemory();
         $buf = $this->bufferFromPath($path);
         if ($buf === null) {
             return ['status' => 502, 'message' => 'Não foi possível carregar a imagem (ficheiro em falta no armazenamento).'];
         }
         $out = $this->resizeJpeg($buf, $thumb ? 400 : 1200);
+        unset($buf);
         if ($out === null) {
             return ['status' => 502, 'message' => 'Falha ao processar imagem'];
         }
@@ -415,9 +420,38 @@ class KingSelectionMediaService
         }
     }
 
+    /** JPGs de câmara (24–45MP) estouram 128M no GD; sobe só durante o decode. */
+    private function bumpImageMemory(): void
+    {
+        $cur = (string) ini_get('memory_limit');
+        $bytes = $this->memoryLimitToBytes($cur);
+        if ($bytes > 0 && $bytes < 512 * 1024 * 1024) {
+            @ini_set('memory_limit', '512M');
+        }
+    }
+
+    private function memoryLimitToBytes(string $limit): int
+    {
+        $limit = trim($limit);
+        if ($limit === '' || $limit === '-1') {
+            return -1;
+        }
+        $unit = strtolower(substr($limit, -1));
+        $num = (float) $limit;
+        return (int) match ($unit) {
+            'g' => $num * 1024 * 1024 * 1024,
+            'm' => $num * 1024 * 1024,
+            'k' => $num * 1024,
+            default => (float) $limit,
+        };
+    }
+
     private function resizeJpeg(string $buf, int $maxSide): ?string
     {
+        $this->bumpImageMemory();
         $img = @imagecreatefromstring($buf);
+        // Libertar JPEG comprimido antes do resample (economiza dezenas de MB).
+        unset($buf);
         if ($img === false) {
             return null;
         }
@@ -427,6 +461,11 @@ class KingSelectionMediaService
         $nw = max(1, (int) round($w * $scale));
         $nh = max(1, (int) round($h * $scale));
         $dst = imagecreatetruecolor($nw, $nh);
+        if ($dst === false) {
+            imagedestroy($img);
+
+            return null;
+        }
         imagecopyresampled($dst, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
         imagedestroy($img);
         ob_start();
@@ -439,7 +478,9 @@ class KingSelectionMediaService
 
     private function resizePng(string $buf, int $maxSide): ?string
     {
+        $this->bumpImageMemory();
         $img = @imagecreatefromstring($buf);
+        unset($buf);
         if ($img === false) {
             return null;
         }
@@ -450,6 +491,11 @@ class KingSelectionMediaService
         $nw = max(1, (int) round($w * $scale));
         $nh = max(1, (int) round($h * $scale));
         $dst = imagecreatetruecolor($nw, $nh);
+        if ($dst === false) {
+            imagedestroy($img);
+
+            return null;
+        }
         imagealphablending($dst, false);
         imagesavealpha($dst, true);
         $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
