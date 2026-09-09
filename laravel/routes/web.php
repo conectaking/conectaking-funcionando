@@ -37,22 +37,12 @@ Route::get('/api/health', [\App\Http\Controllers\FrontLegacyController::class, '
 
 Route::post('/api/password/forgot', [\App\Http\Controllers\Auth\PasswordController::class, 'forgot'])
     ->middleware('throttle:10,1');
-    ->middleware('throttle:10,1');
 Route::post('/api/password/reset', [\App\Http\Controllers\Auth\PasswordController::class, 'reset'])
-    ->middleware('throttle:10,1');
     ->middleware('throttle:10,1');
 
 $cardSlug = '[A-Za-z0-9._-]+';
 $userId = '[A-Za-z0-9_-]+';
 
-// Prefixo /l (proxy Node)
-    ->where(['bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
-    ->where('bookId', '[A-Za-z0-9_-]+');
-    ->where('day', '[0-9]+');
-    ->where('day', '[0-9]+');
-    ->where('n', '[0-9]+');
-    ->where('n', '[0-9]+');
-    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+']);
     return redirect('/portaria/'.$token, 301)->header('X-Conecta-Engine', 'laravel');
 })->where('token', $cardSlug);
 Route::get('/api/profile/import-form-info', [ProfileFormExtrasController::class, 'importFormInfo']);
@@ -235,25 +225,19 @@ Route::get('/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->wh
 Route::get('/{slug}/biblia/estudos-livro', [SatellitePublicController::class, 'bibleStudyRedirect'])->where('slug', $cardSlug);
 Route::get('/{slug}/biblia/estudos-livro/{bookId}', [SatellitePublicController::class, 'bibleStudy'])
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+']);
-    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+']);
 Route::get('/{slug}/biblia/devocional/{day?}', [SatellitePublicController::class, 'bibleDevotional'])
-    ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
     ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
 Route::get('/{slug}/biblia/salmo', [SatellitePublicController::class, 'bibleSalmo'])->where('slug', $cardSlug);
 Route::get('/{slug}/biblia/plano/{day?}', [SatellitePublicController::class, 'biblePlan'])
     ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
-    ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
 Route::get('/{slug}/biblia/biblia-inteira/{day?}', [SatellitePublicController::class, 'bibleWhole'])
     ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
-    ->where(['slug' => $cardSlug, 'day' => '[0-9]+']);
 Route::get('/{slug}/biblia/prosperidade/{n?}', [SatellitePublicController::class, 'bibleProsperidade'])
-    ->where(['slug' => $cardSlug, 'n' => '[0-9]+']);
     ->where(['slug' => $cardSlug, 'n' => '[0-9]+']);
 Route::get('/{slug}/bible', [SatellitePublicController::class, 'bibleRedirect'])->where('slug', $cardSlug);
 Route::get('/{slug}/bible/estudo-livro/{bookId}', [SatellitePublicController::class, 'bibleStudyLegacyRedirect'])
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+']);
 Route::get('/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReader'])
-    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
 
 // King Selection (read-only público)
@@ -262,82 +246,59 @@ Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController:
 Route::get('/api/king-selection/public/gallery-content', [KingSelectionPublicController::class, 'galleryContent']);
 Route::get('/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectionPublicController::class, 'shareMeta'])
     ->where('slug', $cardSlug);
-    ->where('slug', $cardSlug);
 Route::get('/api/king-selection/public/cover', [KingSelectionPublicController::class, 'cover']);
 Route::get('/api/king-selection/public/entry-splash', [KingSelectionPublicController::class, 'entrySplash']);
 Route::get('/api/king-selection/public/og-image', [KingSelectionPublicController::class, 'ogImage']);
 Route::get('/api/king-selection/public/photos/{photoId}/preview', [KingSelectionPublicController::class, 'publicPreview'])
     ->where('photoId', '[0-9]+');
-    ->where('photoId', '[0-9]+');
 Route::get('/api/king-selection/public/galleries/{slug}/my-photos', [KingSelectionPublicController::class, 'myPhotos'])
     ->where('slug', $cardSlug);
-    ->where('slug', $cardSlug);
 Route::post('/api/king-selection/public/enroll-face-anonymous', [KingSelectionPublicController::class, 'enrollFaceAnonymous'])
-    ->middleware('throttle:20,1');
     ->middleware('throttle:20,1');
 Route::get('/api/king-selection/public/aws-ping', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsPing']);
 
 Route::post('/api/king-selection/client/login', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'login']);
 Route::post('/api/king-selection/client/login-by-details', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'loginByDetails'])
     ->middleware('throttle:30,1');
-    ->middleware('throttle:30,1');
 Route::post('/api/king-selection/client/register', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'register'])
-    ->middleware('throttle:20,1');
     ->middleware('throttle:20,1');
 Route::post('/api/king-selection/client/public-enter', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'publicEnter'])
     ->middleware('throttle:30,1');
-    ->middleware('throttle:30,1');
 Route::post('/api/king-selection/client/signup-enter', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'signupEnter'])
-    ->middleware('throttle:30,1');
     ->middleware('throttle:30,1');
 Route::middleware('ks.client')->group(function () {
     Route::get('/api/king-selection/client/gallery', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'gallery']);
     Route::post('/api/king-selection/client/select', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'select'])
         ->middleware('throttle:60,1');
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/client/select-bulk', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'selectBulk'])
-        ->middleware('throttle:30,1');
         ->middleware('throttle:30,1');
     Route::post('/api/king-selection/client/finalize', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'finalize'])
         ->middleware('throttle:20,1');
-        ->middleware('throttle:20,1');
     Route::get('/api/king-selection/client/export', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'export']);
     Route::post('/api/king-selection/client/edit-request', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'createEditRequest'])
-        ->middleware('throttle:20,1');
         ->middleware('throttle:20,1');
     Route::get('/api/king-selection/client/edit-requests', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'listEditRequests']);
     Route::post('/api/king-selection/client/edit-request/{requestId}/cancel', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'cancelEditRequest'])
         ->where('requestId', '[0-9]+')
         ->middleware('throttle:20,1');
-        ->where('requestId', '[0-9]+')
-        ->middleware('throttle:20,1');
     Route::get('/api/king-selection/client/photos/{photoId}/preview', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'preview'])
-        ->where('photoId', '[0-9]+');
         ->where('photoId', '[0-9]+');
     Route::post('/api/king-selection/client/payment-proof', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'paymentProof'])
         ->middleware('throttle:20,1');
-        ->middleware('throttle:20,1');
     Route::post('/api/king-selection/client/promo-verify', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'promoVerify'])
         ->middleware('throttle:20,1');
-        ->middleware('throttle:20,1');
     Route::post('/api/king-selection/client/enroll-face-image', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'enrollFaceImage'])
-        ->middleware('throttle:10,1');
         ->middleware('throttle:10,1');
     Route::get('/api/king-selection/client/face-results', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'faceResults']);
     Route::post('/api/king-selection/client/face-enroll-cache', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'faceEnrollCache'])
         ->middleware('throttle:30,1');
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/client/reset-face-session', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'resetFaceSession'])
-        ->middleware('throttle:20,1');
         ->middleware('throttle:20,1');
     Route::post('/api/king-selection/client/search-face-by-photo', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'searchFaceByPhoto'])
         ->middleware('throttle:10,1');
-        ->middleware('throttle:10,1');
     Route::post('/api/king-selection/client/download-zip-plan', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'downloadZipPlan'])
         ->middleware('throttle:30,1');
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/client/download-zip', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'downloadZip'])
-        ->middleware('throttle:10,1');
         ->middleware('throttle:10,1');
 });
 
@@ -349,17 +310,14 @@ Route::middleware('jwt')->group(function () {
     Route::post('/api/account/upgrade', [\App\Http\Controllers\Account\AccountController::class, 'upgrade']);
     Route::get('/api/account/debug-plan/{email}', [\App\Http\Controllers\Account\AccountController::class, 'debugPlan'])
         ->where('email', '[^/]+');
-        ->where('email', '[^/]+');
 
     Route::get('/api/subscription/info', [\App\Http\Controllers\Account\SubscriptionController::class, 'info']);
     Route::get('/api/subscription/plans', [\App\Http\Controllers\Account\SubscriptionController::class, 'plans']);
     Route::put('/api/subscription/plans/{id}', [\App\Http\Controllers\Account\SubscriptionController::class, 'updatePlan'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
 
     Route::get('/api/link-limits/user', [\App\Http\Controllers\Account\LinkLimitsController::class, 'user']);
     Route::get('/api/link-limits/check/{moduleType}', [\App\Http\Controllers\Account\LinkLimitsController::class, 'check'])
-        ->where('moduleType', '[A-Za-z0-9_]+');
         ->where('moduleType', '[A-Za-z0-9_]+');
     Route::get('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'index']);
     Route::put('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'upsert']);
@@ -380,284 +338,175 @@ Route::middleware('jwt')->group(function () {
     Route::get('/api/king-selection/galleries', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'index']);
     Route::post('/api/king-selection/galleries', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'store'])
         ->middleware('throttle:30,1');
-        ->middleware('throttle:30,1');
     Route::get('/api/king-selection/galleries/{id}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'show'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::post('/api/king-selection/galleries/{id}/status', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'status'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::delete('/api/king-selection/galleries/{id}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'destroy'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/photos', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'addPhoto'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:120,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:120,1');
     Route::post('/api/king-selection/galleries/{id}/photos/batch', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'photosBatch'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/photos/worker-commit', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'workerCommit'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/uploads/proxy', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'uploadProxy'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/uploads/presign-batch', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'presignBatch'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::get('/api/king-selection/galleries/{id}/watermark-file', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'watermarkFile'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::put('/api/king-selection/galleries/{id}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'update'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::get('/api/king-selection/galleries/{id}/folders', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'listFolders'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::post('/api/king-selection/galleries/{id}/folders', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'createFolder'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::delete('/api/king-selection/galleries/{id}/folders/{folderId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'deleteFolder'])
         ->where(['id' => '[0-9]+', 'folderId' => '[0-9]+'])
         ->middleware('throttle:60,1');
-        ->where(['id' => '[0-9]+', 'folderId' => '[0-9]+'])
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/folders/generate', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'generateFolders'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/folders/reorder', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'reorderFolders'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/photos/assign-folder', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'assignPhotosFolder'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/watermark', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'uploadWatermark'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/thank-you-image', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'uploadThankYouImage'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/open-selection-round', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'openSelectionRound'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/ai/share-text', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'aiShareText'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:20,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:20,1');
     Route::post('/api/king-selection/galleries/{id}/ai/sales-whatsapp-template', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'aiSalesWhatsappTemplate'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:20,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:20,1');
     Route::post('/api/king-selection/galleries/{id}/ai/support-default-message', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'aiSupportDefaultMessage'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:20,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:20,1');
     Route::get('/api/king-selection/galleries/{id}/edit-requests', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'listEditRequestsAdmin'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::patch('/api/king-selection/galleries/{id}/edit-requests/{requestId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'updateEditRequest'])
-        ->where(['id' => '[0-9]+', 'requestId' => '[0-9]+'])
-        ->middleware('throttle:60,1');
         ->where(['id' => '[0-9]+', 'requestId' => '[0-9]+'])
         ->middleware('throttle:60,1');
     Route::delete('/api/king-selection/galleries/{id}/edit-requests/{requestId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'deleteEditRequest'])
         ->where(['id' => '[0-9]+', 'requestId' => '[0-9]+'])
         ->middleware('throttle:60,1');
-        ->where(['id' => '[0-9]+', 'requestId' => '[0-9]+'])
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/clients/{clientId}/delete-selection-batch', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'deleteSelectionBatch'])
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:30,1');
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/clients/{clientId}/reactivate-selection-batch', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'reactivateSelectionBatch'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:30,1');
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/clients/{clientId}/clear-review', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'clearReview'])
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:30,1');
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/photos/delete-batch', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'deletePhotosBatch'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
     Route::get('/api/king-selection/galleries/{id}/clients', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'listClients'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::post('/api/king-selection/galleries/{id}/clients', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'createClient'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::put('/api/king-selection/galleries/{id}/clients/{clientId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'updateClient'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:60,1');
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:60,1');
     Route::delete('/api/king-selection/galleries/{id}/clients/{clientId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'deleteClient'])
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:60,1');
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/clients/{clientId}/reset-password', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'resetClientPassword'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:30,1');
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/clients/{clientId}/access-link', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'clientAccessLink'])
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:60,1');
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:60,1');
     Route::get('/api/king-selection/galleries/{id}/sales-config', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'salesConfig'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::put('/api/king-selection/galleries/{id}/sales-config', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'saveSalesConfig'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::get('/api/king-selection/galleries/{id}/sales/clients', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'salesClients'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::get('/api/king-selection/galleries/{id}/sales/clients/{clientId}/round/{selectionBatch}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'salesRound'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+']);
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+']);
     Route::post('/api/king-selection/galleries/{id}/sales/clients/{clientId}/round/{selectionBatch}/payment-terms', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'paymentTerms'])
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
-        ->middleware('throttle:60,1');
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
         ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/sales/clients/{clientId}/round/{selectionBatch}/payment-review', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'paymentReview'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
         ->middleware('throttle:60,1');
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/sales/clients/{clientId}/round/{selectionBatch}/approve-photo', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'approvePhoto'])
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
-        ->middleware('throttle:120,1');
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
         ->middleware('throttle:120,1');
     Route::post('/api/king-selection/galleries/{id}/sales/clients/{clientId}/round/{selectionBatch}/approve-all', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'approveAll'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
         ->middleware('throttle:30,1');
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+', 'selectionBatch' => '[0-9]+'])
-        ->middleware('throttle:30,1');
     Route::get('/api/king-selection/galleries/{id}/sales/payment-proof/{paymentId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'paymentProof'])
         ->where(['id' => '[0-9]+', 'paymentId' => '[0-9]+']);
-        ->where(['id' => '[0-9]+', 'paymentId' => '[0-9]+']);
     Route::post('/api/king-selection/galleries/{id}/uploads/worker-token', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'workerToken'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::post('/api/king-selection/galleries/{id}/reset-password', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'resetGalleryPassword'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
     Route::get('/api/king-selection/galleries/{id}/enrolled-faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'enrolledFaces'])
-        ->where('id', '[0-9]+');
         ->where('id', '[0-9]+');
     Route::post('/api/king-selection/galleries/{id}/clients/{clientId}/enroll-face', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'enrollFace'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:20,1');
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
-        ->middleware('throttle:20,1');
     Route::get('/api/king-selection/galleries/{id}/clients/{clientId}/password', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'getClientPassword'])
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+']);
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+']);
     Route::get('/api/king-selection/galleries/{id}/export', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'exportGallery'])
-        ->where('id', '[0-9]+');
         ->where('id', '[0-9]+');
     Route::post('/api/king-selection/galleries/{id}/link-cover-upload', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'uploadLinkCover'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:30,1');
     Route::get('/api/king-selection/galleries/{id}/link-cover-preview', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'linkCoverPreview'])
-        ->where('id', '[0-9]+');
         ->where('id', '[0-9]+');
     Route::post('/api/king-selection/galleries/{id}/photos/{photoId}/edited-upload', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'editedUpload'])
         ->where(['id' => '[0-9]+', 'photoId' => '[0-9]+'])
         ->middleware('throttle:30,1');
-        ->where(['id' => '[0-9]+', 'photoId' => '[0-9]+'])
-        ->middleware('throttle:30,1');
     Route::get('/api/king-selection/galleries/{galleryId}/face-process-status', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'faceProcessStatus'])
-        ->where('galleryId', '[0-9]+');
         ->where('galleryId', '[0-9]+');
     Route::get('/api/king-selection/galleries/{galleryId}/face-results', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'faceResultsAdmin'])
         ->where('galleryId', '[0-9]+');
-        ->where('galleryId', '[0-9]+');
     Route::get('/api/king-selection/galleries/{galleryId}/photos/{photoId}/face-detail', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'faceDetail'])
-        ->where(['galleryId' => '[0-9]+', 'photoId' => '[0-9]+']);
         ->where(['galleryId' => '[0-9]+', 'photoId' => '[0-9]+']);
     Route::get('/api/king-selection/galleries/{id}/folders/auto-separate-job', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'autoSeparateJobLatest'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::get('/api/king-selection/galleries/{id}/folders/auto-separate-jobs', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'autoSeparateJobsList'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::post('/api/king-selection/galleries/{id}/folders/auto-separate-by-face', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'autoSeparateByFace'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:10,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:10,1');
     Route::post('/api/king-selection/galleries/{id}/folders/auto-separate-job/{jobId}/cancel', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'cancelAutoSeparateJob'])
         ->where(['id' => '[0-9]+', 'jobId' => '[0-9]+'])
         ->middleware('throttle:30,1');
-        ->where(['id' => '[0-9]+', 'jobId' => '[0-9]+'])
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{id}/folders/auto-separate-job/start', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'startAutoSeparateJob'])
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:5,1');
         ->where('id', '[0-9]+')
         ->middleware('throttle:5,1');
     Route::post('/api/king-selection/galleries/{galleryId}/photos/{photoId}/process-faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'processPhotoFaces'])
         ->where(['galleryId' => '[0-9]+', 'photoId' => '[0-9]+'])
         ->middleware('throttle:30,1');
-        ->where(['galleryId' => '[0-9]+', 'photoId' => '[0-9]+'])
-        ->middleware('throttle:30,1');
     Route::post('/api/king-selection/galleries/{galleryId}/process-all-faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'processAllFaces'])
-        ->where('galleryId', '[0-9]+')
-        ->middleware('throttle:5,1');
         ->where('galleryId', '[0-9]+')
         ->middleware('throttle:5,1');
 
@@ -668,54 +517,36 @@ Route::middleware('jwt')->group(function () {
     Route::get('/api/king-selection/facial/matches', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'matches']);
     Route::post('/api/king-selection/facial/process', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'process'])
         ->middleware('throttle:5,1');
-        ->middleware('throttle:5,1');
     Route::get('/api/king-selection/facial/progress', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'progress']);
     Route::delete('/api/king-selection/facial/clients/{clientId}/faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'deleteClientFaces'])
-        ->where('clientId', '[0-9]+');
         ->where('clientId', '[0-9]+');
     Route::get('/api/king-selection/facial/diagnose', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'diagnose']);
     Route::get('/api/king-selection/aws-check', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsCheck']);
 
     Route::get('/api/king-selection/config-finalizacao/{galleryId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'configFinalizacao'])
         ->where('galleryId', '[0-9]+');
-        ->where('galleryId', '[0-9]+');
     Route::patch('/api/king-selection/photos/{photoId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'patchPhoto'])
-        ->where('photoId', '[0-9]+')
-        ->middleware('throttle:120,1');
         ->where('photoId', '[0-9]+')
         ->middleware('throttle:120,1');
     Route::delete('/api/king-selection/photos/{photoId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'deletePhoto'])
         ->where('photoId', '[0-9]+')
         ->middleware('throttle:60,1');
-        ->where('photoId', '[0-9]+')
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/photos/{photoId}/replace-r2', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'replacePhotoR2'])
-        ->where('photoId', '[0-9]+')
-        ->middleware('throttle:60,1');
         ->where('photoId', '[0-9]+')
         ->middleware('throttle:60,1');
     Route::post('/api/king-selection/photos/{photoId}/replace', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'replacePhotoCf'])
         ->where('photoId', '[0-9]+')
         ->middleware('throttle:60,1');
-        ->where('photoId', '[0-9]+')
-        ->middleware('throttle:60,1');
     Route::post('/api/king-selection/photos/{photoId}/replace-proxy', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'replacePhotoProxy'])
-        ->where('photoId', '[0-9]+')
-        ->middleware('throttle:30,1');
         ->where('photoId', '[0-9]+')
         ->middleware('throttle:30,1');
     Route::get('/api/king-selection/photos/{photoId}/preview', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'adminPhotoPreview'])
         ->where('photoId', '[0-9]+');
-        ->where('photoId', '[0-9]+');
     Route::get('/api/king-selection/photos/{photoId}/download', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'adminPhotoDownload'])
-        ->where('photoId', '[0-9]+');
         ->where('photoId', '[0-9]+');
     Route::get('/api/king-selection/galleries/{id}/watermark-suggest-scales', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'watermarkSuggestScales'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::patch('/api/king-selection/galleries/{id}/folders/{folderId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'updateFolder'])
-        ->where(['id' => '[0-9]+', 'folderId' => '[0-9]+'])
-        ->middleware('throttle:60,1');
         ->where(['id' => '[0-9]+', 'folderId' => '[0-9]+'])
         ->middleware('throttle:60,1');
 });
@@ -726,52 +557,38 @@ Route::middleware(['jwt', 'module:finance'])->group(function () {
     Route::get('/api/finance/profiles/limit', [\App\Http\Controllers\Finance\FinanceController::class, 'profilesLimit']);
     Route::post('/api/finance/profiles', [\App\Http\Controllers\Finance\FinanceController::class, 'createProfile'])
         ->middleware('throttle:30,1');
-        ->middleware('throttle:30,1');
     Route::put('/api/finance/profiles/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'updateProfile'])
         ->where('id', '[0-9]+')->middleware('throttle:60,1');
-        ->where('id', '[0-9]+')->middleware('throttle:60,1');
     Route::delete('/api/finance/profiles/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'deleteProfile'])
-        ->where('id', '[0-9]+')->middleware('throttle:30,1');
         ->where('id', '[0-9]+')->middleware('throttle:30,1');
     Route::get('/api/finance/dashboard', [\App\Http\Controllers\Finance\FinanceController::class, 'dashboard']);
     Route::get('/api/finance/income-breakdown', [\App\Http\Controllers\Finance\FinanceController::class, 'incomeBreakdown']);
     Route::get('/api/finance/cards', [\App\Http\Controllers\Finance\FinanceController::class, 'cards']);
     Route::post('/api/finance/cards', [\App\Http\Controllers\Finance\FinanceController::class, 'createCard'])
         ->middleware('throttle:60,1');
-        ->middleware('throttle:60,1');
     Route::patch('/api/finance/cards/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'updateCard'])
         ->where('id', '[0-9]+')->middleware('throttle:60,1');
-        ->where('id', '[0-9]+')->middleware('throttle:60,1');
     Route::delete('/api/finance/cards/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'deleteCard'])
-        ->where('id', '[0-9]+')->middleware('throttle:60,1');
         ->where('id', '[0-9]+')->middleware('throttle:60,1');
     Route::get('/api/finance/transactions', [\App\Http\Controllers\Finance\FinanceController::class, 'transactions']);
     Route::get('/api/finance/transactions/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'transactionById'])
         ->where('id', '[0-9]+');
-        ->where('id', '[0-9]+');
     Route::post('/api/finance/transactions', [\App\Http\Controllers\Finance\FinanceController::class, 'createTransaction'])
-        ->middleware('throttle:120,1');
         ->middleware('throttle:120,1');
     Route::put('/api/finance/transactions/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'updateTransaction'])
         ->where('id', '[0-9]+')->middleware('throttle:120,1');
-        ->where('id', '[0-9]+')->middleware('throttle:120,1');
     Route::delete('/api/finance/transactions/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'deleteTransaction'])
-        ->where('id', '[0-9]+')->middleware('throttle:60,1');
         ->where('id', '[0-9]+')->middleware('throttle:60,1');
     Route::get('/api/finance/categories', [\App\Http\Controllers\Finance\FinanceController::class, 'categories']);
     Route::post('/api/finance/categories', [\App\Http\Controllers\Finance\FinanceController::class, 'createCategory'])
         ->middleware('throttle:60,1');
-        ->middleware('throttle:60,1');
     Route::get('/api/finance/accounts', [\App\Http\Controllers\Finance\FinanceController::class, 'accounts']);
     Route::post('/api/finance/accounts', [\App\Http\Controllers\Finance\FinanceController::class, 'createAccount'])
-        ->middleware('throttle:60,1');
         ->middleware('throttle:60,1');
     Route::get('/api/finance/goals', [\App\Http\Controllers\Finance\FinanceController::class, 'goals']);
     Route::post('/api/finance/goals', [\App\Http\Controllers\Finance\FinanceController::class, 'createGoal'])
         ->middleware('throttle:60,1');
-        ->middleware('throttle:60,1');
     Route::delete('/api/finance/goals/{id}', [\App\Http\Controllers\Finance\FinanceController::class, 'deleteGoal'])
-        ->where('id', '[0-9]+')->middleware('throttle:60,1');
         ->where('id', '[0-9]+')->middleware('throttle:60,1');
     Route::get('/api/finance/king-data', [\App\Http\Controllers\Finance\FinanceController::class, 'kingData']);
     Route::put('/api/finance/king-data', [\App\Http\Controllers\Finance\FinanceController::class, 'saveKingData']);
@@ -890,7 +707,7 @@ Route::middleware('admin')->group(function () {
         Route::post($p.'/api/admin/codes/generate-batch', [$adminCodes, 'generateBatch']);
         Route::put($p.'/api/admin/codes/{code}', [$adminCodes, 'update']);
         Route::delete($p.'/api/admin/codes/{code}', [$adminCodes, 'destroy']);
-        // Alias generate-code.
+        // Rota legada sem prefixo /codes.
         Route::post($p.'/api/admin/generate-code', [$adminCodes, 'generateCode']);
     }
 });
@@ -1000,8 +817,8 @@ $ksPhotographerPage = function () {
     return app(\App\Http\Controllers\LegacyPageController::class)->show($request, $page);
 };
 foreach ([
-    '/kingSelection', '/kingSelection.html',
-    '/kingselection', '/kingselection.html',
+    '/kingSelection', '/kingSelection.html', '/l/kingSelection', '/l/kingSelection.html',
+    '/kingselection', '/kingselection.html', '/l/kingselection', '/l/kingselection.html',
     '/mr/kingSelection', '/mr/kingselection',
 ] as $ksPath) {
     Route::get($ksPath, $ksPhotographerPage);
@@ -1058,11 +875,10 @@ foreach (['/admin/'] as $adminSlash) {
 }
 
 
-// Compat: prefixo /l antigo (proxy Node) → rota canónica Laravel
+// Compat: prefixo /l antigo → rota canónica
 Route::any('/l/{path}', function (\Illuminate\Http\Request $request, string $path) {
     $target = '/'.ltrim($path, '/');
     $qs = $request->getQueryString();
-
     return redirect($target.($qs ? '?'.$qs : ''), 301);
 })->where('path', '.*');
 
