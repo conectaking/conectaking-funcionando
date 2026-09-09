@@ -1,4 +1,4 @@
-@verbatim﻿<!DOCTYPE html>
+@verbatim<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
