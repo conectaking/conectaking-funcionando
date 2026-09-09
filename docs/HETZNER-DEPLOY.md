@@ -77,9 +77,15 @@ Flags atuais (canário): cartão/`adrianokingg`, profile, upload, satélites, KS
 
 | Prioridade | Item | Notas |
 |---|---|---|
-| Baixa | KS CompareFaces chunked (`face-results?chunked=1` com REKOG_ON_DEMAND=1) | opcional; prod está com ON_DEMAND=0 |
-| Removido do roadmap | Checkout / PagBank | **Não será usado** — não migrar |
+| Média | Admin de estudos bíblicos por livro (7 rotas) | **Migrado para Laravel** (`BibleAdminBookStudyController`). Upload PDF/DOCX + generate-ai + jobs async |
+| N/A | KS CompareFaces chunked | Feito — `face-results?chunked=1` já é Laravel, com o mesmo default de `REKOG_ON_DEMAND` do Node |
+| N/A | Admin users/codes (mutações + auto-delete) | Feito |
+| N/A | Checkout / PagBank (APIs, webhook e página HTML) | Feito |
+| N/A | Envio de push (web-push) | Código morto no Node — ninguém chama `sendPushNotification`. Nada a migrar |
 | N/A | TTS | Browser-only |
+
+O checklist passo a passo do cutover (flags → Caddy → smoke → desligar `api` → rollback) está em
+[`docs/FULL-PHP-MIGRATION.md`](FULL-PHP-MIGRATION.md#checklist-de-cutover-caddy--8080).
 
 ## Ops (já OK neste VPS)
 

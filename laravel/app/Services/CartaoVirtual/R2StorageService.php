@@ -107,10 +107,14 @@ class R2StorageService
     }
 
     /**
-     * Upload por key (KS galleries) — não exige publicBaseUrl.
+     * Upload por key (KS galleries / king-docs) — não exige publicBaseUrl.
      */
-    public function putKey(string $key, string $binary, string $contentType): bool
-    {
+    public function putKey(
+        string $key,
+        string $binary,
+        string $contentType,
+        ?string $cacheControl = 'public, max-age=31536000, immutable'
+    ): bool {
         $c = $this->config();
         if (! $c['enabled'] || ! $c['endpoint'] || ! $c['bucket']) {
             return false;
@@ -124,7 +128,45 @@ class R2StorageService
             $key,
             $binary,
             $contentType,
-            'public, max-age=31536000, immutable'
+            $cacheControl
+        );
+    }
+
+    /**
+     * Download objeto R2 (SigV4 GET) — retorna binário ou null.
+     */
+    public function getObject(string $key): ?string
+    {
+        $c = $this->config();
+        if (! $c['enabled'] || ! $c['endpoint'] || ! $c['bucket']) {
+            return null;
+        }
+
+        return $this->getObjectRaw(
+            (string) $c['endpoint'],
+            (string) $c['bucket'],
+            (string) $c['accessKeyId'],
+            (string) $c['secretAccessKey'],
+            $key
+        );
+    }
+
+    /**
+     * Apaga objeto R2 (SigV4 DELETE).
+     */
+    public function deleteObject(string $key): bool
+    {
+        $c = $this->config();
+        if (! $c['enabled'] || ! $c['endpoint'] || ! $c['bucket'] || $key === '') {
+            return false;
+        }
+
+        return $this->deleteObjectRaw(
+            (string) $c['endpoint'],
+            (string) $c['bucket'],
+            (string) $c['accessKeyId'],
+            (string) $c['secretAccessKey'],
+            $key
         );
     }
 
@@ -252,6 +294,120 @@ class R2StorageService
             return true;
         } catch (\Throwable $e) {
             Log::error('r2.putObject', ['error' => $e->getMessage(), 'key' => $key]);
+
+            return false;
+        }
+    }
+
+    private function getObjectRaw(
+        string $endpoint,
+        string $bucket,
+        string $accessKeyId,
+        string $secret,
+        string $key
+    ): ?string {
+        try {
+            $host = parse_url($endpoint, PHP_URL_HOST) ?: '';
+            $canonicalUri = '/'.$bucket.'/'.implode('/', array_map('rawurlencode', explode('/', ltrim($key, '/'))));
+            $amzDate = gmdate('Ymd\THis\Z');
+            $dateStamp = gmdate('Ymd');
+            $payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+            $headers = [
+                'host' => $host,
+                'x-amz-content-sha256' => $payloadHash,
+                'x-amz-date' => $amzDate,
+            ];
+            ksort($headers);
+            $signedHeaderNames = implode(';', array_keys($headers));
+            $canonicalHeaders = '';
+            foreach ($headers as $k => $v) {
+                $canonicalHeaders .= $k.':'.trim($v)."\n";
+            }
+            $canonicalRequest = "GET\n{$canonicalUri}\n\n{$canonicalHeaders}\n{$signedHeaderNames}\n{$payloadHash}";
+            $credentialScope = "{$dateStamp}/auto/s3/aws4_request";
+            $stringToSign = "AWS4-HMAC-SHA256\n{$amzDate}\n{$credentialScope}\n".hash('sha256', $canonicalRequest);
+            $signingKey = $this->signingKey($secret, $dateStamp, 'auto', 's3');
+            $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+            $authorization = "AWS4-HMAC-SHA256 Credential={$accessKeyId}/{$credentialScope}, SignedHeaders={$signedHeaderNames}, Signature={$signature}";
+
+            $url = rtrim($endpoint, '/').$canonicalUri;
+            $response = Http::withHeaders([
+                'Authorization' => $authorization,
+                'Host' => $host,
+                'x-amz-content-sha256' => $payloadHash,
+                'x-amz-date' => $amzDate,
+            ])->timeout(60)->get($url);
+
+            if (! $response->successful()) {
+                Log::warning('r2.getObject.failed', [
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 300),
+                    'key' => $key,
+                ]);
+
+                return null;
+            }
+
+            return $response->body();
+        } catch (\Throwable $e) {
+            Log::error('r2.getObject', ['error' => $e->getMessage(), 'key' => $key]);
+
+            return null;
+        }
+    }
+
+    private function deleteObjectRaw(
+        string $endpoint,
+        string $bucket,
+        string $accessKeyId,
+        string $secret,
+        string $key
+    ): bool {
+        try {
+            $host = parse_url($endpoint, PHP_URL_HOST) ?: '';
+            $canonicalUri = '/'.$bucket.'/'.implode('/', array_map('rawurlencode', explode('/', ltrim($key, '/'))));
+            $amzDate = gmdate('Ymd\THis\Z');
+            $dateStamp = gmdate('Ymd');
+            $payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+            $headers = [
+                'host' => $host,
+                'x-amz-content-sha256' => $payloadHash,
+                'x-amz-date' => $amzDate,
+            ];
+            ksort($headers);
+            $signedHeaderNames = implode(';', array_keys($headers));
+            $canonicalHeaders = '';
+            foreach ($headers as $k => $v) {
+                $canonicalHeaders .= $k.':'.trim($v)."\n";
+            }
+            $canonicalRequest = "DELETE\n{$canonicalUri}\n\n{$canonicalHeaders}\n{$signedHeaderNames}\n{$payloadHash}";
+            $credentialScope = "{$dateStamp}/auto/s3/aws4_request";
+            $stringToSign = "AWS4-HMAC-SHA256\n{$amzDate}\n{$credentialScope}\n".hash('sha256', $canonicalRequest);
+            $signingKey = $this->signingKey($secret, $dateStamp, 'auto', 's3');
+            $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+            $authorization = "AWS4-HMAC-SHA256 Credential={$accessKeyId}/{$credentialScope}, SignedHeaders={$signedHeaderNames}, Signature={$signature}";
+
+            $url = rtrim($endpoint, '/').$canonicalUri;
+            $response = Http::withHeaders([
+                'Authorization' => $authorization,
+                'Host' => $host,
+                'x-amz-content-sha256' => $payloadHash,
+                'x-amz-date' => $amzDate,
+            ])->timeout(30)->delete($url);
+
+            if (! $response->successful() && $response->status() !== 204) {
+                Log::warning('r2.deleteObject.failed', [
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 300),
+                    'key' => $key,
+                ]);
+
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('r2.deleteObject', ['error' => $e->getMessage(), 'key' => $key]);
 
             return false;
         }

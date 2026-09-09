@@ -29,6 +29,72 @@ class FrontLegacyController extends Controller
         ], $dbOk ? 200 : 503)->header('X-Conecta-Engine', 'laravel');
     }
 
+    /** Base pública da API para o dashboard fora do domínio principal (server.js). */
+    public function publicApiUrl()
+    {
+        $base = rtrim(trim((string) (env('API_URL') ?: 'https://www.conectaking.com.br')), '/');
+
+        return response()->json(['apiBaseUrl' => $base])
+            ->header('Cache-Control', 'public, max-age=300')
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    /**
+     * `api-config.js`: define `API_BASE` e faz patch ao `fetch()` para anexar o Bearer
+     * e reescrever `/api/*` para esta instância. Byte-a-byte igual ao do Express.
+     */
+    public function apiConfigJs(Request $request)
+    {
+        $proto = trim(explode(',', (string) ($request->header('x-forwarded-proto') ?: $request->getScheme()))[0]);
+        $host = trim(explode(',', (string) ($request->header('x-forwarded-host') ?: $request->getHttpHost()))[0]);
+        $base = json_encode(rtrim($proto.'://'.$host, '/'), JSON_UNESCAPED_SLASHES);
+
+        $js = <<<JS
+        window.CONECTAKING_API_BASE = {$base};
+        window.API_BASE = window.API_BASE || {$base};
+        (function(){
+          var apiBase = {$base};
+          var nativeFetch = window.fetch;
+          if (!nativeFetch) return;
+          function getToken() {
+            try {
+              return (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token')) || '';
+            } catch (e) { return ''; }
+          }
+          window.fetch = function(input, opts) {
+            opts = opts || {};
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var finalUrl = url;
+            if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
+              finalUrl = url.indexOf('http') === 0 ? url : apiBase.replace(/\/$/, '') + (url.indexOf('/') === 0 ? url : '/' + url);
+            } else if (url && url.indexOf('conectaking.com.br') !== -1 && url.indexOf('/api/') !== -1) {
+              finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
+            }
+            var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking.com.br') !== -1)) || (url && url.indexOf('/api/') === 0);
+            if (isApiUrl) {
+              var headers = opts.headers || (opts.headers = {});
+              if (!(headers.Authorization || (headers.get && headers.get('Authorization')))) {
+                var token = getToken();
+                if (token) {
+                  if (typeof headers.set === 'function') headers.set('Authorization', 'Bearer ' + token);
+                  else if (Object.prototype.toString.call(headers) === '[object Headers]') headers.set('Authorization', 'Bearer ' + token);
+                  else headers.Authorization = 'Bearer ' + token;
+                }
+              }
+            }
+            if (finalUrl === url) return nativeFetch.apply(this, arguments);
+            var finalInput = typeof input === 'string' ? finalUrl : (typeof Request !== 'undefined' ? new Request(finalUrl, input) : finalUrl);
+            return nativeFetch.call(this, finalInput, opts);
+          };
+        })();
+        JS;
+
+        return response($js)
+            ->header('Content-Type', 'application/javascript; charset=utf-8')
+            ->header('Cache-Control', 'public, max-age=300')
+            ->header('X-Conecta-Engine', 'laravel');
+    }
+
     public function page(Request $request, string $path = '')
     {
         $path = ltrim(str_replace('\\', '/', $path), '/');

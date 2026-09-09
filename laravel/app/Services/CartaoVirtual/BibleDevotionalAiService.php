@@ -342,6 +342,214 @@ Use versiculo_texto vazio.";
         return $s;
     }
 
+    /**
+     * Estudo completo por livro (paridade com generateBookStudyFullText do Node).
+     *
+     * @param  array{bookId:string,bookName:string,referenceSample?:string,baseadoEmGenesis?:bool|null,profundidadeEstiloGenesis?:bool}  $opts
+     * @return array{text?:string,error?:string}
+     */
+    public function generateBookStudyFullText(array $opts): array
+    {
+        $bookId = trim((string) ($opts['bookId'] ?? ''));
+        $bookName = trim((string) ($opts['bookName'] ?? $bookId));
+        $referenceSample = trim((string) ($opts['referenceSample'] ?? ''));
+        $baseadoEmGenesis = !empty($opts['baseadoEmGenesis']);
+        $profundidadeEstiloGenesis = !empty($opts['profundidadeEstiloGenesis']);
+        $key = $this->apiKey();
+        if ($key === '') {
+            return ['error' => 'Chave OpenAI não configurada (OPENAI_API_KEY ou BIBLE_OPENAI_API_KEY).'];
+        }
+        if ($bookId === '' || $bookName === '') {
+            return ['error' => 'Livro inválido.'];
+        }
+
+        $refBlock = '';
+        if ($referenceSample !== '' && strcasecmp($bookId, 'gn') !== 0) {
+            $sample = mb_substr($referenceSample, 0, 11000);
+            $refBlock = "\nEXEMPLO NO SITE (estudo de Gênesis — use APENAS como referência de profundidade, extensão e estilo de secções; NÃO copie frases; o texto final deve ser 100% sobre {$bookName}):\n\n---\n{$sample}\n---\n";
+        }
+
+        $modoGenesisExtra = '';
+        if ($baseadoEmGenesis || $profundidadeEstiloGenesis) {
+            $modoGenesisExtra = "\n\nMODO PROFUNDIDADE EXTRA (painel: estilo Gênesis):\n"
+                ."- Trate este livro com o mesmo nível de riqueza que um estudo \"tipo Gênesis\" no site: muitas subsecções, muitas histórias ou arcos narrativos desenvolvidos (não uma frase por capítulo).\n"
+                ."- Inclua secções claras com títulos em linha própria:\n"
+                ."  ► O QUE ESTE LIVRO REPRESENTA no conjunto da Escritura e na história da redenção.\n"
+                ."  ► O QUE APRENDEMOS COM {$bookName} (síntese espiritual e prática).\n"
+                ."  ► NARRATIVAS E HISTÓRIAS PRINCIPAIS: para CADA grande história ou bloco, desenvolvimento substancial: actores, tensão espiritual, o que revela sobre Deus e o ser humano; ligue arcos quando fizer sentido.\n"
+                ."- Vá além do óbvio: explicações memoráveis e fundamentadas no texto; linguagem acessível mas não superficial.\n";
+        }
+
+        $bookDirectives = $this->getBookStudyExtraDirectives($bookId, $bookName);
+        $profundidade = $this->bookStudyProfundidadeGlobal();
+
+        $userPrompt = "Livro bíblico: {$bookName} (id técnico: {$bookId}).
+
+Escreva um ÚNICO estudo completo do livro em português do Brasil, para leitor cristão evangélico.
+
+{$profundidade}
+
+REQUISITOS DE ESTRUTURA (obrigatórios):
+- NÃO seja um resumo rápido. O texto deve ser MUITO LONGO quando o conteúdo do livro o exigir: vários mil palavras, muitos parágrafos; priorize completar os tópicos abaixo em vez de poupar tokens.
+- O leitor deve poder compreender narrativa, doutrinas e contexto com profundidade (como se tivesse lido o livro com um professor ao lado).
+- Organize com títulos em linha própria (MAIÚSCULAS curtas ou \"► Secção\").
+- Inclua no mínimo estas áreas (adaptando ao género do livro): VISÃO GERAL; CONTEXTO; ESTRUTURA E CONTEÚDO (grandes blocos com aprofundamento real); PERSONAGENS OU TEMAS CENTRAIS; MENSAGEM TEOLÓGICA E LUGAR NA HISTÓRIA DA REDENÇÃO; APLICAÇÃO PARA HOJE.
+- Ao citar passagens, use o nome do livro como na Bíblia em português (ex.: {$bookName} 3; Salmos 23; João 3) para o site poder criar links. Insira referências ao longo de CADA secção importante, não só no início.
+- Não invente versículos longos entre aspas; pode parafrasear com precisão, mas o conteúdo deve corresponder ao texto sagrado.
+- PRIORIDADE MÁXIMA: especificidade (nomes, eventos, referências). Se faltar espaço, corte adjetivos vazios, não corte listas de factos bíblicos exigidas pelas directivas do livro.
+{$bookDirectives}
+{$modoGenesisExtra}
+{$refBlock}
+
+Responda SOMENTE com o texto do estudo, sem comentários introdutórios nem markdown de código.";
+
+        $system = 'Você é teólogo evangélico, exegeta e professor de Bíblia em português do Brasil, com nível de estudos avançados (teologia bíblica, exegese histórico-gramatical, história da redenção). Domina os 66 livros; não contradiz a Escritura. Produz estudos extensos e rigorosos: priorize FACTOS DO TEXTO — nomes próprios, sequências de eventos, referências capítulo/versículo — e recusa resumos vagos. Quando o utilizador pedir desenvolvimento de séries (ex.: dez pragas), nomeie e explique cada elemento. Nunca invente citações textuais de obras extra-bíblicas nem páginas; alusões a tradição ou historiografia só em termos gerais.';
+
+        try {
+            $res = Http::timeout(300)
+                ->withToken($key)
+                ->post(self::CHAT_URL, [
+                    'model' => $this->bookStudyModel(),
+                    'temperature' => 0.4,
+                    'max_tokens' => $this->bookStudyMaxTokens(),
+                    'presence_penalty' => 0.12,
+                    'frequency_penalty' => 0.08,
+                    'messages' => [
+                        ['role' => 'system', 'content' => $system],
+                        ['role' => 'user', 'content' => $userPrompt],
+                    ],
+                ]);
+            if (!$res->successful()) {
+                $msg = (string) data_get($res->json(), 'error.message', $res->reason());
+                Log::error('bibleDevotionalAi generateBookStudyFullText HTTP: '.$msg);
+
+                return ['error' => $msg !== '' ? $msg : 'Erro ao chamar a IA.'];
+            }
+            $trimmed = trim((string) data_get($res->json(), 'choices.0.message.content', ''));
+            if (mb_strlen($trimmed) < 2200) {
+                return [
+                    'error' => 'A resposta da IA ficou curta demais para o nível de profundidade pedido. Defina BIBLE_BOOK_STUDY_MAX_TOKENS=16000 (ou o máximo permitido), use BIBLE_BOOK_STUDY_AI_MODEL=gpt-4o e regenere; textos como Êxodo exigem saída longa.',
+                ];
+            }
+
+            return ['text' => $trimmed];
+        } catch (\Throwable $e) {
+            Log::error('bibleDevotionalAi generateBookStudyFullText: '.$e->getMessage());
+
+            return ['error' => $e->getMessage() ?: 'Falha de rede.'];
+        }
+    }
+
+    private function bookStudyModel(): string
+    {
+        $m = trim((string) (env('BIBLE_BOOK_STUDY_AI_MODEL') ?: env('BIBLE_DEV365_AI_MODEL') ?: 'gpt-4o'));
+
+        return $m !== '' ? $m : 'gpt-4o';
+    }
+
+    private function bookStudyMaxTokens(): int
+    {
+        $n = (int) (env('BIBLE_BOOK_STUDY_MAX_TOKENS') ?: 16000);
+
+        return min(16384, max(4000, $n));
+    }
+
+    private function bookStudyProfundidadeGlobal(): string
+    {
+        return <<<'TXT'
+PROFUNDIDADE OBRIGATÓRIA (QUALQUER LIVRO):
+- O leitor pode dedicar UMA HORA OU MAIS a este texto: priorize explicação real em vez de brevidade artificial. Prefira muitos parágrafos bem desenvolvidos a listas telegráficas.
+- Identifique os "pontos de máximo impacto" do livro (acontecimentos, leis, discursos, imagens proféticas, doutrinas centrais) e desenvolva CADA UM com subsecção própria: contexto → o que o texto diz → significado teológico → implicações para a vida cristã hoje.
+- Não se limite a "uma frase por capítulo". Agrupe capítulos quando fizer sentido, mas aprofunde os blocos que mais moldam a mensagem do livro.
+
+CONCRETUDE, NOMES E REFERÊNCIAS (CRÍTICO — EXTRAIA O MÁXIMO DO CONHECIMENTO BÍBLICO, SEM SER VAGO):
+- PROIBIDO substituir factos nomeados no texto por frases genéricas ("houve milagres", "Deus castigou", "aconteceram coisas terríveis"). Se o texto lista pragas, juízes, milagres, leis ou parábolas, NOMEIE-OS ou enumere-os como o próprio relato faz.
+- OBRIGATÓRIO: ao desenvolver cada grande tema, inclua referências bíblicas no formato "NomeDoLivro capítulo:versículo" ou intervalos (ex.: Êxodo 9:13–35). O objectivo é o leitor poder abrir a Bíblia na passagem certa.
+- Cada tópico central deve ter NO MÍNIMO dois parágrafos de explicação do texto ANTES da aplicação contemporânea.
+- Quando o livro apresentar uma série de eventos (pragas, vitórias, discursos, salmos encadeados), é INACEITÁVEL condensar toda a série num único parágrafo: desenvolva cada elemento importante ou agrupe com critério explicativo, nunca com omissão dos nomes.
+
+Síntese teológica: integre perspectiva histórico-gramatical e teologia bíblica (história da redenção). Pode aludir, em termos GERAIS, a paralelos históricos ou debates académicos quando útil.
+- FONTES EXTRA-BÍBLICAS: NÃO invente citações entre aspas, páginas ou edições. NÃO atribua frases específicas a autores antigos sem base; quando mencionar historiografia ou tradição, faça-o de modo geral. A Escritura permanece a autoridade.
+- Não cite nomes de pastores ou obras comerciais recentes; pode referir categorias teológicas sem inventar títulos.
+TXT;
+    }
+
+    private function getBookStudyExtraDirectives(string $bookId, string $bookName): string
+    {
+        $id = strtolower(trim($bookId));
+        $n = mb_strtolower(trim($bookName));
+
+        if ($id === 'ex' || str_contains($n, 'êxodo') || str_contains($n, 'exodo')) {
+            return $this->exodusStudyDirective();
+        }
+        if ($id === 'lv' || str_contains($n, 'levítico') || str_contains($n, 'levitico')) {
+            return "\n\n=== OBRIGATÓRIO PARA LEVÍTICO ===\nDesenvolva com profundidade (não listas frias): santidade de Deus; significado teológico dos sacrifícios e do Dia da Expiação; pureza/impureza; grandes festas; blocos morais (ex.: Levítico 18–20); \"ama o teu próximo como a ti mesmo\" no contexto do livro; ligação com Cristo como cumprimento (em termos teológicos, sem slogans).\n";
+        }
+        if ($id === 'nm' || str_contains($n, 'números') || str_contains($n, 'numeros')) {
+            return "\n\n=== OBRIGATÓRIO PARA NÚMEROS ===\nPercorra com secções próprias: preparação para Canaã; murmurações e julgamentos; Balaão e Balaque (significado narrativo e teológico); a nova geração; incidentes-chave (ex.: madeira de bronze) com explicação, não só menção.\n";
+        }
+        if ($id === 'dt' || str_contains($n, 'deuteron')) {
+            return "\n\n=== OBRIGATÓRIO PARA DEUTERONÔMIO ===\nDesenvolva: estrutura como renovação da aliança; Shema e centralidade do amor a Deus; repetição e actualização da lei; bênçãos e maldições; morte de Moisés e transição — cada bloco com substância, não resumo de uma linha por capítulo.\n";
+        }
+        if ($id === 'gn' || str_contains($n, 'gênesis') || str_contains($n, 'genesis')) {
+            return "\n\n=== REFORÇO PARA GÉNESIS ===\nGaranta grandes blocos para: criação e queda; primeiros capítulos até Abraão; patriarcas; José e o propósito de Deus nas vicissitudes — cada arco com múltiplos parágrafos e tensão teológica clara.\n";
+        }
+        if (in_array($id, ['js', 'jud', 'rt', '1sm', '2sm', '1kgs', '2kgs', '1ch', '2ch', 'ezr', 'ne', 'et'], true)) {
+            return "\n\n=== LIVRO HISTÓRICO / NARRATIVO ===\nIdentifique os principais arcos narrativos e personagens; para CADA arco de grande impacto, escreva subsecção própria: o que acontece, tensão espiritual, o que revela sobre Deus e o povo, e aplicação. Não se limite a uma cronologia superficial.\n";
+        }
+        if (in_array($id, ['job', 'ps', 'prv', 'ec', 'so'], true)) {
+            return "\n\n=== LIVRO POÉTICO / SAPIENCIAL ===\nExplique género literário; temas centrais; estrutura quando visível; secções dedicadas aos discursos ou ciclos mais marcantes (ex.: amigos de Jó, Salmos de lamentação ou de confiança, provérbios por temas). Evite generalidades vazias.\n";
+        }
+        if (in_array($id, ['is', 'jr', 'lm', 'ez', 'dn', 'ho', 'jl', 'am', 'ob', 'jn', 'mi', 'na', 'hk', 'zp', 'hg', 'zc', 'ml'], true)) {
+            return "\n\n=== LIVRO PROFÉTICO ===\nDesenvolva: contexto histórico em linhas gerais; mensagem principal; julgamento e esperança; textos messiânicos ou de consolação quando presentes; relação com a aliança. Secções por grandes blocos literários, não um parágrafo por capítulo.\n";
+        }
+        if (in_array($id, [
+            'mt', 'mk', 'lk', 'jo', 'act', 'rm', '1co', '2co', 'gl', 'eph', 'ph', 'cl',
+            '1ts', '2ts', '1tm', '2tm', 'tt', 'phm', 'hb', 'jm', '1pe', '2pe', '1jo', '2jo', '3jo', 'jd', 're',
+        ], true)) {
+            return "\n\n=== NOVO TESTAMENTO ===\nDesenvolva teologia central do livro; narrativa (se aplicável); argumentos principais (cartas); parábolas ou discursos-chave (evangelhos); conexão com o Antigo Testamento e com Cristo. Epístolas: trace o fio condutor do argumento, não só tópicos soltos. Em Hebreus, desenvolva o argumento do sacerdócio de Cristo e as figuras do AT citadas, com profundidade.\n";
+        }
+
+        return '';
+    }
+
+    private function exodusStudyDirective(): string
+    {
+        return <<<'TXT'
+
+=== ÊXODO — CONCRETUDE OBRIGATÓRIA (RESPOSTA INACEITÁVEL SE FOR GENÉRICA) ===
+
+REGRAS GERAIS DESTE LIVRO:
+- Cite referências bíblicas ao longo do texto no formato: Êxodo capítulo:versículo ou intervalo (ex.: Êxodo 7:14–25). O leitor precisa poder localizar cada afirmação.
+- Nomeie personagens e lugares: Moisés, Arão, Miriã, Faraó, Midiane, Sinai, etc., sempre que o texto o fizer — não use só "o líder" ou "o faraó" sem contexto quando o relato é específico.
+- PROIBIDO escrever uma única secção genérica intitulada "As dez pragas" com dois parágrafos. É OBRIGATÓRIO uma subsecção dedicada para CADA praga, com TÍTULO que contenha o NOME da praga.
+
+AS DEZ PRAGAS — LISTA NOMINAL (ordem clássica do texto; desenvolva CADA UMA em profundidade, mínimo ~200–400 palavras POR PRAGA, vários parágrafos):
+
+► 1ª PRAGA — Águas do Nilo (e canais) transformadas em sangue (Êxodo 7:14–25).
+► 2ª PRAGA — Rãs cobrindo a terra e invadindo casas (Êxodo 7:25–8:15).
+► 3ª PRAGA — Piolhos (ou enxames / "mosquitos" conforme tradução) — e o fracasso dos magos de Faraó (Êxodo 8:16–28).
+► 4ª PRAGA — Enxames de moscas ou moscas venenosas (Êxodo 8:29–32).
+► 5ª PRAGA — Morte do gado e dos rebanhos no Egito (Êxodo 9:1–7).
+► 6ª PRAGA — Úlceras ou feridas inflamadas em humanos e animais (Êxodo 9:8–12).
+► 7ª PRAGA — Granizo severo, raios e fogo na terra (Êxodo 9:13–35).
+► 8ª PRAGA — Gafanhotos devorando o que restou (Êxodo 10:1–20).
+► 9ª PRAGA — Trevas espessas e palpáveis sobre o Egito (Êxodo 10:21–29).
+► 10ª PRAGA — Morte dos primogênitos; instituição da Páscoa e libertação (Êxodo 11–12) — desenvolva teologia da Páscoa e ligação com o cordeiro.
+
+EM CADA UMA DAS 10 SUBSECÇÕES ACIMA, INCLUA OBRIGATORIAMENTE:
+(1) O que o narrador descreve (factos do texto); (2) o endurecimento de Faraó e o papel da soberania divina; (3) significado teológico (juízo, misericórdia, revelação do nome do Senhor); (4) uma aplicação para hoje (ídolatria, dureza de coração, opressão, confiança) — sem alegoria forçada em cada pormenor.
+
+OUTROS BLOCOS OBRIGATÓRIOS (cada um com secção própria, referências e profundidade, não um parágrafo):
+- Narrativa de Moisés: nascimento, salvação do Nilo, matar o egípcio, fuga a Midiã, Zípora (Êxodo 2; 4).
+- Sarça ardente, vocação, objecções de Moisés, sinais da vara (Êxodo 3–4).
+- Confronto com os magos; progressão das pragas como liturgia de juízo (Êxodo 7–12).
+- Cantico do Mar, êxodo e caminho no deserto (Êxodo 14–18).
+- Sinai: aliança, Decálogo, quebra (bezerro de ouro), intercessão (Êxodo 19–34).
+- Tabernáculo e presença de Deus no meio do povo (Êxodo 35–40).
+TXT;
+    }
+
     private function fnv1aShort(string $s): string
     {
         $h = 2166136261;

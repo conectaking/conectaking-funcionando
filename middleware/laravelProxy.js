@@ -178,13 +178,13 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
     if (method === 'GET' && /^\/(?:l\/)?form\/[^/]+$/i.test(pathOnly)) return true;
     if (method === 'GET' && /^\/l\/loja\/[^/]+\/[^/]+$/i.test(pathOnly)) return true;
 
-    const formItem = pathOnly.match(/^\/([^/]+)\/form\/(\d+)(?:\/(submit|success))?$/i);
+    const formItem = pathOnly.match(/^\/([^/]+)\/form\/(\d+)(?:\/(submit|success|checkout))?$/i);
     if (formItem) {
         if (!force && !LARAVEL_SATELLITES) return false;
         if (!force && !slugAllowedForSatellite(formItem[1])) return false;
         const action = (formItem[3] || '').toLowerCase();
         if (action === 'submit') return method === 'POST';
-        if (action === 'success') return method === 'GET';
+        if (action === 'success' || action === 'checkout') return method === 'GET';
         return method === 'GET';
     }
 
@@ -717,6 +717,59 @@ function isLaravelGuestListPath(reqMethod, urlPath) {
     return false;
 }
 
+function isLaravelAdminExtrasPath(reqMethod, urlPath) {
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    const force = wantsLaravelEngine(urlPath);
+    if (!force && !(LARAVEL_DASHBOARD || LARAVEL_SATELLITES || LARAVEL_ADMIN_BIBLE)) return false;
+
+    if ((method === 'GET' || method === 'POST') && /^\/(?:l\/)?api\/admin\/link-preview-config$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?og-image\.jpg$/i.test(pathOnly)) {
+        return true;
+    }
+    // Painel admin (routes/admin.js): overview, users e codes já são todos Laravel.
+    if ((method === 'GET' || method === 'PUT') && /^\/(?:l\/)?api\/admin\/default-branding$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/(stats|advanced-stats|plans|users|codes)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/analytics\/users$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/analytics\/user\/[^/]+\/details$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/admin\/plans\/\d+$/i.test(pathOnly)) {
+        return true;
+    }
+    if (/^\/(?:l\/)?api\/admin\/(users|codes)\/(auto-delete-config|execute-auto-delete)$/i.test(pathOnly)) {
+        return method === 'GET' || method === 'POST';
+    }
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/users\/[^/]+\/dashboard$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'PUT' && /^\/(?:l\/)?api\/admin\/users\/[^/]+(\/(manage|update-role))?$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/admin\/users\/[^/]+$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/codes\/generate-(manual|batch)$/i.test(pathOnly)) {
+        return true;
+    }
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/generate-code$/i.test(pathOnly)) {
+        return true;
+    }
+    if ((method === 'PUT' || method === 'DELETE') && /^\/(?:l\/)?api\/admin\/codes\/[^/]+$/i.test(pathOnly)) {
+        return true;
+    }
+    return false;
+}
+
 function isLaravelAdminBiblePath(reqMethod, urlPath) {
     if (!urlPath) return false;
     const pathOnly = urlPath.split('?')[0];
@@ -755,6 +808,94 @@ function isLaravelAdminBiblePath(reqMethod, urlPath) {
     if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/month-themes\/\d+\/generate-all$/i.test(pathOnly)) return true;
     if (method === 'PUT' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/\d+$/i.test(pathOnly)) return true;
     if (method === 'DELETE' && /^\/(?:l\/)?api\/admin\/bible\/devotionals-365\/\d+$/i.test(pathOnly)) return true;
+
+    // Estudos por livro (admin) — residual de routes/adminBibleStudy.js
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/study\/books$/i.test(pathOnly)) return true;
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/admin\/bible\/study\/book\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/study\/book\/[^/]+\/upload$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/study\/book\/[^/]+\/generate-ai$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/study\/generate-ai-async$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/admin\/bible\/study\/generation-job\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/admin\/bible\/study\/generation-job\/[^/]+\/cancel$/i.test(pathOnly)) return true;
+    return false;
+}
+
+function isLaravelDocumentosPath(reqMethod, urlPath) {
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    if (method === 'GET' && /^\/(?:l\/)?api\/documentos\/ver\/[^/]+(?:\/pdf)?$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/documentos\/ver\/[^/]+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/documentos\/(ocr-info|warm-ocr)$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/documentos(?:\/settings|\/\d+(?:\/pdf)?)?$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/documentos(?:\/upload-logo|\/\d+\/(duplicate|anexos|nota-fiscal|processar-comprovante))?$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/documentos(?:\/settings|\/\d+)$/i.test(pathOnly)) return true;
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/documentos\/\d+(?:\/nota-fiscal)?$/i.test(pathOnly)) return true;
+    return false;
+}
+
+function isLaravelKingDocsPath(reqMethod, urlPath) {
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-docs\/public\/[^/]+\/(meta|data|file\/\d+)$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-docs\/public\/[^/]+\/unlock$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/king-docs\/(vault(?:\/export-pdf)?|files(?:\/\d+\/download)?|shares)$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/king-docs\/vault$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/king-docs\/(vault\/import-profile|files|shares)$/i.test(pathOnly)) return true;
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/king-docs\/(files\/\d+|shares\/\d+(?:\/permanent)?)$/i.test(pathOnly)) return true;
+    return false;
+}
+
+/**
+ * APIs residuais migradas nas fatias B7 / B9–B15 (image, location, suggestions,
+ * checkin, inquiry, generator, payment, push, orçamentos, sales-pages, business codes).
+ */
+function isLaravelResidualApiPath(reqMethod, urlPath) {
+    if (!urlPath || wantsNodeEngine(urlPath)) return false;
+    const pathOnly = urlPath.split('?')[0];
+    const method = String(reqMethod || 'GET').toUpperCase();
+    const force = wantsLaravelEngine(urlPath);
+    if (!force && !(LARAVEL_DASHBOARD || LARAVEL_SATELLITES)) return false;
+
+    if (method === 'GET' && /^\/(?:l\/)?api\/image\/profile-image$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/inquiry\/submit$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/generator\/new-key$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/push\/vapid-public-key$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/push\/subscribe$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/payment\/(create-preference|webhook-notification)$/i.test(pathOnly)) return true;
+    if ((method === 'GET' || method === 'PUT') && /^\/(?:l\/)?api\/location\/config\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/suggestions\/generate$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/checkin\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/orcamentos$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/orcamentos\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/orcamentos\/\d+\/status$/i.test(pathOnly)) return true;
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/orcamentos\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/business\/codes$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/business\/generate-code$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/business\/codes\/generate-manual$/i.test(pathOnly)) return true;
+
+    // Sales pages: CRUD da página + produtos + analytics + /track (público).
+    if (method === 'POST' && /^\/(?:l\/)?api\/v1\/sales-pages$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/v1\/sales-pages\/item\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/v1\/sales-pages\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'PUT' && /^\/(?:l\/)?api\/v1\/sales-pages\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/v1\/sales-pages\/\d+\/(publish|pause|archive)$/i.test(pathOnly)) return true;
+    if (method === 'DELETE' && /^\/(?:l\/)?api\/v1\/sales-pages\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/v1\/sales-pages\/track$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/v1\/sales-pages\/analytics\/products\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/v1\/sales-pages\/analytics\/\d+(?:\/(funnel|ranking))?$/i.test(pathOnly)) return true;
+    if (method === 'GET' && /^\/(?:l\/)?api\/v1\/sales-pages\/\d+\/products$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/v1\/sales-pages\/\d+\/products(?:\/reorder)?$/i.test(pathOnly)) return true;
+    if ((method === 'GET' || method === 'PUT' || method === 'DELETE') && /^\/(?:l\/)?api\/v1\/sales-pages\/products\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'PATCH' && /^\/(?:l\/)?api\/v1\/sales-pages\/products\/\d+\/status$/i.test(pathOnly)) return true;
+
+    // Checkout KingForms / PagBank (B20). O webhook é público (chamado pelo PagBank).
+    if (method === 'GET' && /^\/(?:l\/)?api\/checkout\/(page|preview-link)$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/checkout\/(create|test-connection)$/i.test(pathOnly)) return true;
+    if ((method === 'GET' || method === 'PUT') && /^\/(?:l\/)?api\/checkout\/config\/\d+$/i.test(pathOnly)) return true;
+    if (method === 'POST' && /^\/(?:l\/)?api\/webhooks\/pagbank$/i.test(pathOnly)) return true;
+
     return false;
 }
 
@@ -873,8 +1014,28 @@ function laravelProxyMiddleware(req, res, next) {
         return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: 900000 });
     }
 
+    if (isLaravelAdminExtrasPath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
     if ((LARAVEL_KS || wantsLaravelEngine(url)) && isLaravelKsPath(req.method, url)) {
         return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
+    if ((LARAVEL_SATELLITES || LARAVEL_DASHBOARD || wantsLaravelEngine(url)) && isLaravelDocumentosPath(req.method, url)) {
+        // OCR com IA (OpenAI Vision) pode passar dos 20s padrão
+        const isOcr = /\/api\/documentos\/\d+\/processar-comprovante(?:\?|$)/i.test(url);
+        return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: isOcr ? 180000 : 20000 });
+    }
+
+    if ((LARAVEL_SATELLITES || LARAVEL_DASHBOARD || wantsLaravelEngine(url)) && isLaravelKingDocsPath(req.method, url)) {
+        return proxyToLaravel(req, res, url, { publicMode: false });
+    }
+
+    if (isLaravelResidualApiPath(req.method, url)) {
+        // OG image baixa e reprocessa a foto remota — pode passar dos 20s padrão
+        const isImage = /^\/(?:l\/)?api\/image\/profile-image(?:\?|$)/i.test(url);
+        return proxyToLaravel(req, res, url, { publicMode: false, timeoutMs: isImage ? 45000 : 20000 });
     }
 
     if (!url.startsWith('/l/') && url !== '/l') return next();
@@ -892,6 +1053,7 @@ module.exports = {
     proxyPublicCardToLaravel,
     shouldServePublicCardWithLaravel,
     isLaravelCardApiPath,
+    isLaravelAdminExtrasPath,
     LARAVEL_ENABLED,
     LARAVEL_CARD_PUBLIC,
     LARAVEL_CARD_APIS,

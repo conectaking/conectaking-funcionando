@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CartaoVirtual\AnalyticsLogController;
+use App\Http\Controllers\CartaoVirtual\BibleAdminBookStudyController;
 use App\Http\Controllers\CartaoVirtual\BibleAdminDev365Controller;
 use App\Http\Controllers\CartaoVirtual\BibleProsperidadeAdminController;
 use App\Http\Controllers\CartaoVirtual\BibleProgressController;
@@ -34,6 +35,10 @@ Route::get('/up', function () {
 });
 
 Route::get('/health', [\App\Http\Controllers\FrontLegacyController::class, 'health']);
+Route::get('/api/public-api-url', [\App\Http\Controllers\FrontLegacyController::class, 'publicApiUrl']);
+Route::get('/l/api/public-api-url', [\App\Http\Controllers\FrontLegacyController::class, 'publicApiUrl']);
+Route::get('/api-config.js', [\App\Http\Controllers\FrontLegacyController::class, 'apiConfigJs']);
+Route::get('/l/api-config.js', [\App\Http\Controllers\FrontLegacyController::class, 'apiConfigJs']);
 Route::get('/api/health', [\App\Http\Controllers\FrontLegacyController::class, 'health']);
 
 Route::post('/api/password/forgot', [\App\Http\Controllers\Auth\PasswordController::class, 'forgot'])
@@ -236,6 +241,14 @@ Route::middleware('admin')->group(function () {
     Route::put('/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'upsert'])->where('day', '[0-9]+');
     Route::delete('/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'destroy'])->where('day', '[0-9]+');
 
+    Route::get('/api/admin/bible/study/books', [BibleAdminBookStudyController::class, 'books']);
+    Route::delete('/api/admin/bible/study/book/{bookId}', [BibleAdminBookStudyController::class, 'destroy'])->where('bookId', '[A-Za-z0-9_-]+');
+    Route::post('/api/admin/bible/study/book/{bookId}/upload', [BibleAdminBookStudyController::class, 'upload'])->where('bookId', '[A-Za-z0-9_-]+');
+    Route::post('/api/admin/bible/study/book/{bookId}/generate-ai', [BibleAdminBookStudyController::class, 'generateAi'])->where('bookId', '[A-Za-z0-9_-]+');
+    Route::post('/api/admin/bible/study/generate-ai-async', [BibleAdminBookStudyController::class, 'generateAiAsync']);
+    Route::get('/api/admin/bible/study/generation-job/{jobId}', [BibleAdminBookStudyController::class, 'generationJob']);
+    Route::post('/api/admin/bible/study/generation-job/{jobId}/cancel', [BibleAdminBookStudyController::class, 'cancelGenerationJob']);
+
     Route::get('/l/api/admin/bible/prosperidade', [BibleProsperidadeAdminController::class, 'index']);
     Route::get('/l/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
     Route::post('/l/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);
@@ -265,6 +278,14 @@ Route::middleware('admin')->group(function () {
     Route::post('/l/api/admin/bible/devotionals-365/month-themes/{year}/generate-all', [BibleAdminDev365Controller::class, 'generateAllMonthThemes'])->where('year', '[0-9]+');
     Route::put('/l/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'upsert'])->where('day', '[0-9]+');
     Route::delete('/l/api/admin/bible/devotionals-365/{day}', [BibleAdminDev365Controller::class, 'destroy'])->where('day', '[0-9]+');
+
+    Route::get('/l/api/admin/bible/study/books', [BibleAdminBookStudyController::class, 'books']);
+    Route::delete('/l/api/admin/bible/study/book/{bookId}', [BibleAdminBookStudyController::class, 'destroy'])->where('bookId', '[A-Za-z0-9_-]+');
+    Route::post('/l/api/admin/bible/study/book/{bookId}/upload', [BibleAdminBookStudyController::class, 'upload'])->where('bookId', '[A-Za-z0-9_-]+');
+    Route::post('/l/api/admin/bible/study/book/{bookId}/generate-ai', [BibleAdminBookStudyController::class, 'generateAi'])->where('bookId', '[A-Za-z0-9_-]+');
+    Route::post('/l/api/admin/bible/study/generate-ai-async', [BibleAdminBookStudyController::class, 'generateAiAsync']);
+    Route::get('/l/api/admin/bible/study/generation-job/{jobId}', [BibleAdminBookStudyController::class, 'generationJob']);
+    Route::post('/l/api/admin/bible/study/generation-job/{jobId}/cancel', [BibleAdminBookStudyController::class, 'cancelGenerationJob']);
 });
 
 Route::middleware('jwt')->group(function () {
@@ -343,6 +364,9 @@ Route::get('/{slug}/form/{itemId}/success', [SatellitePublicController::class, '
 Route::get('/l/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::post('/l/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/l/{slug}/form/{itemId}/success', [SatellitePublicController::class, 'formSuccess'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+// Página de pagamento do KingForms (antes o res.render('checkout') do Express).
+Route::get('/{slug}/form/{itemId}/checkout', [\App\Http\Controllers\Checkout\CheckoutController::class, 'pageHtml'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::get('/l/{slug}/form/{itemId}/checkout', [\App\Http\Controllers\Checkout\CheckoutController::class, 'pageHtml'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/l/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/{slug}/biblia/estudos-livro', [SatellitePublicController::class, 'bibleStudyRedirect'])->where('slug', $cardSlug);
@@ -1107,10 +1131,269 @@ Route::middleware(['jwt', 'module:finance'])->group(function () {
     Route::post('/l/api/finance/serasa/import-image-preview', [\App\Http\Controllers\Finance\FinanceController::class, 'serasaImportImagePreview']);
 });
 
+// ---------- Documentos (recibos/orçamentos) ----------
+$doc = \App\Http\Controllers\Documentos\DocumentosController::class;
+Route::get('/api/documentos/ver/{token}/pdf', [$doc, 'getPdfByToken']);
+Route::get('/l/api/documentos/ver/{token}/pdf', [$doc, 'getPdfByToken']);
+Route::get('/api/documentos/ver/{token}', [$doc, 'getByToken']);
+Route::get('/l/api/documentos/ver/{token}', [$doc, 'getByToken']);
+Route::put('/api/documentos/ver/{token}', [$doc, 'updateByToken']);
+Route::put('/l/api/documentos/ver/{token}', [$doc, 'updateByToken']);
+Route::get('/api/documentos/ocr-info', [$doc, 'ocrInfo']);
+Route::get('/l/api/documentos/ocr-info', [$doc, 'ocrInfo']);
+Route::get('/api/documentos/warm-ocr', [$doc, 'warmOcr']);
+Route::get('/l/api/documentos/warm-ocr', [$doc, 'warmOcr']);
+
+Route::middleware('jwt')->group(function () use ($doc) {
+    Route::get('/api/documentos/settings', [$doc, 'getSettings']);
+    Route::get('/l/api/documentos/settings', [$doc, 'getSettings']);
+    Route::put('/api/documentos/settings', [$doc, 'putSettings']);
+    Route::put('/l/api/documentos/settings', [$doc, 'putSettings']);
+    Route::post('/api/documentos/upload-logo', [$doc, 'uploadLogo']);
+    Route::post('/l/api/documentos/upload-logo', [$doc, 'uploadLogo']);
+    Route::post('/api/documentos', [$doc, 'create']);
+    Route::post('/l/api/documentos', [$doc, 'create']);
+    Route::get('/api/documentos', [$doc, 'list']);
+    Route::get('/l/api/documentos', [$doc, 'list']);
+    Route::post('/api/documentos/{id}/duplicate', [$doc, 'duplicate'])->whereNumber('id');
+    Route::post('/l/api/documentos/{id}/duplicate', [$doc, 'duplicate'])->whereNumber('id');
+    Route::get('/api/documentos/{id}/pdf', [$doc, 'getPdf'])->whereNumber('id');
+    Route::get('/l/api/documentos/{id}/pdf', [$doc, 'getPdf'])->whereNumber('id');
+    Route::get('/api/documentos/{id}', [$doc, 'getOne'])->whereNumber('id');
+    Route::get('/l/api/documentos/{id}', [$doc, 'getOne'])->whereNumber('id');
+    Route::put('/api/documentos/{id}', [$doc, 'update'])->whereNumber('id');
+    Route::put('/l/api/documentos/{id}', [$doc, 'update'])->whereNumber('id');
+    Route::delete('/api/documentos/{id}', [$doc, 'remove'])->whereNumber('id');
+    Route::delete('/l/api/documentos/{id}', [$doc, 'remove'])->whereNumber('id');
+    Route::post('/api/documentos/{id}/anexos', [$doc, 'uploadAnexo'])->whereNumber('id');
+    Route::post('/l/api/documentos/{id}/anexos', [$doc, 'uploadAnexo'])->whereNumber('id');
+    Route::post('/api/documentos/{id}/nota-fiscal', [$doc, 'uploadNotaFiscalItem'])->whereNumber('id');
+    Route::post('/l/api/documentos/{id}/nota-fiscal', [$doc, 'uploadNotaFiscalItem'])->whereNumber('id');
+    Route::delete('/api/documentos/{id}/nota-fiscal', [$doc, 'removeNotaFiscalItem'])->whereNumber('id');
+    Route::delete('/l/api/documentos/{id}/nota-fiscal', [$doc, 'removeNotaFiscalItem'])->whereNumber('id');
+    Route::post('/api/documentos/{id}/processar-comprovante', [$doc, 'processarComprovante'])->whereNumber('id');
+    Route::post('/l/api/documentos/{id}/processar-comprovante', [$doc, 'processarComprovante'])->whereNumber('id');
+});
+
+// ---------- King Docs ----------
+$kd = \App\Http\Controllers\KingDocs\KingDocsController::class;
+Route::get('/api/king-docs/public/{token}/meta', [$kd, 'publicMeta']);
+Route::get('/l/api/king-docs/public/{token}/meta', [$kd, 'publicMeta']);
+Route::post('/api/king-docs/public/{token}/unlock', [$kd, 'publicUnlock'])->middleware('throttle:20,1');
+Route::post('/l/api/king-docs/public/{token}/unlock', [$kd, 'publicUnlock'])->middleware('throttle:20,1');
+Route::get('/api/king-docs/public/{token}/data', [$kd, 'publicData']);
+Route::get('/l/api/king-docs/public/{token}/data', [$kd, 'publicData']);
+Route::get('/api/king-docs/public/{token}/file/{fileId}', [$kd, 'publicDownloadFile'])->whereNumber('fileId');
+Route::get('/l/api/king-docs/public/{token}/file/{fileId}', [$kd, 'publicDownloadFile'])->whereNumber('fileId');
+
+Route::middleware(['jwt', 'module:king_docs'])->group(function () use ($kd) {
+    Route::get('/api/king-docs/vault', [$kd, 'getVault']);
+    Route::get('/l/api/king-docs/vault', [$kd, 'getVault']);
+    Route::put('/api/king-docs/vault', [$kd, 'putVault']);
+    Route::put('/l/api/king-docs/vault', [$kd, 'putVault']);
+    Route::post('/api/king-docs/vault/import-profile', [$kd, 'importProfile']);
+    Route::post('/l/api/king-docs/vault/import-profile', [$kd, 'importProfile']);
+    Route::get('/api/king-docs/vault/export-pdf', [$kd, 'exportPdf']);
+    Route::get('/l/api/king-docs/vault/export-pdf', [$kd, 'exportPdf']);
+    Route::get('/api/king-docs/files/{id}/download', [$kd, 'downloadFile'])->whereNumber('id');
+    Route::get('/l/api/king-docs/files/{id}/download', [$kd, 'downloadFile'])->whereNumber('id');
+    Route::get('/api/king-docs/files', [$kd, 'listFiles']);
+    Route::get('/l/api/king-docs/files', [$kd, 'listFiles']);
+    Route::post('/api/king-docs/files', [$kd, 'uploadFile']);
+    Route::post('/l/api/king-docs/files', [$kd, 'uploadFile']);
+    Route::delete('/api/king-docs/files/{id}', [$kd, 'deleteFile'])->whereNumber('id');
+    Route::delete('/l/api/king-docs/files/{id}', [$kd, 'deleteFile'])->whereNumber('id');
+    Route::post('/api/king-docs/shares', [$kd, 'createShare']);
+    Route::post('/l/api/king-docs/shares', [$kd, 'createShare']);
+    Route::get('/api/king-docs/shares', [$kd, 'listShares']);
+    Route::get('/l/api/king-docs/shares', [$kd, 'listShares']);
+    Route::delete('/api/king-docs/shares/{id}/permanent', [$kd, 'deleteSharePermanent'])->whereNumber('id');
+    Route::delete('/l/api/king-docs/shares/{id}/permanent', [$kd, 'deleteSharePermanent'])->whereNumber('id');
+    Route::delete('/api/king-docs/shares/{id}', [$kd, 'revokeShare'])->whereNumber('id');
+    Route::delete('/l/api/king-docs/shares/{id}', [$kd, 'revokeShare'])->whereNumber('id');
+});
+
 Route::middleware('admin')->group(function () {
     Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
     Route::get('/l/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
+
+    $linkPreview = \App\Http\Controllers\Admin\PersonalizarLinkController::class;
+    Route::get('/api/admin/link-preview-config', [$linkPreview, 'getConfig']);
+    Route::get('/l/api/admin/link-preview-config', [$linkPreview, 'getConfig']);
+    Route::post('/api/admin/link-preview-config', [$linkPreview, 'saveConfig']);
+    Route::post('/l/api/admin/link-preview-config', [$linkPreview, 'saveConfig']);
+
+    // Painel admin completo (routes/admin.js: overview + users + codes).
+    $adminOverview = \App\Http\Controllers\Admin\AdminOverviewController::class;
+    $adminUsers = \App\Http\Controllers\Admin\AdminUsersController::class;
+    $adminCodes = \App\Http\Controllers\Admin\AdminCodesController::class;
+    foreach (['', '/l'] as $p) {
+        Route::get($p.'/api/admin/default-branding', [$adminOverview, 'getDefaultBranding']);
+        Route::put($p.'/api/admin/default-branding', [$adminOverview, 'putDefaultBranding']);
+        Route::get($p.'/api/admin/stats', [$adminOverview, 'stats']);
+        Route::get($p.'/api/admin/advanced-stats', [$adminOverview, 'advancedStats']);
+        Route::get($p.'/api/admin/analytics/users', [$adminOverview, 'analyticsUsers']);
+        Route::get($p.'/api/admin/analytics/user/{userId}/details', [$adminOverview, 'analyticsUserDetails']);
+        Route::get($p.'/api/admin/plans', [$adminOverview, 'plans']);
+        Route::patch($p.'/api/admin/plans/{id}', [$adminOverview, 'updatePlan'])->whereNumber('id');
+
+        // Users: rotas fixas antes de /users/{id} para não serem capturadas pelo curinga.
+        Route::get($p.'/api/admin/users', [$adminOverview, 'users']);
+        Route::get($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'autoDeleteConfig']);
+        Route::post($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'saveAutoDeleteConfig']);
+        Route::post($p.'/api/admin/users/execute-auto-delete', [$adminUsers, 'executeAutoDelete']);
+        Route::get($p.'/api/admin/users/{id}/dashboard', [$adminUsers, 'dashboard']);
+        Route::put($p.'/api/admin/users/{id}/manage', [$adminUsers, 'manage']);
+        Route::put($p.'/api/admin/users/{id}/update-role', [$adminUsers, 'updateRole']);
+        Route::put($p.'/api/admin/users/{id}', [$adminUsers, 'updateAccountType']);
+        Route::delete($p.'/api/admin/users/{id}', [$adminUsers, 'destroy']);
+
+        Route::get($p.'/api/admin/codes', [$adminOverview, 'codes']);
+        Route::get($p.'/api/admin/codes/auto-delete-config', [$adminCodes, 'autoDeleteConfig']);
+        Route::post($p.'/api/admin/codes/auto-delete-config', [$adminCodes, 'saveAutoDeleteConfig']);
+        Route::post($p.'/api/admin/codes/execute-auto-delete', [$adminCodes, 'executeAutoDelete']);
+        Route::post($p.'/api/admin/codes/generate-manual', [$adminCodes, 'generateManual']);
+        Route::post($p.'/api/admin/codes/generate-batch', [$adminCodes, 'generateBatch']);
+        Route::put($p.'/api/admin/codes/{code}', [$adminCodes, 'update']);
+        Route::delete($p.'/api/admin/codes/{code}', [$adminCodes, 'destroy']);
+        // Rota legada sem prefixo /codes.
+        Route::post($p.'/api/admin/generate-code', [$adminCodes, 'generateCode']);
+    }
 });
+
+// ---------- APIs residuais do Node (fatias B7 / B9–B15) ----------
+
+// Proxy de imagem OG (público)
+$imageProxy = \App\Http\Controllers\Media\ImageProxyController::class;
+Route::get('/api/image/profile-image', [$imageProxy, 'profileImage']);
+Route::get('/l/api/image/profile-image', [$imageProxy, 'profileImage']);
+
+// Lead empresarial + chave curta de cadastro (públicos, como no Node)
+$inquiry = \App\Http\Controllers\Leads\InquiryController::class;
+Route::post('/api/inquiry/submit', [$inquiry, 'submit'])->middleware('throttle:20,1');
+Route::post('/l/api/inquiry/submit', [$inquiry, 'submit'])->middleware('throttle:20,1');
+
+$generator = \App\Http\Controllers\Admin\GeneratorController::class;
+Route::post('/api/generator/new-key', [$generator, 'newKey'])->middleware('throttle:20,1');
+Route::post('/l/api/generator/new-key', [$generator, 'newKey'])->middleware('throttle:20,1');
+
+// Push: chave VAPID é pública; webhook do Mercado Pago também
+$push = \App\Http\Controllers\Push\PushController::class;
+Route::get('/api/push/vapid-public-key', [$push, 'vapidPublicKey']);
+Route::get('/l/api/push/vapid-public-key', [$push, 'vapidPublicKey']);
+
+$payment = \App\Http\Controllers\Payment\PaymentController::class;
+Route::post('/api/payment/webhook-notification', [$payment, 'webhook']);
+Route::post('/l/api/payment/webhook-notification', [$payment, 'webhook']);
+
+Route::middleware('jwt')->group(function () use ($push, $payment) {
+    $location = \App\Http\Controllers\CartaoVirtual\LocationController::class;
+    Route::get('/api/location/config/{itemId}', [$location, 'show'])->whereNumber('itemId');
+    Route::get('/l/api/location/config/{itemId}', [$location, 'show'])->whereNumber('itemId');
+    Route::put('/api/location/config/{itemId}', [$location, 'update'])->whereNumber('itemId');
+    Route::put('/l/api/location/config/{itemId}', [$location, 'update'])->whereNumber('itemId');
+
+    $suggestions = \App\Http\Controllers\Suggestions\SuggestionsController::class;
+    Route::post('/api/suggestions/generate', [$suggestions, 'generate']);
+    Route::post('/l/api/suggestions/generate', [$suggestions, 'generate']);
+
+    $checkin = \App\Http\Controllers\CartaoVirtual\CheckinController::class;
+    Route::get('/api/checkin/{itemId}', [$checkin, 'show'])->whereNumber('itemId');
+    Route::get('/l/api/checkin/{itemId}', [$checkin, 'show'])->whereNumber('itemId');
+
+    Route::post('/api/push/subscribe', [$push, 'subscribe']);
+    Route::post('/l/api/push/subscribe', [$push, 'subscribe']);
+
+    Route::post('/api/payment/create-preference', [$payment, 'createPreference']);
+    Route::post('/l/api/payment/create-preference', [$payment, 'createPreference']);
+
+    $orcamentos = \App\Http\Controllers\Orcamentos\OrcamentosController::class;
+    Route::get('/api/orcamentos', [$orcamentos, 'index']);
+    Route::get('/l/api/orcamentos', [$orcamentos, 'index']);
+    Route::get('/api/orcamentos/{id}', [$orcamentos, 'show'])->whereNumber('id');
+    Route::get('/l/api/orcamentos/{id}', [$orcamentos, 'show'])->whereNumber('id');
+    Route::patch('/api/orcamentos/{id}/status', [$orcamentos, 'updateStatus'])->whereNumber('id');
+    Route::patch('/l/api/orcamentos/{id}/status', [$orcamentos, 'updateStatus'])->whereNumber('id');
+    Route::delete('/api/orcamentos/{id}', [$orcamentos, 'destroy'])->whereNumber('id');
+    Route::delete('/l/api/orcamentos/{id}', [$orcamentos, 'destroy'])->whereNumber('id');
+
+    $businessCodes = \App\Http\Controllers\Business\InviteCodesController::class;
+    Route::get('/api/business/codes', [$businessCodes, 'index']);
+    Route::get('/l/api/business/codes', [$businessCodes, 'index']);
+    Route::post('/api/business/generate-code', [$businessCodes, 'generate']);
+    Route::post('/l/api/business/generate-code', [$businessCodes, 'generate']);
+    Route::post('/api/business/codes/generate-manual', [$businessCodes, 'generateManual']);
+    Route::post('/l/api/business/codes/generate-manual', [$businessCodes, 'generateManual']);
+
+    // Sales pages: CRUD da página, produtos e analytics. Os {id} continuam numéricos
+    // para não capturarem os prefixos literais /products e /analytics.
+    $salesPage = \App\Http\Controllers\SalesPage\SalesPageController::class;
+    Route::post('/api/v1/sales-pages', [$salesPage, 'store']);
+    Route::post('/l/api/v1/sales-pages', [$salesPage, 'store']);
+    Route::get('/api/v1/sales-pages/item/{itemId}', [$salesPage, 'showByProfileItem'])->whereNumber('itemId');
+    Route::get('/l/api/v1/sales-pages/item/{itemId}', [$salesPage, 'showByProfileItem'])->whereNumber('itemId');
+    Route::get('/api/v1/sales-pages/{id}', [$salesPage, 'show'])->whereNumber('id');
+    Route::get('/l/api/v1/sales-pages/{id}', [$salesPage, 'show'])->whereNumber('id');
+    Route::put('/api/v1/sales-pages/{id}', [$salesPage, 'update'])->whereNumber('id');
+    Route::put('/l/api/v1/sales-pages/{id}', [$salesPage, 'update'])->whereNumber('id');
+    Route::patch('/api/v1/sales-pages/{id}/publish', [$salesPage, 'publish'])->whereNumber('id');
+    Route::patch('/l/api/v1/sales-pages/{id}/publish', [$salesPage, 'publish'])->whereNumber('id');
+    Route::patch('/api/v1/sales-pages/{id}/pause', [$salesPage, 'pause'])->whereNumber('id');
+    Route::patch('/l/api/v1/sales-pages/{id}/pause', [$salesPage, 'pause'])->whereNumber('id');
+    Route::patch('/api/v1/sales-pages/{id}/archive', [$salesPage, 'archive'])->whereNumber('id');
+    Route::patch('/l/api/v1/sales-pages/{id}/archive', [$salesPage, 'archive'])->whereNumber('id');
+    Route::delete('/api/v1/sales-pages/{id}', [$salesPage, 'destroy'])->whereNumber('id');
+    Route::delete('/l/api/v1/sales-pages/{id}', [$salesPage, 'destroy'])->whereNumber('id');
+
+    $salesPageProduct = \App\Http\Controllers\SalesPage\SalesPageProductController::class;
+    foreach (['', '/l'] as $p) {
+        Route::get($p.'/api/v1/sales-pages/products/{productId}', [$salesPageProduct, 'show'])->whereNumber('productId');
+        Route::put($p.'/api/v1/sales-pages/products/{productId}', [$salesPageProduct, 'update'])->whereNumber('productId');
+        Route::patch($p.'/api/v1/sales-pages/products/{productId}/status', [$salesPageProduct, 'updateStatus'])->whereNumber('productId');
+        Route::delete($p.'/api/v1/sales-pages/products/{productId}', [$salesPageProduct, 'destroy'])->whereNumber('productId');
+        Route::get($p.'/api/v1/sales-pages/{salesPageId}/products', [$salesPageProduct, 'index'])->whereNumber('salesPageId');
+        Route::post($p.'/api/v1/sales-pages/{salesPageId}/products', [$salesPageProduct, 'store'])->whereNumber('salesPageId');
+        Route::post($p.'/api/v1/sales-pages/{salesPageId}/products/reorder', [$salesPageProduct, 'reorder'])->whereNumber('salesPageId');
+    }
+
+    $salesPageAnalytics = \App\Http\Controllers\SalesPage\SalesPageAnalyticsController::class;
+    foreach (['', '/l'] as $p) {
+        Route::get($p.'/api/v1/sales-pages/analytics/products/{productId}', [$salesPageAnalytics, 'product'])->whereNumber('productId');
+        Route::get($p.'/api/v1/sales-pages/analytics/{salesPageId}', [$salesPageAnalytics, 'index'])->whereNumber('salesPageId');
+        Route::get($p.'/api/v1/sales-pages/analytics/{salesPageId}/funnel', [$salesPageAnalytics, 'funnel'])->whereNumber('salesPageId');
+        Route::get($p.'/api/v1/sales-pages/analytics/{salesPageId}/ranking', [$salesPageAnalytics, 'ranking'])->whereNumber('salesPageId');
+    }
+});
+
+// Tracking da loja: público, chamado pelo JS da página pública (sem JWT).
+$salesPageTrack = \App\Http\Controllers\SalesPage\SalesPageAnalyticsController::class;
+Route::post('/api/v1/sales-pages/track', [$salesPageTrack, 'track']);
+Route::post('/l/api/v1/sales-pages/track', [$salesPageTrack, 'track']);
+
+// ---------- Checkout KingForms / PagBank (B20) ----------
+$checkout = \App\Http\Controllers\Checkout\CheckoutController::class;
+
+// A página de checkout e o webhook do PagBank são públicos.
+Route::get('/api/checkout/page', [$checkout, 'page']);
+Route::get('/l/api/checkout/page', [$checkout, 'page']);
+Route::post('/api/checkout/create', [$checkout, 'create'])->middleware('throttle:30,1');
+Route::post('/l/api/checkout/create', [$checkout, 'create'])->middleware('throttle:30,1');
+Route::post('/api/webhooks/pagbank', [$checkout, 'webhook']);
+Route::post('/l/api/webhooks/pagbank', [$checkout, 'webhook']);
+
+Route::middleware('jwt')->group(function () use ($checkout) {
+    Route::get('/api/checkout/preview-link', [$checkout, 'previewLink']);
+    Route::get('/l/api/checkout/preview-link', [$checkout, 'previewLink']);
+    Route::get('/api/checkout/config/{itemId}', [$checkout, 'getConfig'])->whereNumber('itemId');
+    Route::get('/l/api/checkout/config/{itemId}', [$checkout, 'getConfig'])->whereNumber('itemId');
+    Route::put('/api/checkout/config/{itemId}', [$checkout, 'saveConfig'])->whereNumber('itemId');
+    Route::put('/l/api/checkout/config/{itemId}', [$checkout, 'saveConfig'])->whereNumber('itemId');
+    Route::post('/api/checkout/test-connection', [$checkout, 'testConnection']);
+    Route::post('/l/api/checkout/test-connection', [$checkout, 'testConnection']);
+});
+
+Route::get('/og-image.jpg', [\App\Http\Controllers\Admin\OgImageController::class, 'show']);
+Route::get('/l/og-image.jpg', [\App\Http\Controllers\Admin\OgImageController::class, 'show']);
 
 Route::post('/api/auth/login', [\App\Http\Controllers\Auth\AuthController::class, 'login'])->middleware('throttle:20,1');
 Route::post('/l/api/auth/login', [\App\Http\Controllers\Auth\AuthController::class, 'login'])->middleware('throttle:20,1');

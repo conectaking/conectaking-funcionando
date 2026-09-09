@@ -352,9 +352,7 @@ class KingSelectionFaceService
                 return ['status' => 403, 'body' => ['message' => 'Reconhecimento facial está desativado nesta galeria.']];
             }
         }
-        $onDemand = strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: ''))) === 'true'
-            || strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: ''))) === '1';
-        if ($onDemand) {
+        if ($this->isRekogOnDemand()) {
             return ['status' => 200, 'body' => [
                 'success' => true,
                 'code' => 'FACE_USE_CHUNKED',
@@ -474,15 +472,12 @@ class KingSelectionFaceService
                 }
             }
         }
-        $onDemand = strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: ''))) === 'true'
-            || strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: ''))) === '1';
-
         return ['status' => 200, 'body' => [
             'success' => true,
             'galleryId' => $galleryId,
             'totalPhotos' => $total,
             'jobs' => $jobs,
-            'onDemand' => $onDemand,
+            'onDemand' => $this->isRekogOnDemand(),
         ]];
     }
 
@@ -1110,23 +1105,77 @@ class KingSelectionFaceService
                 return ['status' => 403, 'body' => ['message' => 'Reconhecimento facial está desativado nesta galeria.']];
             }
         }
-        $onDemand = strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: ''))) === 'true'
-            || strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: ''))) === '1';
-        if ($onDemand) {
-            return ['status' => 200, 'body' => [
-                'success' => true,
-                'code' => 'FACE_USE_CHUNKED',
-                'photoIds' => [],
-                'total' => null,
-                'message' => 'Use análise em etapas (chunked). Atualize a página (Ctrl+F5) se a galeria estiver em cache antigo.',
-            ]];
-        }
-        if (! Schema::hasTable('rekognition_face_matches') || ! Schema::hasTable('rekognition_photo_faces')) {
-            return ['status' => 200, 'body' => ['success' => true, 'total' => 0, 'photoIds' => []]];
-        }
         $page = max(1, (int) ($query['page'] ?? 1));
         $limit = min(8000, max(1, (int) ($query['limit'] ?? 500)));
         $offset = ($page - 1) * $limit;
+
+        if ($this->isRekogOnDemand()) {
+            if ($this->useFaceSearchCache()) {
+                $cached = $this->getSearchCache($galleryId, $clientId, 'enroll');
+                if (is_array($cached) && $cached !== []) {
+                    return ['status' => 200, 'body' => [
+                        'success' => true,
+                        'total' => count($cached),
+                        'photoIds' => array_values(array_slice($cached, $offset, $limit)),
+                        'fromCache' => true,
+                    ]];
+                }
+            }
+            $refBytes = $this->getReferenceImageBytes($galleryId, $clientId);
+            if ($refBytes === null || $refBytes === '') {
+                return ['status' => 200, 'body' => [
+                    'success' => true,
+                    'total' => 0,
+                    'photoIds' => [],
+                    'message' => 'Nenhuma foto de referência. Cadastre seu rosto primeiro.',
+                ]];
+            }
+            /**
+             * Um scan completo num único pedido estoura o timeout do proxy: o front pede vários
+             * GET curtos com chunked=1 e depois grava o resultado em POST /client/face-enroll-cache.
+             */
+            $chunked = in_array(strtolower(trim((string) ($query['chunked'] ?? ''))), ['1', 'true'], true);
+            if (! $chunked) {
+                return ['status' => 200, 'body' => [
+                    'success' => true,
+                    'code' => 'FACE_USE_CHUNKED',
+                    'photoIds' => [],
+                    'total' => null,
+                    'message' => 'Use análise em etapas (chunked). Atualize a página (Ctrl+F5) se a galeria estiver em cache antigo.',
+                ]];
+            }
+            $batch = min(96, max(8, (int) ($query['photoBatch'] ?? 40) ?: 40));
+            $skip = max(0, (int) ($query['photoSkip'] ?? 0));
+            $totalGallery = (int) (DB::selectOne(
+                'SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id = ?',
+                [$galleryId]
+            )->c ?? 0);
+            $rows = DB::select(
+                'SELECT id, file_path FROM king_photos WHERE gallery_id = ? ORDER BY id LIMIT ? OFFSET ?',
+                [$galleryId, $batch, $skip]
+            );
+            $chunk = $this->compareFacesAgainstPhotoRows($refBytes, $rows, [
+                'verifySourceFace' => $skip === 0,
+                'speedMode' => (string) ($query['speedMode'] ?? ''),
+            ]);
+            $photoIds = $chunk['photoIds'];
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'faceChunk' => true,
+                'photoIds' => $photoIds,
+                'galleryPhotoTotal' => $totalGallery,
+                'photoSkip' => $skip,
+                'photoBatchReturned' => count($rows),
+                'hasMore' => ($skip + count($rows)) < $totalGallery,
+                'total' => count($photoIds),
+                'diagnostics' => $chunk['diagnostics'],
+            ]];
+        }
+
+        if (! Schema::hasTable('rekognition_face_matches') || ! Schema::hasTable('rekognition_photo_faces')) {
+            return ['status' => 200, 'body' => ['success' => true, 'total' => 0, 'photoIds' => []]];
+        }
         $minSim = max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 70)));
         $total = (int) (DB::selectOne(
             'SELECT COUNT(DISTINCT kp.id)::int AS cnt
@@ -1176,13 +1225,7 @@ class KingSelectionFaceService
         if (! Schema::hasTable('rekognition_processing_cache')) {
             return ['status' => 200, 'body' => ['success' => true, 'saved' => count($ids)]];
         }
-        $cacheKey = 'search:'.$galleryId.':'.$clientId.':enroll';
-        DB::statement(
-            'INSERT INTO rekognition_processing_cache (cache_key, payload_json, expires_at)
-             VALUES (?, ?, NOW() + interval \'7 days\')
-             ON CONFLICT (cache_key) DO UPDATE SET payload_json = EXCLUDED.payload_json, expires_at = EXCLUDED.expires_at',
-            [$cacheKey, json_encode($ids)]
-        );
+        $this->setSearchCache($galleryId, $clientId, 'enroll', $ids);
 
         return ['status' => 200, 'body' => ['success' => true, 'saved' => count($ids)]];
     }
@@ -1572,10 +1615,314 @@ class KingSelectionFaceService
         ];
     }
 
+    private function useFaceSearchCache(): bool
+    {
+        $raw = strtolower(trim((string) (env('REKOG_FACE_USE_CACHE') ?: '0')));
+
+        return in_array($raw, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    /**
+     * Mesmo formato de payload do Node (`{"photoIds":[...]}`), tolerando o array cru antigo.
+     *
+     * @return list<int>|null
+     */
+    private function getSearchCache(int $galleryId, int $clientId, string $key): ?array
+    {
+        if (! Schema::hasTable('rekognition_processing_cache')) {
+            return null;
+        }
+        $row = DB::selectOne(
+            'SELECT payload_json FROM rekognition_processing_cache WHERE cache_key = ? AND expires_at > NOW() LIMIT 1',
+            ['search:'.$galleryId.':'.$clientId.':'.$key]
+        );
+        if (! $row) {
+            return null;
+        }
+        $raw = $row->payload_json;
+        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (is_array($decoded) && isset($decoded['photoIds']) && is_array($decoded['photoIds'])) {
+            $decoded = $decoded['photoIds'];
+        }
+        if (! is_array($decoded) || ! array_is_list($decoded)) {
+            return null;
+        }
+
+        return array_values(array_filter(array_map('intval', $decoded), static fn ($id) => $id > 0));
+    }
+
+    /**
+     * @param  list<int>  $photoIds
+     */
+    private function setSearchCache(int $galleryId, int $clientId, string $key, array $photoIds, int $ttlDays = 7): void
+    {
+        if (! Schema::hasTable('rekognition_processing_cache')) {
+            return;
+        }
+        DB::statement(
+            "INSERT INTO rekognition_processing_cache (cache_key, payload_json, expires_at)
+             VALUES (?, ?, NOW() + (? || ' days')::interval)
+             ON CONFLICT (cache_key) DO UPDATE SET payload_json = EXCLUDED.payload_json, expires_at = EXCLUDED.expires_at",
+            [
+                'search:'.$galleryId.':'.$clientId.':'.$key,
+                json_encode(['photoIds' => array_values($photoIds)]),
+                (string) $ttlDays,
+            ]
+        );
+    }
+
+    /**
+     * Bytes da selfie/referência gravada no enroll (R2). `staging/` é legado do S3 do Node.
+     */
+    private function getReferenceImageBytes(int $galleryId, int $clientId): ?string
+    {
+        if (! Schema::hasTable('rekognition_client_faces')) {
+            return null;
+        }
+        $row = DB::selectOne(
+            'SELECT reference_r2_key FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ? LIMIT 1',
+            [$galleryId, $clientId]
+        );
+        $ref = trim((string) ($row->reference_r2_key ?? ''));
+        if ($ref === '' || str_starts_with(strtolower($ref), 'staging/')) {
+            return null;
+        }
+        $key = str_starts_with(strtolower($ref), 'r2:') ? substr($ref, 3) : $ref;
+        $key = ltrim($key, '/');
+        if (! str_starts_with($key, 'galleries/')) {
+            return null;
+        }
+
+        return $this->media->bufferFromStoragePath('r2:'.$key);
+    }
+
+    /**
+     * Compara a referência do cliente contra um lote de `king_photos` via CompareFaces (modo sob demanda).
+     * Sem collection indexada: cada chunk faz fetch das fotos e compara, com fallback por recorte de rosto.
+     *
+     * @param  list<object>  $photoRows  linhas com `id` e `file_path`
+     * @param  array<string,mixed>  $opts
+     * @return array{photoIds:list<int>, diagnostics:array<string,int>}
+     */
+    private function compareFacesAgainstPhotoRows(string $sourceImageBytes, array $photoRows, array $opts = []): array
+    {
+        $diag = [
+            'totalRows' => count($photoRows),
+            'compareAttempts' => 0,
+            'compareMatches' => 0,
+            'cropFaceCandidates' => 0,
+            'cropCompareAttempts' => 0,
+            'cropCompareMatches' => 0,
+            'fetchErrors' => 0,
+            'compareErrors' => 0,
+        ];
+        $cfg = $this->rekogConfig();
+        if ($photoRows === [] || ! $cfg['enabled']) {
+            return ['photoIds' => [], 'diagnostics' => $diag];
+        }
+
+        $sourceNorm = $this->normalizeJpegMax($sourceImageBytes, 2048, 84) ?? $sourceImageBytes;
+
+        $speedMode = strtolower(trim((string) ($opts['speedMode'] ?? '') ?: (env('REKOG_SPEED_MODE_DEFAULT') ?: 'auto')));
+        $isFast = in_array($speedMode, ['fast', 'turbo', 'rapid'], true);
+        $compareMaxPx = min(2048, max(400, (int) (env('KINGSELECTION_FACE_COMPARE_MAX_PX') ?: ($isFast ? 720 : 960))));
+        $concurrency = min(24, max(2, (int) (env('KINGSELECTION_FACE_COMPARE_CONCURRENCY') ?: ($isFast ? 10 : 8))));
+        $cropMinConfidence = min(100, max(0, (int) (env('KINGSELECTION_FACE_CROP_MIN_CONFIDENCE') ?: 45)));
+        $cropMaxFaces = min(12, max(1, (int) (env('KINGSELECTION_FACE_CROP_MAX_FACES') ?: ($isFast ? 4 : 8))));
+        $cropFallbackEnabled = trim((string) (env('KINGSELECTION_FACE_CROP_FALLBACK') ?? '1')) !== '0';
+        $deferCropFallback = strtolower(trim((string) (env('KINGSELECTION_FACE_DEFER_CROP_FALLBACK') ?? '1'))) !== '0';
+        $compareThreshold = min(100, max(50, (int) (env('REKOG_COMPARE_SIMILARITY_THRESHOLD') ?: 68)));
+        $relaxed = min(95, max(50, (int) (env('KINGSELECTION_FACE_RELAXED_THRESHOLD') ?: 62)));
+        $thresholdMain = (float) max($relaxed, $compareThreshold);
+        $thresholdFallback = (float) max(50, min($thresholdMain, (int) (env('KINGSELECTION_FACE_FALLBACK_THRESHOLD') ?: max(58, (int) $thresholdMain - 8))));
+
+        if (($opts['verifySourceFace'] ?? false) === true) {
+            $minConf = min(99, max(45, (int) (env('REKOG_SOURCE_VERIFY_MIN_CONFIDENCE') ?: 55)));
+            $det = $this->detectFacesSafe($sourceNorm, $cfg);
+            if ($det !== null) {
+                $ok = array_filter($det, static fn ($f) => (float) ($f['Confidence'] ?? 0) >= $minConf);
+                if ($ok === []) {
+                    return ['photoIds' => [], 'diagnostics' => $diag];
+                }
+            }
+        }
+
+        // Recorta o rosto principal da selfie: reduz falso negativo quando o fundo tem outras pessoas.
+        $sourceCmp = $sourceNorm;
+        $srcFaces = $this->detectFacesSafe($sourceNorm, $cfg);
+        if ($srcFaces !== null) {
+            $srcFaces = $this->sortFacesByArea(array_filter(
+                $srcFaces,
+                static fn ($f) => (float) ($f['Confidence'] ?? 0) >= $cropMinConfidence && ! empty($f['BoundingBox'])
+            ));
+            if ($srcFaces !== []) {
+                $crop = $this->cropFaceJpeg($sourceNorm, $srcFaces[0]['BoundingBox'], 0.12);
+                if ($crop !== null) {
+                    $sourceCmp = $this->normalizeJpegMax($crop, 1024, 84) ?? $crop;
+                }
+            }
+        }
+        $sourceB64 = base64_encode($sourceCmp);
+
+        $matched = [];
+        $misses = [];
+        foreach (array_chunk($photoRows, $concurrency) as $slice) {
+            $targets = [];
+            foreach ($slice as $row) {
+                $buf = $this->fetchPhotoBuffer((string) ($row->file_path ?? ''));
+                if ($buf === null || $buf === '') {
+                    $diag['fetchErrors']++;
+
+                    continue;
+                }
+                $targets[(int) $row->id] = $this->normalizeJpegMax($buf, $compareMaxPx, 80) ?? $buf;
+            }
+            if ($targets === []) {
+                continue;
+            }
+            $requests = [];
+            foreach ($targets as $id => $bin) {
+                $requests[$id] = $this->rekogSignedRequest('CompareFaces', [
+                    'SourceImage' => ['Bytes' => $sourceB64],
+                    'TargetImage' => ['Bytes' => base64_encode($bin)],
+                    'SimilarityThreshold' => $compareThreshold,
+                ], $cfg);
+            }
+            $diag['compareAttempts'] += count($requests);
+            foreach ($this->rekogPool($requests) as $id => $out) {
+                if ($out === null) {
+                    $diag['compareErrors']++;
+
+                    continue;
+                }
+                $best = (float) ($out['FaceMatches'][0]['Similarity'] ?? 0);
+                if (($out['FaceMatches'] ?? []) !== [] && $best >= $thresholdMain) {
+                    $matched[(int) $id] = true;
+                    $diag['compareMatches']++;
+
+                    continue;
+                }
+                if ($cropFallbackEnabled) {
+                    $misses[(int) $id] = $targets[$id];
+                }
+            }
+        }
+
+        $runFallback = $cropFallbackEnabled && $misses !== [] && (! $deferCropFallback || $matched === []);
+        if ($runFallback) {
+            $maxCandidates = min(500, max(1, (int) (env('KINGSELECTION_FACE_FAST_FALLBACK_MAX_CANDIDATES') ?: ($isFast ? 120 : count($misses)))));
+            if ($isFast && count($misses) > $maxCandidates) {
+                $misses = array_slice($misses, 0, $maxCandidates, true);
+            }
+            $fallbackConcurrency = min(8, max(1, intdiv($concurrency, 2)));
+            foreach (array_chunk($misses, $fallbackConcurrency, true) as $slice) {
+                $cropRequests = [];
+                foreach ($slice as $id => $targetBuf) {
+                    if (isset($matched[$id])) {
+                        continue;
+                    }
+                    $faces = $this->detectFacesSafe($targetBuf, $cfg);
+                    if ($faces === null) {
+                        continue;
+                    }
+                    $faces = array_slice($this->sortFacesByArea(array_filter(
+                        $faces,
+                        static fn ($f) => (float) ($f['Confidence'] ?? 0) >= $cropMinConfidence && ! empty($f['BoundingBox'])
+                    )), 0, $cropMaxFaces);
+                    $diag['cropFaceCandidates'] += count($faces);
+                    foreach ($faces as $i => $face) {
+                        $crop = $this->cropFaceJpeg($targetBuf, $face['BoundingBox'], 0.12);
+                        if ($crop === null) {
+                            continue;
+                        }
+                        $crop = $this->normalizeJpegMax($crop, 1024, 84) ?? $crop;
+                        $cropRequests[$id.':'.$i] = $this->rekogSignedRequest('CompareFaces', [
+                            'SourceImage' => ['Bytes' => $sourceB64],
+                            'TargetImage' => ['Bytes' => base64_encode($crop)],
+                            'SimilarityThreshold' => $compareThreshold,
+                        ], $cfg);
+                    }
+                }
+                if ($cropRequests === []) {
+                    continue;
+                }
+                $diag['cropCompareAttempts'] += count($cropRequests);
+                foreach ($this->rekogPool($cropRequests) as $key => $out) {
+                    if ($out === null) {
+                        $diag['compareErrors']++;
+
+                        continue;
+                    }
+                    $id = (int) strtok((string) $key, ':');
+                    if (isset($matched[$id])) {
+                        continue;
+                    }
+                    $best = (float) ($out['FaceMatches'][0]['Similarity'] ?? 0);
+                    if (($out['FaceMatches'] ?? []) !== [] && $best >= $thresholdFallback) {
+                        $matched[$id] = true;
+                        $diag['cropCompareMatches']++;
+                    }
+                }
+            }
+        }
+
+        return ['photoIds' => array_map('intval', array_keys($matched)), 'diagnostics' => $diag];
+    }
+
+    /**
+     * @return list<array<string,mixed>>|null null quando a chamada falhou (não é "sem rostos")
+     */
+    private function detectFacesSafe(string $jpeg, array $cfg): ?array
+    {
+        try {
+            $out = $this->rekogCall('DetectFaces', [
+                'Image' => ['Bytes' => base64_encode($jpeg)],
+                'Attributes' => ['DEFAULT'],
+            ], $cfg);
+        } catch (\Throwable) {
+            return null;
+        }
+        $faces = $out['FaceDetails'] ?? [];
+
+        return is_array($faces) ? array_values($faces) : [];
+    }
+
+    /**
+     * @param  iterable<array<string,mixed>>  $faces
+     * @return list<array<string,mixed>>
+     */
+    private function sortFacesByArea(iterable $faces): array
+    {
+        $list = is_array($faces) ? array_values($faces) : iterator_to_array($faces, false);
+        usort($list, static function ($a, $b) {
+            $aa = (float) ($a['BoundingBox']['Width'] ?? 0) * (float) ($a['BoundingBox']['Height'] ?? 0);
+            $bb = (float) ($b['BoundingBox']['Width'] ?? 0) * (float) ($b['BoundingBox']['Height'] ?? 0);
+
+            return $bb <=> $aa;
+        });
+
+        return $list;
+    }
+
+    private function fetchPhotoBuffer(string $filePath): ?string
+    {
+        $path = trim($filePath);
+        if ($path === '') {
+            return null;
+        }
+        try {
+            return $this->media->bufferFromStoragePath($path);
+        } catch (\Throwable $e) {
+            Log::warning('ks.face.fetchPhoto', ['path' => $path, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
     /**
      * @param  array<string,mixed>  $box
      */
-    private function cropFaceJpeg(string $jpegBinary, array $box): ?string
+    private function cropFaceJpeg(string $jpegBinary, array $box, float $pad = 0.15): ?string
     {
         $img = @imagecreatefromstring($jpegBinary);
         if ($img === false) {
@@ -1587,7 +1934,6 @@ class KingSelectionFaceService
         $top = (float) ($box['Top'] ?? 0);
         $bw = (float) ($box['Width'] ?? 0);
         $bh = (float) ($box['Height'] ?? 0);
-        $pad = 0.15;
         $x = (int) max(0, floor(($left - $pad * $bw) * $w));
         $y = (int) max(0, floor(($top - $pad * $bh) * $h));
         $cw = (int) min($w - $x, ceil(($bw + 2 * $pad * $bw) * $w));
@@ -1664,13 +2010,17 @@ class KingSelectionFaceService
 
     private function normalizeJpeg(string $binary): ?string
     {
+        return $this->normalizeJpegMax($binary, 1600, 90);
+    }
+
+    private function normalizeJpegMax(string $binary, int $max, int $quality): ?string
+    {
         $img = @imagecreatefromstring($binary);
         if ($img === false) {
             return null;
         }
         $w = imagesx($img);
         $h = imagesy($img);
-        $max = 1600;
         if (max($w, $h) > $max) {
             $scale = $max / max($w, $h);
             $nw = max(1, (int) round($w * $scale));
@@ -1681,7 +2031,7 @@ class KingSelectionFaceService
             $img = $dst;
         }
         ob_start();
-        imagejpeg($img, null, 90);
+        imagejpeg($img, null, max(40, min(100, $quality)));
         $out = (string) ob_get_clean();
         imagedestroy($img);
 
@@ -1711,6 +2061,74 @@ class KingSelectionFaceService
      */
     private function rekogCall(string $action, array $payload, array $cfg): array
     {
+        $req = $this->rekogSignedRequest($action, $payload, $cfg);
+
+        $res = Http::withHeaders($req['headers'])
+            ->withBody($req['body'], 'application/x-amz-json-1.1')
+            ->timeout(60)
+            ->post($req['url']);
+
+        if (! $res->successful()) {
+            throw new \RuntimeException('HTTP '.$res->status().': '.substr($res->body(), 0, 200));
+        }
+        $json = $res->json();
+        if (! is_array($json)) {
+            throw new \RuntimeException('Resposta Rekognition inválida');
+        }
+
+        return $json;
+    }
+
+    /**
+     * Dispara vários pedidos Rekognition em paralelo (CompareFaces por chunk cabe no timeout do proxy).
+     *
+     * @param  array<array-key, array{url:string, headers:array<string,string>, body:string}>  $requests
+     * @return array<array-key, array<string,mixed>|null> null = falha nesse pedido
+     */
+    private function rekogPool(array $requests): array
+    {
+        if ($requests === []) {
+            return [];
+        }
+        $keys = array_keys($requests);
+        $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($requests) {
+            $pending = [];
+            foreach ($requests as $key => $req) {
+                $pending[] = $pool->as((string) $key)
+                    ->withHeaders($req['headers'])
+                    ->withBody($req['body'], 'application/x-amz-json-1.1')
+                    ->timeout(60)
+                    ->post($req['url']);
+            }
+
+            return $pending;
+        });
+
+        $out = [];
+        foreach ($keys as $key) {
+            $res = $responses[(string) $key] ?? null;
+            if (! $res instanceof \Illuminate\Http\Client\Response || ! $res->successful()) {
+                if ($res instanceof \Throwable) {
+                    Log::warning('ks.face.rekogPool', ['error' => $res->getMessage()]);
+                }
+                $out[$key] = null;
+
+                continue;
+            }
+            $json = $res->json();
+            $out[$key] = is_array($json) ? $json : null;
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string,mixed>  $payload
+     * @param  array{region:string, accessKeyId:string, secretAccessKey:string}  $cfg
+     * @return array{url:string, headers:array<string,string>, body:string}
+     */
+    private function rekogSignedRequest(string $action, array $payload, array $cfg): array
+    {
         $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
         if ($body === false) {
             throw new \RuntimeException('JSON inválido');
@@ -1735,25 +2153,17 @@ class KingSelectionFaceService
         $signature = hash_hmac('sha256', $stringToSign, $kSigning);
         $authorization = "AWS4-HMAC-SHA256 Credential={$cfg['accessKeyId']}/{$credentialScope}, SignedHeaders={$signedHeaders}, Signature={$signature}";
 
-        $res = Http::withHeaders([
-            'Authorization' => $authorization,
-            'Content-Type' => 'application/x-amz-json-1.1',
-            'Host' => $host,
-            'X-Amz-Date' => $amzDate,
-            'X-Amz-Target' => $amzTarget,
-        ])->withBody($body, 'application/x-amz-json-1.1')
-            ->timeout(60)
-            ->post('https://'.$host.'/');
-
-        if (! $res->successful()) {
-            throw new \RuntimeException('HTTP '.$res->status().': '.substr($res->body(), 0, 200));
-        }
-        $json = $res->json();
-        if (! is_array($json)) {
-            throw new \RuntimeException('Resposta Rekognition inválida');
-        }
-
-        return $json;
+        return [
+            'url' => 'https://'.$host.'/',
+            'headers' => [
+                'Authorization' => $authorization,
+                'Content-Type' => 'application/x-amz-json-1.1',
+                'Host' => $host,
+                'X-Amz-Date' => $amzDate,
+                'X-Amz-Target' => $amzTarget,
+            ],
+            'body' => $body,
+        ];
     }
 
     /**
@@ -2169,11 +2579,18 @@ class KingSelectionFaceService
         ]];
     }
 
+    /**
+     * Mesma semântica do Node (`useRekogOnDemand`): ligado por omissão, só desliga com `0`/`false`.
+     * Divergir daqui faz o front receber lista vazia em vez de FACE_USE_CHUNKED.
+     */
     private function isRekogOnDemand(): bool
     {
-        $v = strtolower(trim((string) (env('REKOG_ON_DEMAND') ?: '')));
+        $v = strtolower(trim((string) (env('REKOG_ON_DEMAND') ?? '')));
+        if ($v === '') {
+            return true;
+        }
 
-        return $v === 'true' || $v === '1';
+        return $v !== '0' && $v !== 'false';
     }
 
     private function ownedGallery(string $userId, int $galleryId): bool

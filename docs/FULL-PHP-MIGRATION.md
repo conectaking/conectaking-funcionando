@@ -1,104 +1,252 @@
 # Migração FULL PHP — sem Node
 
-Objetivo: **Caddy → Laravel**, zero container `api` (Express). Front em Blade (ou HTML servido pelo Laravel até virar Blade). APIs 100% PHP.
+Objetivo: **Caddy → Laravel**, zero container `api` (Express). Front em Blade (ou HTML servido pelo
+Laravel até virar Blade). APIs 100% PHP.
 
 ## Resposta direta: o Node pode sair?
 
-**Sim.** Hoje ele só existe porque o Caddy faz `reverse_proxy 127.0.0.1:5000`.  
-Quando Laravel servir estáticos + todas as APIs + `/health`, o Caddy aponta para `:8080` e o serviço `api` desliga.
+**Sim, com uma ressalva.** Toda a superfície `/api/*` e as páginas HTML já existem em Laravel.
+O único bloqueio funcional que resta é o painel **admin de estudos bíblicos por livro**
+(7 rotas, ver [Gaps](#gaps-reais-que-sobram)). Se esse painel puder ficar indisponível por uns dias,
+o cutover pode ser feito já.
 
-## Já em Laravel (não migrar de novo)
+Hoje o Node só continua no caminho porque o Caddy faz `reverse_proxy 127.0.0.1:5000` e o Express
+decide, rota a rota, o que reencaminha para o Laravel (`middleware/laravelProxy.js`).
 
-- Cartão virtual (Blade + APIs)
-- Profile / upload / satélites (form, guest-list, bíblia, loja)
-- King Selection (quase tudo) + facial panel
+---
+
+## Cobertura atual
+
+Verificado com `scripts/tmp-route-coverage.js` (compara os prefixos `/api/*` do `server.js` com os
+de `laravel/routes/web.php`): **todos os prefixos do Express existem no Laravel**.
+
+### Já em Laravel (não migrar de novo)
+
+- Cartão virtual (Blade + APIs) e satélites (form, guest-list, bíblia, loja)
+- Profile / upload / analytics / branding
+- King Selection completo (painel, cliente, público, watermark, R2, vendas, zip, face)
 - Finance + Serasa
-- Auth login/refresh/logout + dashboard boot (modules/analytics/branding)
-- Admin bíblia (prosperidade / Dev365)
+- Auth (login/register/refresh/logout/password) + dashboard boot
+- Admin bíblia: prosperidade e Dev365 (incluindo jobs assíncronos)
+- Documentos (CRUD + OCR: `ocr-info`, `warm-ocr`, `processar-comprovante`), King Docs, orçamentos
+- Checkout KingForms/PagBank: APIs, webhook **e a página HTML**
+- Painel admin: overview, `advanced-stats`, `analytics/*`, planos, **users e codes completos**
+- Edge: `/health`, `/api/public-api-url`, `/api-config.js`, estáticos `public/` e `public_html/`
 
-## Lista COMPLETA do que ainda depende do Node
+### Fechado nesta rodada
 
-### A) Infra (obrigatório para matar o Node)
-
-| # | Item | Ação |
-|---|---|---|
-| A1 | Caddy aponta para `:5000` | Mudar para `:8080` (Laravel) |
-| A2 | `artisan serve` frágil como edge | Preferir FrankenPHP ou nginx+php-fpm |
-| A3 | Estáticos `public/` + `public_html/` | Montar/servir via `laravel/public` |
-| A4 | Rotas HTML Express (`/login`, `/dashboard`, `/kingSelection*`, …) | Rotas Laravel (arquivo ou Blade) |
-| A5 | `GET /health` | Endpoint Laravel (LB/Caddy) |
-| A6 | `NODE_INTERNAL_URL` no Laravel | Remover após residual zero |
-| A7 | Cron / auto-migrate Node | `php artisan schedule` + migrate no deploy |
-| A8 | Desligar container `conectaking-api` | Compose sem serviço `api` |
-
-### B) APIs ainda só no Node
-
-| # | API | Notas |
-|---|---|---|
-| B1 | `POST /api/auth/register` | ✅ Laravel |
-| B2 | `/api/password/*` (forgot/reset) | ✅ Laravel |
-| B3 | `/api/account/*` (details/status/upgrade/password/debug) | ✅ Laravel |
-| B4 | `/api/subscription/*` | ✅ Laravel |
-| B5 | `/api/link-limits` | ✅ Laravel |
-| B6 | `/api/documentos/*` (+ OCR) | |
-| B7 | `/api/orcamentos` + recibos | |
-| B8 | `/api/king-docs/*` | |
-| B9 | `/api/checkin/:itemId` (agregado dashboard) | portaria guest já Laravel |
-| B10 | `/api/inquiry/*` | |
-| B11 | `/api/generator/*` | |
-| B12 | `/api/payment`, `/api/suggestions`, `/api/push` | |
-| B13 | `/api/location` | |
-| B14 | `/api/v1/sales-pages/*` | página pública loja já Laravel |
-| B15 | `/api/image` (proxy de imagem) | |
-| B16 | `/api/admin/*` (exceto bíblia) | planos, OG/personalizar-link, etc. |
-| B17 | `/api/business/*` (além branding/team) | |
-| B18 | `/api/analytics/*` (além KPIs do boot) | |
-| B19 | `/api/pix/*` (além QR do cartão) | |
-| B20 | `/api/checkout/*` + webhooks PagBank | incluir se quiser zero Node |
-| B21 | KS CompareFaces chunked | `face-results?chunked=1` se `REKOG_ON_DEMAND=1` |
-
-### C) Front HTML → Blade (ou servir pelo Laravel)
-
-| # | Página |
+| Item | O que entrou |
 |---|---|
-| C1 | login / registro / recuperar-senha / conta |
-| C2 | dashboard |
-| C3 | kingSelection* (Edit, Project, Cliente, Gallery, Review, Success) |
-| C4 | formPageEdit, salesPageEdit, guestListEdit* |
-| C5 | kingDocs*, kingForms, documentos*, orcamentos, recibos* |
-| C6 | admin-planos, admin-devocionais, admin-prosperidade |
-| C7 | checkoutConfig, termos, privacidade, index, demais HTML |
+| **B21 — CompareFaces chunked** | `GET /api/king-selection/client/face-results?chunked=1` faz CompareFaces real contra o lote de fotos (`photoSkip`/`photoBatch`), com fallback por recorte de rosto, cache `REKOG_FACE_USE_CACHE` e o mesmo `diagnostics` do Node. Fetch do R2 e chamadas Rekognition vão em `Http::pool` para o chunk caber no timeout do proxy. |
+| **B21 — default de `REKOG_ON_DEMAND`** | O PHP considerava on-demand **desligado** quando a env estava ausente; o Node considera **ligado**. Com a env vazia o Laravel devolvia lista vazia em vez de `FACE_USE_CHUNKED` e o cliente via "0 fotos". Agora os dois usam a mesma regra (só desliga com `0`/`false`). |
+| **B21 — formato do cache facial** | `POST /client/face-enroll-cache` gravava um array cru; o Node grava e lê `{"photoIds":[...]}`. O Laravel agora escreve no formato do Node e lê os dois. |
+| **B16 — mutações admin** | `users`: dashboard, `manage`, `update-role`, `PUT /users/{id}`, `DELETE`, auto-delete (config + execute). `codes`: `generate-manual`, `generate-batch`, `generate-code` (legado), `PUT`/`DELETE /codes/{code}`, auto-delete. Mesmo envelope do `utils/responseFormatter.js`. |
+| **B16 — leituras que faltavam** | `advanced-stats`, `analytics/users`, `analytics/user/{id}/details`. |
+| **Checkout HTML** | `views/checkout.ejs` → `laravel/resources/views/checkout/kingforms.blade.php`, servido em `GET /{slug}/form/{itemId}/checkout`. As 21 views Blade compilam (`scripts/tmp-blade-compile-check.php`). |
+| **Edge** | `/api/public-api-url` e `/api-config.js` não existiam no Laravel. O `api-config.js` é servido byte-a-byte igual ao do Express (conferido por `scripts/tmp-check-api-config.php`) — sem ele o dashboard perde o `API_BASE` e o patch de `fetch()`. |
 
-**Nota:** Na fase de matar o Node, basta o Laravel **servir** esses HTML (igual Express). Converter tudo para `.blade.php` pode ser paralelo/depois — o critério “sem Node” é a casca HTTP.
+---
 
-## Ordem de execução
+## Gaps reais que sobram
 
-1. **Edge Laravel** — health, estáticos, rotas HTML, compose mounts  
-2. **APIs residual** — B1→B21 (prioridade: password, account, subscription, documentos, king-docs, admin)  
-3. **CompareFaces chunked** — B21  
-4. **Caddy → :8080** + smoke total  
-5. **Remover serviço `api`**  
-6. **HTML → Blade** (C1–C7) até zero HTML legado  
+### 1. Admin de estudos bíblicos por livro — **migrado**
 
-## Progresso
+As 7 rotas de `routes/adminBibleStudy.js` (estudos por livro) estão em Laravel
+(`BibleAdminBookStudyController` + `BibleAdminBookStudyService`), com proxy
+`isLaravelAdminBiblePath`, CSRF e job async `book-study:run-ai-job`.
 
-- [x] Lista completa documentada
-- [x] `/health` Laravel
-- [x] Front legado (HTML/JS) servido pelo Laravel + volumes `public`/`public_html`
-- [x] `/api/password/forgot|reset` → Laravel
-- [x] `/api/account/*` + status com plan map completo + linkLimits
-- [x] `/api/subscription/*` + plans-public
-- [x] `/api/link-limits/*`
-- [x] `POST /api/auth/register`
-- [ ] Demais APIs B6–B21 (documentos, king-docs, admin, …)
-- [ ] CompareFaces chunked
-- [ ] Caddy → `:8080`
-- [ ] Remover container `api`
-- [ ] HTML → Blade (C1–C7)
+### 2. Envio de push — **não é gap**
 
+`utils/pushNotificationService.js` exporta `sendPushNotification`, mas **nenhum ficheiro do projeto o
+chama**. Nenhuma rota, nenhum job, nenhum módulo. É código morto: o Node em produção nunca envia push.
 
-- [ ] Caddy → só Laravel  
-- [ ] Container `api` parado/removido  
-- [ ] Nenhuma rota `/api/*` respondida por Express  
-- [ ] Front servido por Laravel (Blade ou static)  
-- [ ] Sem `NODE_INTERNAL_URL` / sem proxy `laravelProxy.js`
+O que está em uso é só `GET /api/push/vapid-public-key` e `POST /api/push/subscribe`, ambos já em
+Laravel. Portanto **não há nada a migrar** e nada bloqueia o cutover. Reforça isso o facto de o
+`docker-compose.prod.yml` passar `VAPID_PUBLIC_KEY` ao container `laravel` mas **não**
+`VAPID_PRIVATE_KEY` — sem ela não se envia push de qualquer forma.
+
+Se um dia for preciso enviar de facto, é preciso Web Push completo em PHP (JWT VAPID ES256 + ECDH
+P-256 + HKDF + AES-128-GCM). Recomendação: usar `minishlink/web-push` em vez de escrever à mão.
+
+### 3. Front ainda em HTML legado (não bloqueia)
+
+O Laravel já **serve** os HTML de `public/`/`public_html/` tal como o Express. Converter para Blade
+(login, dashboard, kingSelection*, kingDocs*, admin-*, etc.) é trabalho paralelo — o critério para
+"sem Node" é a casca HTTP, não o template.
+
+---
+
+## Riscos do cutover (ler antes de mexer no Caddy)
+
+**Este é o ponto mais importante do documento.** Enquanto o Node é o edge, o
+`middleware/laravelProxy.js` decide rota a rota o que vai para o Laravel, e essa decisão é governada
+por flags de ambiente do container `api`:
+
+| Flag | Default no compose |
+|---|---|
+| `LARAVEL_CARD_PUBLIC` | `false` |
+| `LARAVEL_PROFILE_API` | `false` |
+| `LARAVEL_UPLOAD_API` | `false` |
+| `LARAVEL_SATELLITES` | `false` |
+| `LARAVEL_KS` | `false` |
+| `LARAVEL_ADMIN_BIBLE` | (segue satélites) |
+
+Quando o Caddy apontar para `:8080`, **o proxy deixa de existir e as flags deixam de ter efeito**:
+o Laravel passa a responder tudo de uma vez. Qualquer rota que hoje esteja com a flag em `false`
+nunca foi exercitada em produção e vai a produção no mesmo segundo.
+
+Por isso o cutover tem de ser em duas etapas: **primeiro ligar todas as flags no Node e observar**,
+só depois mudar o Caddy. É exatamente o que o checklist abaixo faz.
+
+---
+
+## Checklist de cutover (Caddy → :8080)
+
+### Fase 0 — pré-requisitos
+
+- [ ] `docker compose -f docker-compose.prod.yml --env-file .env.prod ps` mostra `laravel` saudável
+- [ ] Confirmar no `.env.prod` do VPS que o container `laravel` recebe todas as envs que o `api`
+      recebia e que o PHP usa: `JWT_SECRET`, `DATABASE_*`, `AWS_*`, `REKOG_*`, `R2_*`,
+      `OPENAI_API_KEY`, `SMTP_*`/`EMAIL_*`, `MERCADOPAGO_*`, `PAGBANK_*`, `CHECKOUT_ENCRYPTION_KEY`,
+      `PUBLIC_APP_URL`, `API_URL`
+- [ ] Backup do banco: `docker exec conectaking-db pg_dump -U conectaking conectaking > /opt/backup-pre-cutover.sql`
+- [ ] Guardar cópia do `Caddyfile` atual
+
+### Fase 1 — ligar tudo no Node (ainda com rollback fácil)
+
+Este passo põe o Laravel a servir 100% do tráfego **através** do Node. Se algo partir, basta voltar a
+flag a `false` e recriar o `api` — sem tocar em DNS nem TLS.
+
+```bash
+cd /opt/conectaking
+# no .env.prod:
+LARAVEL_CARD_PUBLIC=true
+LARAVEL_CARD_SLUGS=
+LARAVEL_PROFILE_API=true
+LARAVEL_UPLOAD_API=true
+LARAVEL_SATELLITES=true
+LARAVEL_ADMIN_BIBLE=true
+LARAVEL_DASHBOARD=true
+LARAVEL_KS=true
+LARAVEL_KS_SLUGS=
+
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build laravel
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps api
+```
+
+- [ ] Rodar o smoke da Fase 3 **contra a porta 5000** (`http://127.0.0.1:5000`)
+- [ ] Deixar correr pelo menos um ciclo de uso real (idealmente 24h) e vigiar
+      `docker logs -f conectaking-laravel`
+- [ ] Onde a resposta trouxer `X-Conecta-Engine: laravel`, está confirmado que quem serviu foi o
+      PHP. O header é carimbado pelos controllers (não há middleware global), por isso a **ausência**
+      não prova nada — mas a presença prova. Use-o para confirmar as rotas novas, sobretudo as de
+      admin e checkout.
+
+### Fase 2 — mudar o Caddy — ✅ FEITO (2026-09-08/09)
+
+```caddyfile
+# antes
+reverse_proxy 127.0.0.1:5000
+# depois
+reverse_proxy 127.0.0.1:8080
+```
+
+Backup: `/etc/caddy/Caddyfile.bak-pre-php-*` · DB dump: `/opt/backup-pre-cutover-*.sql`
+
+- [x] `curl -sS https://www.conectaking.com.br/health` → `{"status":"ok","engine":"laravel",...}`
+- [x] Container `api` **parado** (`docker compose ... stop api`); só `laravel` + `db` up
+
+### Fase 3 — smoke
+
+Anónimo (sem token):
+
+```bash
+BASE=https://www.conectaking.com.br
+curl -sS -o /dev/null -w '%{http_code} health\n'        $BASE/health
+curl -sS -o /dev/null -w '%{http_code} api-config\n'    $BASE/api-config.js
+curl -sS -o /dev/null -w '%{http_code} public-api-url\n' $BASE/api/public-api-url
+curl -sS -o /dev/null -w '%{http_code} login\n'         $BASE/login
+curl -sS -o /dev/null -w '%{http_code} dashboard\n'     $BASE/dashboard
+curl -sS -o /dev/null -w '%{http_code} cartao\n'        $BASE/adrianokingg
+curl -sS -o /dev/null -w '%{http_code} vapid\n'         $BASE/api/push/vapid-public-key
+curl -sS -o /dev/null -w '%{http_code} plans-public\n'  $BASE/api/subscription/plans-public
+```
+
+Autenticado (`TOKEN` de utilizador comum, `ADMIN` de administrador):
+
+```bash
+H="Authorization: Bearer $TOKEN"
+curl -sS -o /dev/null -w '%{http_code} account\n'   -H "$H" $BASE/api/account/status
+curl -sS -o /dev/null -w '%{http_code} profile\n'   -H "$H" $BASE/api/profile
+curl -sS -o /dev/null -w '%{http_code} finance\n'   -H "$H" $BASE/api/finance/dashboard
+curl -sS -o /dev/null -w '%{http_code} kingdocs\n'  -H "$H" $BASE/api/king-docs/files
+curl -sS -o /dev/null -w '%{http_code} docs\n'      -H "$H" $BASE/api/documentos
+
+A="Authorization: Bearer $ADMIN"
+curl -sS -o /dev/null -w '%{http_code} adm stats\n'    -H "$A" $BASE/api/admin/stats
+curl -sS -o /dev/null -w '%{http_code} adm advanced\n' -H "$A" $BASE/api/admin/advanced-stats
+curl -sS -o /dev/null -w '%{http_code} adm users\n'    -H "$A" $BASE/api/admin/users
+curl -sS -o /dev/null -w '%{http_code} adm codes\n'    -H "$A" $BASE/api/admin/codes
+curl -sS -o /dev/null -w '%{http_code} adm autodel\n'  -H "$A" $BASE/api/admin/codes/auto-delete-config
+```
+
+Fluxos que só se validam no browser (fazer manualmente):
+
+- [ ] Login → dashboard carrega os módulos
+- [ ] Criar/editar um link no editor de perfil e fazer upload de imagem
+- [ ] Abrir um cartão público e um formulário público; submeter o formulário
+- [ ] Se houver checkout ativo: `/{slug}/form/{itemId}/checkout?submissionId=...` renderiza e o
+      Pix gera QR
+- [ ] King Selection: galeria pública → login do cliente → seleção → finalizar
+- [ ] **Reconhecimento facial** (é o caminho novo): cadastrar rosto e correr "buscar minhas fotos".
+      Confirmar na aba Network vários `face-results?chunked=1&photoSkip=…` a devolver `200` com
+      `faceChunk: true`, e a barra de progresso a avançar até 100%
+- [ ] Admin: gerar código de registo, editar validade e apagar; abrir o dashboard de um utilizador
+
+### Fase 4 — desligar o Node — ✅ parado em produção
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod stop api
+```
+
+- [x] Smoke com `api` parado (health/login/account/documentos/king-docs/admin/plans)
+- [ ] Deixar parado 24–48h antes de remoção definitiva do compose
+
+Remoção definitiva (depois do período de observação):
+
+- [ ] Apagar o serviço `api` do `docker-compose.prod.yml`
+- [ ] Remover `NODE_INTERNAL_URL` do serviço `laravel`
+- [ ] `docker compose ... up -d --remove-orphans` e `docker image prune`
+- [ ] Apagar `middleware/laravelProxy.js` e residual Express no repo
+
+### Rollback
+
+| Etapa | Como voltar atrás |
+|---|---|
+| Fase 1 | Repor as flags `LARAVEL_*` em `.env.prod` e `up -d --force-recreate --no-deps api` |
+| Fase 2 | `reverse_proxy 127.0.0.1:5000` no Caddyfile + `systemctl reload caddy` |
+| Fase 4 | `docker compose ... start api` e Caddy de volta para `:5000` |
+
+O rollback da Fase 2 é o mais importante e leva segundos — por isso vale a pena não remover o
+serviço `api` do compose no mesmo dia do cutover.
+
+---
+
+## Notas de ambiente
+
+**Checkout (container `laravel`, já no `docker-compose.prod.yml`, mesmos nomes do Node):**
+`CHECKOUT_ENCRYPTION_KEY` (fallback `JWT_SECRET`), `PAGBANK_API_BASE_URL`/`PAGBANK_API_URL`,
+`PAGBANK_LEGACY_API_URL`, `PAGBANK_PLATFORM_ACCESS_TOKEN`, `PAGBANK_PLATFORM_ACCOUNT_ID`,
+`PAGBANK_TOKEN`, `PAGBANK_EMAIL`, `PAGBANK_WEBHOOK_SECRET`, `PAGBANK_WEBHOOK_BASE_URL`,
+`PUBLIC_APP_URL`. O token do vendedor gravado pelo Node continua legível: o AES-256-GCM do
+`App\Support\AesGcmCrypto` usa o mesmo formato de `utils/encryption.js` (iv|salt|tag|cipher, chave
+SHA-256).
+
+**Reconhecimento facial:** o Laravel lê as mesmas envs do Node —
+`REKOG_ON_DEMAND`, `REKOG_COMPARE_SIMILARITY_THRESHOLD`, `REKOG_SPEED_MODE_DEFAULT`,
+`REKOG_SOURCE_VERIFY_MIN_CONFIDENCE`, `REKOG_FACE_USE_CACHE`, `KINGSELECTION_FACE_COMPARE_MAX_PX`,
+`KINGSELECTION_FACE_COMPARE_CONCURRENCY`, `KINGSELECTION_FACE_RELAXED_THRESHOLD`,
+`KINGSELECTION_FACE_FALLBACK_THRESHOLD`, `KINGSELECTION_FACE_CROP_*`. Como vêm todas do
+`env_file: .env.prod`, os dois containers veem os mesmos valores.
+
+**`API_URL`** passa a ser lida também pelo Laravel (para `/api/public-api-url`).
