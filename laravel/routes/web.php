@@ -364,9 +364,13 @@ Route::get('/{slug}/form/{itemId}/success', [SatellitePublicController::class, '
 Route::get('/l/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::post('/l/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/l/{slug}/form/{itemId}/success', [SatellitePublicController::class, 'formSuccess'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
-// Página de pagamento do KingForms (antes o res.render('checkout') do Express).
-Route::get('/{slug}/form/{itemId}/checkout', [\App\Http\Controllers\Checkout\CheckoutController::class, 'pageHtml'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
-Route::get('/l/{slug}/form/{itemId}/checkout', [\App\Http\Controllers\Checkout\CheckoutController::class, 'pageHtml'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+// Checkout/PagBank fora de escopo — não servir no Laravel.
+Route::get('/{slug}/form/{itemId}/checkout', function () {
+    return response('Checkout/PagBank não está disponível.', 410);
+})->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
+Route::get('/l/{slug}/form/{itemId}/checkout', function () {
+    return response('Checkout/PagBank não está disponível.', 410);
+})->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/l/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/{slug}/biblia/estudos-livro', [SatellitePublicController::class, 'bibleStudyRedirect'])->where('slug', $cardSlug);
@@ -1370,27 +1374,7 @@ $salesPageTrack = \App\Http\Controllers\SalesPage\SalesPageAnalyticsController::
 Route::post('/api/v1/sales-pages/track', [$salesPageTrack, 'track']);
 Route::post('/l/api/v1/sales-pages/track', [$salesPageTrack, 'track']);
 
-// ---------- Checkout KingForms / PagBank (B20) ----------
-$checkout = \App\Http\Controllers\Checkout\CheckoutController::class;
-
-// A página de checkout e o webhook do PagBank são públicos.
-Route::get('/api/checkout/page', [$checkout, 'page']);
-Route::get('/l/api/checkout/page', [$checkout, 'page']);
-Route::post('/api/checkout/create', [$checkout, 'create'])->middleware('throttle:30,1');
-Route::post('/l/api/checkout/create', [$checkout, 'create'])->middleware('throttle:30,1');
-Route::post('/api/webhooks/pagbank', [$checkout, 'webhook']);
-Route::post('/l/api/webhooks/pagbank', [$checkout, 'webhook']);
-
-Route::middleware('jwt')->group(function () use ($checkout) {
-    Route::get('/api/checkout/preview-link', [$checkout, 'previewLink']);
-    Route::get('/l/api/checkout/preview-link', [$checkout, 'previewLink']);
-    Route::get('/api/checkout/config/{itemId}', [$checkout, 'getConfig'])->whereNumber('itemId');
-    Route::get('/l/api/checkout/config/{itemId}', [$checkout, 'getConfig'])->whereNumber('itemId');
-    Route::put('/api/checkout/config/{itemId}', [$checkout, 'saveConfig'])->whereNumber('itemId');
-    Route::put('/l/api/checkout/config/{itemId}', [$checkout, 'saveConfig'])->whereNumber('itemId');
-    Route::post('/api/checkout/test-connection', [$checkout, 'testConnection']);
-    Route::post('/l/api/checkout/test-connection', [$checkout, 'testConnection']);
-});
+// Checkout/PagBank: intencionalmente NÃO migrado para Laravel (pedido do produto).
 
 Route::get('/og-image.jpg', [\App\Http\Controllers\Admin\OgImageController::class, 'show']);
 Route::get('/l/og-image.jpg', [\App\Http\Controllers\Admin\OgImageController::class, 'show']);

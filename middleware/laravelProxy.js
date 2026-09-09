@@ -184,7 +184,8 @@ function isLaravelSatellitePath(reqMethod, urlPath) {
         if (!force && !slugAllowedForSatellite(formItem[1])) return false;
         const action = (formItem[3] || '').toLowerCase();
         if (action === 'submit') return method === 'POST';
-        if (action === 'success' || action === 'checkout') return method === 'GET';
+        if (action === 'success') return method === 'GET';
+        // checkout/PagBank: fora de escopo Laravel — não proxyar
         return method === 'GET';
     }
 
@@ -890,11 +891,7 @@ function isLaravelResidualApiPath(reqMethod, urlPath) {
     if ((method === 'GET' || method === 'PUT' || method === 'DELETE') && /^\/(?:l\/)?api\/v1\/sales-pages\/products\/\d+$/i.test(pathOnly)) return true;
     if (method === 'PATCH' && /^\/(?:l\/)?api\/v1\/sales-pages\/products\/\d+\/status$/i.test(pathOnly)) return true;
 
-    // Checkout KingForms / PagBank (B20). O webhook é público (chamado pelo PagBank).
-    if (method === 'GET' && /^\/(?:l\/)?api\/checkout\/(page|preview-link)$/i.test(pathOnly)) return true;
-    if (method === 'POST' && /^\/(?:l\/)?api\/checkout\/(create|test-connection)$/i.test(pathOnly)) return true;
-    if ((method === 'GET' || method === 'PUT') && /^\/(?:l\/)?api\/checkout\/config\/\d+$/i.test(pathOnly)) return true;
-    if (method === 'POST' && /^\/(?:l\/)?api\/webhooks\/pagbank$/i.test(pathOnly)) return true;
+    // Checkout/PagBank: fora de escopo — não proxyar para Laravel.
 
     return false;
 }

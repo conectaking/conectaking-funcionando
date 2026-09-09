@@ -29,7 +29,7 @@ de `laravel/routes/web.php`): **todos os prefixos do Express existem no Laravel*
 - Auth (login/register/refresh/logout/password) + dashboard boot
 - Admin bíblia: prosperidade e Dev365 (incluindo jobs assíncronos)
 - Documentos (CRUD + OCR: `ocr-info`, `warm-ocr`, `processar-comprovante`), King Docs, orçamentos
-- Checkout KingForms/PagBank: APIs, webhook **e a página HTML**
+- Checkout KingForms/PagBank: **fora de escopo** (não no Laravel; APIs/página removidas)
 - Painel admin: overview, `advanced-stats`, `analytics/*`, planos, **users e codes completos**
 - Edge: `/health`, `/api/public-api-url`, `/api-config.js`, estáticos `public/` e `public_html/`
 
@@ -42,7 +42,7 @@ de `laravel/routes/web.php`): **todos os prefixos do Express existem no Laravel*
 | **B21 — formato do cache facial** | `POST /client/face-enroll-cache` gravava um array cru; o Node grava e lê `{"photoIds":[...]}`. O Laravel agora escreve no formato do Node e lê os dois. |
 | **B16 — mutações admin** | `users`: dashboard, `manage`, `update-role`, `PUT /users/{id}`, `DELETE`, auto-delete (config + execute). `codes`: `generate-manual`, `generate-batch`, `generate-code` (legado), `PUT`/`DELETE /codes/{code}`, auto-delete. Mesmo envelope do `utils/responseFormatter.js`. |
 | **B16 — leituras que faltavam** | `advanced-stats`, `analytics/users`, `analytics/user/{id}/details`. |
-| **Checkout HTML** | `views/checkout.ejs` → `laravel/resources/views/checkout/kingforms.blade.php`, servido em `GET /{slug}/form/{itemId}/checkout`. As 21 views Blade compilam (`scripts/tmp-blade-compile-check.php`). |
+| **Checkout HTML** | Removido do Laravel (fora de escopo PagBank). Página `/…/checkout` responde **410**. |
 | **Edge** | `/api/public-api-url` e `/api-config.js` não existiam no Laravel. O `api-config.js` é servido byte-a-byte igual ao do Express (conferido por `scripts/tmp-check-api-config.php`) — sem ele o dashboard perde o `API_BASE` e o patch de `fetch()`. |
 
 ---
@@ -234,13 +234,7 @@ serviço `api` do compose no mesmo dia do cutover.
 
 ## Notas de ambiente
 
-**Checkout (container `laravel`, já no `docker-compose.prod.yml`, mesmos nomes do Node):**
-`CHECKOUT_ENCRYPTION_KEY` (fallback `JWT_SECRET`), `PAGBANK_API_BASE_URL`/`PAGBANK_API_URL`,
-`PAGBANK_LEGACY_API_URL`, `PAGBANK_PLATFORM_ACCESS_TOKEN`, `PAGBANK_PLATFORM_ACCOUNT_ID`,
-`PAGBANK_TOKEN`, `PAGBANK_EMAIL`, `PAGBANK_WEBHOOK_SECRET`, `PAGBANK_WEBHOOK_BASE_URL`,
-`PUBLIC_APP_URL`. O token do vendedor gravado pelo Node continua legível: o AES-256-GCM do
-`App\Support\AesGcmCrypto` usa o mesmo formato de `utils/encryption.js` (iv|salt|tag|cipher, chave
-SHA-256).
+**Checkout/PagBank:** fora de escopo — código e envs removidos do Laravel. Não reintroduzir sem pedido explícito.
 
 **Reconhecimento facial:** o Laravel lê as mesmas envs do Node —
 `REKOG_ON_DEMAND`, `REKOG_COMPARE_SIMILARITY_THRESHOLD`, `REKOG_SPEED_MODE_DEFAULT`,
