@@ -2239,11 +2239,12 @@ window.showKingFinancePane = async function () {
 
     const fmt = (v) => Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     let db = { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
+    const profileId = localStorage.getItem('finance_current_profile_id') || '';
     try {
         const saved = localStorage.getItem('king_finance_v9');
         if (saved) db = JSON.parse(saved);
     } catch (e) { }
-    // Sync: carregar do servidor (Serasa, Quem eu devo, Trabalhos, Bens)
+    // Sync: servidor é a fonte de verdade para Serasa / Quem eu devo / Trabalhos / Bens
     try {
         const kingDataUrl = `${env.API_URL}/api/finance/king-data${profileId ? '?profile_id=' + encodeURIComponent(profileId) : ''}`;
         const kingRes = await fetch(kingDataUrl, { headers: env.HEADERS_AUTH });
@@ -2264,7 +2265,6 @@ window.showKingFinancePane = async function () {
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${lastDay}`;
-    const profileId = localStorage.getItem('finance_current_profile_id') || '';
 
     let receitas = 0, despesas = 0;
     let transactions = [], cards = [];

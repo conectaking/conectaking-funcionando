@@ -99,7 +99,7 @@ class FinanceService
         if (! Schema::hasTable('finance_king_sync')) {
             return ['status' => 200, 'body' => [
                 'success' => true,
-                'data' => ['dividas' => [], 'terceiros' => [], 'trabalhos' => [], 'bens' => []],
+                'data' => $this->emptyKingData(),
                 'error' => null,
                 'message' => null,
             ]];
@@ -109,11 +109,11 @@ class FinanceService
             'SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1',
             [$userId, $pid]
         );
-        $data = ['dividas' => [], 'terceiros' => [], 'trabalhos' => [], 'bens' => []];
+        $data = $this->emptyKingData();
         if ($row && ! empty($row->data)) {
             $decoded = is_string($row->data) ? json_decode($row->data, true) : (array) $row->data;
             if (is_array($decoded)) {
-                $data = array_merge($data, $decoded);
+                $data = $this->normalizeKingData($decoded);
             }
         }
 
@@ -132,11 +132,20 @@ class FinanceService
         $profileId = isset($payload['profile_id']) && $payload['profile_id'] !== '' && $payload['profile_id'] !== null
             ? (string) (int) $payload['profile_id']
             : '';
-        $data = $payload['data'] ?? $payload;
-        if (! is_array($data)) {
-            $data = [];
+        $raw = $payload['data'] ?? $payload;
+        if (! is_array($raw)) {
+            $raw = [];
         }
+        // Não persistir chaves de envelope (profile_id etc.) dentro do blob.
+        unset($raw['profile_id'], $raw['user_id'], $raw['success'], $raw['error'], $raw['message']);
+        $data = $this->normalizeKingData($raw);
         $json = json_encode($data, JSON_UNESCAPED_UNICODE);
+        if ($json === false || strlen($json) > 1_500_000) {
+            return ['status' => 413, 'body' => [
+                'success' => false,
+                'message' => 'Dados King Finance demasiado grandes. Reduza itens e tente de novo.',
+            ]];
+        }
         try {
             DB::statement(
                 'INSERT INTO finance_king_sync (user_id, profile_id, data, updated_at)
@@ -161,6 +170,43 @@ class FinanceService
         }
 
         return ['status' => 200, 'body' => ['success' => true, 'data' => $data, 'error' => null, 'message' => 'OK']];
+    }
+
+    /**
+     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list}
+     */
+    private function emptyKingData(): array
+    {
+        return ['dividas' => [], 'terceiros' => [], 'trabalhos' => [], 'bens' => []];
+    }
+
+    /**
+     * Whitelist das 4 coleções syncadas — remove lixo/localStorage (fluxo/cartoes) do blob.
+     *
+     * @param  array<string,mixed>  $raw
+     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list}
+     */
+    private function normalizeKingData(array $raw): array
+    {
+        $out = $this->emptyKingData();
+        $limits = [
+            'dividas' => 500,
+            'terceiros' => 500,
+            'trabalhos' => 1000,
+            'bens' => 500,
+        ];
+        foreach ($limits as $key => $max) {
+            if (! isset($raw[$key]) || ! is_array($raw[$key])) {
+                continue;
+            }
+            $list = array_values(array_filter($raw[$key], static fn ($item) => is_array($item)));
+            if (count($list) > $max) {
+                $list = array_slice($list, 0, $max);
+            }
+            $out[$key] = $list;
+        }
+
+        return $out;
     }
 
     /**
