@@ -1781,20 +1781,17 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('s️ Botão de lista de convidados não encontrado (sidebar-guest-list ou sidebar-responses). Funcionalidade pode não estar disponível.');
         }
         
-        // Checkout (KingForms - PagBank)
+        // Checkout (PagBank/Mercado Pago) — fora de escopo
         const sidebarCheckout = document.getElementById('sidebar-checkout');
         if (sidebarCheckout) {
+            sidebarCheckout.style.display = 'none';
             const newCheckoutBtn = sidebarCheckout.cloneNode(true);
             sidebarCheckout.parentNode.replaceChild(newCheckoutBtn, sidebarCheckout);
+            newCheckoutBtn.style.display = 'none';
             newCheckoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                const itemId = typeof currentItemId !== 'undefined' ? currentItemId : (window.currentItemId || null);
-                if (itemId) {
-                    window.location.href = '/checkoutConfig?itemId=' + itemId;
-                } else {
-                    alert('Salve o formulário antes de configurar o checkout.');
-                }
+                alert('Checkout/pagamento online não está disponível.');
             });
         }
         

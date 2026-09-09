@@ -1,3 +1,4 @@
+{{-- Painel ADM (Blade; assets em /admin/*.js|css) --}}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,14 +8,14 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="admin.css?v=2026-09-07-fix2">
+    <link rel="stylesheet" href="/admin/admin.css?v=2026-09-09-blade1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="admin-layout">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <a href="../dashboard.html" class="logo" title="Voltar ao painel">
+                <a href="/dashboard" class="logo" title="Voltar ao painel">
                     <i class="fas fa-arrow-left"></i>
                     <span class="logo-text">Admin</span>
                 </a>
@@ -24,8 +25,8 @@
                 <a href="#" class="nav-link" data-target="users-pane"><i class="fas fa-users"></i> <span>Gerenciar Usuários</span></a>
                 <a href="#" class="nav-link" data-target="codes-pane"><i class="fas fa-key"></i> <span>Gerenciar Códigos</span></a>
                 <a href="#" class="nav-link" data-target="branding-pane"><i class="fas fa-image"></i> <span>Logomarca padrão</span></a>
-                <a href="../admin-devocionais-365.html" class="nav-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
-                <a href="../admin-devocionais-365.html#prosperidade" class="nav-link"><i class="fas fa-moon"></i> <span>Prosperidade antes de dormir</span></a>
+                <a href="/admin-devocionais-365" class="nav-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
+                <a href="/admin-devocionais-365#prosperidade" class="nav-link"><i class="fas fa-moon"></i> <span>Prosperidade antes de dormir</span></a>
             </nav>
             <div class="sidebar-footer">
             </div>
@@ -797,6 +798,12 @@
         </div>
 
         <div class="input-group">
+            <label for="modal-activation-code">Código de ativação / pulseira (camuflado)</label>
+            <input type="text" id="modal-activation-code" class="modal-input-text" maxlength="32" placeholder="Ex: ADRIANO-KING" autocomplete="off">
+            <small style="display:block;margin-top:6px;opacity:.75;font-size:0.8rem;">Vai na tag NFC. Redireciona para o slug original das Informações (não substitui o slug público).</small>
+        </div>
+
+        <div class="input-group">
             <label for="modal-is-admin">Permissão de Administrador</label>
             <select id="modal-is-admin">
                 <option value="true">Sim</option>
@@ -811,6 +818,6 @@
 </div>
         </div>
     </div>
-    <script src="admin.js?v=2026-09-07-fix2"></script>
+    <script src="/admin/admin.js?v=2026-09-09-blade1"></script>
 </body>
 </html>

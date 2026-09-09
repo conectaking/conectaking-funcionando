@@ -46,33 +46,24 @@ class KingSelectionPublicController extends Controller
             )->header('X-Conecta-Engine', 'laravel');
         }
 
-        // SPA completa (JS continua no Node / mesmo host); ?landing=1 mantém a landing read-only.
+        // Cliente KS canónico: Blade pages/kingSelectionCliente (sem SPA HTML legada).
+        // ?landing=1 mantém a landing read-only (cartao.ks-public).
         if ((string) $request->query('landing', '') === '1') {
             return response()
                 ->view('cartao.ks-public', $result['data'])
                 ->header('X-Conecta-Engine', 'laravel');
         }
 
-        $spaPath = public_path('ks-spa/kingSelectionCliente.html');
-        if (! is_file($spaPath)) {
-            return response()
-                ->view('cartao.ks-public', $result['data'])
-                ->header('X-Conecta-Engine', 'laravel');
-        }
-
-        $html = (string) file_get_contents($spaPath);
-        // Garante slug na URL da SPA (script lê location / query).
         $boot = '<script>window.__KS_LARAVEL_ENGINE=true;window.__KS_BOOT_SLUG='
             .json_encode($slug, JSON_UNESCAPED_UNICODE)
             .';</script>';
-        if (str_contains($html, '</head>')) {
-            $html = str_replace('</head>', $boot."\n</head>", $html);
-        } else {
-            $html = $boot.$html;
-        }
 
-        return response($html, 200)
-            ->header('Content-Type', 'text/html; charset=UTF-8')
+        return response()
+            ->view('pages.kingSelectionCliente', [
+                'ksBootScript' => $boot,
+                'ksSlug' => $slug,
+                'gallery' => $result['data']['gallery'] ?? null,
+            ])
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('X-Conecta-Engine', 'laravel');
     }

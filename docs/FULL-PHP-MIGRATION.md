@@ -8,7 +8,7 @@
 - Páginas: `laravel/resources/views/pages/*.blade.php`
 - Assets: `public/` (JS/CSS/imagens) montados em `/legacy/public`
 - Crons: `schedule:work` no entrypoint + comandos `maintenance:*`
-- Checkout/PagBank: fora de escopo (HTTP 410)
+- Checkout/PagBank/Mercado Pago: fora de escopo (HTTP 410; sem gateway)
 
 ## O que foi removido do repo
 
@@ -25,7 +25,7 @@ Prod: `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --bu
 
 Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 
-## Residual intencional
+## Residual intencional\n\n- ADM e King Selection cliente: Blade\n- Sem Payment/MercadoPago no app\n
 
 | Item | Porquê |
 |---|---|

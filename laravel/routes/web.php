@@ -360,12 +360,12 @@ Route::get('/{slug}/form/{itemId}/success', [SatellitePublicController::class, '
 Route::get('/l/{slug}/form/{itemId}', [SatellitePublicController::class, 'formByItem'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::post('/l/{slug}/form/{itemId}/submit', [SatellitePublicController::class, 'formSubmit'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/l/{slug}/form/{itemId}/success', [SatellitePublicController::class, 'formSuccess'])->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
-// Checkout/PagBank fora de escopo — não servir no Laravel.
+// Checkout / PagBank / Mercado Pago — fora de escopo
 Route::get('/{slug}/form/{itemId}/checkout', function () {
-    return response('Checkout/PagBank não está disponível.', 410);
+    return response('Checkout/pagamento online não está disponível.', 410);
 })->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/l/{slug}/form/{itemId}/checkout', function () {
-    return response('Checkout/PagBank não está disponível.', 410);
+    return response('Checkout/pagamento online não está disponível.', 410);
 })->where(['slug' => $cardSlug, 'itemId' => '[0-9]+']);
 Route::get('/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
 Route::get('/l/{slug}/biblia', [SatellitePublicController::class, 'bibleHub'])->where('slug', $cardSlug);
@@ -1281,16 +1281,21 @@ $generator = \App\Http\Controllers\Admin\GeneratorController::class;
 Route::post('/api/generator/new-key', [$generator, 'newKey'])->middleware('throttle:20,1');
 Route::post('/l/api/generator/new-key', [$generator, 'newKey'])->middleware('throttle:20,1');
 
-// Push: chave VAPID é pública; webhook do Mercado Pago também
+// Push: chave VAPID é pública
 $push = \App\Http\Controllers\Push\PushController::class;
 Route::get('/api/push/vapid-public-key', [$push, 'vapidPublicKey']);
 Route::get('/l/api/push/vapid-public-key', [$push, 'vapidPublicKey']);
 
-$payment = \App\Http\Controllers\Payment\PaymentController::class;
-Route::post('/api/payment/webhook-notification', [$payment, 'webhook']);
-Route::post('/l/api/payment/webhook-notification', [$payment, 'webhook']);
+// Checkout / PagBank / Mercado Pago — fora de escopo (não reintroduzir)
+$goneCheckout = fn () => response('Checkout/pagamento online não está disponível.', 410);
+Route::post('/api/payment/create-preference', $goneCheckout);
+Route::post('/l/api/payment/create-preference', $goneCheckout);
+Route::post('/api/payment/webhook-notification', $goneCheckout);
+Route::post('/l/api/payment/webhook-notification', $goneCheckout);
+Route::any('/api/checkout/{any?}', $goneCheckout)->where('any', '.*');
+Route::any('/l/api/checkout/{any?}', $goneCheckout)->where('any', '.*');
 
-Route::middleware('jwt')->group(function () use ($push, $payment) {
+Route::middleware('jwt')->group(function () use ($push) {
     $location = \App\Http\Controllers\CartaoVirtual\LocationController::class;
     Route::get('/api/location/config/{itemId}', [$location, 'show'])->whereNumber('itemId');
     Route::get('/l/api/location/config/{itemId}', [$location, 'show'])->whereNumber('itemId');
@@ -1307,9 +1312,6 @@ Route::middleware('jwt')->group(function () use ($push, $payment) {
 
     Route::post('/api/push/subscribe', [$push, 'subscribe']);
     Route::post('/l/api/push/subscribe', [$push, 'subscribe']);
-
-    Route::post('/api/payment/create-preference', [$payment, 'createPreference']);
-    Route::post('/l/api/payment/create-preference', [$payment, 'createPreference']);
 
     $orcamentos = \App\Http\Controllers\Orcamentos\OrcamentosController::class;
     Route::get('/api/orcamentos', [$orcamentos, 'index']);
@@ -1433,6 +1435,7 @@ Route::get('/mr/kingSelection/{slug}', [\App\Http\Controllers\CartaoVirtual\King
 
 $bladePages = [
     'login', 'dashboard', 'registro', 'recuperar-senha', 'resetar-senha', 'conta',
+    'admin',
     'kingSelectionEdit', 'kingSelectionProject', 'kingSelectionCliente',
     'kingSelectionGallery', 'kingSelectionReview', 'kingSelectionSuccess',
     'formPageEdit', 'salesPageEdit', 'guestListEdit',
@@ -1453,19 +1456,19 @@ foreach ($bladePages as $pageName) {
     Route::get('/l/'.$pageName.'.html', $handler);
 }
 
-// Painel ADM (HTML legado em public_html/admin — não passa pelo filtro só de assets)
-foreach (['/admin', '/admin/', '/admin/index.html', '/l/admin', '/l/admin/', '/l/admin/index.html'] as $adminPath) {
-    Route::get($adminPath, function (\Illuminate\Http\Request $request) {
-        return app(\App\Http\Controllers\FrontLegacyController::class)->page($request, 'admin/index.html');
+// /admin/ (trailing slash) — mesmo painel Blade
+foreach (['/admin/', '/l/admin/'] as $adminSlash) {
+    Route::get($adminSlash, function () {
+        return app(\App\Http\Controllers\LegacyPageController::class)->show(request(), 'admin');
     });
 }
 
 
-// checkoutConfig / PagBank — fora de escopo (não Blade, não API)
-Route::get('/checkoutConfig', fn () => response('Checkout/PagBank não está disponível.', 410));
-Route::get('/checkoutConfig.html', fn () => response('Checkout/PagBank não está disponível.', 410));
-Route::get('/l/checkoutConfig', fn () => response('Checkout/PagBank não está disponível.', 410));
-Route::get('/l/checkoutConfig.html', fn () => response('Checkout/PagBank não está disponível.', 410));
+// checkoutConfig / PagBank / Mercado Pago — fora de escopo
+Route::get('/checkoutConfig', fn () => response('Checkout/pagamento online não está disponível.', 410));
+Route::get('/checkoutConfig.html', fn () => response('Checkout/pagamento online não está disponível.', 410));
+Route::get('/l/checkoutConfig', fn () => response('Checkout/pagamento online não está disponível.', 410));
+Route::get('/l/checkoutConfig.html', fn () => response('Checkout/pagamento online não está disponível.', 410));
 Route::get('/config.js', function () {
     return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), 'config.js');
 });
