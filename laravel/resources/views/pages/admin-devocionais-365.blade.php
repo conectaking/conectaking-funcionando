@@ -97,7 +97,7 @@
             <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-save"></i> Usar token</button>
         </div>
         <div class="auth-bar" style="margin-top:-8px">
-            <label style="flex:1;min-width:260px">URL base da API (obrigatório se esta página está no Hostinger sem /api — ex.: <code style="color:#7dd3fc">https://www.conectaking.com.br</code>)
+            <label style="flex:1;min-width:260px">URL base da API (opcional — vazio = mesma origem Laravel — ex.: <code style="color:#7dd3fc">https://www.conectaking.com.br</code>)
                 <input type="text" class="token-input" id="api-base-url" placeholder="Deixe vazio para usar o mesmo domínio desta página" autocomplete="off">
             </label>
             <button type="button" class="btn btn-secondary" id="btn-save-api-base"><i class="fas fa-link"></i> Guardar URL</button>

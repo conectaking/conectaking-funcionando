@@ -62,7 +62,7 @@
             const params = new URLSearchParams(window.location.search || '');
             if ((params.get('api') || '').toLowerCase() === 'prod') return false;
             if (localStorage.getItem('useProductionApi') === 'true') return false;
-            // Dominio de producao / VPS: mesma origem, NAO marcar useLocalApi (:5000)
+            // Dominio de producao / VPS: mesma origem, NAO marcar useLocalApi (usar mesma origem / :8080)
             if (isSelfHostedApi() && !isLocalHost(String(location.hostname || ''))) {
                 try {
                     localStorage.removeItem('useLocalApi');
@@ -91,7 +91,7 @@
             }
         } catch (e) {}
         const host = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : 'localhost';
-        return 'http://' + host + ':5000';
+        return 'http://' + host + ':8080';
     }
 
     const API_CONFIG = {

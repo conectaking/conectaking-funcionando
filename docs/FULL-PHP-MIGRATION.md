@@ -1,4 +1,4 @@
-# Migração FULL PHP — estado final
+﻿# Migração FULL PHP — estado final
 
 **Produção e local: só Laravel (FrankenPHP) + PostgreSQL. Zero Node. Sem checkout/gateway.**
 
@@ -32,7 +32,7 @@ Health: `/health` → `{"status":"ok","engine":"laravel",...}`
 | Item | Porquê |
 |---|---|
 | `public/` | **Canónico** — JS/CSS/imagens do painel |
-| `public_html/` | Espelho legado (fallback VPS); manter sincronizado com `public/` até desligar o mount |
+| `public_html/` | Espelho legado (fallback). Já quase desligável: assets críticos estão em `public/` |
 | `cf-worker-kingselection-r2` | Worker Cloudflare R2 (edge, não monólito Node) |
 | `data/bible` | JSON bíblia |
 | `migrations/*.sql` | Histórico do schema Postgres |

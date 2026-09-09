@@ -110,7 +110,14 @@
                 localStorage.getItem('useLocalApi') === 'true'
             ));
             var host = (typeof window !== 'undefined' && window.location.hostname) || 'localhost';
-            window.API_URL = forceLocal ? ('http://' + host + ':5000') : 'https://www.conectaking.com.br';
+            // Laravel/FrankenPHP: mesma origem; fallback produção só se necessário
+            if (forceLocal) {
+                window.API_URL = window.location.origin || ('http://' + host + ':8080');
+            } else if (/conectaking\.com\.br$/i.test(host) || /cnking\.bio$/i.test(host) || host === 'localhost' || host === '127.0.0.1') {
+                window.API_URL = window.location.origin || 'https://www.conectaking.com.br';
+            } else {
+                window.API_URL = 'https://www.conectaking.com.br';
+            }
         })();
         const API_URL = window.API_URL;
         function getToken() { return localStorage.getItem('conectaKingToken'); }

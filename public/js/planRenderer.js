@@ -127,9 +127,9 @@ async function loadPlanModules(planCode) {
         if (!apiUrl) {
             // Detecção automática baseada no ambiente
             if (window.location.origin.includes('127.0.0.1:5500') || window.location.origin.includes('localhost:5500')) {
-                apiUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
-            } else if (window.location.origin.includes('onrender.com') || window.location.hostname.includes('conectaking')) {
-                apiUrl = 'https://www.conectaking.com.br';
+                apiUrl = `${window.location.protocol}//${window.location.hostname}:8080`;
+            } else if (window.location.hostname.includes('conectaking') || window.location.hostname.includes('cnking')) {
+                apiUrl = window.location.origin;
             } else {
                 apiUrl = window.location.origin;
             }

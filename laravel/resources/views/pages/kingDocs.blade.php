@@ -16,11 +16,13 @@
             (params.get('api') || '').toLowerCase() === 'local' ||
             (typeof localStorage !== 'undefined' && localStorage.getItem('useLocalApi') === 'true')
           );
-        var localApiBase = 'http://' + host + ':5000';
+        var localApiBase = window.location.origin || ('http://' + host + ':8080');
         var prodApiBase = isProdHost ? (window.location.origin || 'https://www.conectaking.com.br') : 'https://www.conectaking.com.br';
-        window.API_BASE = wantLocal && isLocalHost ? localApiBase : prodApiBase;
+        window.API_BASE = wantLocal && isLocalHost ? localApiBase : (isProdHost ? prodApiBase : (wantLocal ? localApiBase : prodApiBase));
+        // Em produção/VPS: sempre mesma origem
+        if (isProdHost) window.API_BASE = window.location.origin || prodApiBase;
         window.API_URL = window.API_BASE;
-        window.USE_LOCAL_API_5000 = !!(wantLocal && isLocalHost);
+        window.USE_LOCAL_API_5000 = false;
         if (isProdHost) {
           try { localStorage.removeItem('useLocalApi'); } catch (e) {}
         }
