@@ -140,7 +140,10 @@ class AdminUsersService
             return ['error' => 'Dados inválidos.', 'status' => 400];
         }
 
-        return DB::transaction(function () use ($id, $body, $accountType, $isAdmin, $maxInvites): array {
+        $activationRaw = $body['activationCode'] ?? $body['activation_code'] ?? $body['profileSlug'] ?? $body['profile_slug'] ?? null;
+        $activationCode = is_string($activationRaw) ? trim($activationRaw) : null;
+
+        return DB::transaction(function () use ($id, $body, $accountType, $isAdmin, $maxInvites, $activationCode): array {
             $current = DB::selectOne('SELECT email FROM users WHERE id = ?', [$id]);
             if (! $current) {
                 return ['error' => 'Usuário não encontrado.', 'status' => 404];
@@ -168,7 +171,7 @@ class AdminUsersService
                      subscription_expires_at = ?, max_team_invites = ?
                  WHERE id = ?
                  RETURNING id, email, account_type, is_admin, subscription_status,
-                           subscription_expires_at, max_team_invites',
+                           subscription_expires_at, max_team_invites, profile_slug',
                 [
                     $emailToUse,
                     $accountType,
@@ -180,8 +183,94 @@ class AdminUsersService
                 ]
             );
 
-            return ['user' => $user ? (array) $user : null, 'message' => 'Usuário atualizado com sucesso!'];
+            $activationResult = null;
+            if ($activationCode !== null && $activationCode !== '') {
+                $activationResult = $this->updateActivationCode($id, $activationCode);
+                if (isset($activationResult['error'])) {
+                    throw new \RuntimeException(
+                        (string) $activationResult['error'],
+                        (int) ($activationResult['status'] ?? 400)
+                    );
+                }
+                if ($user) {
+                    $user->profile_slug = $activationResult['activation_code'] ?? $activationCode;
+                }
+            }
+
+            return [
+                'user' => $user ? (array) $user : null,
+                'message' => 'Usuário atualizado com sucesso!',
+                'activation_code' => $activationResult['activation_code'] ?? ($user->profile_slug ?? null),
+            ];
         });
+    }
+
+    /**
+     * Altera o código de ativação / slug do cartão (pulseira NFC) do cliente.
+     *
+     * @return array<string,mixed>
+     */
+    public function updateActivationCode(string $id, string $rawCode): array
+    {
+        $code = trim($rawCode);
+        if ($code === '' || strlen($code) > 32 || preg_match('/\s/u', $code)) {
+            return ['error' => 'Código inválido. Máx. 32 caracteres, sem espaços.', 'status' => 400];
+        }
+        if (! preg_match('/^[A-Za-z0-9._-]+$/', $code)) {
+            return ['error' => 'Código inválido. Use letras, números, hífen, ponto ou underscore.', 'status' => 400];
+        }
+
+        $user = DB::selectOne('SELECT id, profile_slug FROM users WHERE id = ?', [$id]);
+        if (! $user) {
+            return ['error' => 'Usuário não encontrado.', 'status' => 404];
+        }
+
+        $slugTaken = DB::selectOne(
+            'SELECT id FROM users WHERE LOWER(profile_slug) = LOWER(?) AND id <> ? LIMIT 1',
+            [$code, $id]
+        );
+        if ($slugTaken) {
+            return ['error' => 'Este código/slug já está em uso por outra conta.', 'status' => 409];
+        }
+
+        $codeRow = DB::selectOne(
+            'SELECT code, is_claimed, claimed_by_user_id FROM registration_codes WHERE LOWER(code) = LOWER(?) LIMIT 1',
+            [$code]
+        );
+        if ($codeRow && (bool) $codeRow->is_claimed && (string) ($codeRow->claimed_by_user_id ?? '') !== (string) $id) {
+            return ['error' => 'Este código já foi reivindicado por outro cliente.', 'status' => 409];
+        }
+        if ($codeRow && ! (bool) $codeRow->is_claimed) {
+            DB::delete('DELETE FROM registration_codes WHERE LOWER(code) = LOWER(?) AND is_claimed = FALSE', [$code]);
+        }
+
+        DB::update('UPDATE users SET profile_slug = ? WHERE id = ?', [$code, $id]);
+
+        $claimed = DB::selectOne(
+            'SELECT code FROM registration_codes
+             WHERE claimed_by_user_id = ? AND is_claimed = TRUE
+             ORDER BY claimed_at DESC NULLS LAST
+             LIMIT 1',
+            [$id]
+        );
+        if ($claimed) {
+            DB::update(
+                'UPDATE registration_codes SET code = ? WHERE claimed_by_user_id = ? AND is_claimed = TRUE AND code = ?',
+                [$code, $id, $claimed->code]
+            );
+        } else {
+            DB::insert(
+                'INSERT INTO registration_codes (code, is_claimed, claimed_by_user_id, claimed_at)
+                 VALUES (?, TRUE, ?, NOW())',
+                [$code, $id]
+            );
+        }
+
+        return [
+            'activation_code' => $code,
+            'profile_slug' => $code,
+            'message' => 'Código de ativação atualizado com sucesso!',
+        ];
     }
 
     /**

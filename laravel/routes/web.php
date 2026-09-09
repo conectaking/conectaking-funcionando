@@ -1247,6 +1247,7 @@ Route::middleware('admin')->group(function () {
         Route::post($p.'/api/admin/users/execute-auto-delete', [$adminUsers, 'executeAutoDelete']);
         Route::get($p.'/api/admin/users/{id}/dashboard', [$adminUsers, 'dashboard']);
         Route::put($p.'/api/admin/users/{id}/manage', [$adminUsers, 'manage']);
+        Route::put($p.'/api/admin/users/{id}/activation-code', [$adminUsers, 'updateActivationCode']);
         Route::put($p.'/api/admin/users/{id}/update-role', [$adminUsers, 'updateRole']);
         Route::put($p.'/api/admin/users/{id}', [$adminUsers, 'updateAccountType']);
         Route::delete($p.'/api/admin/users/{id}', [$adminUsers, 'destroy']);
@@ -1450,6 +1451,13 @@ foreach ($bladePages as $pageName) {
     Route::get('/'.$pageName.'.html', $handler);
     Route::get('/l/'.$pageName, $handler);
     Route::get('/l/'.$pageName.'.html', $handler);
+}
+
+// Painel ADM (HTML legado em public_html/admin — não passa pelo filtro só de assets)
+foreach (['/admin', '/admin/', '/admin/index.html', '/l/admin', '/l/admin/', '/l/admin/index.html'] as $adminPath) {
+    Route::get($adminPath, function (\Illuminate\Http\Request $request) {
+        return app(\App\Http\Controllers\FrontLegacyController::class)->page($request, 'admin/index.html');
+    });
 }
 
 

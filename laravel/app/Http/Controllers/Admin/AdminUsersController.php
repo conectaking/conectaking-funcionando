@@ -43,10 +43,40 @@ class AdminUsersController extends Controller
         }
         try {
             return $this->fromServiceResult($this->users->updateManage($id, $body), 'user');
+        } catch (\RuntimeException $e) {
+            $status = (int) $e->getCode();
+            if ($status < 400 || $status > 599) {
+                $status = 400;
+            }
+
+            return $this->error($e->getMessage(), $status);
         } catch (\Throwable $e) {
             Log::error('Erro PUT /api/admin/users/{id}/manage: '.$e->getMessage());
 
             return $this->error('Erro ao atualizar dados do usuário.', 500);
+        }
+    }
+
+    public function updateActivationCode(Request $request, string $id)
+    {
+        $code = (string) ($request->input('activationCode')
+            ?? $request->input('activation_code')
+            ?? $request->input('code')
+            ?? '');
+        try {
+            $result = $this->users->updateActivationCode($id, $code);
+            if (isset($result['error'])) {
+                return $this->error((string) $result['error'], (int) ($result['status'] ?? 400));
+            }
+
+            return $this->success([
+                'activation_code' => $result['activation_code'] ?? $code,
+                'profile_slug' => $result['profile_slug'] ?? $code,
+            ], $result['message'] ?? null);
+        } catch (\Throwable $e) {
+            Log::error('Erro PUT /api/admin/users/{id}/activation-code: '.$e->getMessage());
+
+            return $this->error('Erro ao atualizar código de ativação.', 500);
         }
     }
 

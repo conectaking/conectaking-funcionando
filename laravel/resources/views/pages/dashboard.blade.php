@@ -332,7 +332,7 @@
     
     <div class="sidebar-footer">
         <div class="footer-section-title">DADOS GERAIS DA CONTA</div>
-        <a href="admin//" class="nav-link" id="adm-link" style="display: none;"><i class="fas fa-user-shield"></i> <span>ADM</span></a>
+        <a href="/admin/" class="nav-link" id="adm-link" style="display: none;"><i class="fas fa-user-shield"></i> <span>ADM</span></a>
         <a href="/admin-devocionais-365" class="nav-link" id="dev365-admin-link" style="display: none;"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
         <a href="#" class="nav-link" data-target="personalizar-link-pane" id="personalizar-link-link" style="display: none;" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
         <a href="#" class="nav-link" data-target="assinatura-pane" id="assinatura-link"><i class="fas fa-crown"></i> <span>Assinatura</span></a>

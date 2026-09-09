@@ -16,7 +16,7 @@ class AdminCodesService
     public function generateManual(mixed $customCode, mixed $expiresAt): array
     {
         $code = is_string($customCode) ? $customCode : '';
-        if ($code === '' || strlen($code) > 12 || str_contains($code, ' ')) {
+        if ($code === '' || strlen($code) > 32 || str_contains($code, ' ')) {
             return ['error' => 'Código personalizado inválido, muito longo ou contém espaços.', 'status' => 400];
         }
         $parsed = $this->parseExpiresAt($expiresAt);
