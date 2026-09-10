@@ -185,6 +185,7 @@ Route::middleware('jwt')->group(function () {
         Route::post('/api/guest-lists', [GuestListAdminController::class, 'store']);
         Route::get('/api/guest-lists/{id}/guests', [GuestListAdminController::class, 'guests'])->where('id', '[0-9]+');
         Route::post('/api/guest-lists/{id}/guests', [GuestListAdminController::class, 'storeGuest'])->where('id', '[0-9]+');
+        Route::post('/api/guest-lists/{id}/guests/delete-bulk', [GuestListAdminController::class, 'destroyGuestsBulk'])->where('id', '[0-9]+')->middleware('throttle:30,1');
         Route::delete('/api/guest-lists/{id}/guests', [GuestListAdminController::class, 'destroyAllGuests'])->where('id', '[0-9]+');
         Route::put('/api/guest-lists/{id}/guests/{guestId}', [GuestListAdminController::class, 'updateGuest'])->where(['id' => '[0-9]+', 'guestId' => '[0-9]+']);
         Route::delete('/api/guest-lists/{id}/guests/{guestId}', [GuestListAdminController::class, 'destroyGuest'])->where(['id' => '[0-9]+', 'guestId' => '[0-9]+']);

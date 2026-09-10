@@ -226,6 +226,59 @@ class R2StorageService
         return ['uploadUrl' => $uploadUrl, 'publicUrl' => $publicUrl];
     }
 
+    /**
+     * Presigned GET (SigV4 query) — URL curta (60–300s) para download direto do R2.
+     * Preferível ao proxy quando o cliente/browser consegue ler o objeto (CORS OK).
+     * Fallback: proxy Laravel com ETag.
+     *
+     * @return string|null URL assinada ou null se R2 indisponível
+     */
+    public function presignGet(string $key, int $expiresInSeconds = 180): ?string
+    {
+        $c = $this->config();
+        if (! $c['enabled'] || ! $c['endpoint'] || ! $c['bucket'] || $key === '') {
+            return null;
+        }
+        $expires = max(60, min(300, $expiresInSeconds));
+        $host = parse_url((string) $c['endpoint'], PHP_URL_HOST) ?: '';
+        $canonicalUri = '/'.$c['bucket'].'/'.implode('/', array_map('rawurlencode', explode('/', ltrim($key, '/'))));
+        $amzDate = gmdate('Ymd\THis\Z');
+        $dateStamp = gmdate('Ymd');
+        $credentialScope = "{$dateStamp}/auto/s3/aws4_request";
+        $credential = $c['accessKeyId'].'/'.$credentialScope;
+
+        $signedHeaders = 'host';
+        $canonicalHeaders = 'host:'.$host."\n";
+
+        $query = [
+            'X-Amz-Algorithm' => 'AWS4-HMAC-SHA256',
+            'X-Amz-Credential' => $credential,
+            'X-Amz-Date' => $amzDate,
+            'X-Amz-Expires' => (string) $expires,
+            'X-Amz-SignedHeaders' => $signedHeaders,
+        ];
+        ksort($query);
+        $canonicalQuery = [];
+        foreach ($query as $k => $v) {
+            $canonicalQuery[] = rawurlencode($k).'='.rawurlencode($v);
+        }
+        $canonicalQueryString = implode('&', $canonicalQuery);
+        $canonicalRequest = "GET\n{$canonicalUri}\n{$canonicalQueryString}\n{$canonicalHeaders}\n{$signedHeaders}\nUNSIGNED-PAYLOAD";
+        $stringToSign = "AWS4-HMAC-SHA256\n{$amzDate}\n{$credentialScope}\n".hash('sha256', $canonicalRequest);
+        $signingKey = $this->signingKey((string) $c['secretAccessKey'], $dateStamp, 'auto', 's3');
+        $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+
+        return rtrim((string) $c['endpoint'], '/').$canonicalUri.'?'.$canonicalQueryString.'&X-Amz-Signature='.$signature;
+    }
+
+    /**
+     * Alias legível: URL GET assinada (mesmo que presignGet).
+     */
+    public function getObjectUrl(string $key, int $expiresInSeconds = 180): ?string
+    {
+        return $this->presignGet($key, $expiresInSeconds);
+    }
+
     private function putObjectRaw(
         string $endpoint,
         string $bucket,

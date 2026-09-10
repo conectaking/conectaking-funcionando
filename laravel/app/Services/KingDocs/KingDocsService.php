@@ -145,9 +145,9 @@ class KingDocsService
     }
 
     /**
-     * @return array{status:int, buffer?:string, mime?:string, filename?:string, body?:mixed}
+     * @return array{status:int, buffer?:string, mime?:string, filename?:string, etag?:string, storage_key?:string, signed_url?:string, body?:mixed}
      */
-    public function downloadFile(string $userId, int $fileId): array
+    public function downloadFile(string $userId, int $fileId, bool $preferSigned = false): array
     {
         if ($fileId < 1) {
             return $this->fail('ID inválido.', 400);
@@ -156,7 +156,28 @@ class KingDocsService
         if (! $file) {
             return $this->fail('Ficheiro não encontrado.', 404);
         }
-        $buf = $this->r2->getObject((string) $file->storage_key);
+        $key = (string) $file->storage_key;
+        $etag = '"'.sha1($key.'|'.(string) ($file->updated_at ?? $file->id ?? $fileId)).'"';
+
+        if ($preferSigned) {
+            try {
+                $url = $this->r2->presignGet($key, 180);
+                if (is_string($url) && $url !== '') {
+                    return [
+                        'status' => 200,
+                        'signed_url' => $url,
+                        'expires_in' => 180,
+                        'mime' => $file->mime ?: 'application/octet-stream',
+                        'filename' => $file->original_name ?: ('documento-'.$fileId),
+                        'etag' => $etag,
+                    ];
+                }
+            } catch (\Throwable $e) {
+                // fallback proxy
+            }
+        }
+
+        $buf = $this->r2->getObject($key);
         if ($buf === null) {
             return $this->fail('Não foi possível obter o ficheiro.', 503);
         }
@@ -166,6 +187,8 @@ class KingDocsService
             'buffer' => $buf,
             'mime' => $file->mime ?: 'application/octet-stream',
             'filename' => $file->original_name ?: ('documento-'.$fileId),
+            'etag' => $etag,
+            'storage_key' => $key,
         ];
     }
 
@@ -390,9 +413,12 @@ class KingDocsService
     }
 
     /**
-     * @return array{status:int, buffer?:string, mime?:string, filename?:string, body?:mixed}
+     * Download público: HMAC viewer obrigatório; depois tenta signed GET curto,
+     * com fallback para proxy (ETag / Cache-Control no controller).
+     *
+     * @return array{status:int, buffer?:string, mime?:string, filename?:string, etag?:string, signed_url?:string, body?:mixed}
      */
-    public function publicDownloadFile(string $token, int $fileId, ?string $viewerHeader): array
+    public function publicDownloadFile(string $token, int $fileId, ?string $viewerHeader, bool $preferSigned = false): array
     {
         $share = $this->findShareByToken($token);
         if (! $share) {
@@ -422,7 +448,29 @@ class KingDocsService
         if (! $file) {
             return $this->fail('Ficheiro não encontrado.', 404);
         }
-        $buf = $this->r2->getObject((string) $file->storage_key);
+        $key = (string) $file->storage_key;
+        $etag = '"'.sha1($key.'|'.(string) ($file->updated_at ?? $file->id ?? $fileId).'|share:'.$token).'"';
+
+        // Após HMAC: signed GET curto (viewer autenticado). CORS/bucket privado → fallback proxy.
+        if ($preferSigned) {
+            try {
+                $url = $this->r2->presignGet($key, 120);
+                if (is_string($url) && $url !== '') {
+                    return [
+                        'status' => 200,
+                        'signed_url' => $url,
+                        'expires_in' => 120,
+                        'mime' => $file->mime ?: 'application/octet-stream',
+                        'filename' => $file->original_name ?: ('documento-'.$fileId),
+                        'etag' => $etag,
+                    ];
+                }
+            } catch (\Throwable $e) {
+                // fallback proxy
+            }
+        }
+
+        $buf = $this->r2->getObject($key);
         if ($buf === null) {
             return $this->fail('Não foi possível obter o ficheiro.', 503);
         }
@@ -432,6 +480,7 @@ class KingDocsService
             'buffer' => $buf,
             'mime' => $file->mime ?: 'application/octet-stream',
             'filename' => $file->original_name ?: ('documento-'.$fileId),
+            'etag' => $etag,
         ];
     }
 

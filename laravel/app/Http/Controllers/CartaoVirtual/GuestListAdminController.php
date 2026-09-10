@@ -93,6 +93,19 @@ class GuestListAdminController extends Controller
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
 
+    public function destroyGuestsBulk(Request $request, string $id)
+    {
+        $ids = $request->input('guestIds', $request->input('ids', []));
+
+        $r = $this->admin->destroyGuestsBulk(
+            (string) $request->attributes->get('auth_user_id'),
+            (int) $id,
+            is_array($ids) ? $ids : []
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
     public function destroyAllGuests(Request $request, string $id)
     {
         $r = $this->admin->destroyAllGuests((string) $request->attributes->get('auth_user_id'), (int) $id);

@@ -606,22 +606,59 @@ async function loadGuestList() {
     }
 }
 
-// Carregar convidados
-async function loadGuests() {
+// Carregar convidados (paginado: default 100, max 500; load-more se hasMore)
+let guestsListMeta = { total: 0, limit: 100, offset: 0, hasMore: false };
+
+function normalizeGuestsPayload(payload) {
+    if (Array.isArray(payload)) {
+        return { guests: payload, total: payload.length, limit: payload.length, offset: 0, hasMore: false };
+    }
+    if (payload && typeof payload === 'object') {
+        const list = Array.isArray(payload.guests)
+            ? payload.guests
+            : (Array.isArray(payload.data) ? payload.data : []);
+        return {
+            guests: list,
+            total: typeof payload.total === 'number' ? payload.total : list.length,
+            limit: typeof payload.limit === 'number' ? payload.limit : 100,
+            offset: typeof payload.offset === 'number' ? payload.offset : 0,
+            hasMore: !!payload.hasMore,
+        };
+    }
+    return { guests: [], total: 0, limit: 100, offset: 0, hasMore: false };
+}
+
+async function loadGuests(append) {
     try {
         const token = getToken();
-        const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}/guests`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+        const offset = append ? ((guestsListMeta.offset || 0) + (guestsListMeta.limit || 100)) : 0;
+        const response = await fetch(
+            `${API_URL}/api/guest-lists/${currentGuestListId}/guests?limit=100&offset=${offset}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             }
-        });
+        );
         
         if (!response.ok) {
             throw new Error('Erro ao carregar convidados');
         }
         
-        guests = await response.json();
-        allGuests = [...guests];
+        const page = normalizeGuestsPayload(await response.json());
+        guestsListMeta = {
+            total: page.total,
+            limit: page.limit,
+            offset: page.offset,
+            hasMore: page.hasMore,
+        };
+        if (append) {
+            guests = (guests || []).concat(page.guests);
+            allGuests = [...guests];
+        } else {
+            guests = page.guests;
+            allGuests = [...guests];
+        }
         
         // Renderizar convidados na aba ativa
         renderGuests();
@@ -716,6 +753,25 @@ function renderGuests() {
         // Mostrar apenas confirmados
         filteredGuests = guests.filter(g => g.status === 'confirmed' || g.status === 'checked_in');
         renderConfirmedGuests(filteredGuests);
+    }
+
+    let moreBtn = document.getElementById('guests-load-more-btn');
+    if (!moreBtn) {
+        moreBtn = document.createElement('button');
+        moreBtn.id = 'guests-load-more-btn';
+        moreBtn.type = 'button';
+        moreBtn.className = 'btn-secondary';
+        moreBtn.style.cssText = 'display:none;margin:12px auto;';
+        moreBtn.textContent = 'Carregar mais';
+        moreBtn.onclick = function () { loadGuests(true); };
+        const host = document.querySelector('.tabs-content') || document.querySelector('.guest-list-container') || document.body;
+        host.appendChild(moreBtn);
+    }
+    if (guestsListMeta && guestsListMeta.hasMore) {
+        moreBtn.style.display = 'block';
+        moreBtn.textContent = 'Carregar mais (' + guests.length + ' / ' + guestsListMeta.total + ')';
+    } else {
+        moreBtn.style.display = 'none';
     }
 }
 
@@ -2346,7 +2402,7 @@ async function filterGuests(tab, searchTerm) {
         const status = tab === 'registered' || tab === 'confirmation' ? 'registered' : 
                       tab === 'confirmed' ? 'confirmed' : null;
         
-        let url = `${API_URL}/api/guest-lists/${currentGuestListId}/guests?search=${encodeURIComponent(searchTerm.trim())}`;
+        let url = `${API_URL}/api/guest-lists/${currentGuestListId}/guests?search=${encodeURIComponent(searchTerm.trim())}&limit=100&offset=0`;
         if (status) {
             url += `&status=${status}`;
         }
@@ -2358,8 +2414,14 @@ async function filterGuests(tab, searchTerm) {
         });
         
         if (response.ok) {
-            const filteredGuests = await response.json();
-            guests = filteredGuests;
+            const page = normalizeGuestsPayload(await response.json());
+            guests = page.guests;
+            guestsListMeta = {
+                total: page.total,
+                limit: page.limit,
+                offset: page.offset,
+                hasMore: page.hasMore,
+            };
             renderGuests();
         }
     } catch (error) {

@@ -207,52 +207,88 @@ class GuestListAdminService
             ]];
         }
         if ($gliId === 0) {
-            return ['status' => 200, 'body' => []];
+            return ['status' => 200, 'body' => [
+                'guests' => [],
+                'total' => 0,
+                'limit' => 100,
+                'offset' => 0,
+                'hasMore' => false,
+            ]];
         }
 
-        $sql = 'SELECT id, guest_list_id, name, email, phone, whatsapp, document,
-                       address, neighborhood, city, state, zipcode, instagram,
-                       status, registration_source, confirmed_at, confirmed_by,
-                       checked_in_at, checked_in_by, notes, custom_responses,
-                       created_at, updated_at
-                FROM guests WHERE guest_list_id = ?';
+        $limit = isset($query['limit']) && is_numeric($query['limit']) ? (int) $query['limit'] : 100;
+        $offset = isset($query['offset']) && is_numeric($query['offset']) ? (int) $query['offset'] : 0;
+        $limit = max(1, min(500, $limit));
+        $offset = max(0, $offset);
+
+        $where = 'guest_list_id = ?';
         $params = [$gliId];
 
         $status = isset($query['status']) ? trim((string) $query['status']) : '';
         if ($status !== '') {
-            $sql .= ' AND status = ?';
+            $where .= ' AND status = ?';
             $params[] = $status;
         }
 
         $hasEntryMode = Schema::hasColumn('guests', 'entry_mode');
         $listMode = strtolower(trim((string) ($query['mode'] ?? 'checkin')));
+        $entryClause = '';
         if ($hasEntryMode) {
             if ($listMode === 'checkin') {
-                $sql .= " AND COALESCE(entry_mode, 'checkin') = 'checkin'";
+                $entryClause = " AND COALESCE(entry_mode, 'checkin') = 'checkin'";
             } elseif ($listMode === 'lead') {
-                $sql .= " AND COALESCE(entry_mode, 'checkin') = 'lead'";
+                $entryClause = " AND COALESCE(entry_mode, 'checkin') = 'lead'";
             }
         }
+        $whereWithEntry = $where.$entryClause;
 
         $search = isset($query['search']) ? trim((string) $query['search']) : '';
+        $searchClause = '';
+        $searchParams = [];
         if ($search !== '') {
             $term = '%'.$search.'%';
-            $sql .= ' AND (name ILIKE ? OR COALESCE(email, \'\') ILIKE ? OR COALESCE(phone, \'\') ILIKE ?
+            $searchClause = ' AND (name ILIKE ? OR COALESCE(email, \'\') ILIKE ? OR COALESCE(phone, \'\') ILIKE ?
                       OR COALESCE(whatsapp, \'\') ILIKE ? OR COALESCE(document, \'\') ILIKE ?
                       OR COALESCE(instagram, \'\') ILIKE ?)';
-            array_push($params, $term, $term, $term, $term, $term, $term);
+            $searchParams = [$term, $term, $term, $term, $term, $term];
         }
-        $sql .= ' ORDER BY created_at DESC';
+
+        $countSql = "SELECT COUNT(*)::int AS total FROM guests WHERE {$whereWithEntry}{$searchClause}";
+        $sql = 'SELECT id, guest_list_id, name, email, phone, whatsapp, document,
+                       address, neighborhood, city, state, zipcode, instagram,
+                       status, registration_source, confirmed_at, confirmed_by,
+                       checked_in_at, checked_in_by, notes, custom_responses,
+                       created_at, updated_at
+                FROM guests WHERE '.$whereWithEntry.$searchClause.' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+        $listParams = array_merge($params, $searchParams);
 
         try {
-            $rows = DB::select($sql, $params);
+            $total = (int) (DB::selectOne($countSql, $listParams)->total ?? 0);
+            $rows = DB::select($sql, array_merge($listParams, [$limit, $offset]));
         } catch (\Throwable $e) {
             Log::warning('guestList.guests', ['error' => $e->getMessage()]);
-            $sql = preg_replace("/ AND COALESCE\\(entry_mode, 'checkin'\\) = '(checkin|lead)'/", '', $sql) ?: $sql;
-            $rows = DB::select($sql, $params);
+            $whereFallback = $where.$searchClause;
+            $countSql = "SELECT COUNT(*)::int AS total FROM guests WHERE {$whereFallback}";
+            $sql = 'SELECT id, guest_list_id, name, email, phone, whatsapp, document,
+                           address, neighborhood, city, state, zipcode, instagram,
+                           status, registration_source, confirmed_at, confirmed_by,
+                           checked_in_at, checked_in_by, notes, custom_responses,
+                           created_at, updated_at
+                    FROM guests WHERE '.$whereFallback.' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+            $total = (int) (DB::selectOne($countSql, $listParams)->total ?? 0);
+            $rows = DB::select($sql, array_merge($listParams, [$limit, $offset]));
         }
 
-        return ['status' => 200, 'body' => array_map(static fn ($r) => (array) $r, $rows)];
+        $items = array_map(static fn ($r) => (array) $r, $rows);
+
+        // Contrato: { guests, total, limit, offset, hasMore } — default limit 100, max 500
+        return ['status' => 200, 'body' => [
+            'guests' => $items,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'hasMore' => ($offset + count($items)) < $total,
+        ]];
     }
 
     /**
@@ -696,6 +732,50 @@ class GuestListAdminService
         DB::delete('DELETE FROM guests WHERE id = ? AND guest_list_id = ?', [$guestId, $gliId]);
 
         return ['status' => 200, 'body' => ['success' => true, 'message' => 'Convidado removido com sucesso']];
+    }
+
+    /**
+     * Exclusão em lote por IDs (mantém destroyGuest e destroyAllGuests).
+     *
+     * @param  list<int|string>  $ids
+     * @return array{status:int, body:mixed}
+     */
+    public function destroyGuestsBulk(string $userId, int $listId, array $ids): array
+    {
+        if ($listId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'ID da lista inválido']];
+        }
+        $owned = $this->resolveOwned($userId, $listId, false);
+        if (! $owned) {
+            return ['status' => 404, 'body' => ['message' => 'Lista não encontrada']];
+        }
+        $guestIds = [];
+        foreach ($ids as $id) {
+            $n = (int) $id;
+            if ($n > 0) {
+                $guestIds[$n] = $n;
+            }
+        }
+        $guestIds = array_values($guestIds);
+        if ($guestIds === []) {
+            return ['status' => 400, 'body' => ['success' => false, 'message' => 'Nenhum ID válido fornecido']];
+        }
+        if (count($guestIds) > 500) {
+            return ['status' => 400, 'body' => ['success' => false, 'message' => 'Máximo de 500 IDs por pedido']];
+        }
+
+        $gliId = $owned['guest_list_item_id'];
+        $placeholders = implode(',', array_fill(0, count($guestIds), '?'));
+        $deleted = DB::delete(
+            "DELETE FROM guests WHERE guest_list_id = ? AND id IN ({$placeholders})",
+            array_merge([$gliId], $guestIds)
+        );
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'message' => 'Convidados removidos com sucesso',
+            'deleted_count' => $deleted,
+        ]];
     }
 
     /**

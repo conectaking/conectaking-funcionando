@@ -400,7 +400,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 // IMPORTANTE: Delay antes de carregar convidados
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                const response = await cachedFetch(`${API_URL}/api/guest-lists/${itemId}/guests?mode=checkin`, {
+                const response = await cachedFetch(`${API_URL}/api/guest-lists/${itemId}/guests?mode=checkin&limit=100&offset=0`, {
                     headers: guestHeaders
                 });
                 
@@ -416,7 +416,15 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     }
                 } else {
                     const responseData = await response.json();
-                    allData = Array.isArray(responseData) ? responseData : (responseData.data || responseData.guests || []);
+                    allData = Array.isArray(responseData)
+                        ? responseData
+                        : (responseData.guests || responseData.data || []);
+                    window.__guestListMeta = {
+                        total: responseData.total ?? allData.length,
+                        limit: responseData.limit ?? 100,
+                        offset: responseData.offset ?? 0,
+                        hasMore: !!responseData.hasMore,
+                    };
                 }
                 
                 if (!allData) allData = [];
@@ -505,6 +513,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 if (contentElFinal) contentElFinal.style.display = 'block';
                 console.log('[loadGuestListData] Carregamento concluído!');
                 if (typeof hideLeadToolbar === 'function') hideLeadToolbar();
+                if (typeof ensureGuestLoadMore === 'function') ensureGuestLoadMore();
                 
             } catch (e) {
                 console.warn('[loadGuestListData] Erro ao carregar informações da lista:', e);
@@ -761,6 +770,48 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             }
         }
         
+        async function ensureGuestLoadMore() {
+            const meta = window.__guestListMeta || {};
+            let btn = document.getElementById('guest-load-more-btn');
+            if (!btn) {
+                btn = document.createElement('button');
+                btn.id = 'guest-load-more-btn';
+                btn.type = 'button';
+                btn.className = 'btn-secondary';
+                btn.style.cssText = 'display:none;margin:16px auto;';
+                btn.onclick = async function () {
+                    const m = window.__guestListMeta || {};
+                    if (!m.hasMore) return;
+                    const nextOffset = (m.offset || 0) + (m.limit || 100);
+                    const headersForFetch = getHeaders();
+                    const res = await cachedFetch(
+                        `${API_URL}/api/guest-lists/${itemId}/guests?mode=checkin&limit=100&offset=${nextOffset}`,
+                        { headers: headersForFetch }
+                    );
+                    if (!res.ok) return;
+                    const payload = await res.json();
+                    const extra = Array.isArray(payload) ? payload : (payload.guests || payload.data || []);
+                    allData = (allData || []).concat(extra);
+                    window.__guestListMeta = {
+                        total: payload.total ?? (allData.length),
+                        limit: payload.limit ?? 100,
+                        offset: payload.offset ?? nextOffset,
+                        hasMore: !!payload.hasMore,
+                    };
+                    if (typeof renderGuestListData === 'function') renderGuestListData();
+                    ensureGuestLoadMore();
+                };
+                const host = document.getElementById('content') || document.body;
+                host.appendChild(btn);
+            }
+            if (meta.hasMore) {
+                btn.style.display = 'block';
+                btn.innerHTML = `<i class="fas fa-plus"></i> Carregar mais convidados (${(allData || []).length} de ${meta.total || '?'})`;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
         // Renderizar dados de lista de convidados
         function renderGuestListData() {
             const total = allData.length; // Total de inscritos (todos, independente do status)
@@ -4867,24 +4918,22 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     return;
                 }
                 
-                // Excluir um por um
-                const deletePromises = guestIds.map(guestId => 
-                    fetch(`${API_URL}/api/guest-lists/${itemId}/guests/${guestId}`, {
-                        method: 'DELETE',
-                        headers: headersForFetch
-                    })
-                );
+                // Excluir em lote (1 request)
+                const response = await fetch(`${API_URL}/api/guest-lists/${itemId}/guests/delete-bulk`, {
+                    method: 'POST',
+                    headers: {
+                        ...headersForFetch,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ guestIds }),
+                });
+                const result = await response.json().catch(() => ({ success: false }));
                 
-                const results = await Promise.all(deletePromises);
-                const jsonResults = await Promise.all(results.map(r => r.json().catch(() => ({ success: false }))));
-                
-                const allSuccess = jsonResults.every(r => r.success !== false && r.success !== undefined);
-                
-                if (allSuccess) {
-                    alert(`${guestIds.length} convidado(s) excluído(s) com sucesso.`);
+                if (response.ok && result.success !== false) {
+                    alert(`${result.deleted_count ?? guestIds.length} convidado(s) excluído(s) com sucesso.`);
                     await loadGuestListData();
                 } else {
-                    throw new Error('Alguns convidados não puderam ser excluídos');
+                    throw new Error(result.message || 'Alguns convidados não puderam ser excluídos');
                 }
             } catch (error) {
                 console.error('Erro ao excluir convidados selecionados:', error);

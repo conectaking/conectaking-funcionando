@@ -73,12 +73,14 @@ class KingDocsController extends Controller
 
     public function downloadFile(Request $request, string $id)
     {
+        $preferSigned = in_array(strtolower((string) $request->query('signed', '')), ['1', 'true', 'yes'], true);
         $r = $this->kingDocs->downloadFile(
             (string) $request->attributes->get('auth_user_id'),
-            (int) $id
+            (int) $id,
+            $preferSigned
         );
 
-        return $this->binaryOrJson($r, 'inline');
+        return $this->binaryOrJson($r, 'inline', $request);
     }
 
     public function createShare(Request $request)
@@ -138,13 +140,17 @@ class KingDocsController extends Controller
 
     public function publicDownloadFile(Request $request, string $token, string $fileId)
     {
+        // HMAC viewer obrigatório no service; signed=1 emite GET curto após auth.
+        // Default: proxy (fetch+blob no viewer; CORS R2 privado é arriscado).
+        $preferSigned = in_array(strtolower((string) $request->query('signed', '')), ['1', 'true', 'yes'], true);
         $r = $this->kingDocs->publicDownloadFile(
             $token,
             (int) $fileId,
-            $request->header('X-King-Docs-Viewer')
+            $request->header('X-King-Docs-Viewer'),
+            $preferSigned
         );
 
-        return $this->binaryOrJson($r, 'attachment');
+        return $this->binaryOrJson($r, 'attachment', $request);
     }
 
     public function importProfile(Request $request)
@@ -185,21 +191,44 @@ class KingDocsController extends Controller
     }
 
     /**
-     * @param  array{status:int, buffer?:string, mime?:string, filename?:string, body?:mixed}  $r
+     * @param  array{status:int, buffer?:string, mime?:string, filename?:string, etag?:string, signed_url?:string, body?:mixed}  $r
      */
-    private function binaryOrJson(array $r, string $disposition)
+    private function binaryOrJson(array $r, string $disposition, ?Request $request = null)
     {
+        if (! empty($r['signed_url'])) {
+            return response()->json([
+                'ok' => true,
+                'signed_url' => $r['signed_url'],
+                'expires_in' => $r['expires_in'] ?? 120,
+                'mime' => $r['mime'] ?? null,
+                'filename' => $r['filename'] ?? null,
+            ], 200)->header('X-Conecta-Engine', 'laravel')
+                ->header('Cache-Control', 'private, no-store');
+        }
+
         if (isset($r['buffer'])) {
             $filename = rawurlencode((string) ($r['filename'] ?? 'file'));
             $buffer = (string) $r['buffer'];
+            $etag = (string) ($r['etag'] ?? ('"'.sha1($buffer).'"'));
+
+            if ($request) {
+                $inm = trim((string) $request->header('If-None-Match', ''));
+                if ($inm !== '' && $inm === $etag) {
+                    return response('', 304, [
+                        'ETag' => $etag,
+                        'Cache-Control' => 'private, max-age=300, immutable',
+                        'X-Conecta-Engine' => 'laravel',
+                    ]);
+                }
+            }
 
             return response($buffer, $r['status'] ?? 200, [
                 'Content-Type' => $r['mime'] ?? 'application/octet-stream',
                 'Content-Disposition' => $disposition.'; filename="'.$filename.'"',
                 'Content-Length' => (string) strlen($buffer),
-                // Cache curto no browser/proxy autenticado: reabrir o mesmo ficheiro no viewer
-                // evita re-download completo durante a sessão de edição (docs privados).
-                'Cache-Control' => 'private, max-age=60',
+                // Conteúdo versionado por storage_key → ETag; cache privado agressivo.
+                'Cache-Control' => 'private, max-age=300, immutable',
+                'ETag' => $etag,
                 'Accept-Ranges' => 'none',
                 'X-Conecta-Engine' => 'laravel',
             ]);
