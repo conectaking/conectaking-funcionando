@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <script src="/vendor/chartjs/chart.umd.min.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/vendor/chartjs/chart.umd.min.js"></script>
     @vite(['resources/js/pages/admin.js'])
 </head>
 <body>

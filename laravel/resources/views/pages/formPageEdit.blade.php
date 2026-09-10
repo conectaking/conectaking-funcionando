@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
     <script src="/vendor/cropperjs/cropper.min.js"></script>
     <script src="/vendor/sortablejs/Sortable.min.js"></script>
-    <script src="/vendor/chartjs/chart.umd.min.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/vendor/chartjs/chart.umd.min.js"></script>
     <script src="/config.js?v=2026-09-09-vite1"></script>
     <style>
         * {
