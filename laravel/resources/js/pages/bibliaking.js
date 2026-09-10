@@ -1,5 +1,6 @@
 /** Bibliaking / painel Bíblia — Vite entry (restored from biblePanel.ejs) */
 import '@legacy/js/ck-auth-gate.js';
+import '@legacy/js/ck-csrf.js';
 
 (async function () {
             if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;

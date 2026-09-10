@@ -18,6 +18,12 @@ class BibleTextService
     /** @var array{at:list<array>,nt:list<array>}|null */
     private static ?array $manifest = null;
 
+    /** @var array<string, int>|null */
+    private static ?array $chapterCounts = null;
+
+    /** @var list<array{bookId:string,bookName:string,chapter:int}>|null */
+    private static ?array $chapterSequence = null;
+
     /** @var array<string, array<string, mixed>|null> */
     private static array $bookCache = [];
 
@@ -52,6 +58,9 @@ class BibleTextService
      */
     public function chapterCountsByBook(): array
     {
+        if (self::$chapterCounts !== null) {
+            return self::$chapterCounts;
+        }
         $all = array_merge($this->manifest()['at'], $this->manifest()['nt']);
         $out = [];
         foreach ($all as $i => $b) {
@@ -63,7 +72,7 @@ class BibleTextService
             $out[$id] = $n >= 1 ? $n : 1;
         }
 
-        return $out;
+        return self::$chapterCounts = $out;
     }
 
     /**
@@ -107,6 +116,9 @@ class BibleTextService
      */
     public function chapterSequence(): array
     {
+        if (self::$chapterSequence !== null) {
+            return self::$chapterSequence;
+        }
         $counts = $this->chapterCountsByBook();
         $all = array_merge($this->manifest()['at'], $this->manifest()['nt']);
         $seq = [];
@@ -122,7 +134,7 @@ class BibleTextService
             }
         }
 
-        return $seq;
+        return self::$chapterSequence = $seq;
     }
 
     /**

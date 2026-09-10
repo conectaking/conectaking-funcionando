@@ -5,6 +5,7 @@ namespace App\Services\CartaoVirtual;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Support\SafeIconClass;
 
 class ProfileItemsService
 {
@@ -122,7 +123,11 @@ class ProfileItemsService
             foreach (['destination_url', 'image_url', 'icon_class'] as $f) {
                 if (array_key_exists($f, $body)) {
                     $fields[] = $f;
-                    $vals[] = $body[$f] ?: null;
+                    $val = $body[$f] ?: null;
+                    if ($f === 'icon_class' && $val !== null) {
+                        $val = SafeIconClass::sanitize((string) $val);
+                    }
+                    $vals[] = $val;
                 }
             }
             foreach (self::OPTIONAL as $f) {
@@ -173,7 +178,11 @@ class ProfileItemsService
         foreach (['title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] as $f) {
             if (array_key_exists($f, $updates)) {
                 $sets[] = "$f = ?";
-                $vals[] = $updates[$f];
+                $val = $updates[$f];
+                if ($f === 'icon_class' && $val !== null && $val !== '') {
+                    $val = SafeIconClass::sanitize((string) $val);
+                }
+                $vals[] = $val;
             }
         }
         foreach (self::OPTIONAL as $f) {

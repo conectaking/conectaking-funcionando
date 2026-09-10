@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Services\CartaoVirtual\CartaoPublicService;
+use App\Support\SafeIconClass;
 
 /**
  * PUT /api/profile/save-all — paridade Node (informações + tema + itens).
@@ -341,6 +342,11 @@ class ProfileSaveService
      */
     private function updateItem(string $userId, int $itemId, array $item, mixed $dest, array $cols): void
     {
+        $rawIcon = $item['icon_class'] ?? null;
+        $iconClass = ($rawIcon === null || $rawIcon === '')
+            ? null
+            : SafeIconClass::sanitize((string) $rawIcon);
+
         $sets = [
             'title = ?',
             'destination_url = COALESCE(?, destination_url)',
@@ -353,7 +359,7 @@ class ProfileSaveService
             $item['title'] ?? null,
             $dest,
             array_key_exists('image_url', $item) ? ($item['image_url'] ?: null) : null,
-            $item['icon_class'] ?? null,
+            $iconClass,
             $item['display_order'] ?? 0,
             array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
         ];
@@ -393,10 +399,15 @@ class ProfileSaveService
      */
     private function insertItem(string $userId, array $item, mixed $dest, array $cols): int
     {
+        $rawIcon = $item['icon_class'] ?? null;
+        $iconClass = ($rawIcon === null || $rawIcon === '')
+            ? null
+            : SafeIconClass::sanitize((string) $rawIcon);
+
         $fields = ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
         $vals = [
             $userId, $item['item_type'] ?? 'link', $item['title'] ?? null, $dest,
-            $item['image_url'] ?? null, $item['icon_class'] ?? null, $item['display_order'] ?? 0,
+            $item['image_url'] ?? null, $iconClass, $item['display_order'] ?? 0,
             array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
         ];
 

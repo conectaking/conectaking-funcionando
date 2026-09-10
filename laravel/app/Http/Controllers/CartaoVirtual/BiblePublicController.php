@@ -72,6 +72,8 @@ class BiblePublicController extends Controller
             ], 404)->header('X-Conecta-Engine', 'laravel');
         }
 
+        $data = $this->text->enrichChapter($data);
+
         return response()->json([
             'success' => true,
             'data' => $data,

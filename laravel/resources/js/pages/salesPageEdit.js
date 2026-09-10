@@ -6,6 +6,7 @@ import '@legacy/style.css';
 import '@legacy/dashboard.css';
 import '@legacy/salesPageEdit.css';
 import '@legacy/js/ck-auth-gate.js';
+import '@legacy/js/ck-csrf.js';
 import '@legacy/js/upload-auth-helper.js';
 
 (async function () {

@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -17,25 +18,28 @@ class VerseOfDayService
      */
     public function get(?string $dateStr = null, string $translation = 'nvi'): ?array
     {
-        $list = $this->loadList();
-        if ($list === []) {
-            return null;
-        }
-
-        $dayOfYear = $this->dayOfYearIndex($dateStr);
-        $index = $dayOfYear % count($list);
-        $item = $list[$index];
-
-        // Traduções completas ficam no Node; aqui usamos o texto do JSON (padrão NVI).
         $date = $dateStr && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)
             ? $dateStr
             : now('America/Sao_Paulo')->toDateString();
+        $trans = strtolower($translation ?: 'nvi');
+        $key = "bible:vod:{$date}:{$trans}";
 
-        return array_merge($item, [
-            'texto' => $item['texto'] ?? '',
-            'date' => $date,
-            'translation' => strtolower($translation ?: 'nvi'),
-        ]);
+        return Cache::remember($key, 3600, function () use ($dateStr, $trans, $date) {
+            $list = $this->loadList();
+            if ($list === []) {
+                return null;
+            }
+
+            $dayOfYear = $this->dayOfYearIndex($dateStr);
+            $index = $dayOfYear % count($list);
+            $item = $list[$index];
+
+            return array_merge($item, [
+                'texto' => $item['texto'] ?? '',
+                'date' => $date,
+                'translation' => $trans,
+            ]);
+        });
     }
 
     /** Índice 0-based do dia no ano (igual Node getVerseOfDayIndex) para rotação de listas. */

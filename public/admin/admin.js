@@ -1330,7 +1330,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     lastClick,
                     firstClick
                 });
-                const iconClass = link.icon_class || 'fas fa-link';
+                const iconClass = (function (raw) {
+                    const tokens = String(raw || '').split(/\s+/).filter((t) => /^(fa[srlb]?|fa-(solid|regular|brands)|fa-[a-z0-9-]+)$/i.test(t));
+                    return tokens.length ? tokens.join(' ') : 'fas fa-link';
+                })(link.icon_class);
                 const linkTitle = link.title || 'Sem título';
                 const linkUrl = link.url || 'N/A';
                 

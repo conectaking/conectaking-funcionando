@@ -50,4 +50,10 @@
     attachToHeaders: attachToHeaders,
     wrapFetch: wrapFetch,
   };
+
+  // Uma vez por página: injeta X-CK-CSRF em mutações (páginas autenticadas).
+  if (!global.__ckCsrfFetchWrapped && typeof global.fetch === 'function') {
+    global.__ckCsrfFetchWrapped = true;
+    global.fetch = wrapFetch(global.fetch.bind(global));
+  }
 })(typeof window !== 'undefined' ? window : this);

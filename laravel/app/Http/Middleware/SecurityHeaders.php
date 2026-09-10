@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Headers de segurança + CSP Report-Only (não bloqueia; permite Vite/CDN atuais).
+ * Headers de segurança + CSP em enforce (CDN/inline atuais ainda permitidos).
  */
 class SecurityHeaders
 {
@@ -24,13 +24,13 @@ class SecurityHeaders
             $response->headers->set('X-XSS-Protection', '0');
         }
 
-        // Report-Only: observa violações sem quebrar o painel (inline scripts / CDNs).
-        if (! $response->headers->has('Content-Security-Policy-Report-Only')) {
+        if (! $response->headers->has('Content-Security-Policy')) {
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
                 "object-src 'none'",
                 "frame-ancestors 'self'",
+                "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.tailwindcss.com",
                 "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net",
                 "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
@@ -39,7 +39,7 @@ class SecurityHeaders
                 "connect-src 'self' https: wss:",
                 "worker-src 'self' blob:",
             ]);
-            $response->headers->set('Content-Security-Policy-Report-Only', $csp, false);
+            $response->headers->set('Content-Security-Policy', $csp, false);
         }
 
         return $response;

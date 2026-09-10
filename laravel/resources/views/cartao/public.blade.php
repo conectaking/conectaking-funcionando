@@ -196,14 +196,14 @@
                 @php
                     $type = $item['item_type'] ?? 'link';
                     $title = trim((string)($item['title'] ?? ''));
-                    $icon = $item['icon_class'] ?? 'fas fa-link';
+                    $icon = \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-link');
                     $url = \App\Support\SafeUrl::publicHref($item['destination_url'] ?? '');
                     $img = trim((string)($item['image_url'] ?? ''));
                 @endphp
 
                 @if($type === 'king_selection')
                     <a href="@safeUrl($item['ks_public_url'] ?? '#')" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
-                        <i class="{{ $item['icon_class'] ?? 'fas fa-images' }}"></i>
+                        <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-images') }}"></i>
                         <span>{{ $title !== '' ? $title : 'King Selection' }}</span>
                     </a>
 
@@ -260,7 +260,7 @@
                             @if($spHasLogo)
                                 <img src="{{ $img }}" alt="" class="profile-link-logo" style="width:{{ $spLogoSize }}px;height:{{ $spLogoSize }}px;object-fit:contain;">
                             @else
-                                <i class="{{ $item['icon_class'] ?? 'fas fa-store' }}"></i>
+                                <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-store') }}"></i>
                             @endif
                             <span>{{ $spTitle }}</span>
                         </a>
@@ -293,7 +293,7 @@
                                 @if($hasBtnLogo)
                                     <img src="{{ $btnLogo }}" alt="" class="profile-link-logo" style="width:{{ $btnLogoSize }}px;height:{{ $btnLogoSize }}px;object-fit:contain;border-radius:8px;">
                                 @else
-                                    <i class="{{ $item['icon_class'] ?? 'fas fa-wpforms' }}"></i>
+                                    <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-wpforms') }}"></i>
                                 @endif
                                 <span>{{ $formTitle }}</span>
                             </a>
@@ -335,7 +335,7 @@
                         @if($catLogo)
                             <img src="{{ $img }}" alt="" class="profile-link-logo" style="width:{{ $catSize }}px;height:{{ $catSize }}px;object-fit:contain;">
                         @else
-                            <i class="{{ $item['icon_class'] ?? 'fas fa-store' }}"></i>
+                            <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-store') }}"></i>
                         @endif
                         <span>{{ $title !== '' ? $title : 'Minha Loja' }}</span>
                     </button>
@@ -371,13 +371,13 @@
 
                 @elseif($type === 'pix_qrcode')
                     <button type="button" class="profile-link profile-button-pix-qrcode" data-item-id="{{ $item['id'] ?? '' }}">
-                        <i class="{{ $item['icon_class'] ?? 'fas fa-qrcode' }}"></i>
+                        <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-qrcode') }}"></i>
                         <span>{{ $title !== '' ? $title : 'PIX QR Code' }}</span>
                     </button>
 
                 @elseif($type === 'pix')
                     <button type="button" class="profile-link profile-button-pix" data-item-id="{{ $item['id'] ?? '' }}" data-pix-key="{{ $item['pix_key'] ?? '' }}">
-                        <i class="{{ $item['icon_class'] ?? 'fas fa-pix' }}"></i>
+                        <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-pix') }}"></i>
                         <span>{{ $title !== '' ? $title : 'PIX' }}</span>
                     </button>
 
@@ -399,13 +399,13 @@
                         ], JSON_UNESCAPED_UNICODE));
                     @endphp
                     <button type="button" class="profile-link wifi-profile-button" data-item-id="{{ $item['id'] ?? '' }}" data-wifi-config="{{ $wifiPayload }}">
-                        <i class="{{ $item['icon_class'] ?? 'fas fa-wifi' }}"></i>
+                        <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-wifi') }}"></i>
                         <span>{{ $title !== '' ? $title : 'Wi‑Fi' }}</span>
                     </button>
 
                 @elseif($type === 'pdf')
                     <a href="/download/pdf/{{ $item['id'] ?? '' }}" class="profile-link" data-item-id="{{ $item['id'] ?? '' }}">
-                        <i class="{{ $item['icon_class'] ?? 'fas fa-file-pdf' }}"></i>
+                        <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-file-pdf') }}"></i>
                         <span>{{ $title !== '' ? $title : 'PDF' }}</span>
                     </a>
 
@@ -458,7 +458,7 @@
                             'telegram' => 'fab fa-telegram', 'linkedin' => 'fab fa-linkedin', 'spotify' => 'fab fa-spotify',
                             'link' => 'fas fa-link',
                         ];
-                        $icon = $item['icon_class'] ?? ($defaultIcons[$type] ?? 'fas fa-link');
+                        $icon = \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? ($defaultIcons[$type] ?? 'fas fa-link'));
                     @endphp
                     @if($href !== '#')
                         <a href="{{ $href }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">

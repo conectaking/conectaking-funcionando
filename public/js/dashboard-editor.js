@@ -9,6 +9,14 @@
 
     var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
 
+    function safeIconClass(s, fb) {
+        fb = fb || 'fas fa-link';
+        var tokens = String(s || '').split(/\s+/).filter(function (t) {
+            return /^(fa[srlb]?|fa-(solid|regular|brands)|fa-[a-z0-9-]+)$/i.test(t);
+        });
+        return tokens.length ? tokens.join(' ') : fb;
+    }
+
     function core() { return global.DashboardCore || {}; }
     function cartao() { return global.DashboardCartao || {}; }
 
@@ -425,9 +433,9 @@ function renderEditor(profileData) {
                             logoClass = 'logo-png';
                         }
 
-                        iconOrThumbHTML = `<img src="${item.image_url}" class="item-logo-preview ${logoClass}" style="width: ${logoSizeListFixed}px; height: ${logoSizeListFixed}px; object-fit: ${objectFit}; border-radius: ${borderRadius}; flex-shrink: 0;" alt="Logo" onerror="this.style.display='none'; const nextIcon = this.nextElementSibling; if (nextIcon && nextIcon.classList.contains('item-icon-picker')) nextIcon.style.display='inline-block';"><i class="${item.icon_class || 'fas fa-link'} item-icon-picker" title="Alterar Ícone" style="display: none;"></i>`;
+                        iconOrThumbHTML = `<img src="${item.image_url}" class="item-logo-preview ${logoClass}" style="width: ${logoSizeListFixed}px; height: ${logoSizeListFixed}px; object-fit: ${objectFit}; border-radius: ${borderRadius}; flex-shrink: 0;" alt="Logo" onerror="this.style.display='none'; const nextIcon = this.nextElementSibling; if (nextIcon && nextIcon.classList.contains('item-icon-picker')) nextIcon.style.display='inline-block';"><i class="${safeIconClass(item.icon_class, 'fas fa-link')} item-icon-picker" title="Alterar Ícone" style="display: none;"></i>`;
                     } else {
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-link'} item-icon-picker" title="Alterar Ícone"></i>`;
+                        iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-link')} item-icon-picker" title="Alterar Ícone"></i>`;
                     }
                     // Usar o título do item, ou 'Link Personalizado' como padrão apenas se não houver título
                     displayHTML = `<div class="item-display-title">${item.title || 'Link Personalizado'}</div><div class="item-display-dest">${item.destination_url || '#'}</div>`;
@@ -485,7 +493,7 @@ function renderEditor(profileData) {
         <input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://exemplo.com">
         <label style="margin-top: 15px;">Ícone (opcional - usado se não houver logo)</label>
         <div class="item-icon-picker" style="font-size: 2rem; cursor: pointer; color: var(--dourado-principal, #FFC700); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border-color, #2C2C2F); border-radius: 8px; margin: 10px 0;" title="Clique para alterar ícone">
-            <i class="${item.icon_class || 'fas fa-link'}"></i>
+            <i class="${safeIconClass(item.icon_class, 'fas fa-link')}"></i>
         </div>
     `;
                     break;
@@ -661,7 +669,7 @@ function renderEditor(profileData) {
                     break;
                 case 'pix':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fa-solid fa-qrcode'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fa-solid fa-qrcode')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'PIX'}</div><div class="item-display-dest">${item.pix_key || 'Chave PIX'}</div>`;
                     editHTML = `
         <label>Título</label>
@@ -684,7 +692,7 @@ function renderEditor(profileData) {
                     break;
                 case 'pix_qrcode':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-qrcode'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-qrcode')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'PIX QR Code'}</div><div class="item-display-dest">${item.pix_key || 'Nenhuma chave configurada'}</div>`;
                     editHTML = `
         <label>Título</label>
@@ -726,9 +734,9 @@ function renderEditor(profileData) {
                     if (wifiDisplay === 'banner' && wifiBannerUrl && !wifiBannerUrl.includes('placeholder')) {
                         iconOrThumbHTML = `<img src="${wifiBannerUrl}" class="banner-preview-thumb" alt="Wi-Fi" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fas fa-wifi" style="display: none;"></i>`;
                     } else if (wifiLogoUrl && !wifiLogoUrl.includes('placeholder')) {
-                        iconOrThumbHTML = `<img src="${wifiLogoUrl}" class="item-logo-preview" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"><i class="${item.icon_class || 'fas fa-wifi'} item-icon-picker" title="Alterar Ícone" style="display:none;"></i>`;
+                        iconOrThumbHTML = `<img src="${wifiLogoUrl}" class="item-logo-preview" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"><i class="${safeIconClass(item.icon_class, 'fas fa-wifi')} item-icon-picker" title="Alterar Ícone" style="display:none;"></i>`;
                     } else {
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-wifi'} item-icon-picker" title="Alterar Ícone"></i>`;
+                        iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-wifi')} item-icon-picker" title="Alterar Ícone"></i>`;
                     }
 
                     const rawWifiTitle = (item.title && String(item.title).trim()) ? String(item.title).trim() : '';
@@ -792,7 +800,7 @@ function renderEditor(profileData) {
             </div>
             <label style="margin-top: 15px;">Ícone (se não houver logo)</label>
             <div class="item-icon-picker" style="font-size: 2rem; cursor: pointer; color: var(--dourado-principal, #FFC700); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border-color, #2C2C2F); border-radius: 8px; margin: 10px 0;" title="Clique para alterar ícone">
-                <i class="${item.icon_class || 'fas fa-wifi'}"></i>
+                <i class="${safeIconClass(item.icon_class, 'fas fa-wifi')}"></i>
             </div>
         </div>
 
@@ -826,7 +834,7 @@ function renderEditor(profileData) {
                     const l2 = lines[1] || {};
                     const l3 = lines[2] || {};
                     const tpl = tcb.template || 'evento';
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-font'} item-icon-picker" title="Texto com Botão"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-font')} item-icon-picker" title="Texto com Botão"></i>`;
                     displayHTML = `<div class="item-display-title">${tcbEsc(item.title || 'Texto com Botão')}</div><div class="item-display-dest">${tcbEsc(tcb.button_label || 'Inscrever-se')} · ${tcbEsc(tcb.url || 'sem link')}</div>`;
                     editHTML = `
         <input type="hidden" class="tcb-template-input" value="${tcbEsc(tpl)}">
@@ -857,103 +865,103 @@ function renderEditor(profileData) {
                 }
                 case 'pdf':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fa-solid fa-file-pdf'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fa-solid fa-file-pdf')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'PDF'}</div><div class="item-display-dest">${item.pdf_url || 'URL do PDF'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título (ex: Baixar Catálogo)"><label>URL do PDF</label><input type="text" class="item-pdf-url-input" value="${item.pdf_url || ''}" placeholder="URL do seu arquivo PDF">`;
                     break;
                 case 'whatsapp':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-whatsapp'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-whatsapp')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'WhatsApp'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Ex: Chamar no WhatsApp"><label>Telefone (com código do país)</label><input type="tel" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="5511999999999 (Brasil) ou 12125551234 (EUA)">`;
                     break;
                 case 'telegram':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-telegram'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-telegram')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Telegram'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Título do Link"><label>URL ou Nome de Usuário</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://t.me/'}" placeholder="https://t.me/seu_usuario">`;
                     break;
                 case 'email':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-envelope'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-envelope')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Email'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Ex: Enviar Email"><label>Endereço de Email</label><input type="email" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="contato@exemplo.com">`;
                     break;
                 case 'facebook':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-facebook'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-facebook')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Facebook'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://facebook.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                     break;
                 case 'instagram':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-instagram'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-instagram')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Instagram'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://instagram.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                     break;
                 case 'pinterest':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-pinterest'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-pinterest')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Pinterest'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://pinterest.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                     break;
                 case 'reddit':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-reddit'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-reddit')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Reddit'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://reddit.com/u/'}" placeholder="Cole a URL completa do seu perfil">`;
                     break;
                 case 'tiktok':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-tiktok'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-tiktok')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'TikTok'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://tiktok.com/@'}" placeholder="Cole a URL completa do seu perfil">`;
                     break;
                 case 'twitch':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-twitch'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-twitch')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Twitch'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Canal</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://twitch.tv/'}" placeholder="Cole a URL completa do seu canal">`;
                     break;
                 case 'twitter':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-twitter'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-twitter')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'X / Twitter'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://x.com/'}" placeholder="Cole a URL completa do seu perfil">`;
                     break;
                 case 'youtube':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-youtube'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-youtube')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'YouTube'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Canal</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL completa do seu canal">`;
                     break;
                 case 'spotify':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-spotify'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-spotify')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Spotify'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}" placeholder="Ex: Ouça meu Podcast"><label>Link do seu Perfil, Música ou Playlist</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do Spotify aqui">`;
                     break;
                 case 'linkedin':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-linkedin'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-linkedin')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'LinkedIn'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Perfil</label><input type="text" class="item-destination-url-input" value="${item.destination_url || 'https://linkedin.com/in/'}" placeholder="Cole a URL completa do seu perfil">`;
                     break;
                 case 'portfolio':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-briefcase'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-briefcase')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Meu Portfólio'}</div><div class="item-display-dest">${item.destination_url || 'Clique para configurar'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>Link do seu Portfólio</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="Cole a URL do seu site ou portfólio">`;
                     break;
                 case 'product_catalog':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-store'} item-icon-picker" title="Catálogo"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-store')} item-icon-picker" title="Catálogo"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Catálogo de Produtos'}</div><div class="item-display-dest">Produtos no cartão</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || 'Catálogo de Produtos'}" placeholder="Título do catálogo">`;
                     break;
                 case 'king_selection':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-check-double'} item-icon-picker" title="KingSelection"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-check-double')} item-icon-picker" title="KingSelection"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'KingSelection'}</div><div class="item-display-dest">Galerias de seleção (estilo Alboom)</div>`;
                     editHTML = `
         <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
@@ -969,43 +977,43 @@ function renderEditor(profileData) {
                     break;
                 case 'instagram_embed':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-instagram'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-instagram')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Instagram Incorporado'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do perfil'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Perfil do Instagram</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://www.instagram.com/p/...">`;
                     break;
                 case 'youtube_embed':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-youtube'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-youtube')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'YouTube Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do vídeo'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Vídeo do YouTube</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://www.youtube.com/watch?v=...">`;
                     break;
                 case 'tiktok_embed':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-tiktok'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-tiktok')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'TikTok Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do perfil'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Perfil do TikTok</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://www.tiktok.com/@seu_usuario">`;
                     break;
                 case 'spotify_embed':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-spotify'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-spotify')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Spotify Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do perfil'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Perfil do Spotify</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://open.spotify.com/user/seu_usuario ou https://open.spotify.com/artist/seu_artista">`;
                     break;
                 case 'linkedin_embed':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-linkedin'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-linkedin')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'LinkedIn Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do perfil'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Perfil do LinkedIn</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://www.linkedin.com/in/seu_perfil">`;
                     break;
                 case 'pinterest_embed':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fab fa-pinterest'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fab fa-pinterest')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Pinterest Embed'}</div><div class="item-display-dest">${item.destination_url || 'Cole o link do perfil'}</div>`;
                     editHTML = `<label>Título</label><input type="text" class="item-title-input" value="${item.title || ''}"><label>URL do Perfil do Pinterest</label><input type="text" class="item-destination-url-input" value="${item.destination_url || ''}" placeholder="https://www.pinterest.com/seu_usuario ou https://br.pinterest.com/seu_usuario">`;
                     break;
                 case 'pdf_embed':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-file-import'} item-icon-picker" title="Alterar Ícone"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-file-import')} item-icon-picker" title="Alterar Ícone"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'PDF Embed'}</div><div class="item-display-dest">${item.pdf_url && item.pdf_url !== '#' ? 'Arquivo carregado' : 'Nenhum arquivo'}</div>`;
                     editHTML = `
         <input type="hidden" class="item-title-input" value="${item.title || ''}">
@@ -1023,7 +1031,7 @@ function renderEditor(profileData) {
                 case 'sales_page':
                     // Página de Vendas - renderizar como módulo simples (edição é na página dedicada)
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-store'} item-icon-picker" title="Página de Vendas"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-store')} item-icon-picker" title="Página de Vendas"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Página de Vendas'}</div><div class="item-display-dest">Gerencie produtos e vendas</div>`;
                     // HTML de edição simplificado (o botão editar redireciona para página dedicada)
                     editHTML = `
@@ -1045,7 +1053,7 @@ function renderEditor(profileData) {
                     if (formDisplayFormat === 'banner' && formImageUrl) {
                         iconOrThumbHTML = `<img src="${formImageUrl}" class="banner-preview-thumb" alt="Preview" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fas fa-file-signature" style="display: none;"></i>`;
                     } else {
-                        iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-file-signature'} item-icon-picker" title="Formulário King"></i>`;
+                        iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-file-signature')} item-icon-picker" title="Formulário King"></i>`;
                     }
 
                     displayHTML = `<div class="item-display-title">${item.title || 'Formulário King'}</div><div class="item-display-dest">${formDisplayFormat === 'banner' ? 'Formato: Banner' : 'Formato: Botão'}</div>`;
@@ -1062,7 +1070,7 @@ function renderEditor(profileData) {
                 case 'guest_list':
                     // Lista de Convidados - renderizar como módulo
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-users'} item-icon-picker" title="Lista de Convidados"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-users')} item-icon-picker" title="Lista de Convidados"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Lista de Convidados'}</div><div class="item-display-dest">Gerencie convidados e confirmações</div>`;
 
                     // HTML de edição - será carregado dinamicamente
@@ -1081,7 +1089,7 @@ function renderEditor(profileData) {
                     break;
                 case 'convite':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-envelope-open-text'} item-icon-picker" title="Convite Digital"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-envelope-open-text')} item-icon-picker" title="Convite Digital"></i>`;
                     const conviteData = item.convite_data || {};
                     displayHTML = `<div class="item-display-title">${item.title || conviteData.subtitulo || 'Convite Digital'}</div><div class="item-display-dest">Edite o convite</div>`;
                     editHTML = `
@@ -1095,7 +1103,7 @@ function renderEditor(profileData) {
                     break;
                 case 'bible':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-bible'} item-icon-picker" title="Bíblia"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-bible')} item-icon-picker" title="Bíblia"></i>`;
                     displayHTML = `<div class="item-display-title">${item.title || 'Bíblia'}</div><div class="item-display-dest">Versículo do dia</div>`;
                     editHTML = `
         <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
@@ -1108,7 +1116,7 @@ function renderEditor(profileData) {
                     break;
                 case 'location':
                     itemEl.classList.add('link-item');
-                    iconOrThumbHTML = `<i class="${item.icon_class || 'fas fa-map-marker-alt'} item-icon-picker" title="Localização"></i>`;
+                    iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-map-marker-alt')} item-icon-picker" title="Localização"></i>`;
                     var locData = item.location_data || {};
                     var locAddr = (locData.address_formatted || locData.address || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
                     var locLat = locData.latitude != null ? String(locData.latitude) : '';
