@@ -3393,7 +3393,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             await new Promise(function (r) { setTimeout(r, profileBackoffMs[attempt]); });
                         }
                         try {
-                            let response = await safeFetch(`${API_URL}/api/profile`, {
+                            let response = await safeFetch(`${API_URL}/api/profile?fields=slim`, {
                                 method: 'GET',
                                 headers: getHeaders()
                             });
@@ -3403,7 +3403,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 __ckDashLog('Token expirado, tentando renovar...');
                                 try {
                                     await refreshAccessToken();
-                                    response = await safeFetch(`${API_URL}/api/profile`, {
+                                    response = await safeFetch(`${API_URL}/api/profile?fields=slim`, {
                                         method: 'GET',
                                         headers: getHeaders()
                                     });

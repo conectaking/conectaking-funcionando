@@ -883,7 +883,7 @@ async function openEditModal(itemEl) {
             })();
             break;
         case 'digital_form':
-            // Buscar dados do formulário se existirem
+            // Buscar dados do formulário se existirem (perfil slim omite form_fields → hidratar via item API)
             let formData = {};
             if (window.currentProfileData && window.currentProfileData.items) {
                 const itemData = window.currentProfileData.items.find(i => String(i.id) === String(itemId));
@@ -891,6 +891,36 @@ async function openEditModal(itemEl) {
                     formData = itemData.digital_form_data;
                 } else if (itemData && itemData.form_data) {
                     formData = itemData.form_data;
+                }
+            }
+            const needsFormHydrate = !Array.isArray(formData.form_fields) || formData.form_fields.length === 0;
+            if (needsFormHydrate && itemId && !String(itemId).startsWith('temp_')) {
+                try {
+                    if (typeof core().updateHeaders === 'function') core().updateHeaders();
+                    const fullRes = await fetch(`${env.API_URL}/api/profile/items/${itemId}`, {
+                        method: 'GET',
+                        headers: env.HEADERS
+                    });
+                    if (fullRes.ok) {
+                        const fullItem = await fullRes.json().catch(() => null);
+                        const hydrated = (fullItem && (fullItem.digital_form_data || fullItem.form_data || fullItem.data)) || fullItem;
+                        if (hydrated && typeof hydrated === 'object') {
+                            formData = Object.assign({}, formData, hydrated.digital_form_data || hydrated.form_data || hydrated);
+                            if (window.currentProfileData && window.currentProfileData.items) {
+                                const idx = window.currentProfileData.items.findIndex(i => String(i.id) === String(itemId));
+                                if (idx >= 0) {
+                                    window.currentProfileData.items[idx] = Object.assign(
+                                        {},
+                                        window.currentProfileData.items[idx],
+                                        fullItem,
+                                        { digital_form_data: formData, form_data: formData }
+                                    );
+                                }
+                            }
+                        }
+                    }
+                } catch (hydrateErr) {
+                    console.warn('[openEditModal] falha ao hidratar digital_form', hydrateErr);
                 }
             }
 
