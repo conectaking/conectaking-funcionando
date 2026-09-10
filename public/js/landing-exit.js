@@ -54,12 +54,19 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refreshToken: rt }),
-                credentials: 'omit'
+                credentials: 'include'
             })
                 .catch(function () {})
                 .finally(go);
         } else {
-            go();
+            fetch(base + '/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+                credentials: 'include'
+            })
+                .catch(function () {})
+                .finally(go);
         }
     }
 

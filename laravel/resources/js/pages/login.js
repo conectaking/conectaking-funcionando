@@ -147,6 +147,7 @@ import '@legacy/auth.css';
                 apiBase + '/api/auth/login',
                 {
                   method: 'POST',
+                  credentials: 'include',
                   headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
@@ -183,10 +184,8 @@ import '@legacy/auth.css';
 
           if (data.token) {
             localStorage.setItem('conectaKingToken', data.token);
-            try {
-              const secure = location.protocol === 'https:' ? '; Secure' : '';
-              document.cookie = `token=${encodeURIComponent(data.token)}; Path=/; SameSite=Lax${secure}`;
-            } catch (_) {}
+            // Cookie HttpOnly vem no Set-Cookie do login API (AuthenticateJwt).
+            // Não gravar document.cookie — JS não consegue sobrescrever HttpOnly.
           }
           if (data.refreshToken) {
             localStorage.setItem('conectaKingRefreshToken', data.refreshToken);
