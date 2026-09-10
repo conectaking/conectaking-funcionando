@@ -37,6 +37,10 @@ final class UploadedFileValidator
         }
 
         $mime = self::detectMime($path, $binary);
+        if (in_array($mime, ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'], true)
+            || self::looksLikeHeic($binary)) {
+            return ['ok' => false, 'message' => 'HEIC/HEIF não suportado. Converta para JPEG ou PNG no iPhone (Ajustes → Câmara → Formatos → Mais Compatível) e envie de novo.'];
+        }
         if (! in_array($mime, self::IMAGE_MIMES, true)) {
             return ['ok' => false, 'message' => 'Formato inválido. Use JPEG, PNG, GIF ou WebP.'];
         }
@@ -117,5 +121,18 @@ final class UploadedFileValidator
         }
 
         return '';
+    }
+
+    private static function looksLikeHeic(string $binary): bool
+    {
+        if (strlen($binary) < 12) {
+            return false;
+        }
+        if (substr($binary, 4, 4) !== 'ftyp') {
+            return false;
+        }
+        $brand = strtolower(substr($binary, 8, 4));
+
+        return in_array($brand, ['heic', 'heif', 'mif1', 'msf1', 'heim', 'heis'], true);
     }
 }

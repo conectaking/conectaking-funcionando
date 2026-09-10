@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\Auth\JwtService;
+use App\Support\KsClientAuthCookie;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,7 +35,12 @@ class AuthenticateKsClient
         $request->attributes->set('ks_client', $payload);
         $request->attributes->set('ks_client_token', $token);
 
-        return $next($request);
+        $response = $next($request);
+        if ($response->getStatusCode() < 400) {
+            $response->headers->setCookie(KsClientAuthCookie::make($request, $token));
+        }
+
+        return $response;
     }
 
     private function extractToken(Request $request): ?string

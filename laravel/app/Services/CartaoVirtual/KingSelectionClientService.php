@@ -441,6 +441,15 @@ class KingSelectionClientService
 
         $accessMode = KsAccess::normAccessMode($g->access_mode ?? 'private');
         $sel = $this->selection->gallerySelectionState($payload, $g);
+        $clientId = (int) ($payload['clientId'] ?? 0);
+        $approvedPhotoIds = $this->approvedPhotoIdsForClient(
+            $galleryId,
+            $clientId,
+            (int) ($sel['currentSelectionRound'] ?? 1)
+        );
+        $faceUsable = ! empty($g->face_recognition_enabled ?? false)
+            && trim((string) (env('AWS_ACCESS_KEY_ID') ?: '')) !== ''
+            && trim((string) (env('AWS_SECRET_ACCESS_KEY') ?: '')) !== '';
 
         $hasCover = !empty($g->gallery_link_cover_photo_id ?? null) || !empty($g->gallery_link_cover_file_path ?? null);
         $splash = $hasCover || !empty($g->client_entry_splash_enabled ?? false);
@@ -494,13 +503,40 @@ class KingSelectionClientService
                 'gallery' => $gallery,
                 'selectedPhotoIds' => $sel['selectedPhotoIds'],
                 'selectionBatchByPhotoId' => (object) $sel['selectionBatchByPhotoId'],
-                'approvedPhotoIds' => [],
+                'approvedPhotoIds' => $approvedPhotoIds,
                 'salesModeActive' => $accessMode === 'paid_event_photos',
-                'faceRecognitionUsable' => false,
+                'faceRecognitionUsable' => $faceUsable,
                 'photosTotal' => $media['photos_total'],
                 'photosHasMore' => $media['photos_has_more'],
             ],
         ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function approvedPhotoIdsForClient(int $galleryId, int $clientId, int $selectionBatch): array
+    {
+        if ($galleryId < 1 || $clientId < 1 || ! Schema::hasTable('king_selection_photo_approvals')) {
+            return [];
+        }
+        $hasBatch = Schema::hasColumn('king_selection_photo_approvals', 'selection_batch');
+        $sql = 'SELECT photo_id FROM king_selection_photo_approvals
+                WHERE gallery_id = ? AND client_id = ? AND lower(status) = \'approved\''
+            .($hasBatch ? ' AND selection_batch = ?' : '')
+            .' ORDER BY photo_id ASC';
+        $params = $hasBatch
+            ? [$galleryId, $clientId, max(1, $selectionBatch)]
+            : [$galleryId, $clientId];
+        $out = [];
+        foreach (DB::select($sql, $params) as $r) {
+            $id = (int) ($r->photo_id ?? 0);
+            if ($id > 0) {
+                $out[] = $id;
+            }
+        }
+
+        return $out;
     }
 
     /**

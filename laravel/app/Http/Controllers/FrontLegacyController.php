@@ -23,13 +23,28 @@ class FrontLegacyController extends Controller
 
         $queueConn = strtolower((string) (env('QUEUE_CONNECTION') ?: 'sync'));
         $redisOk = null;
+        $queuePending = null;
         if ($queueConn === 'redis') {
             $redisOk = false;
             try {
                 \Illuminate\Support\Facades\Redis::connection()->ping();
                 $redisOk = true;
+                try {
+                    $queuePending = (int) \Illuminate\Support\Facades\Redis::connection()->llen('queues:default');
+                } catch (\Throwable) {
+                    $queuePending = null;
+                }
             } catch (\Throwable) {
                 $redisOk = false;
+            }
+        }
+
+        $failedJobs = null;
+        if ($dbOk && \Illuminate\Support\Facades\Schema::hasTable('failed_jobs')) {
+            try {
+                $failedJobs = (int) (DB::selectOne('SELECT COUNT(*)::int AS n FROM failed_jobs')->n ?? 0);
+            } catch (\Throwable) {
+                $failedJobs = null;
             }
         }
 
@@ -43,6 +58,12 @@ class FrontLegacyController extends Controller
         ];
         if ($redisOk !== null) {
             $body['redis'] = $redisOk;
+        }
+        if ($queuePending !== null) {
+            $body['queue_pending'] = $queuePending;
+        }
+        if ($failedJobs !== null) {
+            $body['failed_jobs'] = $failedJobs;
         }
 
         return response()->json($body, $ok ? 200 : 503)->header('X-Conecta-Engine', 'laravel');

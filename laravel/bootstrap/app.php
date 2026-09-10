@@ -11,8 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Atrás do Caddy/Node (proxy /l)
-        $middleware->trustProxies(at: '*');
+        // Atrás do Caddy; TRUSTED_PROXIES=CSV opcional (default *).
+        $trusted = trim((string) (env('TRUSTED_PROXIES') ?: '*'));
+        $middleware->trustProxies(at: $trusted === '' ? '*' : $trusted);
         $middleware->prepend(\App\Http\Middleware\RedirectApexToWww::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->append(\App\Http\Middleware\RequireCookieCsrf::class);
@@ -24,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Except mínimo: públicos / bootstrap auth / beacons / stubs 410.
-        // Rotas autenticadas cookie-first passam pelo VerifyCsrfToken (ck_csrf ou XSRF).
+        // Mutações KS autenticadas exigem CSRF (ck_csrf via @legacy/js/ck-csrf.js).
         $middleware->validateCsrfTokens(except: [
             'log/*',
             '*/form/*/submit',
@@ -43,20 +44,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/king-selection/client/register',
             'api/king-selection/client/public-enter',
             'api/king-selection/client/signup-enter',
-            'api/king-selection/client/select',
-            'api/king-selection/client/select-bulk',
-            'api/king-selection/client/finalize',
-            'api/king-selection/client/edit-request',
-            'api/king-selection/client/edit-request/*/cancel',
-            'api/king-selection/client/payment-proof',
-            'api/king-selection/client/promo-verify',
-            'api/king-selection/client/enroll-face-image',
-            'api/king-selection/client/face-enroll-cache',
-            'api/king-selection/client/reset-face-session',
-            'api/king-selection/client/search-face-by-photo',
+            'api/king-selection/client/clear-session-cookie',
             'api/king-selection/public/enroll-face-anonymous',
-            'api/king-selection/client/download-zip-plan',
-            'api/king-selection/client/download-zip',
             'api/auth/login',
             'api/auth/refresh',
             'api/auth/logout',
@@ -64,7 +53,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/password/forgot',
             'api/password/reset',
             'api/inquiry/submit',
-            'api/push/subscribe',
             // Stubs 410
             'api/payment/create-preference',
             'api/payment/webhook-notification',

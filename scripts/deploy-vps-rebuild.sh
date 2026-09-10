@@ -19,11 +19,12 @@ sed -i 's/\r$//' laravel/docker-entrypoint.sh 2>/dev/null || true
 
 rm -f public/admin/index.html 2>/dev/null || true
 
-docker compose -f docker-compose.prod.yml --env-file .env.prod --profile queue build laravel queue
-docker compose -f docker-compose.prod.yml --env-file .env.prod --profile queue up -d --force-recreate --no-deps laravel
-docker compose -f docker-compose.prod.yml --env-file .env.prod --profile queue up -d --remove-orphans
+docker compose -f docker-compose.prod.yml --env-file .env.prod build laravel queue
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps laravel
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans
 
 docker exec conectaking-laravel rm -rf /app/app/Http/Controllers/Payment /app/app/Services/Payment /app/public/ks-spa 2>/dev/null || true
+docker exec conectaking-laravel php artisan migrate --force --no-interaction
 docker exec conectaking-laravel php artisan optimize:clear
 
 sleep 12

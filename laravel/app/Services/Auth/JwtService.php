@@ -58,6 +58,9 @@ class JwtService
         if (!isset($payload['exp'])) {
             $payload['exp'] = time() + $this->parseExpiresIn($expiresIn);
         }
+        if (!isset($payload['jti'])) {
+            $payload['jti'] = bin2hex(random_bytes(16));
+        }
         $header = $this->base64UrlEncode(json_encode(['alg' => 'HS256', 'typ' => 'JWT'], JSON_UNESCAPED_UNICODE) ?: '{}');
         $body = $this->base64UrlEncode(json_encode($payload, JSON_UNESCAPED_UNICODE) ?: '{}');
         $sig = $this->base64UrlEncode(hash_hmac('sha256', $header.'.'.$body, $secret, true));

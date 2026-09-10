@@ -65,8 +65,8 @@ services:
       DB_DATABASE: ${POSTGRES_DB:-conectaking}
       DB_USERNAME: ${POSTGRES_USER:-conectaking}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      SESSION_DRIVER: file
-      CACHE_STORE: file
+      SESSION_DRIVER: redis
+      CACHE_STORE: redis
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
@@ -137,8 +137,8 @@ services:
       DB_DATABASE: ${POSTGRES_DB:-conectaking}
       DB_USERNAME: ${POSTGRES_USER:-conectaking}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      SESSION_DRIVER: file
-      CACHE_STORE: file
+      SESSION_DRIVER: redis
+      CACHE_STORE: redis
       QUEUE_CONNECTION: redis
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
@@ -152,8 +152,6 @@ services:
       - ./public:/legacy/public:ro
     networks:
       - cknet
-    profiles:
-      - queue
 
 volumes:
   pgdata:

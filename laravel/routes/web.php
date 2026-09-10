@@ -272,6 +272,8 @@ Route::post('/api/king-selection/client/public-enter', [\App\Http\Controllers\Ca
     ->middleware('throttle:30,1');
 Route::post('/api/king-selection/client/signup-enter', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'signupEnter'])
     ->middleware('throttle:30,1');
+Route::post('/api/king-selection/client/clear-session-cookie', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'clearSessionCookie'])
+    ->middleware('throttle:60,1');
 Route::middleware('ks.client')->group(function () {
     Route::get('/api/king-selection/client/gallery', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'gallery']);
         Route::post('/api/king-selection/client/select', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'select'])

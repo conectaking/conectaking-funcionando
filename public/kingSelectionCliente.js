@@ -209,14 +209,18 @@
   let jwt = null;
 
   function syncKsAuthCookie() {
-    try {
-      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-      if (jwt) {
-        document.cookie = `ks_client_token=${encodeURIComponent(jwt)}; Path=/; SameSite=Lax${secure}`;
-      } else {
-        document.cookie = 'ks_client_token=; Path=/; Max-Age=0; SameSite=Lax';
-      }
-    } catch (_) { /* ignore */ }
+    // HttpOnly: o servidor define ks_client_token (login + rotas ks.client).
+    // No logout limpa via endpoint (JS não consegue apagar cookie HttpOnly).
+    if (!jwt) {
+      try {
+        fetch('/api/king-selection/client/clear-session-cookie', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: '{}',
+        }).catch(function () {});
+      } catch (_) { /* ignore */ }
+    }
   }
 
   function setJwt(token) {
@@ -249,16 +253,7 @@
   if (!consumeAccessTokenFromUrl()) {
     try {
       jwt = localStorage.getItem(tokenKey(slug)) || null;
-      if (!jwt) {
-        const m = document.cookie.match(/(?:^|; )ks_client_token=([^;]*)/);
-        if (m) {
-          jwt = decodeURIComponent(m[1]) || null;
-          if (jwt) {
-            try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
-          }
-        }
-      }
-      syncKsAuthCookie();
+      // Cookie HttpOnly: JWT só via localStorage / login response (não legível em JS).
     } catch (_) {}
   }
 

@@ -971,14 +971,21 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 
                 // IMPORTANTE: Usar a função auxiliar para extrair informações corretamente (incluindo CPF)
                 const { displayName, displayEmail, displayWhatsapp, displayDocument } = extractGuestInfo(guest);
+                const safeName = escapeHtml(displayName || '');
+                const safeEmail = escapeHtml(displayEmail || '');
+                const safeWhatsapp = escapeHtml(displayWhatsapp || '');
+                const safeDocument = escapeHtml(displayDocument || '');
+                const safeAddress = escapeHtml(guest.address || '');
+                const safeId = String(Number(guest.id) || 0);
+                const safeNameAttr = escapeHtml(displayName || '').replace(/'/g, '&#39;');
                 
                 return `
-                    <div class="item-card" data-guest-id="${guest.id}">
+                    <div class="item-card" data-guest-id="${safeId}">
                         <div class="item-header">
                             <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                                <input type="checkbox" class="guest-checkbox" data-guest-id="${guest.id}" style="width: 20px; height: 20px; cursor: pointer; accent-color: #FFC700;">
+                                <input type="checkbox" class="guest-checkbox" data-guest-id="${safeId}" style="width: 20px; height: 20px; cursor: pointer; accent-color: #FFC700;">
                                 <div style="flex: 1;">
-                                    <h4 class="item-title">${displayName}</h4>
+                                    <h4 class="item-title">${safeName}</h4>
                                     <span class="status-badge ${statusClass}">
                                         <i class="fas fa-${statusIcon}"></i> ${statusText}
                                     </span>
@@ -986,26 +993,26 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                             </div>
                             <div class="item-actions-container" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%;">
                                 ${(guest.status !== 'checked_in') ? `
-                                <button class="item-action" onclick="checkInGuest(${guest.id}, '${(displayName || '').replace(/'/g, "\\'")}')">
+                                <button class="item-action" onclick="checkInGuest(${safeId}, '${safeNameAttr}')">
                                     <i class="fas fa-check"></i> <span class="btn-text">Confirmar Chegada</span>
                                 </button>
                                 ` : ''}
-                                <button class="item-action" style="background: linear-gradient(135deg, #4A90E2, #357ABD);" onclick="viewGuestDetails(${guest.id})">
+                                <button class="item-action" style="background: linear-gradient(135deg, #4A90E2, #357ABD);" onclick="viewGuestDetails(${safeId})">
                                     <i class="fas fa-eye"></i> <span class="btn-text">Ver Inscrição</span>
                                 </button>
-                                <button class="item-action delete" onclick="deleteGuest(${guest.id}, '${(displayName || '').replace(/'/g, "\\'")}')">
+                                <button class="item-action delete" onclick="deleteGuest(${safeId}, '${safeNameAttr}')">
                                     <i class="fas fa-times"></i> <span class="btn-text">Excluir</span>
                                 </button>
                             </div>
                         </div>
                         <div class="item-details">
                             <div style="font-weight: 600; color: #FFC700; margin-bottom: 8px;">Informações de Contato:</div>
-                            <div><i class="fab fa-whatsapp" style="color: #25D366;"></i> <strong>WhatsApp:</strong> ${displayWhatsapp}</div>
-                            <div><i class="fas fa-envelope" style="color: #FFC700;"></i> <strong>Email:</strong> ${displayEmail}</div>
-                            ${displayDocument ? `<div><i class="fas fa-id-card"></i> <strong>CPF/Documento:</strong> ${displayDocument}</div>` : ''}
-                            ${guest.address ? `<div><i class="fas fa-map-marker-alt"></i> <strong>Endereço:</strong> ${guest.address}</div>` : ''}
-                            ${checkedInTime ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> <strong>Chegou:</strong> ${checkedInTime}</div>` : ''}
-                            ${confirmedTime ? `<div><i class="fas fa-check-double"></i> <strong>Confirmado:</strong> ${confirmedTime}</div>` : ''}
+                            <div><i class="fab fa-whatsapp" style="color: #25D366;"></i> <strong>WhatsApp:</strong> ${safeWhatsapp}</div>
+                            <div><i class="fas fa-envelope" style="color: #FFC700;"></i> <strong>Email:</strong> ${safeEmail}</div>
+                            ${safeDocument ? `<div><i class="fas fa-id-card"></i> <strong>CPF/Documento:</strong> ${safeDocument}</div>` : ''}
+                            ${safeAddress ? `<div><i class="fas fa-map-marker-alt"></i> <strong>Endereço:</strong> ${safeAddress}</div>` : ''}
+                            ${checkedInTime ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> <strong>Chegou:</strong> ${escapeHtml(checkedInTime)}</div>` : ''}
+                            ${confirmedTime ? `<div><i class="fas fa-check-double"></i> <strong>Confirmado:</strong> ${escapeHtml(confirmedTime)}</div>` : ''}
                         </div>
                     </div>
                 `;

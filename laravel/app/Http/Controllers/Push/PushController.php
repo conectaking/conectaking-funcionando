@@ -64,7 +64,6 @@ class PushController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao registrar subscrição',
-                'error' => $e->getMessage(),
             ], 500)->header('X-Conecta-Engine', 'laravel');
         }
     }

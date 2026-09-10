@@ -9,6 +9,8 @@ use App\Services\CartaoVirtual\KingSelectionClientExtrasService;
 use App\Services\CartaoVirtual\KingSelectionClientService;
 use App\Services\CartaoVirtual\KingSelectionSelectionService;
 use App\Services\CartaoVirtual\KingSelectionZipService;
+use App\Support\KsClientAuthCookie;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class KingSelectionClientController extends Controller
@@ -29,7 +31,7 @@ class KingSelectionClientController extends Controller
             (string) ($request->input('senha') ?: '')
         );
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        return $this->jsonWithKsCookie($request, $r);
     }
 
     public function loginByDetails(LoginByDetailsRequest $request)
@@ -41,7 +43,7 @@ class KingSelectionClientController extends Controller
             $request->input('telefone') !== null ? (string) $request->input('telefone') : null
         );
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        return $this->jsonWithKsCookie($request, $r);
     }
 
     public function register(RegisterClientRequest $request)
@@ -53,21 +55,44 @@ class KingSelectionClientController extends Controller
             $request->input('telefone') !== null ? (string) $request->input('telefone') : null
         );
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        return $this->jsonWithKsCookie($request, $r);
     }
 
     public function publicEnter(Request $request)
     {
         $r = $this->ks->publicEnter((string) ($request->input('slug') ?: ''));
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        return $this->jsonWithKsCookie($request, $r);
     }
 
     public function signupEnter(Request $request)
     {
         $r = $this->ks->signupEnter((string) ($request->input('slug') ?: ''));
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        return $this->jsonWithKsCookie($request, $r);
+    }
+
+    public function clearSessionCookie(Request $request): JsonResponse
+    {
+        $response = response()->json(['success' => true])->header('X-Conecta-Engine', 'laravel');
+        $response->headers->setCookie(KsClientAuthCookie::forget($request));
+
+        return $response;
+    }
+
+    /**
+     * @param  array{status:int, body:array<string,mixed>}  $r
+     */
+    private function jsonWithKsCookie(Request $request, array $r): JsonResponse
+    {
+        $response = response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        $token = is_array($r['body'] ?? null) ? (string) ($r['body']['token'] ?? '') : '';
+        if ($r['status'] >= 200 && $r['status'] < 300 && $token !== '') {
+            $response->headers->setCookie(KsClientAuthCookie::make($request, $token));
+            $response->headers->setCookie(\App\Http\Middleware\RequireCookieCsrf::makeCookie($request));
+        }
+
+        return $response;
     }
 
     public function select(Request $request)
