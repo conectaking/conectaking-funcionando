@@ -9,25 +9,6 @@ import '@legacy/js/ck-csrf.js';
             window.API_BASE = window.API_BASE || window.CONECTAKING_API_BASE;
         })();
 
-tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#EAB308",
-                        "background-light": "#F9FAFB",
-                        "background-dark": "#0A0A0A",
-                        "card-dark": "#171717",
-                        "border-dark": "#262626"
-                    },
-                    fontFamily: {
-                        display: ["Inter", "sans-serif"],
-                        serif: ["Playfair Display", "serif"],
-                    },
-                    borderRadius: { DEFAULT: "0.5rem" },
-                },
-            },
-        };
 
 (async function() {
     if (!(await window.CkAuth.requireAuth('/login?redirect=' + encodeURIComponent(location.pathname + location.search)))) return;

@@ -14,7 +14,7 @@
   </style>
   <style>body { min-height: max(884px, 100dvh); }</style>
 </head>
-<body class="bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 antialiased transition-colors duration-300">
+<body class="documentos-ver-page bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 antialiased transition-colors duration-300">
   <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col relative pb-32">
     <div class="ios-status-bar flex justify-between items-center px-8 pt-4">
       <span class="text-xs font-semibold">9:41</span>

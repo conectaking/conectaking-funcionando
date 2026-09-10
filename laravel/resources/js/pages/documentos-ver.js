@@ -1,18 +1,4 @@
 /** documentos-ver — Vite entry (extracted inline) */
-tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            primary: "#D4AF37",
-            "background-light": "#F3F4F6",
-            "background-dark": "#0F172A",
-          },
-          fontFamily: { display: ["Inter", "sans-serif"] },
-          borderRadius: { DEFAULT: "1rem" },
-        },
-      },
-    };
 
 (function() {
   const params = new URLSearchParams(window.location.search || '');

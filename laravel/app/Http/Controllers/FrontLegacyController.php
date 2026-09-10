@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -40,7 +41,7 @@ class FrontLegacyController extends Controller
         }
 
         $failedJobs = null;
-        if ($dbOk && \Illuminate\Support\Facades\Schema::hasTable('failed_jobs')) {
+        if ($dbOk && SchemaMeta::hasTable('failed_jobs')) {
             try {
                 $failedJobs = (int) (DB::selectOne('SELECT COUNT(*)::int AS n FROM failed_jobs')->n ?? 0);
             } catch (\Throwable) {

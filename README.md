@@ -45,5 +45,7 @@ Caddy do host faz TLS e `reverse_proxy 127.0.0.1:8080`.
 
 - Páginas de app vivem em `laravel/resources/views/pages/*.blade.php`.
 - Checkout / PagBank / Mercado Pago estão **fora de escopo** (HTTP 410).
-- Crons: `php artisan schedule:work` no entrypoint do container (+ cron host opcional).
+- Scheduler: o entrypoint do container `laravel` corre `php artisan schedule:run` a cada 60s.
+  **Não** ligue cron no host a fazer o mesmo (evita jobs duplicados).
 - Detalhe da migração: `docs/FULL-PHP-MIGRATION.md`.
+- Variáveis de produção: `laravel/.env.example.conectaking` → `.env.prod` no VPS.
