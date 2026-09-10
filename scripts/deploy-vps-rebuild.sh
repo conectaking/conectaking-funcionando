@@ -29,6 +29,7 @@ docker exec conectaking-laravel php artisan optimize:clear
 sleep 12
 echo '---SMOKE---'
 curl -sS http://127.0.0.1:8080/health; echo
+docker exec conectaking-redis redis-cli ping 2>/dev/null | sed 's/^/redis:/' || echo 'redis:skip'
 curl -sSI http://127.0.0.1:8080/admin | tr -d '\r' | grep -Ei 'HTTP/|X-Conecta-Engine'
 curl -sS http://127.0.0.1:8080/admin | grep -oE 'build/assets/admin-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/admin_vite:/'
 curl -sS -o /dev/null -w 'admin-planos:%{http_code}\n' http://127.0.0.1:8080/admin-planos

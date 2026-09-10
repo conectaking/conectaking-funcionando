@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Atrás do Caddy/Node (proxy /l)
         $middleware->trustProxies(at: '*');
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->append(\App\Http\Middleware\RequireCookieCsrf::class);
+        $middleware->append(\App\Http\Middleware\EnsureCsrfCookie::class);
         // sendBeacon do cartão público (sem CSRF token)
         $middleware->validateCsrfTokens(except: [
             'log/*',
@@ -180,6 +182,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: [
             'ks_client_token',
             'token',
+            'ck_csrf',
         ]);
         $middleware->alias([
             'jwt' => \App\Http\Middleware\AuthenticateJwt::class,

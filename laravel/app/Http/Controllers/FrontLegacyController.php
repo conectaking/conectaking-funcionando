@@ -61,6 +61,27 @@ class FrontLegacyController extends Controller
               return (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token')) || '';
             } catch (e) { return ''; }
           }
+          function readCkCsrf() {
+            try {
+              var m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+              return m ? decodeURIComponent(m[1]) : '';
+            } catch (e) { return ''; }
+          }
+          function writeHeader(h, key, value) {
+            if (!h) return;
+            if (typeof h.set === 'function') h.set(key, value);
+            else if (Object.prototype.toString.call(h) === '[object Headers]') h.set(key, value);
+            else h[key] = value;
+          }
+          function readHeader(h, key) {
+            if (!h) return '';
+            if (typeof h.get === 'function') return String(h.get(key) || '');
+            return String(h[key] || '');
+          }
+          function isMutating(method) {
+            var m = String(method || 'GET').toUpperCase();
+            return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
+          }
           window.fetch = function(input, opts) {
             opts = opts || {};
             var url = typeof input === 'string' ? input : (input && input.url) || '';
@@ -70,16 +91,16 @@ class FrontLegacyController extends Controller
             } else if (url && url.indexOf('/api/') !== -1 && /^https?:\/\//i.test(url) && url.indexOf(apiBase) !== 0) {
               try {
                 var uh = new URL(url).hostname.toLowerCase();
-                // Mesma-origem: hosts do produto + restos de API antiga em cache
                 if (uh.indexOf('conectaking.com.br') !== -1 || uh === 'cnking.bio' || uh === 'www.cnking.bio' || /\.onrender\.com$/i.test(uh)) {
                   finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
                 }
               } catch (e) {}
             }
             var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking.com.br') !== -1)) || (url && url.indexOf('/api/') === 0);
-            if (isApiUrl) {
-              if (opts.credentials == null) opts.credentials = 'include';
-              var headers = opts.headers || (opts.headers = {});
+            function applyAuthAndCsrf(o) {
+              if (!isApiUrl) return o;
+              if (o.credentials == null) o.credentials = 'include';
+              var headers = o.headers || (o.headers = {});
               function readAuth(h) {
                 if (!h) return '';
                 if (typeof h.get === 'function') return String(h.get('Authorization') || h.get('authorization') || '');
@@ -95,8 +116,7 @@ class FrontLegacyController extends Controller
                 else { try { delete h.Authorization; delete h.authorization; } catch (e) {} }
               }
               var existingAuth = readAuth(headers);
-              // Remover Bearer vazio / "null" / "undefined" — bloqueava cookie HttpOnly
-              if (existingAuth && /^Bearer\\s*(null|undefined)?\\s*$/i.test(existingAuth.trim())) {
+              if (existingAuth && /^Bearer\s*(null|undefined)?\s*$/i.test(existingAuth.trim())) {
                 clearAuth(headers);
                 existingAuth = '';
               }
@@ -104,10 +124,32 @@ class FrontLegacyController extends Controller
                 var token = getToken();
                 if (token && token !== 'null' && token !== 'undefined') writeAuth(headers, 'Bearer ' + token);
               }
+              if (isMutating(o.method || (typeof input !== 'string' && input && input.method) || 'GET')) {
+                if (!readHeader(headers, 'X-CK-CSRF') && !readHeader(headers, 'X-XSRF-TOKEN')) {
+                  var csrf = readCkCsrf();
+                  if (csrf) writeHeader(headers, 'X-CK-CSRF', csrf);
+                }
+              }
+              return o;
             }
-            if (finalUrl === url) return nativeFetch.apply(this, arguments);
-            var finalInput = typeof input === 'string' ? finalUrl : (typeof Request !== 'undefined' ? new Request(finalUrl, input) : finalUrl);
-            return nativeFetch.call(this, finalInput, opts);
+            opts = applyAuthAndCsrf(opts);
+            var run = function() {
+              if (finalUrl === url) return nativeFetch.call(window, input, opts);
+              var finalInput = typeof input === 'string' ? finalUrl : (typeof Request !== 'undefined' ? new Request(finalUrl, input) : finalUrl);
+              return nativeFetch.call(window, finalInput, opts);
+            };
+            // Cookie-auth: garantir ck_csrf via probe antes de mutações
+            if (isApiUrl && isMutating(opts.method || 'GET') && !readCkCsrf() && !getToken()) {
+              return nativeFetch.call(window, apiBase + '/api/account/status', {
+                credentials: 'include',
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+              }).catch(function(){ return null; }).then(function() {
+                opts = applyAuthAndCsrf(opts);
+                return run();
+              });
+            }
+            return run();
           };
         })();
         JS;

@@ -60,6 +60,7 @@ class AuthController extends Controller
         $token = is_array($r['body'] ?? null) ? (string) ($r['body']['token'] ?? '') : '';
         if ($r['status'] >= 200 && $r['status'] < 300 && $token !== '') {
             $response->headers->setCookie($this->makeTokenCookie($request, $token, $this->tokenCookieMinutes()));
+            $response->headers->setCookie(\App\Http\Middleware\RequireCookieCsrf::makeCookie($request));
         }
 
         return $response;
@@ -68,6 +69,7 @@ class AuthController extends Controller
     private function forgetTokenCookie(JsonResponse $response, Request $request): JsonResponse
     {
         $response->headers->setCookie($this->makeTokenCookie($request, '', -2628000));
+        $response->headers->setCookie(\App\Http\Middleware\RequireCookieCsrf::forgetCookie($request));
 
         return $response;
     }

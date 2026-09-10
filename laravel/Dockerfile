@@ -14,7 +14,7 @@ RUN npm run build
 # ---- app (FrankenPHP) ----
 FROM dunglas/frankenphp:php8.4-bookworm
 
-RUN install-php-extensions pdo_pgsql pgsql zip gd opcache
+RUN install-php-extensions pdo_pgsql pgsql zip gd opcache redis
 
 RUN printf "memory_limit=512M\nupload_max_filesize=64M\npost_max_size=64M\n" \
     > /usr/local/etc/php/conf.d/zz-conectaking.ini

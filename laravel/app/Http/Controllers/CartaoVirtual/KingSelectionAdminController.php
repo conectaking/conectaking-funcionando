@@ -793,11 +793,20 @@ class KingSelectionAdminController extends Controller
 
     public function getClientPassword(Request $request, string $id, string $clientId)
     {
+        $userId = (string) $request->attributes->get('auth_user_id');
         $r = $this->admin->getClientPassword(
-            (string) $request->attributes->get('auth_user_id'),
+            $userId,
             (int) $id,
             (int) $clientId
         );
+        if (($r['status'] ?? 0) === 200) {
+            \Illuminate\Support\Facades\Log::info('ks.client_password_revealed', [
+                'user_id' => $userId,
+                'gallery_id' => (int) $id,
+                'client_id' => (int) $clientId,
+                'ip' => $request->ip(),
+            ]);
+        }
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }

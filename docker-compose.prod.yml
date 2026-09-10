@@ -1,6 +1,7 @@
-# Produção no VPS (Hetzner) — só Laravel (FrankenPHP) + Postgres.
+# Produção no VPS (Hetzner) — Laravel (FrankenPHP) + Postgres + Redis (filas opcionais).
 # Caddy do host: reverse_proxy 127.0.0.1:8080
 # Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Fila: QUEUE_CONNECTION=sync (default). Worker: docker compose --profile queue up -d queue
 
 services:
   db:
@@ -22,7 +23,22 @@ services:
     networks:
       - cknet
 
-  # Edge app: FrankenPHP classic (HTTP :8080). TLS fica no Caddy do host.
+  redis:
+    image: redis:7-alpine
+    container_name: conectaking-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - cknet
+
   laravel:
     build:
       context: .
@@ -31,6 +47,8 @@ services:
     restart: unless-stopped
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     env_file:
       - .env.prod
@@ -49,7 +67,11 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       SESSION_DRIVER: file
       CACHE_STORE: file
-      QUEUE_CONNECTION: sync
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       JWT_SECRET: ${JWT_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       RECIBO_OCR_AI: ${RECIBO_OCR_AI:-auto}
@@ -77,7 +99,6 @@ services:
     volumes:
       - api_uploads:/shared/uploads
       - ./public:/legacy/public:ro
-    # FrankenPHP image healthchecka :2019/metrics (admin off) — usar /health na app
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || exit 1"]
       interval: 15s
@@ -87,9 +108,57 @@ services:
     networks:
       - cknet
 
+  queue:
+    build:
+      context: .
+      dockerfile: laravel/Dockerfile
+    container_name: conectaking-queue
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "redis", "--sleep=1", "--tries=3", "--max-time=3600"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      laravel:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    environment:
+      APP_NAME: ConectaKing
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: https://www.conectaking.com.br
+      APP_KEY: ${LARAVEL_APP_KEY}
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-conectaking}
+      DB_USERNAME: ${POSTGRES_USER:-conectaking}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      KS_UPLOADS_PATH: /shared/uploads
+      LEGACY_PUBLIC_PATH: /legacy/public
+    volumes:
+      - api_uploads:/shared/uploads
+      - ./public:/legacy/public:ro
+    networks:
+      - cknet
+    profiles:
+      - queue
+
 volumes:
   pgdata:
   api_uploads:
+  redisdata:
 
 networks:
   cknet:

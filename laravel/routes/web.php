@@ -475,7 +475,8 @@ Route::middleware('jwt')->group(function () {
         ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
         ->middleware('throttle:20,1');
         Route::get('/api/king-selection/galleries/{id}/clients/{clientId}/password', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'getClientPassword'])
-        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+']);
+        ->where(['id' => '[0-9]+', 'clientId' => '[0-9]+'])
+        ->middleware('throttle:10,1');
         Route::get('/api/king-selection/galleries/{id}/export', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'exportGallery'])
         ->where('id', '[0-9]+');
         Route::post('/api/king-selection/galleries/{id}/link-cover-upload', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'uploadLinkCover'])

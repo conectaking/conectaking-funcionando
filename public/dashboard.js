@@ -592,7 +592,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     message: 'Servidor funcionando normalmente'
                 };
             } else {
-                __ckDashLog('âš ï¸ Servidor com problemas');
+                __ckDashLog('AVISO: Servidor com problemas');
                 return {
                     server: false,
                     status: testResponse.status,
@@ -1552,7 +1552,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             __ckDashLog(`'️ Tentando deletar item ${itemId} do servidor...`);
-            __ckDashLog(`Y"< URL da requisição: ${API_URL}/api/profile/items/${itemId}`);
+            __ckDashLog(`URL da requisição: ${API_URL}/api/profile/items/${itemId}`);
 
             // Atualizar headers antes de fazer a requisição
             const currentHeaders = getHeaders();
@@ -3618,9 +3618,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             __ckDashLog('Dados validados com sucesso. Renderizando editor...');
-            __ckDashLog(`Y"S Total de itens para renderizar: ${profileData.items?.length || 0}`);
+            __ckDashLog(`Total de itens para renderizar: ${profileData.items?.length || 0}`);
             if (profileData.items && profileData.items.length > 0) {
-                __ckDashLog(`Y"< IDs dos itens:`, profileData.items.map(item => `${item.id} (${item.item_type})`).join(', '));
+                __ckDashLog(`IDs dos itens:`, profileData.items.map(item => `${item.id} (${item.item_type})`).join(', '));
             }
 
             // IMPORTANTE: Atualizar window.currentProfileData para garantir que está sincronizado
@@ -3629,7 +3629,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             __ckDashLog('window.currentProfileData atualizado com', profileData.items?.length || 0, 'itens');
             if (profileData.items && profileData.items.length > 0) {
-                __ckDashLog('Y"< Itens atualizados:', profileData.items.map(item => ({
+                __ckDashLog('Itens atualizados:', profileData.items.map(item => ({
                     id: item.id,
                     type: item.item_type,
                     hasImage: !!item.image_url,
