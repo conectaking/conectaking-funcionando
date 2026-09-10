@@ -310,7 +310,7 @@ class KingSelectionPublicService
             'data' => [
                 'gallery' => $g,
                 'og' => $meta['body'] ?? [],
-                'coverUrl' => '/api/king-selection/public/cover?slug='.rawurlencode($g['slug']),
+                'coverUrl' => '/api/king-selection/public/cover?slug='.rawurlencode($g['slug']).'&o=2',
                 'spaUrl' => '/kingSelection/'.$g['slug'],
                 'statusLabel' => $this->statusLabel((string) ($g['status'] ?? '')),
             ],
