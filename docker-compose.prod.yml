@@ -176,8 +176,13 @@ services:
       - api_uploads:/shared/uploads
       - ./public:/legacy/public:ro
     # Imagem FrankenPHP traz HEALTHCHECK em :2019; o worker não sobe HTTP.
+    # Sem pgrep na imagem — usa php para inspecionar /proc.
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'artisan queue:work' >/dev/null || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "php -r 'foreach (glob(\"/proc/[0-9]*/cmdline\") as $f) { $c=@file_get_contents($f); if ($c!==false && str_contains($c, \"queue:work\")) exit(0);} exit(1);'",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
