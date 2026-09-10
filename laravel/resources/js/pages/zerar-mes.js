@@ -183,9 +183,8 @@ import '@legacy/js/ck-auth-gate.js';
         }
 
         async function deleteOne(id) {
-            if (!getToken()) return;
             try {
-                const res = await fetch(API_URL + '/api/finance/transactions/' + id, { method: 'DELETE', headers: getAuthHeaders() });
+                const res = await fetch(API_URL + '/api/finance/transactions/' + id, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
                 if (res.status === 401) {
                     window.location.href = '/login';
                     return;

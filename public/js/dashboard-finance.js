@@ -10,6 +10,8 @@
         return global.DashboardCore || {};
     }
 
+    var __rawFetch = global.fetch.bind(global);
+
     var env = {
         get API_URL() {
             var c = core();
@@ -36,8 +38,13 @@
             var c = core();
             if (typeof c.safeFetch === 'function') return c.safeFetch(url, options);
             var opts = Object.assign({ credentials: 'include' }, options || {});
-            return fetch(url, opts);
+            return __rawFetch(url, opts);
         }
+    };
+
+    // Cookie-first: todas as chamadas deste módulo passam credentials via safeFetch
+    var fetch = function (url, options) {
+        return env.safeFetch(url, options || {});
     };
 
 // MÓDULO DE FINANÇAS (Estilo Mobills)

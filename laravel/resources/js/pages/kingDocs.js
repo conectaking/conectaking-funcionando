@@ -36,6 +36,7 @@ import '@legacy/js/ck-auth-gate.js';
   function api(path) { return apiBase() + path; }
   function getToken() {
     try {
+      if (window.CkAuth && typeof window.CkAuth.lsToken === 'function') return window.CkAuth.lsToken() || '';
       return localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || sessionStorage.getItem('token') || '';
     } catch (e) { return ''; }
   }
@@ -44,6 +45,12 @@ import '@legacy/js/ck-auth-gate.js';
     const h = { 'Content-Type': 'application/json' };
     if (t) h['Authorization'] = 'Bearer ' + t;
     return h;
+  }
+  var __rawFetch = window.fetch.bind(window);
+  function fetch(input, init) {
+    init = init || {};
+    if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
+    return __rawFetch(input, init);
   }
 
   /** Cada toast tem o seu próprio temporizador (evita que vários toasts fiquem presos quando clearTimeout cancelava o anterior). */
@@ -1556,8 +1563,9 @@ import '@legacy/js/ck-auth-gate.js';
   }
 
   async function loadVault() {
-    const tok = getToken();
-    if (!tok) {
+    if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+      if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
+    } else if (!getToken()) {
       document.getElementById('auth-hint').textContent = 'Inicia sessão no Conecta King e abre esta página a partir do painel (com token guardado).';
       return;
     }
@@ -2825,13 +2833,9 @@ import '@legacy/js/ck-auth-gate.js';
   });
 
   async function loadProfileHints() {
-    const tok = getToken();
-    if (!tok && window.CkAuth) {
-      if (!(await window.CkAuth.probeCookieAuth())) return;
-    } else if (!tok) return;
     if (vaultHasSavedName()) return;
     try {
-      const r = await fetch(api('/api/account/status'), { headers: authHeaders(), credentials: 'include' });
+      const r = await fetch(api('/api/account/status'), { headers: authHeaders() });
       if (!r.ok) return;
       const u = await r.json();
       var hero = document.getElementById('sh-name');

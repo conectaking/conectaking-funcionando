@@ -181,6 +181,7 @@
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
+                    credentials: 'include',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -226,6 +227,7 @@
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
+                    credentials: 'include',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -522,6 +524,7 @@
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -624,6 +627,7 @@
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -1051,6 +1055,7 @@
                             // Obter URL de upload do Cloudflare
                             const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                                 method: 'POST',
+                                credentials: 'include',
                                 headers: {
                                     'Authorization': `Bearer ${token}`,
                                     'Content-Type': 'application/json'
@@ -1232,6 +1237,7 @@
 
                 const response = await fetch(url, {
                     method,
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -1363,6 +1369,7 @@
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}/status`, {
                     method: 'PATCH',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -1436,6 +1443,7 @@
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}`, {
                     method: 'DELETE',
+                    credentials: 'include',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1766,6 +1774,7 @@
                                 
                                 const response = await fetch(`${API_URL}/api/suggestions/generate`, {
                                     method: 'POST',
+                                    credentials: 'include',
                                     headers: {
                                         'Content-Type': 'application/json',
                                         'Authorization': `Bearer ${token}`
@@ -1844,6 +1853,7 @@
                     
                     const response = await fetch(`${API_URL}/api/suggestions/generate`, {
                         method: 'POST',
+                        credentials: 'include',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`

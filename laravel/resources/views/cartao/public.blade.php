@@ -246,7 +246,7 @@
 
                 @elseif($type === 'sales_page')
                     @php
-                        $spUrl = $item['sales_page_url'] ?? '#';
+                        $spUrl = \App\Support\SafeUrl::publicHref($item['sales_page_url'] ?? '#');
                         $spTitle = $title !== '' ? $title : 'Página de Vendas';
                         $spHasLogo = $img !== '' && !str_contains($img, 'placeholder');
                         $spLogoSize = (int)($item['logo_size'] ?? 24);
@@ -494,7 +494,7 @@
         @if(!empty($d['company_logo_url']))
             <div class="branding-logo ck-footer-logo">
                 @if(!empty($d['company_logo_link']))
-                    <a href="{{ $d['company_logo_link'] }}" target="_blank" rel="noopener noreferrer">
+                    <a href="{{ \App\Support\SafeUrl::publicHref($d['company_logo_link'] ?? '') }}" target="_blank" rel="noopener noreferrer">
                         <img class="branding-logo-custom" src="{{ $d['company_logo_url'] }}" alt="Logo" data-logo-size="{{ $logoSize }}">
                     </a>
                 @else

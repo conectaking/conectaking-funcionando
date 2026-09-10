@@ -1,5 +1,6 @@
 /** responsesList — Vite entry (extracted inline) */
 import '@legacy/dashboard.css';
+import '@legacy/js/ck-auth-gate.js';
 
 const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
         const urlParams = new URLSearchParams(window.location.search);
@@ -7,41 +8,40 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
         
         // Função para obter headers de autenticação
         function getHeaders() {
-            // Tentar várias formas de obter o token (priorizando conectaKingToken que é usado no sistema)
-            let token = localStorage.getItem('conectaKingToken') ||
-                       localStorage.getItem('authToken') || 
+            let token = '';
+            try {
+                if (window.CkAuth && typeof window.CkAuth.lsToken === 'function') {
+                    token = window.CkAuth.lsToken() || '';
+                }
+            } catch (e) {}
+            if (!token) {
+                token = localStorage.getItem('conectaKingToken') ||
+                       localStorage.getItem('authToken') ||
                        sessionStorage.getItem('authToken') ||
                        localStorage.getItem('userToken') ||
                        sessionStorage.getItem('userToken') ||
                        localStorage.getItem('token') ||
-                       sessionStorage.getItem('token');
-            
-            // Se ainda não encontrou, tentar obter do contexto da página anterior
+                       sessionStorage.getItem('token') || '';
+            }
             if (!token) {
-                // Verificar se há dados de autenticação em localStorage
                 const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
                 if (userData) {
                     try {
                         const user = JSON.parse(userData);
-                        token = user.token || user.authToken || user.accessToken;
+                        token = user.token || user.authToken || user.accessToken || '';
                     } catch (e) {
                         console.warn('Não foi possível parsear dados do usuário');
                     }
                 }
             }
-            
-            if (!token) {
-                console.warn('[getHeaders] Token de autenticação não encontrado');
-                // Não redirecionar automaticamente, deixar a função de carregamento tratar
-                return {};
-            }
-            
-            console.log('[getHeaders] Token encontrado');
-            
-            return {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            };
+            const h = { 'Content-Type': 'application/json' };
+            if (token) h['Authorization'] = `Bearer ${token}`;
+            return h;
+        }
+
+        const __rawFetch = window.fetch.bind(window);
+        function fetch(url, init) {
+            return __rawFetch(url, Object.assign({ credentials: 'include' }, init || {}));
         }
         
         let allData = [];

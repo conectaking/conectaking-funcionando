@@ -223,13 +223,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const importFormToken = (new URLSearchParams(window.location.search)).get('import_form');
     if (importFormToken) {
         (async () => {
-            const t = localStorage.getItem('conectaKingToken');
-            if (!t) {
-                window.location.href = sameFolderPage('login.html') + '?returnUrl=' + encodeURIComponent(window.location.href);
-                return;
-            }
             try {
-                const infoRes = await fetch(`${API_URL}/api/profile/import-form-info?token=${encodeURIComponent(importFormToken)}`);
+                if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+                    const ok = await window.CkAuth.requireAuth('/login');
+                    if (!ok) return;
+                }
+                const infoRes = await safeFetch(`${API_URL}/api/profile/import-form-info?token=${encodeURIComponent(importFormToken)}`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
                 const info = await infoRes.json().catch(() => ({}));
                 if (!infoRes.ok) {
                     alert(info.message || 'Link inválido ou expirado.');
@@ -237,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 const msg = 'Deseja importar o formulário "' + (info.formTitle || 'Formulário') + '"' + (info.ownerName ? ' de ' + info.ownerName : '') + '" para sua conta?\n\nEle será copiado com todas as perguntas, imagens e configurações.';
                 if (!confirm(msg)) return;
-                const impRes = await fetch(`${API_URL}/api/profile/import-form`, {
+                const impRes = await safeFetch(`${API_URL}/api/profile/import-form`, {
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify({ token: importFormToken })
@@ -258,11 +260,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         })();
     }
 
-    // Função para renovar token
+    // Função para renovar token (cookie-first: sem refresh no LS ainda pode haver sessão HttpOnly)
     async function refreshAccessToken() {
         const refreshToken = localStorage.getItem('conectaKingRefreshToken');
 
         if (!refreshToken) {
+            if (window.CkAuth && typeof window.CkAuth.probeCookieAuth === 'function') {
+                const ok = await window.CkAuth.probeCookieAuth();
+                if (ok) {
+                    try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+                    updateHeaders();
+                    return null;
+                }
+            }
             throw new Error('Nenhum refresh token encontrado');
         }
 
@@ -275,6 +285,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (!response.ok) {
+                // Refresh JWT falhou — cookie de acesso ainda pode ser válido
+                if (window.CkAuth && typeof window.CkAuth.probeCookieAuth === 'function') {
+                    const ok = await window.CkAuth.probeCookieAuth();
+                    if (ok) {
+                        try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+                        updateHeaders();
+                        return null;
+                    }
+                }
                 const errorData = await response.json().catch(() => ({ message: 'Erro ao renovar token' }));
                 throw new Error(errorData.message || 'Erro ao renovar token');
             }
@@ -294,10 +313,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             return data.token;
         } catch (error) {
+            if (window.CkAuth && typeof window.CkAuth.probeCookieAuth === 'function') {
+                try {
+                    const ok = await window.CkAuth.probeCookieAuth();
+                    if (ok) {
+                        try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+                        updateHeaders();
+                        return null;
+                    }
+                } catch (e) {}
+            }
             // Se falhar, limpa tokens e redireciona para login
             localStorage.removeItem('conectaKingToken');
             localStorage.removeItem('conectaKingRefreshToken');
             localStorage.removeItem('conectaKingUser');
+            try { localStorage.removeItem('conectaKingSession'); } catch (e) {}
             if (!isLoginPath()) {
                 window.location.href = sameFolderPage('login.html');
             }
@@ -1521,6 +1551,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const response = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
                 method: 'DELETE',
+                credentials: 'include',
                 headers: currentHeaders
             });
 
@@ -1538,6 +1569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const newHeaders = getHeaders();
                     const retryResponse = await fetch(`${API_URL}/api/profile/items/${itemId}`, {
                         method: 'DELETE',
+                        credentials: 'include',
                         headers: newHeaders
                     });
 
@@ -3003,6 +3035,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     if (typeof window.generateQRCode !== 'function') window.generateQRCode = generateQRCode;
+    if (typeof window.getShareQrMeta !== 'function') window.getShareQrMeta = getShareQrMeta;
+    if (typeof window.composeShareQrArt !== 'function') window.composeShareQrArt = composeShareQrArt;
 
     // Assinatura: js/dashboard-assinatura.js (lazy via Vite — NÃO sobrescrever stub ensureLazy)
     async function loadSubscriptionInfo() {

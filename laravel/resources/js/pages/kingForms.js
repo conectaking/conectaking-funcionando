@@ -1,5 +1,6 @@
 import '@legacy/style.css';
 import '@legacy/dashboard.css';
+import '@legacy/js/ck-auth-gate.js';
 (function () {
             var host = (window.location && window.location.hostname || '').toLowerCase();
             var sameOrigin = (window.location && window.location.origin) || '';
@@ -14,12 +15,13 @@ import '@legacy/dashboard.css';
             }
             function getToken() {
                 try {
+                    if (window.CkAuth && typeof window.CkAuth.lsToken === 'function') return window.CkAuth.lsToken() || '';
                     return localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || sessionStorage.getItem('conectaKingToken') || sessionStorage.getItem('token') || '';
                 } catch (e) { return ''; }
             }
             function getHeaders() {
                 var t = getToken();
-                var h = { 'Content-Type': 'application/json' };
+                var h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
                 if (t) h['Authorization'] = 'Bearer ' + t;
                 return h;
             }
@@ -34,14 +36,14 @@ import '@legacy/dashboard.css';
                     '</div>';
                 document.getElementById('kf-btn-new').style.display = 'none';
             }
-            function loadForms() {
+            async function loadForms() {
                 var list = document.getElementById('kf-list');
                 var empty = document.getElementById('kf-empty');
-                if (!getToken()) {
-                    showLoginRequired();
-                    return;
+                if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+                    var ok = await window.CkAuth.requireAuth('/login');
+                    if (!ok) return;
                 }
-                fetch(API_URL + '/api/profile', { headers: getHeaders() })
+                fetch(API_URL + '/api/profile', { credentials: 'include', headers: getHeaders() })
                     .then(function (r) {
                         if (r.status === 401) {
                             showLoginRequired();
@@ -89,16 +91,17 @@ import '@legacy/dashboard.css';
                 d.textContent = s;
                 return d.innerHTML;
             }
-            document.getElementById('kf-btn-new').addEventListener('click', function () {
-                if (!getToken()) {
-                    showLoginRequired();
-                    return;
+            document.getElementById('kf-btn-new').addEventListener('click', async function () {
+                if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+                    var okAuth = await window.CkAuth.requireAuth('/login');
+                    if (!okAuth) return;
                 }
                 var btn = this;
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
                 fetch(API_URL + '/api/profile/items', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: getHeaders(),
                     body: JSON.stringify({ item_type: 'digital_form', title: 'Formulário King', is_active: false, display_order: 999 })
                 })
@@ -130,7 +133,11 @@ import '@legacy/dashboard.css';
                 if (!id || !confirm('Tem certeza que deseja apagar este formulário? Esta ação não pode ser desfeita.')) return;
                 delBtn.disabled = true;
                 delBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Apagando...';
-                fetch(API_URL + '/api/profile/items/' + encodeURIComponent(id), { method: 'DELETE', headers: getHeaders() })
+                fetch(API_URL + '/api/profile/items/' + encodeURIComponent(id), {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: getHeaders()
+                })
                     .then(function (r) {
                         if (r.status === 401) { showLoginRequired(); return Promise.reject(new Error('Não autorizado')); }
                         if (!r.ok) return r.json().then(function (d) { throw new Error(d.message || 'Erro ao apagar'); });

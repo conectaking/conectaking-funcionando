@@ -1040,7 +1040,10 @@ function _setupEventListenersBody() {
                             } catch (e0) {}
                         }
                         if (!itemId) {
-                            const res = await fetch(`${env.API_URL}/api/profile?fields=slim`, { headers: env.HEADERS });
+                            const res = await fetch(`${env.API_URL}/api/profile?fields=slim`, {
+                                credentials: 'include',
+                                headers: env.HEADERS
+                            });
                             const data = await res.json().catch(function () { return {}; });
                             if (res.ok && data.items && Array.isArray(data.items)) {
                                 const bib = data.items.find(function (it) { return it.item_type === 'bible'; });
@@ -1050,6 +1053,7 @@ function _setupEventListenersBody() {
                         if (!itemId) {
                             const createRes = await fetch(`${env.API_URL}/api/profile/items`, {
                                 method: 'POST',
+                                credentials: 'include',
                                 headers: env.HEADERS,
                                 body: JSON.stringify({ item_type: 'bible', title: 'Bíblia', is_active: true, display_order: 999 })
                             });
