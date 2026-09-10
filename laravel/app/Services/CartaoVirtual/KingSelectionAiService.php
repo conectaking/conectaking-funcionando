@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -151,8 +152,15 @@ Não inventes nomes de pessoas. Podes mencionar de forma genérica "as fotos" ou
      */
     private function chatResult(string $system, string $user, int $maxTokens): array
     {
+        $cacheKey = 'ks:ai:v1:'.hash('sha256', $system."\0".$user."\0".$maxTokens);
+        $cached = Cache::get($cacheKey);
+        if (is_string($cached) && $cached !== '') {
+            return ['status' => 200, 'body' => ['text' => $cached, 'cacheHit' => true]];
+        }
+
         try {
             $text = $this->chat($system, $user, $maxTokens);
+            Cache::put($cacheKey, $text, 3600);
 
             return ['status' => 200, 'body' => ['text' => $text]];
         } catch (\RuntimeException $e) {

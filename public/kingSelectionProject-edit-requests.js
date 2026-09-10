@@ -166,9 +166,6 @@
         }
       });
     });
-    window.setInterval(() => {
-      if (isPublicModeSelected()) ensurePublicEditMarkup();
-    }, 2000);
   }
 
   if (document.readyState === 'loading') {

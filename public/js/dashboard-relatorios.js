@@ -191,6 +191,9 @@ async function loadReportsData() {
             }
         }
 
+        if (typeof window.ckEnsureChart === 'function') {
+            try { await window.ckEnsureChart(); } catch (_) { /* Chart opcional */ }
+        }
         renderKPIs(kpisData);
         renderPerformanceChart(performanceData);
         renderTopItems(topItemsData);
@@ -470,7 +473,8 @@ function renderAllLinksDetails(detailsData, period = '30') {
 
     allLinksDetailsEl.innerHTML = html;
 
-    // Renderizar gráfico de performance
+    // Renderizar gráfico de performance (Chart lazy)
+    const paintClientCharts = function () {
     if (performance.length > 0 && typeof Chart !== 'undefined') {
         const ctx = document.getElementById('client-performance-chart');
         if (ctx) {
@@ -576,6 +580,12 @@ function renderAllLinksDetails(detailsData, period = '30') {
                 }
             });
         }
+    }
+    };
+    if (typeof window.ckEnsureChart === 'function') {
+        window.ckEnsureChart().then(paintClientCharts).catch(function () {});
+    } else {
+        paintClientCharts();
     }
 }
 

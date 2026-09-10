@@ -2,6 +2,7 @@
 
 namespace App\Services\Documentos;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -64,6 +65,16 @@ PROMPT;
             ];
         }
 
+        $cacheKey = 'ocr:vision:v1:'.hash('sha256', $imageBinary);
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached) && isset($cached['itensSugeridos'])) {
+            $pr = is_array($cached['parseResult'] ?? null) ? $cached['parseResult'] : [];
+            $pr['cacheHit'] = true;
+            $cached['parseResult'] = $pr;
+
+            return $cached;
+        }
+
         $dataUrl = $this->toDataUrl($imageBinary);
         $res = Http::timeout(120)
             ->withToken($this->apiKey())
@@ -115,7 +126,7 @@ PROMPT;
             ];
         }
 
-        return [
+        $result = [
             'itensSugeridos' => $itens,
             'parseResult' => [
                 'source' => 'openai',
@@ -125,6 +136,9 @@ PROMPT;
                 'transactions' => $transactions,
             ],
         ];
+        Cache::put($cacheKey, $result, 86400);
+
+        return $result;
     }
 
     /**

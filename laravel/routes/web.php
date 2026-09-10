@@ -247,17 +247,25 @@ Route::get('/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
 // King Selection (read-only público)
 Route::get('/kingSelection/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
-Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery']);
-Route::get('/api/king-selection/public/gallery-content', [KingSelectionPublicController::class, 'galleryContent']);
+Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery'])
+    ->middleware('throttle:120,1');
+Route::get('/api/king-selection/public/gallery-content', [KingSelectionPublicController::class, 'galleryContent'])
+    ->middleware('throttle:120,1');
 Route::get('/api/king-selection/public/gallery-share-meta/{slug}', [KingSelectionPublicController::class, 'shareMeta'])
-    ->where('slug', $cardSlug);
-Route::get('/api/king-selection/public/cover', [KingSelectionPublicController::class, 'cover']);
-Route::get('/api/king-selection/public/entry-splash', [KingSelectionPublicController::class, 'entrySplash']);
-Route::get('/api/king-selection/public/og-image', [KingSelectionPublicController::class, 'ogImage']);
+    ->where('slug', $cardSlug)
+    ->middleware('throttle:60,1');
+Route::get('/api/king-selection/public/cover', [KingSelectionPublicController::class, 'cover'])
+    ->middleware('throttle:60,1');
+Route::get('/api/king-selection/public/entry-splash', [KingSelectionPublicController::class, 'entrySplash'])
+    ->middleware('throttle:60,1');
+Route::get('/api/king-selection/public/og-image', [KingSelectionPublicController::class, 'ogImage'])
+    ->middleware('throttle:30,1');
 Route::get('/api/king-selection/public/photos/{photoId}/preview', [KingSelectionPublicController::class, 'publicPreview'])
-    ->where('photoId', '[0-9]+');
+    ->where('photoId', '[0-9]+')
+    ->middleware('throttle:180,1');
 Route::get('/api/king-selection/public/galleries/{slug}/my-photos', [KingSelectionPublicController::class, 'myPhotos'])
-    ->where('slug', $cardSlug);
+    ->where('slug', $cardSlug)
+    ->middleware('throttle:60,1');
 Route::post('/api/king-selection/public/enroll-face-anonymous', [KingSelectionPublicController::class, 'enrollFaceAnonymous'])
     ->middleware('throttle:20,1');
 Route::get('/api/king-selection/public/aws-ping', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsPing'])

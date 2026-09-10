@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -59,21 +60,28 @@ class BibleDevotionalService
     {
         $day = max(1, min(365, $dayOfYear));
         try {
-            $row = DB::selectOne(
-                'SELECT day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao
-                 FROM bible_devotionals_365 WHERE day_of_year = ? LIMIT 1',
-                [$day]
-            );
-            if (!$row) {
-                return null;
-            }
+            return Cache::remember("bible:dev365:day:{$day}", 86400, function () use ($day) {
+                $row = DB::selectOne(
+                    'SELECT day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao
+                     FROM bible_devotionals_365 WHERE day_of_year = ? LIMIT 1',
+                    [$day]
+                );
+                if (! $row) {
+                    return null;
+                }
 
-            return $this->shape($row);
+                return $this->shape($row);
+            });
         } catch (\Throwable $e) {
             Log::warning('bible.devotional.get', ['day' => $day, 'error' => $e->getMessage()]);
 
             return null;
         }
+    }
+
+    public function forgetDayCache(int $dayOfYear): void
+    {
+        Cache::forget('bible:dev365:day:'.max(1, min(365, $dayOfYear)));
     }
 
     /**

@@ -92,6 +92,7 @@ class BibleAdminDev365Service
                 (string) ($body['oracao'] ?? ''),
             ]
         );
+        $this->devotionals->forgetDayCache($day);
     }
 
     public function delete(int $day): bool
@@ -100,6 +101,9 @@ class BibleAdminDev365Service
             return false;
         }
         $n = DB::delete('DELETE FROM bible_devotionals_365 WHERE day_of_year = ?', [$day]);
+        if ($n > 0) {
+            $this->devotionals->forgetDayCache($day);
+        }
 
         return $n > 0;
     }

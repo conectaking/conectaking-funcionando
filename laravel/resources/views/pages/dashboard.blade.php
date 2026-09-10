@@ -31,7 +31,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -150,8 +149,47 @@
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script>
+    (function () {
+      function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.async = true;
+          s.onload = function () { resolve(); };
+          s.onerror = function () { reject(new Error('Falha ao carregar ' + src)); };
+          document.head.appendChild(s);
+        });
+      }
+      function loadCss(href) {
+        return new Promise(function (resolve) {
+          if (document.querySelector('link[data-ck-lazy="' + href + '"]')) { resolve(); return; }
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = href;
+          l.setAttribute('data-ck-lazy', href);
+          l.onload = function () { resolve(); };
+          l.onerror = function () { resolve(); };
+          document.head.appendChild(l);
+        });
+      }
+      window.ckEnsureChart = function () {
+        if (typeof Chart !== 'undefined') return Promise.resolve(Chart);
+        if (window.__ckChartPromise) return window.__ckChartPromise;
+        window.__ckChartPromise = loadScript('https://cdn.jsdelivr.net/npm/chart.js').then(function () { return window.Chart; });
+        return window.__ckChartPromise;
+      };
+      window.ckEnsureLeaflet = function () {
+        if (window.L) return Promise.resolve(window.L);
+        if (window.__ckLeafletPromise) return window.__ckLeafletPromise;
+        window.__ckLeafletPromise = loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css')
+          .then(function () { return loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'); })
+          .then(function () { return window.L; });
+        return window.__ckLeafletPromise;
+      };
+    })();
+    </script>
     @vite(['resources/js/pages/dashboard.js'])
 </head>
 <body>
@@ -1574,7 +1612,6 @@
         setTimeout(restorePane, 0);
     })();
     </script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
         <div class="wifi-modal-content">
             <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>

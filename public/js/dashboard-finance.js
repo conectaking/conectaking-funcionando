@@ -4104,7 +4104,8 @@ window.initFinanceChart = function (period = '1M') {
     const dateToStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
     const profileIdChart = localStorage.getItem('finance_current_profile_id') || '';
 
-    // Criar gráfico usando Chart.js (se disponível)
+    // Criar gráfico usando Chart.js (lazy)
+    const paintFinanceChart = function () {
     if (typeof Chart !== 'undefined') {
         // Buscar transações do perfil atual para o gráfico (usa último dia real do mês, ex: fev=28)
         fetch(`${env.API_URL}/api/finance/transactions?limit=1000&orderBy=transaction_date&orderDir=ASC&dateFrom=${dateFromStr}&dateTo=${dateToStr}${profileIdChart ? '&profile_id=' + profileIdChart : ''}`, {
@@ -4222,6 +4223,12 @@ window.initFinanceChart = function (period = '1M') {
         ctx.font = '12px Inter';
         ctx.textAlign = 'center';
         ctx.fillText('Chart.js não disponível', canvas.width / 2, canvas.height / 2);
+    }
+    };
+    if (typeof window.ckEnsureChart === 'function') {
+        window.ckEnsureChart().then(paintFinanceChart).catch(paintFinanceChart);
+    } else {
+        paintFinanceChart();
     }
 };
 

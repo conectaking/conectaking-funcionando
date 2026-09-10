@@ -120,7 +120,7 @@
       deleteLoosePhotos().catch((e) => window.alert(e?.message || 'Erro ao excluir fotos soltas'));
     });
     refreshLooseCount();
-    window.setInterval(refreshLooseCount, 12000);
+    // Sem polling: GET galeria completa a cada 12s era caro demais; contagem atualiza no load/render.
   }
 
   function start() {
@@ -306,9 +306,6 @@
         }
       });
     });
-    window.setInterval(() => {
-      if (isPublicModeSelected()) ensurePublicEditMarkup();
-    }, 2000);
   }
 
   if (document.readyState === 'loading') {

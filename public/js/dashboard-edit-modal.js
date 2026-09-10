@@ -1419,6 +1419,7 @@ async function openEditModal(itemEl) {
                 if (leafletMap) leafletMap.setView([lat, lng], leafletMap.getZoom() < 16 ? 17 : leafletMap.getZoom());
             }
 
+            var bootLeafletMap = function () {
             if (window.L && container) {
                 if (window._lastLocationLeafletMap) {
                     try { window._lastLocationLeafletMap.remove(); } catch (e) {}
@@ -1453,6 +1454,12 @@ async function openEditModal(itemEl) {
                     container._leafletMap = leafletMap;
                     window._lastLocationLeafletMap = leafletMap;
                 }, 200);
+            }
+            };
+            if (typeof window.ckEnsureLeaflet === 'function') {
+                window.ckEnsureLeaflet().then(bootLeafletMap).catch(function () {});
+            } else {
+                bootLeafletMap();
             }
 
             function updateMapFromCoords(lat, lng) {

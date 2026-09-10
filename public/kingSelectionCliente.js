@@ -825,7 +825,7 @@
         const gd = await loadGallery();
         applyGalleryData(gd);
       } catch (_) {}
-    }, 45000);
+    }, 90000);
   }
 
   function renderSalesUi() {

@@ -84,12 +84,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let isUpdatingStyles = false;
     
     function setupAutoSave() {
-        // Autosave a cada 30 segundos se houver mudanças
+        // Autosave a cada 60s se houver mudanças (aba visível)
         setInterval(() => {
+            if (document.visibilityState === 'hidden') return;
             if (document.hasFocus()) {
                 autoSave();
             }
-        }, 30000);
+        }, 60000);
         
         // Autosave quando detectar mudanças (apenas mudanças estruturais, não de estilo)
         const observer = new MutationObserver((mutations) => {
@@ -1874,11 +1875,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Observar mudanças na variável global
             let lastValue = window.currentFormIsGuestList;
             setInterval(() => {
+                if (document.visibilityState === 'hidden') return;
                 if (window.currentFormIsGuestList !== lastValue) {
                     lastValue = window.currentFormIsGuestList;
                     updateButtonText();
                 }
-            }, 500);
+            }, 2000);
             
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();

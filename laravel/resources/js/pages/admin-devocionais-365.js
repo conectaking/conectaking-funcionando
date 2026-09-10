@@ -320,7 +320,7 @@ await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
         try { localStorage.setItem(LS_JOB, jobId); } catch (e) {}
         stopBgPoll();
         pollJob(jobId);
-        bgPollTimer = setInterval(function () { pollJob(jobId); }, 4000);
+        bgPollTimer = setInterval(function () { pollJob(jobId); }, 8000);
     }
 
     function resumeBgJobIfAny() {
