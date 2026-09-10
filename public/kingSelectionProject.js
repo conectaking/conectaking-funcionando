@@ -1,10 +1,20 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  // Apex → www (CF 301 em API parte CSRF/cookies)
+  try {
+    const h0 = String(window.location.hostname || '').toLowerCase();
+    if (h0 === 'conectaking.com.br') {
+      window.location.replace('https://www.conectaking.com.br' + window.location.pathname + window.location.search + window.location.hash);
+      return;
+    }
+  } catch (_) {}
+
   const KS_API_FALLBACK = 'https://www.conectaking.com.br';
   function resolveKingApiBase() {
-    // Produção ConectaKing: sempre mesma origem.
+    // Produção ConectaKing: sempre mesma origem (preferir www).
     try {
       const h = String(window.location.hostname || '').toLowerCase();
-      if (h === 'conectaking.com.br' || h === 'www.conectaking.com.br' || h.endsWith('.conectaking.com.br')) {
+      if (h === 'conectaking.com.br') return KS_API_FALLBACK;
+      if (h === 'www.conectaking.com.br' || h.endsWith('.conectaking.com.br')) {
         return String(window.location.origin).replace(/\/$/, '');
       }
     } catch (_) { /* fallback abaixo */ }
@@ -66,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (bearer) HEADERS.Authorization = `Bearer ${bearer}`;
 
   const __ksRawFetch = window.fetch.bind(window);
-  function fetch(url, init) {
+  async function fetch(url, init) {
     init = init || {};
     if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
     // Evitar Authorization: Bearer  (vazio) que quebra middleware
@@ -85,6 +95,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       var __m = (init.method || 'GET').toUpperCase();
       if (__m === 'POST' || __m === 'PUT' || __m === 'PATCH' || __m === 'DELETE') {
+        if (window.CkCsrf && typeof window.CkCsrf.ensureCsrfCookie === 'function') {
+          try { await window.CkCsrf.ensureCsrfCookie(); } catch (_) {}
+        }
         if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
           init.headers = window.CkCsrf.attachToHeaders(init.headers, __m);
         } else {
@@ -102,7 +115,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (__e) {}
 
-    return __ksRawFetch(url, init);
+    const res = await __ksRawFetch(url, init);
+    try {
+      const m = (init.method || 'GET').toUpperCase();
+      if (res && res.status === 419 && (m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE')) {
+        if (window.CkCsrf && typeof window.CkCsrf.ensureCsrfCookie === 'function') {
+          await window.CkCsrf.ensureCsrfCookie();
+        }
+        if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
+          init.headers = window.CkCsrf.attachToHeaders(init.headers, m);
+        }
+        return __ksRawFetch(url, init);
+      }
+    } catch (_) {}
+    return res;
   }
 
   // <img> não envia Authorization header. Para previews protegidos (admin),
@@ -6498,6 +6524,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const token = HEADERS && (HEADERS.Authorization || HEADERS.authorization);
         if (token) xhr.setRequestHeader('Authorization', token);
       } catch (_) { }
+      try {
+        if (window.CkCsrf && typeof window.CkCsrf.attachToXhr === 'function') {
+          window.CkCsrf.attachToXhr(xhr, 'POST');
+        } else {
+          const m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+          const csrf = m ? decodeURIComponent(m[1]) : '';
+          if (csrf) xhr.setRequestHeader('X-CK-CSRF', csrf);
+        }
+      } catch (_) { }
 
       const form = new FormData();
       form.append('file', file, file.name || 'foto.jpg');
@@ -6580,6 +6615,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const t = HEADERS && (HEADERS.Authorization || HEADERS.authorization);
         if (t) xhr.setRequestHeader('Authorization', t);
+      } catch (_) { }
+      try {
+        if (window.CkCsrf && typeof window.CkCsrf.attachToXhr === 'function') {
+          window.CkCsrf.attachToXhr(xhr, 'POST');
+        } else {
+          const m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+          const csrf = m ? decodeURIComponent(m[1]) : '';
+          if (csrf) xhr.setRequestHeader('X-CK-CSRF', csrf);
+        }
       } catch (_) { }
       const form = new FormData();
       form.append('file', file, file.name || 'foto.jpg');
@@ -9731,6 +9775,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   function closeDupeModal() {
     if (!dupeOv) return;
+    try {
+      const ae = document.activeElement;
+      if (ae && dupeOv.contains(ae) && typeof ae.blur === 'function') ae.blur();
+    } catch (_) {}
     dupeOv.classList.add('hidden');
     dupeOv.setAttribute('aria-hidden', 'true');
     clearDupeNewPreview();

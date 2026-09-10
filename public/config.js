@@ -1,5 +1,14 @@
 ﻿// Configuracao da API (auto: producao por padrao) — VPS / mesma origem
 (function () {
+    // Apex sem www parte CSRF (CF 301 em POST/PUT). Canonicaliza já.
+    try {
+        var __h = String(location.hostname || '').toLowerCase();
+        if (__h === 'conectaking.com.br') {
+            location.replace('https://www.conectaking.com.br' + location.pathname + location.search + location.hash);
+            return;
+        }
+    } catch (e) {}
+
     function isStaleRemoteApiHost(hostname) {
         return /\.onrender\.com$/i.test(String(hostname || '')) || String(hostname || '').toLowerCase() === 'onrender.com';
     }

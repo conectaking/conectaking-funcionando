@@ -14,7 +14,11 @@ ufw allow 80/tcp || true
 ufw allow 443/tcp || true
 
 cat > /etc/caddy/Caddyfile <<'EOF'
-www.conectaking.com.br, conectaking.com.br, tag.conectaking.com.br {
+conectaking.com.br {
+	redir https://www.conectaking.com.br{uri} 308
+}
+
+www.conectaking.com.br, tag.conectaking.com.br {
 	encode gzip
 	reverse_proxy 127.0.0.1:8080
 }

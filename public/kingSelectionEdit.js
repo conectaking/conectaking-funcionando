@@ -20,6 +20,14 @@ function ksAppPage(name) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const h0 = String(window.location.hostname || '').toLowerCase();
+    if (h0 === 'conectaking.com.br') {
+      window.location.replace('https://www.conectaking.com.br' + window.location.pathname + window.location.search + window.location.hash);
+      return;
+    }
+  } catch (_) {}
+
   if (/kingSelectionEdit\.html/i.test(window.location.pathname)) {
     const sp = new URLSearchParams(window.location.search || '');
     const q = (sp.get('api') || '').toLowerCase() === 'local' ? '?api=local' : '';

@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Atrás do Caddy/Node (proxy /l)
         $middleware->trustProxies(at: '*');
+        $middleware->prepend(\App\Http\Middleware\RedirectApexToWww::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->append(\App\Http\Middleware\RequireCookieCsrf::class);
         $middleware->append(\App\Http\Middleware\EnsureCsrfCookie::class);

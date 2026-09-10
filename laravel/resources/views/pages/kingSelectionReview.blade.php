@@ -124,7 +124,7 @@
     </div>
   </div>
 
-  <script src="/config.js?v=2026-09-09-vite1"></script>
+  <script src="/config.js?v=2026-09-10-apex1"></script>
   @vite(['resources/js/pages/kingSelectionReview.js'])
 </body>
 </html>

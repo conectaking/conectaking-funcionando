@@ -2084,7 +2084,7 @@
     <span id="ks-support-whats-text">Suporte</span>
   </button>
 
-  <script src="/config.js?v=2026-09-09-ux1"></script>
+  <script src="/config.js?v=2026-09-10-apex1"></script>
   <div id="ks-sales-confirm-bar" class="ks-hidden" aria-live="polite">
     <span id="ks-sales-confirm-count">0 foto(s) selecionada(s)</span>
     <button type="button" class="ks-btn ks-btn-yellow" id="ks-sales-confirm-go">
