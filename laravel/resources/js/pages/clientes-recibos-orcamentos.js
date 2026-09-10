@@ -1,4 +1,5 @@
 /** clientes-recibos-orcamentos — Vite entry (extracted inline) */
+import '@mod/js/recibos-modulo-nav.js';
 import '@legacy/css/recibos-modulo-mobile.css';
 
 

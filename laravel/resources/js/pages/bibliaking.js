@@ -1,6 +1,6 @@
 /** Bibliaking / painel Bíblia — Vite entry (restored from biblePanel.ejs) */
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
 
 (async function () {
             if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
@@ -126,7 +126,7 @@ import '@legacy/js/ck-csrf.js';
                             var p = pb.data;
                             var pctCh = p.percent_chapters != null ? p.percent_chapters : Math.round((p.chapters_read / (p.total_chapters || 1189)) * 100);
                             document.getElementById('progress-stats').innerHTML =
-                                '<strong>' + (p.chapters_read || 0) + '</strong> capítulos · <strong>' + (p.books_read || 0) + '</strong> livros · <strong>' + (p.verses_read || 0) + '</strong> versículos marcados<br>' +
+                                '<strong>' + (p.chapters_read || 0) + '</strong> capítulos Â· <strong>' + (p.books_read || 0) + '</strong> livros Â· <strong>' + (p.verses_read || 0) + '</strong> versículos marcados<br>' +
                                 '<span style="color:#888;font-size:0.85rem">Capítulos: ~' + pctCh + '% da Bíblia</span>';
                             document.getElementById('progress-chapters-pct').style.width = Math.min(100, pctCh) + '%';
                         });
@@ -179,7 +179,7 @@ import '@legacy/js/ck-csrf.js';
                                                         var p = pb.data;
                                                         var pctCh = p.percent_chapters != null ? p.percent_chapters : Math.round((p.chapters_read / (p.total_chapters || 1189)) * 100);
                                                         document.getElementById('progress-stats').innerHTML =
-                                                            '<strong>' + (p.chapters_read || 0) + '</strong> capítulos · <strong>' + (p.books_read || 0) + '</strong> livros · <strong>' + (p.verses_read || 0) + '</strong> versículos marcados<br>' +
+                                                            '<strong>' + (p.chapters_read || 0) + '</strong> capítulos Â· <strong>' + (p.books_read || 0) + '</strong> livros Â· <strong>' + (p.verses_read || 0) + '</strong> versículos marcados<br>' +
                                                             '<span style="color:#888;font-size:0.85rem">Capítulos: ~' + pctCh + '% da Bíblia</span>';
                                                         document.getElementById('progress-chapters-pct').style.width = Math.min(100, pctCh) + '%';
                                                     }

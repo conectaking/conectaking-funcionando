@@ -1,6 +1,6 @@
 /** King Selection — Vite entry */
 import '@legacy/dashboard.css';
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
 
-import '@legacy/kingSelectionEdit.js';
+import '@mod/kingSelectionEdit.js';

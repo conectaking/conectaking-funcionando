@@ -1,6 +1,6 @@
 /** conviteEdit — Vite entry (extracted inline) */
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
 
 (async function() {
   if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
@@ -108,7 +108,7 @@ import '@legacy/js/ck-csrf.js';
     var d = await r.json().catch(function() { return {}; });
     if (!r.ok) { showErr(d.message || (d.error && d.error.message) || 'Erro ao enviar áudio'); return; }
     var url = (d.data && d.data.url) || d.url || '';
-    if (url) { setUrl(url); setInfo(url); showOk('Áudio enviado.'); }
+    if (url) { setUrl(url); setInfo(url); showOk('Ãudio enviado.'); }
   }
   function bindUpload(fileId, btnId, infoId, urlId, isAudio) {
     var fileEl = document.getElementById(fileId);

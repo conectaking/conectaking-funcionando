@@ -3,12 +3,12 @@
  * formPageEdit + integração; guestListEdit.js só em modo manage / sem itemId.
  */
 import '@legacy/dashboard.css';
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
-import '@legacy/js/upload-auth-helper.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
+import '@mod/js/upload-auth-helper.js';
 
-import '@legacy/formPageEdit.js';
-import '@legacy/guestListEditKingFormsIntegration.js';
+import '@mod/formPageEdit.js';
+import '@mod/guestListEditKingFormsIntegration.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const itemId = urlParams.get('itemId') || urlParams.get('id');
@@ -20,6 +20,6 @@ const mode = urlParams.get('mode');
     if (!ok) return;
   }
   if (!itemId || mode === 'manage') {
-    await import('@legacy/guestListEdit.js');
+    await import('@mod/guestListEdit.js');
   }
 })();

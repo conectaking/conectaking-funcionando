@@ -1,7 +1,7 @@
 /** recibos-orcamentos — Vite entry (extracted inline) */
 import '@legacy/css/recibos-modulo-mobile.css';
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
 
 (function () {
             var origin = (window.location && window.location.origin) || 'https://www.conectaking.com.br';
@@ -350,9 +350,9 @@ import '@legacy/js/ck-csrf.js';
                 }
                 linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem' + (scanResumo.ocrIa ? ' (IA OpenAI)' : '') + '.');
                 if (scanResumo.inseridos !== scanResumo.lidosOcr) {
-                    linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela' + (scanResumo.duplicata ? ' (' + scanResumo.duplicata + ' já existiam).' : '.'));
+                    linhas.push(scanResumo.inseridos + ' adicionado(s) Ã  tabela' + (scanResumo.duplicata ? ' (' + scanResumo.duplicata + ' já existiam).' : '.'));
                 } else if (scanResumo.inseridos > 0) {
-                    linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela.');
+                    linhas.push(scanResumo.inseridos + ' adicionado(s) Ã  tabela.');
                 } else if (scanResumo.lidosOcr > 0) {
                     linhas.push('Nenhum item novo (todos já estavam na tabela).');
                 } else if (scanResumo.openAiError) {

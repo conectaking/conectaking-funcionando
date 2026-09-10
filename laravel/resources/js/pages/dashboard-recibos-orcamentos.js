@@ -1,6 +1,7 @@
 /** dashboard-recibos-orcamentos — Vite entry (extracted inline) */
+import '@mod/js/recibos-modulo-nav.js';
 import '@legacy/css/recibos-modulo-mobile.css';
-import '@legacy/js/ck-auth-gate.js';
+import '@mod/js/ck-auth-gate.js';
 
 (function () {
             var origin = (window.location && window.location.origin) || 'https://www.conectaking.com.br';
@@ -55,7 +56,7 @@ import '@legacy/js/ck-auth-gate.js';
             btnCont.classList.remove('hidden');
             var tit = ult.titulo || (ult.emitente_json && ult.emitente_json.nome) || ('#' + ult.id);
             document.getElementById('modal-continuar-label').textContent = 'Continuar o último ' + label.toLowerCase();
-            document.getElementById('modal-continuar-sub').textContent = tit + (ult.data_documento ? ' · ' + ult.data_documento.slice(0, 10) : '');
+            document.getElementById('modal-continuar-sub').textContent = tit + (ult.data_documento ? ' Â· ' + ult.data_documento.slice(0, 10) : '');
             btnCont.dataset.id = String(ult.id);
         } else {
             btnCont.classList.add('hidden');
@@ -119,7 +120,7 @@ import '@legacy/js/ck-auth-gate.js';
         var total = docsMeta.total || loaded;
         loadMoreBtn.disabled = !!docsMeta.loading;
         loadMoreBtn.textContent = docsMeta.loading
-            ? 'A carregar…'
+            ? 'A carregarâ€¦'
             : ('Carregar mais (' + loaded + ' de ' + total + ')');
     }
 

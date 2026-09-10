@@ -1,6 +1,6 @@
 /** kingDocs — Vite entry (extracted inline, icons sanitized) */
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
 
 (function () {
       try {
@@ -300,7 +300,7 @@ import '@legacy/js/ck-csrf.js';
     return !!(f && normalizeDocTypeKey(f.doc_type) === normalizeDocTypeKey('FOTO PESSOAL'));
   }
 
-  /** Cartões «Documentos»: docType enviado no upload (tem de bater com a lista de ficheiros) */
+  /** Cartões Â«DocumentosÂ»: docType enviado no upload (tem de bater com a lista de ficheiros) */
   const DOC_CARD_PRESETS = [
     { docType: 'RG', label: 'RG', icon: '' },
     { docType: 'CNH', label: 'CNH', icon: '' },
@@ -404,7 +404,7 @@ import '@legacy/js/ck-csrf.js';
     });
     return used;
   }
-  /** Um único payload: textos do perfil + ficheiros ligados aos campos + cartões de documento + «documentos extra» */
+  /** Um único payload: textos do perfil + ficheiros ligados aos campos + cartões de documento + Â«documentos extraÂ» */
   function buildUnifiedShareSelection() {
     var built = buildShareSectionsAndExtraFromTable();
     var sections = built.sections;
@@ -480,7 +480,7 @@ import '@legacy/js/ck-csrf.js';
     docPreviewSelectedTypes = types;
     refreshDocVaultPreview();
   }
-  /** Ícone próprio por campo (cartão igual aos tipos de documento) */
+  /** Ãcone próprio por campo (cartão igual aos tipos de documento) */
   var FIELD_ICONS = {
     'pessoal|Nome Completo': '',
     'pessoal|Data de Nasc.': '',
@@ -818,7 +818,7 @@ import '@legacy/js/ck-csrf.js';
     if (gen !== docPreviewRefreshGen) return;
 
     if (!types.length) {
-      bodyEl.innerHTML = '<p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>';
+      bodyEl.innerHTML = '<p class="preview-empty">Clica nos documentos Ã  esquerda (podes escolher vários).</p>';
       updateUnifiedActionButtons();
       return;
     }
@@ -861,7 +861,7 @@ import '@legacy/js/ck-csrf.js';
         var meta = document.createElement('p');
         meta.className = 'sub';
         meta.style.margin = '0 0 .45rem';
-        meta.textContent = '#' + f.id + ' · ' + (f.doc_type || '') + ' · ' + (f.mime || '');
+        meta.textContent = '#' + f.id + ' Â· ' + (f.doc_type || '') + ' Â· ' + (f.mime || '');
         wrap.appendChild(meta);
         if (mime.indexOf('image/') === 0) {
           var img = document.createElement('img');
@@ -1261,9 +1261,9 @@ import '@legacy/js/ck-csrf.js';
     if (pair) {
       setShareCardModes(pair[0], pair[1], dt, false, true);
       if (!findFileForFieldHint(pair[0], pair[1])) {
-        showToast('Envia o ficheiro «' + dt + '» na aba Dados antes de partilhar.', 'neutral');
+        showToast('Envia o ficheiro Â«' + dt + 'Â» na aba Dados antes de partilhar.', 'neutral');
       } else {
-        showToast('Marcado: Foto/PDF no cartão «' + docTypeLabel(dt) + '».', 'ok');
+        showToast('Marcado: Foto/PDF no cartão Â«' + docTypeLabel(dt) + 'Â».', 'ok');
       }
     } else {
       setShareCardModes(null, null, dt, false, true);
@@ -1349,7 +1349,7 @@ import '@legacy/js/ck-csrf.js';
     var last = latestForDocType(dt);
     var cls = 'kd-dados-doc-status' + (has ? ' has-file' : '');
     var txt = has
-      ? ('' + escapeHtml(docTypeLabel(dt)) + ' no cofre' + (last ? ' · ' + escapeHtml(formatShortDate(last)) : ''))
+      ? ('' + escapeHtml(docTypeLabel(dt)) + ' no cofre' + (last ? ' Â· ' + escapeHtml(formatShortDate(last)) : ''))
       : ('Sem ficheiro — envia foto ou PDF');
     return '' + cls + '" data-doc-type="' + escapeAttr(dt) + '' + txt + '</span>';
   }
@@ -1370,7 +1370,7 @@ import '@legacy/js/ck-csrf.js';
       var last = latestForDocType(dt);
       span.className = 'kd-dados-doc-status' + (has ? ' has-file' : '');
       span.textContent = has
-        ? ('' + docTypeLabel(dt) + ' no cofre' + (last ? ' · ' + formatShortDate(last) : ''))
+        ? ('' + docTypeLabel(dt) + ' no cofre' + (last ? ' Â· ' + formatShortDate(last) : ''))
         : 'Sem ficheiro — envia foto ou PDF';
     });
   }
@@ -1480,14 +1480,14 @@ import '@legacy/js/ck-csrf.js';
   }
 
   var KD_EMOJI_PICKER = (
-    '📄 ⭐ ✅ 📌 📎 📁 📷 🪪 🚗 🏢 🏠 ✉️ 📱 💼 🧾 🔑 💳 🏦 📍 🌐 ' +
-    '👤 👥 💍 👶 📝 🔒 🗓️ ☎️ 💬 🏷️'
+    'ðŸ“„ â­ âœ… ðŸ“Œ ðŸ“Ž ðŸ“ ðŸ“· ðŸªª ðŸš— ðŸ¢ ðŸ  âœ‰ï¸ ðŸ“± ðŸ’¼ ðŸ§¾ ðŸ”‘ ðŸ’³ ðŸ¦ ðŸ“ ðŸŒ ' +
+    'ðŸ‘¤ ðŸ‘¥ ðŸ’ ðŸ‘¶ ðŸ“ ðŸ”’ ðŸ—“ï¸ â˜Žï¸ ðŸ’¬ ðŸ·ï¸'
   ).trim().split(/\s+/);
 
   function setShortcutEmoji(ch, skipManual) {
     var raw = ch != null ? String(ch) : '';
     var v = raw.trim().slice(0, 8);
-    if (!v) v = '📄';
+    if (!v) v = 'ðŸ“„';
     var hid = document.getElementById('kd-sc-emoji');
     var prev = document.getElementById('kd-sc-emoji-preview');
     var manual = document.getElementById('kd-sc-emoji-manual');
@@ -1894,7 +1894,7 @@ import '@legacy/js/ck-csrf.js';
     el.innerHTML = filesList.map(f => {
       var dt = f.created_at ? formatShortDate(new Date(f.created_at)) : '';
       return '<div class="file-row"><span>#' + f.id + '' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
-        (dt ? ' <span style="opacity:.78;font-size:.78rem">· ' + escapeHtml(dt) + '</span>' : '') +
+        (dt ? ' <span style="opacity:.78;font-size:.78rem">Â· ' + escapeHtml(dt) + '</span>' : '') +
         '</span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>';
     }).join('');
     el.querySelectorAll('.btn-del-file').forEach(b => {
@@ -1965,7 +1965,7 @@ import '@legacy/js/ck-csrf.js';
     if (!arr.length) { host.innerHTML = ''; return; }
     host.innerHTML = arr.map(function (it) {
       var img = it.imageDataUrl ? '' + escapeAttr(it.imageDataUrl) + '" alt="" class="kd-atalho-img"/>' : '<span aria-hidden="true">' + escapeHtml(it.icon || '') + '</span>';
-      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">⚙</button></span>';
+      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">âš™</button></span>';
     }).join('');
     host.querySelectorAll('[data-custom-id]').forEach(function (btn) {
       btn.onclick = function () { applyCustomShortcut(this.getAttribute('data-custom-id')); };
@@ -2127,15 +2127,15 @@ import '@legacy/js/ck-csrf.js';
     var hintEl = document.getElementById('share-confirm-hint');
     if (hintEl) {
       if (count === 0) {
-        hintEl.textContent = 'Marca Texto e/ou Foto/PDF nos cartões; o link gera-se na aba «Partilhar».';
+        hintEl.textContent = 'Marca Texto e/ou Foto/PDF nos cartões; o link gera-se na aba Â«PartilharÂ».';
         hintEl.classList.remove('kd-share-summary--ok');
       } else {
-        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o resumo no painel acima; na aba «Partilhar» usa «Gerar link seguro» quando estiver correto.';
+        hintEl.textContent = 'Incluíste ' + count + ' ' + (count === 1 ? 'item' : 'itens') + ' — verifica o resumo no painel acima; na aba Â«PartilharÂ» usa Â«Gerar link seguroÂ» quando estiver correto.';
         hintEl.classList.add('kd-share-summary--ok');
       }
     }
     if (count === 0) {
-      out.innerHTML = '<p class="preview-empty">Marca Texto e/ou Foto/PDF nos cartões à esquerda.</p>';
+      out.innerHTML = '<p class="preview-empty">Marca Texto e/ou Foto/PDF nos cartões Ã  esquerda.</p>';
       updateUnifiedActionButtons();
       return;
     }
@@ -2339,7 +2339,7 @@ import '@legacy/js/ck-csrf.js';
     });
     el.querySelectorAll('.btn-rev').forEach(b => {
       b.onclick = async function() {
-        if (!confirm('Revogar este link? O URL deixa de funcionar, mas o registo continua na lista como «Revogado».')) return;
+        if (!confirm('Revogar este link? O URL deixa de funcionar, mas o registo continua na lista como Â«RevogadoÂ».')) return;
         await fetch(api('/api/king-docs/shares/' + this.getAttribute('data-id')), { method: 'DELETE', headers: authHeaders() });
         showToast('Link revogado.', 'ok');
         loadLinks();
@@ -2383,7 +2383,7 @@ import '@legacy/js/ck-csrf.js';
   document.getElementById('btn-links-revoke-sel').onclick = async function () {
     var ids = getSelectedShareIds();
     if (!ids.length) { showToast('Seleciona pelo menos um link.', 'neutral'); return; }
-    if (!confirm('Revogar ' + ids.length + ' link(s)? O URL deixa de funcionar; os registos ficam como «Revogado» na lista.')) return;
+    if (!confirm('Revogar ' + ids.length + ' link(s)? O URL deixa de funcionar; os registos ficam como Â«RevogadoÂ» na lista.')) return;
     for (var i = 0; i < ids.length; i++) {
       var r = await fetch(api('/api/king-docs/shares/' + ids[i]), { method: 'DELETE', headers: authHeaders() });
       if (!r.ok) { showToast('Erro ao revogar o link #' + ids[i], 'err'); loadLinks(); return; }
@@ -2537,13 +2537,13 @@ import '@legacy/js/ck-csrf.js';
     if (labelEl) labelEl.value = '';
     renderCustomDocTypesList();
     renderDocCards();
-    showToast('Tipo criado. Clica no cartão «Enviar ao cofre» para enviar.', 'ok');
+    showToast('Tipo criado. Clica no cartão Â«Enviar ao cofreÂ» para enviar.', 'ok');
     };
   }
   document.getElementById('btn-doc-copy-link').onclick = async function () {
     var url = await quickShareVaultMulti();
     if (!url) {
-      showToast('Marca documentos nos cartões ou campos em «Incluir no link» (e nome no topo, se quiseres).', 'neutral');
+      showToast('Marca documentos nos cartões ou campos em Â«Incluir no linkÂ» (e nome no topo, se quiseres).', 'neutral');
       return;
     }
     try {
@@ -2566,13 +2566,13 @@ import '@legacy/js/ck-csrf.js';
   document.getElementById('btn-doc-copy-plain').onclick = function () {
     var data = collectSharePreviewData();
     var t = formatSharePreviewPlainText(data);
-    if (!t) { showToast('Marca campos ou documentos em «Incluir no link».', 'neutral'); return; }
+    if (!t) { showToast('Marca campos ou documentos em Â«Incluir no linkÂ».', 'neutral'); return; }
     navigator.clipboard.writeText(t).then(function () { showToast('Mensagem copiada (tudo).', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
   };
   document.getElementById('btn-doc-copy-textonly').onclick = function () {
     var data = collectSharePreviewData();
     var t = formatSharePreviewPlainTextTextOnly(data);
-    if (!t) { showToast('Marca campos de texto em «Incluir no link».', 'neutral'); return; }
+    if (!t) { showToast('Marca campos de texto em Â«Incluir no linkÂ».', 'neutral'); return; }
     navigator.clipboard.writeText(t).then(function () { showToast('Só texto copiado.', 'ok'); }).catch(function () { showToast(t, 'neutral'); });
   };
   document.getElementById('btn-doc-copy-with-img').onclick = async function () {
@@ -2592,7 +2592,7 @@ import '@legacy/js/ck-csrf.js';
         return;
       }
       if (typeof ClipboardItem === 'undefined') {
-        showToast('Este browser não copia imagem — usa «WhatsApp · texto + imagem».', 'neutral');
+        showToast('Este browser não copia imagem — usa Â«WhatsApp Â· texto + imagemÂ».', 'neutral');
         return;
       }
       var plain = new Blob([text], { type: 'text/plain' });
@@ -2604,7 +2604,7 @@ import '@legacy/js/ck-csrf.js';
       await navigator.clipboard.write([item]);
       showToast('Texto e imagem copiados.', 'ok');
     } catch (e) {
-      showToast('Não foi possível copiar a imagem — usa «WhatsApp · texto + imagem».', 'neutral');
+      showToast('Não foi possível copiar a imagem — usa Â«WhatsApp Â· texto + imagemÂ».', 'neutral');
     }
   };
   document.getElementById('btn-doc-wa-text').onclick = function () {
@@ -2685,7 +2685,7 @@ import '@legacy/js/ck-csrf.js';
       showToast('Texto copiado. Abre a galeria e envia a foto manualmente (Partilhar — Foto no link).', 'neutral');
     } catch (e2) {
       window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener,noreferrer');
-      showToast('Só foi possível enviar texto pelo link. Usa «PDF · enviar» ou envia a foto à parte.', 'neutral');
+      showToast('Só foi possível enviar texto pelo link. Usa Â«PDF Â· enviarÂ» ou envia a foto Ã  parte.', 'neutral');
     }
   };
   document.getElementById('btn-doc-wa-list').onclick = async function () {
@@ -2718,7 +2718,7 @@ import '@legacy/js/ck-csrf.js';
     try {
       showToast('', 'neutral');
       var blob = await buildMergedPdfBlob();
-      if (!blob) { showToast('Marca o que queres partilhar em «Incluir no link» (textos, foto, documentos).', 'neutral'); return; }
+      if (!blob) { showToast('Marca o que queres partilhar em Â«Incluir no linkÂ» (textos, foto, documentos).', 'neutral'); return; }
       var u = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = u;
@@ -2733,12 +2733,12 @@ import '@legacy/js/ck-csrf.js';
   document.getElementById('btn-doc-pdf-share').onclick = async function () {
     try {
       var blob = await buildMergedPdfBlob();
-      if (!blob) { showToast('Marca o que queres partilhar em «Incluir no link».', 'neutral'); return; }
+      if (!blob) { showToast('Marca o que queres partilhar em Â«Incluir no linkÂ».', 'neutral'); return; }
       var file = new File([blob], 'king-docs-documentos.pdf', { type: 'application/pdf' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: 'King Docs', text: 'PDF com texto, foto e documentos (resumo completo).' });
       } else if (navigator.share) {
-        await navigator.share({ title: 'King Docs', text: 'PDF King Docs (resumo completo). Se não anexar, usa «PDF · descarregar».' });
+        await navigator.share({ title: 'King Docs', text: 'PDF King Docs (resumo completo). Se não anexar, usa Â«PDF Â· descarregarÂ».' });
       } else {
         var u = URL.createObjectURL(blob);
         var a = document.createElement('a');

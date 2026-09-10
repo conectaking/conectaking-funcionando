@@ -8,36 +8,36 @@ import '@legacy/style.css';
 import '@legacy/dashboard.css';
 import '@legacy/css/profile-wifi.css';
 
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
-import '@legacy/js/dashboard-ocultar-modulos-por-plano.js';
-import '@legacy/global.js';
-import '@legacy/android-fix.js';
-import '@legacy/js/planRenderer.js';
-import '@legacy/js/dashboard-cropper-enhance.js';
-import '@legacy/js/profile-wifi.js';
-import '@legacy/dashboard.js';
-import '@legacy/js/dashboard-empresa.js';
-import '@legacy/js/dashboard-cartao.js';
-import '@legacy/js/dashboard-editor.js';
-import '@legacy/js/dashboard-sortable.js';
-import '@legacy/js/dashboard-save.js';
-import '@legacy/js/dashboard-upload.js';
-import '@legacy/js/dashboard-listeners.js';
-import '@legacy/js/dashboard-separacao.js';
-import '@legacy/js/dashboard-info.js';
-import '@legacy/js/dashboard-kingDocs-nav.js';
-import '@legacy/js/dashboard-personalizar.js';
-import '@legacy/js/dashboard-vitrine.js';
-import '@legacy/js/module-link-limits.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
+import '@mod/js/dashboard-ocultar-modulos-por-plano.js';
+import '@mod/global.js';
+import '@mod/android-fix.js';
+import '@mod/js/planRenderer.js';
+import '@mod/js/dashboard-cropper-enhance.js';
+import '@mod/js/profile-wifi.js';
+import '@mod/dashboard.js';
+import '@mod/js/dashboard-empresa.js';
+import '@mod/js/dashboard-cartao.js';
+import '@mod/js/dashboard-editor.js';
+import '@mod/js/dashboard-sortable.js';
+import '@mod/js/dashboard-save.js';
+import '@mod/js/dashboard-upload.js';
+import '@mod/js/dashboard-listeners.js';
+import '@mod/js/dashboard-separacao.js';
+import '@mod/js/dashboard-info.js';
+import '@mod/js/dashboard-kingDocs-nav.js';
+import '@mod/js/dashboard-personalizar.js';
+import '@mod/js/dashboard-vitrine.js';
+import '@mod/js/module-link-limits.js';
 
 const lazyChunks = {
-  finance: () => import('@legacy/js/dashboard-finance.js'),
-  relatorios: () => import('@legacy/js/dashboard-relatorios.js'),
-  assinatura: () => import('@legacy/js/dashboard-assinatura.js'),
-  qr: () => import('@legacy/js/dashboard-qr.js'),
-  formsEditor: () => import('@legacy/js/dashboard-forms-editor.js'),
-  editModal: () => import('@legacy/js/dashboard-edit-modal.js'),
+  finance: () => import('@mod/js/dashboard-finance.js'),
+  relatorios: () => import('@mod/js/dashboard-relatorios.js'),
+  assinatura: () => import('@mod/js/dashboard-assinatura.js'),
+  qr: () => import('@mod/js/dashboard-qr.js'),
+  formsEditor: () => import('@mod/js/dashboard-forms-editor.js'),
+  editModal: () => import('@mod/js/dashboard-edit-modal.js'),
 };
 
 const lazyReady = {};
@@ -46,7 +46,7 @@ async function ensureLazy(key) {
   if (lazyReady[key]) return lazyReady[key];
   lazyReady[key] = lazyChunks[key]().catch((err) => {
     delete lazyReady[key];
-    console.error('[dashboard] falha ao carregar módulo', key, err);
+    console.error('[dashboard] falha ao carregar mÃ³dulo', key, err);
     throw err;
   });
   return lazyReady[key];
@@ -123,13 +123,13 @@ function installLazyGuards() {
     if (key) ensureLazy(key);
   }
 
-  // Stubs: se alguém chamar antes do chunk, carrega e reencaminha
+  // Stubs: se alguÃ©m chamar antes do chunk, carrega e reencaminha
   function installStub(name, key) {
     const stub = async function (...args) {
       await ensureLazy(key);
       const fn = window[name];
       if (typeof fn !== 'function' || fn === stub) {
-        console.warn('[dashboard] módulo carregou sem definir', name);
+        console.warn('[dashboard] mÃ³dulo carregou sem definir', name);
         return;
       }
       return fn.apply(this, args);
@@ -143,14 +143,14 @@ function installLazyGuards() {
   if (typeof window.loadFormResponses !== 'function') installStub('loadFormResponses', 'formsEditor');
   if (typeof window.generateQRCode !== 'function') installStub('generateQRCode', 'qr');
 
-  // Assinatura: sempre garantir chunk (DOMContentLoaded do core NÃO deve sobrescrever isto)
+  // Assinatura: sempre garantir chunk (DOMContentLoaded do core NÃƒO deve sobrescrever isto)
   window.loadSubscriptionInfo = async function (...args) {
     try {
       await ensureLazy('assinatura');
     } catch (err) {
       const infoEl = document.getElementById('subscription-info');
       if (infoEl) {
-        infoEl.innerHTML = '<p style="color:#ff4444;">Erro ao carregar módulo de assinatura. Atualize a página.</p>';
+        infoEl.innerHTML = '<p style="color:#ff4444;">Erro ao carregar mÃ³dulo de assinatura. Atualize a pÃ¡gina.</p>';
       }
       throw err;
     }
@@ -159,13 +159,13 @@ function installLazyGuards() {
       console.warn('[dashboard] assinatura carregou sem loadSubscriptionInfo');
       const infoEl = document.getElementById('subscription-info');
       if (infoEl) {
-        infoEl.innerHTML = '<p style="color:#ff4444;">Assinatura indisponível. Atualize a página.</p>';
+        infoEl.innerHTML = '<p style="color:#ff4444;">Assinatura indisponÃ­vel. Atualize a pÃ¡gina.</p>';
       }
       return;
     }
     return fn.apply(window.DashboardAssinatura, args);
   };
-  // openEditModal: forçar await do chunk antes de delegar
+  // openEditModal: forÃ§ar await do chunk antes de delegar
   window.openEditModal = async function (itemEl) {
     await ensureLazy('editModal');
     const fn = window.DashboardEditModal && window.DashboardEditModal.openEditModal;
@@ -189,7 +189,7 @@ function installLazyGuards() {
 installLazyGuards();
 
 // Reafirma wrappers lazy DEPOIS do boot do core (DOMContentLoaded),
-// para o legado não deixar Assinatura/QR/Edit em no-op eterno.
+// para o legado nÃ£o deixar Assinatura/QR/Edit em no-op eterno.
 document.addEventListener('DOMContentLoaded', () => {
   window.loadSubscriptionInfo = async function (...args) {
     try {
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const infoEl = document.getElementById('subscription-info');
       if (infoEl) {
         infoEl.innerHTML =
-          '<p style="color:#ff4444;">Erro ao carregar módulo de assinatura. Atualize a página.</p>';
+          '<p style="color:#ff4444;">Erro ao carregar mÃ³dulo de assinatura. Atualize a pÃ¡gina.</p>';
       }
       throw err;
     }
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const infoEl = document.getElementById('subscription-info');
       if (infoEl) {
         infoEl.innerHTML =
-          '<p style="color:#ff4444;">Assinatura indisponível. Atualize a página.</p>';
+          '<p style="color:#ff4444;">Assinatura indisponÃ­vel. Atualize a pÃ¡gina.</p>';
       }
       return;
     }
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await ensureLazy('qr');
       const fn = window.generateQRCode;
       if (typeof fn !== 'function' || fn === stub) {
-        console.warn('[dashboard] módulo carregou sem definir generateQRCode');
+        console.warn('[dashboard] mÃ³dulo carregou sem definir generateQRCode');
         return;
       }
       return fn.apply(this, args);

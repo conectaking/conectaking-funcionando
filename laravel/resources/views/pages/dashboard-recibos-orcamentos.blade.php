@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Painel — Recibos e Orçamentos | ConectaKing</title>
+    <title>Painel â€” Recibos e OrÃ§amentos | ConectaKing</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
@@ -16,7 +16,7 @@
     </style>
     @vite(['resources/css/app.css', 'resources/js/pages/dashboard-recibos-orcamentos.js'])
 </head>
-<body class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<body data-recibos-nav="painel" class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
     <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
     <nav class="flex flex-col gap-6">
@@ -28,9 +28,9 @@
             <span class="material-icons-outlined">receipt_long</span>
             <span class="text-[10px] font-semibold uppercase">Recibos</span>
         </a>
-        <a href="/dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos">
+        <a href="/dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="OrÃ§amentos">
             <span class="material-icons-outlined">request_quote</span>
-            <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
+            <span class="text-[10px] font-semibold uppercase">OrÃ§amentos</span>
         </a>
     </nav>
     <div class="flex flex-col gap-6 mt-6">
@@ -38,7 +38,7 @@
             <span class="material-icons-outlined">people</span>
             <span class="text-[10px] font-semibold uppercase">Clientes</span>
         </a>
-        <a href="/configuracoes-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Configurações">
+        <a href="/configuracoes-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="ConfiguraÃ§Ãµes">
             <span class="material-icons-outlined">settings</span>
             <span class="text-[10px] font-semibold uppercase">Config.</span>
         </a>
@@ -49,8 +49,8 @@
     <div class="max-w-4xl mx-auto w-full">
         <header class="mb-6 lg:mb-8 flex flex-col sm:flex-row flex-wrap justify-between items-start gap-4">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-2">Painel — Recibos e Orçamentos</h1>
-                <p class="text-slate-500 dark:text-slate-400">Gerencie seus documentos e acesse as outras áreas do módulo.</p>
+                <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-2">Painel â€” Recibos e OrÃ§amentos</h1>
+                <p class="text-slate-500 dark:text-slate-400">Gerencie seus documentos e acesse as outras Ã¡reas do mÃ³dulo.</p>
             </div>
             <a href="/dashboard" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 hover:bg-slate-200 dark:hover:bg-black/40 transition-all text-inherit no-underline">
                 <span class="material-icons-outlined text-lg">arrow_back</span>
@@ -63,14 +63,14 @@
                 <span class="material-icons-outlined text-4xl text-primary">receipt_long</span>
                 <div>
                     <h2 class="font-bold text-lg dark:text-white">Recibo</h2>
-                    <p class="text-sm text-slate-500">Criar novo, continuar o último ou escolher na lista</p>
+                    <p class="text-sm text-slate-500">Criar novo, continuar o Ãºltimo ou escolher na lista</p>
                 </div>
             </button>
             <button type="button" id="btn-abrir-orcamento" data-tipo="orcamento" class="flex items-center gap-4 p-6 rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all text-left w-full">
                 <span class="material-icons-outlined text-4xl text-primary">request_quote</span>
                 <div>
-                    <h2 class="font-bold text-lg dark:text-white">Orçamento</h2>
-                    <p class="text-sm text-slate-500">Criar novo, continuar o último ou escolher na lista</p>
+                    <h2 class="font-bold text-lg dark:text-white">OrÃ§amento</h2>
+                    <p class="text-sm text-slate-500">Criar novo, continuar o Ãºltimo ou escolher na lista</p>
                 </div>
             </button>
         </div>
@@ -85,10 +85,10 @@
                     <select id="filter-tipo" class="text-sm rounded-lg bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark px-3 py-1">
                         <option value="">Todos</option>
                         <option value="recibo">Recibos</option>
-                        <option value="orcamento">Orçamentos</option>
+                        <option value="orcamento">OrÃ§amentos</option>
                     </select>
                 </div>
-                <span id="loading-docs" class="text-sm text-slate-500">A carregar—</span>
+                <span id="loading-docs" class="text-sm text-slate-500">A carregarâ€”</span>
                 <div id="bulk-actions" class="flex items-center gap-3 hidden">
                     <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
                         <input type="checkbox" id="select-all" class="rounded border-slate-300 text-primary focus:ring-primary"/>
@@ -108,7 +108,7 @@
                     Carregar mais
                 </button>
             </div>
-            <p id="empty-docs" class="text-slate-500 text-sm hidden">Nenhum documento ainda. Crie um recibo ou orçamento acima.</p>
+            <p id="empty-docs" class="text-slate-500 text-sm hidden">Nenhum documento ainda. Crie um recibo ou orÃ§amento acima.</p>
         </section>
     </div>
 </main>
@@ -116,15 +116,15 @@
 <div id="modal-escolha-doc" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-black/60" aria-hidden="true">
     <div class="w-full max-w-md rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark shadow-xl p-6" role="dialog" aria-labelledby="modal-escolha-titulo">
         <h3 id="modal-escolha-titulo" class="text-xl font-bold dark:text-white mb-1">Recibo</h3>
-        <p id="modal-escolha-sub" class="text-sm text-slate-500 dark:text-slate-400 mb-5">O que você deseja fazer?</p>
+        <p id="modal-escolha-sub" class="text-sm text-slate-500 dark:text-slate-400 mb-5">O que vocÃª deseja fazer?</p>
         <div class="flex flex-col gap-2">
             <button type="button" id="modal-btn-novo" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition-opacity text-left">
                 <span class="material-icons-outlined">add_circle</span>
-                <span><span class="block">Criar novo em branco</span><span class="block text-xs font-normal opacity-80">Documento vazio, número novo</span></span>
+                <span><span class="block">Criar novo em branco</span><span class="block text-xs font-normal opacity-80">Documento vazio, nÃºmero novo</span></span>
             </button>
             <button type="button" id="modal-btn-continuar" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 text-left hidden">
                 <span class="material-icons-outlined text-primary">edit</span>
-                <span><span class="block font-medium dark:text-white" id="modal-continuar-label">Continuar o último</span><span class="block text-xs text-slate-500" id="modal-continuar-sub"></span></span>
+                <span><span class="block font-medium dark:text-white" id="modal-continuar-label">Continuar o Ãºltimo</span><span class="block text-xs text-slate-500" id="modal-continuar-sub"></span></span>
             </button>
             <button type="button" id="modal-btn-lista" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-border-dark hover:border-primary/50 text-left">
                 <span class="material-icons-outlined">list</span>
@@ -135,7 +135,6 @@
     </div>
 </div>
 
-<script src="/js/recibos-modulo-nav.js" data-active="painel"></script>
     <script src="/config.js?v=2026-09-09-vite1"></script>
 </body>
 </html>

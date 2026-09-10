@@ -7,7 +7,8 @@
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
-/* Legado Vite (@legacy) — módulos que ainda usam classes Tailwind no JS */
+/* Fonte unificada (@mod = resources/js/legacy) + scan Tailwind no public restante */
+@source '../js/legacy/**/*.js';
 @source '../../../public/kingSelection*.js';
 @source '../../../public/js/**/*.js';
 @source '../../../public/*recibos*.js';

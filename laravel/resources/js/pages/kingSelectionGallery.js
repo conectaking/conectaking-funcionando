@@ -1,3 +1,3 @@
 /** King Selection — Vite entry */
-import '@legacy/js/ck-csrf.js';
-import '@legacy/kingSelectionGallery.js';
+import '@mod/js/ck-csrf.js';
+import '@mod/kingSelectionGallery.js';

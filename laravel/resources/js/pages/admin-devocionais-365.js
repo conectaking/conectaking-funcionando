@@ -1,4 +1,4 @@
-import '@legacy/js/ck-auth-gate.js';
+import '@mod/js/ck-auth-gate.js';
 
 await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
   ? window.CkAuth.requireAuth('/login')
@@ -436,7 +436,7 @@ await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
                 var obj = JSON.parse(text);
                 var parsed = parseThemesJsonObject(obj);
                 var n = applyThemesFromFileParsed(parsed);
-                flash('Ficheiro importado: ' + n + ' mês(es) com texto. Clique em «Guardar no servidor» para gravar na base de dados.', 'ok');
+                flash('Ficheiro importado: ' + n + ' mês(es) com texto. Clique em Â«Guardar no servidorÂ» para gravar na base de dados.', 'ok');
             } catch (e) {
                 flash('Ficheiro inválido. Use JSON com formato { "year": 2026, "themes": { "1": "...", "2": "..." } } ou só as chaves dos meses.', 'err');
             }
@@ -526,7 +526,7 @@ await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
         if (!months.length) { flash('Seleccione pelo menos um mês.', 'err'); return; }
         var year = parseInt(document.getElementById('batch-year').value, 10) || yNow;
         var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
-        if (!confirm('Gerar com IA todos os dias dos meses seleccionados em ' + year + ', um mês após o outro? O navegador fica à espera até terminar.')) return;
+        if (!confirm('Gerar com IA todos os dias dos meses seleccionados em ' + year + ', um mês após o outro? O navegador fica Ã  espera até terminar.')) return;
         var btn = document.getElementById('btn-batch-sync');
         btn.disabled = true;
         var o = bodyGenOpts();
@@ -863,7 +863,7 @@ await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
                     studyBulkRemoveBtn.disabled = false;
                     var master = document.getElementById('study-select-all');
                     if (master) master.checked = false;
-                    flash('Removidos: ' + ok + (fail ? ' · Não removidos (sem estudo ou erro): ' + fail : ''), fail ? 'warn' : 'ok');
+                    flash('Removidos: ' + ok + (fail ? ' Â· Não removidos (sem estudo ou erro): ' + fail : ''), fail ? 'warn' : 'ok');
                     loadStudyBooksList();
                     return;
                 }

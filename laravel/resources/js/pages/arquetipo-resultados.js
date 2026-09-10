@@ -1,5 +1,5 @@
 /** arquetipo-resultados — Vite entry (extracted inline) */
-import '@legacy/js/ck-auth-gate.js';
+import '@mod/js/ck-auth-gate.js';
 
 (async function() {
   if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;

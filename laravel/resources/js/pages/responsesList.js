@@ -1,7 +1,7 @@
 /** responsesList — Vite entry (extracted inline) */
 import '@legacy/dashboard.css';
-import '@legacy/js/ck-auth-gate.js';
-import '@legacy/js/ck-csrf.js';
+import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
 
 const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
         const urlParams = new URLSearchParams(window.location.search);
@@ -440,7 +440,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 if (!allData) allData = [];
                 console.log('[loadGuestListData] Convidados carregados:', allData.length);
                 
-                // NÃO sobrescrever currentFilter - usar o valor salvo (savedTab) para manter a aba correta após refresh
+                // NÃƒO sobrescrever currentFilter - usar o valor salvo (savedTab) para manter a aba correta após refresh
                 // currentFilter já foi definido como savedTab acima
                 if (!currentFilter || currentFilter === 'registered') {
                     currentFilter = savedTab || 'registered';
@@ -740,7 +740,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             const btn = document.getElementById('form-responses-load-more');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A carregar…';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A carregarâ€¦';
             }
             try {
                 const headersForFetch = getHeaders();
@@ -1278,7 +1278,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 <div class="lead-detail-page" role="dialog" aria-modal="true" aria-label="Ficha de ${escapeHtml(name)}">
                     <div class="lead-detail-topbar">
                         <button type="button" class="lead-back-btn" id="lead-detail-close">
-                            <i class="fas fa-arrow-left"></i> Voltar à lista
+                            <i class="fas fa-arrow-left"></i> Voltar Ã  lista
                         </button>
                         <div style="color:#A1A1A1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Ficha do cliente</div>
                     </div>
@@ -1552,7 +1552,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                         const label = (typeof getFieldLabel === 'function') ? getFieldLabel(k) : k;
                         return `${label}: ${formatLeadFieldValue(v)}`;
                     })
-                    .join(' · ');
+                    .join(' Â· ');
 
                 const idx = flatIndex++;
                 const classes = ['item-card', 'lead-card'];
@@ -1798,7 +1798,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 portariaSlugInput.value = guestListTokens.portaria_slug || '';
             }
             
-            // NÃO mostrar automaticamente - será mostrado apenas na aba Links
+            // NÃƒO mostrar automaticamente - será mostrado apenas na aba Links
             // linksHeroSection.style.display = 'block'; // Removido - será mostrado apenas na aba Links
             
             // Sempre mostrar stats
@@ -1851,7 +1851,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                         return label;
                     }
                 } else {
-                    console.log(`[getFieldLabel] Índice ${index} fora do range (0-${formFields.length - 1})`);
+                    console.log(`[getFieldLabel] Ãndice ${index} fora do range (0-${formFields.length - 1})`);
                 }
             }
             
@@ -2148,7 +2148,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             }
         }
         
-        // Função para iniciar cronômetro em tempo real
+        // Função para iniciar cronÃ´metro em tempo real
         function startCountdown(elementId, expiresAt) {
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -2375,7 +2375,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 `;
             }).join('');
             
-            // Iniciar cronômetros para links ativos (desktop e mobile)
+            // Iniciar cronÃ´metros para links ativos (desktop e mobile)
             links.forEach(link => {
                 if (link.expires_at && !link.isExpired) {
                     const expiresAt = new Date(link.expires_at);

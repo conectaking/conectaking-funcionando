@@ -56,7 +56,10 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
+            // CSS / assets ainda em public/
             '@legacy': legacyPublic,
+            // JS unificado sob resources/js/legacy (fonte Vite)
+            '@mod': path.resolve(__dirname, 'resources/js/legacy'),
         },
     },
     server: {

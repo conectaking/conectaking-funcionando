@@ -1,5 +1,5 @@
 /** zerar-mes — Vite entry (extracted inline) */
-import '@legacy/js/ck-auth-gate.js';
+import '@mod/js/ck-auth-gate.js';
 
 (function() {
             // Mesma regra do dashboard: produção por padrão; API local só com ?api=local ou localStorage useLocalApi
