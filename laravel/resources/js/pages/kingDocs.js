@@ -1647,7 +1647,7 @@ import '@legacy/js/ck-auth-gate.js';
   }
 
   async function exportVaultPdf() {
-    const r = await fetch(api('/api/king-docs/vault/export-pdf'), { headers: { Authorization: 'Bearer ' + getToken() } });
+    const r = await fetch(api('/api/king-docs/vault/export-pdf'), { headers: authHeaders() });
     if (!r.ok) { showToast('Erro ao gerar o PDF.', 'err'); return; }
     const blob = await r.blob();
     const u = URL.createObjectURL(blob);
@@ -1858,7 +1858,10 @@ import '@legacy/js/ck-auth-gate.js';
     var fd = new FormData();
     fd.append('file', file);
     fd.append('docType', docTypeLabel || 'documento');
-    var r = await fetch(api('/api/king-docs/files'), { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }, body: fd });
+    var upH = {};
+    var tok = getToken();
+    if (tok) upH.Authorization = 'Bearer ' + tok;
+    var r = await fetch(api('/api/king-docs/files'), { method: 'POST', headers: upH, body: fd });
     return r.ok;
   }
 

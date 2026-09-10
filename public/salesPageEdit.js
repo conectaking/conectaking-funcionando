@@ -505,12 +505,12 @@
 
             // Obter URL de upload do Cloudflare
             const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+            const authHeaders = { 'Content-Type': 'application/json' };
+            if (token) authHeaders.Authorization = `Bearer ${token}`;
             const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                credentials: 'include',
+                headers: authHeaders
             });
 
             if (!authResponse.ok) {
@@ -1566,12 +1566,12 @@
                         uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
                         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+                        const authHeaders = { 'Content-Type': 'application/json' };
+                        if (token) authHeaders.Authorization = `Bearer ${token}`;
                         const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                             method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
+                            credentials: 'include',
+                            headers: authHeaders
                         });
 
                         if (!authResponse.ok) {
@@ -1648,12 +1648,12 @@
                         uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
                         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+                        const authHeaders = { 'Content-Type': 'application/json' };
+                        if (token) authHeaders.Authorization = `Bearer ${token}`;
                         const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                             method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
+                            credentials: 'include',
+                            headers: authHeaders
                         });
 
                         if (!authResponse.ok) {
@@ -1745,12 +1745,12 @@
                         uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
                         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+                        const authHeaders = { 'Content-Type': 'application/json' };
+                        if (token) authHeaders.Authorization = `Bearer ${token}`;
                         const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                             method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
+                            credentials: 'include',
+                            headers: authHeaders
                         });
 
                         if (!authResponse.ok) {

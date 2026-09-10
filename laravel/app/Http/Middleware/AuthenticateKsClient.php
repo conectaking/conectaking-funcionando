@@ -42,8 +42,9 @@ class AuthenticateKsClient
         $auth = $request->header('Authorization', '');
         if (is_string($auth) && str_starts_with($auth, 'Bearer ')) {
             $t = trim(substr($auth, 7));
-
-            return $t !== '' ? $t : null;
+            if ($t !== '') {
+                return $t;
+            }
         }
         // Cookie SameSite (para <img src> de preview) — sem token em query/logs/Referer.
         $cookie = $request->cookie('ks_client_token');

@@ -74,6 +74,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (token) HEADERS.Authorization = `Bearer ${token}`;
   const IMG_HEADERS = token ? { 'Authorization': `Bearer ${token}` } : {};
 
+  const __ksEditRawFetch = window.fetch.bind(window);
+  function fetch(url, init) {
+    init = init || {};
+    if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
+    try {
+      const h = init.headers;
+      if (h && typeof h === 'object' && !h.get) {
+        const auth = h.Authorization || h.authorization;
+        if (typeof auth === 'string' && /^Bearer\s*$/i.test(auth.trim())) {
+          const copy = Object.assign({}, h);
+          delete copy.Authorization;
+          delete copy.authorization;
+          init = Object.assign({}, init, { headers: copy });
+        }
+      }
+    } catch (_) {}
+    return __ksEditRawFetch(url, init);
+  }
+
   async function ensureProfileItemId() {
     if (itemId) return String(itemId);
     const res = await fetch(`${API_URL}/api/profile`, { headers: HEADERS });

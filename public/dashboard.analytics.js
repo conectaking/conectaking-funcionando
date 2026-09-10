@@ -69,12 +69,11 @@
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers.Authorization = `Bearer ${token}`;
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/analytics/${salesPageId}`, {
                     credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    headers
                 });
 
                 if (!response.ok) {
@@ -99,12 +98,11 @@
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers.Authorization = `Bearer ${token}`;
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/analytics/${salesPageId}/funnel`, {
                     credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    headers
                 });
 
                 if (!response.ok) {
@@ -126,12 +124,11 @@
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                 const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers.Authorization = `Bearer ${token}`;
                 const response = await fetch(`${API_URL}/api/v1/sales-pages/analytics/${salesPageId}/ranking`, {
                     credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    headers
                 });
 
                 if (!response.ok) {

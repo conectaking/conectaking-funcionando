@@ -80,13 +80,29 @@ class FrontLegacyController extends Controller
             if (isApiUrl) {
               if (opts.credentials == null) opts.credentials = 'include';
               var headers = opts.headers || (opts.headers = {});
-              if (!(headers.Authorization || (headers.get && headers.get('Authorization')))) {
+              function readAuth(h) {
+                if (!h) return '';
+                if (typeof h.get === 'function') return String(h.get('Authorization') || h.get('authorization') || '');
+                return String(h.Authorization || h.authorization || '');
+              }
+              function writeAuth(h, value) {
+                if (typeof h.set === 'function') h.set('Authorization', value);
+                else if (Object.prototype.toString.call(h) === '[object Headers]') h.set('Authorization', value);
+                else h.Authorization = value;
+              }
+              function clearAuth(h) {
+                if (typeof h.delete === 'function') { h.delete('Authorization'); h.delete('authorization'); }
+                else { try { delete h.Authorization; delete h.authorization; } catch (e) {} }
+              }
+              var existingAuth = readAuth(headers);
+              // Remover "Bearer " vazio — bloqueava cookie HttpOnly no middleware
+              if (existingAuth && /^Bearer\\s*$/i.test(existingAuth.trim())) {
+                clearAuth(headers);
+                existingAuth = '';
+              }
+              if (!existingAuth) {
                 var token = getToken();
-                if (token) {
-                  if (typeof headers.set === 'function') headers.set('Authorization', 'Bearer ' + token);
-                  else if (Object.prototype.toString.call(headers) === '[object Headers]') headers.set('Authorization', 'Bearer ' + token);
-                  else headers.Authorization = 'Bearer ' + token;
-                }
+                if (token) writeAuth(headers, 'Bearer ' + token);
               }
             }
             if (finalUrl === url) return nativeFetch.apply(this, arguments);

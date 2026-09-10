@@ -17,6 +17,11 @@ import '@legacy/js/ck-auth-gate.js';
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = 'Bearer ' + token;
 
+  const __rawFetch = window.fetch.bind(window);
+  function fetch(url, init) {
+    return __rawFetch(url, Object.assign({ credentials: 'include' }, init || {}));
+  }
+
   function showErr(msg) {
     const el = document.getElementById('err');
     el.textContent = msg || '';
@@ -72,7 +77,7 @@ import '@legacy/js/ck-auth-gate.js';
   async function uploadImage(file, setUrl, setInfo) {
     var fd = new FormData();
     fd.append('image', file);
-    var r = await fetch(API + '/api/upload/image', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+    var r = await fetch(API + '/api/upload/image', { method: 'POST', headers: token ? { 'Authorization': 'Bearer ' + token } : {}, body: fd });
     var d = await r.json().catch(function() { return {}; });
     if (!r.ok) { showErr(d.message || 'Erro ao enviar imagem'); return; }
     var url = (d.url || d.imageUrl || d.data && d.data.url) || '';
@@ -81,7 +86,7 @@ import '@legacy/js/ck-auth-gate.js';
   async function uploadAudioFile(file, setUrl, setInfo) {
     var fd = new FormData();
     fd.append('file', file);
-    var r = await fetch(API + '/api/convite/upload-audio', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+    var r = await fetch(API + '/api/convite/upload-audio', { method: 'POST', headers: token ? { 'Authorization': 'Bearer ' + token } : {}, body: fd });
     var d = await r.json().catch(function() { return {}; });
     if (!r.ok) { showErr(d.message || (d.error && d.error.message) || 'Erro ao enviar áudio'); return; }
     var url = (d.data && d.data.url) || d.url || '';

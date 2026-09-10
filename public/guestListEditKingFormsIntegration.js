@@ -16,10 +16,10 @@
     }
     
     function getHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getToken()}`
-        };
+        const h = { 'Content-Type': 'application/json' };
+        const t = getToken();
+        if (t) h.Authorization = `Bearer ${t}`;
+        return h;
     }
     
     // Obter itemId da URL
@@ -59,6 +59,7 @@
         
         try {
             const response = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
+                credentials: 'include',
                 headers: getHeaders()
             });
             
