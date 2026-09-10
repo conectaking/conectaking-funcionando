@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
@@ -18,7 +18,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <!-- Cache-bust CSS - v2025-01-31-04 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+    <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
 
     <!-- CSS CRÍTICO INLINE PARA MOBILE - Garantir scroll funcionando -->
     <style>
@@ -175,8 +175,8 @@
         }
     </style>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="/vendor/chartjs/chart.umd.min.js"></script>
+    <script src="/vendor/sortablejs/Sortable.min.js"></script>
     @vite(['resources/js/pages/salesPageEdit.js'])
 </head>
 <body class="sales-page-edit-page">
@@ -647,7 +647,7 @@
             profileId: null
         };
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <script src="/vendor/cropperjs/cropper.min.js"></script>
     <script src="/config.js?v=2026-09-09-vite1"></script>
 <!-- Script para forçar limpeza de cache e garantir comportamento mobile -->
     <script>

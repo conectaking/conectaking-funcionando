@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -146,10 +146,10 @@
     }
     </style>
 
-    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="/vendor/qrcodejs/qrcode.min.js"></script>
+    <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
+    <script src="/vendor/cropperjs/cropper.min.js"></script>
+    <script src="/vendor/sortablejs/Sortable.min.js"></script>
     <script>
     (function () {
       function loadScript(src) {
@@ -177,14 +177,14 @@
       window.ckEnsureChart = function () {
         if (typeof Chart !== 'undefined') return Promise.resolve(Chart);
         if (window.__ckChartPromise) return window.__ckChartPromise;
-        window.__ckChartPromise = loadScript('https://cdn.jsdelivr.net/npm/chart.js').then(function () { return window.Chart; });
+        window.__ckChartPromise = loadScript('/vendor/chartjs/chart.umd.min.js').then(function () { return window.Chart; });
         return window.__ckChartPromise;
       };
       window.ckEnsureLeaflet = function () {
         if (window.L) return Promise.resolve(window.L);
         if (window.__ckLeafletPromise) return window.__ckLeafletPromise;
-        window.__ckLeafletPromise = loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css')
-          .then(function () { return loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'); })
+        window.__ckLeafletPromise = loadCss('/vendor/leaflet/leaflet.css')
+          .then(function () { return loadScript('/vendor/leaflet/leaflet.js'); })
           .then(function () { return window.L; });
         return window.__ckLeafletPromise;
       };
@@ -1780,6 +1780,5 @@
       })();
     </script>
     <!-- api-config.js já no <head> (credentials + CSRF) -->
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>

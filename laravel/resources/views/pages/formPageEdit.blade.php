@@ -6,11 +6,11 @@
     <title>Editar King Forms - Dashboard</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
+    <script src="/vendor/cropperjs/cropper.min.js"></script>
+    <script src="/vendor/sortablejs/Sortable.min.js"></script>
+    <script src="/vendor/chartjs/chart.umd.min.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/config.js?v=2026-09-09-vite1"></script>
     <style>
         * {

@@ -272,6 +272,7 @@ class FrontLegacyController extends Controller
             'webp' => 'image/webp',
             'woff2' => 'font/woff2',
             'woff' => 'font/woff',
+            'ttf' => 'font/ttf',
             default => 'application/octet-stream',
         };
 

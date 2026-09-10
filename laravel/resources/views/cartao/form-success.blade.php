@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'Enviado' }} — {{ $formTitle ?? 'Formulário' }}</title>
     @if(!empty($showQr) && !empty($qrToken))
-    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js"></script>
+    <script src="/vendor/qrcodejs/qrcode.min.js"></script>
     @endif
     <style>
         :root {

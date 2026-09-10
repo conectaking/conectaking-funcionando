@@ -6,7 +6,7 @@
   <title>KingSelection - Revisão</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
   
   <style>
     .ks-img-loading{filter: blur(18px); transform: scale(1.03); opacity:.85}

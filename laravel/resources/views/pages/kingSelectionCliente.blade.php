@@ -12,7 +12,7 @@
   @endisset
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png" />
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" crossorigin="anonymous" />
   <style>
     :root {
       --bg: #000000;

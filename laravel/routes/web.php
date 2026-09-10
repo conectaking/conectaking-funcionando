@@ -876,6 +876,10 @@ Route::get('/checkoutConfig.html', fn () => response('Checkout/pagamento online 
 Route::get('/config.js', function () {
     return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), 'config.js');
 });
+// Vendor estático (FA, Chart, Leaflet, Cropper…) — paths aninhados
+Route::get('/vendor/{path}', function (\Illuminate\Http\Request $request, string $path) {
+    return app(\App\Http\Controllers\FrontLegacyController::class)->page($request, 'vendor/'.$path);
+})->where('path', '.*');
 Route::get('/{asset}', [\App\Http\Controllers\FrontLegacyController::class, 'page'])
     ->where('asset', '^(?!build/).+\\.(js|css|map|png|jpg|jpeg|webp|svg|woff2?|ttf|ico|json)$');
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);
