@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\AuthCookieDomain;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -64,7 +65,7 @@ class RequireCookieCsrf
             $token,
             time() + ($minutes * 60),
             '/',
-            null,
+            AuthCookieDomain::forRequest($request),
             $request->isSecure(),
             false, // legível pelo JS (double-submit)
             false,
@@ -79,7 +80,7 @@ class RequireCookieCsrf
             '',
             1,
             '/',
-            null,
+            AuthCookieDomain::forRequest($request),
             $request->isSecure(),
             false,
             false,

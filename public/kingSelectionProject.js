@@ -40,8 +40,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `/kingSelection${q}`;
   }
 
-  const token = localStorage.getItem('conectaKingToken') || '';
-  if (!token) {
+  const token = (window.CkAuth && typeof window.CkAuth.lsToken === 'function')
+    ? (window.CkAuth.lsToken() || '')
+    : (localStorage.getItem('conectaKingToken') || '');
+  if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+    if (!(await window.CkAuth.requireAuth('/login'))) return;
+  } else if (!token) {
     try {
       const r = await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
       if (!r.ok) {
@@ -56,7 +60,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   // Cookie HttpOnly do login autentica <img> same-origin.
   const HEADERS = { 'Content-Type': 'application/json' };
-  if (token) HEADERS.Authorization = `Bearer ${token}`;
+  const bearer = (window.CkAuth && typeof window.CkAuth.lsToken === 'function')
+    ? (window.CkAuth.lsToken() || '')
+    : token;
+  if (bearer) HEADERS.Authorization = `Bearer ${bearer}`;
 
   const __ksRawFetch = window.fetch.bind(window);
   function fetch(url, init) {

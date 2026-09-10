@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\Auth\AuthService;
+use App\Support\AuthCookieDomain;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -81,7 +82,7 @@ class AuthController extends Controller
             $value,
             $minutes > 0 ? time() + ($minutes * 60) : 1,
             '/',
-            null,
+            AuthCookieDomain::forRequest($request),
             $request->isSecure(),
             true, // HttpOnly — AuthenticateJwt já lê cookie `token`
             false,

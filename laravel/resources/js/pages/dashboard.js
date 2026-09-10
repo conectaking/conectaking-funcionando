@@ -226,6 +226,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return fn.call(window.DashboardEditModal, tempItem);
   };
   if (typeof window.generateQRCode !== 'function' || !window.DashboardQR) {
-    installStub('generateQRCode', 'qr');
+    const stub = async function (...args) {
+      await ensureLazy('qr');
+      const fn = window.generateQRCode;
+      if (typeof fn !== 'function' || fn === stub) {
+        console.warn('[dashboard] módulo carregou sem definir generateQRCode');
+        return;
+      }
+      return fn.apply(this, args);
+    };
+    window.generateQRCode = stub;
   }
 });

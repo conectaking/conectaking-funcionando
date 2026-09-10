@@ -52,24 +52,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   const qs = new URLSearchParams(window.location.search || '');
   let itemId = qs.get('itemId') || qs.get('itemid') || qs.get('profileItemId');
 
-  const token = localStorage.getItem('conectaKingToken')
-    || localStorage.getItem('conectaking_token')
-    || localStorage.getItem('token')
-    || localStorage.getItem('jwt')
-    || '';
-  if (!token) {
-    try {
-      const r = await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
-      if (!r.ok) {
+  // Cookie-first: JWT stale no localStorage não pode bloquear a sessão HttpOnly.
+  if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+    if (!(await window.CkAuth.requireAuth(`${ksAppPage('login')}`))) return;
+  } else {
+    const tokenProbe = localStorage.getItem('conectaKingToken')
+      || localStorage.getItem('conectaking_token')
+      || localStorage.getItem('token')
+      || localStorage.getItem('jwt')
+      || '';
+    if (!tokenProbe) {
+      try {
+        const r = await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (!r.ok) {
+          window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
+          return;
+        }
+        try { localStorage.setItem('conectaKingSession', '1'); } catch (_) {}
+      } catch (_) {
         window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
         return;
       }
-      try { localStorage.setItem('conectaKingSession', '1'); } catch (_) {}
-    } catch (_) {
-      window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
-      return;
     }
   }
+
+  const token = (window.CkAuth && typeof window.CkAuth.lsToken === 'function')
+    ? (window.CkAuth.lsToken() || '')
+    : (localStorage.getItem('conectaKingToken')
+      || localStorage.getItem('conectaking_token')
+      || localStorage.getItem('token')
+      || localStorage.getItem('jwt')
+      || '');
   const HEADERS = { 'Content-Type': 'application/json' };
   if (token) HEADERS.Authorization = `Bearer ${token}`;
   const IMG_HEADERS = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -578,6 +591,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const res = await fetch(`${API_URL}/api/king-selection/galleries?profileItemId=${encodeURIComponent(itemId)}`, { headers: HEADERS });
     const data = await res.json().catch(() => ({}));
     if (res.status === 401) {
+      // Retry cookie-only (Bearer stale no LS).
+      try {
+        const retryHeaders = { Accept: 'application/json', 'Content-Type': 'application/json' };
+        const retry = await fetch(`${API_URL}/api/king-selection/galleries?profileItemId=${encodeURIComponent(itemId)}`, {
+          headers: retryHeaders,
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const retryData = await retry.json().catch(() => ({}));
+        if (retry.ok) {
+          try {
+            if (window.CkAuth && typeof window.CkAuth.clearSession === 'function') window.CkAuth.clearSession();
+            else {
+              localStorage.removeItem('conectaKingToken');
+              localStorage.removeItem('conectaKingRefreshToken');
+            }
+          } catch (_) {}
+          if (retryData.share_base_url) window.KING_SELECTION_SHARE_BASE_URL = retryData.share_base_url;
+          galleries = Array.isArray(retryData.galleries) ? retryData.galleries : [];
+          renderKanban();
+          return;
+        }
+      } catch (_) { /* cai no login */ }
       localStorage.removeItem('conectaKingToken');
       localStorage.removeItem('conectaKingRefreshToken');
       localStorage.removeItem('conectaKingUser');
