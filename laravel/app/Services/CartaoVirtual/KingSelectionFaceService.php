@@ -5,7 +5,7 @@ namespace App\Services\CartaoVirtual;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaMeta;
 
 /**
  * KS face — enroll + listagem (Rekognition IndexFaces com Bytes).
@@ -29,7 +29,7 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
-        if (! Schema::hasTable('rekognition_client_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_client_faces')) {
             return ['status' => 200, 'body' => ['success' => true, 'clientIds' => []]];
         }
         $rows = DB::select(
@@ -65,7 +65,7 @@ class KingSelectionFaceService
         if ($r2Key === '' || ! str_starts_with($r2Key, 'galleries/')) {
             return ['status' => 400, 'body' => ['message' => 'referenceR2Key deve ser uma chave R2 válida (ex: galleries/123/ref.jpg).']];
         }
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 500, 'body' => ['message' => 'Tabela de clientes não disponível.']];
         }
         $clientRow = DB::selectOne(
@@ -102,7 +102,7 @@ class KingSelectionFaceService
             ]];
         }
 
-        if (! Schema::hasTable('rekognition_client_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_client_faces')) {
             return ['status' => 200, 'body' => [
                 'success' => true,
                 'message' => 'Rosto indexado no Rekognition. Tabela rekognition_client_faces não existe (rode a migration 181).',
@@ -162,7 +162,7 @@ class KingSelectionFaceService
                 'message' => 'Cadastro de rosto requer acesso individual ou uma única ficha de visitante nesta galeria.',
             ]];
         }
-        if (Schema::hasColumn('king_galleries', 'face_recognition_enabled')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'face_recognition_enabled')) {
             $ge = DB::selectOne('SELECT face_recognition_enabled FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
             if ($ge && empty($ge->face_recognition_enabled)) {
                 return ['status' => 403, 'body' => ['message' => 'Reconhecimento facial está desativado nesta galeria.']];
@@ -186,7 +186,7 @@ class KingSelectionFaceService
         if (! is_array($faceRecords) || $faceRecords === []) {
             return ['status' => 400, 'body' => ['message' => 'Nenhum rosto detectado na foto. Tente uma selfie mais nítida.']];
         }
-        if (Schema::hasTable('rekognition_client_faces')) {
+        if (SchemaMeta::hasTable('rekognition_client_faces')) {
             DB::delete('DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?', [$galleryId, $clientId]);
             foreach ($faceRecords as $rec) {
                 $faceId = $rec['Face']['FaceId'] ?? null;
@@ -226,7 +226,7 @@ class KingSelectionFaceService
         if (! $cfg['enabled']) {
             return ['status' => 503, 'body' => ['message' => 'Reconhecimento facial não configurado no servidor.']];
         }
-        if (! Schema::hasTable('rekognition_client_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_client_faces')) {
             return ['status' => 503, 'body' => [
                 'message' => 'Reconhecimento facial não está disponível. Execute as migrations do banco (rekognition) no servidor.',
             ]];
@@ -277,13 +277,13 @@ class KingSelectionFaceService
         if (! is_array($faceRecords) || $faceRecords === []) {
             return ['status' => 400, 'body' => ['message' => 'Rosto não detectado na imagem. Tente uma foto mais clara.']];
         }
-        if (Schema::hasTable('rekognition_processing_cache')) {
+        if (SchemaMeta::hasTable('rekognition_processing_cache')) {
             DB::delete(
                 'DELETE FROM rekognition_processing_cache WHERE cache_key LIKE ?',
                 ['search:'.$galleryId.':'.$clientId.':%']
             );
         }
-        if (Schema::hasTable('rekognition_face_matches') && Schema::hasTable('rekognition_photo_faces')) {
+        if (SchemaMeta::hasTable('rekognition_face_matches') && SchemaMeta::hasTable('rekognition_photo_faces')) {
             DB::delete(
                 'DELETE FROM rekognition_face_matches
                  WHERE client_id = ?
@@ -346,7 +346,7 @@ class KingSelectionFaceService
                 'message' => 'Busca por rosto requer acesso individual ou uma única ficha nesta galeria.',
             ]];
         }
-        if (Schema::hasColumn('king_galleries', 'face_recognition_enabled')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'face_recognition_enabled')) {
             $ge = DB::selectOne('SELECT face_recognition_enabled FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
             if ($ge && empty($ge->face_recognition_enabled)) {
                 return ['status' => 403, 'body' => ['message' => 'Reconhecimento facial está desativado nesta galeria.']];
@@ -393,7 +393,7 @@ class KingSelectionFaceService
                 'message' => 'Nenhum rosto parecido encontrado na galeria.',
             ]];
         }
-        if (! Schema::hasTable('rekognition_client_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_client_faces')) {
             return ['status' => 200, 'body' => ['success' => true, 'total' => 0, 'photoIds' => []]];
         }
         $placeholders = implode(',', array_fill(0, count($matchedFaceIds), '?'));
@@ -411,7 +411,7 @@ class KingSelectionFaceService
             ]];
         }
         $minSim = max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 70)));
-        if (! Schema::hasTable('rekognition_face_matches') || ! Schema::hasTable('rekognition_photo_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_face_matches') || ! SchemaMeta::hasTable('rekognition_photo_faces')) {
             return ['status' => 200, 'body' => ['success' => true, 'total' => 0, 'photoIds' => []]];
         }
         $total = (int) (DB::selectOne(
@@ -458,7 +458,7 @@ class KingSelectionFaceService
             [$galleryId]
         )->total ?? 0);
         $jobs = ['pending' => 0, 'processing' => 0, 'done' => 0, 'error' => 0];
-        if (Schema::hasTable('rekognition_photo_jobs')) {
+        if (SchemaMeta::hasTable('rekognition_photo_jobs')) {
             $rows = DB::select(
                 'SELECT process_status, COUNT(*)::int AS cnt
                  FROM rekognition_photo_jobs WHERE gallery_id = ?
@@ -493,7 +493,7 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
-        if (! Schema::hasTable('rekognition_photo_faces') || ! Schema::hasTable('rekognition_face_matches')) {
+        if (! SchemaMeta::hasTable('rekognition_photo_faces') || ! SchemaMeta::hasTable('rekognition_face_matches')) {
             return ['status' => 200, 'body' => [
                 'success' => true,
                 'galleryId' => $galleryId,
@@ -608,7 +608,7 @@ class KingSelectionFaceService
             return ['status' => 404, 'body' => ['message' => 'Foto não encontrada.']];
         }
         $faces = [];
-        if (Schema::hasTable('rekognition_photo_faces')) {
+        if (SchemaMeta::hasTable('rekognition_photo_faces')) {
             $faceRows = DB::select(
                 'SELECT id, face_index, bounding_box_json, confidence
                  FROM rekognition_photo_faces WHERE photo_id = ? ORDER BY face_index',
@@ -616,7 +616,7 @@ class KingSelectionFaceService
             );
             foreach ($faceRows as $faceRow) {
                 $matches = [];
-                if (Schema::hasTable('rekognition_face_matches')) {
+                if (SchemaMeta::hasTable('rekognition_face_matches')) {
                     $matchRows = DB::select(
                         'SELECT rfm.client_id, rfm.similarity, rfm.rekognition_face_id,
                                 kgc.nome AS client_name, kgc.email AS client_email
@@ -652,7 +652,7 @@ class KingSelectionFaceService
             }
         }
         $job = null;
-        if (Schema::hasTable('rekognition_photo_jobs')) {
+        if (SchemaMeta::hasTable('rekognition_photo_jobs')) {
             $job = DB::selectOne(
                 'SELECT process_status, processed_at, error_message
                  FROM rekognition_photo_jobs WHERE gallery_id = ? AND photo_id = ? LIMIT 1',
@@ -684,7 +684,7 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_folder_auto_jobs')) {
+        if (! SchemaMeta::hasTable('king_folder_auto_jobs')) {
             return ['status' => 200, 'body' => ['success' => true, 'job' => null]];
         }
         $job = DB::selectOne(
@@ -707,7 +707,7 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_folder_auto_jobs')) {
+        if (! SchemaMeta::hasTable('king_folder_auto_jobs')) {
             return ['status' => 200, 'body' => ['success' => true, 'jobs' => []]];
         }
         $limit = min(50, max(1, (int) ($query['limit'] ?? 20)));
@@ -760,7 +760,7 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_folder_auto_jobs')) {
+        if (! SchemaMeta::hasTable('king_folder_auto_jobs')) {
             return ['status' => 412, 'body' => ['message' => 'Tabela king_folder_auto_jobs não encontrada.']];
         }
         $job = DB::selectOne(
@@ -791,7 +791,7 @@ class KingSelectionFaceService
     private function runAutoSeparateByFaceInternal(int $galleryId, float $minSimilarity): array
     {
         $foldersEmpty = [];
-        if (Schema::hasTable('king_photo_folders')) {
+        if (SchemaMeta::hasTable('king_photo_folders')) {
             $foldersEmpty = DB::select(
                 'SELECT id, gallery_id, name, sort_order, cover_photo_id, created_at
                  FROM king_photo_folders WHERE gallery_id = ? ORDER BY sort_order ASC, id ASC',
@@ -799,7 +799,7 @@ class KingSelectionFaceService
             );
         }
         foreach (['king_photo_folders', 'rekognition_photo_faces', 'rekognition_face_matches', 'king_gallery_clients'] as $t) {
-            if (! Schema::hasTable($t)) {
+            if (! SchemaMeta::hasTable($t)) {
                 return [
                     'updated' => 0,
                     'assignments' => [],
@@ -808,7 +808,7 @@ class KingSelectionFaceService
                 ];
             }
         }
-        if (! Schema::hasColumn('king_photos', 'folder_id')) {
+        if (! SchemaMeta::hasColumn('king_photos', 'folder_id')) {
             return [
                 'updated' => 0,
                 'assignments' => [],
@@ -916,7 +916,7 @@ class KingSelectionFaceService
             }
             $folderIds = array_values(array_unique(array_map(static fn ($a) => $a['folderId'], $assignments)));
             foreach ($folderIds as $fid) {
-                if (Schema::hasColumn('king_photo_folders', 'cover_photo_id')) {
+                if (SchemaMeta::hasColumn('king_photo_folders', 'cover_photo_id')) {
                     DB::update(
                         'UPDATE king_photo_folders f
                          SET cover_photo_id = COALESCE(
@@ -1031,7 +1031,7 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_folder_auto_jobs')) {
+        if (! SchemaMeta::hasTable('king_folder_auto_jobs')) {
             return ['status' => 412, 'body' => ['message' => 'Tabela king_folder_auto_jobs não encontrada. Execute a migration 207.']];
         }
         $minSimilarity = max(45.0, min(99.0, (float) ($body['minSimilarity'] ?? 72) ?: 72));
@@ -1098,7 +1098,7 @@ class KingSelectionFaceService
                 'message' => 'Reconhecimento facial requer acesso individual ou uma única ficha de visitante nesta galeria. Peça ao fotógrafo.',
             ]];
         }
-        if (Schema::hasColumn('king_galleries', 'face_recognition_enabled')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'face_recognition_enabled')) {
             $ge = DB::selectOne('SELECT face_recognition_enabled FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
             if ($ge && empty($ge->face_recognition_enabled)) {
                 return ['status' => 403, 'body' => ['message' => 'Reconhecimento facial está desativado nesta galeria.']];
@@ -1172,7 +1172,7 @@ class KingSelectionFaceService
             ]];
         }
 
-        if (! Schema::hasTable('rekognition_face_matches') || ! Schema::hasTable('rekognition_photo_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_face_matches') || ! SchemaMeta::hasTable('rekognition_photo_faces')) {
             return ['status' => 200, 'body' => ['success' => true, 'total' => 0, 'photoIds' => []]];
         }
         $minSim = max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 70)));
@@ -1221,7 +1221,7 @@ class KingSelectionFaceService
             }
         }
         $ids = array_values(array_unique($ids));
-        if (! Schema::hasTable('rekognition_processing_cache')) {
+        if (! SchemaMeta::hasTable('rekognition_processing_cache')) {
             return ['status' => 200, 'body' => ['success' => true, 'saved' => count($ids)]];
         }
         $this->setSearchCache($galleryId, $clientId, 'enroll', $ids);
@@ -1241,13 +1241,13 @@ class KingSelectionFaceService
         if ($galleryId < 1 || $clientId < 1) {
             return ['status' => 403, 'body' => ['message' => 'Sessão facial não encontrada para este acesso.']];
         }
-        if (Schema::hasTable('rekognition_processing_cache')) {
+        if (SchemaMeta::hasTable('rekognition_processing_cache')) {
             DB::delete(
                 'DELETE FROM rekognition_processing_cache WHERE cache_key LIKE ?',
                 ['search:'.$galleryId.':'.$clientId.':%']
             );
         }
-        if (Schema::hasTable('rekognition_face_matches') && Schema::hasTable('rekognition_photo_faces')) {
+        if (SchemaMeta::hasTable('rekognition_face_matches') && SchemaMeta::hasTable('rekognition_photo_faces')) {
             DB::delete(
                 'DELETE FROM rekognition_face_matches
                  WHERE client_id = ?
@@ -1259,7 +1259,7 @@ class KingSelectionFaceService
                 [$clientId, $galleryId]
             );
         }
-        if (Schema::hasTable('rekognition_client_faces')) {
+        if (SchemaMeta::hasTable('rekognition_client_faces')) {
             DB::delete(
                 'DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?',
                 [$galleryId, $clientId]
@@ -1318,7 +1318,7 @@ class KingSelectionFaceService
         $limit = min(100, max(1, (int) ($query['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
         $minSim = max(50.0, min(100.0, (float) (env('REKOG_FACE_RESULT_MIN_SIMILARITY') ?: 70)));
-        if (! Schema::hasTable('rekognition_face_matches')) {
+        if (! SchemaMeta::hasTable('rekognition_face_matches')) {
             return ['status' => 200, 'body' => [
                 'success' => true,
                 'galleryId' => $galleryId,
@@ -1530,7 +1530,7 @@ class KingSelectionFaceService
         usort($faces, static fn ($a, $b) => $b['area'] <=> $a['area']);
         $faces = array_slice($faces, 0, $maxFaces);
 
-        if (Schema::hasTable('rekognition_face_matches') && Schema::hasTable('rekognition_photo_faces')) {
+        if (SchemaMeta::hasTable('rekognition_face_matches') && SchemaMeta::hasTable('rekognition_photo_faces')) {
             DB::delete(
                 'DELETE FROM rekognition_face_matches
                  WHERE photo_face_id IN (SELECT id FROM rekognition_photo_faces WHERE photo_id = ?)',
@@ -1542,7 +1542,7 @@ class KingSelectionFaceService
         $resultFaces = [];
         foreach ($faces as $face) {
             $photoFaceId = null;
-            if (Schema::hasTable('rekognition_photo_faces')) {
+            if (SchemaMeta::hasTable('rekognition_photo_faces')) {
                 $ins = DB::selectOne(
                     'INSERT INTO rekognition_photo_faces (photo_id, face_index, bounding_box_json, confidence)
                      VALUES (?, ?, ?, ?) RETURNING id',
@@ -1568,7 +1568,7 @@ class KingSelectionFaceService
                         }
                         $similarity = (float) ($fm['Similarity'] ?? 0);
                         $rekFaceId = $fm['Face']['FaceId'] ?? null;
-                        if ($photoFaceId && Schema::hasTable('rekognition_face_matches')) {
+                        if ($photoFaceId && SchemaMeta::hasTable('rekognition_face_matches')) {
                             DB::insert(
                                 'INSERT INTO rekognition_face_matches (photo_face_id, client_id, similarity, rekognition_face_id)
                                  VALUES (?, ?, ?, ?)',
@@ -1593,7 +1593,7 @@ class KingSelectionFaceService
             ];
         }
 
-        if (Schema::hasTable('rekognition_photo_jobs')) {
+        if (SchemaMeta::hasTable('rekognition_photo_jobs')) {
             DB::statement(
                 'INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
                  VALUES (?, ?, ?, \'done\', NOW(), NULL)
@@ -1628,7 +1628,7 @@ class KingSelectionFaceService
      */
     private function getSearchCache(int $galleryId, int $clientId, string $key): ?array
     {
-        if (! Schema::hasTable('rekognition_processing_cache')) {
+        if (! SchemaMeta::hasTable('rekognition_processing_cache')) {
             return null;
         }
         $row = DB::selectOne(
@@ -1655,7 +1655,7 @@ class KingSelectionFaceService
      */
     private function setSearchCache(int $galleryId, int $clientId, string $key, array $photoIds, int $ttlDays = 7): void
     {
-        if (! Schema::hasTable('rekognition_processing_cache')) {
+        if (! SchemaMeta::hasTable('rekognition_processing_cache')) {
             return;
         }
         DB::statement(
@@ -1675,7 +1675,7 @@ class KingSelectionFaceService
      */
     private function getReferenceImageBytes(int $galleryId, int $clientId): ?string
     {
-        if (! Schema::hasTable('rekognition_client_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_client_faces')) {
             return null;
         }
         $row = DB::selectOne(
@@ -2193,7 +2193,7 @@ class KingSelectionFaceService
         $pendingPhotos = 0;
         $totalFaces = 0;
         $enrolledClients = 0;
-        if (Schema::hasTable('rekognition_photo_jobs')) {
+        if (SchemaMeta::hasTable('rekognition_photo_jobs')) {
             $processedPhotos = (int) (DB::selectOne(
                 "SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs WHERE gallery_id = ? AND process_status = 'done'",
                 [$galleryId]
@@ -2208,14 +2208,14 @@ class KingSelectionFaceService
                 [$galleryId]
             )->n ?? 0);
         }
-        if (Schema::hasTable('rekognition_photo_faces')) {
+        if (SchemaMeta::hasTable('rekognition_photo_faces')) {
             $totalFaces = (int) (DB::selectOne(
                 'SELECT COUNT(*)::int AS n FROM rekognition_photo_faces rpf
                  JOIN king_photos kp ON kp.id = rpf.photo_id WHERE kp.gallery_id = ?',
                 [$galleryId]
             )->n ?? 0);
         }
-        if (Schema::hasTable('rekognition_client_faces')) {
+        if (SchemaMeta::hasTable('rekognition_client_faces')) {
             $enrolledClients = (int) (DB::selectOne(
                 'SELECT COUNT(DISTINCT client_id)::int AS n FROM rekognition_client_faces WHERE gallery_id = ?',
                 [$galleryId]
@@ -2246,10 +2246,10 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
-        if (! Schema::hasTable('rekognition_client_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_client_faces')) {
             return ['status' => 200, 'body' => ['success' => true, 'clients' => []]];
         }
-        $hasMatches = Schema::hasTable('rekognition_face_matches') && Schema::hasTable('rekognition_photo_faces');
+        $hasMatches = SchemaMeta::hasTable('rekognition_face_matches') && SchemaMeta::hasTable('rekognition_photo_faces');
         $matchSub = $hasMatches
             ? '(SELECT COUNT(DISTINCT kp.id)::int
                  FROM rekognition_face_matches rfm
@@ -2294,10 +2294,10 @@ class KingSelectionFaceService
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
         $limit = min(200, max(1, $limit));
-        if (! Schema::hasTable('rekognition_photo_jobs')) {
+        if (! SchemaMeta::hasTable('rekognition_photo_jobs')) {
             return ['status' => 200, 'body' => ['success' => true, 'jobs' => []]];
         }
-        $faceCountSel = Schema::hasTable('rekognition_photo_faces')
+        $faceCountSel = SchemaMeta::hasTable('rekognition_photo_faces')
             ? '(SELECT COUNT(*)::int FROM rekognition_photo_faces WHERE photo_id = rpj.photo_id)'
             : '0';
         $rows = DB::select(
@@ -2337,7 +2337,7 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
-        if (! Schema::hasTable('rekognition_face_matches') || ! Schema::hasTable('rekognition_photo_faces')) {
+        if (! SchemaMeta::hasTable('rekognition_face_matches') || ! SchemaMeta::hasTable('rekognition_photo_faces')) {
             return ['status' => 200, 'body' => ['success' => true, 'matches' => []]];
         }
         $rows = DB::select(
@@ -2382,7 +2382,7 @@ class KingSelectionFaceService
                 'message' => 'Reconhecimento facial não configurado. Verifique as variáveis de ambiente AWS e S3 staging.',
             ]];
         }
-        if (! Schema::hasTable('rekognition_photo_jobs')) {
+        if (! SchemaMeta::hasTable('rekognition_photo_jobs')) {
             return ['status' => 503, 'body' => [
                 'message' => 'Tabelas de reconhecimento facial não encontradas. Execute as migrations.',
             ]];
@@ -2434,7 +2434,7 @@ class KingSelectionFaceService
         $processing = 0;
         $pending = 0;
         $error = 0;
-        if (Schema::hasTable('rekognition_photo_jobs')) {
+        if (SchemaMeta::hasTable('rekognition_photo_jobs')) {
             $rows = DB::select(
                 'SELECT process_status, COUNT(*)::int AS cnt FROM rekognition_photo_jobs WHERE gallery_id = ? GROUP BY process_status',
                 [$galleryId]
@@ -2477,11 +2477,11 @@ class KingSelectionFaceService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
-        if (Schema::hasTable('rekognition_face_matches')) {
+        if (SchemaMeta::hasTable('rekognition_face_matches')) {
             DB::delete('DELETE FROM rekognition_face_matches WHERE client_id = ?', [$clientId]);
         }
         $deleted = 0;
-        if (Schema::hasTable('rekognition_client_faces')) {
+        if (SchemaMeta::hasTable('rekognition_client_faces')) {
             $deleted = DB::delete(
                 'DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?',
                 [$galleryId, $clientId]
@@ -2504,11 +2504,11 @@ class KingSelectionFaceService
         if ($userId === '') {
             return ['status' => 401, 'body' => ['message' => 'Não autenticado.']];
         }
-        $colExists = Schema::hasColumn('king_galleries', 'face_recognition_enabled');
+        $colExists = SchemaMeta::hasColumn('king_galleries', 'face_recognition_enabled');
         $tables = ['rekognition_client_faces', 'rekognition_photo_jobs', 'rekognition_photo_faces', 'rekognition_face_matches'];
         $tableStatus = [];
         foreach ($tables as $t) {
-            $tableStatus[$t] = Schema::hasTable($t);
+            $tableStatus[$t] = SchemaMeta::hasTable($t);
         }
         $cfg = $this->rekogConfig();
         $env = [

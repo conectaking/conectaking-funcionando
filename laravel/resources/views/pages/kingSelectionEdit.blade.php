@@ -378,7 +378,7 @@
       padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
     }
   </style>
-    @vite(['resources/js/pages/kingSelectionEdit.js'])
+    @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionEdit.js'])
 </head>
 <body>
   <div class="ks-header">

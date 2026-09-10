@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Comprovante de Serviço - King</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
   
@@ -110,6 +110,6 @@
   </div>
 
       <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/documentos-ver.js'])
+    @vite(['resources/css/app.css', 'resources/js/pages/documentos-ver.js'])
 </body>
 </html>

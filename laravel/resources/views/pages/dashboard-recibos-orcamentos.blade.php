@@ -4,7 +4,7 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Painel — Recibos e Orçamentos | ConectaKing</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
     
@@ -14,7 +14,7 @@
         ::-webkit-scrollbar-track { background: #171717; }
         ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
     </style>
-    @vite(['resources/js/pages/dashboard-recibos-orcamentos.js'])
+    @vite(['resources/css/app.css', 'resources/js/pages/dashboard-recibos-orcamentos.js'])
 </head>
 <body class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
@@ -134,7 +134,6 @@
         <button type="button" id="modal-btn-fechar" class="mt-4 w-full py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancelar</button>
     </div>
 </div>
-
 
 <script src="/js/recibos-modulo-nav.js" data-active="painel"></script>
     <script src="/config.js?v=2026-09-09-vite1"></script>

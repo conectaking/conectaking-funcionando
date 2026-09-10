@@ -4,7 +4,7 @@ namespace App\Services\CartaoVirtual;
 
 use App\Support\KingSelection\KsAccess;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaMeta;
 
 /**
  * KS vendas — sales-config + listagem de clientes/rodadas (núcleo).
@@ -52,7 +52,7 @@ class KingSelectionSalesService
         $sets = [];
         $params = [];
         foreach ($map as $col => $cast) {
-            if (! array_key_exists($col, $body) || ! Schema::hasColumn('king_galleries', $col)) {
+            if (! array_key_exists($col, $body) || ! SchemaMeta::hasColumn('king_galleries', $col)) {
                 continue;
             }
             $sets[] = "{$col} = ?";
@@ -63,7 +63,7 @@ class KingSelectionSalesService
             DB::update('UPDATE king_galleries SET '.implode(', ', $sets).', updated_at = NOW() WHERE id = ?', $params);
         }
 
-        if (isset($body['packages']) && is_array($body['packages']) && Schema::hasTable('king_gallery_sale_packages')) {
+        if (isset($body['packages']) && is_array($body['packages']) && SchemaMeta::hasTable('king_gallery_sale_packages')) {
             $this->syncPackages($galleryId, $body['packages']);
         }
 
@@ -84,7 +84,7 @@ class KingSelectionSalesService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 200, 'body' => ['success' => true, 'clients' => []]];
         }
 
@@ -100,7 +100,7 @@ class KingSelectionSalesService
             static fn ($r) => ! KsAccess::isTechnicalFaceEmail($r->email ?? null)
         ));
 
-        $hasBatch = Schema::hasColumn('king_selections', 'selection_batch');
+        $hasBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
         $batchExpr = $hasBatch ? 'selection_batch' : '1';
         $sRows = DB::select(
             "SELECT client_id, {$batchExpr} AS selection_batch, COUNT(*)::int AS selected_count
@@ -112,7 +112,7 @@ class KingSelectionSalesService
         );
 
         $payMap = [];
-        if (Schema::hasTable('king_client_payment_requests')) {
+        if (SchemaMeta::hasTable('king_client_payment_requests')) {
             $pays = DB::select(
                 'SELECT client_id, selection_batch, status, amount_cents, note_admin, proof_file_path
                  FROM king_client_payment_requests WHERE gallery_id = ?',
@@ -175,7 +175,7 @@ class KingSelectionSalesService
             return ['status' => 400, 'body' => ['message' => 'IDs inválidos']];
         }
         $batch = max(1, $selectionBatch);
-        $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
+        $hasSelBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
         $sql = 'SELECT s.photo_id, p.original_name, p."order", p.edited_file_path
              FROM king_selections s
              JOIN king_photos p ON p.id=s.photo_id AND p.gallery_id=s.gallery_id
@@ -183,7 +183,7 @@ class KingSelectionSalesService
             .($hasSelBatch ? ' AND s.selection_batch = ?' : '')
             .' ORDER BY p."order" ASC, p.id ASC';
         $params = $hasSelBatch ? [$galleryId, $clientId, $batch] : [$galleryId, $clientId];
-        $selectedRows = Schema::hasTable('king_selections') ? DB::select($sql, $params) : [];
+        $selectedRows = SchemaMeta::hasTable('king_selections') ? DB::select($sql, $params) : [];
         $selected = [];
         foreach ($selectedRows as $r) {
             $selected[] = [
@@ -214,15 +214,15 @@ class KingSelectionSalesService
         if ($clientId < 1) {
             return ['status' => 400, 'body' => ['message' => 'IDs inválidos']];
         }
-        if (! Schema::hasTable('king_client_payment_requests')) {
+        if (! SchemaMeta::hasTable('king_client_payment_requests')) {
             return ['status' => 503, 'body' => ['message' => 'Tabela de pagamentos indisponível.']];
         }
         $batch = max(1, $selectionBatch);
-        $hasNeg = Schema::hasColumn('king_client_payment_requests', 'negotiated_total_cents');
-        $hasDown = Schema::hasColumn('king_client_payment_requests', 'down_payment_cents');
-        $hasInst = Schema::hasColumn('king_client_payment_requests', 'installment_count');
-        $hasRemBal = Schema::hasColumn('king_client_payment_requests', 'remaining_balance_cents');
-        $hasIntDays = Schema::hasColumn('king_client_payment_requests', 'installment_interval_days');
+        $hasNeg = SchemaMeta::hasColumn('king_client_payment_requests', 'negotiated_total_cents');
+        $hasDown = SchemaMeta::hasColumn('king_client_payment_requests', 'down_payment_cents');
+        $hasInst = SchemaMeta::hasColumn('king_client_payment_requests', 'installment_count');
+        $hasRemBal = SchemaMeta::hasColumn('king_client_payment_requests', 'remaining_balance_cents');
+        $hasIntDays = SchemaMeta::hasColumn('king_client_payment_requests', 'installment_interval_days');
         if (! $hasNeg) {
             return ['status' => 503, 'body' => [
                 'message' => 'Execute a migration 215 (215_kingselection_payment_negotiated_terms.sql) no Postgres.',
@@ -328,8 +328,8 @@ class KingSelectionSalesService
             ]];
         }
 
-        $hasCum = Schema::hasColumn('king_client_payment_requests', 'amount_received_cumulative_cents');
-        $hasCourtesy = Schema::hasColumn('king_client_payment_requests', 'courtesy_cents');
+        $hasCum = SchemaMeta::hasColumn('king_client_payment_requests', 'amount_received_cumulative_cents');
+        $hasCourtesy = SchemaMeta::hasColumn('king_client_payment_requests', 'courtesy_cents');
 
         $insCols = ['gallery_id', 'client_id', 'selection_batch', 'payment_method', 'status', 'negotiated_total_cents'];
         $insVals = [$galleryId, $clientId, $batch, 'pix', 'pending', $neg];
@@ -389,7 +389,7 @@ class KingSelectionSalesService
         if ($clientId < 1) {
             return ['status' => 400, 'body' => ['message' => 'IDs inválidos']];
         }
-        if (! Schema::hasTable('king_client_payment_requests')) {
+        if (! SchemaMeta::hasTable('king_client_payment_requests')) {
             return ['status' => 503, 'body' => ['message' => 'Tabela de pagamentos indisponível. Execute a migration 208.']];
         }
         $batch = max(1, $selectionBatch);
@@ -415,8 +415,8 @@ class KingSelectionSalesService
             : null;
         $incrementMode = ! empty($body['increment_mode']);
         $remainderAsCourtesy = ! empty($body['remainder_as_courtesy']);
-        $hasCum = Schema::hasColumn('king_client_payment_requests', 'amount_received_cumulative_cents');
-        $hasCourtesy = Schema::hasColumn('king_client_payment_requests', 'courtesy_cents');
+        $hasCum = SchemaMeta::hasColumn('king_client_payment_requests', 'amount_received_cumulative_cents');
+        $hasCourtesy = SchemaMeta::hasColumn('king_client_payment_requests', 'courtesy_cents');
 
         if ($nextStatus === 'pending' || $nextStatus === 'rejected') {
             $clearFinancial = $nextStatus === 'pending' && ! empty($body['clear_payment_amounts']);
@@ -516,7 +516,7 @@ class KingSelectionSalesService
 
         $pricing = $this->computeSalesPricingForClientRound($galleryId, $clientId, $batch);
         $computedPkgGross = max(0, (int) ($pricing['computed_total_gross_cents'] ?? 0));
-        $hasNegCol = Schema::hasColumn('king_client_payment_requests', 'negotiated_total_cents');
+        $hasNegCol = SchemaMeta::hasColumn('king_client_payment_requests', 'negotiated_total_cents');
         $extra = [];
         if ($hasCum) {
             $extra[] = 'amount_received_cumulative_cents';
@@ -621,12 +621,12 @@ class KingSelectionSalesService
         if (! in_array($status, ['pending', 'approved', 'rejected'], true)) {
             return ['status' => 400, 'body' => ['message' => 'status inválido (pending/approved/rejected).']];
         }
-        if (! Schema::hasTable('king_selection_photo_approvals')) {
+        if (! SchemaMeta::hasTable('king_selection_photo_approvals')) {
             return ['status' => 503, 'body' => ['message' => 'Tabela de aprovações indisponível. Execute a migration 208.']];
         }
         $batch = max(1, $selectionBatch);
         $deliveryMode = $this->normDeliveryMode($body['delivery_mode'] ?? null);
-        $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
+        $hasSelBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
         $effBatch = $batch;
         $checkSql = 'SELECT 1 FROM king_selections WHERE gallery_id = ? AND client_id = ? AND photo_id = ?'
             .($hasSelBatch ? ' AND selection_batch = ?' : '').' LIMIT 1';
@@ -680,7 +680,7 @@ class KingSelectionSalesService
         if (! in_array($status, ['pending', 'approved', 'rejected'], true)) {
             return ['status' => 400, 'body' => ['message' => 'status inválido (pending/approved/rejected).']];
         }
-        if (! Schema::hasTable('king_selection_photo_approvals')) {
+        if (! SchemaMeta::hasTable('king_selection_photo_approvals')) {
             return ['status' => 503, 'body' => ['message' => 'Tabela de aprovações indisponível. Execute a migration 208.']];
         }
         $batch = max(1, $selectionBatch);
@@ -719,7 +719,7 @@ class KingSelectionSalesService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'message' => 'Sem permissão'];
         }
-        if (! Schema::hasTable('king_client_payment_requests')) {
+        if (! SchemaMeta::hasTable('king_client_payment_requests')) {
             return ['status' => 404, 'message' => 'Comprovante não encontrado.'];
         }
         $row = DB::selectOne(
@@ -769,7 +769,7 @@ class KingSelectionSalesService
         if ($binary === '') {
             return ['status' => 400, 'body' => ['message' => 'Envie o comprovante.']];
         }
-        if (! Schema::hasTable('king_client_payment_requests')) {
+        if (! SchemaMeta::hasTable('king_client_payment_requests')) {
             return ['status' => 503, 'body' => ['message' => 'Sistema de pagamento indisponível. Execute a migration 208.']];
         }
         $galleryId = (int) ($payload['galleryId'] ?? 0);
@@ -842,24 +842,24 @@ class KingSelectionSalesService
             'pix_enabled', 'pix_key', 'pix_holder_name', 'pix_instructions',
             'sales_over_limit_policy', 'sales_price_mode', 'sales_unit_price_cents',
         ] as $c) {
-            if (Schema::hasColumn('king_galleries', $c)) {
+            if (SchemaMeta::hasColumn('king_galleries', $c)) {
                 $cols[] = $c;
             }
         }
         $row = DB::selectOne('SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
 
         return [
-            'pix_enabled' => Schema::hasColumn('king_galleries', 'pix_enabled') ? ! empty($row->pix_enabled) : false,
-            'pix_key' => Schema::hasColumn('king_galleries', 'pix_key') ? ($row->pix_key ?? null) : null,
-            'pix_holder_name' => Schema::hasColumn('king_galleries', 'pix_holder_name') ? ($row->pix_holder_name ?? null) : null,
-            'pix_instructions' => Schema::hasColumn('king_galleries', 'pix_instructions') ? ($row->pix_instructions ?? null) : null,
-            'sales_over_limit_policy' => Schema::hasColumn('king_galleries', 'sales_over_limit_policy')
+            'pix_enabled' => SchemaMeta::hasColumn('king_galleries', 'pix_enabled') ? ! empty($row->pix_enabled) : false,
+            'pix_key' => SchemaMeta::hasColumn('king_galleries', 'pix_key') ? ($row->pix_key ?? null) : null,
+            'pix_holder_name' => SchemaMeta::hasColumn('king_galleries', 'pix_holder_name') ? ($row->pix_holder_name ?? null) : null,
+            'pix_instructions' => SchemaMeta::hasColumn('king_galleries', 'pix_instructions') ? ($row->pix_instructions ?? null) : null,
+            'sales_over_limit_policy' => SchemaMeta::hasColumn('king_galleries', 'sales_over_limit_policy')
                 ? $this->normOverLimit($row->sales_over_limit_policy ?? null)
                 : 'allow_and_warn',
-            'sales_price_mode' => Schema::hasColumn('king_galleries', 'sales_price_mode')
+            'sales_price_mode' => SchemaMeta::hasColumn('king_galleries', 'sales_price_mode')
                 ? $this->normPriceMode($row->sales_price_mode ?? null)
                 : 'best_price_auto',
-            'sales_unit_price_cents' => Schema::hasColumn('king_galleries', 'sales_unit_price_cents')
+            'sales_unit_price_cents' => SchemaMeta::hasColumn('king_galleries', 'sales_unit_price_cents')
                 ? max(0, (int) ($row->sales_unit_price_cents ?? 0))
                 : 0,
         ];
@@ -870,7 +870,7 @@ class KingSelectionSalesService
      */
     private function listPackages(int $galleryId): array
     {
-        if (! Schema::hasTable('king_gallery_sale_packages')) {
+        if (! SchemaMeta::hasTable('king_gallery_sale_packages')) {
             return [];
         }
         $rows = DB::select(
@@ -986,10 +986,10 @@ class KingSelectionSalesService
      */
     private function selectedPhotoIds(int $galleryId, int $clientId, int $selectionBatch): array
     {
-        if (! Schema::hasTable('king_selections')) {
+        if (! SchemaMeta::hasTable('king_selections')) {
             return [];
         }
-        $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
+        $hasSelBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
         $rows = DB::select(
             'SELECT photo_id FROM king_selections
              WHERE gallery_id = ? AND client_id = ?'.($hasSelBatch ? ' AND selection_batch = ?' : '').'
@@ -1012,7 +1012,7 @@ class KingSelectionSalesService
      */
     private function listApprovalsByClientRound(int $galleryId, int $clientId, int $selectionBatch): array
     {
-        if (! Schema::hasTable('king_selection_photo_approvals')) {
+        if (! SchemaMeta::hasTable('king_selection_photo_approvals')) {
             return [];
         }
         $rows = DB::select(
@@ -1056,8 +1056,8 @@ class KingSelectionSalesService
     private function computeSalesPricingForClientRound(int $galleryId, int $clientId, int $selectionBatch): array
     {
         $batch = max(1, $selectionBatch);
-        $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
-        $countRow = Schema::hasTable('king_selections')
+        $hasSelBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
+        $countRow = SchemaMeta::hasTable('king_selections')
             ? DB::selectOne(
                 'SELECT COUNT(*)::int AS c FROM king_selections
                  WHERE gallery_id = ? AND client_id = ?'.($hasSelBatch ? ' AND selection_batch = ?' : ''),
@@ -1068,7 +1068,7 @@ class KingSelectionSalesService
 
         $gCols = ['id', 'access_mode'];
         foreach (['promo_enabled', 'promo_coupon_code', 'promo_valid_until', 'promo_free_photo_count'] as $c) {
-            if (Schema::hasColumn('king_galleries', $c)) {
+            if (SchemaMeta::hasColumn('king_galleries', $c)) {
                 $gCols[] = $c;
             }
         }
@@ -1100,11 +1100,11 @@ class KingSelectionSalesService
 
         $promoEligible = false;
         $freePromoN = 0;
-        $hasPromoEnabled = Schema::hasColumn('king_galleries', 'promo_enabled');
+        $hasPromoEnabled = SchemaMeta::hasColumn('king_galleries', 'promo_enabled');
         if ($hasPromoEnabled && ! empty($galleryRow->promo_enabled)) {
             $freePromoN = max(1, min(50, (int) ($galleryRow->promo_free_photo_count ?? 1)));
             $promoClientRow = null;
-            if (Schema::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
+            if (SchemaMeta::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
                 $promoClientRow = DB::selectOne(
                     'SELECT promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
                      FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1',
@@ -1136,7 +1136,7 @@ class KingSelectionSalesService
     public function clientDownloadApprovedOrPaid(int $galleryId, int $clientId, int $photoId): array
     {
         $fail = ['ok' => false, 'selection_batch' => 1, 'delivery_mode' => 'original'];
-        if (! Schema::hasTable('king_selection_photo_approvals') || $galleryId < 1 || $clientId < 1 || $photoId < 1) {
+        if (! SchemaMeta::hasTable('king_selection_photo_approvals') || $galleryId < 1 || $clientId < 1 || $photoId < 1) {
             return $fail;
         }
         $appr = DB::selectOne(
@@ -1154,7 +1154,7 @@ class KingSelectionSalesService
                 'delivery_mode' => $this->normDeliveryMode($appr->delivery_mode ?? null),
             ];
         }
-        $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
+        $hasSelBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
         $sel = $hasSelBatch
             ? DB::selectOne(
                 'SELECT selection_batch FROM king_selections WHERE gallery_id = ? AND client_id = ? AND photo_id = ? LIMIT 1',
@@ -1347,16 +1347,16 @@ class KingSelectionSalesService
      */
     private function getPaymentByClientRound(int $galleryId, int $clientId, int $selectionBatch): ?array
     {
-        if (! Schema::hasTable('king_client_payment_requests')) {
+        if (! SchemaMeta::hasTable('king_client_payment_requests')) {
             return null;
         }
-        $hasCum = Schema::hasColumn('king_client_payment_requests', 'amount_received_cumulative_cents');
-        $hasCourtesy = Schema::hasColumn('king_client_payment_requests', 'courtesy_cents');
-        $hasNeg = Schema::hasColumn('king_client_payment_requests', 'negotiated_total_cents');
-        $hasDown = Schema::hasColumn('king_client_payment_requests', 'down_payment_cents');
-        $hasInst = Schema::hasColumn('king_client_payment_requests', 'installment_count');
-        $hasRemBal = Schema::hasColumn('king_client_payment_requests', 'remaining_balance_cents');
-        $hasIntDays = Schema::hasColumn('king_client_payment_requests', 'installment_interval_days');
+        $hasCum = SchemaMeta::hasColumn('king_client_payment_requests', 'amount_received_cumulative_cents');
+        $hasCourtesy = SchemaMeta::hasColumn('king_client_payment_requests', 'courtesy_cents');
+        $hasNeg = SchemaMeta::hasColumn('king_client_payment_requests', 'negotiated_total_cents');
+        $hasDown = SchemaMeta::hasColumn('king_client_payment_requests', 'down_payment_cents');
+        $hasInst = SchemaMeta::hasColumn('king_client_payment_requests', 'installment_count');
+        $hasRemBal = SchemaMeta::hasColumn('king_client_payment_requests', 'remaining_balance_cents');
+        $hasIntDays = SchemaMeta::hasColumn('king_client_payment_requests', 'installment_interval_days');
         $extraCols = array_values(array_filter([
             $hasCum ? 'amount_received_cumulative_cents' : null,
             $hasCourtesy ? 'courtesy_cents' : null,
@@ -1443,7 +1443,7 @@ class KingSelectionSalesService
     private function maybeAutoApproveAfterPaymentReview(int $galleryId, int $clientId, int $selectionBatch, string $userId): void
     {
         try {
-            if (! Schema::hasTable('king_selection_photo_approvals')) {
+            if (! SchemaMeta::hasTable('king_selection_photo_approvals')) {
                 return;
             }
             $pay = $this->getPaymentByClientRound($galleryId, $clientId, $selectionBatch);
@@ -1473,10 +1473,10 @@ class KingSelectionSalesService
 
     private function getSalesSelectionRound(int $galleryId, int $clientId): int
     {
-        if ($clientId < 1 || ! Schema::hasTable('king_selections')) {
+        if ($clientId < 1 || ! SchemaMeta::hasTable('king_selections')) {
             return 1;
         }
-        if (Schema::hasColumn('king_selections', 'selection_batch')) {
+        if (SchemaMeta::hasColumn('king_selections', 'selection_batch')) {
             $r = DB::selectOne(
                 'SELECT COALESCE(MAX(selection_batch), 0)::int AS m FROM king_selections WHERE gallery_id = ? AND client_id = ?',
                 [$galleryId, $clientId]

@@ -4,12 +4,12 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Configurações — Recibos e Orçamentos | ConectaKing</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
     
     <style> body { font-family: 'Inter', sans-serif; } </style>
-    @vite(['resources/js/pages/configuracoes-recibos-orcamentos.js'])
+    @vite(['resources/css/app.css', 'resources/js/pages/configuracoes-recibos-orcamentos.js'])
 </head>
 <body class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <aside class="recibos-sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">

@@ -6,7 +6,7 @@
   <title>KingSelection - Sucesso</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  <script src="https://cdn.tailwindcss.com"></script>
+  
 </head>
 <body class="bg-white text-slate-900">
   <div class="min-h-screen flex items-center justify-center px-4">
@@ -21,7 +21,7 @@
   </div>
   
     <script src="/config.js?v=2026-09-10-apex1"></script>
-    @vite(['resources/js/pages/kingSelectionSuccess.js'])
+    @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionSuccess.js'])
 </body>
 </html>
 

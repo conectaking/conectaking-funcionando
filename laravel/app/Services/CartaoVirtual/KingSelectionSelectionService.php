@@ -6,7 +6,7 @@ use App\Services\Auth\JwtService;
 use App\Support\KingSelection\KsAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaMeta;
 
 /**
  * KS cliente — select / select-bulk / finalize (sem PagBank; promo gate mínimo).
@@ -57,8 +57,8 @@ class KingSelectionSelectionService
         }
 
         $round = $this->currentRound($galleryId, $ctx['cid']);
-        $hasBatch = Schema::hasColumn('king_selections', 'selection_batch');
-        $hasSk = Schema::hasColumn('king_selections', 'session_key');
+        $hasBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
+        $hasSk = SchemaMeta::hasColumn('king_selections', 'session_key');
         $anonSk = ($ctx['sk'] && $hasSk) ? $ctx['sk'] : null;
 
         // Contar antes de inserir: se já existe = toggle off (ok); se novo = respeitar máximo
@@ -221,8 +221,8 @@ class KingSelectionSelectionService
         }
 
         $round = $this->currentRound($galleryId, $ctx['cid']);
-        $hasBatch = Schema::hasColumn('king_selections', 'selection_batch');
-        $hasSk = Schema::hasColumn('king_selections', 'session_key');
+        $hasBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
+        $hasSk = SchemaMeta::hasColumn('king_selections', 'session_key');
         $anonSk = ($ctx['sk'] && $hasSk) ? $ctx['sk'] : null;
 
         try {
@@ -297,9 +297,9 @@ class KingSelectionSelectionService
         }
 
         $accessMode = KsAccess::normAccessMode($g->access_mode ?? 'private');
-        $hasSkCol = Schema::hasColumn('king_selections', 'session_key');
-        $hasClients = Schema::hasTable('king_gallery_clients');
-        $hasClientStatus = $hasClients && Schema::hasColumn('king_gallery_clients', 'status');
+        $hasSkCol = SchemaMeta::hasColumn('king_selections', 'session_key');
+        $hasClients = SchemaMeta::hasTable('king_gallery_clients');
+        $hasClientStatus = $hasClients && SchemaMeta::hasColumn('king_gallery_clients', 'status');
 
         $anonSk = ($sk && $hasSkCol) ? $sk : null;
         $selCount = $this->countClientSelections($galleryId, $cid, $anonSk);
@@ -309,9 +309,9 @@ class KingSelectionSelectionService
         }
 
         // Promo pública: exige cupom validado no cliente.
-        if ($accessMode === 'public' && Schema::hasColumn('king_galleries', 'promo_enabled') && ! empty($g->promo_enabled ?? false)) {
+        if ($accessMode === 'public' && SchemaMeta::hasColumn('king_galleries', 'promo_enabled') && ! empty($g->promo_enabled ?? false)) {
             $promoOk = false;
-            if ($cid && Schema::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
+            if ($cid && SchemaMeta::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
                 $pr = DB::selectOne(
                     'SELECT promo_coupon_validated_at FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1',
                     [$cid, $galleryId]
@@ -348,7 +348,7 @@ class KingSelectionSelectionService
             if ($cid && $hasClientStatus) {
                 $sets = ['status = ?', 'updated_at = NOW()'];
                 $vals = ['revisao'];
-                if ($feedback !== '' && Schema::hasColumn('king_gallery_clients', 'feedback_cliente')) {
+                if ($feedback !== '' && SchemaMeta::hasColumn('king_gallery_clients', 'feedback_cliente')) {
                     array_unshift($sets, 'feedback_cliente = ?');
                     array_unshift($vals, mb_substr($feedback, 0, 2000));
                 }
@@ -431,8 +431,8 @@ class KingSelectionSelectionService
         $accessMode = KsAccess::normAccessMode($g->access_mode ?? 'private');
         $locked = $this->isLockedForApi($g, $ctx['cid']);
         $round = $this->currentRound($galleryId, $ctx['cid']);
-        $hasBatch = Schema::hasColumn('king_selections', 'selection_batch');
-        $hasSk = Schema::hasColumn('king_selections', 'session_key');
+        $hasBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
+        $hasSk = SchemaMeta::hasColumn('king_selections', 'session_key');
 
         $rows = [];
         if ($ctx['cid']) {
@@ -501,7 +501,7 @@ class KingSelectionSelectionService
         }
 
         $allowSelf = KsAccess::allowsSelfSignup($accessMode)
-            || (Schema::hasColumn('king_galleries', 'allow_self_signup')
+            || (SchemaMeta::hasColumn('king_galleries', 'allow_self_signup')
                 && filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN));
         $deferred = ! $ctx['cid'] && (bool) $ctx['sk']
             && $allowSelf;
@@ -525,7 +525,7 @@ class KingSelectionSelectionService
         $galleryId = (int) $g->id;
         $accessMode = KsAccess::normAccessMode($g->access_mode ?? 'private');
         $allowSelf = KsAccess::allowsSelfSignup($accessMode)
-            || (Schema::hasColumn('king_galleries', 'allow_self_signup')
+            || (SchemaMeta::hasColumn('king_galleries', 'allow_self_signup')
                 && filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN));
         $publicOk = $accessMode === 'public';
         if (! ($publicOk || $allowSelf)) {
@@ -550,13 +550,13 @@ class KingSelectionSelectionService
             ]];
         }
 
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 500, 'body' => ['message' => 'Cadastro de clientes indisponível neste servidor.']];
         }
 
         $pass = (string) random_int(100000, 999999);
         $senhaHash = password_hash($pass, PASSWORD_BCRYPT);
-        $hasEnc = Schema::hasColumn('king_gallery_clients', 'senha_enc');
+        $hasEnc = SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc');
 
         try {
             $newClientId = DB::transaction(function () use (
@@ -635,7 +635,7 @@ class KingSelectionSelectionService
                 }
 
                 $maxRound = 1;
-                if (Schema::hasColumn('king_selections', 'selection_batch')) {
+                if (SchemaMeta::hasColumn('king_selections', 'selection_batch')) {
                     $maxRound = (int) (DB::selectOne(
                         'SELECT COALESCE(MAX(selection_batch),1)::int AS m FROM king_selections WHERE gallery_id = ? AND client_id = ?',
                         [$galleryId, $newClientId]
@@ -645,15 +645,15 @@ class KingSelectionSelectionService
                 if ($hasClientStatus) {
                     $sets = ['status = ?', 'updated_at = NOW()'];
                     $vals = ['revisao'];
-                    if ($feedback !== '' && Schema::hasColumn('king_gallery_clients', 'feedback_cliente')) {
+                    if ($feedback !== '' && SchemaMeta::hasColumn('king_gallery_clients', 'feedback_cliente')) {
                         array_unshift($sets, 'feedback_cliente = ?');
                         array_unshift($vals, mb_substr($feedback, 0, 2000));
                     }
-                    if (Schema::hasColumn('king_gallery_clients', 'selection_round')) {
+                    if (SchemaMeta::hasColumn('king_gallery_clients', 'selection_round')) {
                         $sets[] = 'selection_round = ?';
                         $vals[] = $maxRound;
                     }
-                    if ($mergePhone && Schema::hasColumn('king_gallery_clients', 'telefone')) {
+                    if ($mergePhone && SchemaMeta::hasColumn('king_gallery_clients', 'telefone')) {
                         $sets[] = 'telefone = ?';
                         $vals[] = $mergePhone;
                     }
@@ -828,7 +828,7 @@ class KingSelectionSelectionService
      */
     private function assertFinalizeBounds(object $g, int $count): ?array
     {
-        $min = Schema::hasColumn('king_galleries', 'min_selections')
+        $min = SchemaMeta::hasColumn('king_galleries', 'min_selections')
             ? (int) ($g->min_selections ?? 0)
             : 0;
         $max = (int) ($g->total_fotos_contratadas ?? 0);
@@ -862,7 +862,7 @@ class KingSelectionSelectionService
                 [$galleryId, $cid]
             )->c ?? 0);
         }
-        if ($anonSk && Schema::hasColumn('king_selections', 'session_key')) {
+        if ($anonSk && SchemaMeta::hasColumn('king_selections', 'session_key')) {
             return (int) (DB::selectOne(
                 'SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id IS NULL AND session_key = ?',
                 [$galleryId, $anonSk]
@@ -890,7 +890,7 @@ class KingSelectionSelectionService
                 array_merge([$galleryId, $cid], $photoIds)
             )->c ?? 0);
         }
-        if ($anonSk && Schema::hasColumn('king_selections', 'session_key')) {
+        if ($anonSk && SchemaMeta::hasColumn('king_selections', 'session_key')) {
             return (int) (DB::selectOne(
                 "SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id = ? AND client_id IS NULL AND session_key = ? AND photo_id IN ($ph)",
                 array_merge([$galleryId, $anonSk], $photoIds)
@@ -906,7 +906,7 @@ class KingSelectionSelectionService
     private function isLocked(object $g, ?int $cid): bool
     {
         $locked = KsAccess::isLockedStatus($g->status ?? '');
-        if ($cid && Schema::hasTable('king_gallery_clients') && Schema::hasColumn('king_gallery_clients', 'status')) {
+        if ($cid && SchemaMeta::hasTable('king_gallery_clients') && SchemaMeta::hasColumn('king_gallery_clients', 'status')) {
             $st = DB::selectOne(
                 'SELECT status FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1',
                 [$cid, (int) $g->id]
@@ -926,7 +926,7 @@ class KingSelectionSelectionService
     private function isLockedForApi(object $g, ?int $cid): bool
     {
         $am = KsAccess::normAccessMode($g->access_mode ?? 'private');
-        $promoOn = Schema::hasColumn('king_galleries', 'promo_enabled') && ! empty($g->promo_enabled ?? false);
+        $promoOn = SchemaMeta::hasColumn('king_galleries', 'promo_enabled') && ! empty($g->promo_enabled ?? false);
         if ($am === 'public' && ! $promoOn) {
             return false;
         }
@@ -936,7 +936,7 @@ class KingSelectionSelectionService
 
     private function currentRound(int $galleryId, ?int $cid): int
     {
-        if ($cid && Schema::hasTable('king_gallery_clients') && Schema::hasColumn('king_gallery_clients', 'selection_round')) {
+        if ($cid && SchemaMeta::hasTable('king_gallery_clients') && SchemaMeta::hasColumn('king_gallery_clients', 'selection_round')) {
             $r = DB::selectOne(
                 'SELECT selection_round FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1',
                 [$cid, $galleryId]
@@ -946,7 +946,7 @@ class KingSelectionSelectionService
                 return $v;
             }
         }
-        if (Schema::hasColumn('king_galleries', 'selection_round')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'selection_round')) {
             $r = DB::selectOne('SELECT selection_round FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
             $v = (int) ($r->selection_round ?? 0);
             if ($v > 0) {

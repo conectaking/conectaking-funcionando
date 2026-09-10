@@ -4,7 +4,7 @@ namespace App\Services\CartaoVirtual;
 
 use App\Support\KingSelection\KsAccess;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaMeta;
 
 /**
  * KS cliente — export + pedidos de edição (modo público).
@@ -31,7 +31,7 @@ class KingSelectionClientExtrasService
         }
 
         $ctx = KsAccess::parseClientContext($payload);
-        $hasSk = Schema::hasColumn('king_selections', 'session_key');
+        $hasSk = SchemaMeta::hasColumn('king_selections', 'session_key');
 
         if ($ctx['cid']) {
             $rows = DB::select(
@@ -113,8 +113,8 @@ class KingSelectionClientExtrasService
             return ['status' => 400, 'body' => ['message' => 'Selecione pelo menos uma foto.']];
         }
 
-        if (! Schema::hasColumn('king_galleries', 'allow_client_edit_request')
-            || ! Schema::hasTable('king_client_edit_requests')) {
+        if (! SchemaMeta::hasColumn('king_galleries', 'allow_client_edit_request')
+            || ! SchemaMeta::hasTable('king_client_edit_requests')) {
             return ['status' => 503, 'body' => ['message' => 'Pedidos de edição indisponíveis no servidor.']];
         }
 
@@ -149,7 +149,7 @@ class KingSelectionClientExtrasService
         }
 
         $noteClient = $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 2000) : null;
-        $hasBatchCol = Schema::hasColumn('king_client_edit_requests', 'selection_batch');
+        $hasBatchCol = SchemaMeta::hasColumn('king_client_edit_requests', 'selection_batch');
         $selectionBatch = $this->currentRound($galleryId, $clientId);
 
         $requestId = DB::transaction(function () use ($galleryId, $clientId, $noteClient, $hasBatchCol, $selectionBatch, $validIds) {
@@ -208,8 +208,8 @@ class KingSelectionClientExtrasService
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
 
-        if (! Schema::hasColumn('king_galleries', 'allow_client_edit_request')
-            || ! Schema::hasTable('king_client_edit_requests')) {
+        if (! SchemaMeta::hasColumn('king_galleries', 'allow_client_edit_request')
+            || ! SchemaMeta::hasTable('king_client_edit_requests')) {
             return ['status' => 200, 'body' => ['success' => true, 'requests' => []]];
         }
 
@@ -231,7 +231,7 @@ class KingSelectionClientExtrasService
             return ['status' => 200, 'body' => ['success' => true, 'requests' => []]];
         }
 
-        $hasBatch = Schema::hasColumn('king_client_edit_requests', 'selection_batch');
+        $hasBatch = SchemaMeta::hasColumn('king_client_edit_requests', 'selection_batch');
         $rows = DB::select(
             'SELECT r.id,'.($hasBatch ? ' r.selection_batch,' : '').' r.status, r.note_client, r.created_at, r.updated_at,
                     (SELECT COUNT(*)::int FROM king_client_edit_request_photos p WHERE p.edit_request_id = r.id) AS photo_count
@@ -262,8 +262,8 @@ class KingSelectionClientExtrasService
             return ['status' => 403, 'body' => ['message' => 'Sem permissão.']];
         }
 
-        if (! Schema::hasColumn('king_galleries', 'allow_client_edit_request')
-            || ! Schema::hasTable('king_client_edit_requests')) {
+        if (! SchemaMeta::hasColumn('king_galleries', 'allow_client_edit_request')
+            || ! SchemaMeta::hasTable('king_client_edit_requests')) {
             return ['status' => 503, 'body' => ['message' => 'Pedidos de edição indisponíveis.']];
         }
 
@@ -299,7 +299,7 @@ class KingSelectionClientExtrasService
 
     private function currentRound(int $galleryId, int $clientId): int
     {
-        if (Schema::hasColumn('king_gallery_clients', 'selection_round')) {
+        if (SchemaMeta::hasColumn('king_gallery_clients', 'selection_round')) {
             $r = DB::selectOne(
                 'SELECT selection_round FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1',
                 [$clientId, $galleryId]
@@ -318,7 +318,7 @@ class KingSelectionClientExtrasService
      */
     private function ensurePhotosInBatch(int $galleryId, int $clientId, array $photoIds, int $batch): void
     {
-        if (! Schema::hasColumn('king_selections', 'selection_batch')) {
+        if (! SchemaMeta::hasColumn('king_selections', 'selection_batch')) {
             return;
         }
         $b = max(1, $batch);
@@ -351,7 +351,7 @@ class KingSelectionClientExtrasService
     {
         $batch = max(1, $completedBatch);
         $next = $batch + 1;
-        if (! Schema::hasColumn('king_gallery_clients', 'selection_round')) {
+        if (! SchemaMeta::hasColumn('king_gallery_clients', 'selection_round')) {
             return $next;
         }
         DB::update(
@@ -394,7 +394,7 @@ class KingSelectionClientExtrasService
                 'message' => 'Entre com sua conta para validar o cupom (e-mail/senha ou nome/e-mail/WhatsApp), ou abra o link da galeria numa sessão válida.',
             ]];
         }
-        if (! Schema::hasColumn('king_galleries', 'promo_enabled')) {
+        if (! SchemaMeta::hasColumn('king_galleries', 'promo_enabled')) {
             return ['status' => 503, 'body' => ['message' => 'Cupom indisponível neste servidor. Execute a migration 213 no Postgres.']];
         }
         $g = DB::selectOne(
@@ -415,7 +415,7 @@ class KingSelectionClientExtrasService
         if ($want === '' || $want !== $got) {
             return ['status' => 400, 'body' => ['message' => 'Código do cupom inválido.']];
         }
-        if (! Schema::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
+        if (! SchemaMeta::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
             return ['status' => 503, 'body' => ['message' => 'Cadastro de cliente sem campos de cupom. Execute a migration 213.']];
         }
         DB::update(

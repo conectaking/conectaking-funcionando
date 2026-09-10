@@ -22,13 +22,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
     rel="stylesheet">
-  <script>
-    // Suprime aviso do Tailwind CDN no console (evita "should not be used in production")
-    (function () {
-      var o = console.warn; console.warn = function (m) { if (typeof m === 'string' && m.indexOf('cdn.tailwindcss.com') !== -1) return; o.apply(console, arguments); };
-    })();
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     :root {
       /* Tema V2 (preto + amarelo) */
@@ -3642,7 +3636,7 @@
 
 @endverbatim
   <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/js/pages/kingSelectionProject.js'])
+  @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"687c708900434ac6b95039b443aa43da","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 

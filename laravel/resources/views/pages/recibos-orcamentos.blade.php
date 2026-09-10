@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Recibos e Orçamentos — ConectaKing</title>
     
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
     
@@ -108,7 +108,7 @@
         }
         .bottom-nav-safe { padding-bottom: env(safe-area-inset-bottom, 0); }
     </style>
-        @vite(['resources/js/pages/recibos-orcamentos.js'])
+        @vite(['resources/css/app.css', 'resources/js/pages/recibos-orcamentos.js'])
 </head>
 <body class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen pb-20 lg:pb-0">
 <aside class="recibos-sidebar-desktop sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
@@ -430,7 +430,6 @@
 
 <div class="fixed top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
 <div class="fixed bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
-
 
     <script src="/config.js?v=2026-09-09-vite1"></script>
 </body>

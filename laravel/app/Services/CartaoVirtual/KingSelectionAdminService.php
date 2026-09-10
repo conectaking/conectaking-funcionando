@@ -2322,6 +2322,7 @@ class KingSelectionAdminService
             'UPDATE king_photos SET edited_file_path = ? WHERE id = ? AND gallery_id = ?',
             [$editedPath, $photoId, $galleryId]
         );
+        $this->dispatchWarmThumbs($galleryId, 24);
 
         return ['status' => 200, 'body' => [
             'success' => true,
@@ -2378,6 +2379,9 @@ class KingSelectionAdminService
         }
         $params[] = $photoId;
         DB::update('UPDATE king_photos SET '.implode(', ', $sets).' WHERE id = ?', $params);
+        if (array_key_exists('edited_file_path', $body)) {
+            $this->dispatchWarmThumbs($galleryId, 24);
+        }
 
         return ['status' => 200, 'body' => ['success' => true]];
     }
@@ -2456,6 +2460,7 @@ class KingSelectionAdminService
             'UPDATE king_photos SET file_path = ?, original_name = ? WHERE id = ?',
             ['r2:'.$key, $name, $photoId]
         );
+        $this->dispatchWarmThumbs($galleryId, 24);
 
         return ['status' => 200, 'body' => ['success' => true]];
     }
@@ -2474,11 +2479,13 @@ class KingSelectionAdminService
         if (! $own) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
+        $galleryId = (int) $own->gallery_id;
         $name = substr((string) ($body['original_name'] ?? 'foto'), 0, 500) ?: 'foto';
         DB::update(
             'UPDATE king_photos SET file_path = ?, original_name = ? WHERE id = ?',
             ['cfimage:'.$imageId, $name, $photoId]
         );
+        $this->dispatchWarmThumbs($galleryId, 24);
 
         return ['status' => 200, 'body' => [
             'success' => true,
@@ -2523,6 +2530,7 @@ class KingSelectionAdminService
             'UPDATE king_photos SET file_path = ?, original_name = ? WHERE id = ?',
             ['r2:'.$key, $name, $photoId]
         );
+        $this->dispatchWarmThumbs($galleryId, 24);
 
         return ['status' => 200, 'body' => ['success' => true]];
     }

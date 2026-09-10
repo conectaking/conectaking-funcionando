@@ -5,7 +5,7 @@ namespace App\Services\CartaoVirtual;
 use App\Support\KingSelection\KsAccess;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaMeta;
 use ZipArchive;
 
 /**
@@ -250,7 +250,7 @@ class KingSelectionZipService
      */
     private function resolvePaidZipRows(array $payload, array $wantedIds, int $galleryId): array
     {
-        if (! Schema::hasTable('king_selection_photo_approvals')) {
+        if (! SchemaMeta::hasTable('king_selection_photo_approvals')) {
             return ['status' => 503, 'body' => ['message' => 'Aprovação de download indisponível no servidor.']];
         }
         $cid = (int) ($payload['clientId'] ?? 0);
@@ -261,7 +261,7 @@ class KingSelectionZipService
         if ($cid < 1) {
             return ['status' => 403, 'body' => ['message' => 'Faça login para baixar as fotos aprovadas.']];
         }
-        $hasEdited = Schema::hasColumn('king_photos', 'edited_file_path');
+        $hasEdited = SchemaMeta::hasColumn('king_photos', 'edited_file_path');
         $placeholders = implode(', ', array_fill(0, count($wantedIds), '?'));
         $params = array_merge([$galleryId, $cid], $wantedIds);
         $rows = DB::select(
@@ -317,10 +317,10 @@ class KingSelectionZipService
             'allowedPhotoIdSet' => [],
         ];
         $cols = ['id'];
-        if (Schema::hasColumn('king_galleries', 'access_mode')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'access_mode')) {
             $cols[] = 'access_mode';
         }
-        if (Schema::hasColumn('king_galleries', 'promo_enabled')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'promo_enabled')) {
             $cols = array_merge($cols, ['promo_enabled', 'promo_coupon_code', 'promo_valid_until', 'promo_free_photo_count']);
         }
         $galleryRow = DB::selectOne('SELECT '.implode(', ', $cols).' FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
@@ -338,13 +338,13 @@ class KingSelectionZipService
         $ctx = KsAccess::parseClientContext($payload);
         $cidJwt = (int) ($ctx['cid'] ?? 0);
         $sk = $ctx['sk'] ?? null;
-        $hasPromo = Schema::hasColumn('king_galleries', 'promo_enabled');
+        $hasPromo = SchemaMeta::hasColumn('king_galleries', 'promo_enabled');
         $promoResolveCid = $cidJwt;
         if ($promoResolveCid < 1 && $sk && $hasPromo && ! empty($galleryRow->promo_enabled)) {
             $promoResolveCid = $this->sessionClientId($galleryId, $sk);
         }
         $promoClientRow = null;
-        if ($promoResolveCid > 0 && $hasPromo && Schema::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
+        if ($promoResolveCid > 0 && $hasPromo && SchemaMeta::hasColumn('king_gallery_clients', 'promo_coupon_validated_at')) {
             $promoClientRow = DB::selectOne(
                 'SELECT promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
                  FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1',
@@ -363,7 +363,7 @@ class KingSelectionZipService
             return $out;
         }
         if ($hasPromo && ! empty($galleryRow->promo_enabled) && $promoValidated && $promoResolveCid > 0
-            && Schema::hasColumn('king_gallery_clients', 'status')) {
+            && SchemaMeta::hasColumn('king_gallery_clients', 'status')) {
             $st = DB::selectOne(
                 'SELECT status FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1',
                 [$promoResolveCid, $galleryId]
@@ -376,7 +376,7 @@ class KingSelectionZipService
         }
         $out['rateLimitClientId'] = $cidJwt > 0 ? $cidJwt : $promoResolveCid;
         $selectedPhotoIds = [];
-        if (Schema::hasColumn('king_selections', 'client_id')) {
+        if (SchemaMeta::hasColumn('king_selections', 'client_id')) {
             if ($cidJwt > 0) {
                 $selectedPhotoIds = array_map(
                     static fn ($r) => (int) $r->photo_id,
@@ -385,7 +385,7 @@ class KingSelectionZipService
                         [$galleryId, $cidJwt]
                     )
                 );
-            } elseif ($sk && Schema::hasColumn('king_selections', 'session_key')) {
+            } elseif ($sk && SchemaMeta::hasColumn('king_selections', 'session_key')) {
                 $selectedPhotoIds = array_map(
                     static fn ($r) => (int) $r->photo_id,
                     DB::select(
@@ -495,7 +495,7 @@ class KingSelectionZipService
      */
     private function auditZipDownloads(int $galleryId, int $clientId, array $appendable, ?string $ip, ?string $userAgent): void
     {
-        if (! Schema::hasTable('king_download_audit')) {
+        if (! SchemaMeta::hasTable('king_download_audit')) {
             return;
         }
         foreach ($appendable as $a) {
@@ -538,7 +538,7 @@ class KingSelectionZipService
 
     private function sessionClientId(int $galleryId, string $sk): int
     {
-        if (! Schema::hasTable('king_gallery_clients') || ! Schema::hasColumn('king_gallery_clients', 'session_key')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients') || ! SchemaMeta::hasColumn('king_gallery_clients', 'session_key')) {
             return 0;
         }
         $row = DB::selectOne(
@@ -555,7 +555,7 @@ class KingSelectionZipService
             return null;
         }
         $cols = ['id', 'nome_projeto'];
-        if (Schema::hasColumn('king_galleries', 'access_mode')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'access_mode')) {
             $cols[] = 'access_mode';
         }
 

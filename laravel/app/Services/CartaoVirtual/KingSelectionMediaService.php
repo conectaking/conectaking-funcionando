@@ -6,7 +6,7 @@ use App\Support\ImageExif;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaMeta;
 
 /**
  * Capa / OG públicos do King Selection (sem Sharp: redimensiona com GD).
@@ -286,10 +286,10 @@ class KingSelectionMediaService
             return ['status' => 400, 'message' => 'galleryId inválido'];
         }
         $cols = ['g.watermark_path'];
-        if (Schema::hasColumn('king_galleries', 'watermark_path_portrait')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_portrait')) {
             $cols[] = 'g.watermark_path_portrait';
         }
-        if (Schema::hasColumn('king_galleries', 'watermark_path_landscape')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'watermark_path_landscape')) {
             $cols[] = 'g.watermark_path_landscape';
         }
         $row = DB::selectOne(

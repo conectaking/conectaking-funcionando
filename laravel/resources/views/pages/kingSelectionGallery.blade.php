@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <script src="https://cdn.tailwindcss.com"></script>
+  
   <style>
     :root{
       --ks-accent:#facc15;
@@ -146,7 +146,7 @@
   </div>
 
   <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/js/pages/kingSelectionGallery.js'])
+  @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionGallery.js'])
 </body>
 </html>
 

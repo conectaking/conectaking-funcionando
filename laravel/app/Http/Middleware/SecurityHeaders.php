@@ -32,15 +32,15 @@ class SecurityHeaders
         }
 
         if (! $response->headers->has('Content-Security-Policy')) {
-            // Harden gradual: upgrade-insecure-requests; Tailwind CDN ainda exige unsafe-eval.
+            // Tailwind via Vite (sem CDN / sem unsafe-eval). Inline scripts legados ainda exigem unsafe-inline.
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
                 "object-src 'none'",
                 "frame-ancestors 'self'",
                 "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://static.cloudflareinsights.com",
-                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net",
+                "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
+                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
                 "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
                 "img-src 'self' data: blob: https:",
                 "media-src 'self' blob: https:",
