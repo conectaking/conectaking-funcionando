@@ -1,5 +1,6 @@
 /** Landing — Vite entry */
 import '@mod/js/planRenderer.js';
+import '@css/pages/index-extra.css';
 
 // Detectar URL da API - mesma lógica do dashboard
         let API_URL = window.location.origin;
