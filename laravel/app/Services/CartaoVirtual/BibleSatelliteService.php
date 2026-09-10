@@ -31,7 +31,7 @@ class BibleSatelliteService
         $counts = $this->text->chapterCountsByBook();
         $withStudy = array_fill_keys($this->studies->bookIdsWithFullStudy(), true);
         $todayDay = $this->devotionals->dayOfYear(null);
-        $devToday = $this->devotionals->getByDay($todayDay);
+        $devToday = $this->devotionals->get365($todayDay) ?? $this->devotionals->getByDay($todayDay);
         $salmo = $this->salmos->get(null);
         $plan = $this->devotionals->readingPlanDay($todayDay);
 
@@ -80,7 +80,7 @@ class BibleSatelliteService
             $day = $this->devotionals->dayOfYear(null);
         }
 
-        $dev = $this->devotionals->getByDay($day);
+        $dev = $this->devotionals->get365($day) ?? $this->devotionals->getByDay($day);
         $prev = $day > 1 ? $day - 1 : null;
         $next = $day < 365 ? $day + 1 : null;
 

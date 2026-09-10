@@ -158,16 +158,17 @@
         @endphp
 
         @if($hasVerse && $versePos === 'top')
-            <div class="verse-of-day-box verse-size-{{ $verseSize }}">
+            <a href="/{{ $profile_slug }}/biblia" class="verse-of-day-box verse-size-{{ $verseSize }}" style="display:block;text-decoration:none;color:inherit;" title="Abrir Bíblia">
                 <div class="verse-of-day-ref">{{ $verseOfDay['ref'] ?? 'Versículo do Dia' }}</div>
                 <div class="verse-of-day-text">"{{ $verseOfDay['texto'] }}"</div>
                 @if(!empty($verseOfDay['reflexao']))
                     <div class="verse-of-day-reflexao">{{ $verseOfDay['reflexao'] }}</div>
                 @endif
-            </div>
+                <div style="margin-top:10px;font-size:.78rem;opacity:.75;font-family:system-ui,sans-serif;">Abrir Bíblia →</div>
+            </a>
         @endif
 
-        @if($showVcard || $mapUrl !== '')
+        @if($showVcard || $mapUrl !== '' || $hasVerse)
             <div class="profile-actions">
                 @if($showVcard)
                     <a href="/vcard/{{ $profile_slug }}" class="profile-link" id="save-contact-btn">
@@ -179,6 +180,12 @@
                     <a href="{{ $mapUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer">
                         <i class="fas fa-map-marker-alt"></i>
                         <span>Ver no Mapa</span>
+                    </a>
+                @endif
+                @if($hasVerse)
+                    <a href="/{{ $profile_slug }}/biblia" class="profile-link">
+                        <i class="fas fa-book-bible"></i>
+                        <span>Bíblia</span>
                     </a>
                 @endif
             </div>
@@ -474,13 +481,14 @@
         </section>
 
         @if($hasVerse && $versePos === 'bottom')
-            <div class="verse-of-day-box verse-of-day-box--bottom verse-size-{{ $verseSize }}">
+            <a href="/{{ $profile_slug }}/biblia" class="verse-of-day-box verse-of-day-box--bottom verse-size-{{ $verseSize }}" style="display:block;text-decoration:none;color:inherit;" title="Abrir Bíblia">
                 <div class="verse-of-day-ref">{{ $verseOfDay['ref'] ?? 'Versículo do Dia' }}</div>
                 <div class="verse-of-day-text">"{{ $verseOfDay['texto'] }}"</div>
                 @if(!empty($verseOfDay['reflexao']))
                     <div class="verse-of-day-reflexao">{{ $verseOfDay['reflexao'] }}</div>
                 @endif
-            </div>
+                <div style="margin-top:10px;font-size:.78rem;opacity:.75;font-family:system-ui,sans-serif;">Abrir Bíblia →</div>
+            </a>
         @endif
 
         @if(!empty($d['company_logo_url']))

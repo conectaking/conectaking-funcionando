@@ -1100,6 +1100,15 @@ function _setupEventListenersBody() {
                             var kfIframe = document.getElementById('king-forms-iframe');
                             if (kfIframe && (!kfIframe.src || kfIframe.src === 'about:blank' || kfIframe.src.endsWith('about:blank'))) kfIframe.src = '/kingForms';
                         }
+                        if (targetId === 'assinatura-pane' && typeof window.loadSubscriptionInfo === 'function') {
+                            window.loadSubscriptionInfo();
+                        }
+                        if (targetId === 'finance-pane' && typeof window.initFinancePane === 'function') {
+                            window.initFinancePane();
+                        }
+                        if (targetId === 'relatorios-pane' && typeof window.loadReportsData === 'function') {
+                            window.loadReportsData();
+                        }
                         // contratos/agenda/meu-site descontinuados — ignorar
                     }
                     // Atualizar URL com o hash do painel para que, ao atualizar a página, permaneça na mesma seção
@@ -2582,6 +2591,7 @@ function _setupEventListenersBody() {
                 }
                 if (targetId === 'finance-pane' && window.initFinancePane) window.initFinancePane();
                 else if (targetId === 'relatorios-pane' && typeof window.loadReportsData === 'function') window.loadReportsData();
+                else if (targetId === 'assinatura-pane' && typeof window.loadSubscriptionInfo === 'function') window.loadSubscriptionInfo();
                 else if (targetId === 'compartilhar-pane' && typeof window.generateQRCode === 'function') window.env.generateQRCode();
 
                 else if (targetId === 'king-forms-pane') {
@@ -2755,6 +2765,9 @@ function _setupEventListenersBody() {
 
                     if (targetId === 'relatorios-pane') {
                         if (typeof window.loadReportsData === 'function') window.loadReportsData();
+                    }
+                    if (targetId === 'assinatura-pane') {
+                        if (typeof window.loadSubscriptionInfo === 'function') window.loadSubscriptionInfo();
                     }
                     if (targetId === 'compartilhar-pane') {
                         env.generateQRCode();
