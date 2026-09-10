@@ -58,6 +58,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   const HEADERS = { 'Content-Type': 'application/json' };
   if (token) HEADERS.Authorization = `Bearer ${token}`;
 
+  const __ksRawFetch = window.fetch.bind(window);
+  function fetch(url, init) {
+    init = init || {};
+    if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
+    // Evitar Authorization: Bearer  (vazio) que quebra middleware
+    try {
+      const h = init.headers;
+      if (h && typeof h === 'object' && !h.get) {
+        const auth = h.Authorization || h.authorization;
+        if (typeof auth === 'string' && /^Bearer\s*$/i.test(auth.trim())) {
+          const copy = Object.assign({}, h);
+          delete copy.Authorization;
+          delete copy.authorization;
+          init = Object.assign({}, init, { headers: copy });
+        }
+      }
+    } catch (_) {}
+    return __ksRawFetch(url, init);
+  }
+
   // <img> não envia Authorization header. Para previews protegidos (admin),
   // precisamos buscar via fetch + blob e aplicar via ObjectURL.
   const _previewObjectUrls = new Map(); // cacheKey(url) -> objectURL
@@ -85,10 +105,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function fetchPreviewObjectUrl(url) {
     const key = String(url || '');
     if (_previewObjectUrls.has(key)) return _previewObjectUrls.get(key);
+    const headers = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch(url, {
       method: 'GET',
       credentials: 'include',
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers,
       cache: 'no-store'
     });
     if (!res.ok) {

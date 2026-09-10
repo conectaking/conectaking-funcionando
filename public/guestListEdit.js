@@ -1034,15 +1034,13 @@ async function loadPersonalizedLinks() {
     
     try {
         const token = getToken();
-        if (!token) {
-            throw new Error('Token não encontrado');
-        }
+        const headers = {};
+        if (token) headers.Authorization = 'Bearer ' + token;
         
         console.log('Carregando links personalizados para lista:', currentGuestListId);
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}/cadastro-links`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            credentials: 'include',
+            headers
         });
         
         if (!response.ok) {

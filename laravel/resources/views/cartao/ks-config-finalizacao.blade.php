@@ -206,7 +206,7 @@
   </div>
 
   <script>
-    (function() {
+    (async function() {
       const galleryId = @json((int) $galleryId);
       const apiBase = @json($apiBase);
       const params = new URLSearchParams(window.location.search);
@@ -224,8 +224,16 @@
         try { window.history.replaceState({}, '', window.location.pathname + window.location.hash); } catch (_) {}
       }
       if (!token) {
-        document.getElementById('msgErro').textContent = 'Token não encontrado. Abra esta página pelo painel King Selection (após login).';
-        document.getElementById('msgErro').classList.remove('hidden');
+        try {
+          const probe = await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+          if (!probe.ok) {
+            document.getElementById('msgErro').textContent = 'Sessão não encontrada. Abra esta página pelo painel King Selection (após login).';
+            document.getElementById('msgErro').classList.remove('hidden');
+          }
+        } catch (_) {
+          document.getElementById('msgErro').textContent = 'Sessão não encontrada. Abra esta página pelo painel King Selection (após login).';
+          document.getElementById('msgErro').classList.remove('hidden');
+        }
       }
 
       function authHeaders() {
@@ -270,9 +278,8 @@
       }
 
       async function load() {
-        if (!token) return;
         try {
-          const r = await fetch(apiBase + '/galleries/' + galleryId, { headers: authHeaders() });
+          const r = await fetch(apiBase + '/galleries/' + galleryId, { credentials: 'include', headers: authHeaders() });
           if (!r.ok) throw new Error('Falha ao carregar');
           const data = await r.json();
           const g = data.gallery || data;
@@ -288,7 +295,7 @@
 
       document.getElementById('thank_you_file').addEventListener('change', async function() {
         const file = this.files && this.files[0];
-        if (!file || !token) return;
+        if (!file) return;
         hideMessages();
         const btn = document.getElementById('btnEnviarLogo');
         btn.disabled = true;
@@ -298,7 +305,8 @@
           form.append('file', file);
           const r = await fetch(apiBase + '/galleries/' + galleryId + '/thank-you-image', {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token },
+            credentials: 'include',
+            headers: authHeaders(),
             body: form
           });
           const data = await r.json().catch(function() { return {}; });
@@ -320,13 +328,13 @@
       });
 
       document.getElementById('btnRemoverLogo').addEventListener('click', async function() {
-        if (!token) return;
         hideMessages();
         const btn = document.getElementById('btnRemoverLogo');
         btn.disabled = true;
         try {
           const r = await fetch(apiBase + '/galleries/' + galleryId, {
             method: 'PUT',
+            credentials: 'include',
             headers: authHeadersJson(),
             body: JSON.stringify({ thank_you_image_url: null })
           });
@@ -345,11 +353,6 @@
       document.getElementById('formFinalizacao').addEventListener('submit', async function(e) {
         e.preventDefault();
         hideMessages();
-        if (!token) {
-          document.getElementById('msgErro').textContent = 'Token necessário para salvar.';
-          document.getElementById('msgErro').classList.remove('hidden');
-          return;
-        }
         const btn = document.getElementById('btnSalvar');
         btn.disabled = true;
         btn.textContent = 'Salvando...';
@@ -361,6 +364,7 @@
           };
           const r = await fetch(apiBase + '/galleries/' + galleryId, {
             method: 'PUT',
+            credentials: 'include',
             headers: authHeadersJson(),
             body: JSON.stringify(body)
           });

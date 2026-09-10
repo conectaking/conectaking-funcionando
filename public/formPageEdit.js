@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         isAnyRequestPending = true;
         try {
-            const response = await fetch(url, options);
+            const opts = Object.assign({ credentials: 'include' }, options || {});
+            const response = await fetch(url, opts);
             // Pequeno delay após a requisição para evitar rate limiting
             await new Promise(resolve => setTimeout(resolve, 100));
             return response;
@@ -257,13 +258,12 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('lastEditedFormItemId', currentItemId);
     }
     
-    // Função para obter headers
+    // Função para obter headers (cookie-first: sem Bearer null)
     function getHeaders() {
-        const token = localStorage.getItem('conectaKingToken');
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        };
+        const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+        const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+        if (token) h.Authorization = 'Bearer ' + token;
+        return h;
     }
     // Apenas Authorization (para upload com FormData - não definir Content-Type)
     function getAuthHeadersOnly() {
@@ -7971,10 +7971,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === modal) modal.remove();
         });
         
-        // Carregar listas de convidados
+        // Carregar listas de convidados (cookie HttpOnly basta)
         try {
-            const token = localStorage.getItem('conectaKingToken');
-            if (!token) {
+            console.log('Carregando listas de convidados...');
+            const response = await fetch(`${API_URL}/api/guest-lists`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: getHeaders()
+            });
+
+            if (response.status === 401) {
                 contentDiv.innerHTML = `
                     <div style="text-align: center; padding: 60px 20px; color: var(--text-dark, #A1A1A1);">
                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #FF9800;"></i>
@@ -7987,14 +7993,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 return;
             }
-            
-            console.log('Carregando listas de convidados...');
-            const response = await fetch(`${API_URL}/api/guest-lists`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
             
             if (!response.ok) {
                 const errorText = await response.text();

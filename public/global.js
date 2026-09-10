@@ -188,7 +188,22 @@ const updateNavUI = (user) => {
             });
 
             if (response.status === 401) {
-                // Token é inválido ou expirado, força o logout
+                // JWT no LS pode estar stale — tentar cookie HttpOnly antes de expulsar
+                try {
+                    localStorage.removeItem('conectaKingToken');
+                    const probe = await fetch(`${statusApiBase}/api/account/status`, {
+                        credentials: 'include',
+                        headers: { Accept: 'application/json' },
+                        cache: 'no-store'
+                    });
+                    if (probe.ok) {
+                        const freshUser = await probe.json();
+                        try { localStorage.setItem('conectaKingUser', JSON.stringify(freshUser)); } catch (e) {}
+                        try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+                        updateNavUI(freshUser);
+                        return freshUser;
+                    }
+                } catch (e) {}
                 handleLogout();
                 return;
             }

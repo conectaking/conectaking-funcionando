@@ -254,19 +254,14 @@
                                         e.preventDefault();
                                         e.stopPropagation();
                                         
-                                        // Obter token do localStorage
+                                        // Cookie HttpOnly da sessão autentica same-origin; Bearer LS é opcional legado
                                         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
-                                        
-                                        if (!token) {
-                                            alert('Erro: Token de autenticação não encontrado. Por favor, faça login novamente.');
-                                            return;
+                                        if (token) {
+                                            try {
+                                                const secure = location.protocol === 'https:' ? '; Secure' : '';
+                                                document.cookie = `token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
+                                            } catch (_) {}
                                         }
-                                        
-                                        // Cookie SameSite para o documento HTML (sem ?token= na URL)
-                                        try {
-                                            const secure = location.protocol === 'https:' ? '; Secure' : '';
-                                            document.cookie = `token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
-                                        } catch (_) {}
                                         const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
                                         const url = `${apiBaseUrl}/api/guest-lists/${id}/customize-portaria`;
                                         

@@ -11,6 +11,8 @@
     function cartao() { return global.DashboardCartao || {}; }
     function editor() { return global.DashboardEditor || {}; }
 
+    var __rawFetch = global.fetch.bind(global);
+
     var env = {
         get API_URL() {
             var c = core();
@@ -24,6 +26,7 @@
         },
         get HEADERS_AUTH() {
             var c = core();
+            if (typeof c.getAuthHeaders === 'function') return c.getAuthHeaders() || {};
             if (typeof c.getHeadersAuth === 'function') return c.getHeadersAuth() || {};
             return {};
         },
@@ -35,7 +38,7 @@
         safeFetch: function (url, options) {
             var c = core();
             if (typeof c.safeFetch === 'function') return c.safeFetch(url, options);
-            return fetch(url, options);
+            return __rawFetch(url, Object.assign({ credentials: 'include' }, options || {}));
         },
         setAvatarSrc: function (el, src) {
             var c = core();
@@ -110,6 +113,10 @@
         }
     });
 
+
+    var fetch = function (url, options) {
+        return env.safeFetch(url, options || {});
+    };
 
     function callOpenCropper() {
         var fn = global.openCropper || (global.DashboardUpload && global.DashboardUpload.openCropper);
