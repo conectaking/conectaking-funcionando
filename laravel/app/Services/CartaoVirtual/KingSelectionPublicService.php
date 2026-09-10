@@ -191,9 +191,14 @@ class KingSelectionPublicService
         if ($accessMode === 'password') {
             $accessMode = 'signup';
         }
+        $accessMode = \App\Support\KingSelection\KsAccess::normAccessMode($accessMode);
         $allowSelfSignup = array_key_exists('allow_self_signup', (array) $g)
             ? (bool) $g->allow_self_signup
-            : in_array($accessMode, ['signup', 'public'], true);
+            : in_array($accessMode, ['signup', 'public', 'paid_event_photos'], true);
+        // Modos com cadastro diferido: sempre permitir (flag no DB pode ter falhado a gravar).
+        if (in_array($accessMode, ['signup', 'paid_event_photos'], true)) {
+            $allowSelfSignup = true;
+        }
 
         $coverPhotoId = null;
         $totalPhotos = 0;
@@ -230,7 +235,7 @@ class KingSelectionPublicService
                     'access_mode' => $accessMode,
                     'total_photos' => $totalPhotos,
                     'cover_photo_id' => $coverPhotoId,
-                    'deferred_signup_flow' => $allowSelfSignup && in_array($accessMode, ['signup', 'public'], true),
+                    'deferred_signup_flow' => $allowSelfSignup && in_array($accessMode, ['signup', 'public', 'paid_event_photos'], true),
                     'register_before_gallery' => $accessMode === 'public',
                     'client_folder_layout' => $folderLayout,
                     'client_entry_splash_enabled' => $splashBoot,

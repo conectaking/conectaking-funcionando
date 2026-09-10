@@ -360,10 +360,11 @@ class KingSelectionClientService
         }
 
         $accessMode = $hasAm ? KsAccess::normAccessMode($g->access_mode ?? 'private') : 'private';
-        $allowSelf = $hasSelf
-            ? filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN)
-            : KsAccess::allowsSelfSignup($accessMode);
-        if (! KsAccess::allowsSelfSignup($accessMode) || ! $allowSelf) {
+        $allowSelf = KsAccess::allowsSelfSignup($accessMode);
+        if (! $allowSelf && $hasSelf) {
+            $allowSelf = filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN);
+        }
+        if (! $allowSelf) {
             return ['status' => 403, 'body' => ['message' => 'Esta galeria não usa o fluxo de cadastro ao enviar.']];
         }
 

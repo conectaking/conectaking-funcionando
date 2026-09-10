@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use App\Support\ImageExif;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -449,10 +450,10 @@ class KingSelectionMediaService
     private function resizeJpeg(string $buf, int $maxSide): ?string
     {
         $this->bumpImageMemory();
-        $img = @imagecreatefromstring($buf);
+        $img = ImageExif::createOrientedImage($buf);
         // Libertar JPEG comprimido antes do resample (economiza dezenas de MB).
         unset($buf);
-        if ($img === false) {
+        if ($img === null) {
             return null;
         }
         $w = imagesx($img);

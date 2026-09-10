@@ -1,17 +1,21 @@
 /**
- * CSRF double-submit helper (ck_csrf / X-CK-CSRF).
+ * CSRF double-submit helper (ck_csrf / X-CK-CSRF) + X-XSRF-TOKEN Laravel.
  * Usado por wrappers que fazem bind de fetch e não passam pelo api-config.
  */
 (function (global) {
   'use strict';
 
-  function readCsrf() {
+  function readCookie(name) {
     try {
-      var m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+      var m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
       return m ? decodeURIComponent(m[1]) : '';
     } catch (e) {
       return '';
     }
+  }
+
+  function readCsrf() {
+    return readCookie('ck_csrf');
   }
 
   function isMutating(method) {
@@ -21,16 +25,22 @@
 
   function attachToHeaders(headers, method) {
     if (!isMutating(method)) return headers || {};
-    var h = headers || {};
     var csrf = readCsrf();
-    if (!csrf) return h;
-    if (typeof h.set === 'function') {
-      if (!h.get('X-CK-CSRF') && !h.get('X-XSRF-TOKEN')) h.set('X-CK-CSRF', csrf);
-      return h;
+    var xsrf = readCookie('XSRF-TOKEN');
+    if (!csrf && !xsrf) return headers || {};
+
+    if (typeof headers !== 'undefined' && headers && typeof headers.set === 'function') {
+      if (csrf && !headers.get('X-CK-CSRF')) headers.set('X-CK-CSRF', csrf);
+      if (xsrf && !headers.get('X-XSRF-TOKEN') && !headers.get('X-CSRF-TOKEN')) {
+        headers.set('X-XSRF-TOKEN', xsrf);
+      }
+      return headers;
     }
-    if (!h['X-CK-CSRF'] && !h['X-XSRF-TOKEN'] && !h['x-ck-csrf']) {
-      h = Object.assign({}, h);
-      h['X-CK-CSRF'] = csrf;
+
+    var h = Object.assign({}, headers || {});
+    if (csrf && !h['X-CK-CSRF'] && !h['x-ck-csrf']) h['X-CK-CSRF'] = csrf;
+    if (xsrf && !h['X-XSRF-TOKEN'] && !h['X-CSRF-TOKEN'] && !h['x-xsrf-token']) {
+      h['X-XSRF-TOKEN'] = xsrf;
     }
     return h;
   }
@@ -51,7 +61,7 @@
     wrapFetch: wrapFetch,
   };
 
-  // Uma vez por página: injeta X-CK-CSRF em mutações (páginas autenticadas).
+  // Uma vez por página: injeta CSRF em mutações (páginas autenticadas).
   if (!global.__ckCsrfFetchWrapped && typeof global.fetch === 'function') {
     global.__ckCsrfFetchWrapped = true;
     global.fetch = wrapFetch(global.fetch.bind(global));

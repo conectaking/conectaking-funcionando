@@ -2163,8 +2163,17 @@ class KingSelectionAdminService
         }
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION) ?: 'jpg');
         $ext = preg_replace('/[^a-z0-9]/', '', $ext) ?: 'jpg';
-        $key = 'galleries/'.$galleryId.'/link-cover/'.(string) \Illuminate\Support\Str::uuid().'.'.$ext;
         $ct = str_starts_with($mime, 'image/') ? $mime : 'image/jpeg';
+        // Normalizar EXIF (telefone vertical → ficheiro já na orientação correta)
+        if (str_contains(strtolower($ct), 'jpeg') || str_contains(strtolower($ct), 'jpg') || $ext === 'jpg' || $ext === 'jpeg') {
+            $normalized = \App\Support\ImageExif::normalizeJpegBinary($binary, 92);
+            if (is_string($normalized) && $normalized !== '') {
+                $binary = $normalized;
+                $ct = 'image/jpeg';
+                $ext = 'jpg';
+            }
+        }
+        $key = 'galleries/'.$galleryId.'/link-cover/'.(string) \Illuminate\Support\Str::uuid().'.'.$ext;
         if (! $r2->putKey($key, $binary, $ct)) {
             return ['status' => 502, 'body' => ['success' => false, 'message' => 'Falha ao enviar capa para o R2']];
         }
@@ -2758,8 +2767,8 @@ class KingSelectionAdminService
         if (! function_exists('imagecreatefromstring')) {
             return $binary;
         }
-        $img = @imagecreatefromstring($binary);
-        if ($img === false) {
+        $img = \App\Support\ImageExif::createOrientedImage($binary);
+        if ($img === null) {
             return null;
         }
         $w = imagesx($img);

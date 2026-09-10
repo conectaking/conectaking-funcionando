@@ -2928,16 +2928,16 @@
       modeDetails?.classList.remove('ks-hidden');
       modePw?.classList.add('ks-hidden');
       $('ks-login-sub').textContent =
-        'Modo fotos vendidas: entre com o mesmo nome, e-mail e WhatsApp usados ao enviar a seleção.';
+        'Modo fotos vendidas: na primeira visita as fotos abrem direto; cadastro (nome, e-mail e WhatsApp) só ao enviar a seleção. Se já enviou, entre com os mesmos dados.';
       const lead = $('ks-login-details-lead');
       if (lead) {
         lead.innerHTML =
-          'Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> do cadastro (ao enviar a seleção). Informe com DDD e, se necessário, código do país (ex.: 55). Se o fotógrafo não salvou seu WhatsApp no cadastro, pode deixar em branco.';
+          'Já enviou a seleção? Use o mesmo <strong>nome</strong>, <strong>e-mail</strong> e <strong>WhatsApp</strong> (com DDD). Se for a primeira vez nesta galeria, volte ao link e atualize a página — o cadastro pedimos só no envio.';
       }
       if (foot) {
         foot.style.display = '';
         foot.textContent =
-          'Na primeira visita você já pode ver as fotos; ao enviar a seleção, confirme nome, e-mail e WhatsApp.';
+          'Primeira visita: vê as fotos sem cadastro. Ao enviar a seleção, confirme nome, e-mail e WhatsApp.';
       }
       return;
     }

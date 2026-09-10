@@ -37,7 +37,21 @@ class RequireCookieCsrf
         }
 
         $cookie = (string) $request->cookie(self::COOKIE, '');
-        $header = (string) ($request->header(self::HEADER) ?: $request->header('X-Xsrf-Token') ?: '');
+        $ckHeader = (string) $request->header(self::HEADER, '');
+
+        // Double-submit ck_csrf
+        if ($cookie !== '' && $ckHeader !== '' && hash_equals($cookie, $ckHeader)) {
+            return $next($request);
+        }
+
+        // Laravel nativo (X-XSRF-TOKEN / _token) — NÃO comparar com ck_csrf.
+        // Deixa o VerifyCsrfToken validar.
+        if ($request->headers->has('X-XSRF-TOKEN')
+            || $request->headers->has('X-CSRF-TOKEN')
+            || $request->input('_token')) {
+            return $next($request);
+        }
+
         if ($cookie === '') {
             return response()->json([
                 'success' => false,
@@ -46,14 +60,11 @@ class RequireCookieCsrf
                 ->header('X-Conecta-Engine', 'laravel')
                 ->withCookie(self::makeCookie($request));
         }
-        if ($header === '' || ! hash_equals($cookie, $header)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'CSRF inválido. Recarregue a página e tente novamente.',
-            ], 419)->header('X-Conecta-Engine', 'laravel');
-        }
 
-        return $next($request);
+        return response()->json([
+            'success' => false,
+            'message' => 'CSRF inválido. Recarregue a página e tente novamente.',
+        ], 419)->header('X-Conecta-Engine', 'laravel');
     }
 
     public static function makeCookie(Request $request, ?string $value = null, int $minutes = 60 * 24): Cookie
