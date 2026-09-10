@@ -1,3 +1,4 @@
+import '../vendor-globals.js';
 /** responsesList — Vite entry (extracted inline) */
 import '@css/dashboard.css';
 import '@mod/js/ck-auth-gate.js';
@@ -77,7 +78,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             
             // Se há cache válido e não é requisição POST/PUT/DELETE, retornar cache
             if (cached && (now - cached.timestamp) < CACHE_TTL && (!options.method || options.method === 'GET')) {
-                console.log('[CACHE] Usando dados em cache:', cacheKey);
                 return new Response(JSON.stringify(cached.data), {
                     ok: true,
                     status: 200,
@@ -155,7 +155,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     // Item nativo de portaria/lista
                     if (item && item.item_type === 'guest_list') {
                         isGuestListMode = true;
-                        console.log('Modo detectado: Check-in (via item_type guest_list)');
                         return;
                     }
                     
@@ -167,12 +166,10 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     const glOn = dfi.enable_guest_list_submit === true || dfi.enable_guest_list_submit === 'true' || dfi.enable_guest_list_submit === 1 || dfi.enable_guest_list_submit === '1';
                     if (mode === 'checkin' || (mode !== 'lead' && glOn)) {
                         isGuestListMode = true;
-                        console.log('Modo detectado: Check-in (via send_mode/enable_guest_list_submit)');
                         return;
                     }
                     if (mode === 'lead' || dfi.enable_guest_list_submit === false || dfi.enable_guest_list_submit === 'false') {
                         isGuestListMode = false;
-                        console.log('Modo detectado: Captação de Clientes');
                         return;
                     }
                 }
@@ -181,12 +178,10 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             }
             
             isGuestListMode = false;
-            console.log('Modo detectado: Captação de Clientes (padrão)');
         }
         
         // Carregar dados
         async function loadData() {
-            console.log('Y"" [loadData] Iniciando...');
             const loadingEl = document.getElementById('loading');
             const contentEl = document.getElementById('content');
             const emptyEl = document.getElementById('empty');
@@ -206,19 +201,14 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 contentEl.style.display = 'none';
                 emptyEl.style.display = 'none';
                 
-                console.log('Y"" [loadData] Detectando modo...');
                 await detectMode();
-                console.log('[loadData] Modo detectado:', isGuestListMode ? 'Lista de Convidados' : 'Formulário Digital');
                 
                 if (isGuestListMode) {
-                    console.log('Y"" [loadData] Carregando dados de lista de convidados...');
                     await loadGuestListData();
                 } else {
-                    console.log('Y"" [loadData] Carregando dados de formulário...');
                     await loadFormResponsesData();
                 }
                 
-                console.log('[loadData] Carregamento concluído!');
             } catch (error) {
                 console.error('[loadData] Erro capturado:', error);
                 console.error('[loadData] Stack:', error.stack);
@@ -257,7 +247,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
         
         // Carregar dados de lista de convidados
         async function loadGuestListData() {
-            console.log('Y"" [loadGuestListData] Iniciando...');
             try {
                 // Verificar elementos do DOM
                 const pageTitleEl = document.getElementById('page-title');
@@ -295,7 +284,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     return;
                 }
                 
-                console.log('Y"" [loadGuestListData] Iniciando carregamento...');
                 
                 // IMPORTANTE: Usar cachedFetch para reduzir requisições
                 const profileItemRes = await cachedFetch(`${API_URL}/api/profile/items/${itemId}`, {
@@ -305,7 +293,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 if (profileItemRes.ok) {
                     const profileItemData = await profileItemRes.json();
                     guestListTokens.share_token = profileItemData.data?.share_token || null;
-                    console.log('[LINKS] share_token obtido:', guestListTokens.share_token ? 'Sim' : 'Não');
                 }
                 
                 // IMPORTANTE: Delay antes da requisição principal
@@ -401,7 +388,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 }
                 
                 // Carregar convidados
-                console.log('Y"" [loadGuestListData] Carregando convidados...');
                 const guestHeaders = getHeaders();
                 if (!guestHeaders || Object.keys(guestHeaders).length === 0) {
                     throw new Error('Headers de autenticação não disponíveis');
@@ -418,7 +404,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     if (response.status === 404) {
                         // Lista ainda não existe ou não tem convidados — tratar como vazio, não como erro
                         allData = [];
-                        console.log('[loadGuestListData] Lista vazia ou não encontrada (404), exibindo estado vazio.');
                     } else {
                         const errorText = await response.text();
                         console.error('[loadGuestListData] Erro ao carregar convidados:', response.status, errorText);
@@ -438,7 +423,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 }
                 
                 if (!allData) allData = [];
-                console.log('[loadGuestListData] Convidados carregados:', allData.length);
                 
                 // NÃƒO sobrescrever currentFilter - usar o valor salvo (savedTab) para manter a aba correta após refresh
                 // currentFilter já foi definido como savedTab acima
@@ -468,7 +452,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                             }
                             if (Array.isArray(fields) && fields.length > 0) {
                                 formFields = fields;
-                                console.log('[loadGuestListData] formFields carregados de custom_form_fields:', formFields.length);
                             }
                         }
                     }
@@ -485,18 +468,11 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                             if (itemData.data && itemData.data.digital_form_data && itemData.data.digital_form_data.form_fields) {
                                 const fields = itemData.data.digital_form_data.form_fields;
                                 formFields = Array.isArray(fields) ? fields : (typeof fields === 'string' ? JSON.parse(fields) : []);
-                                console.log('[loadGuestListData] formFields carregados de digital_form_data:', formFields.length);
                             }
                         }
                     }
                     
-                    console.log('[loadGuestListData] Total de formFields carregados:', formFields.length);
                     if (formFields.length > 0) {
-                        console.log('[loadGuestListData] Primeiros campos:', formFields.slice(0, 3).map(f => ({ 
-                            label: f.label || f.question || f.placeholder || f.name, 
-                            id: f.id,
-                            type: f.type 
-                        })));
                     } else {
                         console.warn('[loadGuestListData] Nenhum formField encontrado!');
                     }
@@ -521,7 +497,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 const contentElFinal = document.getElementById('content');
                 if (loadingElFinal) loadingElFinal.style.display = 'none';
                 if (contentElFinal) contentElFinal.style.display = 'block';
-                console.log('[loadGuestListData] Carregamento concluído!');
                 if (typeof hideLeadToolbar === 'function') hideLeadToolbar();
                 if (typeof ensureGuestLoadMore === 'function') ensureGuestLoadMore();
                 
@@ -554,7 +529,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
         // Carregar dados de respostas de formulário
         async function loadFormResponsesData() {
             try {
-                console.log('Y"" [loadFormResponsesData] Iniciando...');
                 
                 const pageTitleEl = document.getElementById('page-title');
                 if (pageTitleEl) {
@@ -602,7 +576,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     return;
                 }
                 
-                console.log('Y"" [loadFormResponsesData] Carregando respostas...');
                 // IMPORTANTE: Usar cachedFetch e delays sequenciais em vez de Promise.all para evitar rate limiting
                 await new Promise(resolve => setTimeout(resolve, 300));
                 const responsesRes = await cachedFetch(`${API_URL}/api/profile/items/digital_form/${itemId}/responses?mode=lead&limit=100&offset=0`, {
@@ -663,7 +636,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 const searchInputEl = document.getElementById('search-input');
                 if (searchInputEl) searchInputEl.placeholder = 'Buscar por nome, CPF, WhatsApp ou email...';
                 
-                console.log('[loadFormResponsesData] Respostas carregadas:', allData.length);
                 
                 // Renderizar dados
                 if (typeof renderFormResponsesData === 'function') {
@@ -685,7 +657,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 const contentEl = document.getElementById('content');
                 if (loadingEl) loadingEl.style.display = 'none';
                 if (contentEl) contentEl.style.display = 'block';
-                console.log('[loadFormResponsesData] Carregamento concluído!');
                 
             } catch (error) {
                 console.error('[loadFormResponsesData] Erro:', error);
@@ -1648,7 +1619,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 searchBar.style.display = 'none';
                 searchBar.style.visibility = 'hidden';
             }
-            console.log('Y"- Mostrando aba de Links');
             
             // Carregar dados do link de cadastro após um pequeno delay
             setTimeout(() => {
@@ -1675,7 +1645,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             const linksSection = document.getElementById('links-hero-section');
             if (linksSection) {
                 linksSection.style.display = 'block';
-                console.log('Seção de links exibida');
                 
                 // IMPORTANTE: Chamar função para remover rolagem interna
                 setTimeout(() => {
@@ -1728,7 +1697,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 if (linkCadastroPersonalizado) {
                     linkCadastroPersonalizado.value = `${baseUrl}/form/${guestListTokens.cadastro_slug}`;
                     linkCadastroPersonalizado.style.color = '#ECECEC';
-                    console.log('[LINKS] Link de cadastro personalizado:', linkCadastroPersonalizado.value);
                 }
             } else {
                 // Se não tem slug personalizado, mostrar apenas o link original
@@ -1742,7 +1710,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     if (guestListTokens.share_token) {
                         linkCadastroOriginal.value = `${baseUrl}/form/${guestListTokens.share_token}`;
                         linkCadastroOriginal.style.color = '#ECECEC';
-                        console.log('[LINKS] Link de cadastro (King Forms):', linkCadastroOriginal.value);
                     } else {
                         linkCadastroOriginal.value = 'Link não disponível - Salve o formulário primeiro';
                         linkCadastroOriginal.style.color = '#A1A1A1';
@@ -1804,7 +1771,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             // Sempre mostrar stats
             if (statsHeroSection) {
                 statsHeroSection.style.display = 'grid';
-                console.log('Exibindo seção de estatísticas');
             }
         }
         
@@ -1826,12 +1792,10 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             const timestampMatch = fieldIdStr.match(/field[_-]\d+[_-](\d+)$/i);
             if (timestampMatch && timestampMatch[1]) {
                 const index = parseInt(timestampMatch[1]);
-                console.log(`[getFieldLabel] Campo "${fieldIdStr}" -> extraído índice ${index} do formato field_TIMESTAMP_INDEX`);
                 if (index >= 0 && index < formFields.length) {
                     const field = formFields[index];
                     if (field) {
                         const label = field.label || field.question || field.placeholder || field.name || field.title || `Campo ${index + 1}`;
-                        console.log(`[getFieldLabel] Label encontrado: "${label}"`);
                         return label;
                     }
                 }
@@ -1840,18 +1804,14 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             // PRIORIDADE 2: ID é apenas um número (0, 1, 2, etc) - buscar pelo índice
             if (/^\d+$/.test(fieldIdStr)) {
                 const index = parseInt(fieldIdStr);
-                console.log(`[getFieldLabel] Campo "${fieldIdStr}" -> índice ${index}, formFields.length=${formFields.length}`);
                 if (index >= 0 && index < formFields.length) {
                     const field = formFields[index];
-                    console.log(`[getFieldLabel] Campo encontrado:`, field);
                     if (field) {
                         // Tentar label, question, placeholder, ou name
                         const label = field.label || field.question || field.placeholder || field.name || field.title || `Campo ${index + 1}`;
-                        console.log(`[getFieldLabel] Label retornado: "${label}"`);
                         return label;
                     }
                 } else {
-                    console.log(`[getFieldLabel] Ãndice ${index} fora do range (0-${formFields.length - 1})`);
                 }
             }
             
@@ -2126,7 +2086,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-                        console.log(`[CADASTRO_LINKS] ${data.data.length} link(s) personalizado(s) carregado(s)`);
                         renderCadastroLinksList(data.data);
                     } else {
                         container.innerHTML = '<p style="color: #A1A1A1; text-align: center; padding: 20px;">Nenhum link personalizado criado ainda.</p>';
@@ -3067,10 +3026,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     body.expiresAt = null;
                 }
                 
-                console.log('[EDIT_LINK] Enviando dados:', body);
                 
-                console.log('[EDIT_LINK] Enviando requisição PUT para:', `${API_URL}/api/guest-lists/cadastro-links/${linkId}`);
-                console.log('[EDIT_LINK] Body:', JSON.stringify(body, null, 2));
                 
                 const response = await fetch(`${API_URL}/api/guest-lists/cadastro-links/${linkId}`, {
                     method: 'PUT',
@@ -3081,7 +3037,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     body: JSON.stringify(body)
                 });
                 
-                console.log('[EDIT_LINK] Resposta recebida:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ message: `Erro HTTP: ${response.status}` }));
@@ -3090,7 +3045,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 }
                 
                 const data = await response.json();
-                console.log('[EDIT_LINK] Dados recebidos:', data);
                 
                 if (data.success) {
                     // Fechar modal
@@ -3792,7 +3746,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
         // Copiar link para clipboard
         // Salvar slug personalizado da portaria
         async function savePortariaSlug(event) {
-            console.log('Y"" [savePortariaSlug] Iniciando...');
             const slugInput = document.getElementById('portaria-slug-input');
             if (!slugInput) {
                 console.error('[savePortariaSlug] Input não encontrado!');
@@ -3800,7 +3753,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             }
             
             const slug = slugInput.value.trim().toLowerCase();
-            console.log('Y"" [savePortariaSlug] Slug:', slug);
             
             // Validar slug
             if (slug && !/^[a-z0-9_-]+$/.test(slug)) {
@@ -3816,7 +3768,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     return;
                 }
                 
-                console.log('Y"" [savePortariaSlug] Enviando requisição...', { itemId, slug });
                 const response = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
                     method: 'PUT',
                     headers: {
@@ -3828,7 +3779,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     })
                 });
                 
-                console.log('Y"" [savePortariaSlug] Resposta recebida:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     let errorMessage = 'Erro ao atualizar lista';
@@ -3845,7 +3795,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 }
                 
                 const result = await response.json();
-                console.log('[savePortariaSlug] Slug salvo com sucesso:', result);
                 
                 // Atualizar tokens e recarregar links
                 guestListTokens.portaria_slug = slug || null;
@@ -3869,11 +3818,9 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 if (listInfoRes2.ok) {
                     const listInfo = await listInfoRes2.json();
                     guestListTokens.portaria_slug = listInfo.portaria_slug || null;
-                    console.log('[savePortariaSlug] Token atualizado:', guestListTokens.portaria_slug);
                 }
                 
                 // Recarregar display dos links para atualizar visibilidade
-                console.log('Y"" [savePortariaSlug] Recarregando display dos links...');
                 displayPublicLinks();
                 
                 // Forçar atualização visual imediata
@@ -3882,26 +3829,18 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 const linkPortariaOriginal = document.getElementById('link-portaria');
                 const linkPortariaPersonalizado = document.getElementById('link-portaria-personalizado');
                 
-                console.log('Y"" [savePortariaSlug] Elementos encontrados:', {
-                    originalGroup: !!linkPortariaOriginalGroup,
-                    personalizadoGroup: !!linkPortariaPersonalizadoGroup,
-                    slug: guestListTokens.portaria_slug
-                });
                 
                 if (guestListTokens.portaria_slug) {
                     // Se tem slug personalizado, mostrar apenas o link personalizado
                     if (linkPortariaOriginalGroup) {
                         linkPortariaOriginalGroup.style.display = 'none';
-                        console.log('[savePortariaSlug] Link original ocultado');
                     }
                     if (linkPortariaPersonalizadoGroup) {
                         linkPortariaPersonalizadoGroup.style.display = 'flex';
-                        console.log('[savePortariaSlug] Link personalizado exibido');
                     }
                     if (linkPortariaPersonalizado) {
                         linkPortariaPersonalizado.value = `${baseUrl}/portaria/${guestListTokens.portaria_slug}`;
                         linkPortariaPersonalizado.style.color = '#ECECEC';
-                        console.log('[savePortariaSlug] Link personalizado atualizado:', linkPortariaPersonalizado.value);
                     }
                 } else {
                     // Se não tem slug personalizado, mostrar apenas o link original
@@ -3959,7 +3898,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
         
         // Salvar slug personalizado do cadastro
         async function saveCadastroSlug(event) {
-            console.log('Y"" [saveCadastroSlug] Iniciando...');
             const slugInput = document.getElementById('cadastro-slug-input');
             if (!slugInput) {
                 console.error('[saveCadastroSlug] Input não encontrado!');
@@ -3967,7 +3905,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             }
             
             const slug = slugInput.value.trim().toLowerCase();
-            console.log('Y"" [saveCadastroSlug] Slug:', slug);
             
             // Validar slug
             if (slug && !/^[a-z0-9_-]+$/.test(slug)) {
@@ -3983,7 +3920,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     return;
                 }
                 
-                console.log('Y"" [saveCadastroSlug] Enviando requisição...', { itemId, slug });
                 const response = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
                     method: 'PUT',
                     headers: {
@@ -3995,7 +3931,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     })
                 });
                 
-                console.log('Y"" [saveCadastroSlug] Resposta recebida:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     let errorMessage = 'Erro ao atualizar lista';
@@ -4012,7 +3947,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 }
                 
                 const result = await response.json();
-                console.log('[saveCadastroSlug] Slug salvo com sucesso:', result);
                 
                 // Recarregar dados da lista para obter o slug atualizado
                 const listInfoRes = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
@@ -4021,11 +3955,9 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 if (listInfoRes.ok) {
                     const listInfo = await listInfoRes.json();
                     guestListTokens.cadastro_slug = listInfo.cadastro_slug || null;
-                    console.log('[saveCadastroSlug] Token atualizado:', guestListTokens.cadastro_slug);
                 }
                 
                 // Recarregar display dos links para atualizar visibilidade
-                console.log('Y"" [saveCadastroSlug] Recarregando display dos links...');
                 displayPublicLinks();
                 
                 // Feedback visual
@@ -4778,12 +4710,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             const apiBaseUrl = (window.API_BASE || window.API_URL || window.location.origin || '').replace(/\/$/, '');
             const customizeUrl = `${apiBaseUrl}/api/guest-lists/${currentItemId}/customize-portaria`;
             
-            console.log('[CUSTOMIZE_PORTARIA] Carregando iframe:', {
-                url: customizeUrl,
-                itemId: currentItemId,
-                hasToken: !!token,
-                apiBaseUrl: apiBaseUrl
-            });
             
             // Criar iframe para carregar a página de personalização
             customizePortariaContainer.innerHTML = `
@@ -4802,7 +4728,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             const iframe = document.getElementById('customize-portaria-iframe');
             if (iframe) {
                 iframe.onload = function() {
-                    console.log('[CUSTOMIZE_PORTARIA] Iframe carregado com sucesso');
                 };
                 
                 iframe.onerror = function(e) {
@@ -4823,7 +4748,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 };
             }
             
-            console.log('[CUSTOMIZE_PORTARIA] Aba de personalização configurada');
         }
         
         // Função auxiliar para converter hex para RGB
@@ -5024,10 +4948,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             }
             
             // Garantir que formFields está disponível (debug)
-            console.log('[viewGuestDetails] formFields:', formFields);
-            console.log('[viewGuestDetails] formFields length:', formFields ? formFields.length : 0);
             if (formFields && formFields.length > 0) {
-                console.log('[viewGuestDetails] Primeiros campos:', formFields.slice(0, 3));
             }
             
             // Criar modal com detalhes completos
@@ -5078,14 +4999,11 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             let formFieldsHTML = '';
             if (Object.keys(customResponses).length > 0) {
                 // Debug: verificar se formFields está disponível
-                console.log('[MODAL] formFields disponível:', formFields && formFields.length > 0 ? `Sim (${formFields.length} campos)` : 'Não');
-                console.log('[MODAL] customResponses keys:', Object.keys(customResponses));
                 
                 formFieldsHTML = Object.entries(customResponses).map(([key, value]) => {
                     const label = getFieldLabel(key);
                     
                     // Debug para cada campo
-                    console.log(`[MODAL] Campo ${key}: label="${label}", formFields[${key}]=`, formFields && formFields[parseInt(key)] ? formFields[parseInt(key)] : 'não encontrado');
                     
                     const displayValue = Array.isArray(value) ? value.join(', ') : (value || '');
                     
@@ -5505,7 +5423,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
             try {
                 const fileName = `inscricao_${inscricaoCode}_${displayName.replace(/[^a-z0-9]/gi, '_')}.pdf`;
                 doc.save(fileName);
-                console.log('[downloadGuestPDF] PDF gerado com sucesso:', fileName);
             } catch (error) {
                 console.error('[downloadGuestPDF] Erro ao salvar PDF:', error);
                 alert('Erro ao gerar o PDF. Por favor, verifique o console para mais detalhes.');
@@ -5724,11 +5641,9 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                         // Verificar se o itemId existe antes de navegar
                         const currentItemId = itemId || (new URLSearchParams(window.location.search)).get('itemId');
                         if (currentItemId) {
-                            console.log('Y"" [btn-voltar] Navegando para /formPageEdit com itemId:', currentItemId);
                             window.location.href = `/formPageEdit?itemId=${currentItemId}`;
                         } else {
                             // Fallback: voltar para dashboard se não tiver itemId
-                            console.log('Y"" [btn-voltar] ItemId não encontrado, navegando para /dashboard');
                             window.location.href = '/dashboard';
                         }
                         return false;
@@ -5850,7 +5765,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 linksSection.style.setProperty('padding-right', '0', 'important');
                 linksSection.style.setProperty('box-sizing', 'border-box', 'important');
                 linksSection.style.setProperty('position', 'relative', 'important');
-                console.log('[MOBILE] Rolagem interna removida e largura ajustada para 100vw');
                 return true;
             }
             return false;
@@ -5887,10 +5801,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
         });
         
         function init() {
-            console.log('Y"" [INIT] Iniciando carregamento...');
-            console.log('Y"" [INIT] itemId:', itemId);
-            console.log('Y"" [INIT] API_URL:', API_URL);
-            console.log('Y"" [INIT] ReadyState:', document.readyState);
             
             try {
                 // Verificar se elementos existem
@@ -5898,11 +5808,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 const contentEl = document.getElementById('content');
                 const emptyEl = document.getElementById('empty');
                 
-                console.log('Y"" [INIT] Elementos do DOM:', {
-                    loading: !!loadingEl,
-                    content: !!contentEl,
-                    empty: !!emptyEl
-                });
                 
                 if (!loadingEl || !contentEl || !emptyEl) {
                     console.error('[INIT] Elementos do DOM não encontrados!');
@@ -5919,7 +5824,6 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 }
                 
                 if (itemId) {
-                    console.log('Y"" [INIT] Chamando loadData()...');
                     loadData().catch(error => {
                         console.error('[INIT] Erro fatal ao carregar dados:', error);
                         console.error('[INIT] Stack:', error.stack);

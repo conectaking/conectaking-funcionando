@@ -218,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!currentItemId) {
         const lastEditedItemId = localStorage.getItem('lastEditedFormItemId');
         if (lastEditedItemId) {
-            console.log('[INIT] Usando itemId do localStorage:', lastEditedItemId);
             currentItemId = lastEditedItemId;
             // Atualizar URL sem recarregar
             const newUrl = `${window.location.pathname}?itemId=${currentItemId}`;
@@ -226,9 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    console.log('[INIT] ItemId obtido da URL:', currentItemId);
-    console.log('[INIT] URL completa:', window.location.href);
-    console.log('[INIT] Query params:', window.location.search);
     
     if (!currentItemId) {
         console.error('O [INIT] ItemId não encontrado na URL');
@@ -241,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (formKeys.length > 0) {
             const lastKey = formKeys[formKeys.length - 1];
             const draftId = lastKey.replace('kingForms_draft_', '');
-            console.log('[INIT] Encontrado rascunho com ID:', draftId);
             currentItemId = draftId;
             const newUrl = `${window.location.pathname}?itemId=${currentItemId}`;
             window.history.replaceState({}, '', newUrl);
@@ -282,12 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Função para atualizar previews de imagens e mostrar/esconder botões de remover
     function updateImagePreviews(formData) {
-        console.log('[updateImagePreviews] Atualizando previews:', {
-            logo: formData.form_logo_url || 'vazio',
-            banner: formData.banner_image_url || 'vazio',
-            header: formData.header_image_url || 'vazio',
-            background: formData.background_image_url || 'vazio'
-        });
         
         // Logo
         const logoPreview = document.getElementById('logo-preview');
@@ -305,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (logoUploadText) logoUploadText.style.display = 'none';
             if (removeLogoBtn) {
                 removeLogoBtn.style.display = 'block';
-                console.log('o. Botão remover logo visível');
             }
         } else if (logoPreview) {
             logoPreview.style.display = 'none';
@@ -329,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bannerUploadText) bannerUploadText.style.display = 'none';
             if (removeBannerBtn) {
                 removeBannerBtn.style.display = 'block';
-                console.log('o. Botão remover banner visível');
             }
         } else if (bannerPreview) {
             bannerPreview.style.display = 'none';
@@ -353,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (headerUploadText) headerUploadText.style.display = 'none';
             if (removeHeaderBtn) {
                 removeHeaderBtn.style.display = 'block';
-                console.log('o. Botão remover header visível');
             }
         } else if (headerPreview) {
             headerPreview.style.display = 'none';
@@ -367,12 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const removeBackgroundBtn = document.getElementById('remove-background-btn');
         const backgroundUrl = formData.background_image_url || '';
         
-        console.log('[Background] Verificando elementos:', {
-            preview: !!backgroundPreview,
-            uploadText: !!backgroundUploadText,
-            removeBtn: !!removeBackgroundBtn,
-            url: backgroundUrl || 'vazio'
-        });
         
         if (backgroundPreview && backgroundUrl) {
             backgroundPreview.src = backgroundUrl;
@@ -384,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (backgroundUploadText) backgroundUploadText.style.display = 'none';
             if (removeBackgroundBtn) {
                 removeBackgroundBtn.style.display = 'block';
-                console.log('o. Botão de remover imagem de fundo VISÍVEL');
             } else {
                 console.error('O Botão remove-background-btn não encontrado!');
             }
@@ -393,7 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (backgroundUploadText) backgroundUploadText.style.display = 'block';
             if (removeBackgroundBtn) {
                 removeBackgroundBtn.style.display = 'none';
-                console.log('Botão de remover imagem de fundo oculto (sem imagem)');
             }
         } else {
             // Não é erro crítico - o elemento pode não existir em todas as páginas
@@ -434,7 +412,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             isLoadingFormData = true;
-            console.log('Y"" Carregando dados do formulário...', currentItemId);
             // Usar safeFetch para evitar rate limiting
             const response = await safeFetch(`${API_URL}/api/profile`, {
                 method: 'GET',
@@ -448,11 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const data = await response.json();
-            console.log('[LOAD] Dados recebidos:', {
-                totalItems: data.items?.length || 0,
-                itemTypes: data.items?.map(i => i.item_type) || [],
-                searchingFor: currentItemId
-            });
             
             let item = data.items?.find(i => String(i.id) === String(currentItemId));
             // Se não veio na listagem (ex.: duplicado recém-criado, atraso de atualização), buscar o item direto por id
@@ -464,7 +436,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const itemJson = await itemRes.json();
                         if (itemJson.success && itemJson.data) {
                             item = itemJson.data;
-                            console.log('o. [LOAD] Item carregado via GET /api/profile/items/:id');
                         }
                     }
                 } catch (e) {
@@ -505,7 +476,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (guestListResponse.ok) {
                         const guestListData = await guestListResponse.json();
-                        console.log('[LOAD] Dados da lista de convidados carregados:', guestListData);
                         
                         // Ativar modo lista de convidados
                         window.currentFormIsGuestList = true;
@@ -555,12 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             guest_list_data: guestListData // Manter referência aos dados originais
                         };
                         
-                        console.log('o. [LOAD] Dados de guest_list mapeados para digital_form_data:', {
-                            form_logo_url: currentItemData.digital_form_data.form_logo_url,
-                            button_logo_url: currentItemData.digital_form_data.button_logo_url,
-                            button_logo_size: currentItemData.digital_form_data.button_logo_size,
-                            show_logo_corner: currentItemData.digital_form_data.show_logo_corner
-                        });
                     } else {
                         // Se não encontrou lista, tratar como formulário normal
                         currentItemData = {
@@ -644,20 +608,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 send_mode: digitalFormColors.send_mode || guestListData.send_mode || undefined
                             };
                             currentItemData.guest_list_data = guestListData;
-                            console.log('o. [LOAD] Dados de guest_list mapeados para digital_form_data (sem forçar Check-in):', { form_fields_count: cfFields.length, form_logo_url: currentItemData.digital_form_data.form_logo_url, enable_guest_list_submit: currentItemData.digital_form_data.enable_guest_list_submit });
                         }
                         }
                     } else if (guestListCheckResponse.status === 404) {
                         // Não há lista associada - continuar como formulário normal
-                        console.log('[LOAD] Formulário normal (não há lista de convidados associada)');
                     }
                 } catch (err) {
                     // Erro na busca - continuar normalmente como formulário digital
-                    console.log('[LOAD] Formulário normal (erro ao verificar lista de convidados):', err.message);
                 }
             }
             
-            console.log('[LOAD] Dados do item carregados:', currentItemData);
             
             // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
             // Para cores, usar APENAS item.digital_form_data (digital_form_items), NUNCA guest_list_items
@@ -677,14 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (formDataForColors.background_opacity !== undefined) formData.background_opacity = formDataForColors.background_opacity;
             if (formDataForColors.theme) formData.theme = formDataForColors.theme;
             
-            console.log('YZ [LOAD] CORES SEPARADAS: Usando APENAS cores de digital_form_items:', {
-                primary_color: formData.primary_color,
-                secondary_color: formData.secondary_color,
-                background_color: formData.background_color,
-                card_color: formData.card_color,
-                decorative_bar_color: formData.decorative_bar_color,
-                source: 'digital_form_items (NÃO guest_list_items)'
-            });
             
             // Preencher campos hidden (para salvar)
             const moduleTitleEl = document.getElementById('form-module-title');
@@ -708,7 +660,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (whatsappEl) whatsappEl.value = formData.whatsapp_number || '';
             if (cardColorEl) {
                 cardColorEl.value = formData.card_color || '#FFFFFF';
-                console.log('o. [LOAD] Cor do card carregada:', formData.card_color || '#FFFFFF');
             }
             
             // Carregar cor das barrinhas decorativas
@@ -720,7 +671,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(decorativeBarColorEl);
             }
             decorativeBarColorEl.value = formData.decorative_bar_color || formData.primary_color || '#4A90E2';
-            console.log('o. [LOAD] Cor das barrinhas decorativas carregada:', decorativeBarColorEl.value);
             
             // Carregar cor da barra principal
             let barColorEl = document.getElementById('bar-color');
@@ -732,7 +682,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Usar separator_line_color como fallback, mas preferir primary_color se não houver
             barColorEl.value = formData.separator_line_color || formData.primary_color || '#4A90E2';
-            console.log('o. [LOAD] Cor da barra carregada:', barColorEl.value);
             
             // Carregar campos de evento (data e endereço)
             let eventDateEl = document.getElementById('event-date');
@@ -769,11 +718,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Carregar valores de event_date e event_address (e coordenadas)
             if (eventDateEl) {
                 eventDateEl.value = formData.event_date || '';
-                console.log('Y". [LOAD] event_date carregado:', formData.event_date || '');
             }
             if (eventAddressEl) {
                 eventAddressEl.value = formData.event_address || '';
-                console.log('[LOAD] event_address carregado:', formData.event_address || '');
             }
             if (eventAddressLatEl && (formData.event_address_lat != null && formData.event_address_lat !== '')) {
                 eventAddressLatEl.value = String(formData.event_address_lat);
@@ -844,11 +791,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const enableGuestListSubmitValue = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
                 enableGuestListSubmitInput.value = enableGuestListSubmitValue ? 'true' : 'false';
                 window.enableGuestListSubmitValue = enableGuestListSubmitValue;
-                console.log('Y"< [LOAD] enable_guest_list_submit carregado:', {
-                    valor_banco: formData.enable_guest_list_submit,
-                    tipo: typeof formData.enable_guest_list_submit,
-                    valor_processado: enableGuestListSubmitValue
-                });
             }
 
             // Carregar send_mode (lead = Captação, checkin = Check-in)
@@ -972,15 +914,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             formFields = loadedFormFields;
             ensureAllFormFieldIds();
-            console.log('Y"< [LOAD] Form fields carregados:', {
-                count: formFields.length,
-                fields: formFields
-            });
             
             const formFieldsJsonEl = document.getElementById('form-fields-json');
             if (formFieldsJsonEl) {
                 formFieldsJsonEl.value = JSON.stringify(formFields);
-                console.log('o. form-fields-json atualizado no load:', formFields.length, 'campos');
             }
             
             // Garantir que o container de preview esteja visível
@@ -989,7 +926,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 previewContainer.style.display = 'block';
                 previewContainer.style.visibility = 'visible';
                 previewContainer.style.opacity = '1';
-                console.log('o. Container de preview garantido como visível');
             }
             
             // Renderizar preview das perguntas
@@ -1076,7 +1012,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.id = 'preview-questions-container';
                 container.className = 'preview-questions-container';
                 previewContainer.appendChild(container);
-                console.log('o. Container preview-questions-container criado dinamicamente');
             } else {
                 console.warn('s️ Container preview-questions-container não encontrado - pode não estar na página correta');
                 return;
@@ -1104,7 +1039,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        console.log('Y"" Renderizando preview de perguntas...', fieldsToRender.length, 'campos' + (searchTerm ? ` (filtrado de ${formFields?.length || 0})` : ''));
         
         if (!formFields || formFields.length === 0) {
             container.innerHTML = `
@@ -1119,7 +1053,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (newPlaceholder) {
                 newPlaceholder.addEventListener('click', () => addQuestion());
             }
-            console.log('o. Placeholder de adicionar pergunta exibido');
             return;
         }
         
@@ -1159,7 +1092,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             container.innerHTML = htmlContent;
             
-            console.log('o. Preview renderizado com sucesso:', formFields.length, 'perguntas');
         } catch (error) {
             console.error('O Erro ao renderizar preview:', error);
             container.innerHTML = `<div style="padding: 20px; color: #d32f2f;">Erro ao renderizar perguntas: ${error.message}</div>`;
@@ -1187,7 +1119,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (formFieldsJsonEl) {
                         formFieldsJsonEl.value = JSON.stringify(formFields);
                     }
-                    console.log('o. [PREVIEW] Campo editado inline:', fieldName, 'índice:', index);
                 }
             });
             
@@ -1215,14 +1146,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 newBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('o. [PREVIEW] Botão Editar clicado para índice:', index);
                     editQuestionModal(index);
                 });
             } else if (action === 'delete') {
                 newBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('o. [PREVIEW] Botão Excluir clicado para índice:', index);
                     const confirmDelete = confirm('Tem certeza que deseja excluir esta pergunta?\n\nEsta ação não pode ser desfeita.');
                     if (confirmDelete) {
                         deleteQuestion(index);
@@ -1232,7 +1161,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 newBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('o. [PREVIEW] Botão Duplicar clicado para índice:', index);
                     duplicateQuestion(index);
                 });
             } else if (action === 'move-up') {
@@ -1255,7 +1183,6 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.style.zIndex = '1001';
         });
         
-        console.log('o. Event listeners adicionados aos botões de ação');
         
         // Ativar arrastar para reordenar perguntas
         initQuestionsSortable(container);
@@ -1637,7 +1564,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Configurar listeners da sidebar
     function setupSidebarListeners() {
-        console.log('Configurando listeners da sidebar...');
         
         // Adicionar pergunta
         const sidebarAddQuestion = document.getElementById('sidebar-add-question');
@@ -1647,10 +1573,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão adicionar pergunta clicado');
                 addQuestion();
             });
-            console.log('o. Listener adicionado: sidebar-add-question');
         } else {
             console.error('O Botão sidebar-add-question não encontrado');
         }
@@ -1663,7 +1587,6 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão adicionar título clicado');
                 const previewTitleEl = document.getElementById('preview-title');
                 if (previewTitleEl) {
                     previewTitleEl.focus();
@@ -1674,7 +1597,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     sel.addRange(range);
                 }
             });
-            console.log('o. Listener adicionado: sidebar-add-title');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-add-title não encontrado');
         }
@@ -1687,10 +1609,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão adicionar imagem de cabeçalho clicado');
                 addHeaderImage();
             });
-            console.log('o. Listener adicionado: sidebar-add-header-image');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-add-header-image não encontrado');
         }
@@ -1703,10 +1623,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão adicionar imagem clicado');
                 addImage();
             });
-            console.log('o. Listener adicionado: sidebar-add-image');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-add-image não encontrado');
         }
@@ -1719,10 +1637,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão personalizar cores clicado');
                 openColorCustomizer();
             });
-            console.log('o. Listener adicionado: sidebar-customize-colors');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-customize-colors não encontrado');
         }
@@ -1735,10 +1651,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão módulos/templates clicado');
                 openModuleSelector();
             });
-            console.log('o. Listener adicionado: sidebar-load-module');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-load-module não encontrado');
         }
@@ -1751,20 +1665,14 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão configurações clicado');
                 openSettingsModal();
             });
-            console.log('o. Listener adicionado: sidebar-settings');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-settings não encontrado');
         }
         
         // Listener para Lista de Convidados (pode ser sidebar-guest-list ou sidebar-responses)
         const guestListBtn = document.getElementById('sidebar-guest-list') || document.getElementById('sidebar-responses');
-        console.log('Procurando botão de lista de convidados...', { 
-            found: !!guestListBtn,
-            id: guestListBtn?.id || 'não encontrado'
-        });
         
         if (guestListBtn) {
             // Remover listeners anteriores se existirem (clone para limpar)
@@ -1775,7 +1683,6 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Botão Lista de Convidados/Envios clicado (addEventListener)!');
                 handleGuestListButtonClick();
             }, true); // useCapture = true para capturar primeiro
             
@@ -1784,7 +1691,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 newBtn.setAttribute('onclick', 'handleGuestListClick(event); return false;');
             }
             
-            console.log('o. Listener adicionado:', guestListBtn.id, '- abre página completa');
         } else {
             // Botão não encontrado - não é crítico, apenas logar como warning (não error)
             console.warn('s️ Botão de lista de convidados não encontrado (sidebar-guest-list ou sidebar-responses). Funcionalidade pode não estar disponível.');
@@ -1807,20 +1713,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const currentItemId = urlParams.get('itemId');
                 
-                console.log('Y"< Verificando modo:', {
-                    isGuestListMode,
-                    currentItemId,
-                    hasOpenModal: typeof openGuestListManagementModalForCurrentForm === 'function'
-                });
                 
                 // Abrir modal de respostas/envios que agora também gerencia listas
                 if (isGuestListMode && currentItemId) {
                     // Se estiver em modo lista, abrir o modal de respostas que mostrará a lista
-                    console.log('o. Abrindo modal de confirmação de Check-in');
                     openResponsesModal();
                 } else {
                     // Para formulários normais, também abrir modal de respostas
-                    console.log('o. Abrindo modal de envios de formulário');
                     openResponsesModal();
                 }
             } catch (error) {
@@ -1854,7 +1753,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const buttonText = newBtn.querySelector('span');
                 if (buttonText) {
                     buttonText.textContent = isGuestList ? 'Confirmação de Check-in' : 'Captação de Clientes';
-                    console.log('Y"" [BUTTON] Texto atualizado:', buttonText.textContent, 'isGuestList:', isGuestList);
                 }
             };
             
@@ -1885,7 +1783,6 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão respostas clicado - redirecionando para página completa');
                 
                 // Redirecionar para página completa de Envios|Listas
                 if (currentItemId) {
@@ -1894,7 +1791,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Salve o formulário antes de visualizar os envios/listas');
                 }
             });
-            console.log('o. Listener adicionado: sidebar-responses');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-responses não encontrado');
         }
@@ -1907,10 +1803,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('o. Botão dashboard clicado');
                 openDashboardModal();
             });
-            console.log('o. Listener adicionado: sidebar-dashboard');
         } else if (isFormEditPage) {
             console.warn('s️ Botão sidebar-dashboard não encontrado');
         }
@@ -2255,7 +2149,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     updatePreviewButton();
                 }
                 
-                console.log('Y"" [CHECKBOX] Valores atualizados:', { enableWhatsapp, enableGuestListSubmit });
             };
             
             // Listener para checkbox de Check-in
@@ -2287,7 +2180,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.body.appendChild(whatsappInput);
                 }
                 whatsappInput.value = whatsappNumber;
-                console.log('Y"" [WHATSAPP] Número atualizado:', whatsappNumber);
             };
             
             // Event listeners para checkboxes - PERMITIR ambas as opções juntas
@@ -2432,7 +2324,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                             guestListInput.value = currentState ? 'true' : 'false';
                             
-                            console.log('o. [TOGGLE] Estado inicial carregado:', currentState ? 'Check-in' : 'Captação de Clientes');
                         }
                     } catch (err) {
                         console.warn('s️ Erro ao carregar estado inicial:', err);
@@ -2472,8 +2363,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     saveToggleBtn.textContent = 'Salvando...';
                     
                     try {
-                        console.log('Y"" [TOGGLE] Alterando modo:', isChecked ? 'Check-in' : 'Captação de Clientes');
-                        console.log('Y"" [TOGGLE] Opções:', { enableWhatsapp, enableGuestListSubmit });
                         
                         // Persistir flags (Check-in cria/sincroniza guest_list_items no backend)
                         {
@@ -2537,7 +2426,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const errorData = await saveOptionsResponse.json().catch(() => ({}));
                                 console.warn('s️ [TOGGLE] Erro ao salvar opções de envio:', errorData);
                             } else {
-                                console.log('o. [TOGGLE] Tipo salvo:', { sendMode, finalEnableWhatsapp, finalEnableGL });
                             }
                         }
                         
@@ -2588,7 +2476,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const isGuestListMode = window.currentFormIsGuestList === true || 
                                document.getElementById('is-guest-list-mode')?.value === 'true';
         
-        console.log('Y"< Abrindo modal de respostas/envios:', { isGuestListMode, currentItemId });
         
         const modal = document.createElement('div');
         modal.className = 'responses-modal';
@@ -3028,7 +2915,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parsed = JSON.parse(cachedData);
                 const cacheAge = Date.now() - (parsed.timestamp || 0);
                 if (cacheAge < 300000) { // 5 minutos
-                    console.log('o. Usando dados do cache');
                     modal._allResponses = parsed.data || [];
                     if (modal._allResponses.length > 0) {
                         if (isGuestListMode) {
@@ -3087,7 +2973,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     offset += pageLimit;
                     if (page.length < pageLimit) hasMore = false;
                 }
-                console.log('Y"S Convidados carregados:', guests.length);
                 modal._allResponses = guests;
 
                 // Stats: preferir endpoint agregado (totais reais), fallback no slice carregado
@@ -3163,7 +3048,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     responses = responsesData.data;
                 }
                 
-                console.log('Y"S Respostas carregadas:', responses.length);
                 modal._allResponses = responses;
                 
                 // Encontrar dados do formulário atual
@@ -4215,12 +4099,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Função global para abrir detalhes da resposta
     window.openResponseDetail = function(response, formFields) {
-        console.log('[RESPONSE DETAIL] Abrindo detalhes da resposta:', response);
-        console.log('[RESPONSE DETAIL] FormFields recebidos:', formFields);
         
         // Obter responseData primeiro
         const responseData = response.response_data || {};
-        console.log('Y"S [RESPONSE DETAIL] Response data:', responseData);
         
         // Garantir que formFields seja um array válido
         if (!formFields || !Array.isArray(formFields) || formFields.length === 0 || formFields.every(f => !f || Object.keys(f).length === 0)) {
@@ -4231,7 +4112,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parsed = JSON.parse(formFieldsJsonEl.value);
                     if (Array.isArray(parsed) && parsed.length > 0 && parsed.some(f => f && Object.keys(f).length > 0)) {
                         formFields = parsed;
-                        console.log('o. [RESPONSE DETAIL] FormFields carregados do DOM:', formFields);
                     } else {
                         console.warn('s️ [RESPONSE DETAIL] FormFields do DOM estão vazios');
                     }
@@ -4279,14 +4159,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
             
-            console.log('o. [RESPONSE DETAIL] FormFields criados a partir do response_data:', formFields);
         }
         
         const modal = document.createElement('div');
         modal.className = 'response-detail-modal';
         modal.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; background: rgba(0,0,0,0.95) !important; backdrop-filter: blur(10px) !important; z-index: 99999 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 20px !important; overflow-y: auto !important;';
         
-        console.log('Y"S [RESPONSE DETAIL] Total campos no formFields:', formFields ? formFields.length : 0);
         
         const submittedDate = new Date(response.submitted_at);
         const formattedDate = submittedDate.toLocaleString('pt-BR', {
@@ -4441,7 +4319,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                                 
                                 const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
-                                console.log(`[RESPONSE DETAIL] Campo "${label}" (${valueKey}): ${displayValue.substring(0, 50)}...`);
                                 
                                 let fieldDisplay = '';
                                 const fieldType = field.type || 'short_text';
@@ -4562,9 +4439,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Adicionar ao body
             document.body.appendChild(modal);
-            console.log('o. [RESPONSE DETAIL] Modal adicionado ao DOM');
-            console.log('o. [RESPONSE DETAIL] Modal HTML length:', formHTML.length);
-            console.log('o. [RESPONSE DETAIL] Modal innerHTML length:', modal.innerHTML.length);
             
             // Forçar scroll para o topo
             modal.scrollTop = 0;
@@ -4592,7 +4466,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!contentDiv) {
                     console.error('O [RESPONSE DETAIL] Conteúdo do modal não foi renderizado!');
                 } else {
-                    console.log('o. [RESPONSE DETAIL] Conteúdo do modal renderizado com sucesso');
                 }
             }, 100);
             
@@ -6483,7 +6356,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 
                 const moduleKey = card.getAttribute('data-module-key');
-                console.log(`Card clicado: ${moduleKey}`);
                 
                 if (!moduleKey || !modules[moduleKey]) {
                     console.error('O Módulo não encontrado:', moduleKey);
@@ -6493,7 +6365,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 const selectedModule = modules[moduleKey];
-                console.log('Módulo selecionado:', selectedModule.name);
                 
                 // Se for guest_list e não estamos editando uma lista de convidados, redirecionar
                 if (moduleKey === 'guest_list' && !window.currentFormIsGuestList) {
@@ -6648,7 +6519,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Hover effects para os cards
             const moduleCards = modal.querySelectorAll('.module-card');
-            console.log(`Encontrados ${moduleCards.length} cards de módulos`);
             
             moduleCards.forEach((card) => {
                 const moduleKey = card.getAttribute('data-module-key');
@@ -6673,16 +6543,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.cursor = 'pointer';
             });
             
-            console.log('o. Event listeners configurados para módulos');
         }, 100);
     }
     
     // Função para carregar um módulo
     function loadModule(module, appendToExisting = false) {
         try {
-            console.log('Carregando módulo:', module.name);
-            console.log();
-            console.log('Dados do módulo:', module);
             
             if (!module) {
                 throw new Error('Módulo inválido ou não fornecido');
@@ -6700,15 +6566,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (formTitleEl) {
                     formTitleEl.value = formTitle;
-                    console.log('o. Título atualizado:', formTitle);
                 }
                 if (formDescEl) {
                     formDescEl.value = formDesc;
-                    console.log('o. Descrição atualizada');
                 }
                 if (previewTitle) {
                     previewTitle.textContent = formTitle;
-                    console.log('o. Preview título atualizado');
                 }
                 if (previewDescription) {
                     previewDescription.textContent = formDesc;
@@ -6717,7 +6580,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (removeDescBtn) {
                         removeDescBtn.style.display = formDesc ? 'block' : 'none';
                     }
-                    console.log('o. Preview descrição atualizado');
                 }
                 
                 // Atualizar cores e tema (só se não estiver adicionando)
@@ -6733,7 +6595,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (primaryColorEl) primaryColorEl.value = primaryColor;
                 if (textColorEl) textColorEl.value = textColor;
                 
-                console.log('o. Cores atualizadas:', { theme, primaryColor, textColor });
                 
                 // Aplicar cores
                 if (typeof applyCustomColors === 'function') {
@@ -6746,7 +6607,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         background_image_url: '',
                         background_opacity: 1.0
                     });
-                    console.log('o. Cores aplicadas ao preview');
                 }
             }
             
@@ -6762,33 +6622,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (appendToExisting) {
                 // Adicionar aos campos existentes
                 formFields = [...formFields, ...newFields];
-                console.log(`${newFields.length} campos adicionados aos ${formFields.length - newFields.length} existentes`);
             } else {
                 // Substituir todos os campos
                 formFields = newFields;
-                console.log(`${formFields.length} campos carregados (substituição)`);
             }
             
             const formFieldsJsonEl = document.getElementById('form-fields-json');
             if (formFieldsJsonEl) {
                 formFieldsJsonEl.value = JSON.stringify(formFields);
-                console.log('o. form-fields-json atualizado:', formFields.length, 'campos');
-                console.log();
             } else {
                 console.error('O Elemento form-fields-json não encontrado!');
             }
             
             // Renderizar preview
-            console.log('Y"" Renderizando preview das perguntas...');
             if (typeof renderPreviewQuestions === 'function') {
                 renderPreviewQuestions();
-                console.log('o. Preview renderizado');
             } else {
                 console.error('O Função renderPreviewQuestions não encontrada!');
             }
             
             const actionMsg = appendToExisting ? 'adicionados' : 'carregados';
-            console.log(`Módulo "${module.name}" carregado com sucesso!`);
             alert(`Módulo "${module.name}" carregado com sucesso!\n\n${newFields.length} campo(s) ${actionMsg}.\n\nTotal de campos no formulário: ${formFields.length}\n\nNão esqueça de clicar em "Salvar" para salvar as alterações.`);
             
         } catch (error) {
@@ -7183,7 +7036,6 @@ document.addEventListener('DOMContentLoaded', () => {
             logoEl.type = 'hidden';
             logoEl.id = 'logo-url';
             document.body.appendChild(logoEl);
-            console.log('o. [MODAL] Input hidden logo-url criado');
         }
         
         let buttonLogoEl = document.getElementById('button-logo-url');
@@ -7192,7 +7044,6 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonLogoEl.type = 'hidden';
             buttonLogoEl.id = 'button-logo-url';
             document.body.appendChild(buttonLogoEl);
-            console.log('o. [MODAL] Input hidden button-logo-url criado');
         }
         
         let bannerEl = document.getElementById('banner-image-url');
@@ -7201,7 +7052,6 @@ document.addEventListener('DOMContentLoaded', () => {
             bannerEl.type = 'hidden';
             bannerEl.id = 'banner-image-url';
             document.body.appendChild(bannerEl);
-            console.log('o. [MODAL] Input hidden banner-image-url criado');
         }
         
         let headerEl = document.getElementById('header-image-url');
@@ -7210,7 +7060,6 @@ document.addEventListener('DOMContentLoaded', () => {
             headerEl.type = 'hidden';
             headerEl.id = 'header-image-url';
             document.body.appendChild(headerEl);
-            console.log('o. [MODAL] Input hidden header-image-url criado');
         }
         
         let backgroundEl = document.getElementById('background-image-url');
@@ -7219,7 +7068,6 @@ document.addEventListener('DOMContentLoaded', () => {
             backgroundEl.type = 'hidden';
             backgroundEl.id = 'background-image-url';
             document.body.appendChild(backgroundEl);
-            console.log('o. [MODAL] Input hidden background-image-url criado');
         }
         
         const opacityEl = document.getElementById('background-opacity');
@@ -7273,12 +7121,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalEventDate) {
             const eventDateValue = eventDateEl.value || currentFormData.event_date || '';
             modalEventDate.value = eventDateValue;
-            console.log('Y". [MODAL] event_date carregado:', eventDateValue);
         }
         if (modalEventAddress) {
             const eventAddressValue = eventAddressEl.value || currentFormData.event_address || '';
             modalEventAddress.value = eventAddressValue;
-            console.log('[MODAL] event_address carregado:', eventAddressValue);
         }
         if (modalEventAddressLat) modalEventAddressLat.value = eventAddressLatEl.value || currentFormData.event_address_lat || '';
         if (modalEventAddressLon) modalEventAddressLon.value = eventAddressLonEl.value || currentFormData.event_address_lon || '';
@@ -7299,7 +7145,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (logoUploadText) logoUploadText.style.display = 'none';
             if (removeLogoBtn) removeLogoBtn.style.display = 'block';
-            console.log('o. [MODAL] Logo carregado no preview do modal:', logoEl.value);
         } else {
             // Se não tiver logo, garantir que os elementos estão ocultos
             const logoPreview = modal.querySelector('#modal-logo-preview');
@@ -7350,7 +7195,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const previewSize = Math.min(size * 1.5, 450); // Preview até 450px para logo até 300px
                 buttonLogoPreview.style.maxWidth = `${previewSize}px`;
                 buttonLogoPreview.style.maxHeight = `${previewSize}px`;
-                console.log('[MODAL] Tamanho da logo no preview atualizado:', size, 'px (preview:', previewSize, 'px)');
             }
         };
         
@@ -7370,7 +7214,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.body.appendChild(buttonLogoSizeEl);
                 }
                 buttonLogoSizeEl.value = newSize;
-                console.log('[MODAL] Tamanho da logo atualizado via slider:', newSize);
             });
             
             // Quando o input numérico muda, atualizar slider e preview
@@ -7392,7 +7235,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.body.appendChild(buttonLogoSizeEl);
                 }
                 buttonLogoSizeEl.value = newSize;
-                console.log('[MODAL] Tamanho da logo atualizado via input:', newSize);
             });
             
             // Atualizar preview inicialmente
@@ -7568,17 +7410,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (enableWhatsappCheckbox) enableWhatsappCheckbox.checked = enableWhatsappValue;
         highlightFormType(selectedFormType);
         
-        console.log('Y"~ [MODAL] Tipo de formulário carregado:', {
-            selectedFormType,
-            enableWhatsappValue,
-            isCheckinMode
-        });
         
         [formTypeLeadRadio, formTypeCheckinRadio].filter(Boolean).forEach(radio => {
             radio.addEventListener('change', (e) => {
                 if (e.target.checked) {
                     highlightFormType(e.target.value);
-                    console.log('Y"~ [MODAL] Tipo alterado para:', e.target.value);
                 }
             });
         });
@@ -7588,7 +7424,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (guestListCheckbox) {
             guestListCheckbox.checked = isCheckinMode;
             guestListCheckbox.addEventListener('change', function() {
-                console.log('Y"< [MODAL] Checkbox de lista de convidados alterado:', this.checked);
                 setTimeout(() => {
                     if (typeof checkGuestListAndShowButtons === 'function') {
                         checkGuestListAndShowButtons();
@@ -7605,7 +7440,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Tipo: Captação (lead) ou Check-in + checkbox WhatsApp
             const selectedFormType = modal.querySelector('input[name="modal-form-type"]:checked')?.value || 'lead';
             const alsoWhatsapp = !!modal.querySelector('#modal-settings-enable-whatsapp')?.checked;
-            console.log('[MODAL] Tipo selecionado para salvar:', selectedFormType, 'whatsapp:', alsoWhatsapp);
             
             let enableWhatsappInput = document.getElementById('enable-whatsapp-value');
             let enableGuestListSubmitInput = document.getElementById('enable-guest-list-submit-value');
@@ -7646,12 +7480,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             sendModeInput.value = sendMode;
             
-            console.log('o. [MODAL] Tipo de formulário salvo:', {
-                formType: selectedFormType,
-                sendMode: sendMode,
-                enableWhatsapp: enableWhatsappInput.value,
-                enableGuestListSubmit: enableGuestListSubmitInput.value
-            });
             
             // Copiar valores do modal para os campos originais
             if (moduleTitleEl) moduleTitleEl.value = modal.querySelector('#modal-form-module-title').value;
@@ -7697,11 +7525,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (modalEventDate && eventDateEl) {
                 eventDateEl.value = modalEventDate.value || '';
-                console.log('Y". [MODAL] event_date salvo:', eventDateEl.value);
             }
             if (modalEventAddress && eventAddressEl) {
                 eventAddressEl.value = modalEventAddress.value.trim() || '';
-                console.log('[MODAL] event_address salvo:', eventAddressEl.value);
             }
             if (modalEventAddressLat && eventAddressLatEl) {
                 eventAddressLatEl.value = (modalEventAddressLat.value || '').trim();
@@ -7715,7 +7541,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalLogoUrl = document.getElementById('logo-url');
             if (logoEl && modalLogoUrl) {
                 logoEl.value = modalLogoUrl.value;
-                console.log('o. [MODAL] Logo copiado para campo principal:', logoEl.value);
                 
                 // Atualizar preview principal se existir
                 const mainLogoPreview = document.getElementById('logo-preview');
@@ -7739,21 +7564,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnLogoUrlInput = document.getElementById('button-logo-url');
             if (buttonLogoEl && btnLogoUrlInput && (buttonLogoEl.value || '').trim()) {
                 btnLogoUrlInput.value = (buttonLogoEl.value || '').trim();
-                console.log('o. [MODAL] button_logo_url sincronizado:', btnLogoUrlInput.value);
             }
             
             // Copiar banner
             const modalBannerUrlElement = document.getElementById('banner-image-url');
             if (bannerEl && modalBannerUrlElement) {
                 bannerEl.value = modalBannerUrlElement.value;
-                console.log('o. [MODAL] Banner copiado para campo principal:', bannerEl.value);
             }
             
             // Copiar header
             const modalHeaderUrlElement = document.getElementById('header-image-url');
             if (headerEl && modalHeaderUrlElement) {
                 headerEl.value = modalHeaderUrlElement.value;
-                console.log('o. [MODAL] Header copiado para campo principal:', headerEl.value);
             }
             
             // IMPORTANTE: Copiar button_logo_size também
@@ -7768,7 +7590,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (modalButtonLogoSizeInput && buttonLogoSizeEl) {
                 buttonLogoSizeEl.value = modalButtonLogoSizeInput.value || modalButtonLogoSize?.value || '40';
-                console.log('o. [MODAL] button_logo_size copiado:', buttonLogoSizeEl.value);
             }
             
             // Salvar configurações do botão do pastor e logo corner
@@ -8000,7 +7821,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Carregar listas de convidados (cookie HttpOnly basta)
         try {
-            console.log('Carregando listas de convidados...');
             const response = await fetch(`${API_URL}/api/guest-lists`, {
                 method: 'GET',
                 credentials: 'include',
@@ -8028,7 +7848,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const lists = await response.json();
-            console.log('o. Listas carregadas:', lists.length, lists);
             const contentDiv = document.getElementById('guest-list-modal-content');
             
             // Calcular estatísticas gerais
@@ -8233,18 +8052,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const logoEl = document.getElementById('logo-url');
         if (logoUploadArea && logoFileInput) {
             logoUploadArea.addEventListener('click', () => {
-                console.log('[UPLOAD] Clicou na área de upload do logo');
                 logoFileInput.click();
             });
             logoFileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    console.log('[UPLOAD] Arquivo selecionado para logo:', file.name, file.size);
                     function applyLogoUrl(imageUrl) {
                         if (!imageUrl) return;
                         if (logoEl) {
                             logoEl.value = imageUrl;
-                            console.log('o. [UPLOAD] Input logo-url atualizado:', imageUrl);
                         }
                         const logoPreview = modal.querySelector('#modal-logo-preview');
                         const logoUploadText = modal.querySelector('#modal-logo-upload-text');
@@ -8286,7 +8102,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         else alert('Erro ao fazer upload da imagem. Tente novamente.');
                     }
                 } else {
-                    console.log('s️ [UPLOAD] Nenhum arquivo selecionado');
                 }
             });
             
@@ -8296,12 +8111,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 removeLogoBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('[UPLOAD] Removendo logo');
                     
                     // Limpar valor do input hidden
                     if (logoEl) {
                         logoEl.value = '';
-                        console.log('o. [UPLOAD] Input logo-url limpo');
                     }
                     
                     // Esconder preview no modal
@@ -8325,7 +8138,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Limpar input file
                     if (logoFileInput) logoFileInput.value = '';
                     
-                    console.log('o. [UPLOAD] Logo removido');
                 });
             } else {
                 console.warn('s️ [UPLOAD] Botão remover logo não encontrado no modal');
@@ -8464,11 +8276,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
         
-        console.log(`[UPLOAD] Iniciando upload de ${imageType}:`, {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type
-        });
         
         // Mostrar loading no elemento de upload correspondente
         const loadingElement = document.querySelector(`#modal-${imageType}-upload-area .upload-loader, #modal-${imageType === 'logo' ? 'logo' : imageType}-upload-area .upload-loader`);
@@ -8490,7 +8297,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const authData = await authResponse.json();
-            console.log('o. [UPLOAD] Autenticação OK:', authData);
             
             if (!authData.uploadURL) {
                 throw new Error('URL de upload não recebida do servidor.');
@@ -8502,7 +8308,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData();
             formData.append('file', file);
             
-            console.log('[UPLOAD] Enviando para Cloudflare:', uploadURL);
             const uploadResponse = await fetch(uploadURL, {
                 method: 'POST',
                 body: formData,
@@ -8516,7 +8321,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const uploadData = await uploadResponse.json();
-            console.log('o. [UPLOAD] Resposta do Cloudflare:', uploadData);
             
             // Cloudflare retorna a imagem em diferentes formatos após upload direto
             // O upload direto retorna { success: true, result: { id: "...", variants: ["url1", "url2"] } }
@@ -8527,13 +8331,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Formato padrão: { success: true, result: { id: "...", variants: ["url1", "url2"] } }
                 if (uploadData.result.variants && uploadData.result.variants.length > 0) {
                     imageUrl = uploadData.result.variants[0];
-                    console.log('o. [UPLOAD] URL obtida de variants:', imageUrl);
                 } else if (uploadData.result.url) {
                     imageUrl = uploadData.result.url;
-                    console.log('o. [UPLOAD] URL obtida de result.url:', imageUrl);
                 } else if (uploadData.result.id) {
                     // Se tiver apenas o ID, buscar a URL completa do backend
-                    console.log('Y"" [UPLOAD] Buscando URL completa usando imageId:', uploadData.result.id);
                     try {
                         const imageIdResponse = await fetch(`${API_URL}/api/upload/get-url/${uploadData.result.id}`, {
                             headers: getHeaders()
@@ -8541,7 +8342,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (imageIdResponse.ok) {
                             const imageUrlData = await imageIdResponse.json();
                             imageUrl = imageUrlData.url || imageUrlData.imageUrl;
-                            console.log('o. [UPLOAD] URL obtida do endpoint get-url:', imageUrl);
                         }
                     } catch (getUrlError) {
                         console.warn('s️ [UPLOAD] Erro ao buscar URL do endpoint, usando imageId direto:', getUrlError);
@@ -8550,15 +8350,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Se ainda não tiver URL, usar o imageId da autenticação
                     if (!imageUrl && authData.imageId) {
                         imageUrl = `https://imagedelivery.net/${authData.imageId}/public`;
-                        console.log('s️ [UPLOAD] Usando imageId da autenticação para construir URL:', imageUrl);
                     }
                 }
             } else if (uploadData.url) {
                 imageUrl = uploadData.url;
-                console.log('o. [UPLOAD] URL obtida diretamente:', imageUrl);
             } else if (uploadData.imageUrl) {
                 imageUrl = uploadData.imageUrl;
-                console.log('o. [UPLOAD] URL obtida de imageUrl:', imageUrl);
             }
             
             if (!imageUrl) {
@@ -8572,13 +8369,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Tentar usar apenas o imageId - Cloudflare pode redirecionar
                             imageUrl = `https://imagedelivery.net/${imageIdToUse}/public`;
                         }
-                        console.log('s️ [UPLOAD] Usando imageId como fallback para construir URL:', imageUrl);
                     } else {
                         throw new Error('URL da imagem não foi retornada pelo servidor. Tente novamente.');
                     }
                 }
             
-            console.log('o. [UPLOAD] Upload concluído com sucesso:', imageUrl);
             
             // Esconder loading
             if (loadingElement) {
@@ -9001,7 +8796,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const formFieldsJsonEl = document.getElementById('form-fields-json');
         if (formFieldsJsonEl) {
             formFieldsJsonEl.value = JSON.stringify(formFields);
-            console.log('o. Pergunta importada adicionada:', newQuestion);
         }
         renderPreviewQuestions();
     }
@@ -9342,7 +9136,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const formFieldsJsonEl = document.getElementById('form-fields-json');
             if (formFieldsJsonEl) {
                 formFieldsJsonEl.value = JSON.stringify(formFields);
-                console.log('o. form-fields-json atualizado:', formFieldsJsonEl.value);
             } else {
                 console.error('O Campo form-fields-json não encontrado!');
             }
@@ -10223,12 +10016,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 parsedFields = Array.isArray(formFields) ? formFields : [];
             }
             
-            console.log('[SAVE] Preparando para salvar form_fields:', {
-                parsedFieldsLength: parsedFields.length,
-                formFieldsLength: formFields.length,
-                parsedFields: parsedFields,
-                formFieldsJsonValue: formFieldsJsonEl?.value?.substring(0, 200)
-            });
             
             const moduleTitleEl = document.getElementById('form-module-title');
             const formTitleEl = document.getElementById('form-title');
@@ -10269,13 +10056,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 isGuestListMode = window.currentFormIsGuestList === true;
             }
             
-            console.log('[SAVE] Verificando modo lista de convidados:', {
-                window_currentFormIsGuestList: window.currentFormIsGuestList,
-                guestListInput_value: guestListInput?.value,
-                guestListInput_exists: !!guestListInput,
-                isGuestListMode: isGuestListMode,
-                itemId: currentItemId
-            });
             
             // Obter is_listed do modal ou padrão (true)
             // Verificar também o checkbox do modal diretamente
@@ -10289,12 +10069,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 isListed = currentItemData.is_listed;
             }
             
-            console.log('[SAVE] is_listed determinado:', {
-                window_currentFormIsListed: window.currentFormIsListed,
-                modalCheckbox_checked: modalIsListedCheckbox?.checked,
-                currentItemData_is_listed: currentItemData.is_listed,
-                final_isListed: isListed
-            });
             
             // Obter valores do botão do pastor e logo
             const enablePastor = enablePastorBtnEl?.value === 'true' || enablePastorBtnEl?.value === true;
@@ -10313,7 +10087,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 buttonLogoElFinal.type = 'hidden';
                 buttonLogoElFinal.id = 'button-logo-url';
                 document.body.appendChild(buttonLogoElFinal);
-                console.log('s️ [SAVE] button-logo-url criado durante save');
             }
             
             if (!buttonLogoSizeElFinal) {
@@ -10322,25 +10095,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 buttonLogoSizeElFinal.id = 'button-logo-size';
                 buttonLogoSizeElFinal.value = '40'; // Valor padrão
                 document.body.appendChild(buttonLogoSizeElFinal);
-                console.log('s️ [SAVE] button-logo-size criado durante save');
             }
             
-            console.log('[SAVE] Valores de logo antes de salvar:', {
-                form_logo_url: logoEl?.value || 'não encontrado',
-                button_logo_url: buttonLogoElFinal?.value || 'não encontrado',
-                button_logo_size: buttonLogoSizeElFinal?.value || 'não encontrado',
-                button_logo_size_type: typeof buttonLogoSizeElFinal?.value
-            });
             
             // IMPORTANTE: Garantir que form_title seja capturado corretamente
             const formTitleValue = formTitleEl?.value?.trim() || formTitleEl?.value || previewTitleEl?.textContent?.trim() || previewTitleEl?.textContent || null;
-            console.log('[SAVE] form_title capturado:', {
-                formTitleEl_value: formTitleEl?.value,
-                formTitleEl_exists: !!formTitleEl,
-                previewTitleEl_textContent: previewTitleEl?.textContent,
-                previewTitleEl_exists: !!previewTitleEl,
-                final_form_title: formTitleValue
-            });
             
             const updateData = {
                 title: moduleTitleEl?.value.trim() || formTitleValue || null,
@@ -10349,10 +10108,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 button_logo_url: (() => {
                     const value = buttonLogoElFinal?.value?.trim();
                     if (value && value !== '' && value !== 'null' && value !== 'undefined') {
-                        console.log('o. [SAVE] button_logo_url incluído no updateData:', value);
                         return value;
                     }
-                    console.log('s️ [SAVE] button_logo_url vazio ou inválido, usando null');
                     return null;
                 })(),
                 button_logo_size: (() => {
@@ -10360,11 +10117,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (sizeValue) {
                         const parsed = parseInt(sizeValue, 10);
                         if (!isNaN(parsed) && parsed >= 20 && parsed <= 300) {
-                            console.log('o. [SAVE] button_logo_size incluído no updateData:', parsed);
                             return parsed;
                         }
                     }
-                    console.log('s️ [SAVE] button_logo_size inválido, usando padrão 40');
                     return 40;
                 })(),
                 show_logo_corner: showLogoCorner,
@@ -10374,7 +10129,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Primeiro tentar do input hidden principal
                     const whatsappInput = document.getElementById('whatsapp-number');
                     if (whatsappInput && whatsappInput.value.trim()) {
-                        console.log('[SAVE] whatsapp_number do input hidden:', whatsappInput.value.trim());
                         return whatsappInput.value.trim();
                     }
                     // Depois tentar do modal (caso ainda não tenha sido atualizado no input hidden)
@@ -10390,12 +10144,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             newInput.value = modalWhatsappInput.value.trim();
                             document.body.appendChild(newInput);
                         }
-                        console.log('[SAVE] whatsapp_number do modal:', modalWhatsappInput.value.trim());
                         return modalWhatsappInput.value.trim();
                     }
                     // Por último, tentar do whatsappEl (campo antigo)
                     const value = whatsappEl?.value.trim() || null;
-                    console.log('[SAVE] whatsapp_number do whatsappEl:', value);
                     return value;
                 })(),
                 enable_pastor_button: enablePastor,
@@ -10411,12 +10163,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const decorativeBarColorEl = document.getElementById('decorative-bar-color');
                     const value = decorativeBarColorEl?.value?.trim();
                     const finalValue = value || primaryColorEl?.value || null;
-                    console.log('[SAVE_FORM] Cor das barrinhas decorativas a ser salva:', {
-                        decorativeBarColorEl: decorativeBarColorEl,
-                        valueFromHidden: value,
-                        primaryColor: primaryColorEl?.value,
-                        finalValue: finalValue
-                    });
                     return finalValue;
                 })(),
                 separator_line_color: (() => {
@@ -10424,12 +10170,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const barColorEl = document.getElementById('bar-color');
                     const value = barColorEl?.value?.trim();
                     const finalValue = value || primaryColorEl?.value || '#4A90E2';
-                    console.log('[SAVE_FORM] Cor da barra a ser salva (como separator_line_color):', {
-                        barColorEl: barColorEl,
-                        valueFromHidden: value,
-                        primaryColor: primaryColorEl?.value,
-                        finalValue: finalValue
-                    });
                     return finalValue;
                 })(),
                 background_opacity: opacityEl ? parseFloat(opacityEl.value) : 1.0,
@@ -10447,19 +10187,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 event_date: (() => {
                     const eventDateEl = document.getElementById('event-date');
                     if (eventDateEl && eventDateEl.value) {
-                        console.log('Y". [SAVE] event_date incluído no updateData:', eventDateEl.value);
                         return eventDateEl.value.trim() || null;
                     }
-                    console.log('s️ [SAVE] event_date não encontrado ou vazio');
                     return null;
                 })(),
                 event_address: (() => {
                     const eventAddressEl = document.getElementById('event-address');
                     if (eventAddressEl && eventAddressEl.value) {
-                        console.log('[SAVE] event_address incluído no updateData:', eventAddressEl.value);
                         return eventAddressEl.value.trim() || null;
                     }
-                    console.log('s️ [SAVE] event_address não encontrado ou vazio');
                     return null;
                 })(),
                 event_address_lat: (() => {
@@ -10477,32 +10213,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     const input = document.getElementById('enable-whatsapp-value');
                     if (input) {
                         const value = input.value === 'true';
-                        console.log('[SAVE] enable_whatsapp do input:', value);
                         return value;
                     }
                     // Se não tiver input, verificar se está definido em window
                     if (window.enableWhatsappValue !== undefined) {
-                        console.log('[SAVE] enable_whatsapp do window:', window.enableWhatsappValue);
                         return window.enableWhatsappValue !== false;
                     }
                     // Default true se não tiver nada definido
-                    console.log('[SAVE] enable_whatsapp usando default: true');
                     return true;
                 })(),
                 enable_guest_list_submit: (() => {
                     const input = document.getElementById('enable-guest-list-submit-value');
                     if (input) {
                         const value = input.value === 'true';
-                        console.log('[SAVE] enable_guest_list_submit do input:', value);
                         return value;
                     }
                     // Se não tiver input, verificar se está definido em window
                     if (window.enableGuestListSubmitValue !== undefined) {
-                        console.log('[SAVE] enable_guest_list_submit do window:', window.enableGuestListSubmitValue);
                         return window.enableGuestListSubmitValue === true;
                     }
                     // Default false se não tiver nada definido
-                    console.log('[SAVE] enable_guest_list_submit usando default: false');
                     return false;
                 })(),
                 // send_mode: lead (Captação) ou checkin
@@ -10512,39 +10242,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         const v = sendModeInput.value;
                         if (v === 'system-only') return 'checkin';
                         if (v === 'both' || v === 'whatsapp-only') return 'lead';
-                        console.log('[SAVE] send_mode do input:', v);
                         return v;
                     }
                     
                     const enableGuestListSubmitInput = document.getElementById('enable-guest-list-submit-value');
                     const enableGuestListSubmit = enableGuestListSubmitInput ? enableGuestListSubmitInput.value === 'true' : (window.enableGuestListSubmitValue === true);
                     const determinedSendMode = enableGuestListSubmit ? 'checkin' : 'lead';
-                    console.log('[SAVE] send_mode determinado:', { determinedSendMode, enableGuestListSubmit });
                     return determinedSendMode;
                 })()
             };
             
-            console.log('[SAVE] Verificando modo lista de convidados:', {
-                window_currentFormIsGuestList: window.currentFormIsGuestList,
-                guestListInput_value: guestListInput?.value,
-                guestListInput_exists: !!guestListInput,
-                isGuestListMode: isGuestListMode,
-                itemId: currentItemId
-            });
             
-            console.log('[SAVE] Enviando dados completos para o servidor:', {
-                form_fields_count: finalFormFields.length,
-                form_fields: finalFormFields,
-                itemId: currentItemId,
-                isGuestListMode: isGuestListMode
-            });
             
             let response;
             
             // IMPORTANTE: SEMPRE salvar cores do King Forms em digital_form_items PRIMEIRO
             // Independente de estar em modo guest_list ou não, as cores do King Forms devem ser salvas
             // Separadamente das cores da Portaria (guest_list_items)
-            console.log('[SAVE] Salvando cores do King Forms em digital_form_items (independente do modo)...');
             
             // Salvar cores do King Forms via rota específica de digital_form
             // IMPORTANTE: SEMPRE garantir que item_type seja 'digital_form' para salvar cores
@@ -10567,13 +10281,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Não lançar erro aqui - continuar com o salvamento de guest_list se necessário
                 } else {
                     const digitalFormResult = await digitalFormSaveResponse.json();
-                    console.log('o. [SAVE] Cores do King Forms salvas com sucesso em digital_form_items:', {
-                        primary_color: updateData.primary_color,
-                        background_color: updateData.background_color,
-                        separator_line_color: updateData.separator_line_color,
-                        decorative_bar_color: updateData.decorative_bar_color,
-                        card_color: updateData.card_color
-                    });
                 }
             } catch (error) {
                 digitalFormSaveError = error;
@@ -10589,7 +10296,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).then(r => r.json()).catch(() => ({ data: {} }));
                 
                 if (currentItem.data?.item_type !== 'guest_list') {
-                    console.log('Y"" [SAVE] Atualizando item_type para guest_list');
                     await fetch(`${API_URL}/api/profile/items/${currentItemId}`, {
                         method: 'PUT',
                         headers: getHeaders(),
@@ -10612,7 +10318,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } catch (err) {
-                    console.log('Lista de convidados não encontrada, será criada:', err);
                 }
                 
                 // Se não existe, criar guest_list_item associada ao profile_item atual
@@ -10627,7 +10332,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Ao criar guest_list_items, NÃO usar cores de digital_form_items (King Forms)
                     // Portaria terá suas próprias cores padrão (definidas no backend)
                     // King Forms mantém cores em digital_form_items, Portaria mantém cores em guest_list_items
-                    console.log(`YZ [SAVE] CORES SEPARADAS: Criando guest_list_items SEM cores do King Forms`);
                     
                     const createResponse = await fetch(`${API_URL}/api/guest-lists`, {
                         method: 'POST',
@@ -10692,8 +10396,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // King Forms usa cores de digital_form_items, Portaria usa cores de guest_list_items
                 // Apenas sincronizar dados funcionais (form_title, form_fields, logos, enable_whatsapp, enable_guest_list_submit)
                 // NÃO sincronizar cores: primary_color, secondary_color, text_color, background_color, card_color, decorative_bar_color, separator_line_color
-                console.log(`YZ [SAVE] CORES SEPARADAS: Não enviando cores do King Forms para guest_list_items (Portaria)`);
-                console.log(`YZ [SAVE] Cores do King Forms (primary_color: ${updateData.primary_color}, background_color: ${updateData.background_color}) serão salvas APENAS em digital_form_items`);
                 
                 const guestListUpdateData = {
                     title: updateData.form_title, // Atualizar título do profile_item também
@@ -10722,16 +10424,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Cada sistema (King Forms/digital_form_items e Portaria/guest_list_items) mantém suas próprias cores
                 };
                 
-                console.log('[GUEST_LIST] Salvando APENAS dados funcionais (SEM cores do King Forms):', {
-                    enable_whatsapp: enableWhatsappValue,
-                    enable_guest_list_submit: enableGuestListSubmitValue,
-                    whatsapp_number: whatsappNumber || 'null',
-                    form_logo_url: updateData.form_logo_url || 'null',
-                    button_logo_url: updateData.button_logo_url || 'null',
-                    button_logo_size: updateData.button_logo_size || 40,
-                    show_logo_corner: updateData.show_logo_corner || false,
-                    message: 'CORES REMOVIDAS - King Forms não sincroniza cores para Portaria'
-                });
                 
                 // Usar currentItemId (profile_item_id) para o PUT
                 // IMPORTANTE: Isso salva apenas dados funcionais (form_fields, logos, enable_whatsapp)
@@ -10742,7 +10434,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(guestListUpdateData)
                 });
                 
-                console.log('[SAVE] Dados funcionais salvos em guest_list_items (cores já foram salvas em digital_form_items)');
                 
                 // Usar a resposta do digital_form como principal (já que contém as cores)
                 // response já está definido, mas vamos usar o digitalFormSaveResponse como resposta principal
@@ -10754,7 +10445,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // Não está em modo guest_list - cores já foram salvas acima
                 // Apenas garantir que item_type seja digital_form
-                console.log('[SAVE] Modo King Forms (não guest_list) - cores já foram salvas acima');
                 
                 // SEMPRE incluir item_type = 'digital_form' no updateData quando não está em modo guest list
                 updateData.item_type = 'digital_form';
@@ -10766,7 +10456,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const wasGuestList = currentItem.data?.item_type === 'guest_list';
                 if (wasGuestList) {
-                    console.log('Y"" [SAVE] Item era guest_list, convertendo para digital_form');
                     // Atualizar item_type se necessário
                     await fetch(`${API_URL}/api/profile/items/${currentItemId}`, {
                         method: 'PUT',
@@ -10778,7 +10467,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // response já foi definido no bloco acima (digitalFormSaveResponse)
                 response = digitalFormSaveResponse;
                 
-                console.log('[SAVE] Salvo como Formulário Digital (cores já foram salvas acima)');
             }
             
             // IMPORTANTE: Verificar se houve erro
@@ -10794,8 +10482,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (digitalFormSaveResponse && digitalFormSaveResponse.ok) {
                 try {
                     const result = await digitalFormSaveResponse.json();
-                    console.log('o. [SAVE] Formulário King Forms salvo com sucesso no servidor:', result);
-                    console.log('o. [SAVE] Verifique no formulário público se as cores aparecem.');
                 } catch (e) {
                     console.warn('s️ [SAVE] Aviso ao ler resposta do digital_form:', e);
                 }
@@ -10805,7 +10491,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response && response.ok && response !== digitalFormSaveResponse) {
                 try {
                     const guestListResult = await response.json();
-                    console.log('o. [SAVE] Dados funcionais da guest_list também foram salvos:', guestListResult);
                 } catch (e) {
                     console.warn('s️ [SAVE] Aviso ao ler resposta da guest_list:', e);
                 }
@@ -10843,7 +10528,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (typeof showSuccessMessage === 'function') {
                 showSuccessMessage('Formulário salvo com sucesso!');
                         } else {
-                console.log('o. [SAVE] Formulário salvo com sucesso!');
                         }
             
             // Atualizar previews de imagens se necessário (sem recarregar tudo)
@@ -11736,7 +11420,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     previewContainer.style.background = cardColor || '#FFFFFF';
                 }
                 
-                console.log('o. Imagem de fundo removida');
             });
         }
         
@@ -11940,7 +11623,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // IMPORTANTE: Atualizar as barras laterais das opções (radio/checkbox)
                     const allOptionLabels = mainPreviewContainer.querySelectorAll('.preview-option-label, .radio-label, .checkbox-label');
-                    console.log(`[BAR_COLOR] Atualizando ${allOptionLabels.length} opções com cor: ${barColor}`);
                     allOptionLabels.forEach((label, index) => {
                         label.style.setProperty('border-left-color', barColor, 'important');
                         label.style.borderLeftColor = barColor;
@@ -11950,7 +11632,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     mainPreviewContainer.style.setProperty('--preview-option-bar-color', barColor);
                     document.documentElement.style.setProperty('--preview-option-bar-color', barColor);
                     
-                    console.log('o. [BAR_COLOR] Barras laterais das opções atualizadas:', barColor);
                 }
             });
         }
@@ -11987,7 +11668,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const secondaryColorEl = document.getElementById('secondary-color');
             if (secondaryColorEl && secondaryColor) {
                 secondaryColorEl.value = secondaryColor;
-                console.log('o. Cor secundária salva:', secondaryColor);
             }
             
             // Salvar cor das barrinhas decorativas
@@ -12003,13 +11683,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentDecorativeBarColorInput = modal.querySelector('#customizer-decorative-bar-color');
             const finalDecorativeBarColor = currentDecorativeBarColorInput ? currentDecorativeBarColorInput.value.trim() : (decorativeBarColorInput ? decorativeBarColorInput.value.trim() : decorativeBarColor);
             decorativeBarColorEl.value = finalDecorativeBarColor || primaryColor;
-            console.log('o. [SAVE_COLORS] Cor das barrinhas decorativas salva no campo hidden:', {
-                value: decorativeBarColorEl.value,
-                inputValue: currentDecorativeBarColorInput?.value,
-                decorativeBarColor: decorativeBarColor,
-                primaryColor: primaryColor,
-                finalValue: finalDecorativeBarColor || primaryColor
-            });
             
             // IMPORTANTE: Garantir que a cor seja aplicada imediatamente no preview
             // Marcar que estamos atualizando estilos para evitar loops no MutationObserver
@@ -12052,7 +11725,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const cardColor = modal.querySelector('#customizer-card-color').value || '#FFFFFF';
             if (cardColorEl) {
                 cardColorEl.value = cardColor;
-                console.log('o. Cor do card salva:', cardColor);
             }
             
             // Salvar cor da barra principal
@@ -12066,16 +11738,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const barColorInput = modal.querySelector('#customizer-bar-color');
             const barColor = barColorInput ? barColorInput.value.trim() : primaryColor;
             barColorEl.value = barColor;
-            console.log('o. [SAVE_COLORS] Cor da barra salva no campo hidden:', barColor);
             
             // Obter cor das barrinhas decorativas antes de aplicar (já foi salva acima - usar finalDecorativeBarColor da linha 10563)
             
-            console.log('YZ [SAVE_COLORS] Aplicando cores no preview:', {
-                decorativeBarColor: finalDecorativeBarColor,
-                primaryColor: primaryColor,
-                secondaryColor: secondaryColor,
-                cardColor: cardColor
-            });
             
             applyCustomColors({
                 theme: selectedTheme,
@@ -12112,13 +11777,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Permitir WhatsApp e "Salvar na Lista" juntos
                 const enableWhatsapp = enableWhatsappInput ? enableWhatsappInput.value === 'true' : (window.enableWhatsappValue !== false);
         
-        console.log('Y"" [PREVIEW] Atualizando botão:', {
-            enableWhatsapp,
-            enableGuestListSubmit,
-            enableWhatsappInputValue: enableWhatsappInput?.value,
-            enableGuestListSubmitInputValue: enableGuestListSubmitInput?.value,
-            rule: 'Permitir ambas as opções juntas - WhatsApp e Sistema'
-        });
         
         // Determinar tipo de botão e texto
         let buttonText = 'Enviar';
@@ -12160,7 +11818,6 @@ document.addEventListener('DOMContentLoaded', () => {
         previewSubmitBtn.style.boxShadow = buttonShadow;
         previewSubmitBtn.dataset.submitType = submitType;
         
-        console.log('o. [PREVIEW] Botão atualizado:', buttonText);
     }
     
     function applyCustomColors(formData) {
@@ -12277,7 +11934,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // IMPORTANTE: Aplicar cor do card no formulário (previewForm) quando não há imagem de fundo
             if (previewForm && cardColor) {
                 previewForm.style.background = cardColor;
-                console.log('o. [PREVIEW] Cor do card aplicada no formulário:', cardColor);
             }
         }
         
@@ -12304,7 +11960,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const allDecorativeBars = previewContainer.querySelectorAll('.preview-decorative-bar, span.preview-decorative-bar, span[class*="decorative"], span[style*="width: 3px"], span[style*="width: 6px"]');
         // Removido console.log excessivo - apenas logar se houver muitas barras ou em modo debug
         if (allDecorativeBars.length > 0 && window.DEBUG_MODE) {
-            console.log(`[PREVIEW] Encontradas ${allDecorativeBars.length} barras decorativas para atualizar com cor: ${decorativeBarColor}`);
         }
         allDecorativeBars.forEach((bar, index) => {
             // Aplicar cor diretamente via style.setProperty para garantir que seja aplicada
@@ -12346,7 +12001,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const decorativeBarColorEl = document.getElementById('decorative-bar-color');
         if (decorativeBarColorEl) {
             decorativeBarColorEl.value = decorativeBarColor || primaryColor;
-            console.log('o. [APPLY_COLORS] decorative-bar-color atualizado:', decorativeBarColorEl.value);
         }
         
         const barColorEl = document.getElementById('bar-color');
@@ -12354,7 +12008,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // IMPORTANTE: separator_line_color deve vir de formData, se não existir usar optionBarColor (que é separator_line_color || primaryColor)
             const separatorLineColorValue = formData.separator_line_color || optionBarColor || primaryColor;
             barColorEl.value = separatorLineColorValue;
-            console.log('o. [APPLY_COLORS] bar-color (separator_line_color) atualizado:', barColorEl.value, '(de formData.separator_line_color:', formData.separator_line_color, ')');
         }
         
         const cardColorEl = document.getElementById('card-color');
@@ -12472,13 +12125,11 @@ document.addEventListener('DOMContentLoaded', () => {
         previewContainerCheck.style.display = 'block';
         previewContainerCheck.style.visibility = 'visible';
         previewContainerCheck.style.opacity = '1';
-        console.log('o. Container de preview garantido como visível na inicialização');
     }
     if (previewWrapperCheck) {
         previewWrapperCheck.style.display = 'block';
         previewWrapperCheck.style.visibility = 'visible';
         previewWrapperCheck.style.opacity = '1';
-        console.log('o. Wrapper de preview garantido como visível na inicialização');
     }
     
     // Configurar botões de modo de preview (Desktop/Mobile)
@@ -12605,7 +12256,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error('Erro ao salvar remoção da descrição');
                 }
                 
-                console.log('o. Descrição removida e salva com sucesso');
             } catch (error) {
                 console.error('Erro ao salvar remoção da descrição:', error);
                 alert('Erro ao salvar remoção da descrição: ' + error.message);
@@ -12756,7 +12406,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (hiddenField) {
                 hiddenField.value = imageUrl;
-                console.log(`URL de ${imageType} atualizada:`, imageUrl);
             }
             
             // Atualizar preview
@@ -12780,7 +12429,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Limpar todos os campos relacionados
             if (backgroundEl) {
                 backgroundEl.value = '';
-                console.log('o. Campo background-image-url limpo');
             }
             if (backgroundPreview) {
                 backgroundPreview.src = '';
@@ -12860,7 +12508,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (overlay) overlay.remove();
                 }
                 
-                console.log('o. Imagem de fundo removida e salva com sucesso');
                 alert('Imagem de fundo removida com sucesso!');
             } catch (error) {
                 console.error('Erro ao salvar remoção:', error);
@@ -12889,7 +12536,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (logoFileInput) logoFileInput.value = ''; // Limpar input file
             removeLogoBtn.style.display = 'none';
             
-            console.log('o. Logo removido');
         });
     }
     
@@ -12913,7 +12559,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bannerFileInput) bannerFileInput.value = ''; // Limpar input file
             removeBannerBtn.style.display = 'none';
             
-            console.log('o. Banner removido');
         });
     }
     
@@ -12939,7 +12584,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (headerImageContainer) headerImageContainer.style.display = 'none';
             removeHeaderBtn.style.display = 'none';
             
-            console.log('o. Header removido');
         });
     }
     
@@ -12966,7 +12610,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Salvar imediatamente
             saveForm();
             
-            console.log('o. Descrição removida');
         });
     }
     
@@ -13248,7 +12891,6 @@ function handleGuestListClick(event) {
         event.stopPropagation();
     }
     
-    console.log('handleGuestListClick chamado!');
     
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -13259,13 +12901,11 @@ function handleGuestListClick(event) {
                                document.getElementById('is-guest-list-mode')?.value === 'true';
         
         if (isGuestListMode && currentItemId && typeof openGuestListManagementModalForCurrentForm === 'function') {
-            console.log('o. Abrindo modal de gerenciamento');
             openGuestListManagementModalForCurrentForm();
             return;
         }
         
         // Sempre redirecionar para a página de listas
-        console.log('Y"" Redirecionando para /guestListEdit...', { currentItemId });
         if (currentItemId) {
             window.location.href = `/guestListEdit?formItemId=${currentItemId}`;
         } else {
@@ -13971,7 +13611,6 @@ function openModuleSelector() {
 
 // Aplicar template
 async function applyTemplate(template) {
-    console.log('YZ [APPLY_TEMPLATE] Aplicando template:', template.name, template.title);
     
     // Atualizar título e descrição
     const previewTitle = document.getElementById('preview-title');
@@ -13983,11 +13622,9 @@ async function applyTemplate(template) {
     // IMPORTANTE: Atualizar TODOS os campos de título para garantir que seja salvo
     if (formTitleInput) {
         formTitleInput.value = template.title;
-        console.log('o. [APPLY_TEMPLATE] form-title atualizado:', template.title);
     }
     if (moduleTitleInput) {
         moduleTitleInput.value = template.title;
-        console.log('o. [APPLY_TEMPLATE] form-module-title atualizado:', template.title);
     }
     if (previewTitle) {
         previewTitle.textContent = template.title;
@@ -14030,8 +13667,6 @@ async function applyTemplate(template) {
     const formFieldsJsonEl = document.getElementById('form-fields-json');
     if (formFieldsJsonEl) {
         formFieldsJsonEl.value = JSON.stringify(formFields);
-        console.log('o. [APPLY_TEMPLATE] form_fields atualizados:', formFields.length, 'campos');
-        console.log('o. [APPLY_TEMPLATE] Primeiros campos:', formFields.slice(0, 3).map(f => ({ id: f.id, label: f.label, type: f.type })));
     }
     
     // Renderizar preview
@@ -14046,11 +13681,9 @@ async function applyTemplate(template) {
         
         if (primaryColorEl) {
             primaryColorEl.value = template.primary;
-            console.log('o. [APPLY_TEMPLATE] primary-color atualizado:', template.primary);
         }
         if (secondaryColorEl) {
             secondaryColorEl.value = template.secondary;
-            console.log('o. [APPLY_TEMPLATE] secondary-color atualizado:', template.secondary);
         }
         if (backgroundColorEl && template.backgroundColor) {
             backgroundColorEl.value = template.backgroundColor;
@@ -14064,17 +13697,11 @@ async function applyTemplate(template) {
     
     // Salvar automaticamente com delay maior para garantir que tudo foi atualizado
     setTimeout(async () => {
-        console.log('[APPLY_TEMPLATE] Iniciando salvamento automático...');
         const saveBtn = document.getElementById('save-form-btn');
         if (saveBtn) {
             // Verificar valores antes de salvar
             const formTitleBeforeSave = document.getElementById('form-title')?.value;
             const formFieldsBeforeSave = document.getElementById('form-fields-json')?.value;
-            console.log('[APPLY_TEMPLATE] Valores antes de salvar:', {
-                form_title: formTitleBeforeSave,
-                form_fields_count: formFields.length,
-                form_fields_json_length: formFieldsBeforeSave?.length
-            });
             
             saveBtn.click();
         } else {

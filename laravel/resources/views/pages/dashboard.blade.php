@@ -8,8 +8,8 @@
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
 <!-- Navegação para páginas externas do sidebar (King Docs, Bíblia, etc.):
          o dashboard.js faz preventDefault em .nav-link — permitir sair do SPA. -->
-    <script src="/js/ck-inline/pages-dashboard-1.js"></script>
 <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/config.js?v=2026-09-09-vite1"></script>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -34,9 +34,7 @@
         #share-qr-art-card { position: relative; }
     </style>
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
-    <script src="/js/ck-inline/pages-dashboard-2.js"></script>
-
-    <style>
+<style>
     /* Detalhes expansíveis: orçamento e arquétipo (aparecem abaixo da linha) */
     .detalhe-expansivel-row td { vertical-align: top; padding: 0 !important; border-top: none !important; }
     .detalhe-expansivel-card { margin: 12px 8px 16px; padding: 24px; background: rgba(250,204,21,0.06); border-radius: 12px; border-left: 4px solid #facc15; text-align: left; }
@@ -105,17 +103,10 @@
         display: none;
     }
     </style>
-
-    <script src="/vendor/qrcodejs/qrcode.min.js"></script>
-    <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
-    <script src="/vendor/cropperjs/cropper.min.js"></script>
-    <script src="/vendor/sortablejs/Sortable.min.js"></script>
-    <script src="/js/ck-inline/pages-dashboard-3.js"></script>
-    @vite(['resources/js/pages/dashboard.js'])
+@vite(['resources/js/pages/dashboard.js'])
 </head>
 <body>
-<script src="/js/ck-inline/pages-dashboard-4.js" type="text/javascript"></script>
-    <style id="ck-dashboard-rescue-styles">
+<style id="ck-dashboard-rescue-styles">
     #ck-plan-block-overlay{position:fixed;inset:0;z-index:2147483640;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
     #ck-plan-block-overlay[aria-hidden="false"]{display:flex}
     .ck-plan-block-card{max-width:420px;width:100%;background:#141414;border:1px solid #333;border-radius:12px;padding:24px;color:#e5e5e5;box-shadow:0 16px 48px rgba(0,0,0,.5)}
@@ -136,8 +127,7 @@
             </div>
         </div>
     </div>
-    <script src="/js/ck-inline/pages-dashboard-5.js"></script>
-    <div class="dashboard-layout"><button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Menu">
+<div class="dashboard-layout"><button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Menu">
     <i class="fas fa-bars"></i>
 </button>
 <aside class="sidebar" id="sidebar">
@@ -1369,7 +1359,6 @@
     </div>
 
     <!-- Restaurar painel correto IMEDIATAMENTE (evita flash e demora de 7s no mobile) -->
-    <script src="/js/ck-inline/pages-dashboard-6.js"></script>
 <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
         <div class="wifi-modal-content">
             <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
@@ -1389,9 +1378,7 @@
             </div>
         </div>
     </div>
-    <script src="/js/ck-inline/pages-dashboard-7.js"></script>
-    <!-- Base da API: mesma origem Laravel/FrankenPHP (produção e Docker :8080) -->
-    <script src="/js/ck-inline/pages-dashboard-8.js"></script>
-    <!-- api-config.js já no <head> (credentials + CSRF) -->
+<!-- Base da API: mesma origem Laravel/FrankenPHP (produção e Docker :8080) -->
+<!-- api-config.js já no <head> (credentials + CSRF) -->
 </body>
 </html>

@@ -1,3 +1,4 @@
+import '../vendor-globals.js';
 /** Admin panel — Vite entry */
 import '@css/admin/admin.css';
 

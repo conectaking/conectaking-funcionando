@@ -1,3 +1,4 @@
+import '../vendor-globals.js';
 /** documentos-preview — Vite entry (extracted inline) */
 (function applyCoresConfig() {
             try {

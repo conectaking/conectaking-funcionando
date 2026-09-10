@@ -6,9 +6,7 @@
     <title>Confirmação de Check-in - King Forms</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <script src="/vendor/jspdf/jspdf.umd.min.js"></script>
-    <style>
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css"><style>
         * {
             box-sizing: border-box;
             margin: 0;

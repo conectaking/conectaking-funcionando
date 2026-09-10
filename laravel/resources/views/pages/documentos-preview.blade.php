@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Preview — Orçamento / Recibo</title>
-    <script src="/vendor/html2pdf/html2pdf.bundle.min.js"></script>
-    <script src="/vendor/qrcodejs/qrcode.min.js"></script>
-    <style>
+    <title>Preview — Orçamento / Recibo</title><style>
         :root {
             --doc-blue: #1e3a5f;
             --doc-orange: #e67e22;

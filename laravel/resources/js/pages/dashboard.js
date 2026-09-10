@@ -8,6 +8,14 @@ import '@css/style.css';
 import '@css/dashboard.css';
 import '@css/css/profile-wifi.css';
 import '../vendor-globals.js';
+import '../inline/pages-dashboard-1.js';
+import '../inline/pages-dashboard-2.js';
+import '../inline/pages-dashboard-3.js';
+import '../inline/pages-dashboard-4.js';
+import '../inline/pages-dashboard-5.js';
+import '../inline/pages-dashboard-6.js';
+import '../inline/pages-dashboard-7.js';
+import '../inline/pages-dashboard-8.js';
 
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';

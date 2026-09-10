@@ -847,9 +847,13 @@ $bladePages = [
     'documentos-preview', 'documentos-ver', 'orcamentos', 'recibos-orcamentos',
     'dashboard-recibos-orcamentos', 'clientes-recibos-orcamentos', 'configuracoes-recibos-orcamentos',
     'termos', 'privacidade', 'index', 'bible', 'bibliaking',
-    'admin-planos', 'admin-devocionais-365', 'admin-prosperidade-31',
+    'admin-devocionais-365',
     'responsesList', 'conviteEdit', 'zerar-mes', 'arquetipo-resultados',
 ];
+Route::get('/admin-planos', fn () => redirect('/admin', 301));
+Route::get('/admin-planos.html', fn () => redirect('/admin', 301));
+Route::get('/admin-prosperidade-31', fn () => redirect('/admin-devocionais-365#prosperidade', 301));
+Route::get('/admin-prosperidade-31.html', fn () => redirect('/admin-devocionais-365#prosperidade', 301));
 foreach ($bladePages as $pageName) {
     $handler = function () use ($pageName) {
         return app(\App\Http\Controllers\LegacyPageController::class)->show(request(), $pageName);

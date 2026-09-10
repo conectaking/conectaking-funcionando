@@ -564,8 +564,8 @@ body {
 }
 
 
-.profile-link i { 
-    color: <%= details.button_text_color || '#FFFFFF' %> !important; 
+.profile-link i {
+    color: #FFFFFF !important;
     opacity: 1 !important;
 }
 

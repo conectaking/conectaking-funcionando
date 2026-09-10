@@ -4,9 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'Enviado' }} — {{ $formTitle ?? 'Formulário' }}</title>
-    @if(!empty($showQr) && !empty($qrToken))
-    <script src="/vendor/qrcodejs/qrcode.min.js"></script>
-    @endif
+    @if(!empty($showQr) && !empty($qrToken))@endif
     <style>
         :root {
             --primary: {{ $primaryColor ?? '#FFC700' }};
@@ -64,6 +62,7 @@
             font-weight: 700;
         }
     </style>
+    @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-form-success.js'])
 </head>
 <body>
 <div class="card">
@@ -92,18 +91,8 @@
     @endif
 </div>
 @if(!empty($showQr) && !empty($qrToken))
-<script>
-(function () {
-  var el = document.getElementById('qrcode');
-  if (!el || typeof QRCode === 'undefined') return;
-  new QRCode(el, {
-    text: @json((string) $qrToken),
-    width: 180,
-    height: 180,
-    correctLevel: QRCode.CorrectLevel.M
-  });
-})();
-</script>
+<script>window.__CK_BOOT_FORM_SUCCESS = { j0: @json((string) $qrToken) };</script>
+
 @endif
 </body>
 </html>

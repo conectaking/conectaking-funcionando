@@ -4,18 +4,20 @@
 - **JS:** `laravel/resources/js/legacy/` via `@mod`
 - **CSS de página:** `laravel/resources/css/pub/` via `@css`
 - **Fontes:** `resources/css/fonts.css` (self-host via `@fontsource` + material-icons)
-- **Vendor npm (parciais):** Chart.js, Leaflet, Sortable via `resources/js/vendor-globals.js` (dashboard). Cropper/QR/PDF ainda em `/vendor` (self).
-- **CSP:** `script-src 'self' 'nonce-…'` (sem `'unsafe-inline'`). Middleware injeta nonce em todo `<script>` HTML. `style-src` ainda `'unsafe-inline'` (estilos Blade).
+- **Vendor npm:** Chart.js, Leaflet, Sortable, Cropper 1.6, jsPDF, html2pdf, html5-qrcode, QRCode → `resources/js/vendor-globals.js`
+- **Cartão / portaria / bíblia:** entries Vite `resources/js/pages/cartao-*.js` + boot Blade `__CK_BOOT_*` (nonce CSP)
+- **Inlines do painel:** `resources/js/inline/` importados pelos entries (dashboard, sales, guestList)
+- **CSP:** `script-src 'self' 'nonce-…'` (sem `'unsafe-inline'`). `style-src` ainda `'unsafe-inline'` (atributos `style=""` e CSS Blade)
 
 ## Exceções em `public/`
-- `config.js` (unificado: API_BASE + CSRF/Bearer; `/api-config.js` é alias)
+- `config.js` (API_BASE + CSRF/Bearer; `/api-config.js` é alias)
 - `sw.js`, `cache-buster.js`, `main.js`
 - `guestListEditKingForms.js` → redirect `/guestListEdit`
-- `js/recibos-modulo-nav.js`, `js/ck-inline/*` (scripts que eram inline)
-- `vendor/*`
+- `js/recibos-modulo-nav.js`
+- `vendor/*` (Font Awesome, pdf-lib, fallbacks)
 
-## Residual (aceitável)
-- Alguns `<script>` inline com Blade (`@json` / `{{ }}`) — cobertos por nonce CSP
-- Cropper 1.x e libs PDF/QR em `/vendor` (não npm 2.x)
+## Residual
+- CSS/JS inline em blades grandes (formPageEdit, responsesList) — `style-src` continua com `'unsafe-inline'`
+- Boot scripts pequenos com `@json` nas blades de cartão (cobertos por nonce)
 
 **Regra:** código novo só em `laravel/resources/{js,css}` + Vite.

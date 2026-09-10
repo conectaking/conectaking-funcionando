@@ -1,20 +1,12 @@
-# Vendor estático (sem CDN)
+# Vendor estático (mesma origem)
 
-Bibliotecas servidas de `/vendor/...` (mesma origem) para reduzir dependência de CDN e facilitar CSP.
+Bibliotecas em `/vendor/...` para CSP e fallback quando o Vite não carrega o pacote npm.
 
 | Pasta | Uso |
 |-------|-----|
-| `fontawesome/` | Ícones (CSS + webfonts) |
-| `chartjs/` | Gráficos dashboard |
-| `leaflet/` | Mapa localização |
-| `cropperjs/` | Corte de imagem |
-| `sortablejs/` | Drag-and-drop |
-| `qrcodejs/` | QR Code PIX/Wi‑Fi (davidshimjs) |
-| `qrcode/` | QR Code (npm `qrcode` — King Docs) |
-| `jspdf/` | PDF listas |
-| `html2pdf/` | Export PDF preview |
+| `fontawesome/` | Ícones (CSS + webfonts) — ainda via link Blade |
 | `pdf-lib/` | PDF King Docs |
-| `html5-qrcode/` | Scanner portaria |
+| `chartjs/`, `leaflet/`, `cropperjs/`, `sortablejs/`, `qrcodejs/`, `qrcode/`, `jspdf/`, `html2pdf/`, `html5-qrcode/` | Fallback legado; preferir `vendor-globals.js` via Vite |
 
-Google Fonts permanece em CDN nesta etapa (só tipografia).
-Nonces CSP strict ficam para etapa seguinte (muitos `<script>` inline).
+Fontes: self-host em `resources/css/fonts.css` (não Google Fonts CDN).
+Scripts de página: Vite + nonce CSP (`script-src` sem `'unsafe-inline'`).

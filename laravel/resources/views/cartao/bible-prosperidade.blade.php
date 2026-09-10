@@ -28,6 +28,7 @@
         .warn { color:#FFC700; font-family:system-ui,sans-serif; margin-bottom:14px; }
         #mark-status { font-family:system-ui,sans-serif; font-size:.85rem; color:#A1A1A1; margin-left:8px; }
     </style>
+    @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-bible-prosperidade.js'])
 </head>
 <body>
 @php
@@ -100,37 +101,7 @@
     @endif
 </div>
 @if(!empty($a))
-<script>
-(function () {
-    var KEY = 'ck_prosperidade_vid';
-    var vid = localStorage.getItem(KEY);
-    if (!vid) {
-        vid = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-        localStorage.setItem(KEY, vid);
-    }
-    var btn = document.getElementById('btn-mark-read');
-    var st = document.getElementById('mark-status');
-    if (!btn) return;
-    btn.addEventListener('click', function () {
-        btn.disabled = true;
-        fetch(@json($markReadApi ?? '/api/bible/prosperidade/mark-read'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                visitor_id: vid,
-                activation_number: {{ (int) $n }},
-                slug: @json($slug)
-            })
-        }).then(function (r) { return r.json(); }).then(function (o) {
-            st.textContent = (o && o.success) ? 'Marcada como lida.' : (o && o.message) || 'Erro';
-            btn.disabled = false;
-        }).catch(function () {
-            st.textContent = 'Erro de rede';
-            btn.disabled = false;
-        });
-    });
-})();
-</script>
+<script>window.__CK_BOOT_BIBLE_PROSPERIDADE = { j0: @json($markReadApi ?? '/api/bible/prosperidade/mark-read'), j1: @json($slug), n2: @json((int) $n) };</script>
 @endif
 </body>
 </html>

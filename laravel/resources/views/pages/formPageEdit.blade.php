@@ -6,12 +6,7 @@
     <title>Editar King Forms - Dashboard</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
-    <script src="/vendor/cropperjs/cropper.min.js"></script>
-    <script src="/vendor/sortablejs/Sortable.min.js"></script>
-    <script src="/vendor/chartjs/chart.umd.min.js"></script>
-    <script src="/config.js?v=2026-09-09-vite1"></script>
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css"><script src="/config.js?v=2026-09-09-vite1"></script>
     <style>
         * {
             box-sizing: border-box;

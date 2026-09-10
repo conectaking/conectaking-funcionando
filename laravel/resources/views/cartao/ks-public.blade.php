@@ -33,6 +33,7 @@
         .btn.secondary { background:transparent; color:#FFC700; border:1px solid rgba(255,199,0,.4); margin-left:8px; }
         .note { margin-top:28px; font-size:.85rem; opacity:.55; line-height:1.5; }
     </style>
+    @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-ks-public.js'])
 </head>
 <body>
 <div class="wrap">
@@ -47,12 +48,7 @@
     </div>
     <p class="note">Landing Laravel. Use <code>?landing=1</code> nesta URL; a galeria completa é a SPA (padrão).</p>
 </div>
-<script>
-window.__KS_BOOT_GALLERY_META = {
-  access_mode: @json($gallery['access_mode'] ?? 'private'),
-  allow_self_signup: @json(!empty($gallery['allow_self_signup'])),
-  allow_client_edit_request: @json(!empty($gallery['allow_client_edit_request']))
-};
-</script>
+<script>window.__CK_BOOT_KS_PUBLIC = { j0: @json($gallery['access_mode'] ?? 'private'), j1: @json(!empty($gallery['allow_self_signup'])), j2: @json(!empty($gallery['allow_client_edit_request'])) };</script>
+
 </body>
 </html>

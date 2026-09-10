@@ -7,9 +7,7 @@
     <title>Admin - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <script src="/vendor/chartjs/chart.umd.min.js"></script>
-    @vite(['resources/js/pages/admin.js'])
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">@vite(['resources/js/pages/admin.js'])
 </head>
 <body>
     <div class="admin-layout">

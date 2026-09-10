@@ -7,9 +7,7 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
-    <script src="/vendor/cropperjs/cropper.min.js"></script>
-    <script src="/vendor/sortablejs/Sortable.min.js"></script>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
     <!-- IMPORTAR TODOS OS ESTILOS DO FORM EDIT -->
     <style>
         
@@ -1412,11 +1410,7 @@
     @vite(['resources/js/pages/guestListEdit.js'])
 </head>
 <body class="form-edit-page form-edit-page-body">
-    <!-- Se houver itemId na URL, redirecionar para usar /formPageEdit com parmetro guestList -->
-    <script src="/js/ck-inline/pages-guestListEdit-1.js"></script>
-    
-    <!-- Estrutura do Editor KingForms será carregada dinamicamente via formPageEdit.js quando necessrio -->
-    <!-- Por enquanto, o editor usar os elementos que formPageEdit.js espera encontrar -->
+    <!-- Estrutura do Editor KingForms será carregada dinamicamente via formPageEdit.js quando necessário -->
     
     <!-- Estrutura de Gerenciamento (será mostrada quando não houver itemId ou mode=manage) -->
     <div class="guest-list-management-container" id="guest-list-management-container">
@@ -1736,11 +1730,7 @@
     </div>
     
     </div> <!-- Fechar guest-list-management-container -->
-    
-    <!-- Detectar se estamos em modo de edição (KingForms) ou gerenciamento -->
-    <script src="/js/ck-inline/pages-guestListEdit-2.js"></script>
-    
-    <script src="/config.js?v=2026-09-09-vite1"></script>
+
 </body>
 </html>
 

@@ -4,6 +4,8 @@ import '../vendor-globals.js';
  * formPageEdit + integração; guestListEdit.js só em modo manage / sem itemId.
  */
 import '@css/dashboard.css';
+import '../inline/pages-guestListEdit-1.js';
+import '../inline/pages-guestListEdit-2.js';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
 import '@mod/js/upload-auth-helper.js';

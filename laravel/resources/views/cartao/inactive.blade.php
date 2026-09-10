@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil Indisponível</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700&display=swap" rel="stylesheet">
+    @vite(['resources/css/fonts.css'])
     <style>
         :root { --bg-color: #0D0D0F; --text-primary: #FFF3E0; --highlight-primary: #FFC700; }
         body {
             background-color: var(--bg-color); color: var(--text-primary);
-            font-family: 'Satoshi', sans-serif; display: flex; align-items: center;
+            font-family: Inter, Manrope, system-ui, sans-serif; display: flex; align-items: center;
             justify-content: center; min-height: 100vh; text-align: center; padding: 2rem; margin: 0;
         }
         .container { max-width: 500px; }

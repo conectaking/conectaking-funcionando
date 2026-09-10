@@ -1,11 +1,13 @@
 import '../vendor-globals.js';
 /**
  * Página de vendas (editor) — Vite entry.
- * CDN Chart/Sortable/Cropper e config.js ficam no Blade.
+ * config.js permanece no Blade (API_BASE / CSRF).
  */
 import '@css/style.css';
 import '@css/dashboard.css';
 import '@css/salesPageEdit.css';
+import '../inline/pages-salesPageEdit-1.js';
+import '../inline/pages-salesPageEdit-2.js';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
 import '@mod/js/upload-auth-helper.js';

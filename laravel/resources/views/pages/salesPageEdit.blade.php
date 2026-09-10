@@ -7,16 +7,14 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
 <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/config.js?v=2026-09-09-vite1"></script>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <!-- Cache-bust CSS - v2025-01-31-04 -->
-    <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
-
-    <!-- CSS CRÍTICO INLINE PARA MOBILE - Garantir scroll funcionando -->
+    <!-- Cache-bust CSS - v2025-01-31-04 --><!-- CSS CRÍTICO INLINE PARA MOBILE - Garantir scroll funcionando -->
     <style>
         /* Override crítico para mobile - sempre aplicar */
         @media (max-width: 768px) {
@@ -169,11 +167,7 @@
                 user-drag: none !important;
             }
         }
-    </style>
-
-    <script src="/vendor/chartjs/chart.umd.min.js"></script>
-    <script src="/vendor/sortablejs/Sortable.min.js"></script>
-    @vite(['resources/js/pages/salesPageEdit.js'])
+    </style>@vite(['resources/js/pages/salesPageEdit.js'])
 </head>
 <body class="sales-page-edit-page">
     <div class="dashboard-layout">
@@ -635,11 +629,6 @@
         </div>
     </div>
 
-    <script src="/js/ck-inline/pages-salesPageEdit-1.js"></script>
-    <script src="/vendor/cropperjs/cropper.min.js"></script>
-    <script src="/config.js?v=2026-09-09-vite1"></script>
-<!-- Script para forçar limpeza de cache e garantir comportamento mobile -->
-    <script src="/js/ck-inline/pages-salesPageEdit-2.js"></script>
 </body>
 </html>
 
