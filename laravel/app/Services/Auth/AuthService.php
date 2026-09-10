@@ -228,7 +228,7 @@ class AuthService
             'email' => $user->email,
             'isAdmin' => filter_var($user->is_admin ?? false, FILTER_VALIDATE_BOOLEAN),
             'accountType' => $user->account_type ?? null,
-        ], (string) (env('JWT_EXPIRES_IN') ?: '7d'));
+        ], (string) (env('JWT_EXPIRES_IN') ?: '24h'));
 
         $refresh = $this->jwt->encode([
             'userId' => $user->id,

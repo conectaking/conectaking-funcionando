@@ -1,5 +1,5 @@
 var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     __ckDashLog('Dashboard iniciando... v2026-08-13-banner-url-models');
 
     // Handler global de erros não capturados
@@ -22,19 +22,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- GUARDA DE ROTA (MODO DESENVOLVIMENTO) ---
-    const user = JSON.parse(localStorage.getItem('conectaKingUser'));
+    // Cookie-first: sem JWT no LS ainda pode haver sessão HttpOnly
+    if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+        const ok = await window.CkAuth.requireAuth('/login');
+        if (!ok) return;
+    }
 
-    // Para desenvolvimento, permite acesso mesmo sem usuário
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('conectaKingUser') || 'null');
+    } catch (e) {
+        user = null;
+    }
     if (!user) {
-        console.warn('Usuário não encontrado, criando usuário de teste para desenvolvimento');
-        const testUser = {
-            id: 'test-user',
-            accountType: 'premium',
-            email: 'test@test.com'
-        };
-        localStorage.setItem('conectaKingUser', JSON.stringify(testUser));
-    } else if (user.accountType === 'free') {
+        try {
+            const headers = { Accept: 'application/json' };
+            const t = (window.CkAuth && window.CkAuth.lsToken) ? window.CkAuth.lsToken() : (localStorage.getItem('conectaKingToken') || '');
+            if (t) headers.Authorization = 'Bearer ' + t;
+            const r = await fetch('/api/account/status', { credentials: 'include', headers, cache: 'no-store' });
+            if (r.ok) {
+                const st = await r.json();
+                user = {
+                    id: st.id || st.userId || st.user_id || '',
+                    accountType: st.accountType || st.account_type || 'individual',
+                    email: st.email || '',
+                    subscriptionStatus: st.subscriptionStatus || st.subscription_status || ''
+                };
+                localStorage.setItem('conectaKingUser', JSON.stringify(user));
+            }
+        } catch (e) {}
+    }
+    if (!user) {
+        window.location.href = '/login?returnUrl=' + encodeURIComponent(window.location.href);
+        return;
+    }
+    if (user.accountType === 'free') {
         alert('Acesso negado. Faça um upgrade do seu plano para acessar o dashboard.');
         window.location.href = '/#planos';
         return;
@@ -259,9 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            // Atualiza tokens
-            token = data.token;
-            localStorage.setItem('conectaKingToken', data.token);
+            // Cookie HttpOnly renovado no Set-Cookie — não regravar JWT no localStorage
+            token = data.token || token;
+            try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+            try { localStorage.removeItem('conectaKingToken'); } catch (e) {}
             if (data.refreshToken) {
                 localStorage.setItem('conectaKingRefreshToken', data.refreshToken);
             }
@@ -1122,11 +1145,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     async function fetchAndUpdateUserStatus() {
-        if (!token) {
-            console.warn('Token não encontrado, usando dados mock');
-            return JSON.parse(localStorage.getItem('conectaKingUser'));
-        }
-
         try {
             // Cooldown para evitar muitas requisições
             const now = Date.now();
@@ -1140,8 +1158,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem('lastStatusCheck', now.toString());
 
+            const headers = { Accept: 'application/json' };
+            const t = localStorage.getItem('conectaKingToken') || token || '';
+            if (t) headers.Authorization = `Bearer ${t}`;
             const response = await fetch(`${API_URL}/api/account/status`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include',
+                headers
             });
 
             if (response.status === 401) {

@@ -114,25 +114,25 @@
 <aside class="recibos-sidebar-desktop sidebar-desktop fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark hidden lg:flex flex-col items-center py-8 z-50">
     <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
     <nav class="flex flex-col gap-6">
-        <a href="dashboard-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Painel do módulo">
+        <a href="/dashboard-recibos-orcamentos" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Painel do módulo">
             <span class="material-icons-outlined">dashboard</span>
             <span class="text-[10px] font-semibold uppercase">Painel</span>
         </a>
-        <a href="dashboard-recibos-orcamentos?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Recibos — escolher novo ou continuar">
+        <a href="/dashboard-recibos-orcamentos?abrir=recibo" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Recibos — escolher novo ou continuar">
             <span class="material-icons-outlined">receipt_long</span>
             <span class="text-[10px] font-semibold uppercase">Recibos</span>
         </a>
-        <a href="dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos — escolher novo ou continuar">
+        <a href="/dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Orçamentos — escolher novo ou continuar">
             <span class="material-icons-outlined">request_quote</span>
             <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
         </a>
     </nav>
     <div class="flex flex-col gap-6 mt-6">
-        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="clientes-recibos-orcamentos" title="Clientes">
+        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="/clientes-recibos-orcamentos" title="Clientes">
             <span class="material-icons-outlined">people</span>
             <span class="text-[10px] font-semibold uppercase">Clientes</span>
         </a>
-        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="./configuracoes-recibos-orcamentos" title="Configurações do módulo">
+        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="/configuracoes-recibos-orcamentos" title="Configurações do módulo">
             <span class="material-icons-outlined">settings</span>
             <span class="text-[10px] font-semibold uppercase">Config.</span>
         </a>
@@ -140,23 +140,23 @@
 </aside>
 
 <nav id="recibos-bottom-nav" class="bottom-nav-safe fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-card-dark border-t border-slate-200 dark:border-border-dark flex justify-around items-center py-2 px-1">
-    <a href="dashboard-recibos-orcamentos" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+    <a href="/dashboard-recibos-orcamentos" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
         <span class="material-icons-outlined text-2xl">dashboard</span>
         <span class="text-[9px] font-bold uppercase">Painel</span>
     </a>
-    <a href="dashboard-recibos-orcamentos?abrir=recibo" class="flex flex-col items-center gap-0.5 text-primary min-w-0 px-1 py-1">
+    <a href="/dashboard-recibos-orcamentos?abrir=recibo" class="flex flex-col items-center gap-0.5 text-primary min-w-0 px-1 py-1">
         <span class="material-icons-outlined text-2xl">receipt_long</span>
         <span class="text-[9px] font-bold uppercase">Recibos</span>
     </a>
-    <a href="dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+    <a href="/dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
         <span class="material-icons-outlined text-2xl">request_quote</span>
         <span class="text-[9px] font-bold uppercase">Orçam.</span>
     </a>
-    <a href="clientes-recibos-orcamentos" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+    <a href="/clientes-recibos-orcamentos" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
         <span class="material-icons-outlined text-2xl">people</span>
         <span class="text-[9px] font-bold uppercase">Clientes</span>
     </a>
-    <a href="configuracoes-recibos-orcamentos" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
+    <a href="/configuracoes-recibos-orcamentos" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-primary min-w-0 px-1 py-1">
         <span class="material-icons-outlined text-2xl">settings</span>
         <span class="text-[9px] font-bold uppercase">Config</span>
     </a>
@@ -170,7 +170,7 @@
                 <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400" id="page-subtitle">Crie documentos profissionais em segundos</p>
             </div>
             <div class="doc-header-actions flex gap-2 items-center">
-                <a href="dashboard-recibos-orcamentos" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all text-inherit no-underline" title="Voltar ao painel do módulo">
+                <a href="/dashboard-recibos-orcamentos" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all text-inherit no-underline" title="Voltar ao painel do módulo">
                     <span class="material-icons-outlined text-sm">home</span>
                     <span class="text-sm font-medium">Voltar ao painel</span>
                 </a>
@@ -230,7 +230,7 @@
                             <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Endereço</label>
                             <input name="emitente_endereco" lang="pt-BR" spellcheck="true" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Rua, número, bairro, cidade" type="text"/>
                         </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">A logomarca do PDF é definida só em <a href="configuracoes-recibos-orcamentos" class="text-primary hover:underline">Configurações</a> — não é exibida nesta tela.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">A logomarca do PDF é definida só em <a href="/configuracoes-recibos-orcamentos" class="text-primary hover:underline">Configurações</a> — não é exibida nesta tela.</p>
                         <input type="hidden" name="emitente_logo_url" id="input-logo-url" value=""/>
                     </div>
                 </section>

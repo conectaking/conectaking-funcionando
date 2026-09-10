@@ -121,9 +121,21 @@ class DocumentosController extends Controller
                 ],
             ]);
         }
+        $check = \App\Support\UploadedFileValidator::assertImage($file);
+        if (! ($check['ok'] ?? false)) {
+            return $this->json([
+                'status' => 400,
+                'body' => [
+                    'success' => false,
+                    'data' => null,
+                    'message' => $check['message'] ?? 'Imagem inválida.',
+                    'error' => ['code' => 'ERROR', 'message' => $check['message'] ?? 'Imagem inválida.'],
+                ],
+            ]);
+        }
         $r = $this->documentos->uploadLogo(
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/png'),
+            $check['binary'],
+            $check['mime'],
             (string) ($file->getClientOriginalName() ?: 'logo.png')
         );
 
@@ -144,9 +156,21 @@ class DocumentosController extends Controller
                 ],
             ]);
         }
+        $check = \App\Support\UploadedFileValidator::assertImage($file);
+        if (! ($check['ok'] ?? false)) {
+            return $this->json([
+                'status' => 400,
+                'body' => [
+                    'success' => false,
+                    'data' => null,
+                    'message' => $check['message'] ?? 'Imagem inválida.',
+                    'error' => ['code' => 'ERROR', 'message' => $check['message'] ?? 'Imagem inválida.'],
+                ],
+            ]);
+        }
         $url = $this->r2->uploadImage(
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/jpeg'),
+            $check['binary'],
+            $check['mime'],
             (string) ($file->getClientOriginalName() ?: 'comprovante.jpg')
         );
         if (! $url) {
@@ -201,9 +225,21 @@ class DocumentosController extends Controller
                 ],
             ]);
         }
+        $check = \App\Support\UploadedFileValidator::assertImage($file);
+        if (! ($check['ok'] ?? false)) {
+            return $this->json([
+                'status' => (int) ($check['status'] ?? 400),
+                'body' => [
+                    'success' => false,
+                    'data' => null,
+                    'message' => $check['message'] ?? 'Imagem inválida.',
+                    'error' => ['code' => 'ERROR', 'message' => $check['message'] ?? 'Imagem inválida.'],
+                ],
+            ]);
+        }
         $url = $this->r2->uploadImage(
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/jpeg'),
+            $check['binary'],
+            $check['mime'],
             (string) ($file->getClientOriginalName() ?: 'nota-fiscal.jpg')
         );
         if (! $url) {
@@ -278,7 +314,11 @@ class DocumentosController extends Controller
         if (! $file) {
             return $this->error('Envie uma imagem do comprovante.', 400);
         }
-        $binary = (string) file_get_contents($file->getRealPath());
+        $check = \App\Support\UploadedFileValidator::assertImage($file);
+        if (! ($check['ok'] ?? false)) {
+            return $this->error($check['message'] ?? 'Imagem inválida.', 400);
+        }
+        $binary = $check['binary'];
 
         // 1) OCR primeiro: extrai valores mesmo que o resto do fluxo falhe depois
         $forceOpenAi = $this->truthy($request->input('usar_ia'));

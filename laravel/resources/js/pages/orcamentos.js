@@ -1,12 +1,13 @@
 /** orcamentos — Vite entry (extracted inline) */
-(function() {
+import '@legacy/js/ck-auth-gate.js';
+
+(async function() {
+  if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
+
   const API = (window.API_URL || window.API_BASE || '').replace(/\/$/, '') || (window.location.origin + '/api');
-  const token = localStorage.getItem('conectaKingToken');
-  if (!token) {
-    location.href = '/login?returnUrl=' + encodeURIComponent(location.href);
-    return;
-  }
-  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  const token = window.CkAuth.lsToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = 'Bearer ' + token;
   const apiBase = (window.API_URL || window.API_BASE || '').replace(/\/$/, '');
   const apiOrcamentos = apiBase ? (apiBase + '/api/orcamentos') : (window.location.origin + '/api/orcamentos');
 

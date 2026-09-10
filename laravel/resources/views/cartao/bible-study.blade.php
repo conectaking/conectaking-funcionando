@@ -31,23 +31,55 @@
         .badge { position:fixed; top:72px; left:50%; transform:translateX(-50%); padding:10px 18px; background:rgba(34,197,94,.9);
                  color:#fff; border-radius:10px; font-family:system-ui,sans-serif; font-size:.9rem; z-index:20; opacity:0; transition:opacity .3s; }
         .badge.show { opacity:1; }
+        .sec-nav { font-family:system-ui,sans-serif; display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; padding:0; list-style:none; }
+        .sec-nav a { display:inline-block; padding:6px 12px; border-radius:8px; font-size:.82rem;
+                     background:rgba(255,199,0,.1); border:1px solid rgba(255,199,0,.2); color:#A1A1A1; }
+        .sec-nav a:hover, .sec-nav a.active { color:#FFC700; border-color:rgba(255,199,0,.45); }
+        .accordion { font-family:system-ui,sans-serif; }
+        .acc-item { border:1px solid rgba(255,199,0,.18); border-radius:10px; margin-bottom:10px; overflow:hidden;
+                    background:rgba(20,20,24,.5); }
+        .acc-item summary { cursor:pointer; padding:14px 16px; font-weight:600; color:#FFC700; list-style:none;
+                            display:flex; align-items:center; justify-content:space-between; }
+        .acc-item summary::-webkit-details-marker { display:none; }
+        .acc-item summary::after { content:'▼'; font-size:.65rem; opacity:.5; transition:transform .2s; }
+        .acc-item[open] summary::after { transform:rotate(180deg); }
+        .acc-body { padding:0 16px 16px; font-size:1rem; line-height:1.75; color:#e8e8e8; }
+        .acc-body .bible-ref-link { color:#7dd3fc; border-bottom:1px dotted rgba(125,211,252,.5); }
     </style>
 </head>
 <body>
 <div class="wrap">
     <div class="nav">
         <a href="{{ $hubUrl }}">← Bíblia</a>
-        <a href="{{ $profileUrl }}">Cartão</a>
+        <a href="{{ $profileUrl }}">Voltar ao perfil</a>
         <a href="{{ $readUrl }}">Ler {{ $bookName }}</a>
     </div>
 
-    @if($study && (!empty($study['title']) || !empty($contentHtml) || !empty($study['content'])))
+    @if($study && (!empty($study['title']) || !empty($contentHtml) || !empty($study['content']) || !empty($sections)))
         <h1>Estudo: {{ $bookName }}</h1>
         <div class="card">
             @if(!empty($study['title']))
                 <h2>{{ $study['title'] }}</h2>
             @endif
-            <div class="content" id="study-content">{!! $contentHtml !!}</div>
+
+            @if(!empty($sections))
+                <ul class="sec-nav" id="sec-nav">
+                    @foreach($sections as $sec)
+                        <li><a href="#sec-{{ $sec['id'] }}">{{ $sec['title'] }}</a></li>
+                    @endforeach
+                </ul>
+                <div class="accordion" id="study-sections">
+                    @foreach($sections as $sec)
+                        <details class="acc-item" id="sec-{{ $sec['id'] }}" {{ $loop->first ? 'open' : '' }}>
+                            <summary>{{ $sec['title'] }}</summary>
+                            <div class="acc-body">{!! $sec['html'] ?? '' !!}</div>
+                        </details>
+                    @endforeach
+                </div>
+            @else
+                <div class="content" id="study-content">{!! $contentHtml !!}</div>
+            @endif
+
             <button type="button" class="btn-marcar" id="btn-marcar">Marcar onde parei</button>
             @if(!empty($study['chapters']))
                 <div class="chapters">
@@ -71,20 +103,37 @@
 <div class="badge" id="badge">Posição salva</div>
 <script>
 (function () {
-  var key = 'bible_study_pos_' + @json($bookId);
-  var btn = document.getElementById('btn-marcar');
-  var badge = document.getElementById('badge');
-  try {
-    var y = localStorage.getItem(key);
-    if (y) window.scrollTo(0, parseInt(y, 10) || 0);
-  } catch (e) {}
-  if (btn) btn.addEventListener('click', function () {
+    var key = 'bible_study_pos_' + @json($bookId);
+    var btn = document.getElementById('btn-marcar');
+    var badge = document.getElementById('badge');
     try {
-      localStorage.setItem(key, String(window.scrollY || 0));
-      badge.classList.add('show');
-      setTimeout(function () { badge.classList.remove('show'); }, 2500);
+        var y = localStorage.getItem(key);
+        if (y) window.scrollTo(0, parseInt(y, 10) || 0);
     } catch (e) {}
-  });
+    if (btn) btn.addEventListener('click', function () {
+        try {
+            localStorage.setItem(key, String(window.scrollY || 0));
+            badge.classList.add('show');
+            setTimeout(function () { badge.classList.remove('show'); }, 2500);
+        } catch (e) {}
+    });
+
+    var nav = document.getElementById('sec-nav');
+    if (nav) {
+        nav.addEventListener('click', function (e) {
+            var link = e.target.closest('a[href^="#sec-"]');
+            if (!link) return;
+            e.preventDefault();
+            var id = link.getAttribute('href').slice(1);
+            var el = document.getElementById(id);
+            if (el && el.tagName === 'DETAILS') {
+                el.open = true;
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            nav.querySelectorAll('a').forEach(function (a) { a.classList.remove('active'); });
+            link.classList.add('active');
+        });
+    }
 })();
 </script>
 </body>

@@ -54,11 +54,24 @@ class KingDocsController extends Controller
             ]);
         }
 
+        $check = \App\Support\UploadedFileValidator::assertImageOrPdf($file, 25 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            return $this->json([
+                'status' => 400,
+                'body' => [
+                    'success' => false,
+                    'data' => null,
+                    'message' => $check['message'] ?? 'Arquivo inválido.',
+                    'error' => ['code' => 'ERROR', 'message' => $check['message'] ?? 'Arquivo inválido.'],
+                ],
+            ]);
+        }
+
         return $this->json($this->kingDocs->uploadFile(
             (string) $request->attributes->get('auth_user_id'),
-            (string) file_get_contents($file->getRealPath()),
+            $check['binary'],
             (string) ($file->getClientOriginalName() ?: 'ficheiro'),
-            (string) ($file->getMimeType() ?: 'application/octet-stream'),
+            $check['mime'],
             (string) ($request->input('docType') ?: 'documento')
         ));
     }

@@ -1,7 +1,11 @@
 import '@legacy/assets/css/ui.css';
-(function () {
+import '@legacy/js/ck-auth-gate.js';
+
+(async function () {
+  if (!(await window.CkAuth.requireAuth('/login'))) return;
+
   var apiBase = (window.API_BASE || window.API_URL || '').replace(/\/$/, '');
-  var token = typeof localStorage !== 'undefined' ? localStorage.getItem('conectaKingToken') : null;
+  var token = window.CkAuth.lsToken() || null;
   var plans = [];
   var edited = {};
 
@@ -57,10 +61,17 @@ import '@legacy/assets/css/ui.css';
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function authHeaders(extra) {
+    var h = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
+    if (token) h.Authorization = 'Bearer ' + token;
+    return h;
+  }
+
   function savePlan(planId, kingbriefMinutes) {
     fetch(apiBase + '/api/admin/plans/' + planId, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      headers: authHeaders(),
+      credentials: 'include',
       body: JSON.stringify({ kingbrief_minutes_per_month: kingbriefMinutes })
     })
       .then(function (r) { return r.json(); })
@@ -76,11 +87,7 @@ import '@legacy/assets/css/ui.css';
       .catch(function () { showMessage('Erro de rede.', true); });
   }
 
-  if (!token) {
-    showDenied();
-    return;
-  }
-  fetch(apiBase + '/api/admin/plans', { headers: { 'Authorization': 'Bearer ' + token } })
+  fetch(apiBase + '/api/admin/plans', { headers: authHeaders(), credentials: 'include' })
     .then(function (r) {
       if (r.status === 403 || r.status === 401) { showDenied(); return null; }
       return r.json();
@@ -107,7 +114,8 @@ import '@legacy/assets/css/ui.css';
       var minutes = v === '' ? null : Math.max(0, parseInt(v, 10));
       fetch(apiBase + '/api/admin/plans/' + id, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers: authHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ kingbrief_minutes_per_month: minutes })
       })
         .then(function (r) { return r.json(); })

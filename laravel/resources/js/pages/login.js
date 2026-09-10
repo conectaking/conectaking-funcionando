@@ -183,9 +183,9 @@ import '@legacy/auth.css';
           }
 
           if (data.token) {
-            localStorage.setItem('conectaKingToken', data.token);
-            // Cookie HttpOnly vem no Set-Cookie do login API (AuthenticateJwt).
-            // Não gravar document.cookie — JS não consegue sobrescrever HttpOnly.
+            // Cookie HttpOnly vem no Set-Cookie — não guardar JWT no localStorage (XSS).
+            try { localStorage.setItem('conectaKingSession', '1'); } catch (_) {}
+            try { localStorage.removeItem('conectaKingToken'); } catch (_) {}
           }
           if (data.refreshToken) {
             localStorage.setItem('conectaKingRefreshToken', data.refreshToken);

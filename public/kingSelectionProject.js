@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const KS_API_FALLBACK = 'https://www.conectaking.com.br';
   function resolveKingApiBase() {
     // Produção ConectaKing: sempre mesma origem.
@@ -42,12 +42,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const token = localStorage.getItem('conectaKingToken') || '';
   if (!token) {
-    window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
-    return;
+    try {
+      const r = await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+      if (!r.ok) {
+        window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      try { localStorage.setItem('conectaKingSession', '1'); } catch (_) {}
+    } catch (_) {
+      window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
+      return;
+    }
   }
-  // Cookie HttpOnly do login já autentica <img> same-origin.
-  // NÃO gravar document.cookie=token (legível por XSS) — AuthenticateJwt lê o HttpOnly.
-  const HEADERS = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  // Cookie HttpOnly do login autentica <img> same-origin.
+  const HEADERS = { 'Content-Type': 'application/json' };
+  if (token) HEADERS.Authorization = `Bearer ${token}`;
 
   // <img> não envia Authorization header. Para previews protegidos (admin),
   // precisamos buscar via fetch + blob e aplicar via ObjectURL.

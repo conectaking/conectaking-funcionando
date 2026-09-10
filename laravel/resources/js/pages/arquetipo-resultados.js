@@ -1,12 +1,13 @@
 /** arquetipo-resultados — Vite entry (extracted inline) */
-(function() {
+import '@legacy/js/ck-auth-gate.js';
+
+(async function() {
+  if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
+
   const API = (window.API_URL || window.API_BASE || '').replace(/\/$/, '') || (window.location.origin + '/api');
-  const token = localStorage.getItem('conectaKingToken');
-  if (!token) {
-    location.href = '/login?returnUrl=' + encodeURIComponent(location.href);
-    return;
-  }
-  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  const token = window.CkAuth.lsToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = 'Bearer ' + token;
 
   const ARQUETIPOS_NAMES = { inocente:'O Inocente', sabio:'O Sbio', explorador:'O Explorador', criador:'O Criador', governante:'O Governante', mago:'O Mago', amante:'O Amante', heroi:'O Heri', bufao:'O Bufo', cidadao:'O Cidado', cuidador:'O Cuidador', revolucionario:'O Revolucionrio' };
 

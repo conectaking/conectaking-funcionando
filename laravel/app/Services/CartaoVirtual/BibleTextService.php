@@ -21,6 +21,9 @@ class BibleTextService
     /** @var array<string, array<string, mixed>|null> */
     private static array $bookCache = [];
 
+    /** @var array<string, array<string, mixed>|null> */
+    private static array $dataFileCache = [];
+
     /**
      * @return array{at:list<array<string,mixed>>, nt:list<array<string,mixed>>}
      */
@@ -158,6 +161,161 @@ class BibleTextService
             'verse_count' => 0,
             'summary' => $summary,
         ];
+    }
+
+    public function resolveDataPath(string $name): ?string
+    {
+        $name = ltrim(str_replace(['\\', '..'], '', $name), '/');
+        if ($name === '') {
+            return null;
+        }
+
+        foreach ([resource_path('data/bible/'.$name), base_path('data/bible/'.$name)] as $path) {
+            if (File::exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Enriquece capítulo com letra vermelha e títulos de seção.
+     *
+     * @param  array{bookId:string,bookName:string,chapter:int,totalChapters:int,verses:list<array{verse:int,text:string}>}  $chapterData
+     * @return array{bookId:string,bookName:string,chapter:int,totalChapters:int,verses:list<array{verse:int,text:string,redLetter:bool}>,sectionHeadings:list<array{beforeVerse:int,text:string}>}
+     */
+    public function enrichChapter(array $chapterData): array
+    {
+        $bookId = (string) ($chapterData['bookId'] ?? '');
+        $chapter = (int) ($chapterData['chapter'] ?? 0);
+        $verses = is_array($chapterData['verses'] ?? null) ? $chapterData['verses'] : [];
+
+        $redRanges = $this->redLetterRanges($bookId, $chapter);
+        $headings = $this->sectionHeadings($bookId, $chapter);
+
+        $enrichedVerses = [];
+        foreach ($verses as $v) {
+            $num = (int) ($v['verse'] ?? 0);
+            $enrichedVerses[] = [
+                'verse' => $num,
+                'text' => (string) ($v['text'] ?? ''),
+                'redLetter' => $this->verseInRanges($num, $redRanges),
+            ];
+        }
+
+        return array_merge($chapterData, [
+            'verses' => $enrichedVerses,
+            'sectionHeadings' => $headings,
+        ]);
+    }
+
+    /**
+     * @return list<array{int,int}>
+     */
+    private function redLetterRanges(string $bookId, int $chapter): array
+    {
+        if ($bookId === '' || $chapter < 1) {
+            return [];
+        }
+
+        $overrides = $this->loadDataFile('jesus_verses.json');
+        $override = $overrides[$bookId][(string) $chapter] ?? $overrides[$bookId][$chapter] ?? null;
+        if ($override === 'none') {
+            return [];
+        }
+
+        $gospels = $this->loadDataFile('red_letter_gospels.json');
+        $chData = $gospels[$bookId][(string) $chapter] ?? $gospels[$bookId][$chapter] ?? null;
+        if (!is_array($chData)) {
+            return [];
+        }
+
+        $ranges = [];
+        foreach ($chData['r'] ?? [] as $pair) {
+            if (!is_array($pair) || count($pair) < 2) {
+                continue;
+            }
+            $start = (int) $pair[0];
+            $end = (int) $pair[1];
+            if ($start > 0 && $end >= $start) {
+                $ranges[] = [$start, $end];
+            }
+        }
+
+        return $ranges;
+    }
+
+    /**
+     * @return list<array{beforeVerse:int,text:string}>
+     */
+    private function sectionHeadings(string $bookId, int $chapter): array
+    {
+        if ($bookId === '' || $chapter < 1) {
+            return [];
+        }
+
+        $all = $this->loadDataFile('chapter_section_headings.json');
+        $list = $all[$bookId][(string) $chapter] ?? $all[$bookId][$chapter] ?? null;
+        if (!is_array($list)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($list as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $before = (int) ($item['beforeVerse'] ?? 0);
+            $text = trim((string) ($item['text'] ?? ''));
+            if ($before > 0 && $text !== '') {
+                $out[] = ['beforeVerse' => $before, 'text' => $text];
+            }
+        }
+
+        usort($out, static fn ($a, $b) => $a['beforeVerse'] <=> $b['beforeVerse']);
+
+        return $out;
+    }
+
+    /**
+     * @param  list<array{int,int}>  $ranges
+     */
+    private function verseInRanges(int $verse, array $ranges): bool
+    {
+        foreach ($ranges as [$start, $end]) {
+            if ($verse >= $start && $verse <= $end) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function loadDataFile(string $name): array
+    {
+        if (array_key_exists($name, self::$dataFileCache)) {
+            return self::$dataFileCache[$name] ?? [];
+        }
+
+        $path = $this->resolveDataPath($name);
+        if (!$path) {
+            self::$dataFileCache[$name] = [];
+
+            return [];
+        }
+
+        try {
+            $decoded = json_decode(File::get($path), true);
+            self::$dataFileCache[$name] = is_array($decoded) ? $decoded : [];
+        } catch (\Throwable) {
+            self::$dataFileCache[$name] = [];
+        }
+
+        return self::$dataFileCache[$name];
     }
 
     /**

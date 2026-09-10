@@ -1,0 +1,6 @@
+{
+  "_comment": "Overrides por capítulo em relação a red_letter_gospels.json. Use \"none\" para nenhum vermelho no capítulo.",
+  "lk": {
+    "3": "none"
+  }
+}

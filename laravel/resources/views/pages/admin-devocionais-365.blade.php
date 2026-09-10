@@ -324,7 +324,7 @@
                     <li>O leitor acompanha o capítulo sugerido na página pública do cartão.</li>
                 </ul>
                 <div class="row" style="margin-top:16px">
-                    <a class="btn" href="/bible" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Bíblia</a>
+                    <a class="btn" href="/bibliaking" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Bíblia</a>
                     <a class="btn btn-secondary" href="#" id="link-biblia-api"><i class="fas fa-link"></i> Bíblia (URL da API)</a>
                     <a class="btn btn-secondary" href="/dashboard"><i class="fas fa-th-large"></i> Ir ao painel</a>
                 </div>

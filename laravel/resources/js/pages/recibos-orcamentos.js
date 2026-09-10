@@ -1,5 +1,6 @@
 /** recibos-orcamentos — Vite entry (extracted inline) */
 import '@legacy/css/recibos-modulo-mobile.css';
+import '@legacy/js/ck-auth-gate.js';
 
 (function () {
             var origin = (window.location && window.location.origin) || 'https://www.conectaking.com.br';
@@ -27,7 +28,9 @@ tailwind.config = {
             },
         };
 
-(function() {
+(async function() {
+    if (!(await window.CkAuth.requireAuth('/login?redirect=' + encodeURIComponent(location.pathname + location.search)))) return;
+
     // Usar a mesma base da API do dashboard (banner/carrossel). Assim o upload de logo usa o mesmo servidor e CORS.
     var PROD_API_BASE = 'https://www.conectaking.com.br';
     var host = window.location.hostname || '';
@@ -59,17 +62,6 @@ tailwind.config = {
         if (!id || !API_SETTINGS) return;
         fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ lastDocumentId: parseInt(id, 10) || id }), credentials: 'include' }).catch(function() {});
     }
-
-    // Sem token: manda para login Laravel
-    (function checkOrigin() {
-        try {
-            var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
-            if (!token) {
-                window.location.replace('/login?redirect=' + encodeURIComponent(location.pathname + location.search));
-                return;
-            }
-        } catch (e) {}
-    })();
 
     function getAuthHeaders(extra) {
         var h = extra ? Object.assign({}, extra) : {};

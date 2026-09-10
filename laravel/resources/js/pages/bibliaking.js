@@ -1,11 +1,14 @@
 /** Bibliaking / painel Bíblia — Vite entry (restored from biblePanel.ejs) */
-(function () {
+import '@legacy/js/ck-auth-gate.js';
+
+(async function () {
+            if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
             var SESSION_KEY = 'bible_panel_item_id';
             var API = (window.API_BASE || window.API_URL || window.location.origin || '').replace(/\/$/, '');
             function authHeaders(extra) {
                 var h = Object.assign({ 'Accept': 'application/json' }, extra || {});
                 try {
-                    var t = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+                    var t = (window.CkAuth && window.CkAuth.lsToken()) || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
                     if (t) h['Authorization'] = 'Bearer ' + t;
                 } catch (e) {}
                 return h;

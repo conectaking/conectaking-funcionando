@@ -9,6 +9,7 @@ use App\Services\CartaoVirtual\KingSelectionFaceService;
 use App\Services\CartaoVirtual\KingSelectionMediaService;
 use App\Services\CartaoVirtual\KingSelectionSalesService;
 use App\Services\CartaoVirtual\R2StorageService;
+use App\Support\UploadedFileValidator;
 use Illuminate\Http\Request;
 
 class KingSelectionAdminController extends Controller
@@ -115,18 +116,21 @@ class KingSelectionAdminController extends Controller
             return response()->json(['message' => 'Arquivo é obrigatório'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getSize() > 30 * 1024 * 1024) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Arquivo muito grande (limite 30MB). Envie uma foto menor.',
-            ], 413)->header('X-Conecta-Engine', 'laravel');
+        $check = UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+            $body = $status === 413
+                ? ['success' => false, 'message' => $check['message']]
+                : ['message' => $check['message'] ?? 'Arquivo inválido.'];
+
+            return response()->json($body, $status)->header('X-Conecta-Engine', 'laravel');
         }
 
         $r = $this->admin->uploadProxy(
             (string) $request->attributes->get('auth_user_id'),
             (int) $id,
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'application/octet-stream'),
+            $check['binary'],
+            $check['mime'],
             (string) ($request->input('original_name') ?: $request->input('originalName') ?: $file->getClientOriginalName() ?: 'foto'),
             (int) ($request->input('order') ?: 0),
             $request->input('folder_id') ?? $request->input('folderId'),
@@ -250,18 +254,21 @@ class KingSelectionAdminController extends Controller
             return response()->json(['message' => 'Arquivo é obrigatório'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getSize() > 30 * 1024 * 1024) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Arquivo muito grande (limite 30MB).',
-            ], 413)->header('X-Conecta-Engine', 'laravel');
+        $check = UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+            $body = $status === 413
+                ? ['success' => false, 'message' => $check['message']]
+                : ['message' => $check['message'] ?? 'Arquivo inválido.'];
+
+            return response()->json($body, $status)->header('X-Conecta-Engine', 'laravel');
         }
 
         $r = $this->admin->uploadWatermark(
             (string) $request->attributes->get('auth_user_id'),
             (int) $id,
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/png'),
+            $check['binary'],
+            $check['mime'],
             (string) ($file->getClientOriginalName() ?: 'watermark.png'),
             (string) ($request->query('which') ?: $request->input('which') ?: ''),
             $this->r2
@@ -277,18 +284,21 @@ class KingSelectionAdminController extends Controller
             return response()->json(['message' => 'Arquivo é obrigatório'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getSize() > 30 * 1024 * 1024) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Arquivo muito grande (limite 30MB).',
-            ], 413)->header('X-Conecta-Engine', 'laravel');
+        $check = UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+            $body = $status === 413
+                ? ['success' => false, 'message' => $check['message']]
+                : ['message' => $check['message'] ?? 'Arquivo inválido.'];
+
+            return response()->json($body, $status)->header('X-Conecta-Engine', 'laravel');
         }
 
         $r = $this->admin->uploadThankYouImage(
             (string) $request->attributes->get('auth_user_id'),
             (int) $id,
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/png'),
+            $check['binary'],
+            $check['mime'],
             (string) ($file->getClientOriginalName() ?: 'thank-you.png'),
             $this->r2
         );
@@ -799,17 +809,20 @@ class KingSelectionAdminController extends Controller
             return response()->json(['message' => 'Arquivo de capa é obrigatório.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getSize() > 30 * 1024 * 1024) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Arquivo muito grande (limite 30MB).',
-            ], 413)->header('X-Conecta-Engine', 'laravel');
+        $check = UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+            $body = $status === 413
+                ? ['success' => false, 'message' => $check['message']]
+                : ['message' => $check['message'] ?? 'Arquivo inválido.'];
+
+            return response()->json($body, $status)->header('X-Conecta-Engine', 'laravel');
         }
         $r = $this->admin->uploadLinkCover(
             (string) $request->attributes->get('auth_user_id'),
             (int) $id,
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/jpeg'),
+            $check['binary'],
+            $check['mime'],
             (string) ($file->getClientOriginalName() ?: 'link-cover.jpg'),
             $this->r2
         );
@@ -843,18 +856,21 @@ class KingSelectionAdminController extends Controller
             return response()->json(['message' => 'Arquivo editado é obrigatório.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getSize() > 30 * 1024 * 1024) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Arquivo muito grande (limite 30MB).',
-            ], 413)->header('X-Conecta-Engine', 'laravel');
+        $check = UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+            $body = $status === 413
+                ? ['success' => false, 'message' => $check['message']]
+                : ['message' => $check['message'] ?? 'Arquivo inválido.'];
+
+            return response()->json($body, $status)->header('X-Conecta-Engine', 'laravel');
         }
         $r = $this->admin->editedUpload(
             (string) $request->attributes->get('auth_user_id'),
             (int) $id,
             (int) $photoId,
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/jpeg'),
+            $check['binary'],
+            $check['mime'],
             (string) ($file->getClientOriginalName() ?: 'edited.jpg'),
             $this->r2
         );
@@ -912,17 +928,20 @@ class KingSelectionAdminController extends Controller
             return response()->json(['message' => 'Arquivo é obrigatório'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getSize() > 30 * 1024 * 1024) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Arquivo muito grande (limite 30MB).',
-            ], 413)->header('X-Conecta-Engine', 'laravel');
+        $check = UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+            $body = $status === 413
+                ? ['success' => false, 'message' => $check['message']]
+                : ['message' => $check['message'] ?? 'Arquivo inválido.'];
+
+            return response()->json($body, $status)->header('X-Conecta-Engine', 'laravel');
         }
         $r = $this->admin->replacePhotoProxy(
             (string) $request->attributes->get('auth_user_id'),
             (int) $photoId,
-            (string) file_get_contents($file->getRealPath()),
-            (string) ($file->getMimeType() ?: 'image/jpeg'),
+            $check['binary'],
+            $check['mime'],
             (string) ($request->input('original_name') ?: $file->getClientOriginalName() ?: 'foto.jpg'),
             $this->r2
         );

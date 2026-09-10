@@ -46,18 +46,34 @@
     const container = document.getElementById('wallet-brick-container');
     if (!container) return;
 
-    const token = localStorage.getItem('conectaKingToken');
-    let user = null;
-    try {
-        const userStr = localStorage.getItem('conectaKingUser');
-        if (userStr) user = JSON.parse(userStr);
-    } catch (e) {
-        user = null;
-    }
+    (async function () {
+        const token = localStorage.getItem('conectaKingToken');
+        let user = null;
+        try {
+            const userStr = localStorage.getItem('conectaKingUser');
+            if (userStr) user = JSON.parse(userStr);
+        } catch (e) {
+            user = null;
+        }
 
-    if (token && user) {
-        container.innerHTML = '<a href="/dashboard" class="btn btn-secondary btn-full">Acessar Painel</a>';
-    } else {
+        if (token && user) {
+            container.innerHTML = '<a href="/dashboard" class="btn btn-secondary btn-full">Acessar Painel</a>';
+            return;
+        }
+
+        try {
+            const r = await fetch('/api/account/status', {
+                credentials: 'include',
+                headers: { Accept: 'application/json' },
+                cache: 'no-store',
+            });
+            if (r.ok) {
+                try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+                container.innerHTML = '<a href="/dashboard" class="btn btn-secondary btn-full">Acessar Painel</a>';
+                return;
+            }
+        } catch (e) {}
+
         container.innerHTML = '<a href="/login" class="btn btn-primary btn-full">Fazer Login</a>';
-    }
+    })();
 });

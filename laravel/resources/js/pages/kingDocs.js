@@ -1,4 +1,6 @@
 /** kingDocs — Vite entry (extracted inline, icons sanitized) */
+import '@legacy/js/ck-auth-gate.js';
+
 (function () {
       try {
         var params = new URLSearchParams(window.location.search || '');
@@ -2824,10 +2826,12 @@
 
   async function loadProfileHints() {
     const tok = getToken();
-    if (!tok) return;
+    if (!tok && window.CkAuth) {
+      if (!(await window.CkAuth.probeCookieAuth())) return;
+    } else if (!tok) return;
     if (vaultHasSavedName()) return;
     try {
-      const r = await fetch(api('/api/account/status'), { headers: authHeaders() });
+      const r = await fetch(api('/api/account/status'), { headers: authHeaders(), credentials: 'include' });
       if (!r.ok) return;
       const u = await r.json();
       var hero = document.getElementById('sh-name');

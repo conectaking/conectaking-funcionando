@@ -1,5 +1,6 @@
 /** dashboard-recibos-orcamentos — Vite entry (extracted inline) */
 import '@legacy/css/recibos-modulo-mobile.css';
+import '@legacy/js/ck-auth-gate.js';
 
 (function () {
             var origin = (window.location && window.location.origin) || 'https://www.conectaking.com.br';
@@ -22,18 +23,14 @@ tailwind.config = {
             },
         };
 
-(function() {
+(async function() {
     var host = window.location.hostname || '';
     var port = String(window.location.port || '');
     var isLocal = /^127\.0\.0\.1|localhost$/i.test(host);
     var portasEstaticas = ['5500', '3000', '8080', '5173', '4173'];
-    try {
-        var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
-        if (isLocal && portasEstaticas.indexOf(port) >= 0 && !token) {
-            window.location.replace('/login');
-            return;
-        }
-    } catch (e) {}
+    if (isLocal && portasEstaticas.indexOf(port) >= 0) {
+        if (!(await window.CkAuth.requireAuth('/login'))) return;
+    }
     var apiBase = (typeof window !== 'undefined' && (window.API_BASE || window.CONECTAKING_API_BASE));
     var PROD_API_BASE = 'https://www.conectaking.com.br';
     var apiOrigin = apiBase ? (apiBase.replace(/\/$/, '')) : ((typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin.replace(/\/$/, '') : PROD_API_BASE);

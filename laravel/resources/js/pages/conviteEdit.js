@@ -1,20 +1,21 @@
 /** conviteEdit — Vite entry (extracted inline) */
-(function() {
+import '@legacy/js/ck-auth-gate.js';
+
+(async function() {
+  if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
+
   const API = (window.API_URL || window.API_BASE || window.location.origin).replace(/\/$/, '');
   const qs = new URLSearchParams(location.search);
   const itemId = qs.get('itemId');
-  const token = localStorage.getItem('conectaKingToken');
-  if (!token) {
-    location.href = '/login?returnUrl=' + encodeURIComponent(location.href);
-    return;
-  }
+  const token = window.CkAuth.lsToken();
   if (!itemId) {
     document.getElementById('err').textContent = 'Informe itemId na URL (/conviteEdit?itemId=123)';
     document.getElementById('err').classList.add('show');
     return;
   }
 
-  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = 'Bearer ' + token;
 
   function showErr(msg) {
     const el = document.getElementById('err');

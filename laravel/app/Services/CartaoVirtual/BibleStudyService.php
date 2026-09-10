@@ -77,6 +77,54 @@ class BibleStudyService
     }
 
     /**
+     * @return array{title:?string,content:?string}|null
+     */
+    public function getChapterStudy(string $bookId, int $chapter): ?array
+    {
+        $id = trim($bookId);
+        if ($id === '' || $chapter < 1) {
+            return null;
+        }
+        try {
+            $row = DB::selectOne(
+                'SELECT title, content FROM bible_chapter_studies WHERE book_id = ? AND chapter_number = ? LIMIT 1',
+                [$id, $chapter]
+            );
+            if (!$row) {
+                return null;
+            }
+
+            return [
+                'title' => $row->title !== null ? (string) $row->title : null,
+                'content' => $row->content !== null ? (string) $row->content : null,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('bible.study.chapter', ['book' => $id, 'chapter' => $chapter, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Divide conteúdo em seções por cabeçalhos ### ou linhas ALL-CAPS.
+     *
+     * @return list<array{id:string,title:string,body:string,html?:string}>
+     */
+    public function parseStudySections(string $raw): array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [];
+        }
+
+        if (preg_match('/^###\s/m', $raw) || str_contains($raw, "\n### ")) {
+            return $this->splitOnMarkdownHeaders($raw);
+        }
+
+        return $this->splitOnAllCapsHeaders($raw);
+    }
+
+    /**
      * Escapa HTML e transforma "Nome do livro + capítulo" em links.
      */
     public function prepareStudyContentHtml(string $raw, string $slug, string $returnTo = ''): string
@@ -119,5 +167,85 @@ class BibleStudyService
 
             return '<a href="'.e($href).'" class="bible-ref-link" target="_blank" rel="noopener">'.e($m[0]).'</a>';
         }, $out) ?: $out;
+    }
+
+    /**
+     * @return list<array{id:string,title:string,body:string}>
+     */
+    private function splitOnMarkdownHeaders(string $raw): array
+    {
+        $parts = preg_split('/^###\s+/m', $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $sections = [];
+        foreach ($parts as $part) {
+            $lines = explode("\n", $part, 2);
+            $title = trim($lines[0] ?? '');
+            $body = trim($lines[1] ?? '');
+            if ($title === '') {
+                continue;
+            }
+            $sections[] = $this->makeStudySection($title, $body);
+        }
+
+        return $sections;
+    }
+
+    /**
+     * @return list<array{id:string,title:string,body:string}>
+     */
+    private function splitOnAllCapsHeaders(string $raw): array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $raw) ?: [];
+        $sections = [];
+        $currentTitle = null;
+        $currentBody = [];
+
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed !== '' && $this->isAllCapsHeading($trimmed)) {
+                if ($currentTitle !== null || trim(implode("\n", $currentBody)) !== '') {
+                    $sections[] = $this->makeStudySection((string) $currentTitle, implode("\n", $currentBody));
+                }
+                $currentTitle = $trimmed;
+                $currentBody = [];
+            } else {
+                $currentBody[] = $line;
+            }
+        }
+
+        if ($currentTitle !== null || trim(implode("\n", $currentBody)) !== '') {
+            $sections[] = $this->makeStudySection((string) $currentTitle, implode("\n", $currentBody));
+        }
+
+        if (count($sections) === 1 && ($sections[0]['title'] ?? '') === '') {
+            return [];
+        }
+
+        return array_values(array_filter($sections, static fn ($s) => ($s['title'] ?? '') !== ''));
+    }
+
+    /**
+     * @return array{id:string,title:string,body:string}
+     */
+    private function makeStudySection(string $title, string $body): array
+    {
+        $slug = preg_replace('/[^a-z0-9]+/u', '-', mb_strtolower(trim($title))) ?: 'section';
+
+        return [
+            'id' => trim($slug, '-') ?: 'section',
+            'title' => trim($title),
+            'body' => trim($body),
+        ];
+    }
+
+    private function isAllCapsHeading(string $line): bool
+    {
+        if (mb_strlen($line) < 3) {
+            return false;
+        }
+        if (!preg_match('/\p{L}/u', $line)) {
+            return false;
+        }
+
+        return !preg_match('/\p{Ll}/u', $line);
     }
 }

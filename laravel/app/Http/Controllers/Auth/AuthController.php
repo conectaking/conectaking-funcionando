@@ -89,7 +89,7 @@ class AuthController extends Controller
 
     private function tokenCookieMinutes(): int
     {
-        $raw = strtolower(trim((string) (env('JWT_EXPIRES_IN') ?: '7d')));
+        $raw = strtolower(trim((string) (env('JWT_EXPIRES_IN') ?: '24h')));
         if (preg_match('/^(\d+)([smhd])$/', $raw, $m)) {
             $n = (int) $m[1];
             $unit = $m[2];
@@ -103,6 +103,6 @@ class AuthController extends Controller
             return max(1, (int) ceil($seconds / 60));
         }
 
-        return 7 * 24 * 60;
+        return 24 * 60;
     }
 }

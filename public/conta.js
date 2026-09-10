@@ -1,13 +1,26 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('conectaKingToken');
+document.addEventListener('DOMContentLoaded', async () => {
+    let token = localStorage.getItem('conectaKingToken') || '';
     if (!token) {
-        window.location.href = '/login';
-        return;
+        try {
+            const r = await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+            if (!r.ok) {
+                window.location.href = '/login';
+                return;
+            }
+            try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+        } catch (e) {
+            window.location.href = '/login';
+            return;
+        }
     }
 
     const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-    const HEADERS_JSON = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-    const HEADERS_AUTH = { 'Authorization': `Bearer ${token}` };
+    const HEADERS_JSON = { 'Content-Type': 'application/json' };
+    const HEADERS_AUTH = {};
+    if (token) {
+        HEADERS_JSON.Authorization = `Bearer ${token}`;
+        HEADERS_AUTH.Authorization = `Bearer ${token}`;
+    }
 
     const photoUploadArea = document.getElementById('photo-upload-area');
     const photoPreview = document.getElementById('profile-photo-preview');
@@ -26,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadProfileData() {
         try {
-            const response = await fetch(`${API_URL}/api/profile`, { headers: HEADERS_JSON });
+            const response = await fetch(`${API_URL}/api/profile`, { credentials: 'include', headers: HEADERS_JSON });
             if (!response.ok) throw new Error('Falha ao carregar dados do perfil.');
             
             const data = await response.json();
@@ -54,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadSubscriptionData() {
     try {
-        const response = await fetch(`${API_URL}/api/account/status`, { headers: HEADERS_JSON });
+        const response = await fetch(`${API_URL}/api/account/status`, { credentials: 'include', headers: HEADERS_JSON });
         if (!response.ok) throw new Error('Falha ao carregar dados da assinatura.');
         
         const sub = await response.json();

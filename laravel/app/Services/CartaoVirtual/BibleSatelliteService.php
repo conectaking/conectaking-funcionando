@@ -116,6 +116,8 @@ class BibleSatelliteService
             return ['status' => 404, 'message' => 'Capítulo não encontrado.'];
         }
 
+        $chapterData = $this->text->enrichChapter($chapterData);
+
         $total = (int) $chapterData['totalChapters'];
         $ch = (int) $chapterData['chapter'];
         $prev = $ch > 1 ? $ch - 1 : null;
@@ -123,18 +125,30 @@ class BibleSatelliteService
         $tParam = $trans !== 'nvi' ? '?translation='.urlencode($trans) : '';
         $hasStudy = in_array($bookId, $this->studies->bookIdsWithFullStudy(), true);
 
+        $chapterStudy = $this->studies->getChapterStudy($bookId, $ch);
+        $chapterStudyHtml = '';
+        if ($chapterStudy && !empty($chapterStudy['content'])) {
+            $returnTo = '/'.$ctx['slug'].'/bible/'.$bookId.'/'.$ch.$tParam;
+            $chapterStudyHtml = $this->studies->prepareStudyContentHtml($chapterStudy['content'], $ctx['slug'], $returnTo);
+        }
+
         return [
             'status' => 200,
             'data' => [
                 'slug' => $ctx['slug'],
                 'translation' => $trans,
+                'bookId' => $bookId,
+                'chapter' => $ch,
                 'chapterData' => $chapterData,
+                'chapterStudy' => $chapterStudy,
+                'chapterStudyHtml' => $chapterStudyHtml,
                 'hubUrl' => '/'.$ctx['slug'].'/biblia',
                 'profileUrl' => '/'.$ctx['slug'],
                 'studyUrl' => $hasStudy ? '/'.$ctx['slug'].'/biblia/estudos-livro/'.$bookId : null,
                 'prevUrl' => $prev ? '/'.$ctx['slug'].'/bible/'.$bookId.'/'.$prev.$tParam : null,
                 'nextUrl' => $next ? '/'.$ctx['slug'].'/bible/'.$bookId.'/'.$next.$tParam : null,
                 'tParam' => $tParam,
+                'markReadApi' => '/api/bible/mark-read',
             ],
         ];
     }
@@ -163,8 +177,17 @@ class BibleSatelliteService
         $hubUrl = '/'.$ctx['slug'].'/biblia';
         $returnTo = '/'.$ctx['slug'].'/biblia/estudos-livro/'.rawurlencode($bookId);
         $contentHtml = '';
+        $sections = [];
         if ($study && !empty($study['content'])) {
             $contentHtml = $this->studies->prepareStudyContentHtml($study['content'], $ctx['slug'], $returnTo);
+            $sections = $this->studies->parseStudySections($study['content']);
+            foreach ($sections as $i => $sec) {
+                $sections[$i]['html'] = $this->studies->prepareStudyContentHtml(
+                    (string) ($sec['body'] ?? ''),
+                    $ctx['slug'],
+                    $returnTo
+                );
+            }
         }
 
         return [
@@ -178,6 +201,7 @@ class BibleSatelliteService
                 'readUrl' => '/'.$ctx['slug'].'/bible/'.$bookId.'/1',
                 'study' => $study,
                 'contentHtml' => $contentHtml,
+                'sections' => $sections,
             ],
         ];
     }

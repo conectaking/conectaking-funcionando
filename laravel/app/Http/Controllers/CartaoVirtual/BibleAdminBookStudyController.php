@@ -64,20 +64,23 @@ class BibleAdminBookStudyController extends Controller
 
             return $this->fail($msg, 400);
         }
-        if ($file->getSize() > 15 * 1024 * 1024) {
-            return $this->fail('Arquivo muito grande. Máximo 15 MB.', 400);
+        $ext = strtolower((string) $file->getClientOriginalExtension());
+        $allowedExt = ['doc', 'docx', 'pdf'];
+        if (! in_array($ext, $allowedExt, true)) {
+            return $this->fail('Apenas arquivos Word (.doc, .docx) ou PDF são permitidos.', 400);
         }
 
-        $ext = strtolower((string) $file->getClientOriginalExtension());
-        $mime = strtolower((string) ($file->getMimeType() ?: ''));
-        $allowedExt = ['doc', 'docx', 'pdf'];
-        $allowedMimes = [
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/pdf',
-        ];
-        if (!in_array($ext, $allowedExt, true) && !in_array($mime, $allowedMimes, true)) {
-            return $this->fail('Apenas arquivos Word (.doc, .docx) ou PDF são permitidos.', 400);
+        if ($ext === 'pdf') {
+            $check = \App\Support\UploadedFileValidator::assertPdf($file, 15 * 1024 * 1024);
+            if (! ($check['ok'] ?? false)) {
+                return $this->fail($check['message'] ?? 'Arquivo inválido.', 400);
+            }
+            $mime = $check['mime'];
+        } else {
+            // Word (.doc/.docx): sem validador binário disponível — confia na extensão
+            $mime = $ext === 'docx'
+                ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                : 'application/msword';
         }
 
         try {

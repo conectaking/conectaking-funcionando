@@ -1,4 +1,6 @@
 /** zerar-mes — Vite entry (extracted inline) */
+import '@legacy/js/ck-auth-gate.js';
+
 (function() {
             // Mesma regra do dashboard: produção por padrão; API local só com ?api=local ou localStorage useLocalApi
             var forceLocal = (typeof window !== 'undefined' && (
@@ -16,13 +18,16 @@
             }
         })();
         const API_URL = window.API_URL;
-        function getToken() { return localStorage.getItem('conectaKingToken'); }
+        function getToken() { return window.CkAuth ? window.CkAuth.lsToken() : (localStorage.getItem('conectaKingToken') || ''); }
         function getHeaders() {
             const t = getToken();
-            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (t || '') };
+            const h = { 'Content-Type': 'application/json' };
+            if (t) h.Authorization = 'Bearer ' + t;
+            return h;
         }
         function getAuthHeaders() {
-            return { 'Authorization': 'Bearer ' + (getToken() || '') };
+            const t = getToken();
+            return t ? { 'Authorization': 'Bearer ' + t } : {};
         }
 
         const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -69,10 +74,7 @@
         }
 
         async function loadTransactions() {
-            if (!getToken()) {
-                window.location.href = '/login?redirect=' + encodeURIComponent('/zerar-mes');
-                return;
-            }
+            if (window.CkAuth && !(await window.CkAuth.requireAuth('/login?redirect=' + encodeURIComponent('/zerar-mes')))) return;
             const { month, year } = getParams();
             document.getElementById('sel-month').value = month;
             const yearSel = document.getElementById('sel-year');
@@ -93,7 +95,7 @@
             const profileId = localStorage.getItem('finance_current_profile_id') || '';
             const url = API_URL + '/api/finance/transactions?limit=500&orderBy=transaction_date&orderDir=ASC&dateFrom=' + dateFrom + '&dateTo=' + dateTo + (profileId ? '&profile_id=' + profileId : '');
             try {
-                const res = await fetch(url, { headers: getAuthHeaders() });
+                const res = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
                 if (res.status === 401) {
                     window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
                     return;

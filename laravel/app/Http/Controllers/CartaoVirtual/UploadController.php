@@ -197,8 +197,14 @@ class UploadController extends Controller
             return response()->json(['success' => false, 'message' => 'Crop indisponível (GD).'], 503)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        $binary = file_get_contents($file->getRealPath()) ?: '';
-        $src = @imagecreatefromstring($binary);
+        $check = UploadedFileValidator::assertImage($file, self::MAX_MB * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+
+            return response()->json(['success' => false, 'message' => $check['message'] ?? 'Imagem inválida.'], $status)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $src = @imagecreatefromstring($check['binary']);
         if (!$src) {
             return response()->json(['success' => false, 'message' => 'Imagem inválida.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');

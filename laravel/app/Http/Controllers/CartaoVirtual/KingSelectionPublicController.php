@@ -179,10 +179,17 @@ class KingSelectionPublicController extends Controller
             return response()->json(['message' => 'Nenhuma imagem enviada.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
+        $check = \App\Support\UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+
+            return response()->json(['message' => $check['message'] ?? 'Imagem inválida.'], $status)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
         $face = app(\App\Services\CartaoVirtual\KingSelectionFaceService::class);
         $r = $face->enrollFaceAnonymous(
             $slug,
-            (string) file_get_contents($file->getRealPath()),
+            $check['binary'],
             $visitorId !== null ? (string) $visitorId : null
         );
 

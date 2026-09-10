@@ -1,5 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('conectaKingToken');
+document.addEventListener('DOMContentLoaded', async () => {
+    let token = (window.CkAuth && window.CkAuth.lsToken()) || localStorage.getItem('conectaKingToken') || '';
     let user = null;
     try {
         const userStr = localStorage.getItem('conectaKingUser');
@@ -11,17 +11,53 @@ document.addEventListener('DOMContentLoaded', () => {
         user = null;
     }
 
-    
-    // GUARDA DE SEGURAN?A
-    if (!token || !user || !user.isAdmin) {
+    function denyAccess() {
         alert('Acesso negado.');
         window.location.href = '/';
+    }
+
+    if (!token) {
+        try {
+            const ok = window.CkAuth
+                ? await window.CkAuth.probeCookieAuth()
+                : (await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' })).ok;
+            if (!ok) {
+                denyAccess();
+                return;
+            }
+        } catch (e) {
+            denyAccess();
+            return;
+        }
+    }
+
+    if (!user || !user.isAdmin) {
+        try {
+            const hdrs = { Accept: 'application/json' };
+            if (token) hdrs.Authorization = 'Bearer ' + token;
+            const r = await fetch('/api/account/status', { credentials: 'include', headers: hdrs, cache: 'no-store' });
+            if (!r.ok) {
+                denyAccess();
+                return;
+            }
+            user = await r.json();
+            try { localStorage.setItem('conectaKingUser', JSON.stringify(user)); } catch (e) {}
+        } catch (e) {
+            denyAccess();
+            return;
+        }
+    }
+
+    // GUARDA DE SEGURAN?A
+    if (!user || !user.isAdmin) {
+        denyAccess();
         return;
     }
 
     const API_BASE = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
     const API_URL = API_BASE + '/api/admin';
-    const HEADERS = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const HEADERS = { 'Content-Type': 'application/json' };
+    if (token) HEADERS.Authorization = 'Bearer ' + token;
 
     // Função para testar conectividade com a API
     async function testAPIConnectivity() {

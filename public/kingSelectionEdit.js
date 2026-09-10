@@ -19,7 +19,7 @@ function ksAppPage(name) {
   return `/${base}`;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (/kingSelectionEdit\.html/i.test(window.location.pathname)) {
     const sp = new URLSearchParams(window.location.search || '');
     const q = (sp.get('api') || '').toLowerCase() === 'local' ? '?api=local' : '';
@@ -58,11 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
     || localStorage.getItem('jwt')
     || '';
   if (!token) {
-    window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
-    return;
+    try {
+      const r = await fetch('/api/account/status', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+      if (!r.ok) {
+        window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      try { localStorage.setItem('conectaKingSession', '1'); } catch (_) {}
+    } catch (_) {
+      window.location.href = `${ksAppPage('login')}?returnUrl=${encodeURIComponent(window.location.href)}`;
+      return;
+    }
   }
-  const HEADERS = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-  const IMG_HEADERS = { 'Authorization': `Bearer ${token}` };
+  const HEADERS = { 'Content-Type': 'application/json' };
+  if (token) HEADERS.Authorization = `Bearer ${token}`;
+  const IMG_HEADERS = token ? { 'Authorization': `Bearer ${token}` } : {};
 
   async function ensureProfileItemId() {
     if (itemId) return String(itemId);

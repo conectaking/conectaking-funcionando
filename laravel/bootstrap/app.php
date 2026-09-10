@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Atrás do Caddy/Node (proxy /l)
         $middleware->trustProxies(at: '*');
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         // sendBeacon do cartão público (sem CSRF token)
         $middleware->validateCsrfTokens(except: [
             'log/*',

@@ -1,9 +1,11 @@
 /** configuracoes-recibos-orcamentos — Vite entry (extracted inline) */
 import '@legacy/css/recibos-modulo-mobile.css';
+import '@legacy/js/ck-auth-gate.js';
 
 tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#EAB308", "background-dark": "#0A0A0A", "card-dark": "#171717", "border-dark": "#262626" }, fontFamily: { display: ["Inter", "sans-serif"] } } } };
 
-(function() {
+(async function() {
+    if (!(await window.CkAuth.requireAuth('/login'))) return;
     var STORAGE_KEY = 'recibosOrcamentosCores';
     var ESCURIR_KEY = 'recibosOrcamentosEscurecer';
     var host = window.location.hostname || '';

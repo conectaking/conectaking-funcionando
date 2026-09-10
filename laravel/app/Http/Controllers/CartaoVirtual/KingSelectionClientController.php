@@ -205,17 +205,17 @@ class KingSelectionClientController extends Controller
             return response()->json(['message' => 'Arquivo muito grande (limite 30MB).'], 413)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        $mime = (string) ($file->getMimeType() ?: '');
-        if (! str_starts_with(strtolower($mime), 'image/')) {
-            return response()->json(['message' => 'Apenas imagens são permitidas'], 400)
+        $check = \App\Support\UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            return response()->json(['message' => $check['message'] ?? 'Apenas imagens são permitidas'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
         $sales = app(\App\Services\CartaoVirtual\KingSelectionSalesService::class);
         $r = $sales->submitClientPaymentProof(
             $payload,
             (string) ($request->input('slug') ?: $request->query('slug') ?: ''),
-            (string) file_get_contents($file->getRealPath()),
-            $mime,
+            $check['binary'],
+            $check['mime'],
             $request->input('note') !== null ? (string) $request->input('note') : null,
             $request->input('amount_cents')
         );
@@ -292,10 +292,17 @@ class KingSelectionClientController extends Controller
             return response()->json(['message' => 'Nenhuma imagem enviada.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
+        $check = \App\Support\UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+
+            return response()->json(['message' => $check['message'] ?? 'Imagem inválida.'], $status)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
         $face = app(\App\Services\CartaoVirtual\KingSelectionFaceService::class);
         $r = $face->enrollClientFaceImage(
             $payload,
-            (string) file_get_contents($file->getRealPath())
+            $check['binary']
         );
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
@@ -337,11 +344,18 @@ class KingSelectionClientController extends Controller
             return response()->json(['message' => 'Envie uma foto.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
+        $check = \App\Support\UploadedFileValidator::assertImage($file, 30 * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+
+            return response()->json(['message' => $check['message'] ?? 'Imagem inválida.'], $status)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
         $payload = (array) $request->attributes->get('ks_client', []);
         $face = app(\App\Services\CartaoVirtual\KingSelectionFaceService::class);
         $r = $face->searchFaceByPhoto(
             $payload,
-            (string) file_get_contents($file->getRealPath())
+            $check['binary']
         );
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
