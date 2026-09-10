@@ -3,16 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <script>
-    (function () {
-      try {
-        if (String(location.hostname || '').toLowerCase() === 'conectaking.com.br') {
-          location.replace('https://www.conectaking.com.br' + location.pathname + location.search + location.hash);
-        }
-      } catch (e) {}
-    })();
-  </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -20,10 +11,7 @@
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
-    rel="stylesheet">
-
-  <style>
+<style>
     :root {
       /* Tema V2 (preto + amarelo) */
       --ks-primary: #facc15;

@@ -4,15 +4,19 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Headers de segurança + CSP em enforce (CDN/inline atuais ainda permitidos).
+ * Headers de segurança + CSP com nonce (scripts).
+ * Injeta nonce em todo <script> HTML sem nonce, p/ Vite + /config.js + /vendor + inline residual.
  */
 class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $nonce = Vite::useCspNonce();
+
         /** @var Response $response */
         $response = $next($request);
 
@@ -31,18 +35,20 @@ class SecurityHeaders
             $response->headers->set('X-XSS-Protection', '0');
         }
 
+        $this->injectScriptNonces($response, $nonce);
+
         if (! $response->headers->has('Content-Security-Policy')) {
-            // Libs principais em /vendor (self). Inline legado ainda exige unsafe-inline.
-            // Fontes Google + embeds YouTube/Instagram/tag mantidos.
+            // script: self + nonce (sem unsafe-inline). style ainda unsafe-inline (estilos Blade).
+            // Fontes self-host; Google Fonts removido do CSP.
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
                 "object-src 'none'",
                 "frame-ancestors 'self'",
                 "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
-                "script-src 'self' 'unsafe-inline'",
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-                "font-src 'self' data: https://fonts.gstatic.com",
+                "script-src 'self' 'nonce-{$nonce}'",
+                "style-src 'self' 'unsafe-inline'",
+                "font-src 'self' data:",
                 "img-src 'self' data: blob: https:",
                 "media-src 'self' blob: https:",
                 "connect-src 'self' https: wss:",
@@ -53,6 +59,40 @@ class SecurityHeaders
         }
 
         return $response;
+    }
+
+    private function injectScriptNonces(Response $response, string $nonce): void
+    {
+        $contentType = (string) $response->headers->get('Content-Type', '');
+        if ($contentType !== '' && ! str_contains($contentType, 'text/html')) {
+            return;
+        }
+
+        $content = $response->getContent();
+        if (! is_string($content) || $content === '' || ! str_contains($content, '<script')) {
+            return;
+        }
+
+        $updated = preg_replace_callback(
+            '/<script(\s[^>]*)?>/i',
+            static function (array $m) use ($nonce): string {
+                $attrs = $m[1] ?? '';
+                if ($attrs !== '' && preg_match('/\bnonce\s*=/', $attrs)) {
+                    return $m[0];
+                }
+
+                return '<script nonce="'.htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8').'"'.($attrs === '' ? '' : $attrs).'>';
+            },
+            $content
+        );
+
+        if (is_string($updated) && $updated !== $content) {
+            $response->setContent($updated);
+            // Conteúdo mudou: evita Content-Length stale
+            if ($response->headers->has('Content-Length')) {
+                $response->headers->set('Content-Length', (string) strlen($updated));
+            }
+        }
     }
 
     private function allowsCamera(string $path): bool

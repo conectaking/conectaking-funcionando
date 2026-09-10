@@ -18,6 +18,13 @@ class LegacyPageController extends Controller
         $name = trim(str_replace('\\', '/', $name), '/');
         $name = preg_replace('/\.html?$/i', '', $name) ?? '';
 
+        if ($name === 'admin-planos') {
+            return redirect('/admin', 301);
+        }
+        if ($name === 'admin-prosperidade-31') {
+            return redirect('/admin-devocionais-365#prosperidade', 301);
+        }
+
         if ($name !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $name) === 1) {
             $view = 'pages.'.$name;
             if (View::exists($view)) {

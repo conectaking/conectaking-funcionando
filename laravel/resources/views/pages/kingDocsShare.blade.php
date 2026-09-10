@@ -4,9 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Partilha King Docs</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet"/>
-  <style>
+<style>
     :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; }
     * { box-sizing: border-box; }
     body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:1rem; }

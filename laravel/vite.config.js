@@ -14,6 +14,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/fonts.css',
                 'resources/js/app.js',
                 'resources/js/pages/login.js',
                 'resources/js/pages/registro.js',

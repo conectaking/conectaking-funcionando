@@ -26,10 +26,8 @@
     <meta http-equiv="Pragma" content="cache">
     <title>{{ $d['display_name'] ?? 'Conecta King' }}</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    @vite(['resources/css/fonts.css'])
+<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="/css/profile.css?v=laravel-card-6">
     <link rel="stylesheet" href="/css/profile-wifi.css?v=laravel-card-6" id="ck-wifi-css" disabled>
     <script src="/vendor/qrcodejs/qrcode.min.js"></script>

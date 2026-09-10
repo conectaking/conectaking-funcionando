@@ -1,3 +1,4 @@
+import '../vendor-globals.js';
 /**
  * Lista de convidados — Vite entry.
  * formPageEdit + integração; guestListEdit.js só em modo manage / sem itemId.

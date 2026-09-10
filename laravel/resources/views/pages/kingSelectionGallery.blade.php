@@ -46,8 +46,8 @@
     }
   </style>
 </head>
-<body class="bg-black text-white">
-  <script>document.addEventListener('contextmenu', (e)=>e.preventDefault());</script>
+<body class="bg-black text-white" oncontextmenu="return false;">
+  
 
   <div class="ks-topbar">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">

@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Configurar tela de finalização — King Selection</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
+  @vite(['resources/css/fonts.css'])
+<style>
     :root {
       --ks-primary: #facc15;
       --ks-black: #0a0a0a;

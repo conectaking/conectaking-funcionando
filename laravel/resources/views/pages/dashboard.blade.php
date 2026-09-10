@@ -6,31 +6,10 @@
     <title>Meu Painel - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <script src="/api-config.js"></script>
-    <!-- Navegação para páginas externas do sidebar (King Docs, Bíblia, etc.):
+<!-- Navegação para páginas externas do sidebar (King Docs, Bíblia, etc.):
          o dashboard.js faz preventDefault em .nav-link — permitir sair do SPA. -->
-    <script>
-    (function () {
-      document.addEventListener('click', function (e) {
-        var a = e.target && e.target.closest && e.target.closest('.sidebar a.nav-link, .sidebar-nav a, .sidebar-footer a');
-        if (!a) return;
-        if (a.getAttribute('data-target')) return; // painel interno
-        var href = (a.getAttribute('href') || '').trim();
-        if (!href || href === '#' || href.charAt(0) === '#') return;
-        var isHtml = href.indexOf('.html') !== -1;
-        var isAbs = /^https?:\/\//i.test(href);
-        var isAppPath = href.charAt(0) === '/' && href.indexOf('/dashboard') !== 0;
-        if (!isHtml && !isAbs && !isAppPath) return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        window.location.assign(a.href);
-      }, true);
-    })();
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/js/ck-inline/pages-dashboard-1.js"></script>
+<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -55,26 +34,7 @@
         #share-qr-art-card { position: relative; }
     </style>
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
-    <script>
-    (function (w) {
-        function ensureCoreSidebarNavStub() {
-            try {
-                var nav = document.querySelector('#sidebar .sidebar-nav, aside .sidebar-nav, nav.sidebar-nav');
-                if (nav) { nav.style.display = ''; nav.style.visibility = ''; nav.classList.remove('hidden', 'd-none'); }
-                ['.sidebar-nav a[data-target="editar-pane"]', '.sidebar-nav a[data-target="compartilhar-pane"]', '.sidebar-nav a[data-target="relatorios-pane"]', '#bible-sidebar-link', '#logout-btn', '#assinatura-link'].forEach(function (sel) {
-                    var el = document.querySelector(sel);
-                    if (!el) return;
-                    el.style.display = '';
-                    el.style.visibility = '';
-                    el.removeAttribute('hidden');
-                    el.classList.remove('hidden', 'd-none');
-                });
-            } catch (e) {}
-        }
-        w.applyModulesVisibility = function (user) { if (user) { /* noop até o script real carregar */ } ensureCoreSidebarNavStub(); };
-        w.initModulesByPlan = function () {};
-    })(typeof window !== 'undefined' ? window : this);
-    </script>
+    <script src="/js/ck-inline/pages-dashboard-2.js"></script>
 
     <style>
     /* Detalhes expansíveis: orçamento e arquétipo (aparecem abaixo da linha) */
@@ -150,88 +110,11 @@
     <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css" />
     <script src="/vendor/cropperjs/cropper.min.js"></script>
     <script src="/vendor/sortablejs/Sortable.min.js"></script>
-    <script>
-    (function () {
-      function loadScript(src) {
-        return new Promise(function (resolve, reject) {
-          var s = document.createElement('script');
-          s.src = src;
-          s.async = true;
-          s.onload = function () { resolve(); };
-          s.onerror = function () { reject(new Error('Falha ao carregar ' + src)); };
-          document.head.appendChild(s);
-        });
-      }
-      function loadCss(href) {
-        return new Promise(function (resolve) {
-          if (document.querySelector('link[data-ck-lazy="' + href + '"]')) { resolve(); return; }
-          var l = document.createElement('link');
-          l.rel = 'stylesheet';
-          l.href = href;
-          l.setAttribute('data-ck-lazy', href);
-          l.onload = function () { resolve(); };
-          l.onerror = function () { resolve(); };
-          document.head.appendChild(l);
-        });
-      }
-      window.ckEnsureChart = function () {
-        if (typeof Chart !== 'undefined') return Promise.resolve(Chart);
-        if (window.__ckChartPromise) return window.__ckChartPromise;
-        window.__ckChartPromise = loadScript('/vendor/chartjs/chart.umd.min.js').then(function () { return window.Chart; });
-        return window.__ckChartPromise;
-      };
-      window.ckEnsureLeaflet = function () {
-        if (window.L) return Promise.resolve(window.L);
-        if (window.__ckLeafletPromise) return window.__ckLeafletPromise;
-        window.__ckLeafletPromise = loadCss('/vendor/leaflet/leaflet.css')
-          .then(function () { return loadScript('/vendor/leaflet/leaflet.js'); })
-          .then(function () { return window.L; });
-        return window.__ckLeafletPromise;
-      };
-    })();
-    </script>
+    <script src="/js/ck-inline/pages-dashboard-3.js"></script>
     @vite(['resources/js/pages/dashboard.js'])
 </head>
 <body>
-<script type="text/javascript">
-// REMOVER IMEDIATAMENTE qualquer texto "image.png" que seja filho direto do body
-(function() {
-    function removeBodyTextNodes() {
-        if (!document.body) return;
-        
-        // Remover todos os nós de texto filhos diretos do body que contenham "image.png"
-        const bodyChildren = Array.from(document.body.childNodes);
-        bodyChildren.forEach(node => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent || node.nodeValue || '';
-                if (text.includes('image.png') || text.trim().includes('image.png')) {
-                    try {
-                        document.body.removeChild(node);
-                    } catch(e) {
-                        node.textContent = '';
-                        node.nodeValue = '';
-                    }
-                }
-            }
-        });
-    }
-    
-    // Executar imediatamente
-    removeBodyTextNodes();
-    
-    // Executar quando body estiver disponível
-    if (document.body) {
-        removeBodyTextNodes();
-    } else {
-        document.addEventListener('DOMContentLoaded', removeBodyTextNodes);
-    }
-    
-    // Executar múltiplas vezes
-    setTimeout(removeBodyTextNodes, 0);
-    setTimeout(removeBodyTextNodes, 10);
-    setTimeout(removeBodyTextNodes, 50);
-})();
-</script>
+<script src="/js/ck-inline/pages-dashboard-4.js" type="text/javascript"></script>
     <style id="ck-dashboard-rescue-styles">
     #ck-plan-block-overlay{position:fixed;inset:0;z-index:2147483640;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
     #ck-plan-block-overlay[aria-hidden="false"]{display:flex}
@@ -253,83 +136,7 @@
             </div>
         </div>
     </div>
-    <script>
-    (function () {
-        function apiBase() {
-            try {
-                if (window.API_BASE) return String(window.API_BASE).replace(/\/$/, '');
-            } catch (e) {}
-            return (window.location && window.location.origin) ? window.location.origin : 'https://www.conectaking.com.br';
-        }
-        function clearAuthLocal() {
-            var keys = ['token', 'conectaKingToken', 'refreshToken', 'user', 'conectaKingUser', 'dashboard_last_pane'];
-            keys.forEach(function (k) {
-                try { localStorage.removeItem(k); } catch (e) {}
-                try { sessionStorage.removeItem(k); } catch (e2) {}
-            });
-        }
-        function exitToLogin() {
-            var rt = null;
-            try { rt = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken'); } catch (e) {}
-            var base = apiBase();
-            function go() {
-                clearAuthLocal();
-                window.location.href = '/';
-            }
-            if (rt) {
-                fetch(base + '/api/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refreshToken: rt }),
-                    credentials: 'include'
-                }).catch(function () {}).finally(go);
-            } else {
-                fetch(base + '/api/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}),
-                    credentials: 'include'
-                }).catch(function () {}).finally(go);
-            }
-        }
-        window.ckExitToLogin = exitToLogin;
-
-        var overlay = document.getElementById('ck-plan-block-overlay');
-        var msgEl = document.getElementById('ck-plan-block-msg');
-        var btnOk = document.getElementById('ck-plan-block-ok');
-        var btnExit = document.getElementById('ck-plan-block-exit');
-
-        function hidePlanOverlay() {
-            if (!overlay) return;
-            overlay.style.display = 'none';
-            overlay.setAttribute('aria-hidden', 'true');
-        }
-        function showPlanOverlay(text) {
-            if (!overlay || !msgEl) {
-                window.__ckOrigAlert(text);
-                return;
-            }
-            msgEl.textContent = text;
-            overlay.style.display = 'flex';
-            overlay.setAttribute('aria-hidden', 'false');
-        }
-
-        if (btnOk) btnOk.addEventListener('click', hidePlanOverlay);
-        if (btnExit) btnExit.addEventListener('click', exitToLogin);
-
-        var orig = window.alert;
-        window.__ckOrigAlert = orig;
-        window.alert = function (message) {
-            var text = String(message == null ? '' : message);
-            var planBlock = /acesso\s+negado/i.test(text) && (/upgrade|plano|assinatura|dashboard/i.test(text));
-            if (planBlock) {
-                showPlanOverlay(text);
-                return;
-            }
-            return orig.call(window, message);
-        };
-    })();
-    </script>
+    <script src="/js/ck-inline/pages-dashboard-5.js"></script>
     <div class="dashboard-layout"><button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Menu">
     <i class="fas fa-bars"></i>
 </button>
@@ -1562,56 +1369,7 @@
     </div>
 
     <!-- Restaurar painel correto IMEDIATAMENTE (evita flash e demora de 7s no mobile) -->
-    <script>
-    (function(){
-        function restorePane() {
-            var hash = (location.hash || '').trim();
-            if (!hash || hash === '#') {
-                try { var s = localStorage.getItem('dashboard_last_pane'); if (s) hash = s.charAt(0)==='#' ? s : '#'+s; } catch(e){}
-            }
-            if (!hash || hash === '#') return;
-            var tid = hash.replace(/^#/,'').trim();
-            if (tid.startsWith('finance-pane-tab-')) tid = 'finance-pane';
-            var map = {finance:'finance-pane','king-forms':'king-forms-pane',relatorios:'relatorios-pane',editar:'editar-pane',compartilhar:'compartilhar-pane',branding:'branding-pane','separacao-pacotes':'separacao-pacotes-pane',assinatura:'assinatura-pane','personalizar-link':'personalizar-link-pane'};
-            var editorTab = null;
-            if (map[tid]) tid = map[tid];
-            else if (tid === 'modelos-editor' || tid === 'info-editor' || tid === 'items-editor' || tid === 'personalizar-editor') { editorTab = tid; tid = 'editar-pane'; }
-            var target = document.getElementById(tid);
-            var panes = document.querySelectorAll('.main-content');
-            if (panes.length && target) {
-                panes.forEach(function(p){ p.classList.remove('active'); p.style.display='none'; });
-                target.classList.add('active'); target.style.display='flex';
-                var link = document.querySelector('.sidebar .nav-link[data-target="'+tid+'"]');
-                /* Itens da conta (Assinatura, ADM, etc.) ficam em .sidebar-footer: não limpar .active
-                   do .sidebar-nav — muitos temas usam .sidebar-nav .nav-link:not(.active){display:none}
-                   e o menu principal sumiria ao abrir #assinatura-pane. */
-                if (link) {
-                    var inFooter = !!(link.closest && link.closest('.sidebar-footer'));
-                    if (inFooter) {
-                        document.querySelectorAll('.sidebar-footer .nav-link').forEach(function(l){ l.classList.remove('active'); });
-                    } else {
-                        document.querySelectorAll('.sidebar-nav .nav-link').forEach(function(l){ l.classList.remove('active'); });
-                        document.querySelectorAll('.sidebar-footer .nav-link').forEach(function(l){ l.classList.remove('active'); });
-                    }
-                    link.classList.add('active');
-                }
-                if (editorTab) {
-                    var el = document.querySelector('[data-editor-target="'+editorTab+'"]');
-                    var pane = document.getElementById(editorTab);
-                    if (el && pane) {
-                        document.querySelectorAll('.editor-nav-link').forEach(function(l){ l.classList.remove('active'); });
-                        document.querySelectorAll('.editor-pane').forEach(function(p){ p.classList.remove('active'); });
-                        el.classList.add('active');
-                        pane.classList.add('active');
-                    }
-                }
-            }
-        }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restorePane);
-        else restorePane();
-        setTimeout(restorePane, 0);
-    })();
-    </script>
+    <script src="/js/ck-inline/pages-dashboard-6.js"></script>
 <div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true">
         <div class="wifi-modal-content">
             <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar">&times;</button>
@@ -1631,154 +1389,9 @@
             </div>
         </div>
     </div>
-    <script>
-        (function() {
-            function removeImagePngText() {
-                // Função para remover nós de texto que contenham "image.png"
-                function removeTextNodes(node) {
-                    if (!node) return;
-                    
-                    // Verificar todos os nós filhos
-                    const children = Array.from(node.childNodes || []);
-                    children.forEach(child => {
-                        if (child.nodeType === Node.TEXT_NODE) {
-                            const text = child.textContent || child.nodeValue || '';
-                            if (text.includes('image.png') || text.trim().includes('image.png')) {
-                                try {
-                                    child.parentNode && child.parentNode.removeChild(child);
-                                } catch(e) {
-                                    child.textContent = '';
-                                    child.nodeValue = '';
-                                }
-                            }
-                        } else if (child.nodeType === Node.ELEMENT_NODE) {
-                            // Verificar atributos que possam conter o texto
-                            Array.from(child.attributes || []).forEach(attr => {
-                                if (attr.value && attr.value.includes('image.png')) {
-                                    child.removeAttribute(attr.name);
-                                }
-                            });
-                            
-                            // Continuar recursivamente
-                            removeTextNodes(child);
-                        }
-                    });
-                }
-                
-                // Remover de todo o documento
-                removeTextNodes(document.body);
-                removeTextNodes(document.documentElement);
-                removeTextNodes(document.head);
-                
-                // Verificar e remover elementos específicos
-                const allElements = document.querySelectorAll('*');
-                allElements.forEach(el => {
-                    const text = el.textContent || '';
-                    const innerText = el.innerText || '';
-                    
-                    // Se o elemento contém apenas "image.png", remover
-                    if ((text.trim() === 'image.png' || innerText.trim() === 'image.png') && 
-                        el.children.length === 0) {
-                        el.style.display = 'none';
-                        el.style.visibility = 'hidden';
-                        el.style.opacity = '0';
-                        el.style.height = '0';
-                        el.style.width = '0';
-                        el.style.overflow = 'hidden';
-                        el.style.fontSize = '0';
-                        el.style.lineHeight = '0';
-                        try {
-                            el.remove();
-                        } catch(e) {
-                            el.textContent = '';
-                            el.innerHTML = '';
-                        }
-                    }
-                });
-                
-                // Verificar especificamente a área ao redor do botão mobile
-                const mobileToggle = document.querySelector('.mobile-menu-toggle');
-                if (mobileToggle && mobileToggle.parentNode) {
-                    const parent = mobileToggle.parentNode;
-                    const siblings = Array.from(parent.childNodes || []);
-                    siblings.forEach(sibling => {
-                        if (sibling !== mobileToggle && sibling.nodeType === Node.TEXT_NODE) {
-                            const text = sibling.textContent || sibling.nodeValue || '';
-                            if (text.includes('image.png') || text.trim().includes('image.png')) {
-                                try {
-                                    sibling.parentNode && sibling.parentNode.removeChild(sibling);
-                                } catch(e) {
-                                    sibling.textContent = '';
-                                    sibling.nodeValue = '';
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-            
-            // Executar imediatamente
-            removeImagePngText();
-            
-            // Executar quando DOM estiver pronto
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', removeImagePngText);
-            } else {
-                removeImagePngText();
-            }
-            
-            // Executar múltiplas vezes para garantir
-            setTimeout(removeImagePngText, 50);
-            setTimeout(removeImagePngText, 100);
-            setTimeout(removeImagePngText, 200);
-            setTimeout(removeImagePngText, 500);
-            setTimeout(removeImagePngText, 1000);
-            
-            // Observar mudanças no DOM
-            if (window.MutationObserver) {
-                const observer = new MutationObserver(function(mutations) {
-                    removeImagePngText();
-                });
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true,
-                    characterData: true
-                });
-            }
-        })();
-    </script>
+    <script src="/js/ck-inline/pages-dashboard-7.js"></script>
     <!-- Base da API: mesma origem Laravel/FrankenPHP (produção e Docker :8080) -->
-    <script>
-      (function () {
-        try {
-          var host = String(window.location.hostname || '').toLowerCase();
-          var port = String(window.location.port || '');
-          var params = new URLSearchParams(window.location.search || '');
-          var isLocalHost = host === 'localhost' || host === '127.0.0.1';
-          var isProdHost = host === 'conectaking.com.br' || host === 'www.conectaking.com.br' || host.endsWith('.conectaking.com.br') || host === 'cnking.bio' || host === 'www.cnking.bio';
-          var sameOrigin = String(window.location.origin || '').replace(/\/$/, '');
-          var wantLocal =
-            (params.get('api') || '').toLowerCase() === 'local' ||
-            (isLocalHost && localStorage.getItem('useLocalApi') === 'true');
-          if (isProdHost || (params.get('api') || '').toLowerCase() === 'prod') {
-            try { localStorage.removeItem('useLocalApi'); localStorage.setItem('useProductionApi', 'true'); } catch (e) {}
-            wantLocal = false;
-          }
-          // Local: preferir mesma origem (FrankenPHP :8080); portas estáticas → :8080
-          var localApiBase = sameOrigin;
-          if (isLocalHost && (port === '5500' || port === '3000' || port === '5173')) {
-            localApiBase = 'http://' + (host || 'localhost') + ':8080';
-          }
-          var prodApiBase = isProdHost ? sameOrigin : 'https://www.conectaking.com.br';
-          window.API_BASE = (wantLocal || isLocalHost) ? localApiBase : prodApiBase;
-          if (isProdHost) window.API_BASE = sameOrigin || prodApiBase;
-          window.API_URL = window.API_BASE;
-        } catch (e) {
-          window.API_BASE = window.API_BASE || window.API_URL || (window.location && window.location.origin) || 'https://www.conectaking.com.br';
-          window.API_URL = window.API_URL || window.API_BASE;
-        }
-      })();
-    </script>
+    <script src="/js/ck-inline/pages-dashboard-8.js"></script>
     <!-- api-config.js já no <head> (credentials + CSRF) -->
 </body>
 </html>

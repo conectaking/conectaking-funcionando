@@ -7,6 +7,6 @@
 </head>
 <body>
     <p>Redirecionando para <a href="/admin-devocionais-365#prosperidade">Bíblia &amp; Devocionais → Prosperidade antes de dormir</a>…</p>
-    <script>location.replace('/admin-devocionais-365#prosperidade');</script>
+    <script src="/js/ck-inline/pages-admin-prosperidade-31-1.js"></script>
 </body>
 </html>

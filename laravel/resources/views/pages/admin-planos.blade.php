@@ -7,6 +7,6 @@
 </head>
 <body>
     <p>Redirecionando para <a href="/admin">Admin</a>…</p>
-    <script>location.replace('/admin');</script>
+    <script src="/js/ck-inline/pages-admin-planos-1.js"></script>
 </body>
 </html>

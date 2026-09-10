@@ -81,124 +81,12 @@ class FrontLegacyController extends Controller
     }
 
     /**
-     * `api-config.js`: define `API_BASE` e faz patch ao `fetch()` para anexar o Bearer
-     * e reescrever `/api/*` para esta instância.
+     * `api-config.js`: alias compatível — mesmo conteúdo unificado de `/config.js`
+     * (API_BASE + CSRF/Bearer + rewrite). Fonte: public/config.js.
      */
     public function apiConfigJs(Request $request)
     {
-        $proto = trim(explode(',', (string) ($request->header('x-forwarded-proto') ?: $request->getScheme()))[0]);
-        $host = trim(explode(',', (string) ($request->header('x-forwarded-host') ?: $request->getHttpHost()))[0]);
-        $base = json_encode(rtrim($proto.'://'.$host, '/'), JSON_UNESCAPED_SLASHES);
-
-        $js = <<<JS
-        window.CONECTAKING_API_BASE = {$base};
-        window.API_BASE = window.API_BASE || {$base};
-        (function(){
-          var apiBase = {$base};
-          var nativeFetch = window.fetch;
-          if (!nativeFetch) return;
-          function getToken() {
-            try {
-              return (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token')) || '';
-            } catch (e) { return ''; }
-          }
-          function readCkCsrf() {
-            try {
-              var m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
-              return m ? decodeURIComponent(m[1]) : '';
-            } catch (e) { return ''; }
-          }
-          function writeHeader(h, key, value) {
-            if (!h) return;
-            if (typeof h.set === 'function') h.set(key, value);
-            else if (Object.prototype.toString.call(h) === '[object Headers]') h.set(key, value);
-            else h[key] = value;
-          }
-          function readHeader(h, key) {
-            if (!h) return '';
-            if (typeof h.get === 'function') return String(h.get(key) || '');
-            return String(h[key] || '');
-          }
-          function isMutating(method) {
-            var m = String(method || 'GET').toUpperCase();
-            return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
-          }
-          window.fetch = function(input, opts) {
-            opts = opts || {};
-            var url = typeof input === 'string' ? input : (input && input.url) || '';
-            var finalUrl = url;
-            if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
-              finalUrl = url.indexOf('http') === 0 ? url : apiBase.replace(/\/$/, '') + (url.indexOf('/') === 0 ? url : '/' + url);
-            } else if (url && url.indexOf('/api/') !== -1 && /^https?:\/\//i.test(url) && url.indexOf(apiBase) !== 0) {
-              try {
-                var uh = new URL(url).hostname.toLowerCase();
-                if (uh.indexOf('conectaking.com.br') !== -1 || uh === 'cnking.bio' || uh === 'www.cnking.bio' || /\.onrender\.com$/i.test(uh)) {
-                  finalUrl = url.replace(/^https?:\/\/[^\/]+/, apiBase);
-                }
-              } catch (e) {}
-            }
-            var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking.com.br') !== -1)) || (url && url.indexOf('/api/') === 0);
-            function applyAuthAndCsrf(o) {
-              if (!isApiUrl) return o;
-              if (o.credentials == null) o.credentials = 'include';
-              var headers = o.headers || (o.headers = {});
-              function readAuth(h) {
-                if (!h) return '';
-                if (typeof h.get === 'function') return String(h.get('Authorization') || h.get('authorization') || '');
-                return String(h.Authorization || h.authorization || '');
-              }
-              function writeAuth(h, value) {
-                if (typeof h.set === 'function') h.set('Authorization', value);
-                else if (Object.prototype.toString.call(h) === '[object Headers]') h.set('Authorization', value);
-                else h.Authorization = value;
-              }
-              function clearAuth(h) {
-                if (typeof h.delete === 'function') { h.delete('Authorization'); h.delete('authorization'); }
-                else { try { delete h.Authorization; delete h.authorization; } catch (e) {} }
-              }
-              var existingAuth = readAuth(headers);
-              if (existingAuth && /^Bearer\s*(null|undefined)?\s*$/i.test(existingAuth.trim())) {
-                clearAuth(headers);
-                existingAuth = '';
-              }
-              if (!existingAuth) {
-                var token = getToken();
-                if (token && token !== 'null' && token !== 'undefined') writeAuth(headers, 'Bearer ' + token);
-              }
-              if (isMutating(o.method || (typeof input !== 'string' && input && input.method) || 'GET')) {
-                if (!readHeader(headers, 'X-CK-CSRF') && !readHeader(headers, 'X-XSRF-TOKEN')) {
-                  var csrf = readCkCsrf();
-                  if (csrf) writeHeader(headers, 'X-CK-CSRF', csrf);
-                }
-              }
-              return o;
-            }
-            opts = applyAuthAndCsrf(opts);
-            var run = function() {
-              if (finalUrl === url) return nativeFetch.call(window, input, opts);
-              var finalInput = typeof input === 'string' ? finalUrl : (typeof Request !== 'undefined' ? new Request(finalUrl, input) : finalUrl);
-              return nativeFetch.call(window, finalInput, opts);
-            };
-            // Garantir ck_csrf via probe antes de mutações (cookie-auth)
-            if (isApiUrl && isMutating(opts.method || 'GET') && !readCkCsrf()) {
-              return nativeFetch.call(window, apiBase + '/api/account/status', {
-                credentials: 'include',
-                headers: { Accept: 'application/json' },
-                cache: 'no-store'
-              }).catch(function(){ return null; }).then(function() {
-                opts = applyAuthAndCsrf(opts);
-                return run();
-              });
-            }
-            return run();
-          };
-        })();
-        JS;
-
-        return response($js)
-            ->header('Content-Type', 'application/javascript; charset=utf-8')
-            ->header('Cache-Control', 'public, max-age=300')
-            ->header('X-Conecta-Engine', 'laravel');
+        return $this->page($request, 'config.js');
     }
 
     public function page(Request $request, string $path = '')

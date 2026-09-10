@@ -4,12 +4,8 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Recibos e Orçamentos — ConectaKing</title>
-    
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
-    
-    <style>
+
+<style>
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         .premium-border { border: 1px solid rgba(234, 179, 8, 0.1); }
         input:focus, select:focus, textarea:focus {

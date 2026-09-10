@@ -1,4 +1,4 @@
-﻿// Configuracao da API (auto: producao por padrao) — VPS / mesma origem
+// Configuracao da API (auto: producao por padrao) — VPS / mesma origem
 (function () {
     // Apex sem www parte CSRF (CF 301 em POST/PUT). Canonicaliza já.
     try {
@@ -205,4 +205,66 @@
             }
         }
     }
+})();
+
+/* CSRF + Bearer (unificado com antigo api-config.js) */
+(function () {
+  if (window.__CK_API_CONFIG_CSRF__) return;
+  window.__CK_API_CONFIG_CSRF__ = true;
+  var apiBase = String(window.API_BASE || window.API_URL || (window.location && window.location.origin) || '').replace(/\/$/, '');
+  window.CONECTAKING_API_BASE = window.CONECTAKING_API_BASE || apiBase;
+  var nativeFetch = window.fetch;
+  if (!nativeFetch) return;
+  function getToken() {
+    try {
+      return (localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || sessionStorage.getItem('token') || '');
+    } catch (e) { return ''; }
+  }
+  function readCkCsrf() {
+    try {
+      var m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    } catch (e) { return ''; }
+  }
+  function writeHeader(h, key, value) {
+    if (!h) return;
+    if (typeof h.set === 'function') h.set(key, value);
+    else h[key] = value;
+  }
+  function readHeader(h, key) {
+    if (!h) return '';
+    if (typeof h.get === 'function') return String(h.get(key) || '');
+    return String(h[key] || '');
+  }
+  function isMutating(method) {
+    var m = String(method || 'GET').toUpperCase();
+    return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
+  }
+  var prev = window.fetch;
+  window.fetch = function (input, opts) {
+    opts = opts || {};
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    var finalUrl = url;
+    if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
+      finalUrl = url.indexOf('http') === 0 ? url : apiBase + (url.indexOf('/') === 0 ? url : '/' + url);
+    }
+    var isApiUrl = finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('/api/') !== -1 || (url && url.indexOf('/api/') === 0));
+    if (isApiUrl) {
+      if (opts.credentials == null) opts.credentials = 'include';
+      var headers = opts.headers || (opts.headers = {});
+      var existingAuth = readHeader(headers, 'Authorization') || readHeader(headers, 'authorization');
+      if (!existingAuth) {
+        var token = getToken();
+        if (token && token !== 'null' && token !== 'undefined') writeHeader(headers, 'Authorization', 'Bearer ' + token);
+      }
+      if (isMutating(opts.method || (input && input.method) || 'GET')) {
+        if (!readHeader(headers, 'X-CK-CSRF') && !readHeader(headers, 'X-XSRF-TOKEN')) {
+          var csrf = readCkCsrf();
+          if (csrf) writeHeader(headers, 'X-CK-CSRF', csrf);
+        }
+      }
+    }
+    if (finalUrl !== url && typeof input === 'string') return prev.call(window, finalUrl, opts);
+    return prev.call(window, input, opts);
+  };
 })();

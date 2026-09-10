@@ -7,6 +7,7 @@
 import '@css/style.css';
 import '@css/dashboard.css';
 import '@css/css/profile-wifi.css';
+import '../vendor-globals.js';
 
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';

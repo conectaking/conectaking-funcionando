@@ -1,3 +1,4 @@
+import '../vendor-globals.js';
 /**
  * King Forms editor — Vite entry (legacy public/ + boot Blade).
  */

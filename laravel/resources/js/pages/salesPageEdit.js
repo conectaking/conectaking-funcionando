@@ -1,3 +1,4 @@
+import '../vendor-globals.js';
 /**
  * Página de vendas (editor) — Vite entry.
  * CDN Chart/Sortable/Cropper e config.js ficam no Blade.

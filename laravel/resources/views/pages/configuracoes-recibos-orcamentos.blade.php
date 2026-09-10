@@ -4,11 +4,8 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>ConfiguraÃ§Ãµes â€” Recibos e OrÃ§amentos | ConectaKing</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
-    
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+
+<style> body { font-family: 'Inter', sans-serif; } </style>
     @vite(['resources/css/app.css', 'resources/js/pages/configuracoes-recibos-orcamentos.js'])
 </head>
 <body data-recibos-nav="config" class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">

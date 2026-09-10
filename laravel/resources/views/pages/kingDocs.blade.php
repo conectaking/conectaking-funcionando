@@ -4,9 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>King Docs — Conecta King</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;700&display=swap" rel="stylesheet"/>
-  <style>
+<style>
     :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; --bad:#c0392b; --banner-bg:#e8f0ea; --hero-name-bg:#faf9f7; --trust-bg:#faf9f7; --summary-bg:#faf9f7; }
     body.kd-theme-dark {
       --bg:#121814; --card:#1a221c; --ink:#e8ebe9; --muted:#9ca8a2; --accent:#7bc99a; --border:#2f3d35; --bad:#e57373;
