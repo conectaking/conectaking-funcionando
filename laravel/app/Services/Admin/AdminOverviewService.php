@@ -70,15 +70,22 @@ class AdminOverviewService
     }
 
     /**
-     * @return array<int,array<string,mixed>>
+     * Listagem paginada de users.
+     * Contrato: { items, total, limit, offset, hasMore }. Default limit 100, max 200.
+     *
+     * @return array{items:list<array<string,mixed>>,total:int,limit:int,offset:int,hasMore:bool}
      */
-    public function users(): array
+    public function users(int $limit = 100, int $offset = 0): array
     {
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+
         if (! Schema::hasTable('users')) {
-            return [];
+            return ['items' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset, 'hasMore' => false];
         }
 
-        return $this->rows(
+        $total = $this->count('SELECT COUNT(*) AS count FROM users', [], 'users');
+        $items = $this->rows(
             'SELECT u.id, p.display_name, u.email, u.profile_slug, u.is_admin, u.created_at,
                     u.account_type, u.parent_user_id, parent.email AS parent_email,
                     u.subscription_status, u.subscription_expires_at, u.max_team_invites,
@@ -91,17 +98,33 @@ class AdminOverviewService
              FROM users u
              LEFT JOIN user_profiles p ON u.id = p.user_id
              LEFT JOIN users parent ON u.parent_user_id = parent.id
-             ORDER BY u.created_at DESC'
+             ORDER BY u.created_at DESC
+             LIMIT ? OFFSET ?',
+            [$limit, $offset]
         );
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'hasMore' => ($offset + count($items)) < $total,
+        ];
     }
 
     /**
-     * @return array<int,array<string,mixed>>
+     * Listagem paginada de codes.
+     * Contrato: { items, total, limit, offset, hasMore }. Default limit 100, max 200.
+     *
+     * @return array{items:list<array<string,mixed>>,total:int,limit:int,offset:int,hasMore:bool}
      */
-    public function codes(?string $filter): array
+    public function codes(?string $filter, int $limit = 100, int $offset = 0): array
     {
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+
         if (! Schema::hasTable('registration_codes')) {
-            return [];
+            return ['items' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset, 'hasMore' => false];
         }
 
         $where = '';
@@ -111,7 +134,12 @@ class AdminOverviewService
             $where = 'WHERE c.expires_at IS NULL OR c.expires_at >= NOW()';
         }
 
-        return $this->rows(
+        $total = $this->count(
+            "SELECT COUNT(*) AS count FROM registration_codes c {$where}",
+            [],
+            'registration_codes'
+        );
+        $items = $this->rows(
             "SELECT c.code, c.is_claimed, c.created_at, c.claimed_at, c.expires_at,
                     u.email AS claimed_by_email, gen.email AS generated_by_email,
                     CASE
@@ -123,17 +151,33 @@ class AdminOverviewService
              LEFT JOIN users u ON c.claimed_by_user_id = u.id
              LEFT JOIN users gen ON c.generated_by_user_id = gen.id
              {$where}
-             ORDER BY c.created_at DESC"
+             ORDER BY c.created_at DESC
+             LIMIT ? OFFSET ?",
+            [$limit, $offset]
         );
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'hasMore' => ($offset + count($items)) < $total,
+        ];
     }
 
     /**
+     * Estatísticas avançadas: contagens via SQL COUNT; listas LIMIT 100 ORDER BY.
+     *
      * @return array<string,mixed>
      */
     public function advancedStats(): array
     {
-        $usersActivity = $this->rows(
-            "SELECT u.id, u.email, p.display_name, u.subscription_status, u.subscription_expires_at,
+        $expiredWhere = "(subscription_expires_at IS NOT NULL
+            AND COALESCE(subscription_status, '') <> 'free'
+            AND subscription_expires_at < NOW())";
+        $activeWhere = "NOT {$expiredWhere}";
+
+        $activitySelect = "SELECT u.id, u.email, p.display_name, u.subscription_status, u.subscription_expires_at,
                     MAX(ua.created_at) AS last_activity_date,
                     CASE WHEN MAX(ua.created_at) IS NULL THEN NULL
                          WHEN DATE(MAX(ua.created_at)) = CURRENT_DATE THEN 0
@@ -143,25 +187,7 @@ class AdminOverviewService
              FROM users u
              LEFT JOIN user_profiles p ON u.id = p.user_id
              LEFT JOIN user_activities ua ON u.id = ua.user_id
-             GROUP BY u.id, u.email, p.display_name, u.subscription_status, u.subscription_expires_at
-             ORDER BY last_activity_date DESC NULLS LAST"
-        );
-
-        $isExpired = static function (array $u): bool {
-            $exp = $u['subscription_expires_at'] ?? null;
-            if (! $exp || ($u['subscription_status'] ?? null) === 'free') {
-                return false;
-            }
-
-            return strtotime((string) $exp) < time();
-        };
-
-        $active = array_values(array_filter($usersActivity, static fn ($u) => ! $isExpired($u)));
-        $expired = array_values(array_filter($usersActivity, $isExpired));
-        $notUsedToday = count(array_filter(
-            $usersActivity,
-            static fn ($u) => empty($u['used_today']) || ($u['last_activity_date'] ?? null) === null
-        ));
+             GROUP BY u.id, u.email, p.display_name, u.subscription_status, u.subscription_expires_at";
 
         $baseRow = static fn (array $u): array => [
             'id' => $u['id'],
@@ -172,6 +198,57 @@ class AdminOverviewService
             'lastActivityDate' => $u['last_activity_date'],
             'daysSinceLastActivity' => $u['days_since_last_activity'],
         ];
+
+        $usersActivity = $this->rows(
+            "SELECT * FROM ({$activitySelect}) act
+             ORDER BY last_activity_date DESC NULLS LAST
+             LIMIT 100"
+        );
+
+        $activeUsersList = $this->rows(
+            "SELECT * FROM ({$activitySelect}) act
+             WHERE {$activeWhere}
+             ORDER BY last_activity_date DESC NULLS LAST
+             LIMIT 100"
+        );
+
+        $expiredUsersList = $this->rows(
+            "SELECT * FROM ({$activitySelect}) act
+             WHERE {$expiredWhere}
+             ORDER BY subscription_expires_at ASC NULLS LAST
+             LIMIT 100"
+        );
+
+        $activeUsersCount = $this->count(
+            "SELECT COUNT(*) AS count FROM users u
+             WHERE NOT (u.subscription_expires_at IS NOT NULL
+                AND COALESCE(u.subscription_status, '') <> 'free'
+                AND u.subscription_expires_at < NOW())",
+            [],
+            'users'
+        );
+        $expiredUsersCount = $this->count(
+            "SELECT COUNT(*) AS count FROM users u
+             WHERE u.subscription_expires_at IS NOT NULL
+               AND COALESCE(u.subscription_status, '') <> 'free'
+               AND u.subscription_expires_at < NOW()",
+            [],
+            'users'
+        );
+        $notUsedToday = $this->count(
+            "SELECT COUNT(*) AS count FROM (
+                SELECT u.id,
+                       MAX(ua.created_at) AS last_activity_date,
+                       CASE WHEN MAX(ua.created_at) IS NULL THEN NULL
+                            WHEN DATE(MAX(ua.created_at)) = CURRENT_DATE THEN true ELSE false END AS used_today
+                FROM users u
+                LEFT JOIN user_activities ua ON u.id = ua.user_id
+                GROUP BY u.id
+             ) t
+             WHERE used_today IS DISTINCT FROM true OR last_activity_date IS NULL",
+            [],
+            'users'
+        );
 
         return [
             'activeUsers7d' => $this->count(
@@ -219,16 +296,20 @@ class AdminOverviewService
             ),
             'totalLinks' => $this->count('SELECT COUNT(*) AS count FROM profile_items', [], 'profile_items'),
             'notUsedToday' => $notUsedToday,
-            'activeUsersCount' => count($active),
-            'expiredUsersCount' => count($expired),
-            // Contagens completas; listas capadas para não full-dump no painel
-            'usersActivity' => array_map(static function (array $u) use ($baseRow, $isExpired): array {
+            'activeUsersCount' => $activeUsersCount,
+            'expiredUsersCount' => $expiredUsersCount,
+            'usersActivity' => array_map(static function (array $u) use ($baseRow): array {
+                $exp = $u['subscription_expires_at'] ?? null;
+                $isExpired = $exp
+                    && ($u['subscription_status'] ?? null) !== 'free'
+                    && strtotime((string) $exp) < time();
+
                 return $baseRow($u) + [
                     'usedToday' => (bool) ($u['used_today'] ?? false),
-                    'isExpired' => $isExpired($u),
+                    'isExpired' => $isExpired,
                 ];
-            }, array_slice($usersActivity, 0, 100)),
-            'activeUsersList' => array_map($baseRow, array_slice($active, 0, 100)),
+            }, $usersActivity),
+            'activeUsersList' => array_map($baseRow, $activeUsersList),
             'expiredUsersList' => array_map(static function (array $u) use ($baseRow): array {
                 $exp = $u['subscription_expires_at'] ?? null;
                 $daysExpired = $exp
@@ -236,21 +317,27 @@ class AdminOverviewService
                     : null;
 
                 return $baseRow($u) + ['daysExpired' => $daysExpired];
-            }, array_slice($expired, 0, 100)),
+            }, $expiredUsersList),
         ];
     }
 
     /**
-     * @return array<int,array<string,mixed>>
+     * Analytics por user, paginado.
+     * Contrato: { items, total, limit, offset, hasMore }. Default limit 100, max 200.
+     *
+     * @return array{items:list<array<string,mixed>>,total:int,limit:int,offset:int,hasMore:bool}
      */
-    public function analyticsUsers(): array
+    public function analyticsUsers(int $limit = 100, int $offset = 0): array
     {
-        if (! Schema::hasTable('analytics_events')) {
-            return [];
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+
+        if (! Schema::hasTable('analytics_events') || ! Schema::hasTable('users')) {
+            return ['items' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset, 'hasMore' => false];
         }
 
-        // Agrega analytics_events uma vez (evita 3 subqueries correlacionadas por user)
-        return $this->rows(
+        $total = $this->count('SELECT COUNT(*) AS count FROM users', [], 'users');
+        $items = $this->rows(
             "SELECT u.id, u.email, p.display_name, u.profile_slug,
                     COALESCE(a.total_views, 0) AS total_views,
                     COALESCE(a.total_clicks, 0) AS total_clicks,
@@ -265,8 +352,18 @@ class AdminOverviewService
                  FROM analytics_events
                  GROUP BY user_id
              ) a ON a.user_id = u.id
-             ORDER BY total_views DESC"
+             ORDER BY total_views DESC
+             LIMIT ? OFFSET ?",
+            [$limit, $offset]
         );
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'hasMore' => ($offset + count($items)) < $total,
+        ];
     }
 
     /**
@@ -374,10 +471,11 @@ class AdminOverviewService
     }
 
     /**
+     * @param  array<int,mixed>  $bindings
      * @return array<int,array<string,mixed>>
      */
-    private function rows(string $sql): array
+    private function rows(string $sql, array $bindings = []): array
     {
-        return array_map(static fn ($row): array => (array) $row, DB::select($sql));
+        return array_map(static fn ($row): array => (array) $row, DB::select($sql, $bindings));
     }
 }

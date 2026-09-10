@@ -23,14 +23,34 @@ class ProfileEditorController extends Controller
                 ->header('X-Conecta-Engine', 'laravel');
         }
 
-        $profile = $this->service->getFullProfile($userId);
+        // Contrato GET /api/profile:
+        // - default (full): enrichment completo (form_fields, custom_form_fields, etc.)
+        // - ?fields=slim | ?slim=1: itens com ids/titles/types/order/flags; omite payloads pesados
+        $slim = $this->wantsSlimProfile($request);
+
+        $profile = $this->service->getFullProfile($userId, $slim);
         if (!$profile) {
             return response()->json(['message' => 'Usuário não encontrado.'], 404)
                 ->header('X-Conecta-Engine', 'laravel');
         }
 
         return response()->json($profile)
+            ->header('X-Profile-Mode', $slim ? 'slim' : 'full')
             ->header('X-Conecta-Engine', 'laravel');
+    }
+
+    private function wantsSlimProfile(Request $request): bool
+    {
+        $fields = strtolower(trim((string) $request->query('fields', '')));
+        if ($fields === 'slim') {
+            return true;
+        }
+        $slim = $request->query('slim');
+        if ($slim === null || $slim === '') {
+            return false;
+        }
+
+        return in_array(strtolower((string) $slim), ['1', 'true', 'yes'], true);
     }
 
     public function saveAll(Request $request)

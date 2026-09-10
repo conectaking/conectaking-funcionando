@@ -294,6 +294,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return body;
     }
 
+    /** Extrai items[] de resposta paginada {items,total,hasMore} ou array legado. */
+    function unwrapPagedList(payload) {
+        if (Array.isArray(payload)) {
+            return { items: payload, total: payload.length, hasMore: false, limit: payload.length, offset: 0 };
+        }
+        if (payload && typeof payload === 'object') {
+            const items = Array.isArray(payload.items)
+                ? payload.items
+                : (Array.isArray(payload.data) ? payload.data : []);
+            return {
+                items,
+                total: typeof payload.total === 'number' ? payload.total : items.length,
+                hasMore: !!payload.hasMore,
+                limit: typeof payload.limit === 'number' ? payload.limit : items.length,
+                offset: typeof payload.offset === 'number' ? payload.offset : 0,
+            };
+        }
+        return { items: [], total: 0, hasMore: false, limit: 0, offset: 0 };
+    }
+
     async function fetchData(endpoint) {
         try {
             const fullUrl = `${API_URL}/${endpoint}`;
@@ -338,34 +358,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Variável global para armazenar analytics de usuários
     let userAnalytics = [];
+    let usersListMeta = { total: 0, hasMore: false, offset: 0, limit: 100 };
+    let codesListMeta = { total: 0, hasMore: false, offset: 0, limit: 100 };
+    let analyticsListMeta = { total: 0, hasMore: false, offset: 0, limit: 100 };
 
     async function loadDashboard() {
         /* console.log removed (encoding) */
         
         try {
-            const [stats, users, codes, analytics] = await Promise.all([
+            const [stats, usersRaw, codesRaw, analyticsRaw] = await Promise.all([
                 fetchData('stats'),
-                fetchData('users'),
-                fetchData('codes'),
-                fetchData('analytics/users').catch(err => {
+                fetchData('users?limit=100&offset=0'),
+                fetchData('codes?limit=100&offset=0'),
+                fetchData('analytics/users?limit=100&offset=0').catch(err => {
                     console.error('O Erro ao buscar analytics:', err);
-                    // Retornar array vazio em caso de erro
                     return [];
                 })
             ]);
 
+            const usersPage = unwrapPagedList(usersRaw);
+            const codesPage = unwrapPagedList(codesRaw);
+            const analyticsPage = unwrapPagedList(analyticsRaw);
+            const users = usersPage.items;
+            const analytics = analyticsPage.items;
 
-            // Armazenar analytics globalmente
-            userAnalytics = (Array.isArray(analytics) ? analytics : []) || [];
+            usersListMeta = {
+                total: usersPage.total,
+                hasMore: usersPage.hasMore,
+                offset: usersPage.offset,
+                limit: usersPage.limit,
+            };
+            codesListMeta = {
+                total: codesPage.total,
+                hasMore: codesPage.hasMore,
+                offset: codesPage.offset,
+                limit: codesPage.limit,
+            };
+            analyticsListMeta = {
+                total: analyticsPage.total,
+                hasMore: analyticsPage.hasMore,
+                offset: analyticsPage.offset,
+                limit: analyticsPage.limit,
+            };
+
+            userAnalytics = analytics || [];
 
             if (stats) {
                 renderStats(stats);
-                // Carregar métricas avançadas usando dados disponíveis
                 loadAdvancedStats(users, stats);
             } else {
                 console.warn('Stats não carregados, usando valores padrão');
                 renderStats({ totalUsers: 0, totalCodes: 0, claimedCodes: 0, totalClicks: 0, totalViews: 0 });
-                // Tentar carregar métricas avançadas mesmo sem stats
                 loadAdvancedStats(users, { totalUsers: 0, totalCodes: 0, claimedCodes: 0, totalClicks: 0, totalViews: 0 });
             }
 
@@ -374,9 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateUserStats(users);
                 const initial = getUserFiltered();
                 applyUserPagination(initial);
-                // Renderizar top perfis e lista completa com analytics
                 const analyticsArray = Array.isArray(analytics) ? analytics : [];
-                /* console.log removed (encoding) */
                 renderTopPerformedProfiles(analyticsArray);
                 renderAllProfilesList(users, analyticsArray);
             } else {
@@ -387,17 +428,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateUserCount(0, 0);
             }
 
-            // Carregar códigos (sem filtro inicial)
-            await loadCodes();
+            allCodes = codesPage.items;
             updateCodeStats(allCodes);
+            currentCodesPage = 1;
+            applyCodePagination(getFilteredCodes());
         } catch (error) {
             console.error('O Erro ao carregar dashboard:', error);
-            // Renderizar com dados vazios para não quebrar a interface
             renderStats({ totalUsers: 0, totalCodes: 0, claimedCodes: 0, totalClicks: 0, totalViews: 0 });
             renderUsers([]);
             renderCodes([]);
             renderAdvancedStatsWithDefaults();
         }
+    }
+
+    /** Carrega mais users se hasMore (cap servidor). */
+    async function loadMoreUsers() {
+        if (!usersListMeta.hasMore) return;
+        const nextOffset = (usersListMeta.offset || 0) + (usersListMeta.limit || 100);
+        const page = unwrapPagedList(await fetchData('users?limit=100&offset=' + nextOffset));
+        allUsers = allUsers.concat(page.items);
+        usersListMeta = {
+            total: page.total,
+            hasMore: page.hasMore,
+            offset: page.offset,
+            limit: page.limit,
+        };
+        applyUserPagination(getUserFiltered());
+    }
+
+    /** Carrega mais codes se hasMore. */
+    async function loadMoreCodes() {
+        if (!codesListMeta.hasMore) return;
+        const nextOffset = (codesListMeta.offset || 0) + (codesListMeta.limit || 100);
+        const page = unwrapPagedList(await fetchData('codes?limit=100&offset=' + nextOffset));
+        allCodes = allCodes.concat(page.items);
+        codesListMeta = {
+            total: page.total,
+            hasMore: page.hasMore,
+            offset: page.offset,
+            limit: page.limit,
+        };
+        applyCodePagination(getFilteredCodes());
     }
 
     // Função para carregar estatísticas avançadas
@@ -2326,10 +2397,16 @@ if (deleteUserBtn) {
     // Função para carregar códigos
     async function loadCodes() {
         try {
-            const rows = await fetchData('codes');
-            const codes = Array.isArray(rows) ? rows : [];
-            allCodes = codes;
-            updateCodeStats(codes);
+            const rows = await fetchData('codes?limit=100&offset=0');
+            const page = unwrapPagedList(rows);
+            allCodes = page.items;
+            codesListMeta = {
+                total: page.total,
+                hasMore: page.hasMore,
+                offset: page.offset,
+                limit: page.limit,
+            };
+            updateCodeStats(allCodes);
             const filtered = getFilteredCodes();
             currentCodesPage = 1;
             applyCodePagination(filtered);
@@ -2822,12 +2899,18 @@ if (deleteUserBtn) {
     
     function updateUserCount(filteredLength, totalLength) {
         if (totalLength === undefined) totalLength = allUsers.length;
+        const serverTotal = (usersListMeta && typeof usersListMeta.total === 'number' && usersListMeta.total > 0)
+            ? usersListMeta.total
+            : totalLength;
         const el = document.getElementById('user-count');
         if (!el) return;
         const plural = filteredLength === 1 ? 'usuário' : 'usuários';
-        let base = filteredLength === totalLength
+        let base = filteredLength === serverTotal
             ? `${filteredLength} ${plural}`
-            : `Mostrando ${filteredLength} de ${totalLength} usuários`;
+            : `Mostrando ${filteredLength} de ${serverTotal} usuários`;
+        if (usersListMeta && usersListMeta.hasMore) {
+            base += ' (cap)';
+        }
         el.dataset.baseCountText = base;
         const checkboxes = document.querySelectorAll('.user-checkbox:checked');
         const sel = checkboxes.length;

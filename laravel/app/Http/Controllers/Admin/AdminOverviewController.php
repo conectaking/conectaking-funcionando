@@ -87,10 +87,13 @@ class AdminOverviewController extends Controller
         }
     }
 
-    public function users()
+    public function users(Request $request)
     {
+        $limit = is_numeric($request->query('limit')) ? (int) $request->query('limit') : 100;
+        $offset = is_numeric($request->query('offset')) ? (int) $request->query('offset') : 0;
+
         return $this->run(
-            fn () => $this->overview->users(),
+            fn () => $this->overview->users($limit, $offset),
             'Erro ao buscar usuários.'
         );
     }
@@ -98,9 +101,11 @@ class AdminOverviewController extends Controller
     public function codes(Request $request)
     {
         $filter = $request->query('filter');
+        $limit = is_numeric($request->query('limit')) ? (int) $request->query('limit') : 100;
+        $offset = is_numeric($request->query('offset')) ? (int) $request->query('offset') : 0;
 
         return $this->run(
-            fn () => $this->overview->codes(is_string($filter) ? $filter : null),
+            fn () => $this->overview->codes(is_string($filter) ? $filter : null, $limit, $offset),
             'Erro ao buscar códigos.'
         );
     }
@@ -113,10 +118,13 @@ class AdminOverviewController extends Controller
         );
     }
 
-    public function analyticsUsers()
+    public function analyticsUsers(Request $request)
     {
+        $limit = is_numeric($request->query('limit')) ? (int) $request->query('limit') : 100;
+        $offset = is_numeric($request->query('offset')) ? (int) $request->query('offset') : 0;
+
         return $this->run(
-            fn () => $this->overview->analyticsUsers(),
+            fn () => $this->overview->analyticsUsers($limit, $offset),
             'Erro ao buscar analytics de usuários.'
         );
     }

@@ -7,13 +7,18 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Leitura do perfil para o editor/dashboard (GET /api/profile).
+ *
+ * Contrato:
+ * - full (default): enrichment completo — form_fields, custom_form_fields, contract/bible/location.
+ * - slim (?fields=slim|&slim=1): lista dashboard-friendly — ids, titles, types, order, flags;
+ *   omite form_fields / custom_form_fields e payloads pesados; mantém meta leve por tipo.
  */
 class ProfileEditorService
 {
     /**
-     * @return array{details:array<string,mixed>,items:list<array<string,mixed>>}|null
+     * @return array{details:array<string,mixed>,items:list<array<string,mixed>>,mode?:string}|null
      */
-    public function getFullProfile(string $userId): ?array
+    public function getFullProfile(string $userId, bool $slim = false): ?array
     {
         $info = DB::selectOne(
             'SELECT u.id, u.email, u.profile_slug, p.*
@@ -49,13 +54,13 @@ class ProfileEditorService
             }
         }
 
-        $maps = $this->loadEnrichmentMaps($ids);
+        $maps = $this->loadEnrichmentMaps($ids, $slim);
 
         $items = [];
         foreach ($rows as $index => $row) {
             $item = (array) $row;
             $type = (string) ($item['item_type'] ?? 'link');
-            $item = array_merge($item, $this->enrichEditorItem($item, $type, $maps));
+            $item = array_merge($item, $this->enrichEditorItem($item, $type, $maps, $slim));
             $items[] = [
                 ...$item,
                 'id' => $item['id'] ?? null,
@@ -70,6 +75,7 @@ class ProfileEditorService
         return [
             'details' => $details,
             'items' => $items,
+            'mode' => $slim ? 'slim' : 'full',
         ];
     }
 
@@ -83,7 +89,7 @@ class ProfileEditorService
      *   location: array<string, array<string, mixed>>
      * }
      */
-    private function loadEnrichmentMaps(array $profileItemIds): array
+    private function loadEnrichmentMaps(array $profileItemIds, bool $slim = false): array
     {
         $maps = [
             'digital_form' => [],
@@ -115,11 +121,21 @@ class ProfileEditorService
                 if ($key === '') {
                     continue;
                 }
-                if (isset($data['form_fields']) && is_string($data['form_fields'])) {
-                    $parsed = json_decode($data['form_fields'], true);
-                    $data['form_fields'] = is_array($parsed) ? $parsed : [];
-                } elseif (!isset($data['form_fields']) || !is_array($data['form_fields'])) {
+                $fieldsRaw = $data['form_fields'] ?? null;
+                $parsedFields = [];
+                if (is_string($fieldsRaw)) {
+                    $decoded = json_decode($fieldsRaw, true);
+                    $parsedFields = is_array($decoded) ? $decoded : [];
+                } elseif (is_array($fieldsRaw)) {
+                    $parsedFields = $fieldsRaw;
+                }
+                if ($slim) {
+                    // Contrato slim: omitir form_fields; expor só fields_count
+                    $data['fields_count'] = count($parsedFields);
                     $data['form_fields'] = [];
+                    unset($data['confirmation_message'], $data['email_template'], $data['webhook_payload']);
+                } else {
+                    $data['form_fields'] = $parsedFields;
                 }
                 $maps['digital_form'][$key] = $data;
             }
@@ -139,6 +155,10 @@ class ProfileEditorService
                 $data = (array) $row;
                 $key = (string) ($data['profile_item_id'] ?? '');
                 if ($key !== '') {
+                    if ($slim) {
+                        // Manter ids/flags; omitir corpo do contrato se existir
+                        unset($data['contract_html'], $data['contract_text'], $data['content'], $data['body']);
+                    }
                     $maps['contract'][$key] = $data;
                 }
             }
@@ -160,6 +180,15 @@ class ProfileEditorService
                 $data = (array) $row;
                 $key = (string) ($data['profile_item_id'] ?? '');
                 if ($key !== '') {
+                    if ($slim) {
+                        unset(
+                            $data['custom_form_fields'],
+                            $data['form_fields'],
+                            $data['portaria_config'],
+                            $data['confirmacao_config'],
+                            $data['inscricao_config']
+                        );
+                    }
                     $maps['guest_list'][$key] = $data;
                 }
             }
@@ -222,13 +251,16 @@ class ProfileEditorService
      * }  $maps
      * @return array<string, mixed>
      */
-    private function enrichEditorItem(array $item, string $type, array $maps): array
+    private function enrichEditorItem(array $item, string $type, array $maps, bool $slim = false): array
     {
         try {
             $id = (string) ($item['id'] ?? '');
 
             if ($type === 'digital_form') {
                 $data = $maps['digital_form'][$id] ?? ['form_fields' => []];
+                if ($slim && ! isset($data['form_fields'])) {
+                    $data['form_fields'] = [];
+                }
 
                 return ['digital_form_data' => $data];
             }
