@@ -3220,7 +3220,8 @@ window.openFinanceDetailModal = async function (type) {
             var urlInc = (typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/income-breakdown?scope=monthly&dateFrom=' + monthStart + '&dateTo=' + monthEnd + (profileIdInc ? '&profile_id=' + encodeURIComponent(profileIdInc) : '');
             var resInc = await fetch(urlInc, { headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : { 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') } });
             if (resInc.ok) {
-                var dataInc = (await resInc.json()).data || (await resInc.json());
+                var dataIncPayload = await resInc.json();
+                var dataInc = dataIncPayload.data || dataIncPayload;
                 itensReceitas = dataInc.itens || [];
                 totalReceitas = Number(dataInc.total) || itensReceitas.reduce(function (s, x) { return s + (parseFloat(x.valor) || 0); }, 0);
             }
@@ -3324,7 +3325,8 @@ window.financeMarkAsPaid = async function (id, source, pessoaId, contaId) {
         try {
             var res = await fetch(env.API_URL + '/api/finance/transactions/' + id, { method: 'GET', headers: env.HEADERS_AUTH });
             if (!res.ok) throw new Error('Erro ao carregar transação');
-            var data = (await res.json()).data || (await res.json());
+            var dataPayload = await res.json();
+            var data = dataPayload.data || dataPayload;
             var body = { type: data.type || 'EXPENSE', amount: parseFloat(data.amount) || 0, description: data.description || '', transaction_date: (data.transaction_date || data.date || '').slice(0, 10), status: 'PAID' };
             if (data.category_id != null) body.category_id = data.category_id;
             if (data.account_id != null) body.account_id = data.account_id;
@@ -3356,7 +3358,8 @@ window.financeRestoreToPending = async function (id, source, pessoaId, contaId) 
         try {
             var res = await fetch(env.API_URL + '/api/finance/transactions/' + id, { method: 'GET', headers: env.HEADERS_AUTH });
             if (!res.ok) throw new Error('Erro ao carregar transação');
-            var data = (await res.json()).data || (await res.json());
+            var dataPayload = await res.json();
+            var data = dataPayload.data || dataPayload;
             var body = { type: data.type || 'EXPENSE', amount: parseFloat(data.amount) || 0, description: data.description || '', transaction_date: (data.transaction_date || data.date || '').slice(0, 10), status: 'PENDING' };
             if (data.category_id != null) body.category_id = data.category_id;
             if (data.account_id != null) body.account_id = data.account_id;

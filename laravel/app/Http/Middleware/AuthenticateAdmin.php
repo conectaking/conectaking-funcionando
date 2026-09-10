@@ -63,8 +63,13 @@ class AuthenticateAdmin
         $auth = $request->header('Authorization', '');
         if (is_string($auth) && str_starts_with($auth, 'Bearer ')) {
             $t = trim(substr($auth, 7));
-
-            return $t !== '' ? $t : null;
+            if ($t !== '' && ! in_array(strtolower($t), ['null', 'undefined'], true)) {
+                return $t;
+            }
+        }
+        $cookie = $request->cookie('token');
+        if (is_string($cookie) && $cookie !== '') {
+            return $cookie;
         }
 
         return null;

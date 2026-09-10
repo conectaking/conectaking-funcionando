@@ -42,7 +42,7 @@ class AuthenticateKsClient
         $auth = $request->header('Authorization', '');
         if (is_string($auth) && str_starts_with($auth, 'Bearer ')) {
             $t = trim(substr($auth, 7));
-            if ($t !== '') {
+            if ($t !== '' && ! in_array(strtolower($t), ['null', 'undefined'], true)) {
                 return $t;
             }
         }

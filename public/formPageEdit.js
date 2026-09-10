@@ -270,6 +270,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
         return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
+    function escapeHtml(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
     
     // Função para atualizar previews de imagens e mostrar/esconder botões de remover
     function updateImagePreviews(formData) {
@@ -3243,20 +3251,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="display: flex; justify-content: space-between; align-items: start; gap: 16px;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                                <h4 style="margin: 0; color: #ECECEC; font-size: 18px; font-weight: 700;">${guest.name || 'Sem nome'}</h4>
+                                <h4 style="margin: 0; color: #ECECEC; font-size: 18px; font-weight: 700;">${escapeHtml(guest.name || 'Sem nome')}</h4>
                                 <span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; background: ${statusClass === 'success' ? 'rgba(67, 233, 123, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${statusClass === 'success' ? '#43e97b' : '#f59e0b'};">
                                     <i class="fas fa-${statusIcon}"></i> ${statusText}
                                 </span>
                             </div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; color: #A1A1A1; font-size: 14px;">
-                                ${guest.whatsapp ? `<div><i class="fab fa-whatsapp"></i> ${guest.whatsapp}</div>` : ''}
-                                ${guest.email ? `<div><i class="fas fa-envelope"></i> ${guest.email}</div>` : ''}
-                                ${guest.document ? `<div><i class="fas fa-id-card"></i> ${guest.document}</div>` : ''}
-                                ${checkedInTime ? `<div><i class="fas fa-clock"></i> Chegou: ${checkedInTime}</div>` : ''}
+                                ${guest.whatsapp ? `<div><i class="fab fa-whatsapp"></i> ${escapeHtml(guest.whatsapp)}</div>` : ''}
+                                ${guest.email ? `<div><i class="fas fa-envelope"></i> ${escapeHtml(guest.email)}</div>` : ''}
+                                ${guest.document ? `<div><i class="fas fa-id-card"></i> ${escapeHtml(guest.document)}</div>` : ''}
+                                ${checkedInTime ? `<div><i class="fas fa-clock"></i> Chegou: ${escapeHtml(checkedInTime)}</div>` : ''}
                             </div>
                         </div>
                         ${(guest.status !== 'checked_in' && guest.status !== 'confirmed') ? `
-                        <button onclick="checkInGuest(${guest.id}, '${(guest.name || '').replace(/'/g, "\\'")}')" style="padding: 10px 20px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 8px; color: #000; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                        <button type="button" class="ck-checkin-btn" data-guest-id="${Number(guest.id) || 0}" data-guest-name="${escapeHtml(guest.name || '')}" style="padding: 10px 20px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 8px; color: #000; font-weight: 600; cursor: pointer; white-space: nowrap;">
                             <i class="fas fa-check"></i> Confirmar Chegada
                         </button>
                         ` : ''}
@@ -3264,6 +3272,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }).join('');
+        container.querySelectorAll('.ck-checkin-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const id = parseInt(btn.getAttribute('data-guest-id') || '0', 10);
+                const name = btn.getAttribute('data-guest-name') || '';
+                if (id) checkInGuest(id, name);
+            });
+        });
     }
     
     // Função para confirmar chegada de convidado
@@ -3557,20 +3572,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="display: flex; justify-content: space-between; align-items: start; gap: 16px;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                                <h4 style="margin: 0; color: #ECECEC; font-size: 18px; font-weight: 700;">${guest.name || 'Sem nome'}</h4>
+                                <h4 style="margin: 0; color: #ECECEC; font-size: 18px; font-weight: 700;">${escapeHtml(guest.name || 'Sem nome')}</h4>
                                 <span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; background: ${statusClass === 'success' ? 'rgba(67, 233, 123, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${statusClass === 'success' ? '#43e97b' : '#f59e0b'};">
                                     <i class="fas fa-${statusIcon}"></i> ${statusText}
                                 </span>
                             </div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; color: #A1A1A1; font-size: 14px;">
-                                ${guest.whatsapp ? `<div><i class="fab fa-whatsapp"></i> ${guest.whatsapp}</div>` : ''}
-                                ${guest.email ? `<div><i class="fas fa-envelope"></i> ${guest.email}</div>` : ''}
-                                ${guest.document ? `<div><i class="fas fa-id-card"></i> ${guest.document}</div>` : ''}
-                                ${checkedInTime ? `<div><i class="fas fa-clock"></i> Chegou: ${checkedInTime}</div>` : ''}
+                                ${guest.whatsapp ? `<div><i class="fab fa-whatsapp"></i> ${escapeHtml(guest.whatsapp)}</div>` : ''}
+                                ${guest.email ? `<div><i class="fas fa-envelope"></i> ${escapeHtml(guest.email)}</div>` : ''}
+                                ${guest.document ? `<div><i class="fas fa-id-card"></i> ${escapeHtml(guest.document)}</div>` : ''}
+                                ${checkedInTime ? `<div><i class="fas fa-clock"></i> Chegou: ${escapeHtml(checkedInTime)}</div>` : ''}
                             </div>
                         </div>
                         ${(guest.status !== 'checked_in' && guest.status !== 'confirmed') ? `
-                        <button onclick="checkInGuest(${guest.id}, '${(guest.name || '').replace(/'/g, "\\'")}')" style="padding: 10px 20px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 8px; color: #000; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                        <button type="button" class="ck-checkin-btn" data-guest-id="${Number(guest.id) || 0}" data-guest-name="${escapeHtml(guest.name || '')}" style="padding: 10px 20px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 8px; color: #000; font-weight: 600; cursor: pointer; white-space: nowrap;">
                             <i class="fas fa-check"></i> Confirmar Chegada
                         </button>
                         ` : ''}
@@ -3578,6 +3593,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }).join('');
+        container.querySelectorAll('.ck-checkin-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const id = parseInt(btn.getAttribute('data-guest-id') || '0', 10);
+                const name = btn.getAttribute('data-guest-name') || '';
+                if (id && typeof window.checkInGuest === 'function') window.checkInGuest(id, name);
+            });
+        });
     }
     
     // Função para confirmar chegada de convidado (global para ser chamada do HTML)

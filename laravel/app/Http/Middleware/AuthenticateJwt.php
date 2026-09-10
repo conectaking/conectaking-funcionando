@@ -50,8 +50,8 @@ class AuthenticateJwt
         $auth = $request->header('Authorization', '');
         if (is_string($auth) && str_starts_with($auth, 'Bearer ')) {
             $t = trim(substr($auth, 7));
-            // Bearer vazio (comum em front cookie-only) não deve bloquear o cookie HttpOnly.
-            if ($t !== '') {
+            // Bearer vazio / "null" / "undefined" (front cookie-only) não deve bloquear o cookie.
+            if ($t !== '' && ! in_array(strtolower($t), ['null', 'undefined'], true)) {
                 return $t;
             }
         }

@@ -179,13 +179,9 @@
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
+                                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
                     credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: productAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -225,13 +221,9 @@
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
+                                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products`, {
                     credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: productAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -370,7 +362,7 @@
                     </div>
                     <div class="product-card-image">
                         ${product.image_url 
-                            ? `<img src="${product.image_url}" alt="${product.name}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiMxQzFDMjEiLz48dGV4dCB4PSIxMDAiIHk9IjEwNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5TZW0gSW1hZ2VtPC90ZXh0Pjwvc3ZnPg=='">`
+                            ? `<img src="${this.escapeAttrUrl(product.image_url)}" alt="${this.escapeHtml(product.name || '')}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiMxQzFDMjEiLz48dGV4dCB4PSIxMDAiIHk9IjEwNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0Ij5TZW0gSW1hZ2VtPC90ZXh0Pjwvc3ZnPg=='">`
                             : '<div class="product-card-placeholder"><i class="fas fa-image"></i></div>'
                         }
                         ${featuredHtml}
@@ -521,14 +513,10 @@
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
+                                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
                     method: 'POST',
                     credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: productAuthHeaders(),
                     body: JSON.stringify({ productOrders: productOrders })
                 });
 
@@ -624,14 +612,10 @@
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
+                                const response = await fetch(`${API_URL}/api/v1/sales-pages/${salesPageId}/products/reorder`, {
                     method: 'POST',
                     credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: productAuthHeaders(),
                     body: JSON.stringify({ productOrders: productOrders })
                 });
 
@@ -1049,17 +1033,13 @@
                             uploadBtn.disabled = true;
                             uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
-                            const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                            const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
+                                                        const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                             
                             // Obter URL de upload do Cloudflare
                             const authResponse = await fetch(`${API_URL}/api/upload/auth`, {
                                 method: 'POST',
                                 credentials: 'include',
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                }
+                                headers: productAuthHeaders()
                             });
 
                             if (!authResponse.ok) {
@@ -1079,7 +1059,10 @@
                                 const uploadResponse = await fetch(uploadURL, {
                                     method: 'POST',
                                     body: formData,
-                                    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+                                    headers: (() => {
+                                        const t = productAuthToken();
+                                        return t ? { 'Authorization': 'Bearer ' + t } : {};
+                                    })()
                                 });
 
                                 if (!uploadResponse.ok) {
@@ -1227,8 +1210,7 @@
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                
+                                
                 const url = this.currentProduct
                     ? `${API_URL}/api/v1/sales-pages/products/${this.currentProduct.id}`
                     : `${API_URL}/api/v1/sales-pages/${salesPageId}/products`;
@@ -1238,10 +1220,7 @@
                 const response = await fetch(url, {
                     method,
                     credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: productAuthHeaders(),
                     body: JSON.stringify(productData)
                 });
 
@@ -1366,14 +1345,10 @@
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}/status`, {
+                                const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}/status`, {
                     method: 'PATCH',
                     credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: productAuthHeaders(),
                     body: JSON.stringify({ status: newStatus })
                 });
 
@@ -1440,14 +1415,10 @@
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
-                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}`, {
+                                const response = await fetch(`${API_URL}/api/v1/sales-pages/products/${productId}`, {
                     method: 'DELETE',
                     credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: productAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -1769,16 +1740,12 @@
                         defaultValue: currentName,
                         onConfirm: async (prompt) => {
                             try {
-                                const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
+                                                                const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                                 
                                 const response = await fetch(`${API_URL}/api/suggestions/generate`, {
                                     method: 'POST',
                                     credentials: 'include',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${token}`
-                                    },
+                                    headers: productAuthHeaders(),
                                     body: JSON.stringify({
                                         type: 'product_name',
                                         prompt: prompt,
@@ -1848,16 +1815,12 @@
             // Função para buscar sugestões do backend
             const fetchSuggestions = async (name, prompt = '') => {
                 try {
-                    const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
-                    const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
+                                        const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
                     
                     const response = await fetch(`${API_URL}/api/suggestions/generate`, {
                         method: 'POST',
                         credentials: 'include',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
+                        headers: productAuthHeaders(),
                         body: JSON.stringify({
                             type: 'product_description',
                             prompt: prompt || name,
@@ -1947,6 +1910,18 @@
             btnCloseSuggestions?.addEventListener('click', () => {
                 suggestionsContainer.style.display = 'none';
             });
+        },
+
+        /**
+         * Escape URL for use in HTML attributes (blocks javascript: etc.)
+         */
+        escapeAttrUrl(url) {
+            const u = String(url || '').trim();
+            if (!u) return '';
+            if (/^(https?:\/\/|\/|data:image\/)/i.test(u)) {
+                return String(u).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+            }
+            return '';
         },
 
         /**

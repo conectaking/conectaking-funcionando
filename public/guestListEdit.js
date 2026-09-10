@@ -6,6 +6,20 @@ let currentGuestList = null;
 let guests = [];
 
 // Obter token (cookie-first: Bearer só se ainda houver no LS)
+function escapeHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+function authHeaders(extra) {
+    const h = Object.assign({}, extra || {});
+    const token = getToken();
+    if (token) h.Authorization = 'Bearer ' + token;
+    return h;
+}
 function getToken() {
     try {
         if (window.CkAuth && typeof window.CkAuth.lsToken === 'function') {
@@ -19,6 +33,18 @@ const __guestRawFetch = window.fetch.bind(window);
 function fetch(input, init) {
     init = init || {};
     if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
+    try {
+      const h = init.headers;
+      if (h && typeof h === 'object' && !h.get) {
+        const auth = h.Authorization || h.authorization;
+        if (typeof auth === 'string' && /^Bearer\s*(null|undefined)?\s*$/i.test(auth.trim())) {
+          const copy = Object.assign({}, h);
+          delete copy.Authorization;
+          delete copy.authorization;
+          init = Object.assign({}, init, { headers: copy });
+        }
+      }
+    } catch (e) {}
     return __guestRawFetch(input, init);
 }
 
@@ -102,9 +128,7 @@ async function loadAllGuestLists() {
     try {
         const token = getToken();
         const response = await fetch(`${API_URL}/api/guest-lists`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: authHeaders()
         });
         
         if (!response.ok) {
@@ -235,19 +259,19 @@ function renderAllLists(lists) {
             const eventDate = list.event_date ? new Date(list.event_date).toLocaleDateString('pt-BR') : 'Não definido';
             
             html += `
-                <div class="list-card" data-list-name="${(list.event_title || list.title || '').toLowerCase()}" data-list-location="${(list.event_location || '').toLowerCase()}" style="background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; padding: 24px; transition: all 0.3s;">
+                <div class="list-card" data-list-name="${escapeHtml((list.event_title || list.title || '').toLowerCase())}" data-list-location="${escapeHtml((list.event_location || '').toLowerCase())}" style="background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; padding: 24px; transition: all 0.3s;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
                         <div style="flex: 1;">
                             <h3 style="margin: 0 0 8px 0; color: var(--text, #ECECEC); font-size: 20px; display: flex; align-items: center; gap: 10px;">
                                 <i class="fas fa-users" style="color: var(--dourado-principal, #FFC700);"></i>
-                                ${list.event_title || list.title || 'Lista de Convidados'}
+                                ${escapeHtml(list.event_title || list.title || 'Lista de Convidados')}
                             </h3>
                             <p style="color: var(--text-dark, #A1A1A1); margin: 4px 0; font-size: 14px;">
                                 <i class="fas fa-calendar" style="margin-right: 6px;"></i> ${eventDate}
                             </p>
                             ${list.event_location ? `
                                 <p style="color: var(--text-dark, #A1A1A1); margin: 4px 0; font-size: 14px;">
-                                    <i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> ${list.event_location}
+                                    <i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> ${escapeHtml(list.event_location)}
                                 </p>
                             ` : ''}
                         </div>
@@ -425,10 +449,7 @@ async function createNewGuestList() {
         // Usar a rota específica de guest-lists que cria tudo automaticamente
         const response = await fetch(`${API_URL}/api/guest-lists`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 title: prompt('Digite o nome da lista de convidados:') || 'Nova Lista de Convidados',
                 event_title: prompt('Digite o nome do evento:') || 'Evento'
@@ -474,9 +495,7 @@ async function loadGuestList() {
     try {
         const token = getToken();
         const response = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: authHeaders()
         });
         
         if (!response.ok) {
@@ -647,9 +666,7 @@ async function loadGuests(append) {
         const response = await fetch(
             `${API_URL}/api/guest-lists/${currentGuestListId}/guests?limit=100&offset=${offset}`,
             {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: authHeaders()
             }
         );
         
@@ -685,9 +702,7 @@ async function loadStats() {
     try {
         const token = getToken();
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}/stats`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: authHeaders()
         });
         
         if (!response.ok) {
@@ -805,9 +820,9 @@ function renderRegisteredGuests(guestsList) {
         
         return `
             <div class="table-row">
-                <div style="font-weight: 600;">${guest.name || '-'}</div>
-                <div>${guest.email || '-'}</div>
-                <div>${guest.phone || '-'}</div>
+                <div style="font-weight: 600;">${escapeHtml(guest.name || '-')}</div>
+                <div>${escapeHtml(guest.email || '-')}</div>
+                <div>${escapeHtml(guest.phone || '-')}</div>
                 <div><span class="status-badge status-${guest.status}">${getStatusLabel(guest.status)}</span></div>
                 <div>${registeredAt}</div>
                 <div>
@@ -841,9 +856,9 @@ function renderConfirmationGuests(guestsList) {
         
         return `
             <div class="table-row">
-                <div style="font-weight: 600;">${guest.name || '-'}</div>
-                <div>${guest.email || '-'}</div>
-                <div>${guest.phone || '-'}</div>
+                <div style="font-weight: 600;">${escapeHtml(guest.name || '-')}</div>
+                <div>${escapeHtml(guest.email || '-')}</div>
+                <div>${escapeHtml(guest.phone || '-')}</div>
                 <div><span class="status-badge status-${guest.status}">${getStatusLabel(guest.status)}</span></div>
                 <div>${registeredAt}</div>
                 <div>
@@ -880,9 +895,9 @@ function renderConfirmedGuests(guestsList) {
         
         return `
             <div class="table-row">
-                <div style="font-weight: 600;">${guest.name || '-'}</div>
-                <div>${guest.email || '-'}</div>
-                <div>${guest.phone || '-'}</div>
+                <div style="font-weight: 600;">${escapeHtml(guest.name || '-')}</div>
+                <div>${escapeHtml(guest.email || '-')}</div>
+                <div>${escapeHtml(guest.phone || '-')}</div>
                 <div><span class="status-badge status-${guest.status}">${getStatusLabel(guest.status)}</span></div>
                 <div>${confirmedAt}</div>
                 <div>
@@ -1566,10 +1581,7 @@ async function checkInGuest(guestId) {
         const token = getToken();
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}/guests/${guestId}`, {
             method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 status: 'checked_in'
             })
@@ -1595,10 +1607,7 @@ async function confirmGuest(guestId) {
         const token = getToken();
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}/guests/${guestId}`, {
             method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 status: 'confirmed'
             })
@@ -1628,9 +1637,7 @@ async function deleteGuest(guestId) {
         const token = getToken();
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}/guests/${guestId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: authHeaders()
         });
         
         if (!response.ok) {
@@ -2321,10 +2328,7 @@ async function saveGuestList() {
         
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(updateData)
         });
         
@@ -2418,9 +2422,7 @@ async function filterGuests(tab, searchTerm) {
         }
         
         const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: authHeaders()
         });
         
         if (response.ok) {
@@ -2460,11 +2462,11 @@ async function viewGuestDetails(guestId) {
     content.innerHTML = `
         <div class="info-row">
             <div class="info-label">Nome Completo:</div>
-            <div class="info-value">${guest.name || '-'}</div>
+            <div class="info-value">${escapeHtml(guest.name || '-')}</div>
         </div>
         <div class="info-row">
             <div class="info-label">Email:</div>
-            <div class="info-value">${guest.email || '-'}</div>
+            <div class="info-value">${escapeHtml(guest.email || '-')}</div>
         </div>
         <div class="info-row">
             <div class="info-label">WhatsApp:</div>
@@ -2472,7 +2474,7 @@ async function viewGuestDetails(guestId) {
         </div>
         <div class="info-row">
             <div class="info-label">Telefone:</div>
-            <div class="info-value">${guest.phone || '-'}</div>
+            <div class="info-value">${escapeHtml(guest.phone || '-')}</div>
         </div>
         <div class="info-row">
             <div class="info-label">CPF/CNPJ:</div>
@@ -2558,9 +2560,7 @@ async function deleteGuestList() {
         const token = getToken();
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: authHeaders()
         });
         
         if (response.ok) {
@@ -2595,9 +2595,7 @@ async function exportToPDF(tab) {
         }
         
         const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: authHeaders()
         });
         
         if (response.ok) {

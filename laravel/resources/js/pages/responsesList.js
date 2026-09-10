@@ -245,7 +245,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     <div style="color: #ff4444; text-align: center; padding: 40px;">
                         <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px; color: #ff4444;"></i>
                         <h3 style="color: #ff4444; margin-bottom: 12px;">Erro ao Carregar Dados</h3>
-                        <div style="color: #ECECEC; margin-bottom: 20px;">${errorMessage}</div>
+                        <div style="color: #ECECEC; margin-bottom: 20px;">${escapeHtml(errorMessage)}</div>
                         <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
                             <i class="fas fa-redo"></i> Tentar Novamente
                         </button>

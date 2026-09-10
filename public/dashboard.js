@@ -575,8 +575,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Testa um endpoint que sabemos que existe
             const testResponse = await fetch(`${API_URL}/api/account/status`, {
                 method: 'GET',
+                credentials: 'include',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                     'Accept': 'application/json'
                 }
             });

@@ -59,6 +59,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const HEADERS = { 'Content-Type': 'application/json' };
     if (token) HEADERS.Authorization = 'Bearer ' + token;
 
+    const __adminRawFetch = window.fetch.bind(window);
+    function fetch(url, init) {
+        init = init || {};
+        if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
+        try {
+            const h = init.headers;
+            if (h && typeof h === 'object' && !h.get) {
+                const auth = h.Authorization || h.authorization;
+                if (typeof auth === 'string' && /^Bearer\s*(null|undefined)?\s*$/i.test(String(auth).trim())) {
+                    const copy = Object.assign({}, h);
+                    delete copy.Authorization;
+                    delete copy.authorization;
+                    init = Object.assign({}, init, { headers: copy });
+                }
+            }
+        } catch (e) {}
+        return __adminRawFetch(url, init);
+    }
+
     // Função para testar conectividade com a API
     async function testAPIConnectivity() {
         try {
@@ -161,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const msgEl = document.getElementById('default-branding-message');
         if (msgEl) msgEl.textContent = '';
         try {
-            const res = await fetch(`${API_URL}/default-branding`, { headers: { 'Authorization': HEADERS.Authorization } });
+            const res = await fetch(`${API_URL}/default-branding`, { headers: HEADERS });
             if (!res.ok) throw new Error(res.status === 403 ? 'Acesso negado.' : 'Erro ao carregar.');
             const data = await res.json();
             if (data.success) {

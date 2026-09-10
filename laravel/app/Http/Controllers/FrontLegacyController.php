@@ -95,14 +95,14 @@ class FrontLegacyController extends Controller
                 else { try { delete h.Authorization; delete h.authorization; } catch (e) {} }
               }
               var existingAuth = readAuth(headers);
-              // Remover "Bearer " vazio — bloqueava cookie HttpOnly no middleware
-              if (existingAuth && /^Bearer\\s*$/i.test(existingAuth.trim())) {
+              // Remover Bearer vazio / "null" / "undefined" — bloqueava cookie HttpOnly
+              if (existingAuth && /^Bearer\\s*(null|undefined)?\\s*$/i.test(existingAuth.trim())) {
                 clearAuth(headers);
                 existingAuth = '';
               }
               if (!existingAuth) {
                 var token = getToken();
-                if (token) writeAuth(headers, 'Bearer ' + token);
+                if (token && token !== 'null' && token !== 'undefined') writeAuth(headers, 'Bearer ' + token);
               }
             }
             if (finalUrl === url) return nativeFetch.apply(this, arguments);
