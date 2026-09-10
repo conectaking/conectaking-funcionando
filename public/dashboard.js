@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ? sameOrigin
         : (window.API_CONFIG?.baseURL || `http://${window.location.hostname}:8080`);
     const computedProd = isProdHost ? (sameOrigin || 'https://www.conectaking.com.br') : 'https://www.conectaking.com.br';
-    // Nunca herdar API Node antiga (:5000) em producao
+    // Bloquear base herdada do stack Node legado (:5000) em hosts de produção.
     if (inheritedApi && /:5000$/i.test(inheritedApi) && isProdHost) {
         try { window.API_BASE = computedProd; window.API_URL = computedProd; } catch (e) {}
     }

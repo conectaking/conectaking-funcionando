@@ -63,7 +63,7 @@ A exclusão do KingSelection só acontece se alguém **explicitamente** clicar e
 ## O que fazer daqui pra frente
 
 1. **Evitar excluir o módulo KingSelection** no dashboard, a menos que seja realmente o que você quer (e aí todas as galerias daquele perfil serão apagadas).
-2. **Se ainda tiver backup do banco** (por exemplo no Render ou no provedor), pode ser possível recuperar a tabela `profile_items` e `king_galleries` de um ponto anterior; isso depende do seu plano e do suporte.
+2. **Se ainda tiver backup do banco** (ex.: `/opt/conectaking/backups` no VPS Hetzner ou snapshot do provedor), pode ser possível recuperar `profile_items` / `king_galleries`; depende do ponto de restauração.
 3. **Novas galerias** que você criar a partir de agora já ficam protegidas contra o save-all; o que foi perdido antes não volta sozinho, só por restauração de backup.
 
 ---

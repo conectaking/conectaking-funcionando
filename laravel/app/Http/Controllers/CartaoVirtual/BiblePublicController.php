@@ -94,7 +94,7 @@ class BiblePublicController extends Controller
         if (!$study) {
             return response()->json([
                 'success' => false,
-                'message' => 'Estudo ainda não disponível para este livro. Em breve no Bíblia King.',
+                'message' => 'Estudo deste livro ainda não está publicado.',
                 'code' => 'STUDY_NOT_READY',
             ], 404)->header('X-Conecta-Engine', 'laravel');
         }

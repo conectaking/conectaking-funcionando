@@ -23,7 +23,7 @@
 <div class="wrap">
     <p class="nav"><a href="{{ $profileUrl }}">← Voltar ao perfil</a></p>
     <h1>Bíblia</h1>
-    <p class="nav" style="opacity:.75;margin-top:-4px;margin-bottom:12px">Leitura pública · Devocionais · Estudos por livro</p>
+    <p class="nav" style="opacity:.75;margin-top:-4px;margin-bottom:12px">Leitura pública · Devocionais · Planos</p>
     <p class="nav">Tradução: {{ strtoupper($translation) }}</p>
     @if(!empty($verse))
         <div class="verse">
@@ -78,18 +78,8 @@
         </div>
     @endif
 
-    @php $withStudy = $booksWithStudy ?? []; @endphp
-    @if(!empty($withStudy))
-        <h2>Estudos por livro</h2>
-        <div class="books">
-            @foreach(array_merge($at ?? [], $nt ?? []) as $b)
-                @php $id = $b['id'] ?? ''; @endphp
-                @if($id !== '' && !empty($withStudy[$id]))
-                    <a class="book" href="/{{ $slug }}/biblia/estudos-livro/{{ $id }}">{{ $b['name'] ?? $id }}<small>estudo</small></a>
-                @endif
-            @endforeach
-        </div>
-    @endif
+    @php $withStudy = []; @endphp
+    {{-- Estudos por livro: seção pública ocultada até corpus completo --}}
 
     <h2>Antigo Testamento</h2>
     <div class="books">
@@ -98,7 +88,7 @@
                 $id = $b['id'] ?? '';
                 $name = $b['name'] ?? $id;
                 $n = $chapterCounts[$id] ?? 1;
-                $meta = $n.' cap.'.(!empty($withStudy[$id]) ? ' · estudo' : '');
+                $meta = $n.' cap.';
             @endphp
             <a class="book" href="/{{ $slug }}/bible/{{ $id }}/1">{{ $name }}<small>{{ $meta }}</small></a>
         @endforeach
@@ -111,7 +101,7 @@
                 $id = $b['id'] ?? '';
                 $name = $b['name'] ?? $id;
                 $n = $chapterCounts[$id] ?? 1;
-                $meta = $n.' cap.'.(!empty($withStudy[$id]) ? ' · estudo' : '');
+                $meta = $n.' cap.';
             @endphp
             <a class="book" href="/{{ $slug }}/bible/{{ $id }}/1">{{ $name }}<small>{{ $meta }}</small></a>
         @endforeach

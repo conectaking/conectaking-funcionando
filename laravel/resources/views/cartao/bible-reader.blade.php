@@ -41,9 +41,6 @@
 <div class="wrap">
     <div class="top">
         <a href="{{ $hubUrl }}">← Livros</a>
-        @if(!empty($studyUrl))
-            <a href="{{ $studyUrl }}">Estudo do livro</a>
-        @endif
         <a href="{{ $profileUrl }}">Voltar ao perfil</a>
     </div>
     <h1>{{ $chapterData['bookName'] }} {{ $chapterData['chapter'] }}</h1>

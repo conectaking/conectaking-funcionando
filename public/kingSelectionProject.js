@@ -1027,7 +1027,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let photoFilter = 'all'; // all|fav
   let photoSearch = '';
-  let photoPageSize = 24;
+  let photoPageSize = 12;
+  let _photosPreviewIo = null;
   let photoPageIndex = 0;
   let photoFolderFilterId = null; // null=todas, -1=fotos soltas, >0=id da pasta
   let photoSortMode = 'order'; // order|name|id
@@ -3590,6 +3591,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Hidratar previews: só os visíveis (IntersectionObserver). Não disparar o resto da galeria.
     if (uploadState && uploadState.running) return;
+    // Troca de página/filtro: desligar observer anterior e podar blob URLs fora da tela.
+    try { if (_photosPreviewIo) { _photosPreviewIo.disconnect(); _photosPreviewIo = null; } } catch (_) { }
+    try {
+      const inUse = getPreviewKeysInUse();
+      let pruned = 0;
+      for (const k of Array.from(_previewObjectUrls.keys())) {
+        if (pruned >= 80) break;
+        if (inUse.has(k)) continue;
+        revokePreviewUrl(k);
+        pruned += 1;
+      }
+    } catch (_) { }
     const imgs = Array.from(pGrid.querySelectorAll('img[data-photo-id]'))
       .map(img => ({ img, id: parseInt(img.getAttribute('data-photo-id') || '0', 10) }))
       .filter(x => x.id);
@@ -3637,6 +3650,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           loadOne(img, id);
         });
       }, { rootMargin: '180px', threshold: 0.01 });
+      _photosPreviewIo = io;
       imgs.forEach(({ img }) => {
         img.removeAttribute('data-preview-loaded');
         io.observe(img);
@@ -3647,7 +3661,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadOne(img, id);
       });
     } else {
-      runPool(imgs.slice(0, 24), PREVIEW_CONCURRENCY, async ({ img, id }) => loadOne(img, id)).catch(() => { });
+      runPool(imgs.slice(0, 12), PREVIEW_CONCURRENCY, async ({ img, id }) => loadOne(img, id)).catch(() => { });
     }
   }
 

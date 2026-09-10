@@ -1013,24 +1013,6 @@
                                 </div>
                                 <button id="download-qr-btn-alt" class="btn btn-secondary">Baixar</button>
                             </div>
-                            
-                            <div class="share-option-item disabled">
-                                <div class="share-option-label">
-                                    <i class="fab fa-apple"></i>
-                                    <span>Apple Wallet</span>
-                                    <span class="pro-badge">Em breve</span>
-                                </div>
-                                <button class="btn btn-secondary" disabled>Adicionar</button>
-                            </div>
-
-                            <div class="share-option-item disabled">
-                                <div class="share-option-label">
-                                    <i class="fab fa-google-wallet"></i>
-                                    <span>Google Wallet</span>
-                                    <span class="pro-badge">Em breve</span>
-                                </div>
-                                <button class="btn btn-secondary" disabled>Adicionar</button>
-                            </div>
 
                         </div>
                     </div>

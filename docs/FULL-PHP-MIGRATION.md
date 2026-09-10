@@ -7,7 +7,7 @@
 - Edge app: FrankenPHP classic (`:8080`), TLS no Caddy do host
 - Páginas: `laravel/resources/views/pages/*.blade.php` (ADM, dashboard, KS, forms, docs, etc.)
 - Assets: `public/` (JS/CSS/imagens) montados em `/legacy/public`
-- Crons: `schedule:work` no entrypoint + comandos `maintenance:*`
+- Crons: loop `schedule:run` a cada 60s no entrypoint (`laravel/docker-entrypoint.sh`)
 - Checkout / PagBank / Mercado Pago: **fora de escopo** (HTTP 410)
 
 ## Removido

@@ -92,7 +92,7 @@
             if (!this.plans.length) {
                 var isNetworkError = this.loadError && (this.loadError.message || '').toLowerCase().indexOf('fetch') !== -1;
                 var msg = isNetworkError
-                    ? 'Não foi possvel conectar  API. <strong>Inicie o servidor</strong> na pasta do projeto no terminal: <code>npm start</code> (porta 5000).'
+                    ? 'Não foi possível conectar à API. Em desenvolvimento: suba o stack local (<code>docker compose up</code> / porta <code>8080</code>). Em produção, confira a sessão e a origem da API.'
                     : 'Sem permissão para ver os planos ou nenhum plano ativo. Apenas administradores podem configurar limites de links.';
                 gridContainer.innerHTML = '<p style="color: var(--text-secondary, #888888); text-align: center; padding: 40px;">' + msg + '</p>';
                 return;

@@ -42,9 +42,10 @@ RUN rm -f .env .env.backup \
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 ENV LOG_CHANNEL=stderr
-ENV SESSION_DRIVER=file
-ENV CACHE_STORE=file
-ENV QUEUE_CONNECTION=sync
+# Defaults alinhados ao compose prod (sobrescritos por env_file se necessário)
+ENV SESSION_DRIVER=redis
+ENV CACHE_STORE=redis
+ENV QUEUE_CONNECTION=redis
 
 ENV SERVER_NAME=:8080
 
