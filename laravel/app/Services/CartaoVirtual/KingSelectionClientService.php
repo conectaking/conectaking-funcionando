@@ -467,7 +467,7 @@ class KingSelectionClientService
             ],
             'photographer_name' => (string) ($g->thank_you_photographer_name ?? $g->nome_projeto ?? 'Fotógrafo'),
             'entry_splash_url' => $splash
-                ? '/api/king-selection/public/entry-splash?slug='.rawurlencode((string) $g->slug)
+                ? '/api/king-selection/public/entry-splash?slug='.rawurlencode((string) $g->slug).'&o=2'
                 : null,
             'client_entry_splash_enabled' => $splash,
             'currentSelectionRound' => $sel['currentSelectionRound'],

@@ -240,7 +240,7 @@ class KingSelectionPublicService
                     'client_folder_layout' => $folderLayout,
                     'client_entry_splash_enabled' => $splashBoot,
                     'entry_splash_url' => $splashBoot
-                        ? '/api/king-selection/public/cover?slug='.rawurlencode((string) $g->slug)
+                        ? '/api/king-selection/public/cover?slug='.rawurlencode((string) $g->slug).'&o=2'
                         : null,
                     'tutorial_video_url' => !empty($g->tutorial_video_url ?? null) ? trim((string) $g->tutorial_video_url) : null,
                     'allow_client_edit_request' => $accessMode === 'public' && !empty($g->allow_client_edit_request ?? false),

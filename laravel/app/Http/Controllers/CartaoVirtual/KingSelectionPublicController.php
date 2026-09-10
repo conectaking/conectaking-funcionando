@@ -82,7 +82,7 @@ class KingSelectionPublicController extends Controller
 
         return response($result['binary'], 200)
             ->header('Content-Type', $result['contentType'] ?? 'image/jpeg')
-            ->header('Cache-Control', 'public, max-age=900')
+            ->header('Cache-Control', 'public, max-age=120, must-revalidate')
             ->header('X-Conecta-Engine', 'laravel');
     }
 
@@ -133,7 +133,7 @@ class KingSelectionPublicController extends Controller
 
         return response($result['binary'], 200)
             ->header('Content-Type', $result['contentType'] ?? 'image/jpeg')
-            ->header('Cache-Control', 'public, max-age=600')
+            ->header('Cache-Control', 'public, max-age=120, must-revalidate')
             ->header('X-Conecta-Engine', 'laravel');
     }
 

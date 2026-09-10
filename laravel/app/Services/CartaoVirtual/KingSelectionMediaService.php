@@ -144,7 +144,7 @@ class KingSelectionMediaService
 
     private function previewCachePath(string $path, int $maxSide, string $wmKey): ?string
     {
-        $hash = hash('sha256', $path.'|'.$maxSide.$wmKey);
+        $hash = hash('sha256', $path.'|'.$maxSide.$wmKey.'|orient2');
         $sub = substr($hash, 0, 2);
         $uploads = rtrim((string) (env('KS_UPLOADS_PATH') ?: ''), '/');
         if ($uploads !== '' && is_dir($uploads)) {
