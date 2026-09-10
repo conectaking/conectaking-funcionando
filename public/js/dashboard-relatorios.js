@@ -46,9 +46,9 @@
 async function fetchAnalyticsData(period = '30') {
     try {
         const [kpisRes, performanceRes, topItemsRes] = await Promise.all([
-            fetch(`${env.API_URL}/api/analytics/kpis?period=${period}`, { headers: env.HEADERS }),
-            fetch(`${env.API_URL}/api/analytics/performance?period=${period}`, { headers: env.HEADERS }),
-            fetch(`${env.API_URL}/api/analytics/top-items?period=${period}`, { headers: env.HEADERS })
+            fetch(`${env.API_URL}/api/analytics/kpis?period=${period}`, { credentials: 'include', headers: env.HEADERS }),
+            fetch(`${env.API_URL}/api/analytics/performance?period=${period}`, { credentials: 'include', headers: env.HEADERS }),
+            fetch(`${env.API_URL}/api/analytics/top-items?period=${period}`, { credentials: 'include', headers: env.HEADERS })
         ]);
 
         if (!kpisRes.ok || !performanceRes.ok || !topItemsRes.ok) {
@@ -164,9 +164,9 @@ async function loadReportsData() {
 
     try {
         const [kpisRes, performanceRes, topItemsRes] = await Promise.all([
-            fetch(`${env.API_URL}/api/analytics/kpis?period=${period}`, { headers: env.HEADERS }),
-            fetch(`${env.API_URL}/api/analytics/performance?period=${period}`, { headers: env.HEADERS }),
-            fetch(`${env.API_URL}/api/analytics/top-items?period=${period}`, { headers: env.HEADERS })
+            fetch(`${env.API_URL}/api/analytics/kpis?period=${period}`, { credentials: 'include', headers: env.HEADERS }),
+            fetch(`${env.API_URL}/api/analytics/performance?period=${period}`, { credentials: 'include', headers: env.HEADERS }),
+            fetch(`${env.API_URL}/api/analytics/top-items?period=${period}`, { credentials: 'include', headers: env.HEADERS })
         ]);
 
         if (!kpisRes.ok || !performanceRes.ok || !topItemsRes.ok) {
@@ -180,7 +180,7 @@ async function loadReportsData() {
         // Buscar detalhes completos com período
         let detailsData = null;
         const detailsUrl = `${env.API_URL}/api/analytics/details?period=${period}`;
-        const detailsResponse = await fetch(detailsUrl, { headers: env.HEADERS });
+        const detailsResponse = await fetch(detailsUrl, { credentials: 'include', headers: env.HEADERS });
         if (detailsResponse.ok) {
             detailsData = await detailsResponse.json();
             renderAllLinksDetails(detailsData, period);

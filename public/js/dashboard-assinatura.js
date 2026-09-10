@@ -22,6 +22,7 @@
         },
         get HEADERS_AUTH() {
             var c = core();
+            if (typeof c.getAuthHeaders === 'function') return c.getAuthHeaders() || {};
             if (typeof c.getHeadersAuth === 'function') return c.getHeadersAuth() || {};
             return {};
         },

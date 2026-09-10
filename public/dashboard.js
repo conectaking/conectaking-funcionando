@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.DashboardCore = {
         getApiUrl: function () { return API_URL; },
-        getHeadersAuth: function () { return HEADERS_AUTH; },
+        getHeadersAuth: function () { return getAuthHeaders(); },
         getAuthHeaders: function () { return getAuthHeaders(); },
         getHeaders: function () { return getHeaders(); },
         safeFetch: function (url, options) { return safeFetch(url, options); },
@@ -1399,19 +1399,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.closeCropper = closeCropper;
 
 
-    // Edit modal: js/dashboard-edit-modal.js
+    // Edit modal: js/dashboard-edit-modal.js (lazy via Vite — não sobrescrever stub ensureLazy)
     async function openEditModal(itemEl) {
         if (window.DashboardEditModal && window.DashboardEditModal.openEditModal) {
             return window.DashboardEditModal.openEditModal(itemEl);
         }
+        if (typeof window.__ckEnsureLazy === 'function') {
+            await window.__ckEnsureLazy('editModal');
+            if (window.DashboardEditModal && window.DashboardEditModal.openEditModal) {
+                return window.DashboardEditModal.openEditModal(itemEl);
+            }
+        }
     }
-    function openEditModalForNewItem(tempItem) {
+    async function openEditModalForNewItem(tempItem) {
         if (window.DashboardEditModal && window.DashboardEditModal.openEditModalForNewItem) {
             return window.DashboardEditModal.openEditModalForNewItem(tempItem);
         }
+        if (typeof window.__ckEnsureLazy === 'function') {
+            await window.__ckEnsureLazy('editModal');
+            if (window.DashboardEditModal && window.DashboardEditModal.openEditModalForNewItem) {
+                return window.DashboardEditModal.openEditModalForNewItem(tempItem);
+            }
+        }
     }
-    window.openEditModal = openEditModal;
-    window.openEditModalForNewItem = openEditModalForNewItem;
+    if (typeof window.openEditModal !== 'function') window.openEditModal = openEditModal;
+    if (typeof window.openEditModalForNewItem !== 'function') window.openEditModalForNewItem = openEditModalForNewItem;
 
     if (window.DashboardCore) window.DashboardCore.duplicateItem = function () { return duplicateItem.apply(null, arguments); };
     async function duplicateItem(itemId) {
@@ -2961,10 +2973,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-    // QR: js/dashboard-qr.js
-    function generateQRCode() {
+    // QR: js/dashboard-qr.js (lazy via Vite — não sobrescrever stub ensureLazy)
+    async function generateQRCode() {
         if (window.DashboardQR && typeof window.DashboardQR.generateQRCode === 'function') {
             return window.DashboardQR.generateQRCode();
+        }
+        if (typeof window.__ckEnsureLazy === 'function') {
+            await window.__ckEnsureLazy('qr');
+            if (window.DashboardQR && typeof window.DashboardQR.generateQRCode === 'function') {
+                return window.DashboardQR.generateQRCode();
+            }
         }
     }
     function getShareQrMeta() {
@@ -2977,16 +2995,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (window.DashboardQR && typeof window.DashboardQR.composeShareQrArt === 'function') {
             return window.DashboardQR.composeShareQrArt();
         }
+        if (typeof window.__ckEnsureLazy === 'function') {
+            await window.__ckEnsureLazy('qr');
+            if (window.DashboardQR && typeof window.DashboardQR.composeShareQrArt === 'function') {
+                return window.DashboardQR.composeShareQrArt();
+            }
+        }
     }
-    window.generateQRCode = generateQRCode;
+    if (typeof window.generateQRCode !== 'function') window.generateQRCode = generateQRCode;
 
-    // Assinatura: js/dashboard-assinatura.js
+    // Assinatura: js/dashboard-assinatura.js (lazy via Vite — NÃO sobrescrever stub ensureLazy)
     async function loadSubscriptionInfo() {
         if (window.DashboardAssinatura && typeof window.DashboardAssinatura.loadSubscriptionInfo === 'function') {
             return window.DashboardAssinatura.loadSubscriptionInfo();
         }
+        if (typeof window.__ckEnsureLazy === 'function') {
+            try {
+                await window.__ckEnsureLazy('assinatura');
+            } catch (e) {
+                console.error('[dashboard] falha ao carregar chunk assinatura', e);
+            }
+            if (window.DashboardAssinatura && typeof window.DashboardAssinatura.loadSubscriptionInfo === 'function') {
+                return window.DashboardAssinatura.loadSubscriptionInfo();
+            }
+        }
+        var infoEl = document.getElementById('subscription-info');
+        if (infoEl) {
+            infoEl.innerHTML = '<p style="color:#ff4444;">Não foi possível carregar a assinatura. Atualize a página.</p>';
+        }
+        var plansEl = document.getElementById('subscription-plans-list');
+        if (plansEl) {
+            plansEl.innerHTML = '<p style="color:#ff4444;">Planos indisponíveis no momento.</p>';
+        }
     }
-    window.loadSubscriptionInfo = loadSubscriptionInfo;
+    if (typeof window.loadSubscriptionInfo !== 'function') {
+        window.loadSubscriptionInfo = loadSubscriptionInfo;
+    }
 
     function getDefaultIcon(itemType) {
         const defaultIcons = {

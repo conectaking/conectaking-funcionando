@@ -2592,7 +2592,7 @@ function _setupEventListenersBody() {
                 if (targetId === 'finance-pane' && window.initFinancePane) window.initFinancePane();
                 else if (targetId === 'relatorios-pane' && typeof window.loadReportsData === 'function') window.loadReportsData();
                 else if (targetId === 'assinatura-pane' && typeof window.loadSubscriptionInfo === 'function') window.loadSubscriptionInfo();
-                else if (targetId === 'compartilhar-pane' && typeof window.generateQRCode === 'function') window.env.generateQRCode();
+                else if (targetId === 'compartilhar-pane' && typeof window.generateQRCode === 'function') window.generateQRCode();
 
                 else if (targetId === 'king-forms-pane') {
                     var kfIframe = document.getElementById('king-forms-iframe');

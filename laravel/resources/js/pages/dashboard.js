@@ -50,6 +50,7 @@ async function ensureLazy(key) {
   });
   return lazyReady[key];
 }
+window.__ckEnsureLazy = ensureLazy;
 
 function paneKeyFromTarget(targetId) {
   if (!targetId) return null;
@@ -139,17 +140,31 @@ function installLazyGuards() {
   if (typeof window.loadReportsData !== 'function') installStub('loadReportsData', 'relatorios');
   if (typeof window.renderFormQuestions !== 'function') installStub('renderFormQuestions', 'formsEditor');
   if (typeof window.loadFormResponses !== 'function') installStub('loadFormResponses', 'formsEditor');
-  // Assinatura: o core define um loadSubscriptionInfo vazio se o chunk ainda não chegou — forçar await
+  if (typeof window.generateQRCode !== 'function') installStub('generateQRCode', 'qr');
+
+  // Assinatura: sempre garantir chunk (DOMContentLoaded do core NÃO deve sobrescrever isto)
   window.loadSubscriptionInfo = async function (...args) {
-    await ensureLazy('assinatura');
+    try {
+      await ensureLazy('assinatura');
+    } catch (err) {
+      const infoEl = document.getElementById('subscription-info');
+      if (infoEl) {
+        infoEl.innerHTML = '<p style="color:#ff4444;">Erro ao carregar módulo de assinatura. Atualize a página.</p>';
+      }
+      throw err;
+    }
     const fn = window.DashboardAssinatura && window.DashboardAssinatura.loadSubscriptionInfo;
     if (typeof fn !== 'function') {
       console.warn('[dashboard] assinatura carregou sem loadSubscriptionInfo');
+      const infoEl = document.getElementById('subscription-info');
+      if (infoEl) {
+        infoEl.innerHTML = '<p style="color:#ff4444;">Assinatura indisponível. Atualize a página.</p>';
+      }
       return;
     }
     return fn.apply(window.DashboardAssinatura, args);
   };
-  // openEditModal já existe no core (delegação); forçar await do chunk antes de delegar
+  // openEditModal: forçar await do chunk antes de delegar
   window.openEditModal = async function (itemEl) {
     await ensureLazy('editModal');
     const fn = window.DashboardEditModal && window.DashboardEditModal.openEditModal;
@@ -171,3 +186,45 @@ function installLazyGuards() {
 }
 
 installLazyGuards();
+
+// Reafirma wrappers lazy DEPOIS do boot do core (DOMContentLoaded),
+// para o legado não deixar Assinatura/QR/Edit em no-op eterno.
+document.addEventListener('DOMContentLoaded', () => {
+  window.loadSubscriptionInfo = async function (...args) {
+    try {
+      await ensureLazy('assinatura');
+    } catch (err) {
+      const infoEl = document.getElementById('subscription-info');
+      if (infoEl) {
+        infoEl.innerHTML =
+          '<p style="color:#ff4444;">Erro ao carregar módulo de assinatura. Atualize a página.</p>';
+      }
+      throw err;
+    }
+    const fn = window.DashboardAssinatura && window.DashboardAssinatura.loadSubscriptionInfo;
+    if (typeof fn !== 'function') {
+      const infoEl = document.getElementById('subscription-info');
+      if (infoEl) {
+        infoEl.innerHTML =
+          '<p style="color:#ff4444;">Assinatura indisponível. Atualize a página.</p>';
+      }
+      return;
+    }
+    return fn.apply(window.DashboardAssinatura, args);
+  };
+  window.openEditModal = async function (itemEl) {
+    await ensureLazy('editModal');
+    const fn = window.DashboardEditModal && window.DashboardEditModal.openEditModal;
+    if (typeof fn !== 'function') return;
+    return fn.call(window.DashboardEditModal, itemEl);
+  };
+  window.openEditModalForNewItem = async function (tempItem) {
+    await ensureLazy('editModal');
+    const fn = window.DashboardEditModal && window.DashboardEditModal.openEditModalForNewItem;
+    if (typeof fn !== 'function') return;
+    return fn.call(window.DashboardEditModal, tempItem);
+  };
+  if (typeof window.generateQRCode !== 'function' || !window.DashboardQR) {
+    installStub('generateQRCode', 'qr');
+  }
+});

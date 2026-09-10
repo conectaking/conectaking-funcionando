@@ -18,8 +18,8 @@
         },
         get HEADERS_AUTH() {
             var c = core();
+            if (typeof c.getAuthHeaders === 'function') return c.getAuthHeaders() || {};
             if (typeof c.getHeadersAuth === 'function') return c.getHeadersAuth() || {};
-            if (typeof c.getAuthHeaders === 'function') return c.getAuthHeaders();
             return {};
         },
         getAuthHeaders: function () {
@@ -35,7 +35,8 @@
         safeFetch: function (url, options) {
             var c = core();
             if (typeof c.safeFetch === 'function') return c.safeFetch(url, options);
-            return fetch(url, options);
+            var opts = Object.assign({ credentials: 'include' }, options || {});
+            return fetch(url, opts);
         }
     };
 
