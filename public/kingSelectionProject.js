@@ -3588,20 +3588,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    // Hidratar previews: Intersection Observer para carregar só quando visível (mais rápido)
+    // Hidratar previews: só os visíveis (IntersectionObserver). Não disparar o resto da galeria.
     if (uploadState && uploadState.running) return;
     const imgs = Array.from(pGrid.querySelectorAll('img[data-photo-id]'))
       .map(img => ({ img, id: parseInt(img.getAttribute('data-photo-id') || '0', 10) }))
       .filter(x => x.id);
     if (!imgs.length) return;
+
+    const PREVIEW_CONCURRENCY = 6;
+    let previewInFlight = 0;
+    const previewWait = [];
+    const withPreviewSlot = (fn) => new Promise((resolve, reject) => {
+      const run = () => {
+        previewInFlight += 1;
+        Promise.resolve()
+          .then(fn)
+          .then(resolve, reject)
+          .finally(() => {
+            previewInFlight -= 1;
+            const next = previewWait.shift();
+            if (next) next();
+          });
+      };
+      if (previewInFlight < PREVIEW_CONCURRENCY) run();
+      else previewWait.push(run);
+    });
+
     const loadOne = (img, id) => {
-      if (img.getAttribute('data-preview-loading') === '1' || img.getAttribute('data-preview-loaded') === '1') return;
+      if (img.getAttribute('data-preview-loading') === '1' || img.getAttribute('data-preview-loaded') === '1') return Promise.resolve();
       img.setAttribute('data-preview-loading', '1');
-      setImgPreview(img, { url: `${API_URL}/api/king-selection/photos/${id}/preview?wm_mode=none&max=480`, photoId: id })
+      return withPreviewSlot(() => setImgPreview(img, {
+        url: `${API_URL}/api/king-selection/photos/${id}/preview?wm_mode=none&max=480`,
+        photoId: id,
+      }))
         .then(() => { img.setAttribute('data-preview-loaded', '1'); })
         .catch(() => { })
         .finally(() => { img.removeAttribute('data-preview-loading'); });
     };
+
     if (typeof IntersectionObserver !== 'undefined') {
       const io = new IntersectionObserver((entries) => {
         entries.forEach(ent => {
@@ -3612,18 +3636,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           io.unobserve(img);
           loadOne(img, id);
         });
-      }, { rootMargin: '200px', threshold: 0.01 });
+      }, { rootMargin: '180px', threshold: 0.01 });
       imgs.forEach(({ img }) => {
         img.removeAttribute('data-preview-loaded');
         io.observe(img);
       });
-      imgs.slice(0, 18).forEach(({ img, id }) => {
+      // Primeira dobra: só as primeiras ~12, com limite de concorrência
+      imgs.slice(0, 12).forEach(({ img, id }) => {
         try { io.unobserve(img); } catch (_) { }
         loadOne(img, id);
       });
-      runPool(imgs.slice(18), 8, async ({ img, id }) => loadOne(img, id)).catch(() => { });
     } else {
-      runPool(imgs, 12, async ({ img, id }) => loadOne(img, id)).catch(() => { });
+      runPool(imgs.slice(0, 24), PREVIEW_CONCURRENCY, async ({ img, id }) => loadOne(img, id)).catch(() => { });
     }
   }
 

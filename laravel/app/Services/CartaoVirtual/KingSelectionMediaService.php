@@ -91,22 +91,29 @@ class KingSelectionMediaService
     /**
      * Preview JPEG a partir de um file_path (cliente autenticado).
      *
+     * @param  bool|int  $thumbOrMax  true=400, false=1200, ou max side (ex.: 480)
      * @param  array{enabled?:bool, mode?:string, opacity?:float}|null  $watermark
      * @return array{status:int, binary?:string, contentType?:string, message?:string}
      */
-    public function previewFromStoragePath(string $path, bool $thumb = false, ?array $watermark = null): array
+    public function previewFromStoragePath(string $path, bool|int $thumbOrMax = false, ?array $watermark = null): array
     {
         $this->bumpImageMemory();
         $buf = $this->bufferFromPath($path);
         if ($buf === null) {
             return ['status' => 502, 'message' => 'Não foi possível carregar a imagem (ficheiro em falta no armazenamento).'];
         }
-        $out = $this->resizeJpeg($buf, $thumb ? 400 : 1200);
+        if (is_int($thumbOrMax)) {
+            $maxSide = max(320, min(2400, $thumbOrMax));
+        } else {
+            $maxSide = $thumbOrMax ? 400 : 1200;
+        }
+        $out = $this->resizeJpeg($buf, $maxSide);
         unset($buf);
         if ($out === null) {
             return ['status' => 502, 'message' => 'Falha ao processar imagem'];
         }
-        if ($watermark && ! empty($watermark['enabled']) && ! $thumb) {
+        $isThumb = $maxSide <= 480;
+        if ($watermark && ! empty($watermark['enabled']) && ! $isThumb) {
             $wm = $this->applyDiagonalWatermark($out, (float) ($watermark['opacity'] ?? 0.22));
             if ($wm !== null) {
                 $out = $wm;

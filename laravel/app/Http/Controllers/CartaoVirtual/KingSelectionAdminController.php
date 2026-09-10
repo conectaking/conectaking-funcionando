@@ -969,7 +969,7 @@ class KingSelectionAdminController extends Controller
 
         return response($r['binary'], 200)
             ->header('Content-Type', $r['contentType'] ?? 'image/jpeg')
-            ->header('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Cache-Control', 'private, max-age=600')
             ->header('Cross-Origin-Resource-Policy', 'cross-origin')
             ->header('X-Conecta-Engine', 'laravel');
     }

@@ -2527,14 +2527,8 @@ class KingSelectionAdminService
                 ];
             }
         }
-        $thumb = $maxSide <= 400;
-        $r = $media->previewFromStoragePath($path, $thumb, $wm);
-        if (($r['status'] ?? 500) === 200 && ! $thumb && $maxSide !== 1200 && ! empty($r['binary'])) {
-            $resized = $this->jpegPreviewResize((string) $r['binary'], $maxSide);
-            if ($resized !== null) {
-                $r['binary'] = $resized;
-            }
-        }
+        // Grelha admin pede max=480: um único resize pequeno (antes gerava 1200 e redimensionava de novo).
+        $r = $media->previewFromStoragePath($path, $maxSide, $skipWm ? null : $wm);
 
         return $r;
     }
