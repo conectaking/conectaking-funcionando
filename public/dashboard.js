@@ -228,8 +228,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const ok = await window.CkAuth.requireAuth('/login');
                     if (!ok) return;
                 }
-                const infoRes = await safeFetch(`${API_URL}/api/profile/import-form-info?token=${encodeURIComponent(importFormToken)}`, {
+                const infoRes = await fetch(`${API_URL}/api/profile/import-form-info?token=${encodeURIComponent(importFormToken)}`, {
                     method: 'GET',
+                    credentials: 'include',
                     headers: getHeaders()
                 });
                 const info = await infoRes.json().catch(() => ({}));
@@ -239,8 +240,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 const msg = 'Deseja importar o formulário "' + (info.formTitle || 'Formulário') + '"' + (info.ownerName ? ' de ' + info.ownerName : '') + '" para sua conta?\n\nEle será copiado com todas as perguntas, imagens e configurações.';
                 if (!confirm(msg)) return;
-                const impRes = await safeFetch(`${API_URL}/api/profile/import-form`, {
+                const impRes = await fetch(`${API_URL}/api/profile/import-form`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: getHeaders(),
                     body: JSON.stringify({ token: importFormToken })
                 });
