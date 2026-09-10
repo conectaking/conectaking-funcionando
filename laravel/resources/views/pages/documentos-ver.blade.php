@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Comprovante de Servio - King</title>
+  <title>Comprovante de Serviço - King</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
@@ -30,7 +30,7 @@
         <span id="logo-placeholder" class="text-slate-400 dark:text-slate-500 text-sm font-medium">Logo</span>
       </div>
       <h1 class="text-xl font-bold tracking-tight text-primary">King Digital Invoice</h1>
-      <p class="text-xs opacity-60 font-medium" id="subtitle">Comprovante de Servio</p>
+      <p class="text-xs opacity-60 font-medium" id="subtitle">Comprovante de Serviço</p>
     </header>
     <main class="px-5">
       <div id="content-card" class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-700/50" style="display:none">

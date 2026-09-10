@@ -1520,7 +1520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const historyHTML = `
                 <div style="margin-bottom: 30px;">
                     <h4 style="color: var(--text); margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-history"></i> Histórico Recente de Cliques (ltimos ${recentClicks.length})
+                        <i class="fas fa-history"></i> Histórico Recente de Cliques (últimos ${recentClicks.length})
                     </h4>
                     <div style="background: var(--bg-dark); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse;">
@@ -1941,8 +1941,8 @@ function renderUsers(users) {
         const displayName = (u.display_name || 'N/A').replace(/</g, '&lt;').replace(/"/g, '&quot;');
         row.innerHTML = `
             <td data-label="#" data-col="num"><strong style="color: var(--text-dark);">${rowNumber}</strong></td>
-            <td data-label="Nome" data-col="name" class="admin-user-name-cell" data-user-id="${u.id}" data-display-name="${displayName}" style="cursor: pointer; color: var(--primary); text-decoration: underline; font-weight: 600;" title="Ver dashboard completo do usuário">${u.display_name || 'N/A'}</td>
-            <td data-label="Email" data-col="email">${u.email}</td>
+            <td data-label="Nome" data-col="name" class="admin-user-name-cell" data-user-id="${u.id}" data-display-name="${displayName}" style="cursor: pointer; color: var(--primary); text-decoration: underline; font-weight: 600;" title="Ver dashboard completo do usuário">${displayName}</td>
+            <td data-label="Email" data-col="email">${(u.email || '').replace(/</g, '&lt;').replace(/"/g, '&quot;')}</td>
             <td data-label="Tipo de Conta" data-col="account_type" class="account-type-cell" style="cursor: pointer; user-select: none;" data-user-id="${u.id}" data-user-email="${u.email}" data-account-type="${u.account_type}" data-is-admin="${u.is_admin}" data-subscription-status="${u.subscription_status || ''}" data-expires-at="${u.subscription_expires_at || ''}" data-max-team-invites="${u.max_team_invites}" data-profile-slug="${u.profile_slug || ''}" data-tag-code="${u.tag_code || ''}">${accountTypeBadges[u.account_type] || u.account_type}</td>
             <td data-label="Status Assinatura" data-col="subscription_status">${u.subscription_status || 'N/A'}</td>
             <td data-label="Expira em" data-col="expires_at">${u.subscription_expires_at ? new Date(u.subscription_expires_at).toLocaleDateString('pt-BR') : 'N/A'}</td>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Oramentos - ConectaKing</title>
+  <title>Orçamentos - ConectaKing</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,7 +48,7 @@
 </head>
 <body>
   <div class="layout">
-    <h1><i class="fas fa-file-invoice-dollar"></i> Oramentos</h1>
+    <h1><i class="fas fa-file-invoice-dollar"></i> Orçamentos</h1>
     <div id="err" class="err"></div>
     <p style="margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center">
       <a href="/recibos-orcamentos" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar à página anterior</a>
@@ -68,7 +68,7 @@
           <option value="">Todos os status</option>
           <option value="novo">Novo</option>
           <option value="em_contato">Em contato</option>
-          <option value="orcamento_enviado">Oramento enviado</option>
+          <option value="orcamento_enviado">Orçamento enviado</option>
           <option value="convertido">Convertido</option>
           <option value="perdido">Perdido</option>
         </select>
@@ -107,7 +107,7 @@
           <select id="detail-status">
             <option value="novo">Novo</option>
             <option value="em_contato">Em contato</option>
-            <option value="orcamento_enviado">Oramento enviado</option>
+            <option value="orcamento_enviado">Orçamento enviado</option>
             <option value="convertido">Convertido</option>
             <option value="perdido">Perdido</option>
           </select>

@@ -1455,8 +1455,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const radioName = `preview-${index}`;
                 inputHTML = `<div class="radio-group" style="display: flex; flex-direction: column; gap: 12px;">` + options.map((opt, i) => `
                     <label class="radio-label preview-option-label" style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 2px solid #e8eaed; border-left: 4px solid var(--preview-option-bar-color, var(--preview-primary-color, #4A90E2)); border-radius: 12px; cursor: default; transition: all 0.2s; background: white;" onmouseover="this.style.borderColor='var(--preview-primary-color, #4A90E2)'; this.style.background='rgba(74,144,226,0.05)';" onmouseout="this.style.borderColor='#e8eaed'; this.style.background='white';">
-                        <input type="radio" name="${radioName}" value="${opt}" data-field-index="${index}" class="preview-conditional-trigger" disabled style="width: 20px; height: 20px; cursor: default; accent-color: var(--preview-primary-color, #4A90E2);">
-                        <span style="color: var(--preview-text-color, #202124); font-size: 15px; font-weight: 500; flex: 1;">${opt}</span>
+                        <input type="radio" name="${radioName}" value="${escapeHtml(opt)}" data-field-index="${index}" class="preview-conditional-trigger" disabled style="width: 20px; height: 20px; cursor: default; accent-color: var(--preview-primary-color, #4A90E2);">
+                        <span style="color: var(--preview-text-color, #202124); font-size: 15px; font-weight: 500; flex: 1;">${escapeHtml(opt)}</span>
                     </label>
                 `).join('') + `</div>`;
                 break;
@@ -1489,8 +1489,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const checkOptions = field.options || [];
                 inputHTML = `<div class="checkbox-group" style="display: flex; flex-direction: column; gap: 12px;">` + checkOptions.map((opt, i) => `
                     <label class="checkbox-label preview-option-label" style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 2px solid #e8eaed; border-left: 4px solid var(--preview-option-bar-color, var(--preview-primary-color, #4A90E2)); border-radius: 12px; cursor: default; transition: all 0.2s; background: white;" onmouseover="this.style.borderColor='var(--preview-primary-color, #4A90E2)'; this.style.background='rgba(74,144,226,0.05)';" onmouseout="this.style.borderColor='#e8eaed'; this.style.background='white';">
-                        <input type="checkbox" name="preview-${index}" value="${opt}" disabled style="width: 20px; height: 20px; cursor: default; accent-color: var(--preview-primary-color, #4A90E2);">
-                        <span style="color: var(--preview-text-color, #202124); font-size: 15px; font-weight: 500; flex: 1;">${opt}</span>
+                        <input type="checkbox" name="preview-${index}" value="${escapeHtml(opt)}" disabled style="width: 20px; height: 20px; cursor: default; accent-color: var(--preview-primary-color, #4A90E2);">
+                        <span style="color: var(--preview-text-color, #202124); font-size: 15px; font-weight: 500; flex: 1;">${escapeHtml(opt)}</span>
                     </label>
                 `).join('') + `</div>`;
                 break;
@@ -1498,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dropOptions = field.options || [];
                 inputHTML = `<select id="preview-field-${index}" class="question-input-preview" disabled style="cursor: default; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\' fill=\\'%235f6368\\'><path d=\\'M7 10l5 5 5-5z\\'/></svg>'); background-repeat: no-repeat; background-position: right 16px center; background-size: 20px; padding-right: 48px;">
                     <option value="">Selecione...</option>
-                    ${dropOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    ${dropOptions.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}
                 </select>`;
                 break;
             case 'date':
@@ -1523,7 +1523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'section':
                 inputHTML = `<div style="margin-top: 16px; padding: 16px 0; border-top: 2px solid #dadce0;">
-                    <div style="font-size: 14px; color: #5f6368; margin-top: 8px;">${field.description || ''}</div>
+                    <div style="font-size: 14px; color: #5f6368; margin-top: 8px;">${escapeHtml(field.description || '')}</div>
                 </div>`;
                 break;
             default:
@@ -1554,9 +1554,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                    <div class="question-label-edit" contenteditable="true" data-index="${index}" style="font-size: 24px; font-weight: 400; color: #202124;">${field.label || 'Nova Seção'}</div>
+                    <div class="question-label-edit" contenteditable="true" data-index="${index}" style="font-size: 24px; font-weight: 400; color: #202124;">${escapeHtml(field.label || 'Nova Seção')}</div>
                     <div style="font-size: 14px; color: #5f6368; margin-top: 8px;">
-                        <div class="question-label-edit" contenteditable="true" data-index="${index}" data-field="description" style="font-size: 14px; font-weight: 400; padding: 8px; border: 2px dashed transparent; border-radius: 4px; min-height: 20px;">${field.description || 'Descrição da seção (opcional)'}</div>
+                        <div class="question-label-edit" contenteditable="true" data-index="${index}" data-field="description" style="font-size: 14px; font-weight: 400; padding: 8px; border: 2px dashed transparent; border-radius: 4px; min-height: 20px;">${escapeHtml(field.description || 'Descrição da seção (opcional)')}</div>
                     </div>
                 </div>
             `;
@@ -3404,7 +3404,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Gráfico 1: Respostas por dia (últimos 30 dias)
         const dailyChartContainer = document.createElement('div');
         dailyChartContainer.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;';
-        dailyChartContainer.innerHTML = '<h4 style="color: #ECECEC; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">Respostas por Dia (ltimos 30 dias)</h4><canvas id="daily-responses-chart"></canvas>';
+        dailyChartContainer.innerHTML = '<h4 style="color: #ECECEC; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">Respostas por Dia (últimos 30 dias)</h4><canvas id="daily-responses-chart"></canvas>';
         chartsContainer.appendChild(dailyChartContainer);
         
         // Calcular dados diários
@@ -4802,7 +4802,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     <div style="font-size: 32px; font-weight: 800;" id="dashboard-last7">0</div>
                                 </div>
-                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">ltimos 7 dias</div>
+                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">últimos 7 dias</div>
                             </div>
                             
                             <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 24px; border-radius: 16px; box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);">
@@ -4812,7 +4812,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     <div style="font-size: 32px; font-weight: 800;" id="dashboard-last30">0</div>
                                 </div>
-                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">ltimos 30 dias</div>
+                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">últimos 30 dias</div>
                             </div>
                             
                             <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 24px; border-radius: 16px; box-shadow: 0 8px 20px rgba(67, 233, 123, 0.3);">
@@ -13015,9 +13015,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Função para destacar termo de busca
     function highlightSearchTerm(text, term) {
-        if (!term || !text) return text;
-        const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        return text.replace(regex, '<mark style="background: #FFC700; color: #000; padding: 2px 4px; border-radius: 3px; font-weight: 600;">$1</mark>');
+        const safe = escapeHtml(text == null ? '' : text);
+        if (!term) return safe;
+        const t = String(term).trim();
+        if (!t) return safe;
+        try {
+            const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            return safe.replace(re, '<mark style="background: #FFC700; color: #000; padding: 2px 4px; border-radius: 3px; font-weight: 600;">$1</mark>');
+        } catch (e) {
+            return safe;
+        }
     }
     
     // Sistema de Preview em Tempo Real

@@ -356,7 +356,7 @@ window.initFinancePane = async function () {
             if (apiBase) {
                 fetch(apiBase + '/api/finance/king-data', {
                     method: 'PUT',
-                    headers: typeof getHeaders === 'function' ? (function () { var h = env.getHeaders(); h['Content-Type'] = 'application/json'; return h; })() : { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') },
+                    headers: typeof getHeaders === 'function' ? (function () { var h = env.getHeaders(); h['Content-Type'] = 'application/json'; return h; })() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={'Content-Type':'application/json'}; if(t) h.Authorization='Bearer '+t; return h; })(),
                     body: JSON.stringify({ profile_id: profileId || null, data: payload })
                 }).then(function (r) { if (!r.ok) console.warn('Sync Serasa/Quem eu devo falhou (HTTP ' + r.status + '). Rode a migration 162 e faça deploy do backend.'); }).catch(function () { });
             }
@@ -966,7 +966,7 @@ window.initFinancePane = async function () {
                 container.innerHTML = '<p style="color:#64748b;text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Carregando metas...</p>';
                 var profileIdMeta = localStorage.getItem('finance_current_profile_id') || '';
                 var urlMeta = (typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals' + (profileIdMeta ? '?profile_id=' + encodeURIComponent(profileIdMeta) : '');
-                var headersMeta = typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : { 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') };
+                var headersMeta = typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })();
                 fetch(urlMeta, { headers: headersMeta }).then(function (r) { return r.json(); }).then(function (data) {
                     var goals = (data.data && data.data.goals) ? data.data.goals : (data.goals || []);
                     var earned = (data.data && data.data.total_income_earned != null) ? Number(data.data.total_income_earned) : Number(data.total_income_earned || 0);
@@ -1241,7 +1241,7 @@ window.initFinancePane = async function () {
                     var profileId = localStorage.getItem('finance_current_profile_id') || null;
                     var body = { name: name.trim(), target_value: parseFloat(target_value), target_date: target_date };
                     if (profileId) body.profile_id = parseInt(profileId, 10);
-                    fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, (typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : { 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') })), body: JSON.stringify(body) })
+                    fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, (typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })())), body: JSON.stringify(body) })
                         .then(function (r) { return r.json(); })
                         .then(function (data) {
                             if (data.success !== false && !data.error) {
@@ -1254,7 +1254,7 @@ window.initFinancePane = async function () {
                 d.querySelector('#meta-modal-cancel').onclick = function () { if (d.parentNode) d.parentNode.removeChild(d); };
             };
             window._kingFinanceDeleteMeta = function (id) {
-                fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals/' + id, { method: 'DELETE', headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : { 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') } })
+                fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals/' + id, { method: 'DELETE', headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })() })
                     .then(function (r) { if (r.ok) { if (window.renderUnifiedKingTab) window.renderUnifiedKingTab('meta'); } else { return r.json().then(function (d) { alert(d.message || 'Erro ao excluir.'); }); } })
                     .catch(function () { alert('Erro ao excluir meta.'); });
             };
@@ -3218,7 +3218,7 @@ window.openFinanceDetailModal = async function (type) {
             var lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
             var monthEnd = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + lastDay;
             var urlInc = (typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/income-breakdown?scope=monthly&dateFrom=' + monthStart + '&dateTo=' + monthEnd + (profileIdInc ? '&profile_id=' + encodeURIComponent(profileIdInc) : '');
-            var resInc = await fetch(urlInc, { headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : { 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') } });
+            var resInc = await fetch(urlInc, { headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })() });
             if (resInc.ok) {
                 var dataIncPayload = await resInc.json();
                 var dataInc = dataIncPayload.data || dataIncPayload;
@@ -3261,7 +3261,7 @@ window.openFinanceDetailModal = async function (type) {
             try {
                 var profileIdBreakdown = localStorage.getItem('finance_current_profile_id') || '';
                 var urlBreakdown = (typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/income-breakdown?scope=accumulated' + (profileIdBreakdown ? '&profile_id=' + encodeURIComponent(profileIdBreakdown) : '');
-                var resBreakdown = await fetch(urlBreakdown, { headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : { 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') } });
+                var resBreakdown = await fetch(urlBreakdown, { headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })() });
                 if (resBreakdown.ok) {
                     var dataBreakdown = await resBreakdown.json();
                     var result = dataBreakdown.data || dataBreakdown;
@@ -3758,12 +3758,12 @@ window.changeFinancePeriod = function (period) {
             dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             break;
         case '3M':
-            // ltimos 3 meses
+            // últimos 3 meses
             dateFrom = new Date(now.getFullYear(), now.getMonth() - 2, 1);
             dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             break;
         case '6M':
-            // ltimos 6 meses
+            // últimos 6 meses
             dateFrom = new Date(now.getFullYear(), now.getMonth() - 5, 1);
             dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             break;
@@ -4554,7 +4554,7 @@ window.showGeneralBalanceModal = async function () {
                 <!-- Média Mensal -->
                 <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 25px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);">
                     <h3 style="color: white; font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-calendar-alt" style="color: #8b5cf6;"></i> Média Mensal (ltimos 12 Meses)
+                        <i class="fas fa-calendar-alt" style="color: #8b5cf6;"></i> Média Mensal (últimos 12 Meses)
                     </h3>
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
                         <div>

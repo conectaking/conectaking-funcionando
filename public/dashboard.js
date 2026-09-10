@@ -1482,7 +1482,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await fetch(url, {
                 method: 'POST',
                 credentials: 'include',
-                headers: typeof getHeaders === 'function' ? getHeaders() : { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') }
+                headers: typeof getHeaders === 'function' ? getHeaders() : (function () {
+                    var t = localStorage.getItem('conectaKingToken') || '';
+                    var h = { 'Content-Type': 'application/json' };
+                    if (t) h.Authorization = 'Bearer ' + t;
+                    return h;
+                })()
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok) {

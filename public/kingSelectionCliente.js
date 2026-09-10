@@ -249,6 +249,15 @@
   if (!consumeAccessTokenFromUrl()) {
     try {
       jwt = localStorage.getItem(tokenKey(slug)) || null;
+      if (!jwt) {
+        const m = document.cookie.match(/(?:^|; )ks_client_token=([^;]*)/);
+        if (m) {
+          jwt = decodeURIComponent(m[1]) || null;
+          if (jwt) {
+            try { localStorage.setItem(tokenKey(slug), jwt); } catch (_) {}
+          }
+        }
+      }
       syncKsAuthCookie();
     } catch (_) {}
   }
@@ -1291,7 +1300,8 @@
   }
 
   function authHeaders(json) {
-    const h = { Authorization: `Bearer ${jwt}` };
+    const h = {};
+    if (jwt) h.Authorization = `Bearer ${jwt}`;
     if (json) h['Content-Type'] = 'application/json';
     return h;
   }

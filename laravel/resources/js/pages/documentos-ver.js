@@ -64,7 +64,7 @@ tailwind.config = {
       const itens = Array.isArray(d.itens_json) ? d.itens_json : [];
 
       document.getElementById('content-card').style.display = 'block';
-      document.getElementById('subtitle').textContent = d.tipo === 'orcamento' ? 'Oramento' : 'Comprovante de Servio';
+      document.getElementById('subtitle').textContent = d.tipo === 'orcamento' ? 'Orçamento' : 'Comprovante de Serviço';
       document.getElementById('doc-title').textContent = 'King #' + (d.numero_sequencial || d.id || '1');
       document.getElementById('doc-date').textContent = 'Emitido em ' + formatData(d.data_documento);
 

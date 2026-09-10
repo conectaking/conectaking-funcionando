@@ -632,14 +632,14 @@
       <div class="share-layout kd-docs-unified-layout doc-browse-layout">
         <div class="kd-docs-left-col">
           <div class="doc-panel-card">
-            <div class="doc-badge" role="status"><span aria-hidden="true">Y"<</span> O que incluir no link</div>
+            <div class="doc-badge" role="status"><span aria-hidden="true"><i class="fas fa-clipboard-list"></i></span> O que incluir no link</div>
             <div class="kd-docs-share-toolbar">
               <p class="kd-share-summary" id="share-confirm-hint">Marca Texto e/ou Foto/PDF nos cartões; o resumo aparece à direita.</p>
               <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar seleção</button>
             </div>
             <div class="kd-doc-vault-row">
               <div class="kd-doc-vault-grid-col">
-                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Secções: documentos, dados pessoais, contato, morada, etc. — cada um com o seu ícone. <strong>z. Novo tipo</strong> em <strong>Dados</strong>.</p>
+                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Secções: documentos, dados pessoais, contato, morada, etc. — cada um com o seu ícone. <strong>+ Novo tipo</strong> em <strong>Dados</strong>.</p>
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
               <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
@@ -651,7 +651,7 @@
                   <div class="preview-header preview-header--resumo">Resumo do link <span id="preview-count" class="badge">0 itens</span></div>
                   <div id="share-preview-body" class="kd-preview-resumo-body"><p class="preview-empty">Marca Texto e/ou Foto/PDF nos cartões à esquerda.</p></div>
                 </div>
-                <p class="preview-footer-msg kd-preview-partilhar-hint"><span>o"</span> Isto é só visualização. O URL gera-se na aba <strong>Partilhar</strong> (ou com os botões de link abaixo).</p>
+                <p class="preview-footer-msg kd-preview-partilhar-hint"><span aria-hidden="true"><i class="fas fa-lightbulb"></i></span> Isto é só visualização. O URL gera-se na aba <strong>Partilhar</strong> (ou com os botões de link abaixo).</p>
                 <div class="doc-preview-actions" id="doc-preview-actions">
                   <div class="doc-preview-actions-row">
                     <button type="button" class="btn secondary" id="btn-doc-clear-sel" disabled title="Limpa só a escolha dos cartões de documento à esquerda">Limpar cartões</button>

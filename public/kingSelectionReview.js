@@ -8,13 +8,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const tokenKey = `ks_client_${slug}`;
-  const token = localStorage.getItem(tokenKey) || '';
+  function readCookie(name) {
+    try {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\/+^])/g, '\\$1') + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    } catch (_) { return ''; }
+  }
+  let token = localStorage.getItem(tokenKey) || '';
+  if (!token) {
+    token = readCookie('ks_client_token') || '';
+    if (token) {
+      try { localStorage.setItem(tokenKey, token); } catch (_) {}
+    }
+  }
   if (!token) {
     location.href = `kingSelection/${encodeURIComponent(slug)}`;
     return;
   }
 
-  const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` };
+  const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+  if (token) HEADERS.Authorization = `Bearer ${token}`;
   (function syncKsAuthCookie() {
     try {
       const secure = location.protocol === 'https:' ? '; Secure' : '';
@@ -104,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'GET',
       cache: 'no-store',
       credentials: 'include',
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      headers: Object.assign({ Accept: 'application/json' }, token ? { Authorization: `Bearer ${token}` } : {})
     });
     if (!res.ok) {
       const t = await res.text().catch(() => '');

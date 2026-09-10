@@ -2291,7 +2291,7 @@ function updateCustomFieldsPreview() {
         preview.innerHTML = '<i class="fas fa-info-circle"></i> Nenhum campo customizado definido. Clique em "Editar Campos Customizados" para começar.';
     } else {
         preview.innerHTML = `<strong>${parsedFields.length} campo(s) customizado(s):</strong><br>` +
-            parsedFields.map((f, i) => `${i + 1}. ${f.label || 'Campo sem nome'} (${f.type || 'text'})${f.required ? ' *' : ''}`).join('<br>');
+            parsedFields.map((f, i) => `${i + 1}. ${escapeHtml(f.label || 'Campo sem nome')} (${escapeHtml(f.type || 'text')})${f.required ? ' *' : ''}`).join('<br>');
     }
 }
 

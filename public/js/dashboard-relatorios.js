@@ -409,7 +409,7 @@ function renderAllLinksDetails(detailsData, period = '30') {
         html += `
         <div style="margin-bottom: 30px; margin-top: 30px;">
             <h3 style="color: var(--text, #ECECEC); margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-history"></i> Histórico Recente de Cliques (ltimos ${recentClicks.length})
+                <i class="fas fa-history"></i> Histórico Recente de Cliques (últimos ${recentClicks.length})
             </h3>
             <div style="background: var(--card-background-color, #1C1C21); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color, #2C2C2F); overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse;">
