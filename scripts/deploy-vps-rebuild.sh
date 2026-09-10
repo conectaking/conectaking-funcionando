@@ -19,9 +19,9 @@ sed -i 's/\r$//' laravel/docker-entrypoint.sh 2>/dev/null || true
 
 rm -f public/admin/index.html 2>/dev/null || true
 
-docker compose -f docker-compose.prod.yml --env-file .env.prod build laravel
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps laravel
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans
+docker compose -f docker-compose.prod.yml --env-file .env.prod --profile queue build laravel queue
+docker compose -f docker-compose.prod.yml --env-file .env.prod --profile queue up -d --force-recreate --no-deps laravel
+docker compose -f docker-compose.prod.yml --env-file .env.prod --profile queue up -d --remove-orphans
 
 docker exec conectaking-laravel rm -rf /app/app/Http/Controllers/Payment /app/app/Services/Payment /app/public/ks-spa 2>/dev/null || true
 docker exec conectaking-laravel php artisan optimize:clear
@@ -30,6 +30,8 @@ sleep 12
 echo '---SMOKE---'
 curl -sS http://127.0.0.1:8080/health; echo
 docker exec conectaking-redis redis-cli ping 2>/dev/null | sed 's/^/redis:/' || echo 'redis:skip'
+docker exec conectaking-laravel printenv QUEUE_CONNECTION 2>/dev/null | sed 's/^/queue_conn:/' || true
+docker ps --filter name=conectaking-queue --format '{{.Status}}' | sed 's/^/queue_status:/' || echo 'queue_status:missing'
 curl -sSI http://127.0.0.1:8080/admin | tr -d '\r' | grep -Ei 'HTTP/|X-Conecta-Engine'
 curl -sS http://127.0.0.1:8080/admin | grep -oE 'build/assets/admin-[A-Za-z0-9_-]+\.js' | head -1 | sed 's/^/admin_vite:/'
 curl -sS -o /dev/null -w 'admin-planos:%{http_code}\n' http://127.0.0.1:8080/admin-planos
