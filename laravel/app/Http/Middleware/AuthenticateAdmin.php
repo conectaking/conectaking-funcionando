@@ -27,33 +27,47 @@ class AuthenticateAdmin
 
         try {
             $payload = $this->jwt->decode($token);
-            $userId = (string) ($payload['userId'] ?? $payload['id'] ?? '');
-            if ($userId === '') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ID do usuário não encontrado.',
-                ], 400)->header('X-Conecta-Engine', 'laravel');
-            }
-
-            // Revalidar na DB — claim JWT isAdmin sozinho não basta (admin revogado)
-            $row = DB::selectOne('SELECT is_admin FROM users WHERE id = ? LIMIT 1', [$userId]);
-            $isAdmin = $row && filter_var($row->is_admin ?? false, FILTER_VALIDATE_BOOLEAN);
-            if (!$isAdmin) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Acesso negado. Permissões insuficientes.',
-                ], 403)->header('X-Conecta-Engine', 'laravel');
-            }
-
-            $request->attributes->set('auth_user_id', $userId);
-            $request->attributes->set('auth_payload', $payload);
-            $request->attributes->set('auth_is_admin', true);
         } catch (UnexpectedValueException $e) {
+            $cookie = $request->cookie('token');
+            if (is_string($cookie) && $cookie !== '' && $cookie !== $token) {
+                try {
+                    $payload = $this->jwt->decode($cookie);
+                    $token = $cookie;
+                } catch (UnexpectedValueException) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Não autorizado, token inválido.',
+                    ], 401)->header('X-Conecta-Engine', 'laravel');
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não autorizado, token inválido.',
+                ], 401)->header('X-Conecta-Engine', 'laravel');
+            }
+        }
+
+        $userId = (string) ($payload['userId'] ?? $payload['id'] ?? '');
+        if ($userId === '') {
             return response()->json([
                 'success' => false,
-                'message' => 'Não autorizado, token inválido.',
-            ], 401)->header('X-Conecta-Engine', 'laravel');
+                'message' => 'ID do usuário não encontrado.',
+            ], 400)->header('X-Conecta-Engine', 'laravel');
         }
+
+        // Revalidar na DB — claim JWT isAdmin sozinho não basta (admin revogado)
+        $row = DB::selectOne('SELECT is_admin FROM users WHERE id = ? LIMIT 1', [$userId]);
+        $isAdmin = $row && filter_var($row->is_admin ?? false, FILTER_VALIDATE_BOOLEAN);
+        if (!$isAdmin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Acesso negado. Permissões insuficientes.',
+            ], 403)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        $request->attributes->set('auth_user_id', $userId);
+        $request->attributes->set('auth_payload', $payload);
+        $request->attributes->set('auth_is_admin', true);
 
         return $next($request);
     }

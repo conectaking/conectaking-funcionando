@@ -1,6 +1,7 @@
 /** recibos-orcamentos — Vite entry (extracted inline) */
 import '@legacy/css/recibos-modulo-mobile.css';
 import '@legacy/js/ck-auth-gate.js';
+import '@legacy/js/ck-csrf.js';
 
 (function () {
             var origin = (window.location && window.location.origin) || 'https://www.conectaking.com.br';
@@ -69,6 +70,15 @@ tailwind.config = {
             var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
             if (token) h['Authorization'] = 'Bearer ' + token;
         } catch (e) {}
+        try {
+            if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
+                h = window.CkCsrf.attachToHeaders(h, 'POST');
+            } else {
+                var m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+                var csrf = m ? decodeURIComponent(m[1]) : '';
+                if (csrf && !h['X-CK-CSRF']) h['X-CK-CSRF'] = csrf;
+            }
+        } catch (e2) {}
         return h;
     }
 

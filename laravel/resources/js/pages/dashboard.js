@@ -9,6 +9,7 @@ import '@legacy/dashboard.css';
 import '@legacy/css/profile-wifi.css';
 
 import '@legacy/js/ck-auth-gate.js';
+import '@legacy/js/ck-csrf.js';
 import '@legacy/js/dashboard-ocultar-modulos-por-plano.js';
 import '@legacy/global.js';
 import '@legacy/android-fix.js';

@@ -1,6 +1,7 @@
 /** responsesList — Vite entry (extracted inline) */
 import '@legacy/dashboard.css';
 import '@legacy/js/ck-auth-gate.js';
+import '@legacy/js/ck-csrf.js';
 
 const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API_URL || window.location.origin) || '').toString().replace(/\/$/, '');
         const urlParams = new URLSearchParams(window.location.search);

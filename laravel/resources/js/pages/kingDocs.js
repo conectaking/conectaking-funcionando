@@ -1,5 +1,6 @@
 /** kingDocs — Vite entry (extracted inline, icons sanitized) */
 import '@legacy/js/ck-auth-gate.js';
+import '@legacy/js/ck-csrf.js';
 
 (function () {
       try {
@@ -50,6 +51,23 @@ import '@legacy/js/ck-auth-gate.js';
   function fetch(input, init) {
     init = init || {};
     if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
+    try {
+      var __m = (init.method || 'GET').toUpperCase();
+      if (__m === 'POST' || __m === 'PUT' || __m === 'PATCH' || __m === 'DELETE') {
+        if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
+          init.headers = window.CkCsrf.attachToHeaders(init.headers, __m);
+        } else {
+          var __cm = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+          var __csrf = __cm ? decodeURIComponent(__cm[1]) : '';
+          if (__csrf) {
+            var __h = Object.assign({}, init.headers || {});
+            if (!__h['X-CK-CSRF']) __h['X-CK-CSRF'] = __csrf;
+            init.headers = __h;
+          }
+        }
+      }
+    } catch (__e) {}
+
     return __rawFetch(input, init);
   }
 

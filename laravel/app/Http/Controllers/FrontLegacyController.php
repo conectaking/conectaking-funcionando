@@ -21,12 +21,31 @@ class FrontLegacyController extends Controller
             $dbOk = false;
         }
 
-        return response()->json([
-            'status' => $dbOk ? 'ok' : 'degraded',
+        $queueConn = strtolower((string) (env('QUEUE_CONNECTION') ?: 'sync'));
+        $redisOk = null;
+        if ($queueConn === 'redis') {
+            $redisOk = false;
+            try {
+                \Illuminate\Support\Facades\Redis::connection()->ping();
+                $redisOk = true;
+            } catch (\Throwable) {
+                $redisOk = false;
+            }
+        }
+
+        $ok = $dbOk && ($redisOk !== false);
+        $body = [
+            'status' => $ok ? 'ok' : 'degraded',
             'engine' => 'laravel',
             'db' => $dbOk,
+            'queue' => $queueConn,
             'time' => gmdate('c'),
-        ], $dbOk ? 200 : 503)->header('X-Conecta-Engine', 'laravel');
+        ];
+        if ($redisOk !== null) {
+            $body['redis'] = $redisOk;
+        }
+
+        return response()->json($body, $ok ? 200 : 503)->header('X-Conecta-Engine', 'laravel');
     }
 
     /** Base pública da API (mesmo host / FrankenPHP). */
@@ -138,8 +157,8 @@ class FrontLegacyController extends Controller
               var finalInput = typeof input === 'string' ? finalUrl : (typeof Request !== 'undefined' ? new Request(finalUrl, input) : finalUrl);
               return nativeFetch.call(window, finalInput, opts);
             };
-            // Cookie-auth: garantir ck_csrf via probe antes de mutações
-            if (isApiUrl && isMutating(opts.method || 'GET') && !readCkCsrf() && !getToken()) {
+            // Garantir ck_csrf via probe antes de mutações (cookie-auth)
+            if (isApiUrl && isMutating(opts.method || 'GET') && !readCkCsrf()) {
               return nativeFetch.call(window, apiBase + '/api/account/status', {
                 credentials: 'include',
                 headers: { Accept: 'application/json' },

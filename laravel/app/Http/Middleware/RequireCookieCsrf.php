@@ -24,10 +24,7 @@ class RequireCookieCsrf
             return $next($request);
         }
 
-        if ($this->hasRealBearer($request)) {
-            return $next($request);
-        }
-
+        // Cookie de sessão presente → exigir CSRF (mesmo com Bearer no LS — evita bypass com JWT stale).
         if (! $this->hasAuthCookie($request)) {
             return $next($request);
         }
@@ -88,17 +85,6 @@ class RequireCookieCsrf
             false,
             Cookie::SAMESITE_LAX
         );
-    }
-
-    private function hasRealBearer(Request $request): bool
-    {
-        $auth = $request->header('Authorization', '');
-        if (! is_string($auth) || ! str_starts_with($auth, 'Bearer ')) {
-            return false;
-        }
-        $t = trim(substr($auth, 7));
-
-        return $t !== '' && ! in_array(strtolower($t), ['null', 'undefined'], true);
     }
 
     private function hasAuthCookie(Request $request): bool

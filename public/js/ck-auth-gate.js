@@ -49,16 +49,12 @@
    * @returns {Promise<boolean>}
    */
   async function requireAuth(loginPath) {
-    if (lsToken()) {
-      markSession();
+    // Sempre validar sessão (cookie ou Bearer). LS sozinho não basta — JWT stale bloqueava cookie.
+    if (await probeCookieAuth()) {
       return true;
     }
-    try {
-      if (localStorage.getItem('conectaKingSession') === '1') {
-        if (await probeCookieAuth()) return true;
-      }
-    } catch (e) {}
-    if (await probeCookieAuth()) return true;
+    // Probe falhou: limpar LS inválido se existir
+    if (lsToken()) clearSession();
     var dest = loginPath || '/login';
     var ru = encodeURIComponent(global.location.href);
     global.location.href = dest + (dest.indexOf('?') >= 0 ? '&' : '?') + 'returnUrl=' + ru;

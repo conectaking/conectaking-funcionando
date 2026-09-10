@@ -180,6 +180,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentToken = localStorage.getItem('conectaKingToken') || token || '';
         const h = {};
         if (currentToken) h.Authorization = `Bearer ${currentToken}`;
+        try {
+            if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
+                return window.CkCsrf.attachToHeaders(h, 'POST');
+            }
+            const m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+            const csrf = m ? decodeURIComponent(m[1]) : '';
+            if (csrf) h['X-CK-CSRF'] = csrf;
+        } catch (e) {}
         return h;
     }
 

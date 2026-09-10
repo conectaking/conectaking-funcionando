@@ -1008,17 +1008,11 @@ class KingSelectionFaceService
         $concurrency = min(4, max(1, (int) ($body['concurrency'] ?? 3)));
         $speedMode = strtolower(trim((string) ($body['speedMode'] ?? env('REKOG_SPEED_MODE_DEFAULT') ?: 'auto')));
 
-        dispatch(function () use ($galleryId, $force, $concurrency, $speedMode) {
-            try {
-                app(self::class)->runGalleryPhotosThroughRekognition($galleryId, $force, $concurrency, ['speedMode' => $speedMode]);
-            } catch (\Throwable $e) {
-                Log::error('ks.face.processAll', ['galleryId' => $galleryId, 'error' => $e->getMessage()]);
-            }
-        })->afterResponse();
+        dispatch(new \App\Jobs\ProcessGalleryFacesJob($galleryId, $force, $concurrency, $speedMode));
 
         return ['status' => 200, 'body' => [
             'success' => true,
-            'message' => 'Processamento facial iniciado em segundo plano.',
+            'message' => 'Processamento facial enfileirado.',
             'galleryId' => $galleryId,
         ]];
     }
@@ -1075,9 +1069,14 @@ class KingSelectionFaceService
         );
         $jobId = (int) $job->id;
 
-        dispatch(function () use ($galleryId, $jobId, $force, $concurrency, $speedMode, $minSimilarity) {
-            app(self::class)->runAutoSeparateJobWorker($galleryId, $jobId, $force, $concurrency, $speedMode, $minSimilarity);
-        })->afterResponse();
+        dispatch(new \App\Jobs\AutoSeparateGalleryJob(
+            $galleryId,
+            $jobId,
+            $force,
+            $concurrency,
+            $speedMode,
+            (float) $minSimilarity
+        ));
 
         return ['status' => 200, 'body' => ['success' => true, 'job' => $job]];
     }

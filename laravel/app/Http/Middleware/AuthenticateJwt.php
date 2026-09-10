@@ -26,21 +26,36 @@ class AuthenticateJwt
 
         try {
             $payload = $this->jwt->decode($token);
-            $userId = $payload['userId'] ?? $payload['id'] ?? null;
-            if (!$userId) {
+        } catch (UnexpectedValueException $e) {
+            // Bearer antigo/inválido no LS não deve bloquear cookie HttpOnly válido.
+            $cookie = $request->cookie('token');
+            if (is_string($cookie) && $cookie !== '' && $cookie !== $token) {
+                try {
+                    $payload = $this->jwt->decode($cookie);
+                    $token = $cookie;
+                } catch (UnexpectedValueException) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Não autorizado, token inválido ou expirado.',
+                    ], 401)->header('X-Conecta-Engine', 'laravel');
+                }
+            } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ID do usuário não encontrado.',
-                ], 400)->header('X-Conecta-Engine', 'laravel');
+                    'message' => 'Não autorizado, token inválido ou expirado.',
+                ], 401)->header('X-Conecta-Engine', 'laravel');
             }
-            $request->attributes->set('auth_user_id', (string) $userId);
-            $request->attributes->set('auth_payload', $payload);
-        } catch (UnexpectedValueException $e) {
+        }
+
+        $userId = $payload['userId'] ?? $payload['id'] ?? null;
+        if (!$userId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Não autorizado, token inválido ou expirado.',
-            ], 401)->header('X-Conecta-Engine', 'laravel');
+                'message' => 'ID do usuário não encontrado.',
+            ], 400)->header('X-Conecta-Engine', 'laravel');
         }
+        $request->attributes->set('auth_user_id', (string) $userId);
+        $request->attributes->set('auth_payload', $payload);
 
         return $next($request);
     }

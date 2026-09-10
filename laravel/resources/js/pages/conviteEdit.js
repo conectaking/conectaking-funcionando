@@ -1,5 +1,6 @@
 /** conviteEdit — Vite entry (extracted inline) */
 import '@legacy/js/ck-auth-gate.js';
+import '@legacy/js/ck-csrf.js';
 
 (async function() {
   if (!(await window.CkAuth.requireAuth('/login?returnUrl=' + encodeURIComponent(location.href)))) return;
@@ -19,6 +20,23 @@ import '@legacy/js/ck-auth-gate.js';
 
   const __rawFetch = window.fetch.bind(window);
   function fetch(url, init) {
+    try {
+      var __m = (init.method || 'GET').toUpperCase();
+      if (__m === 'POST' || __m === 'PUT' || __m === 'PATCH' || __m === 'DELETE') {
+        if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
+          init.headers = window.CkCsrf.attachToHeaders(init.headers, __m);
+        } else {
+          var __cm = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+          var __csrf = __cm ? decodeURIComponent(__cm[1]) : '';
+          if (__csrf) {
+            var __h = Object.assign({}, init.headers || {});
+            if (!__h['X-CK-CSRF']) __h['X-CK-CSRF'] = __csrf;
+            init.headers = __h;
+          }
+        }
+      }
+    } catch (__e) {}
+
     return __rawFetch(url, Object.assign({ credentials: 'include' }, init || {}));
   }
 

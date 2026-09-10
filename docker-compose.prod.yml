@@ -1,7 +1,7 @@
 # Produção no VPS (Hetzner) — Laravel (FrankenPHP) + Postgres + Redis (filas opcionais).
 # Caddy do host: reverse_proxy 127.0.0.1:8080
 # Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-# Fila: QUEUE_CONNECTION=sync (default). Worker: docker compose --profile queue up -d queue
+# Fila: QUEUE_CONNECTION=redis (default). Worker: --profile queue
 
 services:
   db:

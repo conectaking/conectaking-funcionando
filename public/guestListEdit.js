@@ -45,6 +45,21 @@ function fetch(input, init) {
         }
       }
     } catch (e) {}
+    if (window.CkCsrf && typeof window.CkCsrf.wrapFetch === 'function') {
+      return window.CkCsrf.wrapFetch(__guestRawFetch)(input, init);
+    }
+    try {
+      const method = (init.method || 'GET').toUpperCase();
+      if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+        const m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
+        const csrf = m ? decodeURIComponent(m[1]) : '';
+        if (csrf) {
+          const h = Object.assign({}, init.headers || {});
+          if (!h['X-CK-CSRF']) h['X-CK-CSRF'] = csrf;
+          init = Object.assign({}, init, { headers: h });
+        }
+      }
+    } catch (e2) {}
     return __guestRawFetch(input, init);
 }
 
