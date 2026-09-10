@@ -1480,6 +1480,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             const response = await fetch(url, {
                 method: 'POST',
+                credentials: 'include',
                 headers: typeof getHeaders === 'function' ? getHeaders() : { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('conectaKingToken') || '') }
             });
             const result = await response.json().catch(() => ({}));

@@ -1,3 +1,9 @@
+import '@legacy/js/ck-auth-gate.js';
+
+await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
+  ? window.CkAuth.requireAuth('/login')
+  : Promise.resolve(true));
+
 (function () {
     var yNow = new Date().getFullYear();
     var LS_API = 'CONECTAKING_API_BASE';
@@ -16,6 +22,10 @@
 
     function getToken() {
         try {
+            if (window.CkAuth && typeof window.CkAuth.lsToken === 'function') {
+                var ck = window.CkAuth.lsToken() || '';
+                if (ck) return ck;
+            }
             var t = localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || '';
             var manual = document.getElementById('token-manual');
             if (manual && manual.value.trim()) return manual.value.trim();
@@ -53,7 +63,7 @@
         if (tok) headers['Authorization'] = 'Bearer ' + tok;
         headers['Content-Type'] = headers['Content-Type'] || 'application/json';
         var base = getApiBase();
-        return fetch(base + path, Object.assign({}, opts, { headers: headers }));
+        return fetch(base + path, Object.assign({ credentials: 'include' }, opts, { headers: headers }));
     }
 
     var studyBooksData = [];
@@ -66,6 +76,7 @@
         if (tok) headers['Authorization'] = 'Bearer ' + tok;
         return fetch(getApiBase() + '/api/admin/bible/study/book/' + encodeURIComponent(bookId) + '/upload', {
             method: 'POST',
+            credentials: 'include',
             headers: headers,
             body: fd
         });

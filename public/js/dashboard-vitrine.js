@@ -32,10 +32,16 @@
     }
 
     function getHeaders() {
-        if (typeof HEADERS !== 'undefined' && HEADERS) return HEADERS;
+        if (window.DashboardCore && typeof window.DashboardCore.getHeaders === 'function') {
+            return window.DashboardCore.getHeaders() || {};
+        }
         if (typeof window.getHeaders === 'function') return window.getHeaders();
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        return token ? { Authorization: 'Bearer ' + token } : {};
+        const token = (window.CkAuth && window.CkAuth.lsToken)
+            ? window.CkAuth.lsToken()
+            : (localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || sessionStorage.getItem('token') || '');
+        const h = { 'Content-Type': 'application/json' };
+        if (token) h.Authorization = 'Bearer ' + token;
+        return h;
     }
 
     function syncStateFromDom() {
@@ -185,9 +191,10 @@
     async function uploadImageFile(file) {
         const authResponse = await fetch(getApiUrl() + '/api/upload/auth', {
             method: 'POST',
+            credentials: 'include',
             headers: Object.assign({ 'Content-Type': 'application/json' }, getHeaders())
         });
-        if (!authResponse.ok) throw new Error('Falha na autenticao de upload');
+        if (!authResponse.ok) throw new Error('Falha na autenticação de upload');
         const authData = await authResponse.json();
         const uploadURL = authData.uploadURL || authData.url;
         const formData = new FormData();

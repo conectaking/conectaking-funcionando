@@ -194,6 +194,11 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 console.error('[loadData] Elementos do DOM não encontrados!');
                 return;
             }
+
+            if (window.CkAuth && typeof window.CkAuth.requireAuth === 'function') {
+                const ok = await window.CkAuth.requireAuth('/login');
+                if (!ok) return;
+            }
             
             try {
                 loadingEl.style.display = 'block';
@@ -268,16 +273,20 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                     pageTitleEl.textContent = 'Confirmação de Check-in';
                 }
                 
-                // Carregar informações da lista (incluindo tokens)
+                // Cookie-first: Content-Type sempre existe — não usar length === 0
                 const headersForFetch = getHeaders();
-                if (!headersForFetch || Object.keys(headersForFetch).length === 0) {
-                    console.error('[loadGuestListData] Headers de autenticação não encontrados');
+                let hasAuth = !!(headersForFetch && headersForFetch.Authorization);
+                if (!hasAuth && window.CkAuth && typeof window.CkAuth.probeCookieAuth === 'function') {
+                    hasAuth = await window.CkAuth.probeCookieAuth();
+                }
+                if (!hasAuth) {
+                    console.error('[loadGuestListData] Sessão não autenticada');
                     loadingEl.innerHTML = `
                         <div style="color: #ff4444; text-align: center; padding: 40px;">
                             <i class="fas fa-lock" style="font-size: 3rem; margin-bottom: 16px;"></i>
                             <h3 style="color: #ff4444; margin-bottom: 12px;">Autenticação Necessária</h3>
                             <div style="color: #ECECEC; margin-bottom: 20px;">Por favor, faça login novamente.</div>
-                            <button onclick="window.location.href='/dashboard'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
+                            <button onclick="window.location.href='/login'" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;">
                                 <i class="fas fa-sign-in-alt"></i> Ir para Login
                             </button>
                         </div>

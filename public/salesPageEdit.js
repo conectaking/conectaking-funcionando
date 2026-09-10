@@ -27,6 +27,7 @@
     async function safeFetch(url, options = {}) {
         const defaultOptions = {
             method: 'GET',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',

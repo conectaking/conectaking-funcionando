@@ -78,6 +78,7 @@ class FrontLegacyController extends Controller
             }
             var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking.com.br') !== -1)) || (url && url.indexOf('/api/') === 0);
             if (isApiUrl) {
+              if (opts.credentials == null) opts.credentials = 'include';
               var headers = opts.headers || (opts.headers = {});
               if (!(headers.Authorization || (headers.get && headers.get('Authorization')))) {
                 var token = getToken();

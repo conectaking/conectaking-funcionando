@@ -118,8 +118,44 @@ const updateNavUI = (user) => {
             localUser = null;
         }
 
+        // Cookie-first: sem JWT no LS ainda pode haver sessão HttpOnly
         if (!token || !localUser) {
-            updateNavUI(null); 
+            try {
+                const statusApiBase = (typeof window !== 'undefined' && (window.API_URL || window.API_BASE))
+                    ? String(window.API_URL || window.API_BASE).replace(/\/$/, '')
+                    : (window.location && window.location.origin) || '';
+                let ok = false;
+                if (window.CkAuth && typeof window.CkAuth.probeCookieAuth === 'function') {
+                    ok = await window.CkAuth.probeCookieAuth();
+                } else {
+                    const probe = await fetch(`${statusApiBase}/api/account/status`, {
+                        credentials: 'include',
+                        headers: { Accept: 'application/json' },
+                        cache: 'no-store'
+                    });
+                    ok = probe.ok;
+                    if (ok) {
+                        const freshUser = await probe.json();
+                        try { localStorage.setItem('conectaKingUser', JSON.stringify(freshUser)); } catch (e) {}
+                        try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+                        updateNavUI(freshUser);
+                        return freshUser;
+                    }
+                }
+                if (ok) {
+                    const response = await fetch(`${statusApiBase}/api/account/status`, {
+                        credentials: 'include',
+                        headers: { Accept: 'application/json' }
+                    });
+                    if (response.ok) {
+                        const freshUser = await response.json();
+                        try { localStorage.setItem('conectaKingUser', JSON.stringify(freshUser)); } catch (e) {}
+                        updateNavUI(freshUser);
+                        return freshUser;
+                    }
+                }
+            } catch (e) {}
+            updateNavUI(null);
             return;
         }
 
@@ -131,10 +167,10 @@ const updateNavUI = (user) => {
             
             if (lastStatusCheck && (now - parseInt(lastStatusCheck)) < STATUS_CHECK_COOLDOWN) {
                 console.log('⏳ Cooldown ativo para verificação de status. Usando dados locais.');
-                const localUser = JSON.parse(localStorage.getItem('conectaKingUser') || 'null');
-                if (localUser) {
-                    updateNavUI(localUser);
-                    return localUser;
+                const localUserCooldown = JSON.parse(localStorage.getItem('conectaKingUser') || 'null');
+                if (localUserCooldown) {
+                    updateNavUI(localUserCooldown);
+                    return localUserCooldown;
                 }
                 return null;
             }
@@ -144,8 +180,11 @@ const updateNavUI = (user) => {
             const statusApiBase = (typeof window !== 'undefined' && (window.API_URL || window.API_BASE))
                 ? String(window.API_URL || window.API_BASE).replace(/\/$/, '')
                 : 'https://www.conectaking.com.br';
+            const headers = { Accept: 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
             const response = await fetch(`${statusApiBase}/api/account/status`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include',
+                headers
             });
 
             if (response.status === 401) {

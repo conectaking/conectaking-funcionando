@@ -5,9 +5,21 @@ let currentGuestListId = null;
 let currentGuestList = null;
 let guests = [];
 
-// Obter token
+// Obter token (cookie-first: Bearer só se ainda houver no LS)
 function getToken() {
-    return localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+    try {
+        if (window.CkAuth && typeof window.CkAuth.lsToken === 'function') {
+            return window.CkAuth.lsToken() || '';
+        }
+    } catch (e) {}
+    return localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+}
+
+const __guestRawFetch = window.fetch.bind(window);
+function fetch(input, init) {
+    init = init || {};
+    if (!init.credentials) init = Object.assign({}, init, { credentials: 'include' });
+    return __guestRawFetch(input, init);
 }
 
 // Voltar para página anterior ou KingForms
