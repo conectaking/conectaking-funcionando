@@ -6,6 +6,7 @@ import '../vendor-globals.js';
 import '@css/style.css';
 import '@css/dashboard.css';
 import '@css/salesPageEdit.css';
+import '@css/pages/salesPageEdit-extra.css';
 import '../inline/pages-salesPageEdit-1.js';
 import '../inline/pages-salesPageEdit-2.js';
 import '@mod/js/ck-auth-gate.js';

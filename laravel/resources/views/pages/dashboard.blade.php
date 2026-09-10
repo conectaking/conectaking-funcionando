@@ -16,108 +16,13 @@
     <meta http-equiv="Expires" content="0">
 
     <!-- Cache-buster para CSS - Atualizado para forçar reload -->
-    <style>
-        .qr-art-hint { color: var(--text-dark, #A1A1A1); font-size: 13px; line-height: 1.45; margin: 0 0 14px; }
-        .qr-theme-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-        .qr-theme-chip {
-            border: 2px solid transparent; border-radius: 999px; padding: 6px 12px 6px 8px;
-            cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(255,255,255,0.04); color: var(--text, #ECECEC); font-size: 12px; font-weight: 700;
-        }
-        .qr-theme-chip.active { border-color: #FFC700; background: rgba(255,199,0,0.12); }
-        .qr-theme-swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); flex-shrink: 0; }
-        .qr-logo-toggle { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: var(--text, #ECECEC); font-size: 13px; font-weight: 600; cursor: pointer; }
-        .qr-logo-toggle input { width: 16px; height: 16px; accent-color: #FFC700; }
-        .qr-hidden-source { position: absolute; left: -9999px; width: 280px; height: 280px; overflow: hidden; pointer-events: none; }
-        .qr-art-preview-wrap { display: flex; justify-content: center; margin: 8px 0 16px; }
-        #qr-art-canvas { width: min(100%, 340px); height: auto; border-radius: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.45); background: #111; }
-        #share-qr-art-card { position: relative; }
-    </style>
+    
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
-<style>
-    /* Detalhes expansíveis: orçamento e arquétipo (aparecem abaixo da linha) */
-    .detalhe-expansivel-row td { vertical-align: top; padding: 0 !important; border-top: none !important; }
-    .detalhe-expansivel-card { margin: 12px 8px 16px; padding: 24px; background: rgba(250,204,21,0.06); border-radius: 12px; border-left: 4px solid #facc15; text-align: left; }
-    .detalhe-expansivel-card h4 { color: #facc15; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 12px; }
-    .detalhe-expansivel-card .detalhe-secao { margin-bottom: 20px; }
-    .detalhe-expansivel-card .detalhe-secao:last-child { margin-bottom: 0; }
-    .detalhe-expansivel-card .detalhe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 24px; }
-    .detalhe-expansivel-card .detalhe-item { font-size: 0.9rem; color: var(--text-secondary, #ccc); }
-    .detalhe-expansivel-card .detalhe-item strong { color: var(--text-primary, #fff); display: block; font-size: 0.75rem; margin-bottom: 2px; }
-    .detalhe-expansivel-card .detalhe-lista { list-style: none; padding: 0; margin: 0; }
-    .detalhe-expansivel-card .detalhe-lista li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; gap: 12px; }
-    .detalhe-expansivel-card .detalhe-lista li:last-child { border-bottom: none; }
-    .detalhe-expansivel-card .btn-fechar-detalhe { margin-top: 16px; padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #ccc; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
-    .detalhe-expansivel-card .btn-fechar-detalhe:hover { background: rgba(255,255,255,0.15); color: #fff; }
-    .detalhe-expansivel-card .arq-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 4px; }
-    .detalhe-expansivel-card .arq-bar-fill { height: 100%; background: linear-gradient(90deg, #facc15, #eab308); border-radius: 4px; transition: width 0.3s; }
-    /* Botão Editar King Forms (igual aos outros botões de edição: ícone amarelo no hover) */
-    .king-forms-config-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0; padding: 8px; min-width: 36px; font-size: 1rem; text-decoration: none; border-radius: 6px; transition: all 0.2s ease; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; margin-left: 8px; }
-    .king-forms-config-btn:hover { color: var(--dourado-principal); background: rgba(255, 199, 0, 0.1); }
-/* Modal de crop — medidas e pré-visualização “tipo telemóvel” */
-    .cropper-meta-bar {
-        padding: 10px 14px 12px;
-        margin: 0 -4px 12px -4px;
-        background: rgba(250, 204, 21, 0.06);
-        border: 1px solid rgba(255, 199, 0, 0.2);
-        border-radius: 10px;
-        font-size: 0.82rem;
-        color: #ccc;
-        line-height: 1.45;
-    }
-    .cropper-meta-bar strong { color: #facc15; }
-    .cropper-meta-bar .cropper-tip { margin: 8px 0 0; font-size: 0.78rem; color: #9ca3af; }
-    .cropper-mobile-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; color: #e5e5e5; font-size: 0.8rem; user-select: none; }
-    .cropper-mobile-toggle input { width: 16px; height: 16px; accent-color: #facc15; }
-    #crop-size-readout, #crop-aspect-readout { color: #fff; font-weight: 600; }
-    .cropper-body .cropper-container { position: relative; overflow: hidden; }
-    #cropper-modal .modal-body.cropper-body { overflow: hidden !important; }
-    #cropper-modal .cropper-container {
-      height: auto !important;
-      min-height: 280px;
-      overflow: hidden;
-    }
-    @media (max-width: 768px) {
-      #cropper-modal .cropper-container {
-        height: calc(100dvh - 210px) !important;
-        min-height: 42dvh;
-      }
-      #cropper-modal .modal-body.cropper-body {
-        overflow: hidden !important;
-      }
-    }
-    .ck-crop-mobile-strip {
-        position: absolute;
-        left: 50%;
-        top: 0;
-        bottom: 0;
-        transform: translateX(-50%);
-        width: 38%;
-        max-width: 100%;
-        border: 2px dashed rgba(255, 255, 255, 0.85);
-        box-sizing: border-box;
-        pointer-events: none;
-        z-index: 5;
-        border-radius: 4px;
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
-        display: none;
-    }
-    </style>
+
 @vite(['resources/js/pages/dashboard.js'])
 </head>
 <body>
-<style id="ck-dashboard-rescue-styles">
-    #ck-plan-block-overlay{position:fixed;inset:0;z-index:2147483640;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
-    #ck-plan-block-overlay[aria-hidden="false"]{display:flex}
-    .ck-plan-block-card{max-width:420px;width:100%;background:#141414;border:1px solid #333;border-radius:12px;padding:24px;color:#e5e5e5;box-shadow:0 16px 48px rgba(0,0,0,.5)}
-    .ck-plan-block-card p{margin:0 0 20px;line-height:1.45;font-size:0.95rem}
-    .ck-plan-block-actions{display:flex;flex-direction:column;gap:10px}
-    .ck-plan-block-actions button{border:none;border-radius:8px;padding:12px 16px;font-size:0.9rem;font-weight:600;cursor:pointer}
-    #ck-plan-block-ok{background:#374151;color:#fff}
-    #ck-plan-block-ok:hover{background:#4b5563}
-    #ck-plan-block-exit{background:linear-gradient(135deg,#facc15,#eab308);color:#111}
-    #ck-plan-block-exit:hover{filter:brightness(1.05)}
-    </style>
+
     <div id="ck-plan-block-overlay" role="dialog" aria-modal="true" aria-label="Acesso ao painel" aria-hidden="true">
         <div class="ck-plan-block-card">
             <p id="ck-plan-block-msg" class="ck-plan-block-msg"></p>
@@ -397,7 +302,6 @@
                         
                         <!-- Seção de Gerenciamento de Abas -->
                     </div>
-
 
                     <div id="personalizar-editor" class="editor-pane">
                         <div class="config-section-header">

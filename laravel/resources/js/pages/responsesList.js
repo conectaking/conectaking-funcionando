@@ -1,6 +1,7 @@
 import '../vendor-globals.js';
 /** responsesList — Vite entry (extracted inline) */
 import '@css/dashboard.css';
+import '@css/pages/responsesList.css';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
 

@@ -174,7 +174,6 @@
                 
                 // Salvar no localStorage
                 localStorage.setItem(CART_KEY, JSON.stringify(cart));
-                console.log('Carrinho salvo:', cart);
                 
                 // Atualizar UI
                 this.updateUI();
@@ -210,7 +209,6 @@
             // Salvar diretamente no localStorage primeiro
             try {
                 localStorage.setItem(CART_KEY, JSON.stringify(cart));
-                console.log('Produto adicionado. Carrinho salvo com', cart.items.length, 'itens');
             } catch (error) {
                 console.error('Erro ao salvar carrinho:', error);
             }
@@ -260,7 +258,6 @@
             
             // Atualizar contador
             const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-            console.log('Atualizando UI do carrinho. Total de itens:', itemCount, 'Itens:', cart.items);
             
             // Buscar elemento do contador dinamicamente
             const cartCountEl = document.getElementById('cart-count');
@@ -274,7 +271,6 @@
                 } else {
                     cartCountEl.style.display = 'none';
                 }
-                console.log('Contador atualizado com sucesso:', itemCount);
             } else {
                 console.warn('Elemento cart-count não encontrado. Tentando novamente...');
                 // Tentar novamente apum pequeno delay
@@ -287,7 +283,6 @@
                             retryCartCount.style.visibility = 'visible';
                             retryCartCount.style.opacity = '1';
                         }
-                        console.log('Contador atualizado na segunda tentativa:', itemCount);
                     } else {
                         console.error('Elemento cart-count ainda não encontrado apretry');
                     }
@@ -685,7 +680,6 @@
             newToggle.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Carrinho clicado');
                 const sidebar = document.getElementById('cart-sidebar');
                 const overlay = document.getElementById('cart-overlay');
                 if (sidebar) sidebar.classList.add('open');
@@ -729,7 +723,6 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const productId = btn.dataset.productId;
-                console.log('Adicionar ao carrinho clicado, productId:', productId);
                 if (productId && products[productId]) {
                     Cart.add(productId, 1);
                     trackProductClick(productId);
@@ -837,7 +830,6 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const mode = newBtn.dataset.mode;
-                console.log('Modo de visualização clicado:', mode);
                 
                 // Atualizar botes
                 document.querySelectorAll('.view-btn').forEach(b => {
@@ -867,7 +859,6 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const size = newBtn.dataset.size;
-                console.log('Tamanho clicado:', size);
                 
                 // Atualizar botes
                 document.querySelectorAll('.size-btn').forEach(b => {
@@ -897,19 +888,15 @@
 
     // Inicializao - garantir que o carrinho seja restaurado quando a página carregar
     function initializeCart() {
-        console.log('Inicializando carrinho...');
         try {
             const cartStr = localStorage.getItem(CART_KEY);
-            console.log('Carrinho no localStorage (raw):', cartStr);
             
             if (!cartStr) {
-                console.log('Nenhum carrinho encontrado no localStorage');
                 Cart.updateUI();
                 return;
             }
             
             const cart = JSON.parse(cartStr);
-            console.log('Carrinho carregado do localStorage:', cart);
             
             // Validar estrutura
             if (!cart.items) {
@@ -925,12 +912,10 @@
                 Cart.calculateTotal(cart);
                 // Salvar novamente para garantir que est sincronizado
                 localStorage.setItem(CART_KEY, JSON.stringify(cart));
-                console.log('Carrinho validado e salvo. Total de itens:', cart.items.length);
             }
             
             // Atualizar UI
             Cart.updateUI();
-            console.log('Carrinho inicializado com', cart.items.length, 'itens');
         } catch (error) {
             console.error('Erro ao inicializar carrinho:', error);
             // Em caso de erro, limpar e comear do zero

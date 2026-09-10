@@ -3,6 +3,7 @@ import '../vendor-globals.js';
  * King Forms editor — Vite entry (legacy public/ + boot Blade).
  */
 import '@css/dashboard.css';
+import '@css/pages/formPageEdit.css';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
 import '@mod/js/image-crop-modal.js';

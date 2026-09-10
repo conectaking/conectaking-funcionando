@@ -7,6 +7,7 @@
 import '@css/style.css';
 import '@css/dashboard.css';
 import '@css/css/profile-wifi.css';
+import '@css/pages/dashboard-extra.css';
 import '../vendor-globals.js';
 import '../inline/pages-dashboard-1.js';
 import '../inline/pages-dashboard-2.js';

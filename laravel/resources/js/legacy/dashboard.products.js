@@ -34,14 +34,12 @@
                 this.loadProductsCount();
             } else {
                 // Se não está disponível, tentar novamente após um delay
-                console.log('SalesPageId ainda não disponível, tentando novamente em 500ms...');
                 setTimeout(() => {
                     const retrySalesPageId = window.SALES_PAGE_EDIT_DATA?.salesPageId;
                     if (retrySalesPageId) {
                         this.loadProductsCount();
                     } else {
                         // Tentar mais uma vez após mais tempo
-                        console.log('SalesPageId ainda não disponível, tentando novamente em 1s...');
                         setTimeout(() => {
                             if (window.SALES_PAGE_EDIT_DATA?.salesPageId) {
                                 this.loadProductsCount();
@@ -69,7 +67,6 @@
                                  productsContainer.style.display !== 'none';
                 
                 if (isActive) {
-                    console.log('Aba de produtos está ativa, carregando produtos...');
                     setTimeout(() => {
                         this.loadProducts();
                     }, 300);
@@ -89,7 +86,6 @@
                         const productsContainer = document.getElementById('products-list');
                         if (productsContainer && productsContainer.offsetParent !== null) {
                             // Sempre recarregar quando clicar na aba para garantir dados atualizados
-                            console.log('Aba de produtos clicada, carregando produtos...');
                             this.loadProducts();
                         }
                     }, 100);
@@ -104,7 +100,6 @@
                         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                             const target = mutation.target;
                             if (target.classList.contains('active') && target.dataset.tab === 'products') {
-                                console.log('Aba de produtos detectada como ativa via MutationObserver');
                                 setTimeout(() => {
                                     this.loadProducts();
                                 }, 200);
@@ -203,7 +198,6 @@
                 
                 // Atualizar badge sem carregar todos os produtos
                 this.updateProductsCount(productCount);
-                console.log('Contagem de produtos atualizada:', productCount);
             } catch (error) {
                 console.error('Erro ao carregar contagem de produtos:', error);
             }
@@ -231,7 +225,6 @@
                 }
 
                 const data = await response.json();
-                console.log('Produtos recebidos da API:', data);
                 
                 // A API retorna { success: true, data: { products: [...] } }
                 if (data.success && data.data && data.data.products) {
@@ -244,7 +237,6 @@
                     this.products = [];
                 }
                 
-                console.log('Produtos processados:', this.products.length, 'produtos');
                 this.renderProducts();
                 this.updateProductsCount();
 
@@ -419,7 +411,6 @@
             
             // NO MOBILE: Desabilitar completamente o Sortable para evitar conflito com scroll
             if (isMobile) {
-                console.log('Sortable desabilitado no mobile para evitar conflito com scroll');
                 return;
             }
             
@@ -456,7 +447,6 @@
             };
 
             this.sortable = new Sortable(container, sortableConfig);
-            console.log('Sortable configurado com sucesso');
         },
 
         /**
@@ -509,7 +499,6 @@
                 display_order: index
             }));
 
-            console.log('Y"" Movendo produto:', { productId, direction, productOrders });
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
@@ -533,7 +522,6 @@
                 }
 
                 const responseData = await response.json().catch(() => ({}));
-                console.log('Produto movido com sucesso:', responseData);
 
                 // Atualizar lista local
                 this.products = sortedProducts.map((product, index) => ({
@@ -559,7 +547,6 @@
             // BLOQUEAR REORDENA—fO NO MOBILE - nunca permitir no mobile
             const isMobile = window.innerWidth <= 768;
             if (isMobile) {
-                console.log('Reordenação bloqueada no mobile - scroll deve funcionar normalmente');
                 return;
             }
 
@@ -608,7 +595,6 @@
                 return;
             }
 
-            console.log('Y"" Reordenando produtos:', productOrders);
 
             try {
                 const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
@@ -632,7 +618,6 @@
                 }
 
                 const responseData = await response.json().catch(() => ({}));
-                console.log('Produtos reordenados com sucesso:', responseData);
 
                 // Atualizar lista local
                 this.products = sortedProducts.map((product, index) => ({
@@ -645,7 +630,6 @@
                 // No mobile, nunca mostrar erro de reordenação (não deve acontecer)
                 const isMobile = window.innerWidth <= 768;
                 if (isMobile) {
-                    console.log('Erro de reordenação ignorado no mobile');
                     return;
                 }
                 // Só mostrar alerta se não for erro de validação silenciosa
@@ -1255,7 +1239,6 @@
             if (btn) {
                 // Verificar se já está processando
                 if (btn.disabled || btn.dataset.processing === 'true') {
-                    console.log('Requisição já em andamento para produto', productId);
                     return;
                 }
                 btn.disabled = true;
@@ -1369,7 +1352,6 @@
                 }
 
                 const responseData = await response.json().catch(() => ({}));
-                console.log('Status alterado com sucesso:', responseData);
 
                 // Recarregar produtos para garantir sincronização
                 await this.loadProducts();
@@ -1451,7 +1433,6 @@
                     }
                 }
             });
-            console.log('Badge de produtos atualizado:', productCount);
         },
 
         /**
@@ -1762,14 +1743,12 @@
                                     }
                                 } else if (response.status === 404) {
                                     // Endpoint não encontrado - usar sugestões locais
-                                    console.log('Usando sugestões locais (servidor precisa ser reiniciado)');
                                     productNameSuggestions = [window.TextSuggestions.generateProductName(prompt)];
                                 } else {
                                     productNameSuggestions = [window.TextSuggestions.generateProductName(prompt)];
                                 }
                             } catch (error) {
                                 // Erro de rede - usar sugestões locais silenciosamente
-                                console.log('Usando sugestões locais (backend não disponível)');
                                 productNameSuggestions = [window.TextSuggestions.generateProductName(prompt)];
                             }
                             

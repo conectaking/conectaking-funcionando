@@ -52,7 +52,6 @@
                     const cacheKey = `${url}_${JSON.stringify(defaultOptions.headers || {})}`;
                     const cached = requestCache.get(cacheKey);
                     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION * 2) {
-                        console.log(`Usando cache durante cooldown para: ${url}`);
                         return cached.response.clone();
                     }
                 }
@@ -70,7 +69,6 @@
             const cached = requestCache.get(cacheKey);
             
             if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-                console.log(`Usando cache para: ${url}`);
                 return cached.response.clone();
             }
         }
@@ -103,7 +101,6 @@
                         const cacheKey = `${url}_${JSON.stringify(defaultOptions.headers || {})}`;
                         const cached = requestCache.get(cacheKey);
                         if (cached) {
-                            console.log(`Usando cache após rate limit para: ${url}`);
                             return cached.response.clone();
                         }
                     }
@@ -170,7 +167,6 @@
                 const oldValue = target[property];
                 target[property] = value;
                 if (property === 'salesPageId' && value && value !== oldValue) {
-                    console.log('SalesPageId definido:', value, '- Carregando contagem de produtos...');
                     setTimeout(() => {
                         if (window.DashboardProducts && typeof window.DashboardProducts.loadProductsCount === 'function') {
                             window.DashboardProducts.loadProductsCount();
@@ -387,7 +383,6 @@
 
         // Carregar dados específicos da aba se necessário
         if (tabName === 'products') {
-            console.log('Aba de produtos ativada, carregando produtos...');
             // Aguardar um pouco para garantir que a aba foi renderizada
             setTimeout(() => {
                 if (window.DashboardProducts && typeof window.DashboardProducts.loadProducts === 'function') {
@@ -679,7 +674,6 @@
                 if (error.status === 429 || error.message.includes('Rate limit')) {
                     const cachedData = localStorage.getItem(`salesPageItem_${currentItemId}`);
                     if (cachedData) {
-                        console.log('Usando dados em cache após rate limit');
                         const itemResponseData = JSON.parse(cachedData);
                         const itemData = itemResponseData.data || itemResponseData;
                         // Continuar com o fluxo usando dados em cache
@@ -696,7 +690,6 @@
                     // Tentar usar cache antes de redirecionar
                     const cachedData = localStorage.getItem(`salesPageItem_${currentItemId}`);
                     if (cachedData) {
-                        console.log('Item não encontrado no servidor, usando dados em cache...');
                         try {
                             const itemResponseData = JSON.parse(cachedData);
                             const itemData = itemResponseData.data || itemResponseData;
@@ -710,7 +703,6 @@
                     }
                     
                     // Limpar cache e localStorage relacionado quando o item não existe
-                    console.log(`'️ Limpando cache e localStorage para item ${currentItemId} que não existe mais...`);
                     localStorage.removeItem(`salesPageItem_${currentItemId}`);
                     localStorage.removeItem(`salesPage_${currentItemId}`);
                     localStorage.removeItem(`salesPage_pendingChanges_${currentItemId}`);
@@ -756,12 +748,10 @@
             // Tentar usar cache em caso de qualquer erro (404, rate limit, etc.)
             const cachedData = localStorage.getItem(`salesPageItem_${currentItemId}`);
             if (cachedData) {
-                console.log('Erro ao carregar dados, tentando usar cache...');
                 try {
                     const itemResponseData = JSON.parse(cachedData);
                     const itemData = itemResponseData.data || itemResponseData;
                     if (itemData && itemData.item_type === 'sales_page') {
-                        console.log('Usando dados em cache para continuar...');
                         await processItemData(itemData);
                         return;
                     }
@@ -799,7 +789,6 @@
             if (error.status === 429 || error.message.includes('Rate limit')) {
                 const cachedSalesPage = localStorage.getItem(`salesPage_${currentItemId}`);
                 if (cachedSalesPage) {
-                    console.log('Usando sales page em cache após rate limit');
                     const salesPageData = JSON.parse(cachedSalesPage);
                     if (salesPageData.success && salesPageData.data) {
                         await processSalesPageData(salesPageData.data, itemData);
@@ -816,7 +805,6 @@
             if (salesPageResponse.status === 404) {
                 const cachedSalesPage = localStorage.getItem(`salesPage_${currentItemId}`);
                 if (cachedSalesPage) {
-                    console.log('Sales page não encontrada no servidor (404), usando dados em cache...');
                     try {
                         const salesPageData = JSON.parse(cachedSalesPage);
                         if (salesPageData.success && salesPageData.data) {
@@ -827,7 +815,6 @@
                         console.error('Erro ao processar cache:', e);
                     }
                 }
-                console.log('Sales page não encontrada e sem cache, criando página inicial...');
                 await createInitialSalesPage(itemData);
                 return; // createInitialSalesPage já preenche o formulário
             }
@@ -835,7 +822,6 @@
             // Para outros erros, tentar usar cache
             const cachedSalesPage = localStorage.getItem(`salesPage_${currentItemId}`);
             if (cachedSalesPage) {
-                console.log('Erro ao buscar sales page, usando dados em cache...');
                 try {
                     const salesPageData = JSON.parse(cachedSalesPage);
                     if (salesPageData.success && salesPageData.data) {
@@ -858,7 +844,6 @@
         }
         
         const salesPageData = await salesPageResponse.json();
-        console.log('Sales page response:', salesPageData);
         
         // Salvar no cache
         if (salesPageData.success && salesPageData.data) {
@@ -867,7 +852,6 @@
         
         // Se não encontrou dados válidos, criar uma página inicial
         if (!salesPageData.success || !salesPageData.data) {
-            console.log('Sales page não encontrada ou dados inválidos, criando página inicial...');
             await createInitialSalesPage(itemData);
             return; // createInitialSalesPage já preenche o formulário
         }
@@ -883,11 +867,6 @@
         // A API retorna um objeto único quando busca por profile_item_id
         currentSalesPage = salesPageData;
         // Garantir que o status está sendo preservado corretamente
-        console.log('"S Status recebido da API:', {
-            status: currentSalesPage.status,
-            id: currentSalesPage.id,
-            store_title: currentSalesPage.store_title
-        });
         
         if (currentSalesPage && currentSalesPage.id) {
             window.SALES_PAGE_EDIT_DATA.salesPageId = currentSalesPage.id;
@@ -895,7 +874,6 @@
             
             // Notificar que o salesPageId está disponível para carregar contagem de produtos
             if (window.DashboardProducts && typeof window.DashboardProducts.loadProductsCount === 'function') {
-                console.log('SalesPageId disponível, carregando contagem de produtos...');
                 window.DashboardProducts.loadProductsCount();
             }
             
@@ -929,7 +907,6 @@
             // Status sempre será PUBLISHED - não precisa mais atualizar dropdown
         } else {
             // Criar página inicial se não existir
-            console.log('Sales page data inválida, criando página inicial...');
             await createInitialSalesPage(itemData);
         }
     }
@@ -961,7 +938,6 @@
                 
                 // Notificar que o salesPageId está disponível para carregar contagem de produtos
                 if (window.DashboardProducts && typeof window.DashboardProducts.loadProductsCount === 'function') {
-                    console.log('SalesPageId disponível (criação), carregando contagem de produtos...');
                     window.DashboardProducts.loadProductsCount();
                 }
                 
@@ -1102,19 +1078,6 @@
             const metaDescriptionEl = document.getElementById('meta-description');
             const metaImageUrlEl = document.getElementById('meta-image-url');
             
-            console.log('Verificando elementos do formulário:', {
-                storeTitleEl: !!storeTitleEl,
-                storeDescriptionEl: !!storeDescriptionEl,
-                themeSelectEl: !!themeSelectEl,
-                backgroundColorTextEl: !!backgroundColorTextEl,
-                textColorTextEl: !!textColorTextEl,
-                buttonColorTextEl: !!buttonColorTextEl,
-                backgroundImageUrlEl: !!backgroundImageUrlEl,
-                whatsappNumberEl: !!whatsappNumberEl,
-                metaTitleEl: !!metaTitleEl,
-                metaDescriptionEl: !!metaDescriptionEl,
-                metaImageUrlEl: !!metaImageUrlEl
-            });
             
             const cardFormatRadio = document.querySelector('input[name="card-display-format"]:checked');
             const cardBannerUrlEl = document.getElementById('card-banner-image-url');
@@ -1137,36 +1100,8 @@
                 status: 'PUBLISHED'
             };
             
-            console.log('"< Dados capturados do formulário (VALORES REAIS):', {
-                store_title: formData.store_title,
-                store_description: formData.store_description,
-                theme: formData.theme,
-                background_color: formData.background_color,
-                text_color: formData.text_color,
-                button_color: formData.button_color,
-                button_text_color: formData.button_text_color,
-                background_image_url: formData.background_image_url,
-                whatsapp_number: formData.whatsapp_number,
-                meta_title: formData.meta_title,
-                meta_description: formData.meta_description,
-                meta_image_url: formData.meta_image_url,
-                status: formData.status
-            });
             
             // Verificar valores brutos dos elementos
-            console.log('Valores brutos dos elementos:', {
-                'store-title': storeTitleEl?.value,
-                'store-description': storeDescriptionEl?.value,
-                'theme-select': themeSelectEl?.value,
-                'background-color-text': backgroundColorTextEl?.value,
-                'text-color-text': textColorTextEl?.value,
-                'button-color-text': buttonColorTextEl?.value,
-                'background-image-url': backgroundImageUrlEl?.value,
-                'whatsapp-number': whatsappNumberEl?.value,
-                'meta-title': metaTitleEl?.value,
-                'meta-description': metaDescriptionEl?.value,
-                'meta-image-url': metaImageUrlEl?.value
-            });
             
             // Validar campos obrigatórios antes de enviar
             if (!formData.store_title || formData.store_title.trim().length < 2) {
@@ -1185,7 +1120,6 @@
 
             // SIMPLIFICADO: Salvar diretamente no servidor (como os outros módulos)
             // O status será mantido como está (DRAFT, PUBLISHED, etc)
-            console.log('Salvando alterações no servidor...');
             
             // Salvar dados do botão (profile_item)
             const logoSizeInput = document.getElementById('button-logo-size');
@@ -1199,7 +1133,6 @@
 
             // Salvar sales_page diretamente no servidor
             // O safeFetch já adiciona o token automaticamente
-            console.log('Enviando dados para salvar:', formData);
             const salesPageResponse = await safeFetch(`${API_URL}/api/v1/sales-pages/${currentSalesPage.id}`, {
                 method: 'PUT',
                 headers: {
@@ -1224,7 +1157,6 @@
 
             // Salvar dados do botão (profile_item)
             // O safeFetch já adiciona o token automaticamente
-            console.log('Enviando dados do botão para salvar:', buttonData);
             const itemResponse = await safeFetch(`${API_URL}/api/profile/items/${currentItemId}`, {
                 method: 'PUT',
                 headers: {
@@ -1255,7 +1187,6 @@
                 Object.assign(currentSalesPage, formData);
             }
             
-            console.log('Alterações salvas com sucesso no servidor!');
 
             // Mostrar sucesso
             btnSave.innerHTML = '<i class="fas fa-check"></i> Salvo!';
@@ -1282,7 +1213,6 @@
         return;
         // Prevenir múltiplas execuções simultâneas
         if (statusSelect.disabled) {
-            console.log('Dropdown desabilitado, ignorando mudança...');
             return;
         }
 
@@ -1332,37 +1262,19 @@
         // Neste caso, vamos confiar no dropdown (que reflete o que o usuário vê)
         const dropdownCurrentValue = statusSelect?.value?.toUpperCase() || '';
         
-        console.log('Status antes da validação:', {
-            oldStatusFromObject: oldStatus,
-            dropdownCurrentValue: dropdownCurrentValue,
-            newStatusSelected: newStatus,
-            currentSalesPageStatus: currentSalesPage.status,
-            currentSalesPageId: currentSalesPage.id
-        });
         
         // CORREÇÃO?fO CRÍTICA: Se o dropdown mostra ARCHIVED mas o objeto mostra DRAFT,
         // significa que o objeto foi atualizado incorretamente. Vamos usar o dropdown.
         // Isso acontece quando o usuário está tentando mudar de ARCHIVED para DRAFT
         // mas o objeto já foi alterado para DRAFT incorretamente em algum lugar
         if (dropdownCurrentValue === 'ARCHIVED' && oldStatus === 'DRAFT' && newStatus === 'DRAFT') {
-            console.log('CORREÇÃO?fO: Dropdown mostra ARCHIVED mas objeto mostra DRAFT. Corrigindo...');
             oldStatus = 'ARCHIVED';
             currentSalesPage.status = 'ARCHIVED';
-            console.log('Status corrigido para ARCHIVED');
         }
         
         // IMPORTANTE: NÃO atualizar o status do objeto antes de fazer a requisição
         // O oldStatus deve refletir o estado REAL no servidor
         
-        console.log('"" Tentando mudar status:', { 
-            oldStatus, 
-            newStatus, 
-            currentSalesPageStatus: currentSalesPage.status,
-            dropdownValue: statusSelect?.value,
-            eventTargetValue: event?.target?.value,
-            selectedIndex: statusSelect?.selectedIndex,
-            selectedOptionText: statusSelect?.options[statusSelect?.selectedIndex]?.text
-        });
         
         // Garantir que estamos usando o valor correto do dropdown
         // Se o evento não tem valor, usar o índice selecionado
@@ -1371,7 +1283,6 @@
             if (selectedOption && selectedOption.value) {
                 const actualNewStatus = selectedOption.value.toUpperCase();
                 if (actualNewStatus !== newStatus) {
-                    console.log('Corrigindo valor do status:', { newStatus, actualNewStatus });
                     // Não fazer nada aqui, apenas logar - o newStatus já foi definido acima
                 }
             }
@@ -1379,7 +1290,6 @@
         
         // Se não mudou, não fazer nada
         if (newStatus === oldStatus) {
-            console.log('Status não mudou, ignorando...');
             return;
         }
 
@@ -1410,7 +1320,6 @@
             return;
         }
         
-        console.log('Transição válida, prosseguindo...');
 
         const statusActions = {
             'PUBLISHED': 'publish',
@@ -1453,8 +1362,6 @@
                     currentSalesPage = data.data;
                     // Garantir que o status está correto
                     currentSalesPage.status = data.data.status || 'DRAFT';
-                    console.log('Status alterado para Rascunho');
-                    console.log('"S Status atualizado no objeto:', currentSalesPage.status);
                     // Garantir que o dropdown está sincronizado com o status atual
                     if (statusSelect.value !== 'DRAFT') {
                         statusSelect.value = 'DRAFT';
@@ -1515,7 +1422,6 @@
                     currentSalesPage.status = updatedStatus;
                     currentSalesPage = data.data; // Atualizar objeto completo para garantir sincronização
                     const statusText = statusSelect.options[statusSelect.selectedIndex].text;
-                    console.log(`Status alterado para ${statusText}`);
                     // Atualizar opções do dropdown após mudança de status
                     updateStatusOptions(updatedStatus);
                     updateSaveButtonState(); // Atualizar estado do botão salvar
@@ -1824,11 +1730,9 @@
                 }
             } else if (response.status === 404) {
                 // Endpoint não encontrado - servidor precisa ser reiniciado
-                console.log('Endpoint de sugestões não encontrado. Usando sugestões locais. (Servidor precisa ser reiniciado)');
             }
         } catch (error) {
             // Erro de rede ou outro erro - usar sugestões locais silenciosamente
-            console.log('Usando sugestões locais (backend não disponível)');
         }
         
         // Fallback: usar sugestões locais

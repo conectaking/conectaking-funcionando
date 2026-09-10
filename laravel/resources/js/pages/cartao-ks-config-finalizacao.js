@@ -1,4 +1,5 @@
 import '../../css/fonts.css';
+import '@css/pages/cartao-ks-config-finalizacao.css';
 import '../vendor-globals.js';
 
 (async function() {

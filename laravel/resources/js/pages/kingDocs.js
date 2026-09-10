@@ -1,4 +1,5 @@
 /** kingDocs — Vite entry (extracted inline, icons sanitized) */
+import '../vendor-globals.js';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
 
@@ -968,11 +969,8 @@ import '@mod/js/ck-csrf.js';
     modal.classList.add('kd-modal--open');
     modal.setAttribute('aria-hidden', 'false');
     function draw() {
-      if (typeof QRCode === 'undefined') {
-        var s = document.createElement('script');
-        s.src = '/vendor/qrcode/qrcode.min.js';
-        s.onload = function () { draw(); };
-        document.head.appendChild(s);
+      if (typeof QRCode === 'undefined' || typeof QRCode.toCanvas !== 'function') {
+        wrap.textContent = 'QRCode indisponível.';
         return;
       }
       var canvas = document.createElement('canvas');

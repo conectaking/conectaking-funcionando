@@ -393,11 +393,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const raw = await response.json();
             const payload = unwrapApiJson(raw);
-            console.log(`Dados recebidos para ${endpoint}:`, {
-                type: Array.isArray(payload) ? 'array' : typeof payload,
-                length: Array.isArray(payload) ? payload.length : 'N/A',
-                sample: Array.isArray(payload) && payload.length > 0 ? payload[0] : payload
-            });
             return payload;
         } catch (error) {
             console.error(`O Erro ao buscar ${endpoint}:`, error);
@@ -546,7 +541,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const rawAdvanced = await response.json();
             const advancedStats = unwrapApiJson(rawAdvanced);
-            console.log(advancedStats);
             
             const statsData = {
                 activeUsers7d: parseInt(advancedStats.activeUsers7d, 10) || 0,
@@ -565,7 +559,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 expiredUsersList: advancedStats.expiredUsersList || []
             };
             
-            console.log(statsData);
             
             // Renderizar as novas estatísticas
             renderAdvancedStats(statsData);
@@ -1154,7 +1147,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             const details = await response.json();
-            console.log(details);
             
             // Validar estrutura dos dados
             if (!details || typeof details !== 'object') {
@@ -1322,14 +1314,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const lastClick = lastClickDate ? new Date(lastClickDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Nunca';
                 const firstClick = firstClickDate ? new Date(firstClickDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Nunca';
                 
-                console.log(`Y"- Renderizando link "${link.title || 'Sem título'}":`, {
-                    clickCount,
-                    clickCountPeriod,
-                    lastClickDate,
-                    firstClickDate,
-                    lastClick,
-                    firstClick
-                });
                 const iconClass = (function (raw) {
                     const tokens = String(raw || '').split(/\s+/).filter((t) => /^(fa[srlb]?|fa-(solid|regular|brands)|fa-[a-z0-9-]+)$/i.test(t));
                     return tokens.length ? tokens.join(' ') : 'fas fa-link';
@@ -1596,7 +1580,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentAnalyticsUserId = userId;
         
         // Mostrar modal imediatamente
-        console.log(displayName);
         titleEl.textContent = `Analytics: ${displayName}`;
         contentEl.innerHTML = '<p style="color: var(--text-dark); text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Carregando detalhes...</p>';
         
@@ -1633,7 +1616,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             /* console.log removed (encoding) */
             const details = await loadAnalyticsWithPeriod(userId, period);
-            console.log(details);
             
             if (!details) {
                 console.error('O Detalhes é null ou undefined');
@@ -1859,7 +1841,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 function renderUsers(users) {
-    console.log(users);
     const tableBody = document.querySelector('#users-table tbody');
     const tableContainer = document.getElementById('users-table-container');
     const emptyState = document.getElementById('users-empty-state');
@@ -1991,7 +1972,6 @@ function renderUsers(users) {
 }
 
 function renderCodes(codes) {
-    console.log(codes);
     const tableBody = document.querySelector('#codes-table tbody');
     const tableContainer = document.getElementById('codes-table-container');
     const emptyState = document.getElementById('codes-empty-state');

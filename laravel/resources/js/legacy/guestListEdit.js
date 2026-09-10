@@ -105,17 +105,13 @@ function getFormItemIdFromUrl() {
 
 // Função de inicialização principal
 function initializeGuestList() {
-    console.log('Y"" Inicializando página de lista de convidados...');
     const itemId = getItemIdFromUrl();
-    console.log('Y"< ItemId da URL:', itemId);
     
     if (itemId) {
-        console.log('Carregando lista específica:', itemId);
         loadGuestList().catch(error => {
             console.error('O Erro ao inicializar lista:', error);
         });
     } else {
-        console.log('Y"< Carregando todas as listas');
         loadAllGuestLists().catch(error => {
             console.error('O Erro ao inicializar listas:', error);
         });
@@ -152,7 +148,6 @@ async function loadAllGuestLists() {
         }
         
         const lists = await response.json();
-        console.log('Listas carregadas:', lists.length, 'listas');
         renderAllLists(lists);
         
     } catch (error) {
@@ -580,7 +575,6 @@ async function loadGuestList() {
             const tabParam = urlParams.get('tab');
             
             if ((linksTab && linksTab.classList.contains('active')) || tabParam === 'links') {
-                console.log('Y"< Aba Links está ativa, carregando links personalizados...');
                 if (currentGuestListId) {
                     loadPersonalizedLinks();
                     updatePortariaLink();
@@ -1067,7 +1061,6 @@ async function loadPersonalizedLinks() {
         const headers = {};
         if (token) headers.Authorization = 'Bearer ' + token;
         
-        console.log('Carregando links personalizados para lista:', currentGuestListId);
         const response = await fetch(`${API_URL}/api/guest-lists/${currentGuestListId}/cadastro-links`, {
             credentials: 'include',
             headers
@@ -1081,8 +1074,6 @@ async function loadPersonalizedLinks() {
         const data = await response.json();
         const links = data.data || [];
         
-        console.log('Links personalizados carregados:', links.length, 'links');
-        console.log('Y"< Dados dos links:', links);
         
         if (links.length === 0) {
             renderPersonalizedLinks([]);
@@ -1111,7 +1102,6 @@ function renderPersonalizedLinks(links) {
         return;
     }
     
-        console.log('YZ Renderizando links personalizados:', links.length, 'links');
     
     // Garantir que o elemento está visível e não tem overflow hidden
     if (listEl) {
@@ -1343,7 +1333,6 @@ function renderPersonalizedLinks(links) {
         });
     }
     
-    console.log('Links personalizados renderizados com sucesso');
     
     // Aplicar estilos mobile após um pequeno delay para garantir que o DOM está pronto
     setTimeout(() => {
@@ -1509,7 +1498,6 @@ window.addEventListener('resize', () => {
 
 // Função para editar link (placeholder)
 function editPersonalizedLink(linkId) {
-    console.log('Edit link:', linkId);
     // Implementar
 }
 
@@ -1538,18 +1526,15 @@ function copyToClipboardPersonalized(text, btn) {
 }
 
 function toggleLinkStatus(linkId, currentStatus) {
-    console.log('Toggle link status:', linkId, currentStatus);
     // Implementar
 }
 
 function renewLink(linkId) {
-    console.log('Renew link:', linkId);
     // Implementar
 }
 
 function deletePersonalizedLink(linkId) {
     if (!confirm('Tem certeza que deseja excluir este link?')) return;
-    console.log('Delete link:', linkId);
     // Implementar
 }
 

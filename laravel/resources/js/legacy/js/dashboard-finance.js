@@ -4072,7 +4072,6 @@ window.changeFinanceMonth = function (direction) {
 window.initFinanceChart = function (period = '1M') {
     const canvas = document.getElementById('finance-evolution-chart');
     if (!canvas) {
-        console.log('Canvas não encontrado, tentando novamente...');
         setTimeout(() => window.initFinanceChart(period), 200);
         return;
     }
@@ -4092,7 +4091,6 @@ window.initFinanceChart = function (period = '1M') {
         try {
             window.financeChartInstance.destroy();
         } catch (e) {
-            console.log('Erro ao destruir gráfico anterior:', e);
         }
     }
 
@@ -5909,18 +5907,15 @@ window.openAddTransactionModal = async function (type, transactionData = null) {
 
     // PREVENIR SUBMIT PADRÃO E CHAMAR FUNÇÃO DE SALVAR
     if (form) {
-        console.log('[FINANCE] Adicionando listeners para prevenir submit padrão e chamar saveFinanceTransaction');
 
         // Adicionar listener para submit - CHAMAR A FUNÇÃO DE SALVAR AQUI
         form.addEventListener('submit', async (e) => {
-            console.log('[FINANCE] Form submit capturado, prevenindo padrão e chamando saveFinanceTransaction');
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
 
             // CHAMAR A FUNÇÃO DE SALVAR
             try {
-                console.log('[FINANCE] Chamando saveFinanceTransaction com type:', type);
                 await saveFinanceTransaction(e, type);
             } catch (error) {
                 console.error('[FINANCE] Erro ao chamar saveFinanceTransaction:', error);
@@ -5931,7 +5926,6 @@ window.openAddTransactionModal = async function (type, transactionData = null) {
 
         // Também prevenir no onsubmit inline e chamar função
         form.onsubmit = async function (e) {
-            console.log('[FINANCE] Form onsubmit capturado, prevenindo padrão e chamando saveFinanceTransaction');
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -5940,7 +5934,6 @@ window.openAddTransactionModal = async function (type, transactionData = null) {
 
             // CHAMAR A FUNÇÃO DE SALVAR
             try {
-                console.log('[FINANCE] Chamando saveFinanceTransaction (onsubmit) com type:', type);
                 await saveFinanceTransaction(e, type);
             } catch (error) {
                 console.error('[FINANCE] Erro ao chamar saveFinanceTransaction:', error);
@@ -5988,7 +5981,6 @@ window.closeFinanceTransactionModal = function () {
 };
 
 async function saveFinanceTransaction(event, type) {
-    console.log('[FINANCE] saveFinanceTransaction chamado', { type, event });
 
     // PREVENT DEFAULT IMEDIATAMENTE - ANTES DE QUALQUER COISA
     if (event) {
@@ -5997,7 +5989,6 @@ async function saveFinanceTransaction(event, type) {
         event.stopImmediatePropagation();
     }
 
-    console.log('[FINANCE] Event preventDefault executado');
 
     // Retornar false para garantir que não há submit padrão
     try {
@@ -6008,18 +5999,11 @@ async function saveFinanceTransaction(event, type) {
             errorMsg.style.display = 'none';
         }
 
-        console.log('[FINANCE] Buscando elementos do formulário...');
         const amountInput = document.getElementById('transaction-amount');
         const descriptionInput = document.getElementById('transaction-description');
         const dateInput = document.getElementById('transaction-date');
         const statusInput = document.getElementById('transaction-status');
 
-        console.log('[FINANCE] Elementos encontrados:', {
-            amountInput: !!amountInput,
-            descriptionInput: !!descriptionInput,
-            dateInput: !!dateInput,
-            statusInput: !!statusInput
-        });
 
         if (!amountInput || !descriptionInput || !dateInput || !statusInput) {
             throw new Error('Elementos do formulário não encontrados. Por favor, recarregue a página.');
@@ -6030,16 +6014,8 @@ async function saveFinanceTransaction(event, type) {
         const transactionDate = dateInput.value;
         const status = statusInput.value;
 
-        console.log('[FINANCE] Valores coletados:', {
-            amount,
-            description,
-            transactionDate,
-            status,
-            type
-        });
 
         // Validação
-        console.log('[FINANCE] Iniciando validação...');
         let hasError = false;
 
         if (!amount || amount <= 0 || isNaN(amount)) {
@@ -6081,10 +6057,8 @@ async function saveFinanceTransaction(event, type) {
             return;
         }
 
-        console.log('[FINANCE] Validação passou');
 
         // Mostrar loading
-        console.log('[FINANCE] Preparando para enviar...');
         const submitBtn = document.getElementById('save-btn');
         const cancelBtn = document.getElementById('cancel-btn');
 
@@ -6103,12 +6077,6 @@ async function saveFinanceTransaction(event, type) {
         const typeUpper = (type || '').toUpperCase();
         const transactionType = typeUpper === 'INCOME' ? 'INCOME' : 'EXPENSE';
 
-        console.log('[FINANCE] Tipo da transação determinado:', {
-            typeOriginal: type,
-            typeUpper,
-            transactionType,
-            isIncome: transactionType === 'INCOME'
-        });
 
         // Coletar dados adicionais
         const categoryId = document.getElementById('transaction-category-id')?.value || null;
@@ -6136,18 +6104,7 @@ async function saveFinanceTransaction(event, type) {
             profile_id: profileId ? parseInt(profileId) : null
         };
 
-        console.log('[FINANCE] Enviando requisição:', {
-            url: `${env.API_URL}/api/finance/transactions`,
-            method: 'POST',
-            body: requestBody,
-            headers: {
-                ...env.HEADERS_AUTH,
-                'Content-Type': 'application/json'
-            }
-        });
 
-        console.log('[FINANCE] env.API_URL:', env.API_URL);
-        console.log('[FINANCE] env.HEADERS_AUTH:', env.HEADERS_AUTH);
 
         let response;
         try {
@@ -6160,12 +6117,6 @@ async function saveFinanceTransaction(event, type) {
                 body: JSON.stringify(requestBody)
             });
 
-            console.log('[FINANCE] Resposta recebida:', {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok,
-                headers: Object.fromEntries(response.headers.entries())
-            });
         } catch (fetchError) {
             console.error('[FINANCE] Erro na requisição fetch:', fetchError);
             throw new Error(`Erro de conexão: ${fetchError.message}`);
@@ -6174,11 +6125,9 @@ async function saveFinanceTransaction(event, type) {
         let responseData = null;
         try {
             const responseText = await response.text();
-            console.log('[FINANCE] Resposta texto:', responseText);
 
             if (responseText) {
                 responseData = JSON.parse(responseText);
-                console.log('[FINANCE] Resposta JSON:', responseData);
             }
         } catch (parseError) {
             console.error('[FINANCE] Erro ao parsear JSON:', parseError);
@@ -6196,7 +6145,6 @@ async function saveFinanceTransaction(event, type) {
             throw new Error(errorMessage);
         }
 
-        console.log('[FINANCE] Transação salva com sucesso:', responseData);
 
         // Fechar modal imediatamente para o usuário sair da tela de formulário
         closeFinanceTransactionModal();
@@ -6290,7 +6238,6 @@ function showTransactionError(message) {
 }
 
 window.editFinanceTransaction = async function (id) {
-    console.log('[FINANCE] editFinanceTransaction chamado para ID:', id);
 
     if (!id) {
         alert('ID da transação não fornecido.');
@@ -6311,7 +6258,6 @@ window.editFinanceTransaction = async function (id) {
         const responseData = await response.json();
         const transaction = responseData.data || responseData;
 
-        console.log('[FINANCE] Transação carregada:', transaction);
 
         // Determinar tipo (INCOME ou EXPENSE)
         const transactionType = (transaction.type || '').toUpperCase();
@@ -6340,7 +6286,6 @@ window.editFinanceTransaction = async function (id) {
                 }, true);
             }
 
-            console.log('[FINANCE] Modal de edição configurado');
         }, 500);
 
     } catch (error) {
@@ -6350,7 +6295,6 @@ window.editFinanceTransaction = async function (id) {
 };
 
 async function updateFinanceTransaction(event, id, type) {
-    console.log('[FINANCE] updateFinanceTransaction chamado', { id, type });
 
     // PREVENT DEFAULT IMEDIATAMENTE
     if (event) {
@@ -6430,7 +6374,6 @@ async function updateFinanceTransaction(event, id, type) {
             recurring_times: recurringTimes
         };
 
-        console.log('[FINANCE] Atualizando transação:', { id, body: requestBody });
 
         const response = await fetch(`${env.API_URL}/api/finance/transactions/${id}`, {
             method: 'PUT',
@@ -6446,12 +6389,10 @@ async function updateFinanceTransaction(event, id, type) {
 
         try {
             responseText = await response.text();
-            console.log('[FINANCE] Resposta texto (update):', responseText);
 
             if (responseText) {
                 try {
                     responseData = JSON.parse(responseText);
-                    console.log('[FINANCE] Resposta JSON (update):', responseData);
                 } catch (parseError) {
                     console.error('[FINANCE] Erro ao parsear JSON:', parseError);
                     responseData = { message: responseText };
@@ -6495,7 +6436,6 @@ async function updateFinanceTransaction(event, id, type) {
             throw new Error(errorMessage);
         }
 
-        console.log('[FINANCE] Transação atualizada com sucesso:', responseData);
 
         // Fechar modal imediatamente para o usuário sair da tela de edição
         closeFinanceTransactionModal();
