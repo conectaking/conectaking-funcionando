@@ -67,7 +67,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       SESSION_DRIVER: file
       CACHE_STORE: file
-      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
       REDIS_PORT: "6379"
