@@ -1307,8 +1307,11 @@
   }
 
   function previewUrl(photoId, thumb) {
-    const q = new URLSearchParams({ slug, v: 'wm6' });
-    if (thumb) q.set('thumb', '1');
+    const q = new URLSearchParams({ slug, v: 'wm7' });
+    if (thumb) {
+      q.set('thumb', '1');
+      q.set('max', '360');
+    }
     const base = resolveKsApiBase();
     return `${base}/api/king-selection/client/photos/${photoId}/preview?${q.toString()}`;
   }
@@ -2045,7 +2048,26 @@
       .filter((img) => img.getAttribute('data-preview-loaded') !== '1');
     if (!imgs.length) return;
 
-    const loadOne = (img) => loadGridPreviewImg(img);
+    const PREVIEW_CONCURRENCY = 4;
+    let inFlight = 0;
+    const waitQ = [];
+    const withSlot = (fn) => new Promise((resolve, reject) => {
+      const run = () => {
+        inFlight += 1;
+        Promise.resolve()
+          .then(fn)
+          .then(resolve, reject)
+          .finally(() => {
+            inFlight -= 1;
+            const next = waitQ.shift();
+            if (next) next();
+          });
+      };
+      if (inFlight < PREVIEW_CONCURRENCY) run();
+      else waitQ.push(run);
+    });
+
+    const loadOne = (img) => withSlot(() => loadGridPreviewImg(img));
 
     if (typeof IntersectionObserver !== 'undefined') {
       _gridPreviewIo = new IntersectionObserver((entries) => {
@@ -2055,14 +2077,15 @@
           try { _gridPreviewIo.unobserve(img); } catch (_) { }
           loadOne(img);
         });
-      }, { root: null, rootMargin: '320px 0px', threshold: 0.01 });
+      }, { root: null, rootMargin: '200px 0px', threshold: 0.01 });
       imgs.forEach((img) => _gridPreviewIo.observe(img));
-      imgs.slice(0, 20).forEach((img) => {
+      // Primeira dobra: poucas e com limite de concorrência (evita saturar R2/GD)
+      imgs.slice(0, 8).forEach((img) => {
         try { _gridPreviewIo.unobserve(img); } catch (_) { }
         loadOne(img);
       });
     } else {
-      runPreviewPool(imgs, 6, loadOne).catch(() => { });
+      runPreviewPool(imgs.slice(0, 16), PREVIEW_CONCURRENCY, loadOne).catch(() => { });
     }
   }
 

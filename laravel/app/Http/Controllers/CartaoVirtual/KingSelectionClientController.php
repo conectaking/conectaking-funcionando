@@ -181,7 +181,14 @@ class KingSelectionClientController extends Controller
                 ->header('X-Conecta-Engine', 'laravel');
         }
         $thumb = in_array(strtolower((string) ($request->query('thumb') ?: $request->query('size') ?: '')), ['1', 'true', 'thumb', 's'], true);
-        $r = $this->ks->clientPreview($payload, (int) $photoId, $thumb);
+        $qMax = (int) $request->query('max', 0);
+        $maxSide = null;
+        if ($qMax >= 240 && $qMax <= 2000) {
+            $maxSide = $qMax;
+        } elseif ($thumb) {
+            $maxSide = 360;
+        }
+        $r = $this->ks->clientPreview($payload, (int) $photoId, $maxSide ?? false);
         if (($r['status'] ?? 500) !== 200) {
             return response($r['message'] ?? 'erro', $r['status'])->header('X-Conecta-Engine', 'laravel');
         }
@@ -189,7 +196,7 @@ class KingSelectionClientController extends Controller
         return response($r['binary'], 200)
             ->header('Content-Type', $r['contentType'] ?? 'image/jpeg')
             ->header('Cross-Origin-Resource-Policy', 'cross-origin')
-            ->header('Cache-Control', 'private, max-age=300')
+            ->header('Cache-Control', 'private, max-age=86400')
             ->header('X-Conecta-Engine', 'laravel');
     }
 

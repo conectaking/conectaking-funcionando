@@ -98,29 +98,63 @@ class KingSelectionMediaService
     public function previewFromStoragePath(string $path, bool|int $thumbOrMax = false, ?array $watermark = null): array
     {
         $this->bumpImageMemory();
+        if (is_int($thumbOrMax)) {
+            $maxSide = max(240, min(2400, $thumbOrMax));
+        } else {
+            $maxSide = $thumbOrMax ? 360 : 1200;
+        }
+        $isThumb = $maxSide <= 480;
+        $wmKey = '';
+        if ($watermark && ! empty($watermark['enabled']) && ! $isThumb) {
+            $wmKey = '|wm:'.($watermark['mode'] ?? 'x').':'.round((float) ($watermark['opacity'] ?? 0.22), 3);
+        }
+        $cacheFile = $this->previewCachePath($path, $maxSide, $wmKey);
+        if ($cacheFile !== null && is_file($cacheFile) && filesize($cacheFile) > 64) {
+            $cached = @file_get_contents($cacheFile);
+            if (is_string($cached) && $cached !== '') {
+                return ['status' => 200, 'binary' => $cached, 'contentType' => 'image/jpeg'];
+            }
+        }
+
         $buf = $this->bufferFromPath($path);
         if ($buf === null) {
             return ['status' => 502, 'message' => 'Não foi possível carregar a imagem (ficheiro em falta no armazenamento).'];
-        }
-        if (is_int($thumbOrMax)) {
-            $maxSide = max(320, min(2400, $thumbOrMax));
-        } else {
-            $maxSide = $thumbOrMax ? 400 : 1200;
         }
         $out = $this->resizeJpeg($buf, $maxSide);
         unset($buf);
         if ($out === null) {
             return ['status' => 502, 'message' => 'Falha ao processar imagem'];
         }
-        $isThumb = $maxSide <= 480;
-        if ($watermark && ! empty($watermark['enabled']) && ! $isThumb) {
+        if ($wmKey !== '') {
             $wm = $this->applyDiagonalWatermark($out, (float) ($watermark['opacity'] ?? 0.22));
             if ($wm !== null) {
                 $out = $wm;
             }
         }
+        if ($cacheFile !== null) {
+            $dir = dirname($cacheFile);
+            if (! is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            @file_put_contents($cacheFile, $out);
+        }
 
         return ['status' => 200, 'binary' => $out, 'contentType' => 'image/jpeg'];
+    }
+
+    private function previewCachePath(string $path, int $maxSide, string $wmKey): ?string
+    {
+        $hash = hash('sha256', $path.'|'.$maxSide.$wmKey);
+        $sub = substr($hash, 0, 2);
+        $uploads = rtrim((string) (env('KS_UPLOADS_PATH') ?: ''), '/');
+        if ($uploads !== '' && is_dir($uploads)) {
+            return $uploads.'/ks-preview-cache/'.$sub.'/'.$hash.'.jpg';
+        }
+        try {
+            return storage_path('app/ks-preview-cache/'.$sub.'/'.$hash.'.jpg');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

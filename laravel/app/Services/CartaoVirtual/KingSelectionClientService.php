@@ -496,9 +496,10 @@ class KingSelectionClientService
 
     /**
      * @param  array<string,mixed>  $payload
+     * @param  bool|int  $thumbOrMax  true=thumb, false=full preview, ou max side
      * @return array{status:int, binary?:string, contentType?:string, message?:string}
      */
-    public function clientPreview(array $payload, int $photoId, bool $thumb = false): array
+    public function clientPreview(array $payload, int $photoId, bool|int $thumbOrMax = false): array
     {
         $galleryId = (int) ($payload['galleryId'] ?? 0);
         $slug = (string) ($payload['slug'] ?? '');
@@ -531,7 +532,7 @@ class KingSelectionClientService
             return ['status' => 404, 'message' => 'Não encontrado'];
         }
 
-        return $this->media->previewFromStoragePath($path, $thumb, $this->watermarkOpts($payload, $galleryId));
+        return $this->media->previewFromStoragePath($path, $thumbOrMax, $this->watermarkOpts($payload, $galleryId));
     }
 
     /**
