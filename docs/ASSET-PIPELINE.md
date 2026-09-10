@@ -9,6 +9,11 @@
 ## Unificação total `public/` → só Vite (trabalho longo)
 Não é um deploy único: cada módulo grande (`kingSelectionProject.js`, `formPageEdit.js`, `dashboard-*.js`) precisa migrar entry, smoke e remoção do dual.
 
+**Já migrado (sem `@legacy` no entry):**
+- `kingSelectionReview.js` → `laravel/resources/js/pages/kingSelectionReview.js` (`public/` ficou stub)
+
+**Próximos candidatos seguros:** `kingSelectionGallery.js`, `conta.js`
+
 **Regra daqui pra frente:** código novo só em `laravel/resources/js` + Vite. Não adicionar páginas novas só em `public/`.
 
 ## Nonces CSP (próxima etapa de hardening)
