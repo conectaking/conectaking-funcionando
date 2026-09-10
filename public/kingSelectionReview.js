@@ -228,14 +228,35 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function load() {
-    const res = await fetch(`${API_URL}/api/king-selection/client/gallery?slug=${encodeURIComponent(slug)}`, { headers: HEADERS });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Erro ao carregar galeria');
-    const g = data.gallery;
-    const selectedIds = (data.selectedPhotoIds || []).map(x => parseInt(x, 10)).filter(Boolean);
+    const PAGE = 120;
+    let offset = 0;
+    let allPhotos = [];
+    let galleryMeta = null;
+    let selectedIds = [];
+    let hasMore = true;
+    while (hasMore && offset < 5000) {
+      const res = await fetch(
+        `${API_URL}/api/king-selection/client/gallery?slug=${encodeURIComponent(slug)}&limit=${PAGE}&offset=${offset}`,
+        { headers: HEADERS }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Erro ao carregar galeria');
+      if (!galleryMeta) {
+        galleryMeta = data.gallery || {};
+        selectedIds = (data.selectedPhotoIds || []).map(x => parseInt(x, 10)).filter(Boolean);
+      }
+      const page = Array.isArray(data?.gallery?.photos) ? data.gallery.photos : [];
+      allPhotos = allPhotos.concat(page);
+      offset = allPhotos.length;
+      hasMore = !!(data?.gallery?.photos_has_more ?? data.photosHasMore);
+      if (selectedIds.length && selectedIds.every((id) => allPhotos.some((p) => parseInt(p.id, 10) === id))) {
+        hasMore = false;
+      }
+    }
+    const g = galleryMeta || {};
+    g.photos = allPhotos;
     titleEl.textContent = g?.nome_projeto || 'Galeria';
     renderSelected(g, selectedIds);
-    // se já foi enviada (bloqueada), não deixa reenviar
     if (g && g.locked) {
       showError('Sua seleção já foi enviada. Aguarde a revisão ou peça reativação ao fotógrafo.');
       finishBtn.disabled = true;

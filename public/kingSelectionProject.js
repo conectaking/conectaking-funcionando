@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let photoFilter = 'all'; // all|fav
   let photoSearch = '';
-  let photoPageSize = 20;
+  let photoPageSize = 24;
   let photoPageIndex = 0;
   let photoFolderFilterId = null; // null=todas, -1=fotos soltas, >0=id da pasta
   let photoSortMode = 'order'; // order|name|id

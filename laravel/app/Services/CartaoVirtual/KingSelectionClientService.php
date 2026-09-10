@@ -7,7 +7,7 @@ use App\Services\Auth\JwtService;
 use App\Support\KingSelection\KsAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaMeta;
 
 /**
  * King Selection — auth + galeria cliente (fatia inicial sem face/vendas).
@@ -114,12 +114,12 @@ class KingSelectionClientService
             return ['status' => 404, 'body' => ['message' => 'Galeria não encontrada.']];
         }
 
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 503, 'body' => ['message' => 'Cadastro de clientes indisponível neste servidor.']];
         }
 
-        $hasAm = Schema::hasColumn('king_galleries', 'access_mode');
-        $hasSelf = Schema::hasColumn('king_galleries', 'allow_self_signup');
+        $hasAm = SchemaMeta::hasColumn('king_galleries', 'access_mode');
+        $hasSelf = SchemaMeta::hasColumn('king_galleries', 'allow_self_signup');
         $gx = DB::selectOne(
             'SELECT id'
             .($hasAm ? ', access_mode' : '')
@@ -236,8 +236,8 @@ class KingSelectionClientService
             return ['status' => 404, 'body' => ['message' => 'Galeria não encontrada.']];
         }
 
-        $hasSelf = Schema::hasColumn('king_galleries', 'allow_self_signup');
-        $hasAm = Schema::hasColumn('king_galleries', 'access_mode');
+        $hasSelf = SchemaMeta::hasColumn('king_galleries', 'allow_self_signup');
+        $hasAm = SchemaMeta::hasColumn('king_galleries', 'access_mode');
         $accessMode = $hasAm ? KsAccess::normAccessMode($g->access_mode ?? 'private') : 'private';
         $allowRegister =
             ($hasSelf && filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN))
@@ -247,7 +247,7 @@ class KingSelectionClientService
             return ['status' => 403, 'body' => ['message' => 'Autocadastro desativado nesta galeria.']];
         }
 
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 500, 'body' => ['message' => 'Tabela de clientes não disponível (migração pendente).']];
         }
 
@@ -267,7 +267,7 @@ class KingSelectionClientService
             'created_at' => now(),
             'updated_at' => now(),
         ];
-        if (Schema::hasColumn('king_gallery_clients', 'senha_enc')) {
+        if (SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc')) {
             $row['senha_enc'] = $this->passwordCrypto->encrypt($pass);
         }
 
@@ -309,7 +309,7 @@ class KingSelectionClientService
             return ['status' => 400, 'body' => ['message' => 'Informe o slug da galeria.']];
         }
 
-        $hasAm = Schema::hasColumn('king_galleries', 'access_mode');
+        $hasAm = SchemaMeta::hasColumn('king_galleries', 'access_mode');
         $g = DB::selectOne(
             'SELECT id, slug'.($hasAm ? ', access_mode' : '').' FROM king_galleries WHERE LOWER(TRIM(slug)) = LOWER(TRIM(?)) LIMIT 1',
             [$slug]
@@ -347,8 +347,8 @@ class KingSelectionClientService
             return ['status' => 400, 'body' => ['message' => 'Informe o slug da galeria.']];
         }
 
-        $hasSelf = Schema::hasColumn('king_galleries', 'allow_self_signup');
-        $hasAm = Schema::hasColumn('king_galleries', 'access_mode');
+        $hasSelf = SchemaMeta::hasColumn('king_galleries', 'allow_self_signup');
+        $hasAm = SchemaMeta::hasColumn('king_galleries', 'access_mode');
         $g = DB::selectOne(
             'SELECT id, slug'
             .($hasSelf ? ', allow_self_signup' : '')
@@ -517,10 +517,10 @@ class KingSelectionClientService
      */
     private function approvedPhotoIdsForClient(int $galleryId, int $clientId, int $selectionBatch): array
     {
-        if ($galleryId < 1 || $clientId < 1 || ! Schema::hasTable('king_selection_photo_approvals')) {
+        if ($galleryId < 1 || $clientId < 1 || ! SchemaMeta::hasTable('king_selection_photo_approvals')) {
             return [];
         }
-        $hasBatch = Schema::hasColumn('king_selection_photo_approvals', 'selection_batch');
+        $hasBatch = SchemaMeta::hasColumn('king_selection_photo_approvals', 'selection_batch');
         $sql = 'SELECT photo_id FROM king_selection_photo_approvals
                 WHERE gallery_id = ? AND client_id = ? AND lower(status) = \'approved\''
             .($hasBatch ? ' AND selection_batch = ?' : '')

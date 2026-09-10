@@ -83,6 +83,11 @@
 
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div id="ks-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+    <div id="ks-load-more-wrap" class="mt-6 flex justify-center hidden">
+      <button type="button" id="ks-load-more" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/20 bg-white/5 text-white font-bold hover:bg-white/10 text-sm">
+        <i class="fas fa-plus"></i> Carregar mais fotos
+      </button>
+    </div>
     <div id="ks-after-grid" class="mt-6 flex flex-wrap items-center gap-3 hidden">
       <a href="#" id="ks-btn-selecionar-mais" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-yellow-400/60 bg-yellow-400/15 text-yellow-300 font-bold hover:bg-yellow-400/25 text-sm">
         <i class="fas fa-plus"></i> Selecionar mais fotos

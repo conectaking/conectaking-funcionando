@@ -2,10 +2,12 @@
 
 namespace App\Services\CartaoVirtual;
 
+use App\Jobs\WarmKsGalleryThumbsJob;
 use App\Services\Auth\JwtService;
 use App\Support\KingSelection\KsAccess;
+use App\Support\SchemaMeta;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -68,7 +70,7 @@ class KingSelectionAdminService
             }
 
             // Só 1 foto (capa) por galeria — evita JSON gigante na lista
-            $hasCover = Schema::hasColumn('king_photos', 'is_cover');
+            $hasCover = SchemaMeta::hasColumn('king_photos', 'is_cover');
             $orderCover = $hasCover
                 ? 'ORDER BY gallery_id, is_cover DESC NULLS LAST, "order" ASC, id ASC'
                 : 'ORDER BY gallery_id, "order" ASC, id ASC';
@@ -99,8 +101,8 @@ class KingSelectionAdminService
                 ];
             }
 
-            if (Schema::hasTable('king_gallery_clients') && Schema::hasColumn('king_gallery_clients', 'status')) {
-                $enabledSql = Schema::hasColumn('king_gallery_clients', 'enabled')
+            if (SchemaMeta::hasTable('king_gallery_clients') && SchemaMeta::hasColumn('king_gallery_clients', 'status')) {
+                $enabledSql = SchemaMeta::hasColumn('king_gallery_clients', 'enabled')
                     ? 'AND (gc.enabled IS DISTINCT FROM false)'
                     : '';
                 $agg = DB::select(
@@ -211,8 +213,8 @@ class KingSelectionAdminService
         $senhaHash = password_hash($plainPassword, PASSWORD_BCRYPT);
         $total = (int) ($body['total_fotos_contratadas'] ?? 0);
         $minSel = (int) ($body['min_selections'] ?? 0);
-        $hasMin = Schema::hasColumn('king_galleries', 'min_selections');
-        $hasEnc = Schema::hasColumn('king_galleries', 'senha_enc');
+        $hasMin = SchemaMeta::hasColumn('king_galleries', 'min_selections');
+        $hasEnc = SchemaMeta::hasColumn('king_galleries', 'senha_enc');
         $senhaEnc = $hasEnc ? $this->passwordCrypto->encrypt($plainPassword) : null;
 
         $cols = ['profile_item_id', 'nome_projeto', 'slug', 'cliente_email', 'senha_hash', 'status', 'total_fotos_contratadas'];
@@ -243,27 +245,27 @@ class KingSelectionAdminService
 
         $sets = [];
         $params = [];
-        if (Schema::hasColumn('king_galleries', 'access_mode')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'access_mode')) {
             $sets[] = 'access_mode = ?';
             $params[] = $accessType;
         }
-        if (Schema::hasColumn('king_galleries', 'allow_self_signup')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'allow_self_signup')) {
             $sets[] = 'allow_self_signup = ?';
             $params[] = KsAccess::allowsSelfSignup($accessType);
         }
-        if (Schema::hasColumn('king_galleries', 'cliente_nome') && $nomeCliente) {
+        if (SchemaMeta::hasColumn('king_galleries', 'cliente_nome') && $nomeCliente) {
             $sets[] = 'cliente_nome = ?';
             $params[] = substr($nomeCliente, 0, 255);
         }
-        if (Schema::hasColumn('king_galleries', 'categoria') && $cat) {
+        if (SchemaMeta::hasColumn('king_galleries', 'categoria') && $cat) {
             $sets[] = 'categoria = ?';
             $params[] = substr($cat, 0, 255);
         }
-        if (Schema::hasColumn('king_galleries', 'data_trabalho')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'data_trabalho')) {
             $sets[] = 'data_trabalho = ?';
             $params[] = $dataTrabalho;
         }
-        if (Schema::hasColumn('king_galleries', 'watermark_mode')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
             if ($useWatermark) {
                 $sets[] = "watermark_mode = COALESCE(NULLIF(watermark_mode,''),'tile_dense')";
             } else {
@@ -271,7 +273,7 @@ class KingSelectionAdminService
                 $params[] = 'none';
             }
         }
-        if ($useWatermark && Schema::hasColumn('king_galleries', 'watermark_opacity')) {
+        if ($useWatermark && SchemaMeta::hasColumn('king_galleries', 'watermark_opacity')) {
             $sets[] = 'watermark_opacity = COALESCE(watermark_opacity, 0.22)';
         }
         if ($sets !== []) {
@@ -301,7 +303,7 @@ class KingSelectionAdminService
             'gallery' => $gallerySafe,
             'client_password' => $clientPasswordResponse,
             'access_type' => $accessType,
-            'data_trabalho' => Schema::hasColumn('king_galleries', 'data_trabalho') ? $dataTrabalho : null,
+            'data_trabalho' => SchemaMeta::hasColumn('king_galleries', 'data_trabalho') ? $dataTrabalho : null,
         ], static fn ($v) => $v !== null)];
     }
 
@@ -330,10 +332,10 @@ class KingSelectionAdminService
         $focusCid = $focusCid > 0 ? $focusCid : null;
 
         $clients = [];
-        if (Schema::hasTable('king_gallery_clients')) {
+        if (SchemaMeta::hasTable('king_gallery_clients')) {
             $cols = ['id', 'nome', 'email', 'telefone', 'enabled', 'note', 'created_at'];
             foreach (['status', 'selection_round', 'feedback_cliente'] as $c) {
-                if (Schema::hasColumn('king_gallery_clients', $c)) {
+                if (SchemaMeta::hasColumn('king_gallery_clients', $c)) {
                     $cols[] = $c;
                 }
             }
@@ -348,16 +350,16 @@ class KingSelectionAdminService
             }
         }
 
-        if (! $focusCid && count($clients) > 1 && Schema::hasColumn('king_selections', 'client_id')) {
+        if (! $focusCid && count($clients) > 1 && SchemaMeta::hasColumn('king_selections', 'client_id')) {
             $firstId = (int) ($clients[0]->id ?? 0);
             if ($firstId > 0) {
                 $focusCid = $firstId;
             }
         }
 
-        $hasFav = Schema::hasColumn('king_photos', 'is_favorite');
-        $hasCover = Schema::hasColumn('king_photos', 'is_cover');
-        $hasFolder = Schema::hasColumn('king_photos', 'folder_id');
+        $hasFav = SchemaMeta::hasColumn('king_photos', 'is_favorite');
+        $hasCover = SchemaMeta::hasColumn('king_photos', 'is_cover');
+        $hasFolder = SchemaMeta::hasColumn('king_photos', 'folder_id');
         $photoCols = [
             'id', 'gallery_id', 'original_name', '"order"', 'created_at',
             $hasFav ? 'is_favorite' : 'FALSE AS is_favorite',
@@ -384,8 +386,8 @@ class KingSelectionAdminService
         );
         $photosHasMore = ($photosOffset + count($photos)) < $photoTotal;
 
-        $hasSelClient = Schema::hasColumn('king_selections', 'client_id');
-        $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
+        $hasSelClient = SchemaMeta::hasColumn('king_selections', 'client_id');
+        $hasSelBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
         $selCols = ['photo_id', 'feedback_cliente', 'created_at'];
         if ($hasSelClient) {
             $selCols[] = 'client_id';
@@ -449,7 +451,7 @@ class KingSelectionAdminService
         }
 
         $folders = [];
-        if (Schema::hasTable('king_gallery_folders')) {
+        if (SchemaMeta::hasTable('king_gallery_folders')) {
             try {
                 $folders = DB::select(
                     'SELECT * FROM king_gallery_folders WHERE gallery_id = ? ORDER BY "order" ASC, id ASC',
@@ -507,8 +509,8 @@ class KingSelectionAdminService
             ? (int) $rawClientId
             : null;
 
-        $hasCliStatus = Schema::hasTable('king_gallery_clients')
-            && Schema::hasColumn('king_gallery_clients', 'status');
+        $hasCliStatus = SchemaMeta::hasTable('king_gallery_clients')
+            && SchemaMeta::hasColumn('king_gallery_clients', 'status');
         $enabledRows = [];
         if ($hasCliStatus) {
             $enabledRows = DB::select(
@@ -563,11 +565,12 @@ class KingSelectionAdminService
         $name = substr((string) ($body['original_name'] ?? 'foto'), 0, 500) ?: 'foto';
         $order = (int) ($body['order'] ?? 0);
         $folderId = $this->resolveFolderId($galleryId, $body['folder_id'] ?? $body['folderId'] ?? null);
-        if (($body['folder_id'] ?? $body['folderId'] ?? null) !== null && Schema::hasColumn('king_photos', 'folder_id') && $folderId === null) {
+        if (($body['folder_id'] ?? $body['folderId'] ?? null) !== null && SchemaMeta::hasColumn('king_photos', 'folder_id') && $folderId === null) {
             return ['status' => 400, 'body' => ['message' => 'Pasta inválida para esta galeria.']];
         }
 
         $photo = $this->insertPhoto($galleryId, $filePath, $name, $order, $folderId);
+        $this->dispatchWarmThumbs($galleryId, 24);
 
         return ['status' => 201, 'body' => ['success' => true, 'photo' => $photo]];
     }
@@ -589,7 +592,7 @@ class KingSelectionAdminService
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
 
-        $hasFolder = Schema::hasColumn('king_photos', 'folder_id');
+        $hasFolder = SchemaMeta::hasColumn('king_photos', 'folder_id');
         $validFolders = $this->validFolderIds($galleryId);
         $photos = [];
         foreach ($list as $img) {
@@ -613,6 +616,7 @@ class KingSelectionAdminService
         if ($photos === []) {
             return ['status' => 400, 'body' => ['message' => 'Nenhuma imagem válida.']];
         }
+        $this->dispatchWarmThumbs($galleryId, min(100, max(24, count($photos))));
 
         return ['status' => 201, 'body' => ['success' => true, 'photos' => $photos]];
     }
@@ -643,7 +647,7 @@ class KingSelectionAdminService
             return ['status' => 403, 'body' => ['success' => false, 'message' => 'Sem permissão']];
         }
 
-        $hasFolder = Schema::hasColumn('king_photos', 'folder_id');
+        $hasFolder = SchemaMeta::hasColumn('king_photos', 'folder_id');
         $validFolders = $this->validFolderIds($galleryId);
         $prefix = 'galleries/'.$galleryId.'/';
         $photos = [];
@@ -684,6 +688,7 @@ class KingSelectionAdminService
         if ($photos === []) {
             return ['status' => 400, 'body' => ['success' => false, 'message' => 'Nenhum item válido (recibo/key inválidos).']];
         }
+        $this->dispatchWarmThumbs($galleryId, min(100, max(24, count($photos))));
 
         return ['status' => 201, 'body' => ['success' => true, 'photos' => $photos]];
     }
@@ -725,7 +730,7 @@ class KingSelectionAdminService
         }
 
         $folderId = $this->resolveFolderId($galleryId, $folderRaw);
-        if ($folderRaw !== null && Schema::hasColumn('king_photos', 'folder_id') && $folderId === null) {
+        if ($folderRaw !== null && SchemaMeta::hasColumn('king_photos', 'folder_id') && $folderId === null) {
             return ['status' => 400, 'body' => ['success' => false, 'message' => 'Pasta inválida para esta galeria.']];
         }
 
@@ -736,6 +741,7 @@ class KingSelectionAdminService
             $order,
             $folderId
         );
+        $this->dispatchWarmThumbs($galleryId, 24);
 
         return ['status' => 201, 'body' => ['success' => true, 'photo' => $photo]];
     }
@@ -810,7 +816,7 @@ class KingSelectionAdminService
         } catch (\Throwable) {
         }
         try {
-            if (Schema::hasTable('king_gallery_clients')) {
+            if (SchemaMeta::hasTable('king_gallery_clients')) {
                 DB::delete('DELETE FROM king_gallery_clients WHERE gallery_id = ?', [$galleryId]);
             }
         } catch (\Throwable) {
@@ -825,7 +831,7 @@ class KingSelectionAdminService
      */
     private function validFolderIds(int $galleryId): array
     {
-        if (! Schema::hasTable('king_photo_folders')) {
+        if (! SchemaMeta::hasTable('king_photo_folders')) {
             return [];
         }
         try {
@@ -843,7 +849,7 @@ class KingSelectionAdminService
 
     private function resolveFolderId(int $galleryId, mixed $raw): ?int
     {
-        if ($raw === null || $raw === '' || ! Schema::hasColumn('king_photos', 'folder_id')) {
+        if ($raw === null || $raw === '' || ! SchemaMeta::hasColumn('king_photos', 'folder_id')) {
             return null;
         }
         $fid = (int) $raw;
@@ -857,7 +863,7 @@ class KingSelectionAdminService
 
     private function insertPhoto(int $galleryId, string $filePath, string $name, int $order, ?int $folderId): object
     {
-        $hasFolder = Schema::hasColumn('king_photos', 'folder_id');
+        $hasFolder = SchemaMeta::hasColumn('king_photos', 'folder_id');
         if ($hasFolder) {
             return DB::selectOne(
                 'INSERT INTO king_photos (gallery_id, file_path, original_name, "order", folder_id)
@@ -883,7 +889,7 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_photo_folders')) {
+        if (! SchemaMeta::hasTable('king_photo_folders')) {
             return ['status' => 200, 'body' => ['success' => true, 'folders' => []]];
         }
         $folders = DB::select(
@@ -908,7 +914,7 @@ class KingSelectionAdminService
         if ($name === '') {
             return ['status' => 400, 'body' => ['message' => 'Nome da pasta é obrigatório']];
         }
-        if (! Schema::hasTable('king_photo_folders')) {
+        if (! SchemaMeta::hasTable('king_photo_folders')) {
             return ['status' => 412, 'body' => ['message' => 'Migrations de pasta ainda não aplicadas no banco.']];
         }
         $sort = (int) ($body['sort_order'] ?? $body['sortOrder'] ?? 0);
@@ -952,10 +958,10 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_photo_folders') || $folderId < 1) {
+        if (! SchemaMeta::hasTable('king_photo_folders') || $folderId < 1) {
             return ['status' => 404, 'body' => ['message' => 'Pasta não encontrada']];
         }
-        if (Schema::hasColumn('king_photos', 'folder_id')) {
+        if (SchemaMeta::hasColumn('king_photos', 'folder_id')) {
             DB::update('UPDATE king_photos SET folder_id = NULL WHERE gallery_id = ? AND folder_id = ?', [$galleryId, $folderId]);
         }
         $n = DB::delete('DELETE FROM king_photo_folders WHERE id = ? AND gallery_id = ?', [$folderId, $galleryId]);
@@ -979,7 +985,7 @@ class KingSelectionAdminService
         if ($count < 1) {
             return ['status' => 400, 'body' => ['message' => 'count é obrigatório (1-200)']];
         }
-        if (! Schema::hasTable('king_photo_folders')) {
+        if (! SchemaMeta::hasTable('king_photo_folders')) {
             return ['status' => 412, 'body' => ['message' => 'Migrations de pasta ainda não aplicadas no banco.']];
         }
         $startAt = max(1, (int) ($body['startAt'] ?? $body['start_at'] ?? 1));
@@ -1032,7 +1038,7 @@ class KingSelectionAdminService
         if ($folderIds === []) {
             return ['status' => 400, 'body' => ['message' => 'folder_ids é obrigatório']];
         }
-        if (! Schema::hasTable('king_photo_folders')) {
+        if (! SchemaMeta::hasTable('king_photo_folders')) {
             return ['status' => 200, 'body' => ['success' => true, 'folders' => []]];
         }
         $dbRows = DB::select(
@@ -1091,7 +1097,7 @@ class KingSelectionAdminService
         if ($photoIds === []) {
             return ['status' => 400, 'body' => ['message' => 'photo_ids é obrigatório']];
         }
-        if (! Schema::hasColumn('king_photos', 'folder_id')) {
+        if (! SchemaMeta::hasColumn('king_photos', 'folder_id')) {
             return ['status' => 412, 'body' => ['message' => 'Migrations de pasta ainda não aplicadas no banco.']];
         }
         $incoming = $body['folder_id'] ?? $body['folderId'] ?? null;
@@ -1105,7 +1111,7 @@ class KingSelectionAdminService
             "UPDATE king_photos SET folder_id = ? WHERE gallery_id = ? AND id IN ({$placeholders})",
             $params
         );
-        if ($wantedFolderId && Schema::hasColumn('king_photo_folders', 'cover_photo_id')) {
+        if ($wantedFolderId && SchemaMeta::hasColumn('king_photo_folders', 'cover_photo_id')) {
             DB::update(
                 'UPDATE king_photo_folders f
                  SET cover_photo_id = COALESCE(
@@ -1159,8 +1165,8 @@ class KingSelectionAdminService
         }
         $r2Path = 'r2:'.$key;
         $which = strtolower(trim($which));
-        $hasPathP = Schema::hasColumn('king_galleries', 'watermark_path_portrait');
-        $hasPathL = Schema::hasColumn('king_galleries', 'watermark_path_landscape');
+        $hasPathP = SchemaMeta::hasColumn('king_galleries', 'watermark_path_portrait');
+        $hasPathL = SchemaMeta::hasColumn('king_galleries', 'watermark_path_landscape');
         $cur = DB::selectOne(
             'SELECT watermark_path'
             .($hasPathP ? ', watermark_path_portrait' : '')
@@ -1189,7 +1195,7 @@ class KingSelectionAdminService
             $sets[] = 'watermark_path = ?';
             $vals[] = $r2Path;
         }
-        if (Schema::hasColumn('king_galleries', 'watermark_mode')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
             $sets[] = 'watermark_mode = ?';
             $vals[] = 'logo';
         }
@@ -1243,7 +1249,7 @@ class KingSelectionAdminService
             $segments = array_map('rawurlencode', array_values(array_filter(explode('/', ltrim($key, '/')))));
             $publicUrl = $cfg['publicBaseUrl'].'/'.implode('/', $segments);
         }
-        if (Schema::hasColumn('king_galleries', 'thank_you_image_url')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'thank_you_image_url')) {
             DB::update(
                 'UPDATE king_galleries SET thank_you_image_url = ?, updated_at = NOW() WHERE id = ?',
                 [$publicUrl, $galleryId]
@@ -1332,7 +1338,7 @@ class KingSelectionAdminService
         $params = [];
         // Ao gravar modo signup/vendidas, garantir allow_self_signup (cadastro diferido).
         if (array_key_exists('access_mode', $body)
-            && Schema::hasColumn('king_galleries', 'allow_self_signup')
+            && SchemaMeta::hasColumn('king_galleries', 'allow_self_signup')
             && ! array_key_exists('allow_self_signup', $body)) {
             $am = \App\Support\KingSelection\KsAccess::normAccessMode($body['access_mode'] ?? null);
             if (in_array($am, ['signup', 'paid_event_photos'], true)) {
@@ -1340,7 +1346,7 @@ class KingSelectionAdminService
             }
         }
         foreach ($allowed as $col) {
-            if (! array_key_exists($col, $body) || ! Schema::hasColumn('king_galleries', $col)) {
+            if (! array_key_exists($col, $body) || ! SchemaMeta::hasColumn('king_galleries', $col)) {
                 continue;
             }
             $sets[] = "{$col} = ?";
@@ -1373,12 +1379,12 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 200, 'body' => ['success' => true, 'clients' => []]];
         }
         $cols = ['id', 'nome', 'email', 'telefone', 'enabled', 'note', 'created_at'];
         foreach (['status', 'selection_round'] as $c) {
-            if (Schema::hasColumn('king_gallery_clients', $c)) {
+            if (SchemaMeta::hasColumn('king_gallery_clients', $c)) {
                 $cols[] = $c;
             }
         }
@@ -1403,7 +1409,7 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 500, 'body' => ['message' => 'Tabela de clientes não disponível (migração pendente).']];
         }
         $nome = trim((string) ($body['nome'] ?? ''));
@@ -1416,14 +1422,14 @@ class KingSelectionAdminService
             $pass = (string) random_int(100000, 999999);
         }
         $hash = password_hash($pass, PASSWORD_BCRYPT);
-        $enc = Schema::hasColumn('king_gallery_clients', 'senha_enc')
+        $enc = SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc')
             ? $this->passwordCrypto->encrypt($pass)
             : null;
         $tel = trim((string) ($body['telefone'] ?? '')) ?: null;
         $note = array_key_exists('note', $body) ? (trim((string) $body['note']) ?: null) : null;
 
         try {
-            if (Schema::hasColumn('king_gallery_clients', 'status')) {
+            if (SchemaMeta::hasColumn('king_gallery_clients', 'status')) {
                 $row = DB::selectOne(
                     'INSERT INTO king_gallery_clients
                      (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, note, status, created_at, updated_at)
@@ -1527,11 +1533,11 @@ class KingSelectionAdminService
         if ($galleryId < 1 || $clientId < 1 || $senha === '') {
             return ['status' => 400, 'body' => ['message' => 'Informe galleryId, clientId e senha.']];
         }
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 500, 'body' => ['message' => 'Tabela de clientes não disponível (migração pendente).']];
         }
         $hash = password_hash($senha, PASSWORD_BCRYPT);
-        $enc = Schema::hasColumn('king_gallery_clients', 'senha_enc')
+        $enc = SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc')
             ? $this->passwordCrypto->encrypt($senha)
             : null;
         if ($enc !== null) {
@@ -1564,7 +1570,7 @@ class KingSelectionAdminService
         if ($clientId < 1) {
             return ['status' => 400, 'body' => ['message' => 'IDs inválidos']];
         }
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return ['status' => 500, 'body' => ['message' => 'Tabela de clientes indisponível.']];
         }
         $row = DB::selectOne(
@@ -1647,7 +1653,7 @@ class KingSelectionAdminService
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
         $hash = password_hash($senha, PASSWORD_BCRYPT);
-        if (Schema::hasColumn('king_galleries', 'senha_enc')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'senha_enc')) {
             DB::update(
                 'UPDATE king_galleries SET senha_hash = ?, senha_enc = ?, updated_at = NOW() WHERE id = ?',
                 [$hash, $this->passwordCrypto->encrypt($senha), $galleryId]
@@ -1677,10 +1683,10 @@ class KingSelectionAdminService
         $bodyCid = isset($body['clientId']) && trim((string) $body['clientId']) !== ''
             ? (int) $body['clientId']
             : null;
-        $hasClients = Schema::hasTable('king_gallery_clients');
-        $hasCliRound = $hasClients && Schema::hasColumn('king_gallery_clients', 'selection_round');
-        $hasCliStatus = $hasClients && Schema::hasColumn('king_gallery_clients', 'status');
-        $hasGalRound = Schema::hasColumn('king_galleries', 'selection_round');
+        $hasClients = SchemaMeta::hasTable('king_gallery_clients');
+        $hasCliRound = $hasClients && SchemaMeta::hasColumn('king_gallery_clients', 'selection_round');
+        $hasCliStatus = $hasClients && SchemaMeta::hasColumn('king_gallery_clients', 'status');
+        $hasGalRound = SchemaMeta::hasColumn('king_galleries', 'selection_round');
 
         $enabledRows = $hasClients
             ? DB::select(
@@ -1766,10 +1772,10 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 404, 'body' => ['message' => 'Galeria não encontrada.']];
         }
-        if (! Schema::hasTable('king_client_edit_requests')) {
+        if (! SchemaMeta::hasTable('king_client_edit_requests')) {
             return ['status' => 200, 'body' => ['success' => true, 'requests' => []]];
         }
-        $hasBatch = Schema::hasColumn('king_client_edit_requests', 'selection_batch');
+        $hasBatch = SchemaMeta::hasColumn('king_client_edit_requests', 'selection_batch');
         $batchSel = $hasBatch ? 'r.selection_batch,' : '';
         $rows = DB::select(
             "SELECT r.id, r.gallery_id, r.client_id, {$batchSel} r.status, r.note_client, r.created_at, r.updated_at,
@@ -1784,7 +1790,7 @@ class KingSelectionAdminService
         );
         $reqIds = array_values(array_filter(array_map(static fn ($r) => (int) $r->id, $rows)));
         $photosByRequest = [];
-        if ($reqIds !== [] && Schema::hasTable('king_client_edit_request_photos')) {
+        if ($reqIds !== [] && SchemaMeta::hasTable('king_client_edit_request_photos')) {
             $placeholders = implode(', ', array_fill(0, count($reqIds), '?'));
             $ph = DB::select(
                 "SELECT erp.edit_request_id, erp.photo_id, kp.original_name, kp.\"order\"
@@ -1843,10 +1849,10 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 404, 'body' => ['message' => 'Galeria não encontrada.']];
         }
-        if (! Schema::hasTable('king_client_edit_requests')) {
+        if (! SchemaMeta::hasTable('king_client_edit_requests')) {
             return ['status' => 503, 'body' => ['message' => 'Pedidos de edição indisponíveis.']];
         }
-        $hasBatch = Schema::hasColumn('king_client_edit_requests', 'selection_batch');
+        $hasBatch = SchemaMeta::hasColumn('king_client_edit_requests', 'selection_batch');
         $batchSel = $hasBatch ? ', selection_batch' : '';
         $upd = DB::selectOne(
             "UPDATE king_client_edit_requests
@@ -1860,11 +1866,11 @@ class KingSelectionAdminService
         }
 
         $releasedCount = 0;
-        if (($statusIn === 'done' || $releaseDownload) && Schema::hasTable('king_selection_photo_approvals')) {
+        if (($statusIn === 'done' || $releaseDownload) && SchemaMeta::hasTable('king_selection_photo_approvals')) {
             $clientId = (int) ($upd->client_id ?? 0);
             $batch = $hasBatch ? ((int) ($upd->selection_batch ?? 0)) : 0;
             $photoIds = [];
-            if (Schema::hasTable('king_client_edit_request_photos')) {
+            if (SchemaMeta::hasTable('king_client_edit_request_photos')) {
                 foreach (DB::select(
                     'SELECT photo_id FROM king_client_edit_request_photos WHERE edit_request_id = ?',
                     [$requestId]
@@ -1876,7 +1882,7 @@ class KingSelectionAdminService
                 }
             }
             if ($clientId > 0 && $photoIds !== []) {
-                if ($batch < 1 && Schema::hasColumn('king_selections', 'selection_batch')) {
+                if ($batch < 1 && SchemaMeta::hasColumn('king_selections', 'selection_batch')) {
                     $placeholders = implode(', ', array_fill(0, count($photoIds), '?'));
                     $params = array_merge([$galleryId, $clientId], $photoIds);
                     $bRes = DB::selectOne(
@@ -1922,7 +1928,7 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 404, 'body' => ['message' => 'Galeria não encontrada.']];
         }
-        if (! Schema::hasTable('king_client_edit_requests')) {
+        if (! SchemaMeta::hasTable('king_client_edit_requests')) {
             return ['status' => 503, 'body' => ['message' => 'Pedidos de edição indisponíveis.']];
         }
         $n = DB::delete(
@@ -1952,7 +1958,7 @@ class KingSelectionAdminService
         if (! $this->enabledClient($galleryId, $clientId)) {
             return ['status' => 404, 'body' => ['message' => 'Cliente não encontrado.']];
         }
-        if (! Schema::hasColumn('king_selections', 'selection_batch')) {
+        if (! SchemaMeta::hasColumn('king_selections', 'selection_batch')) {
             return ['status' => 400, 'body' => ['message' => 'Esta base não tem rodadas de seleção (migration pendente?).']];
         }
         $deleted = 0;
@@ -1961,19 +1967,19 @@ class KingSelectionAdminService
                 'DELETE FROM king_selections WHERE gallery_id = ? AND client_id = ? AND selection_batch = ?',
                 [$galleryId, $clientId, $batch]
             );
-            if (Schema::hasTable('king_selection_photo_approvals')) {
+            if (SchemaMeta::hasTable('king_selection_photo_approvals')) {
                 DB::delete(
                     'DELETE FROM king_selection_photo_approvals WHERE gallery_id = ? AND client_id = ? AND selection_batch = ?',
                     [$galleryId, $clientId, $batch]
                 );
             }
-            if (Schema::hasTable('king_client_payment_requests')) {
+            if (SchemaMeta::hasTable('king_client_payment_requests')) {
                 DB::delete(
                     'DELETE FROM king_client_payment_requests WHERE gallery_id = ? AND client_id = ? AND selection_batch = ?',
                     [$galleryId, $clientId, $batch]
                 );
             }
-            if (Schema::hasTable('king_download_audit')) {
+            if (SchemaMeta::hasTable('king_download_audit')) {
                 DB::delete(
                     'DELETE FROM king_download_audit WHERE gallery_id = ? AND client_id = ? AND selection_batch = ?',
                     [$galleryId, $clientId, $batch]
@@ -2000,7 +2006,7 @@ class KingSelectionAdminService
         if (! $this->enabledClient($galleryId, $clientId)) {
             return ['status' => 404, 'body' => ['message' => 'Cliente não encontrado.']];
         }
-        if (! Schema::hasColumn('king_selections', 'selection_batch')) {
+        if (! SchemaMeta::hasColumn('king_selections', 'selection_batch')) {
             return ['status' => 400, 'body' => ['message' => 'Esta base não tem rodadas de seleção (migration pendente?).']];
         }
         $exists = DB::selectOne(
@@ -2010,7 +2016,7 @@ class KingSelectionAdminService
         if (! $exists) {
             return ['status' => 404, 'body' => ['message' => 'Rodada não encontrada para este cliente.']];
         }
-        if (Schema::hasColumn('king_gallery_clients', 'selection_round')) {
+        if (SchemaMeta::hasColumn('king_gallery_clients', 'selection_round')) {
             DB::update(
                 "UPDATE king_gallery_clients
                  SET status = 'andamento', selection_round = ?, updated_at = NOW()
@@ -2054,27 +2060,27 @@ class KingSelectionAdminService
                 'DELETE FROM king_selections WHERE gallery_id = ? AND client_id = ?',
                 [$galleryId, $clientId]
             );
-            if (Schema::hasTable('king_selection_photo_approvals')) {
+            if (SchemaMeta::hasTable('king_selection_photo_approvals')) {
                 DB::delete(
                     'DELETE FROM king_selection_photo_approvals WHERE gallery_id = ? AND client_id = ?',
                     [$galleryId, $clientId]
                 );
             }
-            if (Schema::hasTable('king_client_payment_requests')) {
+            if (SchemaMeta::hasTable('king_client_payment_requests')) {
                 DB::delete(
                     'DELETE FROM king_client_payment_requests WHERE gallery_id = ? AND client_id = ?',
                     [$galleryId, $clientId]
                 );
             }
-            if (Schema::hasTable('king_download_audit')) {
+            if (SchemaMeta::hasTable('king_download_audit')) {
                 DB::delete(
                     'DELETE FROM king_download_audit WHERE gallery_id = ? AND client_id = ?',
                     [$galleryId, $clientId]
                 );
             }
-            if (Schema::hasColumn('king_gallery_clients', 'status')) {
+            if (SchemaMeta::hasColumn('king_gallery_clients', 'status')) {
                 $sets = "status = 'andamento', updated_at = NOW()";
-                if (Schema::hasColumn('king_gallery_clients', 'feedback_cliente')) {
+                if (SchemaMeta::hasColumn('king_gallery_clients', 'feedback_cliente')) {
                     $sets = "status = 'andamento', feedback_cliente = NULL, updated_at = NOW()";
                 }
                 DB::update(
@@ -2105,8 +2111,8 @@ class KingSelectionAdminService
             ? (int) $clientIdRaw
             : null;
 
-        $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
-        $hasSelClientId = Schema::hasColumn('king_selections', 'client_id');
+        $hasSelBatch = SchemaMeta::hasColumn('king_selections', 'selection_batch');
+        $hasSelClientId = SchemaMeta::hasColumn('king_selections', 'client_id');
         $where = 's.gallery_id = ?';
         $params = [$galleryId];
         $selExtra = '';
@@ -2141,7 +2147,7 @@ class KingSelectionAdminService
             }
         }
         $senhaPlain = null;
-        if (Schema::hasColumn('king_galleries', 'senha_enc')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'senha_enc')) {
             $senhaPlain = $this->passwordCrypto->decrypt($g->senha_enc ?? null);
         }
 
@@ -2205,8 +2211,8 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasColumn('king_galleries', 'gallery_link_cover_photo_id')
-            || ! Schema::hasColumn('king_galleries', 'gallery_link_cover_file_path')) {
+        if (! SchemaMeta::hasColumn('king_galleries', 'gallery_link_cover_photo_id')
+            || ! SchemaMeta::hasColumn('king_galleries', 'gallery_link_cover_file_path')) {
             return ['status' => 503, 'body' => ['message' => 'Campos de capa do link indisponíveis. Execute a migration 210.']];
         }
         if (! $r2->config()['enabled']) {
@@ -2291,7 +2297,7 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasColumn('king_photos', 'edited_file_path')) {
+        if (! SchemaMeta::hasColumn('king_photos', 'edited_file_path')) {
             return ['status' => 503, 'body' => ['message' => 'Coluna edited_file_path indisponível. Execute a migration 208.']];
         }
         $belongs = DB::selectOne(
@@ -2340,7 +2346,7 @@ class KingSelectionAdminService
         $galleryId = (int) $own->gallery_id;
         $sets = [];
         $params = [];
-        if (array_key_exists('is_favorite', $body) && Schema::hasColumn('king_photos', 'is_favorite')) {
+        if (array_key_exists('is_favorite', $body) && SchemaMeta::hasColumn('king_photos', 'is_favorite')) {
             $sets[] = 'is_favorite = ?';
             $params[] = (bool) $body['is_favorite'];
         }
@@ -2352,12 +2358,12 @@ class KingSelectionAdminService
             $sets[] = '"order" = ?';
             $params[] = (int) ($body['order'] ?? 0);
         }
-        if (array_key_exists('edited_file_path', $body) && Schema::hasColumn('king_photos', 'edited_file_path')) {
+        if (array_key_exists('edited_file_path', $body) && SchemaMeta::hasColumn('king_photos', 'edited_file_path')) {
             $v = $body['edited_file_path'];
             $sets[] = 'edited_file_path = ?';
             $params[] = $v === null ? null : (trim((string) $v) ?: null);
         }
-        if (array_key_exists('is_cover', $body) && Schema::hasColumn('king_photos', 'is_cover')) {
+        if (array_key_exists('is_cover', $body) && SchemaMeta::hasColumn('king_photos', 'is_cover')) {
             if ($body['is_cover']) {
                 DB::update('UPDATE king_photos SET is_cover = FALSE WHERE gallery_id = ?', [$galleryId]);
                 $sets[] = 'is_cover = ?';
@@ -2395,7 +2401,7 @@ class KingSelectionAdminService
         } catch (\Throwable) {
         }
         try {
-            if (Schema::hasTable('king_photo_faces')) {
+            if (SchemaMeta::hasTable('king_photo_faces')) {
                 DB::delete('DELETE FROM king_photo_faces WHERE photo_id = ?', [$photoId]);
             }
         } catch (\Throwable) {
@@ -2542,7 +2548,7 @@ class KingSelectionAdminService
         $maxSide = ($qMax >= 320 && $qMax <= 2000) ? $qMax : 1200;
         $skipWm = strtolower((string) ($query['wm_mode'] ?? '')) === 'none';
         $wm = null;
-        if (! $skipWm && Schema::hasColumn('king_galleries', 'watermark_mode')) {
+        if (! $skipWm && SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
             $g = DB::selectOne('SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
             $mode = strtolower((string) ($g->watermark_mode ?? 'none'));
             if ($mode !== '' && $mode !== 'none') {
@@ -2576,7 +2582,7 @@ class KingSelectionAdminService
             return ['status' => 500, 'message' => 'Não foi possível carregar a imagem (Cloudflare/R2 não configurado).'];
         }
         $wm = null;
-        if (Schema::hasColumn('king_galleries', 'watermark_mode')) {
+        if (SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
             $g = DB::selectOne('SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
             $mode = strtolower((string) ($g->watermark_mode ?? 'none'));
             if ($mode !== '' && $mode !== 'none') {
@@ -2649,7 +2655,7 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
-        if (! Schema::hasTable('king_photo_folders')) {
+        if (! SchemaMeta::hasTable('king_photo_folders')) {
             return ['status' => 404, 'body' => ['message' => 'Pasta não encontrada']];
         }
         $f = DB::selectOne(
@@ -2691,7 +2697,7 @@ class KingSelectionAdminService
             $sets[] = 'sort_order = ?';
             $params[] = $sortOrder;
         }
-        if ($wantsCover && Schema::hasColumn('king_photo_folders', 'cover_photo_id')) {
+        if ($wantsCover && SchemaMeta::hasColumn('king_photo_folders', 'cover_photo_id')) {
             $sets[] = 'cover_photo_id = ?';
             $params[] = $coverPhotoId;
         }
@@ -2766,8 +2772,8 @@ class KingSelectionAdminService
             $out[] = $path;
         };
 
-        $hasFile = Schema::hasColumn('king_galleries', 'gallery_link_cover_file_path');
-        $hasPhoto = Schema::hasColumn('king_galleries', 'gallery_link_cover_photo_id');
+        $hasFile = SchemaMeta::hasColumn('king_galleries', 'gallery_link_cover_file_path');
+        $hasPhoto = SchemaMeta::hasColumn('king_galleries', 'gallery_link_cover_photo_id');
         if ($hasFile || $hasPhoto) {
             $cols = ['id'];
             if ($hasFile) {
@@ -2793,7 +2799,7 @@ class KingSelectionAdminService
                 }
             }
         }
-        $order = Schema::hasColumn('king_photos', 'is_cover')
+        $order = SchemaMeta::hasColumn('king_photos', 'is_cover')
             ? 'is_cover DESC, "order" ASC, id ASC'
             : '"order" ASC, id ASC';
         $fallback = DB::selectOne(
@@ -2839,7 +2845,7 @@ class KingSelectionAdminService
 
     private function enabledClient(int $galleryId, int $clientId): bool
     {
-        if (! Schema::hasTable('king_gallery_clients') || $clientId < 1) {
+        if (! SchemaMeta::hasTable('king_gallery_clients') || $clientId < 1) {
             return false;
         }
         $row = DB::selectOne(
@@ -2927,7 +2933,7 @@ class KingSelectionAdminService
      */
     private function ensurePrimaryClient(array $g, ?string $nomeOverride = null): void
     {
-        if (! Schema::hasTable('king_gallery_clients')) {
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
             return;
         }
         $gid = (int) ($g['id'] ?? 0);
@@ -2948,15 +2954,15 @@ class KingSelectionAdminService
 
         $nome = $nomeOverride
             ?: (trim((string) ($g['cliente_nome'] ?? '')) ?: trim((string) ($g['nome_projeto'] ?? '')) ?: 'Cliente');
-        $tel = Schema::hasColumn('king_galleries', 'cliente_telefone')
+        $tel = SchemaMeta::hasColumn('king_galleries', 'cliente_telefone')
             ? (trim((string) ($g['cliente_telefone'] ?? '')) ?: null)
             : null;
-        $enc = Schema::hasColumn('king_gallery_clients', 'senha_enc')
+        $enc = SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc')
             ? ($g['senha_enc'] ?? null)
             : null;
 
         try {
-            if (Schema::hasColumn('king_gallery_clients', 'status')) {
+            if (SchemaMeta::hasColumn('king_gallery_clients', 'status')) {
                 DB::insert(
                     'INSERT INTO king_gallery_clients
                      (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, status, created_at, updated_at)
@@ -3012,6 +3018,21 @@ class KingSelectionAdminService
         }
 
         return $slug;
+    }
+
+    private function dispatchWarmThumbs(int $galleryId, int $limit = 48): void
+    {
+        if ($galleryId < 1) {
+            return;
+        }
+        try {
+            WarmKsGalleryThumbsJob::dispatch($galleryId, max(8, min(120, $limit)));
+        } catch (\Throwable $e) {
+            Log::warning('ks.thumbs.warm.dispatch', [
+                'galleryId' => $galleryId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function shareBaseUrl(): ?string

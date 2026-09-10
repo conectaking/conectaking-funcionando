@@ -56,7 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let showSelectedOnly = false;
   let viewerIndex = 0;
   let locked = false;
+  let photosOffset = 0;
+  let photosHasMore = false;
+  let photosTotal = 0;
+  let loadingMore = false;
+  const PAGE_LIMIT = 100;
   const lockedEl = document.getElementById('ks-locked');
+  const loadMoreWrap = document.getElementById('ks-load-more-wrap');
+  const loadMoreBtn = document.getElementById('ks-load-more');
 
   logoutBtn?.addEventListener('click', () => {
     if (!confirm('Sair desta galeria?')) return;
@@ -169,11 +176,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const photosAll = Array.isArray(gallery?.photos) ? gallery.photos : [];
     const photos = showSelectedOnly ? photosAll.filter(p => selected.has(p.id)) : photosAll;
 
-    const totalPhotos = photosAll.length;
+    const totalPhotos = Math.max(photosTotal || 0, photosAll.length);
     const minSel = parseInt(gallery?.min_selections || 0, 10) || 0;
     const maxSel = 0; // seleção livre
 
     if (totalPhotosEl) totalPhotosEl.textContent = `${totalPhotos} fotos`;
+    if (loadMoreWrap) loadMoreWrap.classList.toggle('hidden', !photosHasMore || showSelectedOnly);
+    if (loadMoreBtn) loadMoreBtn.disabled = !!loadingMore;
     if (minSelEl) minSelEl.textContent = minSel > 0 ? String(minSel) : 'Livre';
     if (maxSelEl) maxSelEl.textContent = maxSel > 0 ? String(maxSel) : 'Livre';
 
@@ -367,7 +376,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function load() {
-    const res = await fetch(`${API_URL}/api/king-selection/client/gallery?slug=${encodeURIComponent(slug)}`, { headers: HEADERS });
+    photosOffset = 0;
+    photosHasMore = false;
+    const res = await fetch(
+      `${API_URL}/api/king-selection/client/gallery?slug=${encodeURIComponent(slug)}&limit=${PAGE_LIMIT}&offset=0`,
+      { headers: HEADERS }
+    );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Erro ao carregar galeria');
     gallery = data.gallery;
@@ -377,12 +391,49 @@ document.addEventListener('DOMContentLoaded', () => {
       lockedEl.textContent = data.lockedMessage || 'Seleção já enviada. Aguarde revisão ou peça reativação ao fotógrafo.';
     }
     selected = new Set((data.selectedPhotoIds || []).map(x => parseInt(x, 10)));
+    const page = Array.isArray(gallery?.photos) ? gallery.photos : [];
+    photosOffset = page.length;
+    photosTotal = parseInt(gallery?.photos_total || data.photosTotal || page.length, 10) || page.length;
+    photosHasMore = !!(gallery?.photos_has_more ?? data.photosHasMore);
     render();
 
     const seenKey = `ks_info_seen_${slug}`;
     if (!sessionStorage.getItem(seenKey)) {
       sessionStorage.setItem(seenKey, '1');
       openInfoModal();
+    }
+  }
+
+  async function loadMore() {
+    if (!photosHasMore || loadingMore || !gallery) return;
+    loadingMore = true;
+    render();
+    try {
+      const res = await fetch(
+        `${API_URL}/api/king-selection/client/gallery?slug=${encodeURIComponent(slug)}&limit=${PAGE_LIMIT}&offset=${photosOffset}`,
+        { headers: HEADERS }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Erro ao carregar mais fotos');
+      const page = Array.isArray(data?.gallery?.photos) ? data.gallery.photos : [];
+      const cur = Array.isArray(gallery.photos) ? gallery.photos : [];
+      const seen = new Set(cur.map((p) => parseInt(p.id, 10)));
+      for (const p of page) {
+        const id = parseInt(p.id, 10);
+        if (id && !seen.has(id)) {
+          cur.push(p);
+          seen.add(id);
+        }
+      }
+      gallery.photos = cur;
+      photosOffset = cur.length;
+      photosTotal = parseInt(data?.gallery?.photos_total || data.photosTotal || photosTotal, 10) || photosTotal;
+      photosHasMore = !!(data?.gallery?.photos_has_more ?? data.photosHasMore);
+    } catch (err) {
+      alert(err.message || 'Erro ao carregar mais');
+    } finally {
+      loadingMore = false;
+      render();
     }
   }
 
@@ -460,6 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedToggleBtn?.classList.toggle('active', false);
     render();
   });
+  loadMoreBtn?.addEventListener('click', () => { loadMore().catch(() => {}); });
   infoBtn?.addEventListener('click', () => openInfoModal());
   infoClose?.addEventListener('click', () => closeInfoModal());
   accessBtn?.addEventListener('click', () => closeInfoModal());
