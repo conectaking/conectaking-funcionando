@@ -2063,7 +2063,7 @@
                     <div class="ks-abo-client-sub mt-2 flex flex-wrap items-center gap-2" id="ks-activity-pass-row" style="display:none">
                       <span class="text-xs text-slate-500">Senha de acesso (login do cliente):</span>
                       <span class="ks-pass-mask font-mono text-sm text-slate-800" id="ks-activity-pass">••••••</span>
-                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-reveal-pass" data-ks-reveal-pass="0">Mostrar</button>
+                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-reveal-pass" data-ks-reveal-pass="0">Nova senha</button>
                     </div>
                     <div class="ks-abo-client-sub" style="margin-top:8px">
                       <span class="ks-abo-badge" id="ks-activity-badge">-</span>

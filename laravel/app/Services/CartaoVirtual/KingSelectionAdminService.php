@@ -2121,25 +2121,14 @@ class KingSelectionAdminService
      */
     public function getClientPassword(string $userId, int $galleryId, int $clientId): array
     {
-        if ($galleryId < 1 || $clientId < 1) {
-            return ['status' => 400, 'body' => ['message' => 'IDs inválidos']];
-        }
-        if (! $this->ownedGallery($userId, $galleryId)) {
-            return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
-        }
-        if (! Schema::hasTable('king_gallery_clients')) {
-            return ['status' => 500, 'body' => ['message' => 'Tabela de clientes não disponível (migração pendente).']];
-        }
-        $row = DB::selectOne(
-            'SELECT senha_enc FROM king_gallery_clients WHERE gallery_id = ? AND id = ? LIMIT 1',
-            [$galleryId, $clientId]
-        );
-        $plain = $this->passwordCrypto->decrypt($row->senha_enc ?? null);
-        if ($plain === null || $plain === '') {
-            return ['status' => 409, 'body' => ['message' => 'Senha indisponível. Gere uma nova senha em Editar.']];
-        }
-
-        return ['status' => 200, 'body' => ['success' => true, 'password' => $plain]];
+        return [
+            'status' => 410,
+            'body' => [
+                'success' => false,
+                'message' => 'Revelar senha antiga foi desativado. Gere uma nova senha.',
+                'code' => 'PASSWORD_REVEAL_DISABLED',
+            ],
+        ];
     }
 
     /**

@@ -4124,7 +4124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       actRevealPassBtn.setAttribute('data-ks-reveal-pass', String(cidPass || 0));
       actPassSpan.textContent = '——————';
       actPassSpan.removeAttribute('data-revealed');
-      actRevealPassBtn.textContent = 'Mostrar';
+      actRevealPassBtn.textContent = 'Nova senha';
       actRevealPassBtn.disabled = false;
     }
     if (actBadge) {
@@ -8306,17 +8306,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     return String(Math.floor(100000 + Math.random() * 900000));
   }
 
-  async function fetchClientPassword(clientId) {
+  async function fetchClientPassword(clientId, opts = {}) {
     const id = parseInt(clientId || 0, 10);
     if (!id) throw new Error('clientId inválido');
-    if (_clientPwCache.has(id)) return _clientPwCache.get(id);
-    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${id}/password`, { headers: HEADERS });
+    const forceNew = !!opts.forceNew;
+    if (!forceNew && _clientPwCache.has(id)) return _clientPwCache.get(id);
+    if (!confirm('Isto gera uma NOVA senha e invalida a anterior. Continuar?')) {
+      throw new Error('Cancelado');
+    }
+    const pw = randomPass6();
+    const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${id}/reset-password`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({ senha: pw })
+    });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Erro ao obter senha');
-    const pw = String(data.password || '').trim();
-    if (!pw) throw new Error('Senha vazia');
-    _clientPwCache.set(id, pw);
-    return pw;
+    if (!res.ok) throw new Error(data.message || 'Erro ao gerar nova senha');
+    const out = String(data.client_password || pw).trim();
+    if (!out) throw new Error('Senha vazia');
+    _clientPwCache.set(id, out);
+    return out;
   }
 
   /** Resumo em «Dados da galeria»: e-mail(s) e senha(s) dos clientes (acesso privado). */
@@ -8342,7 +8351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           : '<span class="text-slate-400">(e-mail não informado)</span>';
       let pwdBlock = '';
       if (showCred && cid) {
-        pwdBlock = `<div class="mt-2 flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500">Senha:</span><span class="ks-pass-mask font-mono text-sm" data-cid="${cid}">——————</span><button type="button" class="ks-btn ks-btn-sm" data-ks-reveal-pass="${cid}">Mostrar</button></div>`;
+        pwdBlock = `<div class="mt-2 flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500">Senha:</span><span class="ks-pass-mask font-mono text-sm" data-cid="${cid}">——————</span><button type="button" class="ks-btn ks-btn-sm" data-ks-reveal-pass="${cid}">Nova senha</button></div>`;
       }
       parts.push(
         `<div class="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"><div class="font-extrabold text-slate-900">${nm}</div><div class="mt-1"><span class="text-xs text-slate-500">E-mail:</span> ${emHtml}</div>${pwdBlock}</div>`
@@ -8350,7 +8359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (clients.length > 1) {
       parts.push(
-        '<p class="text-xs text-slate-500 mt-1">Vários clientes: cada um tem login próprio. Use <b>Mostrar</b> só quando precisar ver a senha.</p>'
+        '<p class="text-xs text-slate-500 mt-1">Vários clientes: cada um tem login próprio. Use <b>Nova senha</b> para gerar e ver uma senha (a anterior deixa de valer).</p>'
       );
     }
     wrap.innerHTML = parts.join('');
@@ -8366,17 +8375,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (span.getAttribute('data-revealed') === '1') {
       span.textContent = '——————';
       span.removeAttribute('data-revealed');
-      btn.textContent = 'Mostrar';
+      btn.textContent = 'Nova senha';
       return;
     }
     try {
       btn.disabled = true;
-      const pw = await fetchClientPassword(cid);
+      const pw = await fetchClientPassword(cid, { forceNew: true });
       span.textContent = pw;
       span.setAttribute('data-revealed', '1');
       btn.textContent = 'Ocultar';
+      toast('Nova senha gerada. A anterior não funciona mais.', { kind: 'ok', title: 'Senha' });
     } catch (err) {
-      toast(String(err?.message || 'Erro ao obter senha'), { kind: 'err', title: 'Senha' });
+      if (String(err?.message || '') === 'Cancelado') return;
+      toast(String(err?.message || 'Erro ao gerar senha'), { kind: 'err', title: 'Senha' });
     } finally {
       btn.disabled = false;
     }
@@ -8610,7 +8621,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (action === 'eye') {
       e.preventDefault();
       try {
-        const pw = await fetchClientPassword(clientId);
+        const pw = await fetchClientPassword(clientId, { forceNew: true });
         const passEl = card.querySelector('[data-pass]');
         if (passEl) passEl.textContent = pw;
       } catch (err) {
