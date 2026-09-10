@@ -3595,7 +3595,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       .filter(x => x.id);
     if (!imgs.length) return;
 
-    const PREVIEW_CONCURRENCY = 6;
+    const PREVIEW_CONCURRENCY = 3;
     let previewInFlight = 0;
     const previewWait = [];
     const withPreviewSlot = (fn) => new Promise((resolve, reject) => {
@@ -4499,9 +4499,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function loadGallery() {
     if (!galleryId) throw new Error('galleryId inválido na URL.');
-    let url = `${API_URL}/api/king-selection/galleries/${galleryId}`;
+    const qs = new URLSearchParams();
     const fid = parseInt(_activityFocusClientId, 10);
-    if (fid) url += `?focusClientId=${encodeURIComponent(fid)}`;
+    if (fid) qs.set('focusClientId', String(fid));
+    const pageLimit = 400;
+    qs.set('photos_limit', String(pageLimit));
+    qs.set('photos_offset', '0');
+    let url = `${API_URL}/api/king-selection/galleries/${galleryId}?${qs.toString()}`;
     const res = await fetch(url, { headers: HEADERS });
     const data = await res.json().catch(() => ({}));
     if (res.status === 401) {
@@ -4526,14 +4530,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (!gallery.selectionBatchByPhotoId) gallery.selectionBatchByPhotoId = {};
     if (!gallery.selectionRoundsSummary) gallery.selectionRoundsSummary = {};
-    if (Array.isArray(gallery.photos)) {
-      gallery.photos = gallery.photos.map(p => ({
-        ...p,
-        folder_id: p.folder_id ? parseInt(p.folder_id, 10) : null,
-        is_favorite: !!p.is_favorite,
-        is_cover: !!p.is_cover
-      }));
+    let photos = Array.isArray(gallery.photos) ? gallery.photos.slice() : [];
+    let offset = photos.length;
+    let hasMore = !!gallery.photos_has_more;
+    // Páginas seguintes em background leve (não bloqueia 1º render se já renderarmos)
+    while (hasMore && offset < 5000) {
+      const q2 = new URLSearchParams(qs);
+      q2.set('photos_offset', String(offset));
+      q2.set('photos_limit', String(pageLimit));
+      const res2 = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}?${q2.toString()}`, { headers: HEADERS });
+      const data2 = await res2.json().catch(() => ({}));
+      if (!res2.ok) break;
+      const page = Array.isArray(data2?.gallery?.photos) ? data2.gallery.photos : [];
+      if (!page.length) break;
+      photos = photos.concat(page);
+      offset = photos.length;
+      hasMore = !!data2.gallery.photos_has_more;
     }
+    gallery.photos = photos.map(p => ({
+      ...p,
+      folder_id: p.folder_id ? parseInt(p.folder_id, 10) : null,
+      is_favorite: !!p.is_favorite,
+      is_cover: !!p.is_cover
+    }));
     gallery.folders = normalizeFolders(gallery?.folders);
     if (photoFolderFilterId && photoFolderFilterId !== -1 && !gallery.folders.some((f) => f.id === photoFolderFilterId)) {
       photoFolderFilterId = null;
@@ -9505,18 +9524,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const uploadState = {
     running: false,
     cancelled: false,
-    minConcurrency: 6,
-    maxConcurrency: 20,
-    // Começa ?oturbo— e ajusta sozinho (desce se der 429/timeout, sobe quando estabilizar).
-    concurrency: 20,
-    // Gap dinâmico do /api/upload/auth (ms). Começa agressivo e ajusta sozinho se vier 429.
-    // (turbo, mas com piso no authUpload para não zerar)
+    minConcurrency: 2,
+    maxConcurrency: 8,
+    // VPS 2 vCPU: começa moderado e sobe se a rede aguentar.
+    concurrency: 4,
     authMinGapMs: 120,
     authMaxGapMs: 1500,
     last429At: 0,
-    // Upload em LOTES (evita travar a UI e reduz ?otempestade— de ações)
-    // Ex.: selecionou 1000 fotos — processa 100 por vez.
-    batchSize: 100,
+    batchSize: 80,
     pendingBatches: [], // File[][]
     batchIndex: 0,
     batchTotal: 0,

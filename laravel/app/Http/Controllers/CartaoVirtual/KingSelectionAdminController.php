@@ -46,10 +46,15 @@ class KingSelectionAdminController extends Controller
 
     public function show(Request $request, string $id)
     {
+        $limitRaw = $request->query('photos_limit', $request->query('limit'));
+        $photosLimit = $limitRaw === null || $limitRaw === '' ? null : (int) $limitRaw;
+        $photosOffset = max(0, (int) ($request->query('photos_offset', $request->query('offset', 0))));
         $r = $this->admin->getGallery(
             (string) $request->attributes->get('auth_user_id'),
             (int) $id,
-            $request->query('focusClientId') ?? $request->query('clientId')
+            $request->query('focusClientId') ?? $request->query('clientId'),
+            $photosLimit,
+            $photosOffset
         );
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
@@ -969,7 +974,7 @@ class KingSelectionAdminController extends Controller
 
         return response($r['binary'], 200)
             ->header('Content-Type', $r['contentType'] ?? 'image/jpeg')
-            ->header('Cache-Control', 'private, max-age=600')
+            ->header('Cache-Control', 'private, max-age=86400')
             ->header('Cross-Origin-Resource-Policy', 'cross-origin')
             ->header('X-Conecta-Engine', 'laravel');
     }

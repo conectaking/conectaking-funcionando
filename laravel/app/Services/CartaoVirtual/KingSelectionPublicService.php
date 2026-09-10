@@ -444,6 +444,19 @@ class KingSelectionPublicService
 
     private function healOrphanFolderIds(int $galleryId): void
     {
+        if ($galleryId < 1) {
+            return;
+        }
+        // No máximo 1× por hora por galeria (evita UPDATE em toda leitura)
+        $cacheKey = 'ks:heal_orphan_folders:'.$galleryId;
+        try {
+            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($cacheKey, 1, now()->addHour());
+        } catch (\Throwable) {
+            // sem cache → segue uma vez
+        }
         try {
             DB::affectingStatement(
                 'UPDATE king_photos p SET folder_id = NULL

@@ -2043,7 +2043,7 @@
       .filter((img) => img.getAttribute('data-preview-loaded') !== '1');
     if (!imgs.length) return;
 
-    const PREVIEW_CONCURRENCY = 6;
+    const PREVIEW_CONCURRENCY = 3;
     let inFlight = 0;
     const waitQ = [];
     const withSlot = (fn) => new Promise((resolve, reject) => {

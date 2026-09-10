@@ -16,7 +16,7 @@ FROM dunglas/frankenphp:php8.4-bookworm
 
 RUN install-php-extensions pdo_pgsql pgsql zip gd exif opcache redis
 
-RUN printf "memory_limit=512M\nupload_max_filesize=64M\npost_max_size=64M\n" \
+RUN printf "memory_limit=384M\nupload_max_filesize=64M\npost_max_size=64M\nopcache.enable=1\nopcache.memory_consumption=128\nopcache.max_accelerated_files=20000\nopcache.validate_timestamps=0\nopcache.jit=0\n" \
     > /usr/local/etc/php/conf.d/zz-conectaking.ini
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

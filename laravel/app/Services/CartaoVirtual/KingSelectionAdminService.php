@@ -308,7 +308,13 @@ class KingSelectionAdminService
     /**
      * @return array{status:int, body:array<string,mixed>}
      */
-    public function getGallery(string $userId, int $galleryId, mixed $focusClientRaw = null): array
+    public function getGallery(
+        string $userId,
+        int $galleryId,
+        mixed $focusClientRaw = null,
+        ?int $photosLimit = null,
+        int $photosOffset = 0
+    ): array
     {
         if ($galleryId < 1) {
             return ['status' => 400, 'body' => ['message' => 'galleryId inválido']];
@@ -358,22 +364,25 @@ class KingSelectionAdminService
             $hasCover ? 'is_cover' : 'FALSE AS is_cover',
             $hasFolder ? 'folder_id' : 'NULL::INTEGER AS folder_id',
         ];
-        $photos = [];
         $photoTotal = (int) (DB::selectOne(
             'SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id = ?',
             [$galleryId]
         )->c ?? 0);
-        $pageSize = 500;
-        for ($off = 0; $off < $photoTotal; $off += $pageSize) {
-            $page = DB::select(
-                'SELECT '.implode(', ', $photoCols).' FROM king_photos WHERE gallery_id = ?
-                 ORDER BY "order" ASC, id ASC LIMIT ? OFFSET ?',
-                [$galleryId, $pageSize, $off]
-            );
-            foreach ($page as $row) {
-                $photos[] = $row;
-            }
+        // Paginação: default 400 (VPS leve). limit=0 = todas (legado, máx 5000).
+        $photosOffset = max(0, $photosOffset);
+        if ($photosLimit === null) {
+            $photosLimit = 400;
+        } elseif ($photosLimit === 0) {
+            $photosLimit = min(5000, max(1, $photoTotal));
+        } else {
+            $photosLimit = min(1000, max(1, $photosLimit));
         }
+        $photos = DB::select(
+            'SELECT '.implode(', ', $photoCols).' FROM king_photos WHERE gallery_id = ?
+             ORDER BY "order" ASC, id ASC LIMIT ? OFFSET ?',
+            [$galleryId, $photosLimit, $photosOffset]
+        );
+        $photosHasMore = ($photosOffset + count($photos)) < $photoTotal;
 
         $hasSelClient = Schema::hasColumn('king_selections', 'client_id');
         $hasSelBatch = Schema::hasColumn('king_selections', 'selection_batch');
@@ -456,6 +465,10 @@ class KingSelectionAdminService
         unset($galleryOut['senha_hash'], $galleryOut['senha_enc']);
         $galleryOut['status'] = $statusSummary ?? $g->status;
         $galleryOut['photos'] = $photos;
+        $galleryOut['photos_total'] = $photoTotal;
+        $galleryOut['photos_offset'] = $photosOffset;
+        $galleryOut['photos_limit'] = $photosLimit;
+        $galleryOut['photos_has_more'] = $photosHasMore;
         $galleryOut['selectedPhotoIds'] = $selectedPhotoIds;
         $galleryOut['feedback_cliente'] = $feedback;
         $galleryOut['clients'] = $clients;

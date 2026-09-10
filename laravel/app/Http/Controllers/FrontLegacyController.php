@@ -291,6 +291,8 @@ class FrontLegacyController extends Controller
 
         return str_ends_with($mime, 'html; charset=UTF-8')
             ? 'no-cache, no-store, must-revalidate'
-            : 'public, max-age=3600';
+            : (preg_match('/-[A-Za-z0-9_-]{6,}\.(js|css)$/', $base)
+                ? 'public, max-age=31536000, immutable'
+                : 'public, max-age=86400');
     }
 }
