@@ -22,12 +22,13 @@ final class SafeUrl
             return '#';
         }
 
-        if (preg_match('#^(https?:|mailto:|tel:|whatsapp:|sms:|/|#)#i', $url) === 1) {
+        // Delimitador ~ — o padrão inclui literal `#` (âncora), que quebraria delimitador `#`
+        if (preg_match('~^(https?:|mailto:|tel:|whatsapp:|sms:|/|#)~i', $url) === 1) {
             return $url;
         }
 
         // Domínio sem esquema → https
-        if (preg_match('#^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}([/:?#].*)?$#i', $url) === 1) {
+        if (preg_match('~^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}([/:?#].*)?$~i', $url) === 1) {
             return 'https://'.$url;
         }
 

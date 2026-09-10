@@ -993,6 +993,12 @@ function _setupEventListenersBody() {
         }
     });
     SELECTORS.sidebarNavLinks.forEach(link => {
+        // Links para outras páginas (sem data-target): navegação nativa — não interceptar
+        var hrefAttr = (link.getAttribute('href') || '').trim();
+        var hasPaneTarget = !!link.getAttribute('data-target');
+        if (!hasPaneTarget && hrefAttr && hrefAttr !== '#' && hrefAttr.charAt(0) !== '#') {
+            return;
+        }
         if (link.id !== 'logout-btn' && link.id !== 'adm-link' && link.id !== 'personalizacao-logo-link' && !link.href.includes('conta.html') && !link.href.includes('admin') && !link.href.includes('business')) {
             if (link.id === 'king-forms-sidebar-link') {
                 return;
@@ -1055,11 +1061,8 @@ function _setupEventListenersBody() {
                             sessionStorage.setItem('bible_item_id', String(itemId));
                             sessionStorage.setItem('bible_panel_item_id', String(itemId));
                         } catch (e) {}
-                        if (slug) {
-                            window.location.href = `${env.API_URL}/${encodeURIComponent(slug)}/biblia`;
-                        } else {
-                            window.location.href = '/bibliaking';
-                        }
+                        // Painel do dono (não o hub público do cartão — lá o "← Cartão" confunde)
+                        window.location.href = '/bibliaking?itemId=' + encodeURIComponent(String(itemId));
                     } catch (err) {
                         alert(err.message || 'Erro ao abrir Bíblia.');
                     }

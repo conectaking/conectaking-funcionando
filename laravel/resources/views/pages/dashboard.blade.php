@@ -6,18 +6,20 @@
     <title>Meu Painel - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <!-- Navegação para páginas .html (King Docs, King Forms, etc.): o dashboard.js usa .nav-link e pode bloquear o carregamento -->
+    <!-- Navegação para páginas externas do sidebar (King Docs, Bíblia, etc.):
+         o dashboard.js faz preventDefault em .nav-link — permitir sair do SPA. -->
     <script>
     (function () {
       document.addEventListener('click', function (e) {
-        var a = e.target && e.target.closest && e.target.closest('.sidebar-nav a.nav-link');
+        var a = e.target && e.target.closest && e.target.closest('.sidebar a.nav-link, .sidebar-nav a, .sidebar-footer a');
         if (!a) return;
-        var href = a.getAttribute('href');
-        if (!href || href === '#') return;
-        if (href.trim().charAt(0) === '#' && href.indexOf('.html') === -1) return;
+        if (a.getAttribute('data-target')) return; // painel interno
+        var href = (a.getAttribute('href') || '').trim();
+        if (!href || href === '#' || href.charAt(0) === '#') return;
         var isHtml = href.indexOf('.html') !== -1;
         var isAbs = /^https?:\/\//i.test(href);
-        if (!isHtml && !isAbs) return;
+        var isAppPath = href.charAt(0) === '/' && href.indexOf('/dashboard') !== 0;
+        if (!isHtml && !isAbs && !isAppPath) return;
         e.preventDefault();
         e.stopImmediatePropagation();
         window.location.assign(a.href);

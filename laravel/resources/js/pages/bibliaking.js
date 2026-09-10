@@ -82,10 +82,24 @@
                     hide(elLoad);
                     show(elMain);
                     if (slug) {
-                        linkPublic.href = '/' + encodeURIComponent(slug) + '/biblia';
+                        var base = '/' + encodeURIComponent(slug) + '/biblia';
+                        linkPublic.href = base;
+                        var map = {
+                            'hub-devocional': base + '/devocional',
+                            'hub-salmo': base + '/salmo',
+                            'hub-plano': base + '/plano',
+                            'hub-inteira': base + '/biblia-inteira',
+                            'hub-prosperidade': base + '/prosperidade',
+                            'hub-livros': base
+                        };
+                        Object.keys(map).forEach(function (id) {
+                            var a = document.getElementById(id);
+                            if (a) a.href = map[id];
+                        });
                     } else {
                         linkPublic.href = '/dashboard';
-                        linkPublic.title = 'Slug do cartão não encontrado — abra o menu inicial e verifique o perfil';
+                        linkPublic.title = 'Slug do cartão não encontrado — volte ao painel e verifique o perfil';
+                        linkPublic.innerHTML = '<i class="fas fa-th-large"></i> Painel principal';
                     }
 
                     return apiFetch('/api/bible/my-progress')

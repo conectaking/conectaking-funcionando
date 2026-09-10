@@ -21,8 +21,9 @@
 </head>
 <body>
 <div class="wrap">
-    <p class="nav"><a href="{{ $profileUrl }}">← Cartão</a></p>
+    <p class="nav"><a href="{{ $profileUrl }}">← Voltar ao perfil</a></p>
     <h1>Bíblia</h1>
+    <p class="nav" style="opacity:.75;margin-top:-4px;margin-bottom:12px">Leitura pública · Devocionais · Estudos por livro</p>
     <p class="nav">Tradução: {{ strtoupper($translation) }}</p>
     @if(!empty($verse))
         <div class="verse">

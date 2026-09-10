@@ -70,14 +70,20 @@ async function loadSubscriptionInfo() {
         }
 
         if (isAdmin) {
-            document.getElementById('subscription-admin-section').style.display = 'block';
+            var adminSec = document.getElementById('subscription-admin-section');
+            if (adminSec) adminSec.style.display = 'block';
             loadPlansForEdit();
         }
     } catch (error) {
         console.error('Erro ao carregar informações de assinatura:', error);
-        document.getElementById('subscription-info').innerHTML = `
-            <p style="color: #ff4444;">Erro ao carregar informações. Tente novamente.</p>
-        `;
+        var infoEl = document.getElementById('subscription-info');
+        if (infoEl) {
+            infoEl.innerHTML = '<p style="color: #ff4444;">Erro ao carregar informações. Tente novamente.</p>';
+        }
+        var plansEl = document.getElementById('subscription-plans-list');
+        if (plansEl) {
+            plansEl.innerHTML = '<p style="color: #ff4444;">Não foi possível carregar os planos. Atualize a página.</p>';
+        }
     }
 }
 

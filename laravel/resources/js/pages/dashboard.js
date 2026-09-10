@@ -138,6 +138,16 @@ function installLazyGuards() {
   if (typeof window.loadReportsData !== 'function') installStub('loadReportsData', 'relatorios');
   if (typeof window.renderFormQuestions !== 'function') installStub('renderFormQuestions', 'formsEditor');
   if (typeof window.loadFormResponses !== 'function') installStub('loadFormResponses', 'formsEditor');
+  // Assinatura: o core define um loadSubscriptionInfo vazio se o chunk ainda não chegou — forçar await
+  window.loadSubscriptionInfo = async function (...args) {
+    await ensureLazy('assinatura');
+    const fn = window.DashboardAssinatura && window.DashboardAssinatura.loadSubscriptionInfo;
+    if (typeof fn !== 'function') {
+      console.warn('[dashboard] assinatura carregou sem loadSubscriptionInfo');
+      return;
+    }
+    return fn.apply(window.DashboardAssinatura, args);
+  };
   // openEditModal já existe no core (delegação); forçar await do chunk antes de delegar
   window.openEditModal = async function (itemEl) {
     await ensureLazy('editModal');
