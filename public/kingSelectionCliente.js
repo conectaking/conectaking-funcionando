@@ -2048,7 +2048,7 @@
       .filter((img) => img.getAttribute('data-preview-loaded') !== '1');
     if (!imgs.length) return;
 
-    const PREVIEW_CONCURRENCY = 4;
+    const PREVIEW_CONCURRENCY = 6;
     let inFlight = 0;
     const waitQ = [];
     const withSlot = (fn) => new Promise((resolve, reject) => {
@@ -2080,12 +2080,12 @@
       }, { root: null, rootMargin: '200px 0px', threshold: 0.01 });
       imgs.forEach((img) => _gridPreviewIo.observe(img));
       // Primeira dobra: poucas e com limite de concorrência (evita saturar R2/GD)
-      imgs.slice(0, 8).forEach((img) => {
+      imgs.slice(0, 12).forEach((img) => {
         try { _gridPreviewIo.unobserve(img); } catch (_) { }
         loadOne(img);
       });
     } else {
-      runPreviewPool(imgs.slice(0, 16), PREVIEW_CONCURRENCY, loadOne).catch(() => { });
+      runPreviewPool(imgs.slice(0, 24), PREVIEW_CONCURRENCY, loadOne).catch(() => { });
     }
   }
 

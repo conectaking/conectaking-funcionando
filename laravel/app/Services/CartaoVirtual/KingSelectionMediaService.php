@@ -31,14 +31,24 @@ class KingSelectionMediaService
     public function coverJpeg(string $slug, int $maxSide = 1400): array
     {
         $this->bumpImageMemory();
+        $maxSide = max(400, min(2000, $maxSide));
+        $cacheFile = $this->previewCachePath('cover:'.strtolower(trim($slug)), $maxSide, '');
+        if ($cacheFile !== null && is_file($cacheFile) && filesize($cacheFile) > 64) {
+            $cached = @file_get_contents($cacheFile);
+            if (is_string($cached) && $cached !== '') {
+                return ['status' => 200, 'binary' => $cached, 'contentType' => 'image/jpeg'];
+            }
+        }
         $buf = $this->fetchCoverBuffer($slug);
         if ($buf === null) {
             return ['status' => 404, 'message' => 'Sem capa'];
         }
         $out = $this->resizeJpeg($buf, $maxSide);
+        unset($buf);
         if ($out === null) {
             return ['status' => 502, 'message' => 'Falha ao processar capa'];
         }
+        $this->writePreviewCache($cacheFile, $out);
 
         return ['status' => 200, 'binary' => $out, 'contentType' => 'image/jpeg'];
     }
@@ -116,6 +126,19 @@ class KingSelectionMediaService
             }
         }
 
+        // Miniatura persistente no R2 (evita baixar JPEG 20MP a cada pedido)
+        if ($isThumb && $wmKey === '') {
+            $thumbKey = $this->r2ThumbObjectKey($path, $maxSide);
+            if ($thumbKey !== null) {
+                $fromR2 = $this->r2->getObject($thumbKey);
+                if (is_string($fromR2) && strlen($fromR2) > 64) {
+                    $this->writePreviewCache($cacheFile, $fromR2);
+
+                    return ['status' => 200, 'binary' => $fromR2, 'contentType' => 'image/jpeg'];
+                }
+            }
+        }
+
         $buf = $this->bufferFromPath($path);
         if ($buf === null) {
             return ['status' => 502, 'message' => 'Não foi possível carregar a imagem (ficheiro em falta no armazenamento).'];
@@ -131,15 +154,61 @@ class KingSelectionMediaService
                 $out = $wm;
             }
         }
-        if ($cacheFile !== null) {
-            $dir = dirname($cacheFile);
-            if (! is_dir($dir)) {
-                @mkdir($dir, 0775, true);
+        $this->writePreviewCache($cacheFile, $out);
+        if ($isThumb && $wmKey === '') {
+            $thumbKey = $this->r2ThumbObjectKey($path, $maxSide);
+            if ($thumbKey !== null) {
+                try {
+                    $this->r2->putKey($thumbKey, $out, 'image/jpeg', 'public, max-age=31536000, immutable');
+                } catch (\Throwable $e) {
+                    Log::warning('ks.thumb.r2put', ['key' => $thumbKey, 'error' => $e->getMessage()]);
+                }
             }
-            @file_put_contents($cacheFile, $out);
         }
 
         return ['status' => 200, 'binary' => $out, 'contentType' => 'image/jpeg'];
+    }
+
+    /**
+     * Pré-aquece miniaturas (disco + R2) para a grelha do cliente.
+     */
+    public function warmGalleryThumbs(int $galleryId, int $limit = 80, int $maxSide = 360): int
+    {
+        if ($galleryId < 1) {
+            return 0;
+        }
+        $limit = max(1, min(200, $limit));
+        $rows = DB::select(
+            'SELECT file_path, edited_file_path FROM king_photos WHERE gallery_id = ? ORDER BY "order" ASC, id ASC LIMIT '.$limit,
+            [$galleryId]
+        );
+        $ok = 0;
+        foreach ($rows as $row) {
+            $edited = trim((string) ($row->edited_file_path ?? ''));
+            $fp = trim((string) ($row->file_path ?? ''));
+            $path = $edited !== '' ? $edited : $fp;
+            if ($path === '') {
+                continue;
+            }
+            $r = $this->previewFromStoragePath($path, $maxSide, null);
+            if (($r['status'] ?? 500) === 200) {
+                $ok++;
+            }
+        }
+
+        return $ok;
+    }
+
+    private function writePreviewCache(?string $cacheFile, string $binary): void
+    {
+        if ($cacheFile === null || $binary === '') {
+            return;
+        }
+        $dir = dirname($cacheFile);
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        @file_put_contents($cacheFile, $binary);
     }
 
     private function previewCachePath(string $path, int $maxSide, string $wmKey): ?string
@@ -155,6 +224,27 @@ class KingSelectionMediaService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function r2ThumbObjectKey(string $path, int $maxSide): ?string
+    {
+        $raw = trim($path);
+        if (str_starts_with(strtolower($raw), 'r2:')) {
+            $raw = substr($raw, 3);
+        }
+        if ($raw === '' || preg_match('#^https?://#i', $raw) || str_contains($raw, '..')) {
+            return null;
+        }
+        if (! str_starts_with($raw, 'galleries/')) {
+            return null;
+        }
+        $dir = dirname($raw);
+        $base = pathinfo($raw, PATHINFO_FILENAME);
+        if ($dir === '.' || $base === '') {
+            return null;
+        }
+
+        return $dir.'/'.$base.'_t'.$maxSide.'.jpg';
     }
 
     /**
@@ -408,14 +498,14 @@ class KingSelectionMediaService
         if ($path === '') {
             return null;
         }
-        if (str_starts_with(strtolower($path), 'r2:')) {
+        $hadR2Prefix = str_starts_with(strtolower($path), 'r2:');
+        if ($hadR2Prefix) {
             $path = substr($path, 3);
         }
         if (preg_match('#^https?://#i', $path)) {
             return $this->httpGetBinary($path);
         }
         if (str_starts_with(strtolower($path), 'cfimage:')) {
-            // Cloudflare Images delivery — se houver URL pública base de delivery
             $id = trim(substr($path, strlen('cfimage:')));
             $cfBase = rtrim((string) (env('CF_IMAGES_DELIVERY_URL') ?: ''), '/');
             if ($cfBase !== '' && $id !== '') {
@@ -423,6 +513,13 @@ class KingSelectionMediaService
             }
 
             return null;
+        }
+        // Preferir GET SigV4 no R2 (mais estável que HTTP público em latência alta).
+        if ($hadR2Prefix || str_starts_with($path, 'galleries/') || str_starts_with($path, 'images/')) {
+            $viaApi = $this->r2->getObject(ltrim($path, '/'));
+            if (is_string($viaApi) && $viaApi !== '') {
+                return $viaApi;
+            }
         }
         $cfg = $this->r2->config();
         $base = $cfg['publicBaseUrl'] ?? null;
@@ -434,7 +531,6 @@ class KingSelectionMediaService
                 return $buf;
             }
         }
-        // caminho local relativo
         $local = base_path('../uploads/'.ltrim($path, '/'));
         if (is_file($local)) {
             $bin = @file_get_contents($local);

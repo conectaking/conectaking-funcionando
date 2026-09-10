@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use App\Jobs\WarmKsGalleryThumbsJob;
 use App\Services\Auth\JwtService;
 use App\Support\KingSelection\KsAccess;
 use Illuminate\Support\Facades\DB;
@@ -477,6 +478,14 @@ class KingSelectionClientService
             'photos_offset' => $media['photos_offset'],
             'photos_limit' => $media['photos_limit'],
         ];
+
+        if ($offset === 0) {
+            try {
+                WarmKsGalleryThumbsJob::dispatch($galleryId, min(100, max(24, count($photos))));
+            } catch (\Throwable $e) {
+                Log::warning('ks.thumbs.warm.dispatch', ['error' => $e->getMessage()]);
+            }
+        }
 
         return [
             'status' => 200,
