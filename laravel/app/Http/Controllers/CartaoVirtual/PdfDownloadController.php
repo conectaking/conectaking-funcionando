@@ -24,10 +24,23 @@ class PdfDownloadController extends Controller
             return response('Arquivo não encontrado.', 404)->header('X-Conecta-Engine', 'laravel');
         }
 
+        $pdfUrl = (string) $row->pdf_url;
+        if (! \App\Support\SafeRemoteUrl::isAllowed($pdfUrl)) {
+            return response('URL do PDF não permitida.', 400)->header('X-Conecta-Engine', 'laravel');
+        }
+
         try {
-            $remote = Http::timeout(30)->withOptions(['allow_redirects' => true])->get((string) $row->pdf_url);
+            $remote = Http::timeout(20)
+                ->withOptions(['allow_redirects' => ['max' => 2]])
+                ->withHeaders(['User-Agent' => 'ConectaKing-PDF/1.0'])
+                ->get($pdfUrl);
             if (!$remote->successful()) {
                 return response('Não foi possível baixar o arquivo.', 500)->header('X-Conecta-Engine', 'laravel');
+            }
+
+            $body = $remote->body();
+            if (strlen($body) > 25 * 1024 * 1024) {
+                return response('Arquivo demasiado grande.', 413)->header('X-Conecta-Engine', 'laravel');
             }
 
             $title = trim((string) ($row->title ?? ''));
@@ -36,7 +49,7 @@ class PdfDownloadController extends Controller
                 : 'documento';
             $filename = rtrim($safe, '_').'.pdf';
 
-            return response($remote->body(), 200, [
+            return response($body, 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename='.$filename,
                 'X-Conecta-Engine' => 'laravel',

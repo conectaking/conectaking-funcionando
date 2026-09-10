@@ -2574,8 +2574,9 @@ class KingSelectionFaceService
             'success' => true,
             's3' => $bucket !== '' && $cfg['enabled'],
             'rekog' => $cfg['enabled'],
-            'bucket' => $bucket !== '' ? '***'.substr($bucket, -4) : null,
-            'collection' => $cfg['collectionId'],
+            // Sem nomes de bucket/collection em claro (só estado on/off)
+            'bucket' => $bucket !== '',
+            'collection' => ! empty($cfg['collectionId']),
         ]];
     }
 

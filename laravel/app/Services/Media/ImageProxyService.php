@@ -31,7 +31,12 @@ class ImageProxyService
             throw new \RuntimeException('GD indisponível');
         }
 
-        $response = Http::timeout(20)
+        if (! \App\Support\SafeRemoteUrl::isAllowed($imageUrl)) {
+            throw new \RuntimeException('URL de imagem não permitida');
+        }
+
+        $response = Http::timeout(12)
+            ->withOptions(['allow_redirects' => ['max' => 2]])
             ->withHeaders(['User-Agent' => 'ConectaKing-OG/1.0'])
             ->get($imageUrl);
 

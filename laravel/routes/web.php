@@ -107,11 +107,11 @@ Route::post('/guest-list/view-full/{token}/checkin/{guestId}', [GuestListPublicC
 Route::get('/guest-list/verify/qr/{qrToken}', [GuestListPublicController::class, 'verifyQr'])->where('qrToken', $cardSlug);
 Route::post('/guest-list/confirm/qr/{qrToken}', [GuestListPublicController::class, 'confirmQr'])->where('qrToken', $cardSlug);
 Route::post('/guest-list/confirm/cpf', [GuestListPublicController::class, 'confirmBySearch']);
-Route::post('/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId);
-Route::post('/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+');
-Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId);
+Route::post('/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId)->middleware('throttle:120,1');
+Route::post('/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+')->middleware('throttle:120,1');
+Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId)->middleware('throttle:60,1');
 Route::get('/vcard/{identifier}', [VcardController::class, 'show'])->where('identifier', $cardSlug);
-Route::get('/download/pdf/{itemId}', [PdfDownloadController::class, 'show'])->where('itemId', '[0-9]+');
+Route::get('/download/pdf/{itemId}', [PdfDownloadController::class, 'show'])->where('itemId', '[0-9]+')->middleware('throttle:30,1');
 Route::get('/api/profile', [ProfileEditorController::class, 'show'])->middleware('jwt');
 Route::put('/api/profile/save-all', [ProfileEditorController::class, 'saveAll'])->middleware(['jwt', 'throttle:30,1']);
 Route::middleware('jwt')->group(function () {
@@ -260,8 +260,10 @@ Route::get('/api/king-selection/public/galleries/{slug}/my-photos', [KingSelecti
     ->where('slug', $cardSlug);
 Route::post('/api/king-selection/public/enroll-face-anonymous', [KingSelectionPublicController::class, 'enrollFaceAnonymous'])
     ->middleware('throttle:20,1');
-Route::get('/api/king-selection/public/aws-ping', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsPing']);
-Route::post('/api/king-selection/client/login', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'login']);
+Route::get('/api/king-selection/public/aws-ping', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsPing'])
+    ->middleware(['jwt', 'admin', 'throttle:10,1']);
+Route::post('/api/king-selection/client/login', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'login'])
+    ->middleware('throttle:30,1');
 Route::post('/api/king-selection/client/login-by-details', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'loginByDetails'])
     ->middleware('throttle:30,1');
 Route::post('/api/king-selection/client/register', [\App\Http\Controllers\CartaoVirtual\KingSelectionClientController::class, 'register'])
@@ -703,12 +705,12 @@ Route::middleware('admin')->group(function () {
 
 // Proxy de imagem OG (público)
 $imageProxy = \App\Http\Controllers\Media\ImageProxyController::class;
-Route::get('/api/image/profile-image', [$imageProxy, 'profileImage']);
-// Lead empresarial + chave curta de cadastro (públicos)
+Route::get('/api/image/profile-image', [$imageProxy, 'profileImage'])->middleware('throttle:60,1');
+// Lead empresarial + chave curta de cadastro (admin only)
 $inquiry = \App\Http\Controllers\Leads\InquiryController::class;
 Route::post('/api/inquiry/submit', [$inquiry, 'submit'])->middleware('throttle:20,1');
 $generator = \App\Http\Controllers\Admin\GeneratorController::class;
-Route::post('/api/generator/new-key', [$generator, 'newKey'])->middleware('throttle:20,1');
+Route::post('/api/generator/new-key', [$generator, 'newKey'])->middleware(['admin', 'throttle:10,1']);
 // Push: chave VAPID é pública
 $push = \App\Http\Controllers\Push\PushController::class;
 Route::get('/api/push/vapid-public-key', [$push, 'vapidPublicKey']);
@@ -768,7 +770,7 @@ Route::middleware('jwt')->group(function () use ($push) {
 
 // Tracking da loja: público, chamado pelo JS da página pública (sem JWT).
 $salesPageTrack = \App\Http\Controllers\SalesPage\SalesPageAnalyticsController::class;
-Route::post('/api/v1/sales-pages/track', [$salesPageTrack, 'track']);
+Route::post('/api/v1/sales-pages/track', [$salesPageTrack, 'track'])->middleware('throttle:120,1');
 // Checkout/PagBank: intencionalmente NÃO migrado para Laravel (pedido do produto).
 
 Route::get('/og-image.jpg', [\App\Http\Controllers\Admin\OgImageController::class, 'show']);
