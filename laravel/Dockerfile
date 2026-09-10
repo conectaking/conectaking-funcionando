@@ -32,6 +32,8 @@ RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoload
 
 COPY laravel/ ./
 COPY --from=assets /app/public/build /app/public/build
+# Vendor estático (FA/Chart/etc.) também em /app/public para Caddy servir sem PHP
+COPY --from=assets /app/legacy-public/vendor /app/public/vendor
 
 RUN rm -f .env .env.backup \
     && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php \

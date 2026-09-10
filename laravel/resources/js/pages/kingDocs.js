@@ -688,7 +688,7 @@ import '@legacy/js/ck-csrf.js';
     return new Promise(function (resolve, reject) {
       if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) return resolve(PDFLib);
       var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+      s.src = '/vendor/pdf-lib/pdf-lib.min.js';
       s.onload = function () {
         if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) resolve(PDFLib);
         else reject(new Error('pdf-lib'));
@@ -970,7 +970,7 @@ import '@legacy/js/ck-csrf.js';
     function draw() {
       if (typeof QRCode === 'undefined') {
         var s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        s.src = '/vendor/qrcode/qrcode.min.js';
         s.onload = function () { draw(); };
         document.head.appendChild(s);
         return;

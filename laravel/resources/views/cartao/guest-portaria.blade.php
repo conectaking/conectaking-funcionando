@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Permissions-Policy" content="camera=(self)">
     <title>Portaria — {{ $guestList['event_title'] ?? 'Evento' }}</title>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="/vendor/html5-qrcode/html5-qrcode.min.js"></script>
     <style>
         :root {
             --primary: {{ $guestList['primary_color'] ?? '#FFC700' }};

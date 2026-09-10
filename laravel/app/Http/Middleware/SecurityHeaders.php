@@ -32,16 +32,17 @@ class SecurityHeaders
         }
 
         if (! $response->headers->has('Content-Security-Policy')) {
-            // Tailwind via Vite (sem CDN / sem unsafe-eval). Inline scripts legados ainda exigem unsafe-inline.
+            // Libs principais em /vendor (self). Inline legado ainda exige unsafe-inline.
+            // Fontes Google + embeds YouTube/Instagram/tag mantidos.
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
                 "object-src 'none'",
                 "frame-ancestors 'self'",
                 "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
-                "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
-                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
-                "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+                "script-src 'self' 'unsafe-inline'",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                "font-src 'self' data: https://fonts.gstatic.com",
                 "img-src 'self' data: blob: https:",
                 "media-src 'self' blob: https:",
                 "connect-src 'self' https: wss:",
