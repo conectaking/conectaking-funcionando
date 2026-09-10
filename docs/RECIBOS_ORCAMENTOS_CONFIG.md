@@ -1,31 +1,34 @@
 # Recibos e orçamentos — configuração (Laravel)
 
-OCR e PDF no stack **PHP**: `tesseract-ocr` + `poppler-utils` no container FrankenPHP (ver `laravel/Dockerfile`). Nada de npm/Node.
+OCR de comprovantes no stack **PHP**: **OpenAI Vision** (`RECIBO_OCR_AI`). PDF: `poppler-utils` no container FrankenPHP. Tesseract **não** está na imagem de produção. Nada de npm/Node para OCR.
 
 ## Banco
 
 Migrations históricas em `migrations/` (já aplicadas na VPS). Em ambiente novo, aplicar o schema Postgres habitual do projeto.
 
-## Variáveis (opcional)
+## Variáveis
 
-Se o OCR precisar de caminhos customizados no `.env` do Laravel:
+No `.env` / `.env.prod` do Laravel:
 
 ```env
-# opcional — defaults do sistema no container
-TESSERACT_CMD=/usr/bin/tesseract
-PDFTOPPM_CMD=/usr/bin/pdftoppm
+OPENAI_API_KEY=sk-...
+RECIBO_OCR_AI=always
+RECIBO_OCR_AI_MODEL=gpt-4o-mini
+# opcional — PDF
+# PDFTOPPM_CMD=/usr/bin/pdftoppm
 ```
 
 ## Comportamento
 
-- OCR de comprovantes/documentos usa Tesseract no servidor (idioma `por` instalado na imagem).
-- A primeira chamada pode ser mais lenta; as seguintes costumam ser rápidas.
+- OCR de comprovantes usa Vision (IA); sem chave/API o fluxo não extrai itens.
+- Import Serasa por imagem: use **PDF** (OCR local de print foi removido).
 - Sem Render / sem `tesseract.js`.
 
 ## Checklist
 
 | Item | Estado |
 |---|---|
-| Pacotes no container | `tesseract-ocr`, `tesseract-ocr-por`, `poppler-utils` |
+| Pacotes no container | `poppler-utils` (sem tesseract) |
+| OCR recibos | OpenAI Vision (`RECIBO_OCR_AI=always`) |
 | Runtime | Laravel / FrankenPHP |
 | Checkout/pagamento | Fora de escopo |

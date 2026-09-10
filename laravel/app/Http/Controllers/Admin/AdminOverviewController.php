@@ -61,7 +61,7 @@ class AdminOverviewController extends Controller
 
     public function updatePlan(Request $request, string $id)
     {
-        return $this->error('KingBrief foi removido. Edição de minutos por plano não está disponível.', 410);
+        return $this->error('Edição de planos por esta rota não está disponível.', 410);
     }
 
     public function users(Request $request)

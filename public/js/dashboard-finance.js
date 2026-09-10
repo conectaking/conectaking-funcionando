@@ -4213,7 +4213,7 @@ window.initFinanceChart = function (period = '1M') {
                 ctx.fillStyle = 'rgba(148, 163, 184, 0.3)';
                 ctx.font = '12px Inter';
                 ctx.textAlign = 'center';
-                ctx.fillText('Gráfico será carregado em breve', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('Erro ao carregar gráfico', canvas.width / 2, canvas.height / 2);
             });
     } else {
         // Fallback: mensagem simples

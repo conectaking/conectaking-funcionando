@@ -1085,6 +1085,8 @@ function renderEditor(profileData) {
                 case 'agenda':
                 case 'contract':
                 case 'photographer_site':
+                case 'kingbrief':
+                case 'king_bolao':
                     // módulos removidos - não renderizar no editor
                     break;
                 case 'convite':

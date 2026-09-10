@@ -502,15 +502,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Mensagens específicas para diferentes tipos de erro
                 if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-                    throw new Error('SERVIDOR COM PROBLEMA: O endpoint /api/upload/pdf não está funcionando. Verifique o arquivo SERVER-FIXES.md para correções necessárias.');
+                    throw new Error('O upload de PDF falhou: o servidor devolveu HTML em vez de JSON. Tente de novo ou confira os logs.');
                 } else if (response.status === 404) {
-                    throw new Error('ENDPOINT NAO ENCONTRADO: O endpoint /api/upload/pdf não existe no servidor. Implemente conforme SERVER-FIXES.md');
+                    throw new Error('Endpoint de upload de PDF não encontrado (404).');
                 } else if (response.status === 401) {
                     throw new Error('NAO AUTORIZADO: Token inválido ou expirado. Faça login novamente.');
                 } else if (response.status === 500) {
-                    throw new Error('ERRO DO SERVIDOR: Erro interno no servidor. Verifique os logs do servidor e implemente as correções do SERVER-FIXES.md');
+                    throw new Error('ERRO DO SERVIDOR: Erro interno no upload de PDF. Verifique os logs.');
                 } else {
-                    throw new Error(` ERRO DO SERVIDOR (${response.status}): ${response.statusText}. Verifique SERVER-FIXES.md para correções.`);
+                    throw new Error(`ERRO DO SERVIDOR (${response.status}): ${response.statusText || 'falha no upload'}.`);
                 }
             }
 
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error.message.includes('Failed to fetch')) {
                 throw new Error('ERRO DE CONEXAO: Não foi possível conectar ao servidor. Verifique sua internet e se o servidor está funcionando.');
             } else if (error.message.includes('Unexpected token')) {
-                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados inválidos. Implemente as correções do SERVER-FIXES.md');
+                throw new Error('ERRO DE RESPOSTA: Servidor retornou dados inválidos no upload de PDF.');
             } else {
                 throw error;
             }

@@ -185,9 +185,9 @@ async function loadReportsData() {
             detailsData = await detailsResponse.json();
             renderAllLinksDetails(detailsData, period);
         } else {
-            console.warn('Endpoint de detalhes não disponível ainda');
+            console.warn('Falha ao carregar detalhes dos links:', detailsResponse.status);
             if (allLinksDetailsEl) {
-                allLinksDetailsEl.innerHTML = '<p style="color: var(--text-dark); text-align: center; padding: 20px;">Detalhes dos links serão carregados em breve.</p>';
+                allLinksDetailsEl.innerHTML = '<p style="color: var(--text-dark); text-align: center; padding: 20px;">Não foi possível carregar os detalhes dos links.</p>';
             }
         }
 

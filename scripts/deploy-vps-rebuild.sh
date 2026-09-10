@@ -66,7 +66,6 @@ curl -sS -o /dev/null -w 'forms:%{http_code}\n' http://127.0.0.1:8080/kingForms
 curl -sS -o /dev/null -w 'ks:%{http_code}\n' http://127.0.0.1:8080/kingSelection
 curl -sS -o /dev/null -w 'dashboard.js:%{http_code}\n' http://127.0.0.1:8080/dashboard.js
 curl -sS -o /dev/null -w 'manifest:%{http_code}\n' http://127.0.0.1:8080/manifest.json
-curl -sS -o /dev/null -w 'ui.css:%{http_code}\n' http://127.0.0.1:8080/assets/css/ui.css
 test ! -f "$BASE/public/admin/index.html" && echo 'admin_html_gone=yes'
 docker exec conectaking-laravel sh -c 'test -z "${LEGACY_PUBLIC_HTML_PATH:-}" && echo public_html_env_off=yes || echo public_html_env=${LEGACY_PUBLIC_HTML_PATH}'
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps
