@@ -119,8 +119,21 @@ class SatellitePublicController extends Controller
                 ->header('X-Conecta-Engine', 'laravel');
         }
 
+        $data = $result['data'] ?? [];
+        $study = $data['study'] ?? null;
+        $hasContent = is_array($study) && (
+            ! empty($study['title'])
+            || ! empty($study['content'])
+            || ! empty($data['contentHtml'])
+            || ! empty($data['sections'])
+        );
+        // Estudos incompletos: volta ao hub (sem página "em breve").
+        if (! $hasContent) {
+            return redirect('/'.$slug.'/biblia', 302)->header('X-Conecta-Engine', 'laravel');
+        }
+
         return response()
-            ->view('cartao.bible-study', $result['data'])
+            ->view('cartao.bible-study', $data)
             ->header('X-Conecta-Engine', 'laravel');
     }
 

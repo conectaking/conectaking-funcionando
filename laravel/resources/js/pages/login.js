@@ -31,8 +31,8 @@ import '@legacy/auth.css';
       hintEl.style.display = 'block';
       hintEl.innerHTML =
         reason === 'refresh_500'
-          ? '<strong>KingBrief no localhost:</strong> O servidor devolveu erro 500 ao renovar o token. Faça login abaixo. Confirme que o Laravel está no ar (<code>/health</code>) e tente de novo.'
-          : '<strong>KingBrief no localhost:</strong> Sessão inválida ou expirada. Faça login. Se o problema repetir, rode a migration 001 (refresh_tokens), reinicie o backend e entre de novo.';
+          ? '<strong>Localhost:</strong> O servidor devolveu erro 500 ao renovar o token. Faça login abaixo. Confirme que o Laravel está no ar (<code>/health</code>) e tente de novo.'
+          : '<strong>Localhost:</strong> Sessão inválida ou expirada. Faça login. Se o problema repetir, reinicie o backend e entre de novo.';
     }
 
     const loginForm = document.getElementById('login-form');

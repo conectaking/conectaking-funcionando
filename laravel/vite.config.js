@@ -28,7 +28,6 @@ export default defineConfig({
                 'resources/js/pages/kingSelectionProject.js',
                 'resources/js/pages/kingSelectionEdit.js',
                 'resources/js/pages/admin-devocionais-365.js',
-                'resources/js/pages/admin-planos.js',
                 'resources/js/pages/admin.js',
                 'resources/js/pages/conta.js',
                 'resources/js/pages/salesPageEdit.js',

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Extrato/comprovante via OpenAI Vision (gpt-4o-mini).
- * Porta de utils/recibo-openai-vision.js — usa OPENAI_API_KEY (mesma chave do KingBrief).
+ * Porta de utils/recibo-openai-vision.js — usa OPENAI_API_KEY do ambiente.
  */
 class ReciboOpenAiVisionService
 {

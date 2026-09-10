@@ -348,7 +348,7 @@ import '@legacy/js/ck-csrf.js';
                     });
                     linhas.push('');
                 }
-                linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem' + (scanResumo.ocrIa ? ' (Tesseract + IA OpenAI em paralelo)' : '') + '.');
+                linhas.push('Desta digitalização: ' + scanResumo.lidosOcr + ' item(ns) lido(s) na imagem' + (scanResumo.ocrIa ? ' (IA OpenAI)' : '') + '.');
                 if (scanResumo.inseridos !== scanResumo.lidosOcr) {
                     linhas.push(scanResumo.inseridos + ' adicionado(s) à tabela' + (scanResumo.duplicata ? ' (' + scanResumo.duplicata + ' já existiam).' : '.'));
                 } else if (scanResumo.inseridos > 0) {
@@ -396,7 +396,7 @@ import '@legacy/js/ck-csrf.js';
                         var itensResp = (payload && payload.itensAdicionados) || [];
                         var lidosFoto = (typeof st.lidosOcr === 'number' && st.lidosOcr > 0)
                             ? st.lidosOcr
-                            : Math.max(itensResp.length, (payload.parse_result && payload.parse_result.tesseractItens) || 0, (payload.parse_result && payload.parse_result.openAiItens) || 0, itensResp.length);
+                            : Math.max(itensResp.length, (payload.parse_result && payload.parse_result.openAiItens) || 0, itensResp.length);
                         var insFoto = (typeof st.inseridos === 'number') ? st.inseridos : itensResp.length;
                         scanResumo.porFoto.push({
                             lidosOcr: lidosFoto,

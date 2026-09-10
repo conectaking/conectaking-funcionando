@@ -94,7 +94,7 @@
         </div>
     @else
         <div class="empty">
-            <p style="font-size:1.1rem;margin-bottom:12px">Estudo de <strong>{{ $bookName }}</strong> em breve.</p>
+            <p style="font-size:1.1rem;margin-bottom:12px">Estudo de <strong>{{ $bookName }}</strong> ainda não publicado.</p>
             <p style="margin-bottom:16px">Enquanto isso, leia o livro na Bíblia.</p>
             <a class="btn-read" href="{{ $readUrl }}">Ler {{ $bookName }} — Capítulo 1</a>
         </div>

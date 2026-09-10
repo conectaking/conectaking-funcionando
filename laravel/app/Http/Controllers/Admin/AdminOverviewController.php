@@ -61,30 +61,7 @@ class AdminOverviewController extends Controller
 
     public function updatePlan(Request $request, string $id)
     {
-        if (! is_numeric($id)) {
-            return $this->error('ID do plano inválido.', 400);
-        }
-
-        $body = is_array($request->all()) ? $request->all() : [];
-        if (! array_key_exists('kingbrief_minutes_per_month', $body)) {
-            return $this->error('Envie kingbrief_minutes_per_month (número ou null para ilimitado).', 400);
-        }
-
-        $raw = $body['kingbrief_minutes_per_month'];
-        $minutes = ($raw === null || $raw === '') ? null : max(0, (int) $raw);
-
-        try {
-            $updated = $this->overview->updatePlanKingBrief((int) $id, $minutes);
-            if ($updated === null) {
-                return $this->error('Plano não encontrado.', 404);
-            }
-
-            return $this->success($updated, 'Plano atualizado.');
-        } catch (\Throwable $e) {
-            Log::error('Erro PATCH /api/admin/plans/{id}: '.$e->getMessage());
-
-            return $this->error('Erro ao atualizar plano.', 500);
-        }
+        return $this->error('KingBrief foi removido. Edição de minutos por plano não está disponível.', 410);
     }
 
     public function users(Request $request)

@@ -324,7 +324,7 @@ class DocumentosController extends Controller
         $forceOpenAi = $this->truthy($request->input('usar_ia'));
         $itensSugeridos = [];
         $parseResult = null;
-        $ocrEngine = 'tesseract';
+        $ocrEngine = 'none';
         $openAiTentou = $forceOpenAi;
         $openAiError = null;
         $openAiAvailable = null;

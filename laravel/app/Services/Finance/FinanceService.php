@@ -1902,17 +1902,8 @@ class FinanceService
 
     private function ocrImage(string $path): string
     {
-        if (! is_file($path)) {
-            return '';
-        }
-        $bin = trim((string) shell_exec('command -v tesseract 2>/dev/null'));
-        if ($bin === '') {
-            throw new \RuntimeException('tesseract não disponível no servidor.');
-        }
-        $cmd = escapeshellarg($bin).' '.escapeshellarg($path).' stdout -l por 2>/dev/null';
-        $out = shell_exec($cmd);
-
-        return trim((string) ($out ?? ''));
+        // Tesseract removido da imagem de produção — import Serasa por print usa PDF.
+        throw new \RuntimeException('OCR local de imagem não está disponível. Envie o PDF do Serasa.');
     }
 
     private function isAdmin(string $userId): bool

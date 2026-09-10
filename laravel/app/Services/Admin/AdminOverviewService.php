@@ -47,26 +47,10 @@ class AdminOverviewService
 
         return $this->rows(
             'SELECT id, plan_code, plan_name, price, description, is_active,
-                    kingbrief_minutes_per_month, created_at, updated_at
+                    created_at, updated_at
              FROM subscription_plans
              ORDER BY price ASC NULLS LAST, plan_code'
         );
-    }
-
-    /**
-     * @return array<string,mixed>|null
-     */
-    public function updatePlanKingBrief(int $planId, ?int $minutes): ?array
-    {
-        $row = DB::selectOne(
-            'UPDATE subscription_plans
-             SET kingbrief_minutes_per_month = ?, updated_at = NOW()
-             WHERE id = ?
-             RETURNING id, plan_code, plan_name, kingbrief_minutes_per_month, updated_at',
-            [$minutes, $planId]
-        );
-
-        return $row ? (array) $row : null;
     }
 
     /**
