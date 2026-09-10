@@ -175,6 +175,13 @@ services:
     volumes:
       - api_uploads:/shared/uploads
       - ./public:/legacy/public:ro
+    # Imagem FrankenPHP traz HEALTHCHECK em :2019; o worker não sobe HTTP.
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'artisan queue:work' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
     mem_limit: 512m
     cpus: 0.75
     networks:

@@ -225,21 +225,35 @@
 
   function setJwt(token) {
     jwt = token || null;
+    // Cookie HttpOnly (login/redeem) — não persistir JWT no localStorage (XSS / partilha de PC).
     try {
-      if (jwt) localStorage.setItem(tokenKey(slug), jwt);
-      else localStorage.removeItem(tokenKey(slug));
+      localStorage.removeItem(tokenKey(slug));
     } catch (_) { /* ignore */ }
     syncKsAuthCookie();
   }
 
-  /** Link pessoal (?access=JWT): substitui sessão antiga e evita cair no cadastro de outro cliente. */
-  function consumeAccessTokenFromUrl() {
+  /** Link pessoal (?k=código ou legado ?access=JWT): troca por cookie HttpOnly e limpa a URL. */
+  async function consumeAccessTokenFromUrl() {
     if (!slug) return false;
     try {
       const q = new URLSearchParams(window.location.search || '');
+      const code = String(q.get('k') || '').trim();
       const access = String(q.get('access') || q.get('token') || '').trim();
-      if (!access) return false;
-      setJwt(access);
+      if (!code && !access) return false;
+      const res = await fetch('/api/king-selection/client/redeem-access', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, code: code || undefined, access: access || undefined }),
+      });
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok) {
+        console.warn('ks redeem-access', data.message || res.status);
+        return false;
+      }
+      if (data.token) setJwt(String(data.token));
+      q.delete('k');
       q.delete('access');
       q.delete('token');
       const qs = q.toString();
@@ -248,13 +262,6 @@
     } catch (_) {
       return false;
     }
-  }
-
-  if (!consumeAccessTokenFromUrl()) {
-    try {
-      jwt = localStorage.getItem(tokenKey(slug)) || null;
-      // Cookie HttpOnly: JWT só via localStorage / login response (não legível em JS).
-    } catch (_) {}
   }
 
   let galleryMeta = null;
@@ -6370,6 +6377,9 @@
       $('ks-login-body')?.classList.add('ks-hidden');
       return;
     }
+    try {
+      await consumeAccessTokenFromUrl();
+    } catch (_) { /* ignore */ }
     scheduleBootWatchdog();
     try {
       let r;

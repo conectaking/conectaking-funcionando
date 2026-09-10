@@ -153,6 +153,17 @@ class GuestListAdminController extends Controller
             $request->query()
         );
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        if (isset($r['pdf']) && is_string($r['pdf'])) {
+            $filename = (string) ($r['filename'] ?? 'convidados.pdf');
+
+            return response($r['pdf'], $r['status'], [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                'X-Conecta-Engine' => 'laravel',
+            ]);
+        }
+
+        return response()->json($r['body'] ?? ['message' => 'Falha ao exportar'], $r['status'])
+            ->header('X-Conecta-Engine', 'laravel');
     }
 }

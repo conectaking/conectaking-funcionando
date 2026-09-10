@@ -80,6 +80,19 @@ class KingSelectionClientController extends Controller
         return $response;
     }
 
+    public function redeemAccess(Request $request): JsonResponse
+    {
+        $r = $this->ks->redeemAccess(
+            (string) ($request->input('slug') ?: ''),
+            $request->input('code') !== null ? (string) $request->input('code') : null,
+            $request->input('access') !== null ? (string) $request->input('access') : (
+                $request->input('token') !== null ? (string) $request->input('token') : null
+            )
+        );
+
+        return $this->jsonWithKsCookie($request, $r);
+    }
+
     /**
      * @param  array{status:int, body:array<string,mixed>}  $r
      */

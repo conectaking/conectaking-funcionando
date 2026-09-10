@@ -270,28 +270,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         })();
     }
 
-    // Função para renovar token (cookie-first: sem refresh no LS ainda pode haver sessão HttpOnly)
+    // Função para renovar token (cookie-first: refresh_token HttpOnly)
     async function refreshAccessToken() {
-        const refreshToken = localStorage.getItem('conectaKingRefreshToken');
-
-        if (!refreshToken) {
-            if (window.CkAuth && typeof window.CkAuth.probeCookieAuth === 'function') {
-                const ok = await window.CkAuth.probeCookieAuth();
-                if (ok) {
-                    try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
-                    updateHeaders();
-                    return null;
-                }
-            }
-            throw new Error('Nenhum refresh token encontrado');
-        }
+        try {
+            localStorage.removeItem('conectaKingRefreshToken');
+            localStorage.removeItem('refreshToken');
+        } catch (e) {}
 
         try {
             const response = await fetch(`${API_URL}/api/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken })
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({})
             });
 
             if (!response.ok) {
@@ -304,44 +295,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return null;
                     }
                 }
-                const errorData = await response.json().catch(() => ({ message: 'Erro ao renovar token' }));
-                throw new Error(errorData.message || 'Erro ao renovar token');
+                throw new Error('Refresh falhou');
             }
 
-            const data = await response.json();
-
-            // Cookie HttpOnly renovado no Set-Cookie — não regravar JWT no localStorage
-            token = data.token || token;
+            const data = await response.json().catch(() => ({}));
+            try { localStorage.removeItem('conectaKingRefreshToken'); } catch (e) {}
             try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
-            try { localStorage.removeItem('conectaKingToken'); } catch (e) {}
-            if (data.refreshToken) {
-                localStorage.setItem('conectaKingRefreshToken', data.refreshToken);
-            }
-
-            // Atualiza headers
             updateHeaders();
-
-            return data.token;
-        } catch (error) {
+            return data.token || null;
+        } catch (err) {
             if (window.CkAuth && typeof window.CkAuth.probeCookieAuth === 'function') {
-                try {
-                    const ok = await window.CkAuth.probeCookieAuth();
-                    if (ok) {
-                        try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
-                        updateHeaders();
-                        return null;
-                    }
-                } catch (e) {}
+                const ok = await window.CkAuth.probeCookieAuth();
+                if (ok) {
+                    try { localStorage.setItem('conectaKingSession', '1'); } catch (e) {}
+                    updateHeaders();
+                    return null;
+                }
             }
-            // Se falhar, limpa tokens e redireciona para login
-            localStorage.removeItem('conectaKingToken');
-            localStorage.removeItem('conectaKingRefreshToken');
-            localStorage.removeItem('conectaKingUser');
-            try { localStorage.removeItem('conectaKingSession'); } catch (e) {}
-            if (!isLoginPath()) {
-                window.location.href = sameFolderPage('login.html');
-            }
-            throw error;
+            throw err;
         }
     }
 

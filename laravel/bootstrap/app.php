@@ -45,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/king-selection/client/public-enter',
             'api/king-selection/client/signup-enter',
             'api/king-selection/client/clear-session-cookie',
+            'api/king-selection/client/redeem-access',
             'api/king-selection/public/enroll-face-anonymous',
             'api/auth/login',
             'api/auth/refresh',
@@ -63,6 +64,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: [
             'ks_client_token',
             'token',
+            'refresh_token',
             'ck_csrf',
         ]);
         $middleware->alias([

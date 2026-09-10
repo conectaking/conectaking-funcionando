@@ -9,24 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const tokenKey = `ks_client_${slug}`;
-  function readCookie(name) {
-    try {
-      const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\/+^])/g, '\\$1') + '=([^;]*)'));
-      return m ? decodeURIComponent(m[1]) : '';
-    } catch (_) { return ''; }
-  }
-  let token = localStorage.getItem(tokenKey) || '';
-  if (!token) {
-    token = readCookie('ks_client_token') || '';
-    if (token) {
-      try { localStorage.setItem(tokenKey, token); } catch (_) {}
-    }
-  }
-  if (!token) {
-    location.href = `kingSelection/${encodeURIComponent(slug)}`;
-    return;
-  }
-
+  let token = '';
+  try {
+    token = localStorage.getItem(tokenKey) || '';
+    localStorage.removeItem(tokenKey);
+  } catch (_) { token = ''; }
+  // Sessão real: cookie HttpOnly ks_client_token (credentials:include). Bearer só se sobrar JWT legado em memória.
   const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
   if (token) HEADERS.Authorization = `Bearer ${token}`;
   // HttpOnly: cookie vem do servidor nas rotas ks.client (Bearer no 1º fetch).

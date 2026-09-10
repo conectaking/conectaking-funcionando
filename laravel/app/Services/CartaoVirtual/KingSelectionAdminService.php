@@ -4,6 +4,7 @@ namespace App\Services\CartaoVirtual;
 
 use App\Jobs\WarmKsGalleryThumbsJob;
 use App\Services\Auth\JwtService;
+use App\Support\KsAccessCode;
 use App\Support\KingSelection\KsAccess;
 use App\Support\SchemaMeta;
 use Illuminate\Support\Facades\DB;
@@ -1597,12 +1598,15 @@ class KingSelectionAdminService
             'clientId' => $clientId,
             'tyh' => false,
         ], '90d');
-        $path = '/kingSelection/'.rawurlencode($slug);
-        $q = 'access='.rawurlencode($token);
-        $base = $this->shareBaseUrl();
-        $url = $base ? ($base.$path.'?'.$q) : ($path.'?'.$q);
+        $code = KsAccessCode::store([
+            'galleryId' => $galleryId,
+            'slug' => $slug,
+            'clientId' => $clientId,
+            'jwt' => $token,
+        ]);
+        $url = KsAccessCode::buildUrl($slug, $code);
 
-        return ['status' => 200, 'body' => ['success' => true, 'token' => $token, 'url' => $url]];
+        return ['status' => 200, 'body' => ['success' => true, 'url' => $url, 'code' => $code]];
     }
 
     /**

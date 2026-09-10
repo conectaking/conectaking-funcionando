@@ -5,6 +5,7 @@ namespace App\Services\CartaoVirtual;
 use App\Jobs\WarmKsGalleryThumbsJob;
 use App\Services\Auth\JwtService;
 use App\Support\KingSelection\KsAccess;
+use App\Support\KsAccessCode;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Support\SchemaMeta;
@@ -21,6 +22,57 @@ class KingSelectionClientService
         private readonly KingSelectionPasswordCrypto $passwordCrypto,
         private readonly KingSelectionSelectionService $selection,
     ) {
+    }
+
+    /**
+     * Troca código opaco (?k=) ou JWT legado (?access=) por sessão cookie.
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function redeemAccess(string $slug, ?string $code, ?string $legacyJwt): array
+    {
+        $slug = trim($slug);
+        $code = trim((string) $code);
+        $legacyJwt = trim((string) $legacyJwt);
+        $token = '';
+
+        if ($code !== '') {
+            $stored = KsAccessCode::take($code);
+            if (! $stored || empty($stored['jwt'])) {
+                return ['status' => 400, 'body' => ['message' => 'Link inválido ou expirado.']];
+            }
+            if ($slug !== '' && $stored['slug'] !== '' && strcasecmp($slug, $stored['slug']) !== 0) {
+                return ['status' => 403, 'body' => ['message' => 'Link não corresponde a esta galeria.']];
+            }
+            $token = (string) $stored['jwt'];
+            if ($slug === '') {
+                $slug = (string) $stored['slug'];
+            }
+        } elseif ($legacyJwt !== '') {
+            $token = $legacyJwt;
+        } else {
+            return ['status' => 400, 'body' => ['message' => 'Informe o código do link.']];
+        }
+
+        try {
+            $payload = $this->jwt->decode($token);
+        } catch (\Throwable) {
+            return ['status' => 401, 'body' => ['message' => 'Link inválido.']];
+        }
+        if (($payload['type'] ?? '') !== 'kingselection_client') {
+            return ['status' => 401, 'body' => ['message' => 'Link inválido.']];
+        }
+        $payloadSlug = (string) ($payload['slug'] ?? '');
+        if ($slug !== '' && $payloadSlug !== '' && strcasecmp($slug, $payloadSlug) !== 0) {
+            return ['status' => 403, 'body' => ['message' => 'Link não corresponde a esta galeria.']];
+        }
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'token' => $token,
+            'slug' => $payloadSlug !== '' ? $payloadSlug : $slug,
+            'clientId' => (int) ($payload['clientId'] ?? 0),
+        ]];
     }
 
     /**

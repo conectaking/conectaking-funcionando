@@ -123,6 +123,7 @@ class RequireCookieCsrf
             'api/king-selection/client/public-enter',
             'api/king-selection/client/signup-enter',
             'api/king-selection/client/clear-session-cookie',
+            'api/king-selection/client/redeem-access',
             'api/king-selection/public/enroll-face-anonymous',
         ], true);
     }

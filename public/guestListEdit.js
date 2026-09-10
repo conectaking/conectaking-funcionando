@@ -2610,18 +2610,33 @@ async function exportToPDF(tab) {
         }
         
         const response = await fetch(url, {
-            headers: authHeaders()
+            headers: authHeaders(),
+            credentials: 'include'
         });
         
         if (response.ok) {
+            const ct = (response.headers.get('content-type') || '').toLowerCase();
+            if (ct.includes('application/pdf')) {
+                const blob = await response.blob();
+                const a = document.createElement('a');
+                const objUrl = URL.createObjectURL(blob);
+                a.href = objUrl;
+                a.download = 'convidados.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+                return;
+            }
             const data = await response.json();
-            const exported = data.exported != null ? data.exported : data.total;
-            const trunc = data.truncated ? `\n(truncado: ${exported} de ${data.total}; use limit=10000 se necessário)` : '';
-            // Por enquanto, apenas mostrar os dados (PDF será implementado depois)
-            alert(`Exportação preparada: ${data.total} convidados encontrados.${trunc}\n\nEm breve: download direto do PDF.`);
-            console.log('Dados para exportação:', data);
+            throw new Error(data.message || 'Resposta inesperada ao exportar PDF');
         } else {
-            throw new Error('Erro ao exportar');
+            let msg = 'Erro ao exportar';
+            try {
+                const err = await response.json();
+                if (err && err.message) msg = err.message;
+            } catch (_) {}
+            throw new Error(msg);
         }
     } catch (error) {
         console.error('Erro ao exportar PDF:', error);

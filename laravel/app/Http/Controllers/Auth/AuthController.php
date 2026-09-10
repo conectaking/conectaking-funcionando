@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Cookie;
 
 class AuthController extends Controller
 {
+    public const REFRESH_COOKIE = 'refresh_token';
+
     public function __construct(private readonly AuthService $auth)
     {
     }
@@ -22,23 +24,27 @@ class AuthController extends Controller
             (string) ($request->input('password') ?: '')
         );
 
-        return $this->jsonWithTokenCookie($request, $r);
+        return $this->jsonWithAuthCookies($request, $r);
     }
 
     public function refresh(Request $request)
     {
-        $r = $this->auth->refresh((string) ($request->input('refreshToken') ?: ''));
+        $fromBody = trim((string) ($request->input('refreshToken') ?: ''));
+        $fromCookie = trim((string) ($request->cookie(self::REFRESH_COOKIE) ?: ''));
+        $r = $this->auth->refresh($fromBody !== '' ? $fromBody : $fromCookie);
 
-        return $this->jsonWithTokenCookie($request, $r);
+        return $this->jsonWithAuthCookies($request, $r);
     }
 
     public function logout(Request $request)
     {
-        $r = $this->auth->logout($request->input('refreshToken') !== null ? (string) $request->input('refreshToken') : null);
+        $fromBody = $request->input('refreshToken') !== null ? (string) $request->input('refreshToken') : null;
+        $fromCookie = trim((string) ($request->cookie(self::REFRESH_COOKIE) ?: ''));
+        $r = $this->auth->logout($fromBody !== null && $fromBody !== '' ? $fromBody : ($fromCookie !== '' ? $fromCookie : null));
 
         $response = response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
 
-        return $this->forgetTokenCookie($response, $request);
+        return $this->forgetAuthCookies($response, $request);
     }
 
     public function register(Request $request)
@@ -80,21 +86,29 @@ class AuthController extends Controller
     /**
      * @param  array{status:int, body:array<string,mixed>}  $r
      */
-    private function jsonWithTokenCookie(Request $request, array $r): JsonResponse
+    private function jsonWithAuthCookies(Request $request, array $r): JsonResponse
     {
-        $response = response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
-        $token = is_array($r['body'] ?? null) ? (string) ($r['body']['token'] ?? '') : '';
+        $body = is_array($r['body'] ?? null) ? $r['body'] : [];
+        $token = (string) ($body['token'] ?? '');
+        $refresh = (string) ($body['refreshToken'] ?? '');
+        // Não devolver refresh no JSON (fica só no cookie HttpOnly).
+        if (array_key_exists('refreshToken', $body)) {
+            unset($body['refreshToken']);
+        }
+        $response = response()->json($body, $r['status'])->header('X-Conecta-Engine', 'laravel');
         if ($r['status'] >= 200 && $r['status'] < 300 && $token !== '') {
             $response->headers->setCookie($this->makeTokenCookie($request, $token, $this->tokenCookieMinutes()));
+            $response->headers->setCookie($this->makeRefreshCookie($request, $refresh, $this->refreshCookieMinutes()));
             $response->headers->setCookie(\App\Http\Middleware\RequireCookieCsrf::makeCookie($request));
         }
 
         return $response;
     }
 
-    private function forgetTokenCookie(JsonResponse $response, Request $request): JsonResponse
+    private function forgetAuthCookies(JsonResponse $response, Request $request): JsonResponse
     {
         $response->headers->setCookie($this->makeTokenCookie($request, '', -2628000));
+        $response->headers->setCookie($this->makeRefreshCookie($request, '', -2628000));
         $response->headers->setCookie(\App\Http\Middleware\RequireCookieCsrf::forgetCookie($request));
 
         return $response;
@@ -109,7 +123,22 @@ class AuthController extends Controller
             '/',
             AuthCookieDomain::forRequest($request),
             $request->isSecure(),
-            true, // HttpOnly — AuthenticateJwt já lê cookie `token`
+            true,
+            false,
+            Cookie::SAMESITE_LAX
+        );
+    }
+
+    private function makeRefreshCookie(Request $request, string $value, int $minutes): Cookie
+    {
+        return Cookie::create(
+            self::REFRESH_COOKIE,
+            $value,
+            $minutes > 0 ? time() + ($minutes * 60) : 1,
+            '/',
+            AuthCookieDomain::forRequest($request),
+            $request->isSecure(),
+            true,
             false,
             Cookie::SAMESITE_LAX
         );
@@ -117,11 +146,20 @@ class AuthController extends Controller
 
     private function tokenCookieMinutes(): int
     {
-        $raw = strtolower(trim((string) (env('JWT_EXPIRES_IN') ?: '24h')));
+        return $this->parseDurationMinutes((string) (env('JWT_EXPIRES_IN') ?: '24h'), 24 * 60);
+    }
+
+    private function refreshCookieMinutes(): int
+    {
+        return $this->parseDurationMinutes((string) (env('JWT_REFRESH_EXPIRES_IN') ?: '30d'), 30 * 24 * 60);
+    }
+
+    private function parseDurationMinutes(string $raw, int $defaultMinutes): int
+    {
+        $raw = strtolower(trim($raw));
         if (preg_match('/^(\d+)([smhd])$/', $raw, $m)) {
             $n = (int) $m[1];
-            $unit = $m[2];
-            $seconds = match ($unit) {
+            $seconds = match ($m[2]) {
                 's' => $n,
                 'm' => $n * 60,
                 'h' => $n * 3600,
@@ -131,6 +169,6 @@ class AuthController extends Controller
             return max(1, (int) ceil($seconds / 60));
         }
 
-        return 24 * 60;
+        return $defaultMinutes;
     }
 }

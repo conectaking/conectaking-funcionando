@@ -4,6 +4,7 @@ namespace App\Services\CartaoVirtual;
 
 use App\Services\Auth\JwtService;
 use App\Support\KingSelection\KsAccess;
+use App\Support\KsAccessCode;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Support\SchemaMeta;
@@ -1162,11 +1163,21 @@ class KingSelectionSelectionService
 
     private function clientAccessUrl(string $slug, string $token): string
     {
-        $base = rtrim((string) (env('SHARE_BASE_URL') ?: env('APP_URL') ?: ''), '/');
-        $path = '/kingSelection/'.rawurlencode(trim($slug));
-        $q = 'access='.rawurlencode($token);
+        $slug = trim($slug);
+        $decoded = [];
+        try {
+            $decoded = $this->jwt->decode($token);
+        } catch (\Throwable) {
+            $decoded = [];
+        }
+        $code = KsAccessCode::store([
+            'galleryId' => (int) ($decoded['galleryId'] ?? 0),
+            'slug' => $slug !== '' ? $slug : (string) ($decoded['slug'] ?? ''),
+            'clientId' => (int) ($decoded['clientId'] ?? 0),
+            'jwt' => $token,
+        ]);
 
-        return $base !== '' ? $base.$path.'?'.$q : $path.'?'.$q;
+        return KsAccessCode::buildUrl($slug !== '' ? $slug : (string) ($decoded['slug'] ?? ''), $code);
     }
 
     private function placeholders(int $n): string

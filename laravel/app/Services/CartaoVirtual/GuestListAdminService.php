@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use App\Support\SimpleTextPdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -145,14 +146,10 @@ class GuestListAdminService
     }
 
     /**
-     * @param  array<string,mixed>  $query
-     * @return array{status:int, body:mixed}
-     */
-    /**
-     * Exportação "PDF" — paridade com Node: JSON com convidados (PDF real nunca foi implementado).
+     * Exportação PDF da lista de convidados.
      *
      * @param  array<string,mixed>  $query
-     * @return array{status:int, body:mixed}
+     * @return array{status:int, body?:array<string,mixed>, pdf?:string, filename?:string}
      */
     public function exportPdf(string $userId, int $listId, array $query = []): array
     {
@@ -173,14 +170,10 @@ class GuestListAdminService
         );
         $eventTitle = (string) (($meta->event_title ?? null) ?: ($meta->title ?? 'Lista de Convidados'));
 
-        // Export dedicado: teto alto (default 5000, max 10000) — evita full-dump ilimitado.
         $limit = isset($query['limit']) && is_numeric($query['limit']) ? (int) $query['limit'] : 5000;
         $limit = max(1, min(10000, $limit));
 
-        $sql = 'SELECT id, guest_list_id, name, email, phone, whatsapp, document,
-                       address, neighborhood, city, state, zipcode, instagram,
-                       status, registration_source, confirmed_at, checked_in_at,
-                       notes, custom_responses, created_at, updated_at
+        $sql = 'SELECT name, email, phone, whatsapp, document, status, city, state
                 FROM guests WHERE guest_list_id = ?';
         $params = [$gliId];
         $status = isset($query['status']) ? trim((string) $query['status']) : '';
@@ -193,19 +186,40 @@ class GuestListAdminService
         $total = (int) (DB::selectOne($countSql, $params)->total ?? 0);
         $sql .= ' ORDER BY name ASC LIMIT ?';
         $params[] = $limit;
-        $guests = array_map(static fn ($r) => (array) $r, DB::select($sql, $params));
+        $guests = DB::select($sql, $params);
+
+        $rows = [];
+        foreach ($guests as $g) {
+            $phone = trim((string) (($g->whatsapp ?? '') ?: ($g->phone ?? '')));
+            $city = trim(implode('/', array_filter([(string) ($g->city ?? ''), (string) ($g->state ?? '')], static fn ($x) => $x !== '')));
+            $rows[] = [
+                (string) ($g->name ?? ''),
+                (string) ($g->email ?? ''),
+                $phone,
+                (string) ($g->document ?? ''),
+                (string) ($g->status ?? ''),
+                $city,
+            ];
+        }
+
+        $pdf = new SimpleTextPdf($eventTitle);
+        $pdf->addLine('Gerado em '.gmdate('d/m/Y H:i').' UTC · '.$total.' convidado(s)'
+            .($total > count($rows) ? ' (exportados '.count($rows).')' : ''));
+        if ($status !== '') {
+            $pdf->addLine('Filtro status: '.$status);
+        }
+        $pdf->addTable(
+            ['Nome', 'E-mail', 'Telefone', 'Documento', 'Status', 'Cidade'],
+            $rows
+        );
+
+        $safe = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($eventTitle)) ?: 'lista';
+        $filename = 'convidados-'.substr($safe, 0, 40).'-'.gmdate('Ymd').'.pdf';
 
         return [
             'status' => 200,
-            'body' => [
-                'success' => true,
-                'event_title' => $eventTitle,
-                'total' => $total,
-                'exported' => count($guests),
-                'limit' => $limit,
-                'truncated' => $total > count($guests),
-                'guests' => $guests,
-            ],
+            'pdf' => $pdf->output(),
+            'filename' => $filename,
         ];
     }
 
