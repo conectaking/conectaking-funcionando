@@ -1,5 +1,5 @@
-﻿import '@legacy/style.css';
-import '@legacy/dashboard.css';
+import '@css/style.css';
+import '@css/dashboard.css';
 import '@mod/js/ck-auth-gate.js';
 (function () {
             var host = (window.location && window.location.hostname || '').toLowerCase();

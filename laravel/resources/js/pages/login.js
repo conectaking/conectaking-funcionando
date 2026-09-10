@@ -1,8 +1,8 @@
 /**
  * Login page — Vite entry (extraído do Blade legado).
  */
-import '@legacy/style.css';
-import '@legacy/auth.css';
+import '@css/style.css';
+import '@css/auth.css';
 
 (function initLoginPage() {
   'use strict';

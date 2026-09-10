@@ -7,8 +7,10 @@
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
-/* Fonte unificada (@mod = resources/js/legacy) + scan Tailwind no public restante */
+/* Fontes unificadas (@mod JS + @css) */
 @source '../js/legacy/**/*.js';
+@source './pub/**/*.css';
+/* Scan residual em public (stubs / espelhos) */
 @source '../../../public/kingSelection*.js';
 @source '../../../public/js/**/*.js';
 @source '../../../public/*recibos*.js';
@@ -16,6 +18,7 @@
 @source '../../../public/dashboard*.js';
 @source '../../../public/conta.js';
 @source '../../../public/global.js';
+
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',

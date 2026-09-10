@@ -1,5 +1,5 @@
 /** Admin panel — Vite entry */
-import '@legacy/admin/admin.css';
+import '@css/admin/admin.css';
 
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';

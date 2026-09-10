@@ -4,9 +4,9 @@
  * + forms/edit-modal) entram sob demanda. Vitrine fica eager (save síncrono).
  * CDN (Chart/Cropper/Sortable/Leaflet/QR) e config.js continuam no Blade.
  */
-import '@legacy/style.css';
-import '@legacy/dashboard.css';
-import '@legacy/css/profile-wifi.css';
+import '@css/style.css';
+import '@css/dashboard.css';
+import '@css/css/profile-wifi.css';
 
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
