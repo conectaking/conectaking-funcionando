@@ -50,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/auth/refresh',
             'api/auth/logout',
             'api/auth/register',
+            'api/auth/sync-session-cookie',
             'api/password/forgot',
             'api/password/reset',
             'api/inquiry/submit',

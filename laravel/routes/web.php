@@ -524,8 +524,10 @@ Route::middleware('jwt')->group(function () {
         Route::get('/api/king-selection/facial/progress', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'progress']);
         Route::delete('/api/king-selection/facial/clients/{clientId}/faces', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'deleteClientFaces'])
         ->where('clientId', '[0-9]+');
-        Route::get('/api/king-selection/facial/diagnose', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'diagnose']);
-        Route::get('/api/king-selection/aws-check', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsCheck']);
+        Route::get('/api/king-selection/facial/diagnose', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'diagnose'])
+            ->middleware('admin');
+        Route::get('/api/king-selection/aws-check', [\App\Http\Controllers\CartaoVirtual\KingSelectionFacialController::class, 'awsCheck'])
+            ->middleware('admin');
         Route::get('/api/king-selection/config-finalizacao/{galleryId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'configFinalizacao'])
         ->where('galleryId', '[0-9]+');
         Route::patch('/api/king-selection/photos/{photoId}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'patchPhoto'])
@@ -782,6 +784,8 @@ Route::post('/api/auth/register', [\App\Http\Controllers\Auth\AuthController::cl
 Route::get('/api/subscription/plans-public', [\App\Http\Controllers\Account\SubscriptionController::class, 'plansPublic']);
 Route::post('/api/auth/refresh', [\App\Http\Controllers\Auth\AuthController::class, 'refresh'])->middleware('throttle:30,1');
 Route::post('/api/auth/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->middleware('throttle:30,1');
+Route::post('/api/auth/sync-session-cookie', [\App\Http\Controllers\Auth\AuthController::class, 'syncSessionCookie'])
+    ->middleware('throttle:60,1');
 // Páginas já convertidas para Blade (resources/views/pages/*.blade.php).
 // O LegacyPageController renderiza o Blade quando existe e cai no HTML legado quando não existe.
 //

@@ -6943,14 +6943,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Link "Página de finalização" — abre a tela de config da mensagem de obrigado (Node)
   const linkConfigFinalizacao = document.getElementById('ks-link-config-finalizacao');
   if (linkConfigFinalizacao && galleryId) {
-    linkConfigFinalizacao.addEventListener('click', (e) => {
+    linkConfigFinalizacao.addEventListener('click', async (e) => {
       e.preventDefault();
       const jwt = localStorage.getItem('conectaKingToken') || localStorage.getItem('conectaking_token') || localStorage.getItem('token') || '';
       const base = (window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
       try {
         if (jwt) {
-          const secure = location.protocol === 'https:' ? '; Secure' : '';
-          document.cookie = `token=${encodeURIComponent(jwt)}; Path=/; SameSite=Lax${secure}`;
+          await fetch(`${base}/api/auth/sync-session-cookie`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${jwt}`,
+            },
+            body: '{}',
+          });
         }
       } catch (_) {}
       const url = `${base}/api/king-selection/config-finalizacao/${galleryId}`;

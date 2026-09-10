@@ -1168,25 +1168,9 @@ function _setupEventListenersBody() {
         });
     });
 
-    // Função para carregar clientes da empresa
+    // Função para carregar clientes da empresa (painel business — não usado no dashboard)
     async function loadEmpresaClients() {
-        try {
-            const response = await fetch(`${env.API_URL}/api/business/team`, {
-                method: 'GET',
-                headers: env.HEADERS
-            });
-
-            if (response.ok) {
-                const clients = await response.json();
-                __ckDashLog('Clientes da empresa:', clients);
-                // TODO: Renderizar lista de clientes na interface quando necessário
-            } else if (response.status === 403) {
-                __ckDashLog('Usuário não tem conta empresarial');
-                alert('Você precisa de uma conta empresarial para acessar esta funcionalidade.');
-            }
-        } catch (error) {
-            console.error('Erro ao carregar clientes:', error);
-        }
+        return;
     }
 
     // Função para mostrar perfil pessoal

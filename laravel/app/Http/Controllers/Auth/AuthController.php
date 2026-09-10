@@ -52,6 +52,31 @@ class AuthController extends Controller
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
 
+    /** Espelha Bearer (LS) → cookie HttpOnly para iframes / window.open. */
+    public function syncSessionCookie(Request $request): JsonResponse
+    {
+        $token = '';
+        $auth = $request->header('Authorization', '');
+        if (is_string($auth) && str_starts_with($auth, 'Bearer ')) {
+            $token = trim(substr($auth, 7));
+        }
+        if ($token === '' || in_array(strtolower($token), ['null', 'undefined'], true)) {
+            return response()->json(['success' => false, 'message' => 'Token ausente.'], 400)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        try {
+            app(\App\Services\Auth\JwtService::class)->decode($token);
+        } catch (\Throwable) {
+            return response()->json(['success' => false, 'message' => 'Token inválido.'], 401)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $response = response()->json(['success' => true])->header('X-Conecta-Engine', 'laravel');
+        $response->headers->setCookie($this->makeTokenCookie($request, $token, $this->tokenCookieMinutes()));
+        $response->headers->setCookie(\App\Http\Middleware\RequireCookieCsrf::makeCookie($request));
+
+        return $response;
+    }
+
     /**
      * @param  array{status:int, body:array<string,mixed>}  $r
      */

@@ -51,25 +51,39 @@ class KingSelectionAdminService
             [$profileItemId]
         );
         $ids = array_map(static fn ($g) => (int) $g->id, $galleries);
-        $photosByGallery = [];
         $selectionStats = [];
         $statusAgg = [];
+        $photosCountByGallery = [];
+        $coverByGallery = [];
 
         if ($ids !== []) {
-            $hasFav = Schema::hasColumn('king_photos', 'is_favorite');
-            $hasCover = Schema::hasColumn('king_photos', 'is_cover');
-            $fav = $hasFav ? 'is_favorite' : 'FALSE AS is_favorite';
-            $cover = $hasCover ? 'is_cover' : 'FALSE AS is_cover';
-            $phRows = DB::select(
-                'SELECT id, gallery_id, original_name, "order", '.$fav.', '.$cover.'
-                 FROM king_photos WHERE gallery_id IN ('.$this->placeholders($ids).')
-                 ORDER BY gallery_id, "order" ASC, id ASC',
+            $countRows = DB::select(
+                'SELECT gallery_id, COUNT(*)::int AS c FROM king_photos
+                 WHERE gallery_id IN ('.$this->placeholders($ids).')
+                 GROUP BY gallery_id',
                 $ids
             );
-            foreach ($phRows as $p) {
-                $gid = (int) $p->gallery_id;
-                $photosByGallery[$gid] ??= [];
-                $photosByGallery[$gid][] = $p;
+            foreach ($countRows as $r) {
+                $photosCountByGallery[(int) $r->gallery_id] = (int) ($r->c ?? 0);
+            }
+
+            // Só 1 foto (capa) por galeria — evita JSON gigante na lista
+            $hasCover = Schema::hasColumn('king_photos', 'is_cover');
+            $orderCover = $hasCover
+                ? 'ORDER BY gallery_id, is_cover DESC NULLS LAST, "order" ASC, id ASC'
+                : 'ORDER BY gallery_id, "order" ASC, id ASC';
+            $coverRows = DB::select(
+                'SELECT DISTINCT ON (gallery_id) id, gallery_id'.($hasCover ? ', is_cover' : '').'
+                 FROM king_photos WHERE gallery_id IN ('.$this->placeholders($ids).')
+                 '.$orderCover,
+                $ids
+            );
+            $coverByGallery = [];
+            foreach ($coverRows as $p) {
+                $coverByGallery[(int) $p->gallery_id] = [
+                    'id' => (int) $p->id,
+                    'is_cover' => $hasCover ? ! empty($p->is_cover) : true,
+                ];
             }
 
             $sRows = DB::select(
@@ -126,14 +140,13 @@ class KingSelectionAdminService
         $payload = [];
         foreach ($galleries as $g) {
             $gid = (int) $g->id;
-            $photos = $photosByGallery[$gid] ?? [];
             $row = (array) $g;
             unset($row['senha_hash'], $row['senha_enc']);
-            $row['photos'] = $photos;
+            $row['photos'] = isset($coverByGallery[$gid]) ? [$coverByGallery[$gid]] : [];
             $row['status'] = $statusAgg[$gid] ?? $g->status;
             $row['selected_count'] = $selectionStats[$gid]['selected_count'] ?? 0;
             $row['feedback_cliente'] = $selectionStats[$gid]['feedback_cliente'] ?? null;
-            $row['photos_count'] = count($photos);
+            $row['photos_count'] = $photosCountByGallery[$gid] ?? 0;
             $payload[] = $row;
         }
 

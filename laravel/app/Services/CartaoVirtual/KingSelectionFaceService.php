@@ -2514,9 +2514,9 @@ class KingSelectionFaceService
         $env = [
             'AWS_ACCESS_KEY_ID' => trim((string) (env('AWS_ACCESS_KEY_ID') ?: '')) !== '',
             'AWS_SECRET_ACCESS_KEY' => trim((string) (env('AWS_SECRET_ACCESS_KEY') ?: '')) !== '',
-            'AWS_REGION' => trim((string) (env('AWS_REGION') ?: '')) ?: '(não definido)',
-            'S3_STAGING_BUCKET' => trim((string) (env('S3_STAGING_BUCKET') ?: '')) ?: '(não definido)',
-            'REKOGNITION_COLLECTION_ID' => $cfg['collectionId'] ?: '(não definido)',
+            'AWS_REGION' => trim((string) (env('AWS_REGION') ?: '')) !== '',
+            'S3_STAGING_BUCKET' => trim((string) (env('S3_STAGING_BUCKET') ?: '')) !== '',
+            'REKOGNITION_COLLECTION_ID' => $cfg['collectionId'] !== '',
         ];
         $galleryFaceEnabled = null;
         if ($galleryId && $galleryId > 0 && $colExists) {
@@ -2527,12 +2527,12 @@ class KingSelectionFaceService
         return ['status' => 200, 'body' => [
             'success' => true,
             'migration182' => $colExists
-                ? '✅ Coluna face_recognition_enabled EXISTS'
-                : '❌ Coluna face_recognition_enabled NÃO EXISTE — migration 182 não rodou',
+                ? 'OK: coluna face_recognition_enabled EXISTS'
+                : 'MISSING: coluna face_recognition_enabled — migration 182 nao rodou',
             'tables' => $tableStatus,
-            'env' => $env,
+            'envConfigured' => $env,
             'galleryId' => $galleryId ?: null,
-            'galleryFaceEnabled' => $galleryFaceEnabled !== null ? $galleryFaceEnabled : '(não verificado)',
+            'galleryFaceEnabled' => $galleryFaceEnabled !== null ? (bool) $galleryFaceEnabled : null,
             'rekogEnabled' => $cfg['enabled'],
             'rekogOnDemand' => $this->isRekogOnDemand(),
         ]];
@@ -2545,18 +2545,13 @@ class KingSelectionFaceService
     {
         $cfg = $this->rekogConfig();
         $bucket = trim((string) (env('S3_STAGING_BUCKET') ?: env('AWS_S3_STAGING_BUCKET') ?: ''));
-        $region = $cfg['region'];
 
         return ['status' => 200, 'body' => [
             's3' => [
                 'enabled' => $bucket !== '' && $cfg['enabled'],
-                'bucket' => $bucket !== '' ? $bucket : null,
-                'region' => $region,
             ],
             'rekog' => [
                 'enabled' => $cfg['enabled'],
-                'collectionId' => $cfg['collectionId'],
-                'region' => $region,
             ],
         ]];
     }

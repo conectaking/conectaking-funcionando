@@ -29,12 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
   if (token) HEADERS.Authorization = `Bearer ${token}`;
-  (function syncKsAuthCookie() {
-    try {
-      const secure = location.protocol === 'https:' ? '; Secure' : '';
-      document.cookie = `ks_client_token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
-    } catch (_) {}
-  })();
+  // HttpOnly: cookie vem do servidor nas rotas ks.client (Bearer no 1º fetch).
   function previewUrl(photoId) {
     return `${API_URL}/api/king-selection/client/photos/${photoId}/preview?slug=${encodeURIComponent(slug)}`;
   }
@@ -66,7 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutBtn?.addEventListener('click', () => {
     if (!confirm('Sair desta galeria?')) return;
     try { localStorage.removeItem(tokenKey); } catch (_) {}
-    try { document.cookie = 'ks_client_token=; Path=/; Max-Age=0; SameSite=Lax'; } catch (_) {}
+    try {
+      fetch('/api/king-selection/client/clear-session-cookie', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: '{}',
+      }).catch(function () {});
+    } catch (_) {}
     location.href = `kingSelection/${encodeURIComponent(slug)}`;
   });
 

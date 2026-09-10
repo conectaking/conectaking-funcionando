@@ -107,6 +107,50 @@ final class UploadedFileValidator
         return ['ok' => false, 'message' => 'Formato inválido. Use imagem (JPEG/PNG/GIF/WebP) ou PDF.'];
     }
 
+    /**
+     * Word: .docx (ZIP/PK) ou .doc (OLE).
+     *
+     * @return array{ok:true, mime:string, binary:string, ext:string}|array{ok:false, message:string}
+     */
+    public static function assertWord(UploadedFile $file, int $maxBytes = 15_728_640): array
+    {
+        if ($file->getSize() > $maxBytes) {
+            return ['ok' => false, 'message' => 'Arquivo muito grande (máx. '.((int) ($maxBytes / 1024 / 1024)).' MB).'];
+        }
+
+        $path = $file->getRealPath() ?: $file->getPathname();
+        if (! is_string($path) || $path === '' || ! is_readable($path)) {
+            return ['ok' => false, 'message' => 'Arquivo inválido.'];
+        }
+
+        $binary = file_get_contents($path);
+        if ($binary === false || $binary === '') {
+            return ['ok' => false, 'message' => 'Arquivo vazio.'];
+        }
+
+        $ext = strtolower((string) $file->getClientOriginalExtension());
+        // DOCX = ZIP (PK..)
+        if (str_starts_with($binary, 'PK')) {
+            return [
+                'ok' => true,
+                'mime' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'binary' => $binary,
+                'ext' => 'docx',
+            ];
+        }
+        // DOC legado OLE compound (D0 CF 11 E0)
+        if (strlen($binary) >= 8 && substr($binary, 0, 4) === "\xD0\xCF\x11\xE0") {
+            return [
+                'ok' => true,
+                'mime' => 'application/msword',
+                'binary' => $binary,
+                'ext' => 'doc',
+            ];
+        }
+
+        return ['ok' => false, 'message' => 'Word inválido. Envie .docx (recomendado) ou .doc real.'];
+    }
+
     private static function detectMime(string $path, string $binary): string
     {
         if (function_exists('finfo_open')) {

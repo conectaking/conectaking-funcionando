@@ -77,10 +77,12 @@ class BibleAdminBookStudyController extends Controller
             }
             $mime = $check['mime'];
         } else {
-            // Word (.doc/.docx): sem validador binário disponível — confia na extensão
-            $mime = $ext === 'docx'
-                ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                : 'application/msword';
+            $check = \App\Support\UploadedFileValidator::assertWord($file, 15 * 1024 * 1024);
+            if (! ($check['ok'] ?? false)) {
+                return $this->fail($check['message'] ?? 'Arquivo Word inválido.', 400);
+            }
+            $mime = $check['mime'];
+            $ext = (string) ($check['ext'] ?? $ext);
         }
 
         try {

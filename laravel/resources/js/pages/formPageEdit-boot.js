@@ -250,19 +250,27 @@
                                     updatedBtn.style.cursor = 'pointer';
                                     
                                     // Adicionar novo listener
-                                    updatedBtn.addEventListener('click', function(e) {
+                                    updatedBtn.addEventListener('click', async function(e) {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         
-                                        // Cookie HttpOnly da sessão autentica same-origin; Bearer LS é opcional legado
+                                        // Cookie HttpOnly da sessão autentica same-origin; sync se só houver Bearer no LS
                                         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+                                        const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
                                         if (token) {
                                             try {
-                                                const secure = location.protocol === 'https:' ? '; Secure' : '';
-                                                document.cookie = `token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
+                                                await fetch(`${apiBaseUrl}/api/auth/sync-session-cookie`, {
+                                                    method: 'POST',
+                                                    credentials: 'include',
+                                                    headers: {
+                                                        Accept: 'application/json',
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${token}`,
+                                                    },
+                                                    body: '{}',
+                                                });
                                             } catch (_) {}
                                         }
-                                        const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
                                         const url = `${apiBaseUrl}/api/guest-lists/${id}/customize-portaria`;
                                         
                                         console.log('Abrindo página de personalização da portaria');

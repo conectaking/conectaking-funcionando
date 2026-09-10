@@ -4672,7 +4672,7 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
         }
         
         // Mostrar aba de personalização da Portaria
-        function showCustomizePortariaTab() {
+        async function showCustomizePortariaTab() {
             const content = document.getElementById('content');
             const loading = document.getElementById('loading');
             const itemsList = document.getElementById('items-list');
@@ -4760,11 +4760,19 @@ const API_URL = (typeof window !== 'undefined' && (window.API_BASE || window.API
                 // O backend pode aceitar autenticação via cookie
             }
             
-            // Cookie SameSite (iframe não pode mandar Authorization no documento HTML)
+            // Cookie HttpOnly: sync via servidor (iframe não manda Authorization)
             try {
                 if (token) {
-                    var secure = location.protocol === 'https:' ? '; Secure' : '';
-                    document.cookie = 'token=' + encodeURIComponent(token) + '; Path=/; SameSite=Lax' + secure;
+                    await fetch((window.API_BASE || window.API_URL || window.location.origin || '').replace(/\/$/, '') + '/api/auth/sync-session-cookie', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                            Authorization: 'Bearer ' + token,
+                        },
+                        body: '{}',
+                    });
                 }
             } catch (e) {}
             const apiBaseUrl = (window.API_BASE || window.API_URL || window.location.origin || '').replace(/\/$/, '');

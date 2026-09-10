@@ -114,6 +114,7 @@ class RequireCookieCsrf
             'api/auth/refresh',
             'api/auth/logout',
             'api/auth/register',
+            'api/auth/sync-session-cookie',
             'api/password/forgot',
             'api/password/reset',
             'api/king-selection/client/login',

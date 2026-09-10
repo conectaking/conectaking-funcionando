@@ -28,12 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
   if (token) HEADERS.Authorization = `Bearer ${token}`;
-  (function syncKsAuthCookie() {
-    try {
-      const secure = location.protocol === 'https:' ? '; Secure' : '';
-      document.cookie = `ks_client_token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
-    } catch (_) {}
-  })();
+  // HttpOnly: cookie vem do servidor nas rotas ks.client.
   function previewUrl(photoId) {
     return `${API_URL}/api/king-selection/client/photos/${photoId}/preview?slug=${encodeURIComponent(slug)}`;
   }
