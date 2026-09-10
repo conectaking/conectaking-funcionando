@@ -113,7 +113,7 @@ Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->wh
 Route::get('/vcard/{identifier}', [VcardController::class, 'show'])->where('identifier', $cardSlug);
 Route::get('/download/pdf/{itemId}', [PdfDownloadController::class, 'show'])->where('itemId', '[0-9]+');
 Route::get('/api/profile', [ProfileEditorController::class, 'show'])->middleware('jwt');
-Route::put('/api/profile/save-all', [ProfileEditorController::class, 'saveAll'])->middleware('jwt');
+Route::put('/api/profile/save-all', [ProfileEditorController::class, 'saveAll'])->middleware(['jwt', 'throttle:30,1']);
 Route::middleware('jwt')->group(function () {
     Route::put('/api/profile/avatar-format', [ProfileEditorController::class, 'avatarFormat']);
     Route::put('/api/profile/share-image', [ProfileEditorController::class, 'shareImage']);
@@ -183,15 +183,15 @@ Route::middleware('admin')->group(function () {
 Route::middleware('jwt')->group(function () {
     Route::get('/api/guest-lists', [GuestListAdminController::class, 'index']);
         Route::post('/api/guest-lists', [GuestListAdminController::class, 'store']);
-        Route::get('/api/guest-lists/{id}/guests', [GuestListAdminController::class, 'guests'])->where('id', '[0-9]+');
+        Route::get('/api/guest-lists/{id}/guests', [GuestListAdminController::class, 'guests'])->where('id', '[0-9]+')->middleware('throttle:60,1');
         Route::post('/api/guest-lists/{id}/guests', [GuestListAdminController::class, 'storeGuest'])->where('id', '[0-9]+');
         Route::post('/api/guest-lists/{id}/guests/delete-bulk', [GuestListAdminController::class, 'destroyGuestsBulk'])->where('id', '[0-9]+')->middleware('throttle:30,1');
         Route::delete('/api/guest-lists/{id}/guests', [GuestListAdminController::class, 'destroyAllGuests'])->where('id', '[0-9]+');
         Route::put('/api/guest-lists/{id}/guests/{guestId}', [GuestListAdminController::class, 'updateGuest'])->where(['id' => '[0-9]+', 'guestId' => '[0-9]+']);
         Route::delete('/api/guest-lists/{id}/guests/{guestId}', [GuestListAdminController::class, 'destroyGuest'])->where(['id' => '[0-9]+', 'guestId' => '[0-9]+']);
         Route::post('/api/guest-lists/{id}/guests/{guestId}/generate-qr', [GuestListAdminController::class, 'generateQr'])->where(['id' => '[0-9]+', 'guestId' => '[0-9]+']);
-        Route::get('/api/guest-lists/{id}/stats', [GuestListAdminController::class, 'stats'])->where('id', '[0-9]+');
-        Route::get('/api/guest-lists/{id}/export/pdf', [GuestListAdminController::class, 'exportPdf'])->where('id', '[0-9]+');
+        Route::get('/api/guest-lists/{id}/stats', [GuestListAdminController::class, 'stats'])->where('id', '[0-9]+')->middleware('throttle:60,1');
+        Route::get('/api/guest-lists/{id}/export/pdf', [GuestListAdminController::class, 'exportPdf'])->where('id', '[0-9]+')->middleware('throttle:10,1');
         Route::post('/api/guest-lists/{id}/generate-all-qr-codes', [GuestListAdminController::class, 'generateAllQr'])->where('id', '[0-9]+');
         Route::put('/api/guest-lists/{id}/reset-tokens', [GuestListAdminController::class, 'resetTokens'])->where('id', '[0-9]+');
         Route::get('/api/guest-lists/{id}', [GuestListAdminController::class, 'show'])->where('id', '[0-9]+');
@@ -665,37 +665,37 @@ Route::middleware('admin')->group(function () {
     $adminUsers = \App\Http\Controllers\Admin\AdminUsersController::class;
     $adminCodes = \App\Http\Controllers\Admin\AdminCodesController::class;
     foreach ([''] as $p) {
-        Route::get($p.'/api/admin/default-branding', [$adminOverview, 'getDefaultBranding']);
-        Route::put($p.'/api/admin/default-branding', [$adminOverview, 'putDefaultBranding']);
-        Route::get($p.'/api/admin/stats', [$adminOverview, 'stats']);
-        Route::get($p.'/api/admin/advanced-stats', [$adminOverview, 'advancedStats']);
-        Route::get($p.'/api/admin/analytics/users', [$adminOverview, 'analyticsUsers']);
-        Route::get($p.'/api/admin/analytics/user/{userId}/details', [$adminOverview, 'analyticsUserDetails']);
-        Route::get($p.'/api/admin/plans', [$adminOverview, 'plans']);
-        Route::patch($p.'/api/admin/plans/{id}', [$adminOverview, 'updatePlan'])->whereNumber('id');
+        Route::get($p.'/api/admin/default-branding', [$adminOverview, 'getDefaultBranding'])->middleware('throttle:60,1');
+        Route::put($p.'/api/admin/default-branding', [$adminOverview, 'putDefaultBranding'])->middleware('throttle:20,1');
+        Route::get($p.'/api/admin/stats', [$adminOverview, 'stats'])->middleware('throttle:60,1');
+        Route::get($p.'/api/admin/advanced-stats', [$adminOverview, 'advancedStats'])->middleware('throttle:30,1');
+        Route::get($p.'/api/admin/analytics/users', [$adminOverview, 'analyticsUsers'])->middleware('throttle:60,1');
+        Route::get($p.'/api/admin/analytics/user/{userId}/details', [$adminOverview, 'analyticsUserDetails'])->middleware('throttle:60,1');
+        Route::get($p.'/api/admin/plans', [$adminOverview, 'plans'])->middleware('throttle:60,1');
+        Route::patch($p.'/api/admin/plans/{id}', [$adminOverview, 'updatePlan'])->whereNumber('id')->middleware('throttle:30,1');
 
         // Users: rotas fixas antes de /users/{id} para não serem capturadas pelo curinga.
-        Route::get($p.'/api/admin/users', [$adminOverview, 'users']);
-        Route::get($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'autoDeleteConfig']);
-        Route::post($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'saveAutoDeleteConfig']);
-        Route::post($p.'/api/admin/users/execute-auto-delete', [$adminUsers, 'executeAutoDelete']);
-        Route::get($p.'/api/admin/users/{id}/dashboard', [$adminUsers, 'dashboard']);
-        Route::put($p.'/api/admin/users/{id}/manage', [$adminUsers, 'manage']);
-        Route::put($p.'/api/admin/users/{id}/activation-code', [$adminUsers, 'updateActivationCode']);
-        Route::put($p.'/api/admin/users/{id}/update-role', [$adminUsers, 'updateRole']);
-        Route::put($p.'/api/admin/users/{id}', [$adminUsers, 'updateAccountType']);
-        Route::delete($p.'/api/admin/users/{id}', [$adminUsers, 'destroy']);
+        Route::get($p.'/api/admin/users', [$adminOverview, 'users'])->middleware('throttle:60,1');
+        Route::get($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'autoDeleteConfig'])->middleware('throttle:30,1');
+        Route::post($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'saveAutoDeleteConfig'])->middleware('throttle:10,1');
+        Route::post($p.'/api/admin/users/execute-auto-delete', [$adminUsers, 'executeAutoDelete'])->middleware('throttle:5,1');
+        Route::get($p.'/api/admin/users/{id}/dashboard', [$adminUsers, 'dashboard'])->middleware('throttle:30,1');
+        Route::put($p.'/api/admin/users/{id}/manage', [$adminUsers, 'manage'])->middleware('throttle:30,1');
+        Route::put($p.'/api/admin/users/{id}/activation-code', [$adminUsers, 'updateActivationCode'])->middleware('throttle:30,1');
+        Route::put($p.'/api/admin/users/{id}/update-role', [$adminUsers, 'updateRole'])->middleware('throttle:20,1');
+        Route::put($p.'/api/admin/users/{id}', [$adminUsers, 'updateAccountType'])->middleware('throttle:30,1');
+        Route::delete($p.'/api/admin/users/{id}', [$adminUsers, 'destroy'])->middleware('throttle:20,1');
 
-        Route::get($p.'/api/admin/codes', [$adminOverview, 'codes']);
-        Route::get($p.'/api/admin/codes/auto-delete-config', [$adminCodes, 'autoDeleteConfig']);
-        Route::post($p.'/api/admin/codes/auto-delete-config', [$adminCodes, 'saveAutoDeleteConfig']);
-        Route::post($p.'/api/admin/codes/execute-auto-delete', [$adminCodes, 'executeAutoDelete']);
-        Route::post($p.'/api/admin/codes/generate-manual', [$adminCodes, 'generateManual']);
-        Route::post($p.'/api/admin/codes/generate-batch', [$adminCodes, 'generateBatch']);
-        Route::put($p.'/api/admin/codes/{code}', [$adminCodes, 'update']);
-        Route::delete($p.'/api/admin/codes/{code}', [$adminCodes, 'destroy']);
+        Route::get($p.'/api/admin/codes', [$adminOverview, 'codes'])->middleware('throttle:60,1');
+        Route::get($p.'/api/admin/codes/auto-delete-config', [$adminCodes, 'autoDeleteConfig'])->middleware('throttle:30,1');
+        Route::post($p.'/api/admin/codes/auto-delete-config', [$adminCodes, 'saveAutoDeleteConfig'])->middleware('throttle:10,1');
+        Route::post($p.'/api/admin/codes/execute-auto-delete', [$adminCodes, 'executeAutoDelete'])->middleware('throttle:5,1');
+        Route::post($p.'/api/admin/codes/generate-manual', [$adminCodes, 'generateManual'])->middleware('throttle:20,1');
+        Route::post($p.'/api/admin/codes/generate-batch', [$adminCodes, 'generateBatch'])->middleware('throttle:10,1');
+        Route::put($p.'/api/admin/codes/{code}', [$adminCodes, 'update'])->middleware('throttle:30,1');
+        Route::delete($p.'/api/admin/codes/{code}', [$adminCodes, 'destroy'])->middleware('throttle:20,1');
         // Rota legada sem prefixo /codes.
-        Route::post($p.'/api/admin/generate-code', [$adminCodes, 'generateCode']);
+        Route::post($p.'/api/admin/generate-code', [$adminCodes, 'generateCode'])->middleware('throttle:20,1');
     }
 });
 

@@ -3038,48 +3038,76 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadModalData(modal, isGuestListMode) {
         try {
             if (isGuestListMode) {
-                // Carregar convidados da lista
-                const guestsRes = await fetch(`${API_URL}/api/guest-lists/${currentItemId}/guests?mode=checkin`, {
-                    method: 'GET',
-                    headers: getHeaders()
-                });
-                
-                if (!guestsRes.ok) {
-                    const errorData = await guestsRes.json().catch(() => ({ message: 'Erro ao carregar convidados' }));
-                    const errorMsg = errorData.message || `Erro ${guestsRes.status}: Não foi possível carregar os convidados`;
-                    console.error('O Erro ao carregar convidados:', {
-                        status: guestsRes.status,
-                        message: errorMsg,
-                        itemId: currentItemId,
-                        url: `${API_URL}/api/guest-lists/${currentItemId}/guests`
-                    });
-                    throw new Error(errorMsg);
+                // Paginação (API default 100/max 500) — carregar até esgotar ou 5 páginas
+                const pageLimit = 500;
+                let guests = [];
+                let offset = 0;
+                let hasMore = true;
+                let reportedTotal = null;
+                while (hasMore && offset < 5000) {
+                    const guestsRes = await fetch(
+                        `${API_URL}/api/guest-lists/${currentItemId}/guests?mode=checkin&limit=${pageLimit}&offset=${offset}`,
+                        { method: 'GET', headers: getHeaders() }
+                    );
+
+                    if (!guestsRes.ok) {
+                        const errorData = await guestsRes.json().catch(() => ({ message: 'Erro ao carregar convidados' }));
+                        const errorMsg = errorData.message || `Erro ${guestsRes.status}: Não foi possível carregar os convidados`;
+                        console.error('O Erro ao carregar convidados:', {
+                            status: guestsRes.status,
+                            message: errorMsg,
+                            itemId: currentItemId,
+                            url: `${API_URL}/api/guest-lists/${currentItemId}/guests`
+                        });
+                        throw new Error(errorMsg);
+                    }
+                    const guestsData = await guestsRes.json();
+                    // Compat: array legado OU { guests, total, hasMore }
+                    const page = Array.isArray(guestsData)
+                        ? guestsData
+                        : (guestsData.guests || guestsData.data || []);
+                    guests = guests.concat(page);
+                    if (typeof guestsData.total === 'number') reportedTotal = guestsData.total;
+                    hasMore = Array.isArray(guestsData)
+                        ? false
+                        : !!guestsData.hasMore && page.length > 0;
+                    offset += pageLimit;
+                    if (page.length < pageLimit) hasMore = false;
                 }
-                const guestsData = await guestsRes.json();
-                
-                const guests = Array.isArray(guestsData) ? guestsData : (guestsData.guests || []);
                 console.log('Y"S Convidados carregados:', guests.length);
                 modal._allResponses = guests;
-                
-                // Atualizar estatísticas
-                const arrived = guests.filter(g => g.status === 'checked_in' || g.status === 'confirmed').length;
-                const notArrived = guests.filter(g => g.status === 'registered').length;
-                const total = guests.length;
-                
+
+                // Stats: preferir endpoint agregado (totais reais), fallback no slice carregado
+                let arrived = guests.filter(g => g.status === 'checked_in' || g.status === 'confirmed').length;
+                let notArrived = guests.filter(g => g.status === 'registered').length;
+                let total = reportedTotal != null ? reportedTotal : guests.length;
+                try {
+                    const statsRes = await fetch(`${API_URL}/api/guest-lists/${currentItemId}/stats`, {
+                        method: 'GET',
+                        headers: getHeaders()
+                    });
+                    if (statsRes.ok) {
+                        const s = await statsRes.json();
+                        arrived = (parseInt(s.checked_in_count, 10) || 0) + (parseInt(s.confirmed_count, 10) || 0);
+                        notArrived = parseInt(s.registered_count, 10) || 0;
+                        total = parseInt(s.total_count, 10) || total;
+                    }
+                } catch (_) { /* stats opcional */ }
+
                 const statsArrivedEl = document.getElementById('stats-arrived');
                 const statsNotArrivedEl = document.getElementById('stats-not-arrived');
                 const statsTotalGuestsEl = document.getElementById('stats-total-guests');
                 const tabCountArrivedEl = document.getElementById('tab-count-arrived');
                 const tabCountNotArrivedEl = document.getElementById('tab-count-not-arrived');
-                
+
                 if (statsArrivedEl) statsArrivedEl.textContent = arrived;
                 if (statsNotArrivedEl) statsNotArrivedEl.textContent = notArrived;
                 if (statsTotalGuestsEl) statsTotalGuestsEl.textContent = total;
                 if (tabCountArrivedEl) tabCountArrivedEl.textContent = arrived;
                 if (tabCountNotArrivedEl) tabCountNotArrivedEl.textContent = notArrived;
-                
+
                 document.getElementById('responses-loading').style.display = 'none';
-                
+
                 if (guests.length === 0) {
                     document.getElementById('responses-empty').style.display = 'block';
                 } else {

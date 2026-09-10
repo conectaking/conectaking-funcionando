@@ -137,6 +137,7 @@ class CheckinAggregateService
      */
     private function fetchGuests(int $guestListId): array
     {
+        // Teto para evitar full-dump em listas enormes (UI agregada de check-in).
         $rows = DB::select(
             'SELECT
                 id, name, email, phone, document, status,
@@ -144,7 +145,8 @@ class CheckinAggregateService
                 custom_data, notes
              FROM guests
              WHERE guest_list_id = ?
-             ORDER BY registered_at DESC',
+             ORDER BY registered_at DESC
+             LIMIT 2000',
             [$guestListId]
         );
 
@@ -166,7 +168,8 @@ class CheckinAggregateService
                 id, response_data, submitted_at, responder_name, responder_email, responder_phone
              FROM digital_form_responses
              WHERE profile_item_id = ?
-             ORDER BY submitted_at DESC',
+             ORDER BY submitted_at DESC
+             LIMIT 2000',
             [$itemId]
         );
 

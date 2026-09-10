@@ -173,14 +173,26 @@ class GuestListAdminService
         );
         $eventTitle = (string) (($meta->event_title ?? null) ?: ($meta->title ?? 'Lista de Convidados'));
 
-        $sql = 'SELECT * FROM guests WHERE guest_list_id = ?';
+        // Export dedicado: teto alto (default 5000, max 10000) — evita full-dump ilimitado.
+        $limit = isset($query['limit']) && is_numeric($query['limit']) ? (int) $query['limit'] : 5000;
+        $limit = max(1, min(10000, $limit));
+
+        $sql = 'SELECT id, guest_list_id, name, email, phone, whatsapp, document,
+                       address, neighborhood, city, state, zipcode, instagram,
+                       status, registration_source, confirmed_at, checked_in_at,
+                       notes, custom_responses, created_at, updated_at
+                FROM guests WHERE guest_list_id = ?';
         $params = [$gliId];
         $status = isset($query['status']) ? trim((string) $query['status']) : '';
         if ($status !== '') {
             $sql .= ' AND status = ?';
             $params[] = $status;
         }
-        $sql .= ' ORDER BY name ASC';
+        $countSql = 'SELECT COUNT(*)::int AS total FROM guests WHERE guest_list_id = ?'
+            .($status !== '' ? ' AND status = ?' : '');
+        $total = (int) (DB::selectOne($countSql, $params)->total ?? 0);
+        $sql .= ' ORDER BY name ASC LIMIT ?';
+        $params[] = $limit;
         $guests = array_map(static fn ($r) => (array) $r, DB::select($sql, $params));
 
         return [
@@ -188,7 +200,10 @@ class GuestListAdminService
             'body' => [
                 'success' => true,
                 'event_title' => $eventTitle,
-                'total' => count($guests),
+                'total' => $total,
+                'exported' => count($guests),
+                'limit' => $limit,
+                'truncated' => $total > count($guests),
                 'guests' => $guests,
             ],
         ];

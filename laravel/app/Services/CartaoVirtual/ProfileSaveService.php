@@ -48,8 +48,18 @@ class ProfileSaveService
                 $this->syncItems($userId, $items);
             }
 
+            $wanted = [
+                'id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url',
+                'display_order', 'is_active', 'icon_class', 'pdf_url', 'pix_key',
+                'recipient_name', 'pix_amount', 'pix_description', 'logo_size',
+                'aspect_ratio', 'whatsapp_message', 'tab_id', 'created_at', 'updated_at',
+            ];
+            $cols = array_values(array_intersect($wanted, $this->profileItemColumns()));
+            if ($cols === []) {
+                $cols = ['id', 'user_id', 'item_type', 'display_order', 'is_active'];
+            }
             $rows = DB::select(
-                'SELECT * FROM profile_items WHERE user_id = ? ORDER BY display_order ASC',
+                'SELECT '.implode(', ', $cols).' FROM profile_items WHERE user_id = ? ORDER BY display_order ASC',
                 [$userId]
             );
             $now = (int) round(microtime(true) * 1000);

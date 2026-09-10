@@ -2592,8 +2592,10 @@ async function exportToPDF(tab) {
         
         if (response.ok) {
             const data = await response.json();
+            const exported = data.exported != null ? data.exported : data.total;
+            const trunc = data.truncated ? `\n(truncado: ${exported} de ${data.total}; use limit=10000 se necessário)` : '';
             // Por enquanto, apenas mostrar os dados (PDF será implementado depois)
-            alert(`Exportação preparada: ${data.total} convidados encontrados.\n\nEm breve: download direto do PDF.`);
+            alert(`Exportação preparada: ${data.total} convidados encontrados.${trunc}\n\nEm breve: download direto do PDF.`);
             console.log('Dados para exportação:', data);
         } else {
             throw new Error('Erro ao exportar');
