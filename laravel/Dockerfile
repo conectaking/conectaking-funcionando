@@ -20,7 +20,7 @@ RUN printf "memory_limit=384M\nupload_max_filesize=64M\npost_max_size=64M\nopcac
     > /usr/local/etc/php/conf.d/zz-conectaking.ini
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git unzip poppler-utils tesseract-ocr tesseract-ocr-por \
+        git unzip poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

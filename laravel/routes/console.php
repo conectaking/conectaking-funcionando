@@ -42,6 +42,29 @@ Artisan::command('maintenance:cleanup', function () {
     $this->info(json_encode($r));
 })->purpose('Limpa tokens/cache expirados (paridade cron 02:00 Node)');
 
+Artisan::command('maintenance:failed-jobs-alert', function () {
+    $n = 0;
+    try {
+        if (\App\Support\SchemaMeta::hasTable('failed_jobs')) {
+            $n = (int) (\Illuminate\Support\Facades\DB::selectOne('SELECT COUNT(*)::int AS n FROM failed_jobs')->n ?? 0);
+        }
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+
+        return 1;
+    }
+    if ($n > 0) {
+        \Illuminate\Support\Facades\Log::warning('queue.failed_jobs', ['count' => $n]);
+        $this->warn("failed_jobs={$n} — revise: docker exec conectaking-laravel php artisan queue:failed");
+        $this->warn('Retry: php artisan queue:retry all | Flush: php artisan queue:flush');
+
+        return 0;
+    }
+    $this->info('failed_jobs=0');
+
+    return 0;
+})->purpose('Alerta se houver jobs falhados na fila');
+
 // Timezone: America/Sao_Paulo (mesmo horário civil do Node na VPS BR)
 Schedule::command('maintenance:expire-subscriptions-morning')
     ->dailyAt('08:00')
@@ -56,4 +79,8 @@ Schedule::command('maintenance:expire-subscriptions-midnight')
 Schedule::command('maintenance:cleanup')
     ->dailyAt('02:00')
     ->timezone('America/Sao_Paulo')
+    ->withoutOverlapping();
+
+Schedule::command('maintenance:failed-jobs-alert')
+    ->hourly()
     ->withoutOverlapping();

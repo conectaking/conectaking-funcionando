@@ -2,8 +2,9 @@
 
 namespace App\Services\Business;
 
+use App\Support\SchemaMeta;
+
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class BrandingService
 {
@@ -30,7 +31,7 @@ class BrandingService
             ]];
         }
 
-        if (! Schema::hasColumn('users', 'company_logo_url')) {
+        if (! SchemaMeta::hasColumn('users', 'company_logo_url')) {
             return ['status' => 503, 'body' => ['success' => false, 'message' => 'Colunas company_logo_* em falta.']];
         }
 
@@ -40,11 +41,11 @@ class BrandingService
 
         $sets = ['company_logo_url = ?'];
         $vals = [$logoUrl];
-        if (Schema::hasColumn('users', 'company_logo_size')) {
+        if (SchemaMeta::hasColumn('users', 'company_logo_size')) {
             $sets[] = 'company_logo_size = ?';
             $vals[] = $logoSize;
         }
-        if (Schema::hasColumn('users', 'company_logo_link')) {
+        if (SchemaMeta::hasColumn('users', 'company_logo_link')) {
             $sets[] = 'company_logo_link = ?';
             $vals[] = $logoLink;
         }

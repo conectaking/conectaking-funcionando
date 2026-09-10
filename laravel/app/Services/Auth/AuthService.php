@@ -2,9 +2,10 @@
 
 namespace App\Services\Auth;
 
+use App\Support\SchemaMeta;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 class AuthService
 {
@@ -81,7 +82,7 @@ class AuthService
             return ['status' => 401, 'body' => ['success' => false, 'message' => 'Refresh token inválido.']];
         }
 
-        if (Schema::hasTable('refresh_tokens')) {
+        if (SchemaMeta::hasTable('refresh_tokens')) {
             $row = DB::selectOne(
                 'SELECT id FROM refresh_tokens WHERE token = ? AND user_id = ? AND expires_at > NOW() LIMIT 1',
                 [$refreshToken, $userId]
@@ -132,7 +133,7 @@ class AuthService
         if (strlen($password) < 6) {
             return ['status' => 400, 'body' => ['success' => false, 'message' => 'Senha deve ter no mínimo 6 caracteres.']];
         }
-        if (! Schema::hasTable('registration_codes') || ! Schema::hasTable('users')) {
+        if (! SchemaMeta::hasTable('registration_codes') || ! SchemaMeta::hasTable('users')) {
             return ['status' => 503, 'body' => ['success' => false, 'message' => 'Registro indisponível.']];
         }
 
@@ -165,7 +166,7 @@ class AuthService
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                     [$registrationCode, $email, $hash, $registrationCode, $accountType, $parentUserId, $subStatus, $expiresAt]
                 );
-                if (Schema::hasTable('user_profiles')) {
+                if (SchemaMeta::hasTable('user_profiles')) {
                     DB::insert(
                         'INSERT INTO user_profiles (user_id, display_name) VALUES (?, ?)',
                         [$registrationCode, $email]
@@ -191,7 +192,7 @@ class AuthService
 
     private function ensureDefaultBibleItem(string $userId): void
     {
-        if (! Schema::hasTable('profile_items')) {
+        if (! SchemaMeta::hasTable('profile_items')) {
             return;
         }
         $n = (int) (DB::selectOne(
@@ -207,7 +208,7 @@ class AuthService
                  VALUES (?, 'bible', 'Bíblia', true, 0) RETURNING id",
                 [$userId]
             );
-            if ($id && Schema::hasTable('bible_items')) {
+            if ($id && SchemaMeta::hasTable('bible_items')) {
                 DB::insert(
                     "INSERT INTO bible_items (profile_item_id, translation_code, is_visible) VALUES (?, 'nvi', true)",
                     [$id->id]
@@ -240,7 +241,7 @@ class AuthService
 
     private function saveRefreshToken(string $userId, string $token): void
     {
-        if (! Schema::hasTable('refresh_tokens')) {
+        if (! SchemaMeta::hasTable('refresh_tokens')) {
             return;
         }
         try {
@@ -258,7 +259,7 @@ class AuthService
 
     private function revokeRefreshToken(string $token): void
     {
-        if ($token === '' || ! Schema::hasTable('refresh_tokens')) {
+        if ($token === '' || ! SchemaMeta::hasTable('refresh_tokens')) {
             return;
         }
         try {

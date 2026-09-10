@@ -21,16 +21,12 @@ await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
     }
 
     function getToken() {
+        // Cookie HttpOnly (CkAuth) — não usar localStorage para JWT.
         try {
-            if (window.CkAuth && typeof window.CkAuth.lsToken === 'function') {
-                var ck = window.CkAuth.lsToken() || '';
-                if (ck) return ck;
-            }
-            var t = localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || '';
             var manual = document.getElementById('token-manual');
             if (manual && manual.value.trim()) return manual.value.trim();
-            return t;
-        } catch (e) { return ''; }
+        } catch (e) {}
+        return '';
     }
 
     function getApiBase() {
@@ -595,13 +591,27 @@ await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
 
     document.getElementById('btn-save-token').addEventListener('click', function () {
         var v = document.getElementById('token-manual').value.trim();
-        if (!v) { flash('Cole o token JWT de administrador.', 'err'); return; }
-        try {
-            localStorage.setItem('token', v);
-            flash('Token guardado em localStorage (chave token).', 'ok');
-        } catch (e) {
-            flash('Não foi possível guardar.', 'err');
+        if (!v) {
+            flash('Sessão admin usa cookie HttpOnly. Faça login no painel; só cole Bearer se precisar espelhar numa aba isolada.', 'warn');
+            return;
         }
+        fetch('/api/auth/sync-session-cookie', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Authorization': 'Bearer ' + v, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: '{}'
+        }).then(function (r) {
+            return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+        }).then(function (x) {
+            if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao sincronizar cookie');
+            try {
+                localStorage.removeItem('token');
+                localStorage.removeItem('conectaKingToken');
+            } catch (e) {}
+            flash('Sessão espelhada em cookie HttpOnly (JWT não fica no localStorage).', 'ok');
+        }).catch(function (e) {
+            flash(e.message || 'Não foi possível sincronizar.', 'err');
+        });
     });
 
     document.querySelectorAll('.tabs button').forEach(function (btn) {

@@ -167,6 +167,11 @@ final class UploadedFileValidator
         return '';
     }
 
+    public static function isHeicBinary(string $binary): bool
+    {
+        return self::looksLikeHeic($binary);
+    }
+
     private static function looksLikeHeic(string $binary): bool
     {
         if (strlen($binary) < 12) {

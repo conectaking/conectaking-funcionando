@@ -2,10 +2,11 @@
 
 namespace App\Services\CartaoVirtual;
 
+use App\Support\SchemaMeta;
+
 use App\Support\SimpleTextPdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Admin guest-lists (read/write) — paridade com routes/guestList.routes.js.
@@ -259,7 +260,7 @@ class GuestListAdminService
             $params[] = $status;
         }
 
-        $hasEntryMode = Schema::hasColumn('guests', 'entry_mode');
+        $hasEntryMode = SchemaMeta::hasColumn('guests', 'entry_mode');
         $listMode = strtolower(trim((string) ($query['mode'] ?? 'checkin')));
         $entryClause = '';
         if ($hasEntryMode) {
@@ -507,7 +508,7 @@ class GuestListAdminService
                 if (! array_key_exists($col, $body)) {
                     continue;
                 }
-                if (in_array($col, ['secondary_color'], true) && ! Schema::hasColumn('guest_list_items', $col)) {
+                if (in_array($col, ['secondary_color'], true) && ! SchemaMeta::hasColumn('guest_list_items', $col)) {
                     continue;
                 }
                 $val = $body[$col];
@@ -549,7 +550,7 @@ class GuestListAdminService
                 'cadastro_description' => fn ($v) => (is_string($v) && trim($v) !== '') ? trim($v) : null,
             ];
             foreach ($optionalScalars as $col => $map) {
-                if (! array_key_exists($col, $body) || ! Schema::hasColumn('guest_list_items', $col)) {
+                if (! array_key_exists($col, $body) || ! SchemaMeta::hasColumn('guest_list_items', $col)) {
                     continue;
                 }
                 $gliSets[] = "{$col} = ?";
@@ -557,7 +558,7 @@ class GuestListAdminService
             }
 
             foreach (['cadastro_slug', 'portaria_slug'] as $slugCol) {
-                if (! array_key_exists($slugCol, $body) || ! Schema::hasColumn('guest_list_items', $slugCol)) {
+                if (! array_key_exists($slugCol, $body) || ! SchemaMeta::hasColumn('guest_list_items', $slugCol)) {
                     continue;
                 }
                 $raw = $body[$slugCol];
@@ -581,7 +582,7 @@ class GuestListAdminService
             }
 
             if (
-                Schema::hasColumn('guest_list_items', 'cadastro_expires_at')
+                SchemaMeta::hasColumn('guest_list_items', 'cadastro_expires_at')
                 && (
                     array_key_exists('cadastro_expires_at', $body)
                     || array_key_exists('cadastro_expires_in_hours', $body)
@@ -599,7 +600,7 @@ class GuestListAdminService
                 $gliSets[] = 'cadastro_expires_at = ?';
                 $gliParams[] = $expiresAt;
             }
-            if (array_key_exists('cadastro_max_uses', $body) && Schema::hasColumn('guest_list_items', 'cadastro_max_uses')) {
+            if (array_key_exists('cadastro_max_uses', $body) && SchemaMeta::hasColumn('guest_list_items', 'cadastro_max_uses')) {
                 $maxUses = $body['cadastro_max_uses'] === null ? 999999 : (int) $body['cadastro_max_uses'];
                 $gliSets[] = 'cadastro_max_uses = ?';
                 $gliParams[] = $maxUses;
@@ -1040,7 +1041,7 @@ class GuestListAdminService
             || array_key_exists('event_date', $body)
             || array_key_exists('event_location', $body)
             || array_key_exists('custom_form_fields', $body);
-        if (! $need || ! Schema::hasTable('digital_form_items')) {
+        if (! $need || ! SchemaMeta::hasTable('digital_form_items')) {
             return;
         }
         $map = [
@@ -1062,25 +1063,25 @@ class GuestListAdminService
         $sets = [];
         $params = [];
         foreach (['enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner'] as $col) {
-            if (! array_key_exists($col, $body) || ! Schema::hasColumn('digital_form_items', $col)) {
+            if (! array_key_exists($col, $body) || ! SchemaMeta::hasColumn('digital_form_items', $col)) {
                 continue;
             }
             $sets[] = "{$col} = ?";
             $params[] = $map[$col]($body[$col]);
         }
-        if (array_key_exists('event_title', $body) && Schema::hasColumn('digital_form_items', 'form_title')) {
+        if (array_key_exists('event_title', $body) && SchemaMeta::hasColumn('digital_form_items', 'form_title')) {
             $sets[] = 'form_title = ?';
             $params[] = $body['event_title'];
         }
-        if (array_key_exists('event_date', $body) && Schema::hasColumn('digital_form_items', 'event_date')) {
+        if (array_key_exists('event_date', $body) && SchemaMeta::hasColumn('digital_form_items', 'event_date')) {
             $sets[] = 'event_date = ?';
             $params[] = $body['event_date'] ?: null;
         }
-        if (array_key_exists('event_location', $body) && Schema::hasColumn('digital_form_items', 'event_address')) {
+        if (array_key_exists('event_location', $body) && SchemaMeta::hasColumn('digital_form_items', 'event_address')) {
             $sets[] = 'event_address = ?';
             $params[] = $body['event_location'] ?: null;
         }
-        if (array_key_exists('custom_form_fields', $body) && Schema::hasColumn('digital_form_items', 'form_fields')) {
+        if (array_key_exists('custom_form_fields', $body) && SchemaMeta::hasColumn('digital_form_items', 'form_fields')) {
             $fields = is_array($body['custom_form_fields']) ? $body['custom_form_fields'] : [];
             $sets[] = 'form_fields = ?::jsonb';
             $params[] = json_encode($fields, JSON_UNESCAPED_UNICODE);
@@ -1188,7 +1189,7 @@ class GuestListAdminService
         ];
         $out = [];
         foreach ($candidates as $col) {
-            if (Schema::hasColumn('guest_list_items', $col)) {
+            if (SchemaMeta::hasColumn('guest_list_items', $col)) {
                 $out[] = $col;
             }
         }

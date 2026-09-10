@@ -1789,9 +1789,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('s️ Botão de lista de convidados não encontrado (sidebar-guest-list ou sidebar-responses). Funcionalidade pode não estar disponível.');
         }
         
-        // Checkout removido (fora de escopo)
-        const sidebarCheckout = document.getElementById('sidebar-checkout');
-        if (sidebarCheckout) sidebarCheckout.remove();
+        // Checkout online removido (HTTP 410) — sem UI de pagamento.
+        try {
+            document.querySelectorAll('.preview-checkout-sidebar-card, #sidebar-checkout, [data-checkout-online]').forEach(function (el) {
+                el.remove();
+            });
+        } catch (_) {}
         
         // Função auxiliar para lidar com clique
         function handleGuestListButtonClick() {

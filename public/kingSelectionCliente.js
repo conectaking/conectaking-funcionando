@@ -228,6 +228,14 @@
     // Cookie HttpOnly (login/redeem) — não persistir JWT no localStorage (XSS / partilha de PC).
     try {
       localStorage.removeItem(tokenKey(slug));
+      localStorage.removeItem(`ks_client_${slug}`);
+      // Limpa chaves legadas de outras galerias nesta aba
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('ks_client_jwt_') || k.startsWith('ks_client_'))) {
+          localStorage.removeItem(k);
+        }
+      }
     } catch (_) { /* ignore */ }
     syncKsAuthCookie();
   }
@@ -6380,6 +6388,7 @@
     try {
       await consumeAccessTokenFromUrl();
     } catch (_) { /* ignore */ }
+    try { setJwt(jwt); } catch (_) { /* limpa LS legado */ }
     scheduleBootWatchdog();
     try {
       let r;

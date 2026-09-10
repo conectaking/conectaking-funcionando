@@ -159,7 +159,17 @@
                 var payload = buildPixPayload(pixChave, nome, cidade, totalGeral);
                 if (payload) {
                     var qrWrap = document.getElementById('pix-qr-wrap');
-                    qrWrap.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(payload) + '" alt="QR PIX" width="120" height="120" class="rounded border"/>';
+                    qrWrap.innerHTML = '';
+                    if (typeof QRCode !== 'undefined') {
+                        new QRCode(qrWrap, {
+                            text: payload,
+                            width: 120,
+                            height: 120,
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    } else {
+                        qrWrap.textContent = 'QR indisponível — use a chave PIX abaixo.';
+                    }
                 }
             } else {
                 pixBlock.style.display = 'none';

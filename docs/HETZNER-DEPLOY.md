@@ -22,7 +22,22 @@ curl -sS http://127.0.0.1:8080/health
 - `./public` → `/legacy/public` (assets canónicos)
 - volume `api_uploads` → `/shared/uploads`
 
+## Fila / failed_jobs
+
+Health: `curl -sS http://127.0.0.1:8080/health` → campo `failed_jobs`.
+
+```bash
+docker exec conectaking-laravel php artisan queue:failed
+docker exec conectaking-laravel php artisan queue:retry all
+# ou limpar após análise:
+docker exec conectaking-laravel php artisan queue:flush
+docker exec conectaking-laravel php artisan maintenance:failed-jobs-alert
+```
+
+Alerta horário via scheduler (`maintenance:failed-jobs-alert` → log `queue.failed_jobs`).
+
 ## Backup Postgres
+
 
 Script: `scripts/backup-postgres-vps.sh` (retenção 7 dias em `/opt/conectaking/backups`).
 

@@ -97,7 +97,8 @@ class KingSelectionFaceService
         $faceRecords = $indexResult['FaceRecords'] ?? [];
         if (! is_array($faceRecords) || $faceRecords === []) {
             return ['status' => 400, 'body' => [
-                'message' => 'Nenhum rosto detectado na imagem. Use uma foto com o rosto visível.',
+                'message' => $this->noFaceDetectedMessage($indexResult),
+                'code' => 'no_face',
                 'UnindexedFaces' => $indexResult['UnindexedFaces'] ?? [],
             ]];
         }
@@ -171,7 +172,8 @@ class KingSelectionFaceService
         $jpeg = $this->normalizeJpeg($binary);
         if ($jpeg === null) {
             return ['status' => 400, 'body' => [
-                'message' => 'Não encontramos um rosto nítido nesta imagem. Tire uma selfie com boa luz, rosto de frente e sem óculos escuros ou boné.',
+                'message' => $this->invalidImageMessage($binary),
+                'code' => \App\Support\UploadedFileValidator::isHeicBinary($binary) ? 'heic_unsupported' : 'invalid_image',
             ]];
         }
         $externalImageId = 'g'.$galleryId.'_c'.$clientId;
@@ -184,7 +186,11 @@ class KingSelectionFaceService
         }
         $faceRecords = $indexResult['FaceRecords'] ?? [];
         if (! is_array($faceRecords) || $faceRecords === []) {
-            return ['status' => 400, 'body' => ['message' => 'Nenhum rosto detectado na foto. Tente uma selfie mais nítida.']];
+            return ['status' => 400, 'body' => [
+                'message' => $this->noFaceDetectedMessage($indexResult),
+                'code' => 'no_face',
+                'UnindexedFaces' => $indexResult['UnindexedFaces'] ?? [],
+            ]];
         }
         if (SchemaMeta::hasTable('rekognition_client_faces')) {
             DB::delete('DELETE FROM rekognition_client_faces WHERE gallery_id = ? AND client_id = ?', [$galleryId, $clientId]);
@@ -2010,6 +2016,36 @@ class KingSelectionFaceService
     private function normalizeJpeg(string $binary): ?string
     {
         return $this->normalizeJpegMax($binary, 1600, 90);
+    }
+
+    private function invalidImageMessage(string $binary): string
+    {
+        if (\App\Support\UploadedFileValidator::isHeicBinary($binary)) {
+            return 'HEIC/HEIF não suportado. No iPhone: Ajustes → Câmara → Formatos → Mais Compatível (JPEG), ou converta a foto e envie de novo.';
+        }
+
+        return 'Imagem inválida ou corrompida. Use JPEG, PNG, GIF ou WebP com o rosto visível.';
+    }
+
+    /**
+     * @param  array<string,mixed>  $indexResult
+     */
+    private function noFaceDetectedMessage(array $indexResult): string
+    {
+        $reasons = [];
+        foreach ($indexResult['UnindexedFaces'] ?? [] as $u) {
+            foreach (($u['Reasons'] ?? []) as $r) {
+                $reasons[] = strtoupper((string) $r);
+            }
+        }
+        $reasons = array_values(array_unique($reasons));
+        if ($reasons !== []) {
+            if (array_intersect($reasons, ['EXCEEDS_MAX_FACES', 'EXTREME_POSE', 'LOW_BRIGHTNESS', 'LOW_SHARPNESS', 'LOW_CONFIDENCE'])) {
+                return 'Rosto encontrado, mas a qualidade ficou baixa (luz, nitidez ou pose). Tire uma selfie de frente, com boa luz e sem óculos escuros/boné.';
+            }
+        }
+
+        return 'Nenhum rosto detectado na foto. Tire uma selfie com o rosto bem visível e de frente.';
     }
 
     private function normalizeJpegMax(string $binary, int $max, int $quality): ?string

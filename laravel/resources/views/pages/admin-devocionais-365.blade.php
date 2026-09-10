@@ -91,10 +91,10 @@
         <div id="flash"></div>
 
         <div class="auth-bar">
-            <label style="flex:1;min-width:220px">Token (ou inicie sessão no dashboard no mesmo domínio)
-                <input type="password" class="token-input" id="token-manual" placeholder="Cole Bearer token se necessário" autocomplete="off">
+            <label style="flex:1;min-width:220px">Sessão admin (cookie). Bearer opcional só para sync:
+                <input type="password" class="token-input" id="token-manual" placeholder="Opcional: Bearer para sync cookie" autocomplete="off">
             </label>
-            <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-save"></i> Usar token</button>
+            <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-cookie"></i> Sync cookie</button>
         </div>
         <div class="auth-bar" style="margin-top:-8px">
             <label style="flex:1;min-width:260px">URL base da API (opcional — vazio = mesma origem Laravel — ex.: <code style="color:#7dd3fc">https://www.conectaking.com.br</code>)

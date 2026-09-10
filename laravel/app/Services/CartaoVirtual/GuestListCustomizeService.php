@@ -2,9 +2,10 @@
 
 namespace App\Services\CartaoVirtual;
 
+use App\Support\SchemaMeta;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 class GuestListCustomizeService
 {
@@ -290,7 +291,7 @@ class GuestListCustomizeService
         $key = $table.'.'.$column;
         if (!array_key_exists($key, $cache)) {
             try {
-                $cache[$key] = Schema::hasColumn($table, $column);
+                $cache[$key] = SchemaMeta::hasColumn($table, $column);
             } catch (\Throwable $e) {
                 $cache[$key] = false;
             }

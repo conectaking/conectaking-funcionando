@@ -2,9 +2,10 @@
 
 namespace App\Services\Documentos;
 
+use App\Support\SchemaMeta;
+
 use App\Services\CartaoVirtual\R2StorageService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -23,7 +24,7 @@ class DocumentosService
      */
     public function list(string $userId, ?string $tipo = null, int $limit = 50, int $offset = 0): array
     {
-        if (! Schema::hasTable('documentos')) {
+        if (! SchemaMeta::hasTable('documentos')) {
             return $this->ok(['documentos' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset, 'hasMore' => false]);
         }
         $limit = max(1, min(100, $limit));
@@ -55,7 +56,7 @@ class DocumentosService
      */
     public function create(string $userId, array $body): array
     {
-        if (! Schema::hasTable('documentos')) {
+        if (! SchemaMeta::hasTable('documentos')) {
             return $this->fail('Tabela documentos indisponível.', 503);
         }
         $tipo = in_array(($body['tipo'] ?? 'recibo'), ['recibo', 'orcamento'], true)
@@ -121,7 +122,7 @@ class DocumentosService
         if ($id < 1) {
             return $this->fail('ID inválido', 400);
         }
-        if (! Schema::hasTable('documentos')) {
+        if (! SchemaMeta::hasTable('documentos')) {
             return $this->fail('Tabela documentos indisponível.', 503);
         }
         $doc = $this->applyUpdate($id, $userId, $body);
@@ -140,7 +141,7 @@ class DocumentosService
         if ($id < 1) {
             return $this->fail('ID inválido', 400);
         }
-        if (! Schema::hasTable('documentos')) {
+        if (! SchemaMeta::hasTable('documentos')) {
             return $this->fail('Tabela documentos indisponível.', 503);
         }
         $row = DB::selectOne(
@@ -217,7 +218,7 @@ class DocumentosService
         if ($token === '') {
             return $this->fail('Token inválido', 400);
         }
-        if (! Schema::hasTable('documentos')) {
+        if (! SchemaMeta::hasTable('documentos')) {
             return $this->fail('Tabela documentos indisponível.', 503);
         }
         // Token público: só dados do cliente (não reescrever itens/valores do documento)
@@ -281,7 +282,7 @@ class DocumentosService
      */
     public function putSettings(string $userId, array $body): array
     {
-        if (! Schema::hasTable('documentos_user_settings')) {
+        if (! SchemaMeta::hasTable('documentos_user_settings')) {
             return $this->fail('Configurações indisponíveis.', 503);
         }
         $data = [];
@@ -881,7 +882,7 @@ class DocumentosService
      */
     private function fetchById(int $id, string $userId): ?array
     {
-        if (! Schema::hasTable('documentos')) {
+        if (! SchemaMeta::hasTable('documentos')) {
             return null;
         }
         $row = DB::selectOne('SELECT * FROM documentos WHERE id = ? AND user_id = ?', [$id, $userId]);
@@ -894,7 +895,7 @@ class DocumentosService
      */
     private function fetchByToken(string $token): ?array
     {
-        if (! Schema::hasTable('documentos')) {
+        if (! SchemaMeta::hasTable('documentos')) {
             return null;
         }
         $row = DB::selectOne('SELECT * FROM documentos WHERE link_token = ?', [$token]);
@@ -976,7 +977,7 @@ class DocumentosService
      */
     private function fetchSettings(string $userId): array
     {
-        if (! Schema::hasTable('documentos_user_settings')) {
+        if (! SchemaMeta::hasTable('documentos_user_settings')) {
             return [];
         }
         $row = DB::selectOne(
@@ -1060,7 +1061,7 @@ class DocumentosService
 
     private function companyLogoUrl(string $userId): ?string
     {
-        if (! Schema::hasTable('users')) {
+        if (! SchemaMeta::hasTable('users')) {
             return null;
         }
         try {
