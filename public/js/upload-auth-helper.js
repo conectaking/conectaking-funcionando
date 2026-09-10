@@ -1,7 +1,7 @@
 /**
- * Injeta o token de autenticação em todas as requisições fetch para a API (incluindo /api/upload/receive-one).
- * Inclua este script como PRIMEIRO script na página (ex.: formPageEdit.html, King Forms) para corrigir 401 no upload.
- * Ex.: <script src="js/upload-auth-helper.js"></script>
+ * Injeta o token de autenticação em requisições fetch para a API (incluindo /api/upload/receive-one).
+ * Preferência: cookie HttpOnly `token` via credentials:include; Bearer do LS só como fallback.
+ * Inclua este script como PRIMEIRO script na página.
  */
 (function () {
     'use strict';
@@ -23,6 +23,16 @@
         } catch (e) { return 'https://www.conectaking.com.br'; }
     }
 
+    function isSameOriginApi(url) {
+        try {
+            if (url.indexOf('/api/') === 0) return true;
+            var u = new URL(url, window.location.href);
+            return u.origin === window.location.origin && u.pathname.indexOf('/api/') === 0;
+        } catch (e) {
+            return false;
+        }
+    }
+
     window.fetch = function (input, opts) {
         opts = opts || {};
         var url = (typeof input === 'string' ? input : (input && input.url) || '').toString();
@@ -32,6 +42,10 @@
             (url.indexOf('/api/') === 0 && url.length > 4);
 
         if (isApiRequest) {
+            // Cookie HttpOnly `token` (login/refresh) precisa de credentials
+            if (opts.credentials == null && isSameOriginApi(url)) {
+                opts.credentials = 'include';
+            }
             var headers = opts.headers;
             if (!headers) opts.headers = headers = {};
             var hasAuth = false;
@@ -51,6 +65,6 @@
                 }
             }
         }
-        return nativeFetch.apply(this, arguments);
+        return nativeFetch.call(this, input, opts);
     };
 })();

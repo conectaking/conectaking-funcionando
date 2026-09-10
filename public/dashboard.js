@@ -146,15 +146,19 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = kingSelectionAdminUrl();
     };
 
-    // Função para atualizar headers com o token atual
+    // Função para atualizar headers com o token atual (Bearer só se LS tiver; cookie HttpOnly via credentials)
     function getHeaders() {
-        const currentToken = localStorage.getItem('conectaKingToken');
-        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken || token}` };
+        const currentToken = localStorage.getItem('conectaKingToken') || token || '';
+        const h = { 'Content-Type': 'application/json' };
+        if (currentToken) h.Authorization = `Bearer ${currentToken}`;
+        return h;
     }
 
     function getAuthHeaders() {
-        const currentToken = localStorage.getItem('conectaKingToken');
-        return { 'Authorization': `Bearer ${currentToken || token}` };
+        const currentToken = localStorage.getItem('conectaKingToken') || token || '';
+        const h = {};
+        if (currentToken) h.Authorization = `Bearer ${currentToken}`;
+        return h;
     }
 
     // Inicializa headers
@@ -328,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const defaultOptions = {
             method: 'GET',
             timeout: safeFetchDefaultTimeoutMs(),
+            credentials: 'include',
             ...options,
             headers: combinedHeaders
         };

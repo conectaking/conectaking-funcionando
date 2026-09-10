@@ -45,12 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.href)}`;
     return;
   }
-  // Cookie HttpOnly-friendly path: AuthenticateJwt aceita cookie `token` (não ?token=).
-  // Necessário para <img> direct em wm_mode=none sem vazar JWT em logs/Referer.
-  try {
-    const secure = location.protocol === 'https:' ? '; Secure' : '';
-    document.cookie = `token=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secure}`;
-  } catch (_) { /* ignore */ }
+  // Cookie HttpOnly do login já autentica <img> same-origin.
+  // NÃO gravar document.cookie=token (legível por XSS) — AuthenticateJwt lê o HttpOnly.
   const HEADERS = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
   // <img> não envia Authorization header. Para previews protegidos (admin),
@@ -82,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (_previewObjectUrls.has(key)) return _previewObjectUrls.get(key);
     const res = await fetch(url, {
       method: 'GET',
+      credentials: 'include',
       headers: { 'Authorization': `Bearer ${token}` },
       cache: 'no-store'
     });
@@ -1098,6 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = `${API_URL}/api/king-selection/photos/${photoId}/download`;
     const res = await fetch(url, {
       method: 'GET',
+      credentials: 'include',
       headers: { 'Authorization': `Bearer ${token}` },
       cache: 'no-store'
     });

@@ -339,12 +339,31 @@ class FinanceController extends Controller
         $file = $request->file('file');
         $url = null;
         if ($file) {
-            $name = 'finance_'.time().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+            $check = \App\Support\UploadedFileValidator::assertImageOrPdf($file);
+            if (! ($check['ok'] ?? false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $check['message'] ?? 'Arquivo inválido.',
+                ], 400)->header('X-Conecta-Engine', 'laravel');
+            }
+            $ext = match ($check['mime']) {
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+                'application/pdf' => 'pdf',
+                default => 'bin',
+            };
+            $safeBase = preg_replace('/[^a-zA-Z0-9._-]/', '', pathinfo($file->getClientOriginalName() ?: 'file', PATHINFO_FILENAME)) ?: 'file';
+            $name = 'finance_'.time().'_'.$safeBase.'.'.$ext;
             $destDir = public_path('uploads/finance');
             if (! is_dir($destDir)) {
                 @mkdir($destDir, 0775, true);
             }
-            $file->move($destDir, $name);
+            if (file_put_contents($destDir.DIRECTORY_SEPARATOR.$name, $check['binary']) === false) {
+                return response()->json(['success' => false, 'message' => 'Falha ao gravar anexo.'], 500)
+                    ->header('X-Conecta-Engine', 'laravel');
+            }
             $url = '/uploads/finance/'.$name;
         }
         $r = $this->finance->uploadAttachment($url);
@@ -362,7 +381,13 @@ class FinanceController extends Controller
         }
         $tmp = sys_get_temp_dir().'/serasa-pdf-'.uniqid('', true).'.pdf';
         try {
-            file_put_contents($tmp, file_get_contents($file->getRealPath() ?: $file->getPathname()));
+            $check = \App\Support\UploadedFileValidator::assertPdf($file);
+            if (! ($check['ok'] ?? false)) {
+                return response()->json([
+                    'success' => false, 'data' => null, 'error' => $check['message'] ?? 'PDF inválido.', 'message' => $check['message'] ?? 'PDF inválido.',
+                ], 400)->header('X-Conecta-Engine', 'laravel');
+            }
+            file_put_contents($tmp, $check['binary']);
             $r = $this->finance->serasaImportPreview($tmp);
         } finally {
             @unlink($tmp);
@@ -392,9 +417,23 @@ class FinanceController extends Controller
         $paths = [];
         try {
             foreach ($files as $f) {
-                $ext = str_contains((string) $f->getMimeType(), 'png') ? '.png' : '.jpg';
+                $check = \App\Support\UploadedFileValidator::assertImage($f);
+                if (! ($check['ok'] ?? false)) {
+                    return response()->json([
+                        'success' => false,
+                        'data' => null,
+                        'error' => $check['message'] ?? 'Imagem inválida.',
+                        'message' => $check['message'] ?? 'Imagem inválida.',
+                    ], 400)->header('X-Conecta-Engine', 'laravel');
+                }
+                $ext = match ($check['mime']) {
+                    'image/png' => '.png',
+                    'image/webp' => '.webp',
+                    'image/gif' => '.gif',
+                    default => '.jpg',
+                };
                 $p = sys_get_temp_dir().'/serasa-ocr-'.uniqid('', true).$ext;
-                file_put_contents($p, file_get_contents($f->getRealPath() ?: $f->getPathname()));
+                file_put_contents($p, $check['binary']);
                 $paths[] = $p;
             }
             $r = $this->finance->serasaImportImagePreview($paths);

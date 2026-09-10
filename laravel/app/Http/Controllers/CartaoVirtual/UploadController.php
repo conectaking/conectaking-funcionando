@@ -5,6 +5,7 @@ namespace App\Http\Controllers\CartaoVirtual;
 use App\Http\Controllers\Controller;
 use App\Services\CartaoVirtual\CloudflareImagesService;
 use App\Services\CartaoVirtual\R2StorageService;
+use App\Support\UploadedFileValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -59,13 +60,16 @@ class UploadController extends Controller
                 'message' => 'Nenhuma imagem enviada. Envie o ficheiro no campo "file" ou "image".',
             ], 400)->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getSize() > self::MAX_MB * 1024 * 1024) {
-            return response()->json(['success' => false, 'message' => 'Arquivo muito grande (máx. '.self::MAX_MB.' MB).'], 413)
+        $check = UploadedFileValidator::assertImage($file, self::MAX_MB * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+
+            return response()->json(['success' => false, 'message' => $check['message'] ?? 'Arquivo inválido.'], $status)
                 ->header('X-Conecta-Engine', 'laravel');
         }
         $url = $this->r2->uploadImage(
-            file_get_contents($file->getRealPath()) ?: '',
-            (string) $file->getMimeType(),
+            $check['binary'],
+            $check['mime'],
             $file->getClientOriginalName() ?: 'image.jpg'
         );
         if (!$url) {
@@ -86,8 +90,15 @@ class UploadController extends Controller
             return response()->json(['success' => false, 'message' => 'Nenhuma imagem enviada.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        $binary = file_get_contents($file->getRealPath()) ?: '';
-        $mime = (string) $file->getMimeType();
+        $check = UploadedFileValidator::assertImage($file, self::MAX_MB * 1024 * 1024);
+        if (! ($check['ok'] ?? false)) {
+            $status = str_contains((string) ($check['message'] ?? ''), 'grande') ? 413 : 400;
+
+            return response()->json(['success' => false, 'message' => $check['message'] ?? 'Arquivo inválido.'], $status)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $binary = $check['binary'];
+        $mime = $check['mime'];
         $name = $file->getClientOriginalName() ?: 'image.jpg';
 
         $url = $this->r2->uploadImage($binary, $mime, $name);
@@ -148,9 +159,17 @@ class UploadController extends Controller
         }
         $urls = [];
         foreach (array_slice($files, 0, 20) as $i => $file) {
+            $check = UploadedFileValidator::assertImage($file, self::MAX_MB * 1024 * 1024);
+            if (! ($check['ok'] ?? false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => ($check['message'] ?? 'Arquivo inválido.').' (imagem '.($i + 1).')',
+                    'uploaded_so_far' => $urls,
+                ], 400)->header('X-Conecta-Engine', 'laravel');
+            }
             $url = $this->r2->uploadImage(
-                file_get_contents($file->getRealPath()) ?: '',
-                (string) $file->getMimeType(),
+                $check['binary'],
+                $check['mime'],
                 $file->getClientOriginalName() ?: ('image-'.($i + 1).'.jpg')
             );
             if (!$url) {
@@ -238,12 +257,13 @@ class UploadController extends Controller
             return response()->json(['message' => 'Nenhum arquivo enviado.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if ($file->getMimeType() !== 'application/pdf') {
-            return response()->json(['message' => 'Formato inválido. Apenas PDFs.'], 400)
+        $check = UploadedFileValidator::assertPdf($file);
+        if (! ($check['ok'] ?? false)) {
+            return response()->json(['message' => $check['message'] ?? 'Formato inválido. Apenas PDFs.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
         $userId = (string) $request->attributes->get('auth_user_id', 'anon');
-        $url = $this->r2->uploadPdf(file_get_contents($file->getRealPath()) ?: '', $userId);
+        $url = $this->r2->uploadPdf($check['binary'], $userId);
         if (!$url) {
             return response()->json(['message' => 'Upload de PDF indisponível.'], 503)
                 ->header('X-Conecta-Engine', 'laravel');
