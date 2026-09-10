@@ -121,6 +121,20 @@ class RequireCookieCsrf
             'api/king-selection/client/register',
             'api/king-selection/client/public-enter',
             'api/king-selection/client/signup-enter',
-        ], true);
+            'api/king-selection/client/select',
+            'api/king-selection/client/select-bulk',
+            'api/king-selection/client/finalize',
+            'api/king-selection/client/edit-request',
+            'api/king-selection/client/payment-proof',
+            'api/king-selection/client/promo-verify',
+            'api/king-selection/client/enroll-face-image',
+            'api/king-selection/client/face-enroll-cache',
+            'api/king-selection/client/reset-face-session',
+            'api/king-selection/client/search-face-by-photo',
+            'api/king-selection/client/download-zip-plan',
+            'api/king-selection/client/download-zip',
+            'api/king-selection/public/enroll-face-anonymous',
+        ], true)
+            || str_starts_with($path, 'api/king-selection/client/edit-request/');
     }
 }

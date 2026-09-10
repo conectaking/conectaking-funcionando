@@ -111,9 +111,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           var __cm = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
           var __csrf = __cm ? decodeURIComponent(__cm[1]) : '';
-          if (__csrf) {
+          var __xm = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+          var __xsrf = __xm ? decodeURIComponent(__xm[1]) : '';
+          if (__csrf || __xsrf) {
             var __h = Object.assign({}, init.headers || {});
-            if (!__h['X-CK-CSRF']) __h['X-CK-CSRF'] = __csrf;
+            if (__csrf && !__h['X-CK-CSRF']) __h['X-CK-CSRF'] = __csrf;
+            if (__xsrf && !__h['X-XSRF-TOKEN']) __h['X-XSRF-TOKEN'] = __xsrf;
             init.headers = __h;
           }
         }

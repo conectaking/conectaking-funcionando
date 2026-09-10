@@ -500,11 +500,10 @@ class KingSelectionSelectionService
             }
         }
 
-        $allowSelf = Schema::hasColumn('king_galleries', 'allow_self_signup')
-            ? filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN)
-            : KsAccess::allowsSelfSignup($accessMode);
+        $allowSelf = KsAccess::allowsSelfSignup($accessMode)
+            || (Schema::hasColumn('king_galleries', 'allow_self_signup')
+                && filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN));
         $deferred = ! $ctx['cid'] && (bool) $ctx['sk']
-            && KsAccess::allowsSelfSignup($accessMode)
             && $allowSelf;
 
         return [
@@ -525,11 +524,11 @@ class KingSelectionSelectionService
     {
         $galleryId = (int) $g->id;
         $accessMode = KsAccess::normAccessMode($g->access_mode ?? 'private');
-        $allowSelf = Schema::hasColumn('king_galleries', 'allow_self_signup')
-            ? filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN)
-            : KsAccess::allowsSelfSignup($accessMode);
+        $allowSelf = KsAccess::allowsSelfSignup($accessMode)
+            || (Schema::hasColumn('king_galleries', 'allow_self_signup')
+                && filter_var($g->allow_self_signup ?? false, FILTER_VALIDATE_BOOLEAN));
         $publicOk = $accessMode === 'public';
-        if (! ($publicOk || (KsAccess::allowsSelfSignup($accessMode) && $allowSelf))) {
+        if (! ($publicOk || $allowSelf)) {
             return ['status' => 403, 'body' => ['message' => 'Este envio não está disponível para esta galeria.']];
         }
 

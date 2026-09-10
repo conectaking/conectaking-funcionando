@@ -1280,14 +1280,39 @@ class KingSelectionAdminService
             'is_published', 'cliente_nome', 'cliente_email', 'cliente_telefone', 'cliente_nota',
             'allow_self_signup', 'categoria', 'data_trabalho', 'idioma', 'mensagem_acesso',
             'allow_download', 'allow_comments', 'allow_social_sharing', 'client_card_height_px',
-            'watermark_mode', 'watermark_opacity', 'watermark_scale', 'client_image_quality',
+            'watermark_mode', 'watermark_opacity', 'watermark_scale',
+            'watermark_scale_portrait', 'watermark_scale_landscape',
+            'watermark_rotate', 'watermark_rotate_portrait', 'watermark_rotate_landscape',
+            'watermark_logo_offset_x', 'watermark_logo_offset_y',
+            'watermark_logo_offset_x_portrait', 'watermark_logo_offset_y_portrait',
+            'watermark_logo_offset_x_landscape', 'watermark_logo_offset_y_landscape',
+            'watermark_stretch_w_pct', 'watermark_stretch_h_pct',
+            'watermark_stretch_w_pct_portrait', 'watermark_stretch_h_pct_portrait',
+            'watermark_stretch_w_pct_landscape', 'watermark_stretch_h_pct_landscape',
+            'watermark_path', 'watermark_path_portrait', 'watermark_path_landscape',
+            'gallery_link_cover_photo_id', 'gallery_link_cover_file_path',
+            'client_folder_layout', 'client_entry_splash_enabled',
+            'share_link_custom_append', 'share_link_full_message', 'share_link_include_credentials',
+            'sales_whatsapp_template_approved', 'sales_whatsapp_template_pending',
+            'sales_whatsapp_template_rejected', 'sales_whatsapp_template_awaiting',
+            'client_image_quality',
             'thank_you_title', 'thank_you_message', 'thank_you_image_url', 'thank_you_photographer_name',
             'support_whatsapp_number', 'support_whatsapp_label', 'support_whatsapp_message',
             'promo_enabled', 'promo_coupon_code', 'promo_valid_until', 'promo_free_photo_count',
             'promo_instructions', 'face_recognition_enabled', 'allow_client_edit_request',
+            'tutorial_video_url',
         ];
         $sets = [];
         $params = [];
+        // Ao gravar modo signup/vendidas, garantir allow_self_signup (cadastro diferido).
+        if (array_key_exists('access_mode', $body)
+            && Schema::hasColumn('king_galleries', 'allow_self_signup')
+            && ! array_key_exists('allow_self_signup', $body)) {
+            $am = \App\Support\KingSelection\KsAccess::normAccessMode($body['access_mode'] ?? null);
+            if (in_array($am, ['signup', 'paid_event_photos'], true)) {
+                $body['allow_self_signup'] = true;
+            }
+        }
         foreach ($allowed as $col) {
             if (! array_key_exists($col, $body) || ! Schema::hasColumn('king_galleries', $col)) {
                 continue;
