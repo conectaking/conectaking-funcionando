@@ -190,7 +190,7 @@
         </div>
         
         <!-- Campos hidden para configurações (usados pelo código JS) -->
-        <div style="display: none;">
+        <div class="ck-hidden">
             <input type="text" id="form-module-title" placeholder="King Forms">
             <input type="text" id="form-title" placeholder="Ex: Formulário de Contato">
             <textarea id="form-description" rows="4" placeholder="Descreva o propósito do formulário..."></textarea>
@@ -221,29 +221,29 @@
             <label>
                 <input type="radio" name="display-format" value="banner">
             </label>
-            <div id="banner-image-container" style="display: none;"></div>
+            <div class="ck-hidden" id="banner-image-container"></div>
             <input type="hidden" id="form-fields-json" value="[]">
             
             <!-- Elementos de upload (ocultos mas acessíveis pelo JS) -->
-            <div id="banner-upload-area" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">
+            <div class="ck-sr-only" id="banner-upload-area">
                 <input type="file" id="banner-file-input" accept="image/*">
                 <img id="banner-preview">
                 <div id="banner-upload-text"></div>
                 <button type="button" id="remove-banner-btn"></button>
             </div>
-            <div id="logo-upload-area" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">
+            <div class="ck-sr-only" id="logo-upload-area">
                 <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/jpg">
                 <img id="logo-preview">
                 <div id="logo-upload-text"></div>
                 <button type="button" id="remove-logo-btn"></button>
             </div>
-            <div id="header-upload-area" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">
+            <div class="ck-sr-only" id="header-upload-area">
                 <input type="file" id="header-file-input" accept="image/*">
                 <img id="header-preview">
                 <div id="header-upload-text"></div>
                 <button type="button" id="remove-header-btn"></button>
             </div>
-            <div id="background-upload-area" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">
+            <div class="ck-sr-only" id="background-upload-area">
                 <input type="file" id="background-file-input" accept="image/*">
                 <img id="background-preview">
                 <div id="background-upload-text"></div>
@@ -252,9 +252,9 @@
         </div>
         
         <!-- Outras tabs (ocultas por enquanto) -->
-        <div style="display: none;">
+        <div class="ck-hidden">
             <div class="form-tab-content" data-tab-content="questions">
-            <div style="margin-bottom: 20px;">
+            <div class="ck-mb-20">
                 <button type="button" class="btn-save-form" id="add-question-btn">
                     <i class="fas fa-plus"></i> Adicionar Pergunta
                 </button>

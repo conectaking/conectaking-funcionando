@@ -23,14 +23,14 @@
     </div>
     <header class="flex flex-col items-center pt-6 pb-8">
       <div id="logo-wrap" class="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm mb-2">
-        <img id="doc-logo" alt="Logo" class="h-12 w-auto object-contain" src="" style="display:none"/>
+        <img id="doc-logo" alt="Logo" class="h-12 w-auto object-contain ck-hidden" src=""/>
         <span id="logo-placeholder" class="text-slate-400 dark:text-slate-500 text-sm font-medium">Logo</span>
       </div>
       <h1 class="text-xl font-bold tracking-tight text-primary">King Digital Invoice</h1>
       <p class="text-xs opacity-60 font-medium" id="subtitle">Comprovante de Serviço</p>
     </header>
     <main class="px-5">
-      <div id="content-card" class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-700/50" style="display:none">
+      <div id="content-card" class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-700/50 ck-hidden">
         <div class="p-6 border-b border-slate-50 dark:border-slate-700/50">
           <div class="flex justify-between items-start mb-6">
             <div>

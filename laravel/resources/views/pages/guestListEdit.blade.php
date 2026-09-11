@@ -59,7 +59,7 @@
                     <h3 style="color: #4A90E2; margin: 0;">
                         <i class="fas fa-sliders-h"></i> Personalização do Formulrio
                     </h3>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <label class="ck-flex-gap-8">
                         <input type="checkbox" id="use-custom-form" onchange="toggleCustomForm()" style="width: 20px; height: 20px; cursor: pointer;">
                         <span>Usar campos customizados (KingForms)</span>
                     </label>

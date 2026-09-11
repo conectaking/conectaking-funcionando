@@ -48,7 +48,7 @@
         <label for="ks-modal-pub-tel">WhatsApp <span style="opacity:.75">(opcional)</span></label>
         <input id="ks-modal-pub-tel" class="ks-input" type="tel" autocomplete="tel" placeholder="Ex.: 5511999999999" />
       </div>
-      <div class="ks-err ks-hidden" id="ks-modal-pub-err" style="margin-top:8px"></div>
+      <div class="ks-err ks-hidden ck-mt-8" id="ks-modal-pub-err"></div>
       <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
         <button type="button" class="ks-btn" id="ks-modal-pub-cancel" style="flex:1;min-width:120px;justify-content:center">Cancelar</button>
         <button type="button" class="ks-btn ks-btn-yellow" id="ks-modal-pub-submit" style="flex:1;min-width:140px;justify-content:center">
@@ -256,7 +256,7 @@
           <button type="button" class="ks-btn ks-btn-yellow ks-hidden" id="ks-refresh-downloads" title="Buscar fotos liberadas pelo fotógrafo">
             <i class="fas fa-sync-alt"></i> Atualizar liberaes
           </button>
-          <div id="ks-downloads-progress" class="ks-hidden" style="margin-top:8px">
+          <div id="ks-downloads-progress" class="ks-hidden ck-mt-8">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#cbd5e1;margin-bottom:4px">
               <span id="ks-downloads-progress-text">Baixando...</span>
               <span id="ks-downloads-progress-pct">0%</span>
@@ -286,7 +286,7 @@
               <button type="button" class="ks-btn ks-dl-btn-zip" id="ks-downloads-download-zip"><i class="fas fa-file-archive"></i> Baixar todas em ZIP</button>
             </div>
           </div>
-          <div id="ks-downloads-grid" class="ks-grid" style="margin-top:10px"></div>
+          <div id="ks-downloads-grid" class="ks-grid ck-mt-10"></div>
         </div>
         <div class="ks-face-panel ks-hidden" id="ks-face-panel">
           <div class="ks-face-panel-title"><i class="fas fa-face-smile"></i> Reconhecimento facial</div>
@@ -435,7 +435,7 @@
             <option value="no">Não</option>
             <option value="yes">Sim</option>
           </select>
-          <div id="ks-confirm-proof-wrap" class="ks-hidden" style="margin-top:10px">
+          <div id="ks-confirm-proof-wrap" class="ks-hidden ck-mt-10">
             <label for="ks-confirm-proof-file">Comprovante (opcional aqui - ou envie depois em Fotos para baixar)</label>
             <input id="ks-confirm-proof-file" type="file" accept="image/*" class="ks-input" />
           </div>

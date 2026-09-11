@@ -160,17 +160,17 @@
         </div>
         <div class="input-group">
             <label>Cor da faixa (fundo)</label>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-bg-type" value="solid" checked> Cor sólida</label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-bg-type" value="gradient"> Degradê</label>
+            <div class="ck-flex-wrap-mt">
+                <label class="ck-flex-gap-6"><input type="radio" name="vitrine-marquee-bg-type" value="solid" checked> Cor sólida</label>
+                <label class="ck-flex-gap-6"><input type="radio" name="vitrine-marquee-bg-type" value="gradient"> Degradê</label>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;align-items:flex-end;">
                 <div>
-                    <label for="vitrine-marquee-color1" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor 1 (fundo)</label>
+                    <label class="ck-hint-dark" for="vitrine-marquee-color1">Cor 1 (fundo)</label>
                     <input type="color" id="vitrine-marquee-color1" value="#2A2A2E" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
                 </div>
                 <div id="vitrine-marquee-color2-wrap">
-                    <label for="vitrine-marquee-color2" style="display:block;font-size:0.8rem;color:var(--text-dark,#A1A1A1);margin-bottom:4px;">Cor 2 (degradê)</label>
+                    <label class="ck-hint-dark" for="vitrine-marquee-color2">Cor 2 (degradê)</label>
                     <input type="color" id="vitrine-marquee-color2" value="#FFC700" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
                 </div>
             </div>
@@ -188,10 +188,10 @@
         </div>
         <div class="input-group">
             <label>Velocidade da faixa</label>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-speed" value="slow" checked> Lenta</label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-speed" value="normal"> Normal</label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="vitrine-marquee-speed" value="fast"> Rápida</label>
+            <div class="ck-flex-wrap-mt">
+                <label class="ck-flex-gap-6"><input type="radio" name="vitrine-marquee-speed" value="slow" checked> Lenta</label>
+                <label class="ck-flex-gap-6"><input type="radio" name="vitrine-marquee-speed" value="normal"> Normal</label>
+                <label class="ck-flex-gap-6"><input type="radio" name="vitrine-marquee-speed" value="fast"> Rápida</label>
             </div>
         </div>
         <div class="input-group">
@@ -627,7 +627,7 @@
             <main id="finance-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-wallet"></i> Gestão Financeira</h1>
-                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                    <p class="ck-text-muted-mt">
                         Controle suas receitas, despesas, contas e orçamentos
                     </p>
                 </header>
@@ -642,7 +642,7 @@
             <main id="king-forms-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-file-signature"></i> King Forms</h1>
-                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                    <p class="ck-text-muted-mt">
                         Crie e gerencie vários formulários. Edite e apague na lista abaixo.
                     </p>
                 </header>
@@ -694,7 +694,7 @@
                 </div>
 
                 <!-- Seção de Detalhes Completos dos Links -->
-                <div style="margin-top: 40px;">
+                <div class="ck-mt-40">
                     <h3 style="color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
                         <i class="fas fa-list"></i> Detalhes Completos dos Seus Links
                     </h3>
@@ -761,15 +761,15 @@
             <main id="branding-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-palette"></i> Personalização da Marca</h1>
-                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                    <p class="ck-text-muted-mt">
                         Personalize o logo da sua empresa que aparecerá no seu cartão virtual
                     </p>
                 </header>
                 
-                <div class="branding-container" style="max-width: 900px; margin: 0 auto;">
+                <div class="branding-container ck-container-900">
                     <!-- Preview do Logo -->
-                    <div class="branding-preview-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 2px solid var(--border-color, #333);">
-                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <div class="branding-preview-card ck-dash-card">
+                        <h3 class="ck-dash-h">
                             <i class="fas fa-eye"></i> Preview do Logo
                         </h3>
                         <div id="branding-preview-container" style="background: #000; border-radius: 8px; padding: 40px; text-align: center; min-height: 200px; display: flex; align-items: center; justify-content: center;">
@@ -779,35 +779,35 @@
                     </div>
                     
                     <!-- Formulário de Personalização -->
-                    <div class="branding-form-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; border: 2px solid var(--border-color, #333);">
-                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                    <div class="branding-form-card ck-dash-card-nb">
+                        <h3 class="ck-dash-h-25">
                             <i class="fas fa-upload"></i> Configurar Logo
                         </h3>
                         
                         <form id="branding-form">
                             <input type="hidden" id="branding-logo-url" value="">
-                            <div class="form-group" style="margin-bottom: 25px;">
-                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                            <div class="form-group ck-mb-25">
+                                <label class="ck-label-primary">
                                     <i class="fas fa-upload"></i> Upload de Imagem
                                 </label>
-                                <input type="file" id="branding-logo-upload" accept="image/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
-                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Formatos aceitos: PNG, JPG, JPEG, GIF, WebP</small>
+                                <input class="ck-input-dash" type="file" id="branding-logo-upload" accept="image/*">
+                                <small class="ck-text-muted-sm">Formatos aceitos: PNG, JPG, JPEG, GIF, WebP</small>
                             </div>
                             
-                            <div class="form-group" style="margin-bottom: 25px;">
-                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                            <div class="form-group ck-mb-25">
+                                <label class="ck-label-primary">
                                     <i class="fas fa-ruler"></i> Tamanho do Logo (px)
                                 </label>
-                                <input type="number" id="branding-logo-size" class="form-input" placeholder="60" min="20" max="200" value="60" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
-                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Tamanho em pixels (recomendado: 60-120px)</small>
+                                <input type="number" id="branding-logo-size" class="form-input ck-input-dash" placeholder="60" min="20" max="200" value="60">
+                                <small class="ck-text-muted-sm">Tamanho em pixels (recomendado: 60-120px)</small>
                             </div>
                             
-                            <div class="form-group" style="margin-bottom: 25px;">
-                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                            <div class="form-group ck-mb-25">
+                                <label class="ck-label-primary">
                                     <i class="fas fa-link"></i> Link do Logo (opcional)
                                 </label>
-                                <input type="url" id="branding-logo-link" class="form-input" placeholder="https://seusite.com.br" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
-                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">URL para onde o logo redirecionará quando clicado</small>
+                                <input type="url" id="branding-logo-link" class="form-input ck-input-dash" placeholder="https://seusite.com.br">
+                                <small class="ck-text-muted-sm">URL para onde o logo redirecionará quando clicado</small>
                             </div>
                             
                             <div style="display: flex; gap: 12px; margin-top: 32px;">
@@ -848,11 +848,11 @@
                 <div id="tab-content-modules" class="tab-content-separation" style="display: block;">
                     <div class="module-availability-container">
                         <div class="module-availability-header">
-                            <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
+                            <p class="ck-text-muted-mb20">
                                 Configure quais módulos estarão disponíveis para cada plano de assinatura.
                             </p>
-                            <div style="margin-bottom: 16px;">
-                                <label for="module-filter-input" style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary, #888888);">Filtrar por módulo</label>
+                            <div class="ck-mb-16">
+                                <label class="ck-label-muted" for="module-filter-input">Filtrar por módulo</label>
                                 <input type="text" id="module-filter-input" placeholder="Ex: Banner, Carrossel, King Forms..." 
                                     style="width: 100%; max-width: 320px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--graphite, #1F1F1F); color: var(--text-primary, #FFF); font-size: 0.95rem;">
                             </div>
@@ -874,7 +874,7 @@
                 <div id="tab-content-individual" class="tab-content-separation ck-hidden">
                     <div class="individual-plans-container">
                         <div style="margin-bottom: 24px;">
-                            <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
+                            <p class="ck-text-muted-mb20">
                                 Configure planos individuais para usuários específicos. Exemplo: permitir que um usuário tenha acesso ao módulo Carrossel mesmo sem ter o plano completo.
                             </p>
                             <button id="add-individual-plan-btn" class="btn btn-primary" onclick="showAddIndividualPlanModal()">
@@ -892,19 +892,19 @@
                 <div id="tab-content-link-limits" class="tab-content-separation ck-hidden">
                     <div class="link-limits-container">
                         <div class="link-limits-header">
-                            <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
+                            <p class="ck-text-muted-mb20">
                                 Configure a quantidade máxima de links por tipo de módulo em cada plano. Deixe em branco para ilimitado.
                             </p>
                             <div style="margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
                                 <div style="flex: 1; min-width: 200px;">
-                                    <label for="link-limits-filter-module" style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary, #888888);">Filtrar por módulo</label>
-                                    <input type="text" id="link-limits-filter-module" placeholder="Ex: Banner, WhatsApp..." 
-                                        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--graphite, #1F1F1F); color: var(--text-primary, #FFF); font-size: 0.95rem;">
+                                    <label class="ck-label-muted" for="link-limits-filter-module">Filtrar por módulo</label>
+                                    <input class="ck-input-graphite" type="text" id="link-limits-filter-module" placeholder="Ex: Banner, WhatsApp..." 
+                                       >
                                 </div>
                                 <div style="flex: 1; min-width: 200px;">
-                                    <label for="link-limits-filter-plan" style="display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary, #888888);">Filtrar por plano</label>
-                                    <input type="text" id="link-limits-filter-plan" placeholder="Ex: King Start, King Prime..." 
-                                        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--graphite, #1F1F1F); color: var(--text-primary, #FFF); font-size: 0.95rem;">
+                                    <label class="ck-label-muted" for="link-limits-filter-plan">Filtrar por plano</label>
+                                    <input class="ck-input-graphite" type="text" id="link-limits-filter-plan" placeholder="Ex: King Start, King Prime..." 
+                                       >
                                 </div>
                             </div>
                         </div>
@@ -967,15 +967,15 @@
             <main id="personalizar-link-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-link"></i> Personalizar Link do Site</h1>
-                    <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
+                    <p class="ck-text-muted-mt">
                         Personalize a preview do link quando compartilhado no WhatsApp, Facebook e outras redes sociais
                     </p>
                 </header>
                 
-                <div class="link-preview-container" style="max-width: 900px; margin: 0 auto;">
+                <div class="link-preview-container ck-container-900">
                     <!-- Preview da Imagem -->
-                    <div class="link-preview-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 2px solid var(--border-color, #333);">
-                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <div class="link-preview-card ck-dash-card">
+                        <h3 class="ck-dash-h">
                             <i class="fas fa-eye"></i> Preview da Imagem
                         </h3>
                         <div id="link-preview-image-container" style="background: #000; border-radius: 8px; padding: 20px; text-align: center; min-height: 400px; display: flex; align-items: center; justify-content: center;">
@@ -987,80 +987,80 @@
                     </div>
                     
                     <!-- Formulário de Personalização -->
-                    <div class="link-preview-form-card" style="background: var(--card-bg, #1F1F1F); border-radius: 12px; padding: 30px; border: 2px solid var(--border-color, #333);">
-                        <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                    <div class="link-preview-form-card ck-dash-card-nb">
+                        <h3 class="ck-dash-h-25">
                             <i class="fas fa-palette"></i> Personalizar
                         </h3>
                         
                         <form id="link-preview-form">
-                            <div class="form-group" style="margin-bottom: 25px;">
-                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                            <div class="form-group ck-mb-25">
+                                <label class="ck-label-primary">
                                     <i class="fas fa-heading"></i> Título Principal
                                 </label>
-                                <input type="text" id="link-preview-title" class="form-input" placeholder="CONECTAKING" maxlength="50" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
-                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Texto principal exibido na preview (máx. 50 caracteres)</small>
+                                <input type="text" id="link-preview-title" class="form-input ck-input-dash" placeholder="CONECTAKING" maxlength="50">
+                                <small class="ck-text-muted-sm">Texto principal exibido na preview (máx. 50 caracteres)</small>
                             </div>
                             
-                            <div class="form-group" style="margin-bottom: 25px;">
-                                <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                            <div class="form-group ck-mb-25">
+                                <label class="ck-label-primary">
                                     <i class="fas fa-text-height"></i> Subtítulo
                                 </label>
-                                <input type="text" id="link-preview-subtitle" class="form-input" placeholder="Sua Presença Digital. Um Toque. Poder Absoluto." maxlength="100" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem;">
-                                <small style="color: var(--text-secondary, #888888); font-size: 0.85rem;">Texto secundário exibido na preview (máx. 100 caracteres)</small>
+                                <input type="text" id="link-preview-subtitle" class="form-input ck-input-dash" placeholder="Sua Presença Digital. Um Toque. Poder Absoluto." maxlength="100">
+                                <small class="ck-text-muted-sm">Texto secundário exibido na preview (máx. 100 caracteres)</small>
                             </div>
                             
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
                                 <div class="form-group">
-                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <label class="ck-label-primary">
                                         <i class="fas fa-fill"></i> Cor de Fundo 1
                                     </label>
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <input type="color" id="link-preview-bg1" value="#991B1B" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
-                                        <input type="text" id="link-preview-bg1-text" value="#991B1B" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    <div class="ck-flex-gap-10">
+                                        <input class="ck-color-swatch" type="color" id="link-preview-bg1" value="#991B1B">
+                                        <input class="ck-input-hex" type="text" id="link-preview-bg1-text" value="#991B1B" pattern="^#[0-9A-Fa-f]{6}$">
                                     </div>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <label class="ck-label-primary">
                                         <i class="fas fa-fill"></i> Cor de Fundo 2
                                     </label>
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <input type="color" id="link-preview-bg2" value="#000000" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
-                                        <input type="text" id="link-preview-bg2-text" value="#000000" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    <div class="ck-flex-gap-10">
+                                        <input class="ck-color-swatch" type="color" id="link-preview-bg2" value="#000000">
+                                        <input class="ck-input-hex" type="text" id="link-preview-bg2-text" value="#000000" pattern="^#[0-9A-Fa-f]{6}$">
                                     </div>
                                 </div>
                             </div>
                             
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
                                 <div class="form-group">
-                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <label class="ck-label-primary">
                                         <i class="fas fa-font"></i> Cor do Texto Principal
                                     </label>
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <input type="color" id="link-preview-text-color" value="#F5F5F5" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
-                                        <input type="text" id="link-preview-text-color-text" value="#F5F5F5" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    <div class="ck-flex-gap-10">
+                                        <input class="ck-color-swatch" type="color" id="link-preview-text-color" value="#F5F5F5">
+                                        <input class="ck-input-hex" type="text" id="link-preview-text-color-text" value="#F5F5F5" pattern="^#[0-9A-Fa-f]{6}$">
                                     </div>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label style="display: block; color: var(--text-primary, #F5F5F5); margin-bottom: 8px; font-weight: 600;">
+                                    <label class="ck-label-primary">
                                         <i class="fas fa-font"></i> Cor do Subtítulo
                                     </label>
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <input type="color" id="link-preview-subtitle-color" value="#FFC700" style="width: 60px; height: 45px; border: 2px solid var(--border-color, #333); border-radius: 8px; cursor: pointer;">
-                                        <input type="text" id="link-preview-subtitle-color-text" value="#FFC700" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: var(--input-bg, #0B0B0B); color: var(--text-primary, #F5F5F5); font-size: 1rem; font-family: monospace;">
+                                    <div class="ck-flex-gap-10">
+                                        <input class="ck-color-swatch" type="color" id="link-preview-subtitle-color" value="#FFC700">
+                                        <input class="ck-input-hex" type="text" id="link-preview-subtitle-color-text" value="#FFC700" pattern="^#[0-9A-Fa-f]{6}$">
                                     </div>
                                 </div>
                             </div>
                             
                             <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
-                                <button type="button" id="link-preview-reset-btn" class="btn btn-secondary" style="padding: 12px 24px;">
+                                <button type="button" id="link-preview-reset-btn" class="btn btn-secondary ck-px-12-py-24">
                                     <i class="fas fa-undo"></i> Restaurar Padrão
                                 </button>
-                                <button type="button" id="link-preview-preview-btn" class="btn btn-secondary" style="padding: 12px 24px;">
+                                <button type="button" id="link-preview-preview-btn" class="btn btn-secondary ck-px-12-py-24">
                                     <i class="fas fa-eye"></i> Atualizar Preview
                                 </button>
-                                <button type="submit" id="link-preview-save-btn" class="btn btn-primary" style="padding: 12px 24px;">
+                                <button type="submit" id="link-preview-save-btn" class="btn btn-primary ck-px-12-py-24">
                                     <i class="fas fa-save"></i> Salvar Configuração
                                 </button>
                             </div>

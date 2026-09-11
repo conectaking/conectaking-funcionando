@@ -26,7 +26,7 @@
                         <a href="/login" class="btn btn-secondary">Login</a>
                         <a href="/registro" class="btn btn-primary">Criar Carto</a>
                     </div>
-                    <div class="logged-in-state" style="display: none;">
+                    <div class="logged-in-state ck-hidden">
                         <a href="/dashboard" class="btn btn-secondary">Meu Painel</a>
                         <div class="profile-button" id="user-profile-btn">
                             <img id="navbar-user-avatar" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=" alt="Avatar">
@@ -72,7 +72,7 @@
                                     <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=" alt="Avatar do Usuário" id="profile-photo-preview">
                                     <div class="upload-overlay"><i class="fas fa-camera"></i></div>
                                     <div class="upload-loader"></div>
-                                    <input type="file" id="photo-file-input" accept="image/*" style="display: none;">
+                                    <input class="ck-hidden" type="file" id="photo-file-input" accept="image/*">
                                 </div>
                             </div>
 

@@ -11,10 +11,11 @@
 
 ## Exceções `public/`
 - `config.js`, `sw.js`, `cache-buster.js`, `main.js`, `js/recibos-modulo-nav.js`
-- `vendor/*` = fallback legado (FA/chart/etc. já via npm; pdf-lib também via npm agora)
+- `vendor/` — sem pastas npm (só README); assets via Vite
 
 ## Residual
-- Muitos `style=""` em dashboard/admin/index (parcialmente migrados para `.ck-hidden`)
-- Endurecer CSP `style-src` só depois de zerar inline styles
+- `style=""` ~633 (antes ~981): dashboard/admin/index e editores ainda com layouts únicos
+- Utilitários `.ck-*` em `ck-utils.css` cobrem cards/inputs/FAQ/flex comuns
+- Endurecer CSP `style-src` só depois de zerar inline styles + `:root` dinâmico
 
 **Regra:** código novo só em `laravel/resources/{js,css}` + Vite.

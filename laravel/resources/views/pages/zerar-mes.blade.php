@@ -33,17 +33,17 @@
             <select id="sel-year"></select>
         </div>
 
-        <div id="error-msg" class="error" style="display: none;"></div>
-        <div id="loading" class="loading" style="display: none;"><i class="fas fa-spinner fa-spin"></i> Carregando lançamentos...</div>
-        <div id="content" class="card" style="display: none;">
+        <div id="error-msg" class="error ck-hidden"></div>
+        <div id="loading" class="loading ck-hidden"><i class="fas fa-spinner fa-spin"></i> Carregando lançamentos...</div>
+        <div id="content" class="card ck-hidden">
             <div class="summary" id="summary"></div>
             <div class="toolbar">
                 <label><input type="checkbox" id="check-all"> Selecionar todos</label>
-                <button type="button" class="btn btn-danger" id="btn-delete-selected" style="display: none;"><i class="fas fa-trash-alt"></i> Excluir selecionados</button>
+                <button type="button" class="btn btn-danger ck-hidden" id="btn-delete-selected"><i class="fas fa-trash-alt"></i> Excluir selecionados</button>
             </div>
             <div class="list" id="list"></div>
         </div>
-        <div id="empty" class="empty card" style="display: none;">
+        <div id="empty" class="empty card ck-hidden">
             <i class="fas fa-inbox"></i>
             <p>Nenhum lançamento neste mês.</p>
             <a href="/dashboard#finance" class="btn btn-outline" style="margin-top: 12px;">Voltar ao painel</a>

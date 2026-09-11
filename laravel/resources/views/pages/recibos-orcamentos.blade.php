@@ -75,7 +75,7 @@
                     <span class="material-icons-outlined text-sm">visibility</span>
                     <span class="text-sm font-medium">Visualizar</span>
                 </button>
-                <button type="button" id="btn-exportar-pdf" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all" style="display: none;">
+                <button type="button" id="btn-exportar-pdf" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all ck-hidden">
                     <span class="material-icons-outlined text-sm">file_download</span>
                     <span class="text-sm font-medium">Exportar PDF</span>
                 </button>
@@ -240,10 +240,10 @@
                         <div id="catalogo-dropdown" class="absolute right-0 top-full mt-1 py-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto hidden min-w-[200px]"></div>
                     </div>
                 </div>
-                <div id="recibo-tirar-configurar" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark" style="display: none;">
+                <div id="recibo-tirar-configurar" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark ck-hidden">
                     <p class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Extrato do cartão — ler valores</p>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Foto do print do cartão com várias compras. O sistema preenche a tabela acima; <strong>não entra no PDF</strong> como nota fiscal.</p>
-                    <div id="comprovante-sem-id" class="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs" style="display: none;">
+                    <div id="comprovante-sem-id" class="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs ck-hidden">
                         Se o recibo ainda não foi salvo, ele será criado ao enviar a primeira foto/arquivo.
                     </div>
                     <div class="mb-4 flex flex-wrap gap-2 items-end">
@@ -283,7 +283,7 @@
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">Os valores extraídos aparecem na tabela acima; use Configurar para ajustar.</p>
                 </div>
-                <div id="recibo-notas-fiscais" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark" style="display: none;">
+                <div id="recibo-notas-fiscais" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark ck-hidden">
                     <div class="flex items-center gap-2 mb-2 text-primary">
                         <span class="material-icons-outlined">receipt_long</span>
                         <h3 class="uppercase tracking-widest text-xs font-bold">Notas fiscais (uma foto por item)</h3>

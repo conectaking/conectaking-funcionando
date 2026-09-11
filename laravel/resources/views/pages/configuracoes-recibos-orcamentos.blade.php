@@ -51,17 +51,17 @@
                 <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Configure a logo que serÃ¡ usada em todos os recibos e orÃ§amentos.</p>
                 <div id="logo-fixa-upload-area" class="rounded-xl border-2 border-dashed border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-black/40 p-6 text-center cursor-pointer hover:border-primary/50 max-w-xs mb-4">
                     <input type="file" id="file-logo-fixa" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden"/>
-                    <img id="logo-fixa-preview" src="" alt="Logo" class="max-h-20 w-auto mx-auto rounded-lg" style="display: none;"/>
+                    <img id="logo-fixa-preview" src="" alt="Logo" class="max-h-20 w-auto mx-auto rounded-lg ck-hidden"/>
                     <div id="logo-fixa-text">
                         <span class="material-icons-outlined text-3xl text-primary block mb-2">cloud_upload</span>
                         <p class="text-sm text-slate-600 dark:text-slate-300 m-0">Clique para definir logo padrÃ£o</p>
                     </div>
                 </div>
                 <p class="text-slate-500 dark:text-slate-400 text-xs mb-2">Selecione a imagem para ver como ficarÃ¡ antes de confirmar.</p>
-                <button type="button" id="btn-remover-logo-fixa" class="text-sm text-red-500 hover:underline" style="display: none;">Remover logo fixa</button>
+                <button type="button" id="btn-remover-logo-fixa" class="text-sm text-red-500 hover:underline ck-hidden">Remover logo fixa</button>
             </section>
             <!-- Modal: visualizar logo antes de importar -->
-            <div id="logo-preview-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style="display: none;">
+            <div id="logo-preview-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm ck-hidden">
                 <div class="bg-white dark:bg-card-dark rounded-2xl shadow-xl border border-slate-200 dark:border-border-dark max-w-md w-full overflow-hidden">
                     <div class="p-4 border-b border-slate-200 dark:border-border-dark">
                         <h3 class="text-lg font-bold dark:text-white">Visualizar logo</h3>

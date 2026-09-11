@@ -66,10 +66,11 @@ curl -sS -o /dev/null -w 'forms:%{http_code}\n' http://127.0.0.1:8080/kingForms
 curl -sS -o /dev/null -w 'ks:%{http_code}\n' http://127.0.0.1:8080/kingSelection
 curl -sS -o /dev/null -w 'dashboard.js:%{http_code}\n' http://127.0.0.1:8080/dashboard.js
 curl -sS -o /dev/null -w 'manifest:%{http_code}\n' http://127.0.0.1:8080/manifest.json
-curl -sS -o /dev/null -w 'vendor_fa:%{http_code}\n' http://127.0.0.1:8080/vendor/fontawesome/css/all.min.css
-curl -sS -o /dev/null -w 'vendor_chart:%{http_code}\n' http://127.0.0.1:8080/vendor/chartjs/chart.umd.min.js
-curl -sS -o /dev/null -w 'vendor_leaflet:%{http_code}\n' http://127.0.0.1:8080/vendor/leaflet/leaflet.js
-curl -sS -o /dev/null -w 'vendor_cropper:%{http_code}\n' http://127.0.0.1:8080/vendor/cropperjs/cropper.min.js
+# vendors npm removidos de public/vendor — esperar 404
+curl -sS -o /dev/null -w 'vendor_fa_gone:%{http_code}\n' http://127.0.0.1:8080/vendor/fontawesome/css/all.min.css
+curl -sS -o /dev/null -w 'vendor_chart_gone:%{http_code}\n' http://127.0.0.1:8080/vendor/chartjs/chart.umd.min.js
+curl -sS http://127.0.0.1:8080/login | grep -oE 'build/assets/fontawesome-[A-Za-z0-9_-]+\.css' | head -1 | sed 's/^/fa_vite:/'
+curl -sS http://127.0.0.1:8080/ | grep -oE 'ck-faq-|ck-container-1200' | head -3 | sed 's/^/ck_utils:/'
 test ! -f "$BASE/public/admin/index.html" && echo 'admin_html_gone=yes'
 docker exec conectaking-laravel sh -c 'test -z "${LEGACY_PUBLIC_HTML_PATH:-}" && echo public_html_env_off=yes || echo public_html_env=${LEGACY_PUBLIC_HTML_PATH}'
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps

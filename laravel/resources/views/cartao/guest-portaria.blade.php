@@ -46,7 +46,7 @@
         <button type="button" class="btn secondary" id="btn-qr">Ler QR</button>
     </div>
     <div id="msg" class="msg"></div>
-    <div id="qr-wrap" style="display:none">
+    <div class="ck-hidden" id="qr-wrap">
         <div id="qr-reader"></div>
         <button type="button" class="btn secondary" id="btn-qr-stop">Parar câmera</button>
     </div>

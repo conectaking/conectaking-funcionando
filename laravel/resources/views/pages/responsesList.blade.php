@@ -33,9 +33,9 @@
                 <div>Carregando dados...</div>
             </div>
             
-            <div id="content" style="display: none;">
+            <div class="ck-hidden" id="content">
                 <!-- SE—fO DE LINKS GRANDE E VISÍVEL (apenas para modo lista de convidados) -->
-                <div id="links-hero-section" class="links-hero-section" style="display: none;">
+                <div id="links-hero-section" class="links-hero-section ck-hidden">
                     <div class="links-hero-title">
                         <i class="fas fa-link"></i>
                         <h2>Links para Compartilhar</h2>
@@ -130,7 +130,7 @@
                 </div>
                 
                 <!-- Estatísticas Melhoradas (Removido contador de contratos conforme solicitado) -->
-                <div id="stats-hero-section" class="stats-hero-grid" style="display: none;">
+                <div id="stats-hero-section" class="stats-hero-grid ck-hidden">
                     <div class="stat-hero-card total">
                         <div class="stat-hero-icon total">
                             <i class="fas fa-users"></i>
@@ -163,13 +163,13 @@
                     <button id="export-pdf" class="btn-export pdf">
                         <i class="fas fa-file-pdf"></i> PDF
                     </button>
-                    <button id="export-csv" class="btn-export csv" style="display: none;">
+                    <button id="export-csv" class="btn-export csv ck-hidden">
                         <i class="fas fa-file-csv"></i> CSV
                     </button>
                 </div>
                 
                 <!-- Controles Administrativos -->
-                <div id="admin-controls" class="admin-controls" style="display: none;">
+                <div id="admin-controls" class="admin-controls ck-hidden">
                     <div class="admin-controls-left">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ECECEC; font-weight: 600;">
                             <input type="checkbox" id="select-all-checkbox" class="guest-checkbox">
@@ -177,7 +177,7 @@
                         </label>
                     </div>
                     <div class="admin-controls-right">
-                        <button class="btn-delete-admin" id="delete-selected-btn" style="display: none;">
+                        <button class="btn-delete-admin ck-hidden" id="delete-selected-btn">
                             <i class="fas fa-trash-alt"></i> Excluir Selecionados (<span id="selected-count">0</span>)
                         </button>
                         <button class="btn-delete-admin" id="delete-all-btn">
@@ -191,7 +191,7 @@
                 </div>
             </div>
             
-            <div id="empty" class="empty-state" style="display: none;">
+            <div id="empty" class="empty-state ck-hidden">
                 <div class="empty-icon">
                     <i class="fas fa-inbox"></i>
                 </div>

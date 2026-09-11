@@ -69,7 +69,7 @@
                                 <button type="button" class="btn-suggestions" id="btn-store-description-suggestions">
                                     <i class="fas fa-magic"></i> Gerar Sugestão
                                 </button>
-                                <button type="button" class="btn-more-suggestions" id="btn-more-store-description" style="display: none;">
+                                <button type="button" class="btn-more-suggestions ck-hidden" id="btn-more-store-description">
                                     <i class="fas fa-sync-alt"></i> Mais Sugestões
                                 </button>
                             </div>
@@ -145,14 +145,14 @@
                         <div class="image-preview" id="logo-preview"></div>
                         <small class="form-help">Faça upload da logo que aparecerá no botão do módulo</small>
                     </div>
-                    <div class="form-group" id="logo-size-group" style="display: none;">
+                    <div class="form-group ck-hidden" id="logo-size-group">
                         <label for="button-logo-size">Tamanho da Logo (em pixels)</label>
                         <div class="input-group range-slider" style="margin-bottom: 15px;">
                             <div class="range-slider-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <label style="margin: 0; color: var(--text, #ECECEC);">Tamanho: <span id="logo-size-value">24</span>px</label>
                                 <input type="number" id="button-logo-size" class="form-input" value="24" min="20" max="600" step="1" style="width: 80px; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color, #2C2C2F); background: var(--card-background-color, #1C1C21); color: var(--text, #ECECEC); text-align: center;">
                             </div>
-                            <input type="range" id="button-logo-size-slider" value="24" min="20" max="600" step="5" style="width: 100%;">
+                            <input class="ck-w-full" type="range" id="button-logo-size-slider" value="24" min="20" max="600" step="5">
                             <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: var(--text-dark, #A1A1A1);">
                                 <span>20px</span>
                                 <span>600px</span>
@@ -166,20 +166,20 @@
                     <h2 class="section-title">
                         <i class="fas fa-id-card"></i> Formato no Cartão
                     </h2>
-                    <p class="form-help" style="margin-bottom: 12px;">Como a página de vendas aparece no seu cartão virtual (igual ao King Forms).</p>
+                    <p class="form-help ck-mb-12">Como a página de vendas aparece no seu cartão virtual (igual ao King Forms).</p>
                     <div class="form-group">
                         <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <label class="ck-flex-gap-8">
                                 <input type="radio" name="card-display-format" value="button" id="card-format-button" checked>
                                 <span>Botão</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <label class="ck-flex-gap-8">
                                 <input type="radio" name="card-display-format" value="banner" id="card-format-banner">
                                 <span>Banner</span>
                             </label>
                         </div>
                     </div>
-                    <div class="form-group" id="card-banner-image-group" style="display: none;">
+                    <div class="form-group ck-hidden" id="card-banner-image-group">
                         <label>Imagem do Banner (no cartão)</label>
                         <div class="image-upload-group">
                             <input type="hidden" id="card-banner-image-url" class="form-input">
@@ -215,7 +215,7 @@
                                 <button type="button" class="btn-suggestions" id="btn-meta-title-suggestions">
                                     <i class="fas fa-magic"></i> Gerar Sugestão
                                 </button>
-                                <button type="button" class="btn-more-suggestions" id="btn-more-meta-title" style="display: none;">
+                                <button type="button" class="btn-more-suggestions ck-hidden" id="btn-more-meta-title">
                                     <i class="fas fa-sync-alt"></i> Mais Sugestões
                                 </button>
                             </div>
@@ -230,7 +230,7 @@
                                 <button type="button" class="btn-suggestions" id="btn-meta-description-suggestions">
                                     <i class="fas fa-magic"></i> Gerar Sugestão
                                 </button>
-                                <button type="button" class="btn-more-suggestions" id="btn-more-meta-description" style="display: none;">
+                                <button type="button" class="btn-more-suggestions ck-hidden" id="btn-more-meta-description">
                                     <i class="fas fa-sync-alt"></i> Mais Sugestões
                                 </button>
                             </div>

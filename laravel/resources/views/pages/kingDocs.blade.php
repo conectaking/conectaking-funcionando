@@ -91,7 +91,7 @@
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
               <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
-                <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge" id="doc-preview-sel-badge" style="display:none" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
+                <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge ck-hidden" id="doc-preview-sel-badge" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
                 <div id="doc-preview-body" class="preview-body doc-preview-body--inline kd-preview-files-scroll">
                   <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
                 </div>
@@ -128,8 +128,8 @@
         </div>
       </div>
     </div>
-    <div id="share-table-wrap" hidden aria-hidden="true" style="display:none"></div>
-    <div id="extra-docs-wrap" hidden aria-hidden="true" style="display:none"></div>
+    <div class="ck-hidden" id="share-table-wrap" hidden aria-hidden="true"></div>
+    <div class="ck-hidden" id="extra-docs-wrap" hidden aria-hidden="true"></div>
 
     <div id="p-partilha" class="panel" role="tabpanel" aria-labelledby="tab-p-partilha">
       <div class="kd-share-head">

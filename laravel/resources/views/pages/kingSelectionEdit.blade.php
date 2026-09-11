@@ -166,7 +166,7 @@
           </select>
           </div>
         </div>
-        <div class="ks-small" id="ks-new-access-hint" style="margin-bottom:10px"></div>
+        <div class="ks-small ck-mb-10" id="ks-new-access-hint"></div>
         <div class="ks-row" id="ks-new-cred-row">
           <div class="ks-field">
             <label>E-mail do cliente</label>
@@ -187,7 +187,7 @@
             <input id="ks-new-min" type="number" inputmode="numeric" min="0" value="0" />
           </div>
         </div>
-        <div class="ks-small" style="margin-bottom:10px">Se "Seleção mínima" não existir no banco ainda, tudo funciona como "Livre" (opcional rodar a migration depois).</div>
+        <div class="ks-small ck-mb-10">Se "Seleção mínima" não existir no banco ainda, tudo funciona como "Livre" (opcional rodar a migration depois).</div>
         <div class="ks-field" style="flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap">
           <input type="checkbox" id="ks-new-watermark" checked style="width:18px;height:18px;accent-color:var(--ks-accent)" />
           <label for="ks-new-watermark" style="margin:0;text-transform:none;letter-spacing:normal;font-weight:800;font-size:13px;color:var(--ks-text)">Aplicar marca d'gua nas fotos desta galeria</label>
@@ -213,9 +213,9 @@
           <button class="ks-tab" data-tab="finder">Finder (Mac)</button>
           <button class="ks-tab" data-tab="win">Windows</button>
         </div>
-        <div class="ks-small" style="margin-top:10px" id="ks-export-meta">-</div>
+        <div class="ks-small ck-mt-10" id="ks-export-meta">-</div>
         <textarea class="ks-textarea" id="ks-export-text"></textarea>
-        <div class="ks-row" style="margin-top:10px">
+        <div class="ks-row ck-mt-10">
           <button class="ks-btn secondary" id="ks-export-copy"><i class="fas fa-copy"></i> Copiar</button>
         </div>
       </div>

@@ -141,17 +141,17 @@
                         <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
                       </button>
                     </div>
-                    <div class="ks-abo-client-sub mt-2 flex flex-wrap items-center gap-2" id="ks-activity-pass-row" style="display:none">
+                    <div class="ks-abo-client-sub mt-2 flex flex-wrap items-center gap-2 ck-hidden" id="ks-activity-pass-row">
                       <span class="text-xs text-slate-500">Senha de acesso (login do cliente):</span>
                       <span class="ks-pass-mask font-mono text-sm text-slate-800" id="ks-activity-pass">••••••</span>
                       <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-reveal-pass" data-ks-reveal-pass="0">Nova senha</button>
                     </div>
-                    <div class="ks-abo-client-sub" style="margin-top:8px">
+                    <div class="ks-abo-client-sub ck-mt-8">
                       <span class="ks-abo-badge" id="ks-activity-badge">-</span>
                     </div>
                     <div class="ks-abo-client-sub" id="ks-activity-sales-mini" style="margin-top:6px;display:none">
-                      <span class="ks-abo-badge" id="ks-activity-sales-pending-mini" style="display:none"></span>
-                      <span class="ks-abo-badge" id="ks-activity-sales-approved-mini" style="display:none"></span>
+                      <span class="ks-abo-badge ck-hidden" id="ks-activity-sales-pending-mini"></span>
+                      <span class="ks-abo-badge ck-hidden" id="ks-activity-sales-approved-mini"></span>
                     </div>
                   </div>
                   <div class="ks-abo-actions">
@@ -380,8 +380,8 @@
                 <option value="Arquitetura / Imóveis">Arquitetura / Imóveis</option>
                 <option value="_outro">Outra (digitar abaixo)</option>
               </select>
-              <input class="ks-input mt-2 hidden" id="f-categoria-outro" placeholder="Digite a categoria"
-                style="margin-top:8px" />
+              <input class="ks-input mt-2 hidden ck-mt-8" id="f-categoria-outro" placeholder="Digite a categoria"
+                />
             </div>
             <div class="ks-field">
               <label>Limite de seleção (0 = livre)</label>

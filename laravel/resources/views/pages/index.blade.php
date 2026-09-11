@@ -59,7 +59,7 @@
                             <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Sair</span>
                         </a>
                         <a href="/login" class="btn btn-secondary" id="login-btn">Login</a>
-                        <a href="/dashboard" class="btn btn-primary" id="access-panel-btn" style="display: none;">
+                        <a href="/dashboard" class="btn btn-primary ck-hidden" id="access-panel-btn">
                             <i class="fas fa-tachometer-alt"></i> <span class="btn-text">Acessar Painel</span>
                         </a>
                 <a href="/registro" class="btn btn-primary" id="create-account-btn"><span class="btn-text">Criar Acesso</span></a>
@@ -69,7 +69,7 @@
 
     <!-- Hero Section -->
         <section class="hero">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
                 <div class="hero-content">
                 <h1>Sua presena digital.<br>Um toque.<br>Poder absoluto.</h1>
                 <p class="subheadline">
@@ -109,7 +109,7 @@
 
     <!-- Preview do Carto Virtual -->
     <section class="section" style="background: var(--graphite); padding: 50px 0;">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
             <div class="section-header" style="margin-bottom: 30px;">
                 <h2 style="position: relative; display: inline-block; color: var(--white); font-family: 'Cinzel', serif;">
                     Veja Nosso Carto Virtual em Ao
@@ -123,7 +123,7 @@
                         <iframe id="card-preview-iframe" src="https://tag.conectaking.com.br/adrianokingg" frameborder="0" style="width: 100%; height: 100%; border: none; border-radius: 16px;"></iframe>
                     </div>
                     <div style="margin-top: 16px; text-align: center;">
-                        <a href="https://tag.conectaking.com.br/adrianokingg" target="_blank" class="btn btn-primary" style="width: 100%;">
+                        <a href="https://tag.conectaking.com.br/adrianokingg" target="_blank" class="btn btn-primary ck-w-full">
                             <i class="fas fa-external-link-alt"></i> Ver Carto Completo
                         </a>
                     </div>
@@ -135,7 +135,7 @@
     <!-- CTA Intermedirio 1 -->
     <section class="section" style="background: linear-gradient(135deg, var(--black-absolute) 0%, var(--red-dark) 100%); padding: 60px 0; text-align: center; position: relative; overflow: hidden;">
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1;">
+        <div class="container ck-container-1200-z">
             <h3 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3vw, 2.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);">
                 Profissionais de sucesso não trocam cartes.<br>Eles trocam conexões.
             </h3>
@@ -147,7 +147,7 @@
 
     <!-- Como Funciona -->
     <section id="como-funciona" class="section" style="background: var(--graphite); padding: 60px 0;">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
             <div class="section-header">
                 <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);">
                     Como Funciona
@@ -159,22 +159,22 @@
                     <div style="width: 80px; height: 80px; background: var(--yellow-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2rem; color: var(--black-absolute); box-shadow: 0 10px 30px rgba(255, 199, 0, 0.3);">
                         <i class="fas fa-hand-pointer"></i>
                     </div>
-                    <h3 style="text-align: center; color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif;">1. Encoste</h3>
-                    <p style="text-align: center; color: rgba(245, 245, 245, 0.8);">Aproxime o celular do seu ConectaKing NFC</p>
+                    <h3 class="ck-heading-cinzel-center">1. Encoste</h3>
+                    <p class="ck-text-muted-center">Aproxime o celular do seu ConectaKing NFC</p>
                 </div>
                 <div class="card fade-in">
                     <div style="width: 80px; height: 80px; background: var(--yellow-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2rem; color: var(--black-absolute); box-shadow: 0 10px 30px rgba(255, 199, 0, 0.3);">
                         <i class="fas fa-link"></i>
                 </div>
-                    <h3 style="text-align: center; color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif;">2. Conecte</h3>
-                    <p style="text-align: center; color: rgba(245, 245, 245, 0.8);">Seu perfil digital abre instantaneamente</p>
+                    <h3 class="ck-heading-cinzel-center">2. Conecte</h3>
+                    <p class="ck-text-muted-center">Seu perfil digital abre instantaneamente</p>
                     </div>
                 <div class="card fade-in">
                     <div style="width: 80px; height: 80px; background: var(--yellow-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2rem; color: var(--black-absolute); box-shadow: 0 10px 30px rgba(255, 199, 0, 0.3);">
                         <i class="fas fa-chart-line"></i>
                     </div>
-                    <h3 style="text-align: center; color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif;">3. Converta</h3>
-                    <p style="text-align: center; color: rgba(245, 245, 245, 0.8);">Transforme contatos em clientes e conexões</p>
+                    <h3 class="ck-heading-cinzel-center">3. Converta</h3>
+                    <p class="ck-text-muted-center">Transforme contatos em clientes e conexões</p>
                     </div>
                 </div>
             </div>
@@ -182,7 +182,7 @@
 
     <!-- CTA Estratgico 1 -->
     <section class="section" style="background: linear-gradient(135deg, var(--red-dark) 0%, var(--black-absolute) 100%); padding: 80px 0; text-align: center;">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
             <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--white); margin-bottom: 1.5rem;">
                 Sua marca não pede aten<br>Ela impe respeito.
             </h2>
@@ -197,7 +197,7 @@
 
     <!-- Benefícios -->
     <section id="beneficios" class="section" style="background: var(--black-absolute);">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
             <div class="section-header">
                 <h2 style="position: relative; display: inline-block; color: var(--white); font-family: 'Cinzel', serif;">
                     Por Que Escolher o ConectaKing?
@@ -209,43 +209,43 @@
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem;">
                         <i class="fas fa-crown"></i>
             </div>
-                    <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Autoridade Profissional Instantnea</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Projete confiana e profissionalismo desde o primeiro contato. Seu carto digital fala por você.</p>
+                    <h3 class="ck-heading-cinzel">Autoridade Profissional Instantnea</h3>
+                    <p class="ck-text-muted">Projete confiana e profissionalismo desde o primeiro contato. Seu carto digital fala por você.</p>
                 </div>
                 <div class="card fade-in" style="animation: float 4.5s ease-in-out infinite; animation-delay: 0.2s;">
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2s ease-in-out infinite;">
                         <i class="fas fa-rocket"></i>
             </div>
-                    <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Mais Impacto em Reuníes e Eventos</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Destaque-se em networking, feiras e encontros profissionais com tecnologia de ponta.</p>
+                    <h3 class="ck-heading-cinzel">Mais Impacto em Reuníes e Eventos</h3>
+                    <p class="ck-text-muted">Destaque-se em networking, feiras e encontros profissionais com tecnologia de ponta.</p>
                 </div>
                 <div class="card fade-in" style="animation: float 5s ease-in-out infinite; animation-delay: 0.4s;">
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.2s ease-in-out infinite;">
                         <i class="fas fa-sync-alt"></i>
                     </div>
-                    <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Atualizaes Ilimitadas</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Mude links, adicione informações e atualize seu perfil quantas vezes precisar, sem custos extras.</p>
+                    <h3 class="ck-heading-cinzel">Atualizaes Ilimitadas</h3>
+                    <p class="ck-text-muted">Mude links, adicione informações e atualize seu perfil quantas vezes precisar, sem custos extras.</p>
                 </div>
                 <div class="card fade-in" style="animation: float 4.8s ease-in-out infinite; animation-delay: 0.6s;">
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.4s ease-in-out infinite;">
                         <i class="fas fa-leaf"></i>
                     </div>
-                    <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Sustentvel e Reutilizvel</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Elimine o desperdcio de cartes de papel. Um ConectaKing dura para sempre.</p>
+                    <h3 class="ck-heading-cinzel">Sustentvel e Reutilizvel</h3>
+                    <p class="ck-text-muted">Elimine o desperdcio de cartes de papel. Um ConectaKing dura para sempre.</p>
                 </div>
                 <div class="card fade-in" style="animation: float 5.2s ease-in-out infinite; animation-delay: 0.8s;">
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.6s ease-in-out infinite;">
                         <i class="fas fa-network-wired"></i>
                     </div>
-                    <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Centralizao Total da Presença Digital</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Todos os seus links, redes sociais e informações em um único lugar profissional.</p>
+                    <h3 class="ck-heading-cinzel">Centralizao Total da Presença Digital</h3>
+                    <p class="ck-text-muted">Todos os seus links, redes sociais e informações em um único lugar profissional.</p>
                 </div>
                 <div class="card fade-in" style="animation: float 5.5s ease-in-out infinite; animation-delay: 1s;">
                     <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.8s ease-in-out infinite;">
                         <i class="fas fa-shield-alt"></i>
                     </div>
-                    <h3 style="color: var(--white); margin-bottom: 12px; font-family: 'Cinzel', serif; font-size: 1.3rem;">Segurana e Privacidade</h3>
-                    <p style="color: rgba(245, 245, 245, 0.8); line-height: 1.8;">Tecnologia NFC confiável e segura. Você controla o que compartilha.</p>
+                    <h3 class="ck-heading-cinzel">Segurana e Privacidade</h3>
+                    <p class="ck-text-muted">Tecnologia NFC confiável e segura. Você controla o que compartilha.</p>
                 </div>
             </div>
         </div>
@@ -254,7 +254,7 @@
     <!-- CTA Estratgico 2 -->
     <section class="section" style="background: var(--black-absolute); padding: 80px 0; text-align: center; position: relative; overflow: hidden;">
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1;">
+        <div class="container ck-container-1200-z">
             <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--white); margin-bottom: 1.5rem; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); position: relative; display: inline-block;">
                 Pare de perder oportunidades.<br>Comece a criar conexões que vendem.
             </h2>
@@ -270,7 +270,7 @@
     <!-- CTA Antes dos Planos -->
     <section class="section" style="background: linear-gradient(135deg, var(--red-dark) 0%, var(--black-absolute) 100%); padding: 60px 0; text-align: center; position: relative; overflow: hidden;">
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.12) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1;">
+        <div class="container ck-container-1200-z">
             <h3 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3vw, 2.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);">
                 Escolha o plano que transforma seu networking em vendas reais.
             </h3>
@@ -282,7 +282,7 @@
 
     <!-- Planos -->
     <section id="planos" class="section pricing" style="padding-top: 40px;">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
             <div class="section-header" style="position: relative; margin-bottom: 40px;">
                 <h2 style="position: relative; display: inline-block; color: var(--white); font-family: 'Cinzel', serif; text-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2);">
                     Escolha Seu Plano
@@ -297,52 +297,52 @@
 
     <!-- FAQ -->
     <section id="faq" class="section" style="background: var(--graphite);">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
             <div class="section-header">
                 <h2>Perguntas Frequentes</h2>
                 <p>Tire suas dvidas sobre o ConectaKing</p>
                 </div>
             <div style="max-width: 800px; margin: 60px auto 0;">
-                <div class="faq-item" style="background: var(--black-absolute); border: 1px solid rgba(255, 199, 0, 0.2); border-radius: 12px; margin-bottom: 16px; overflow: hidden;">
-                    <div class="faq-question" style="padding: 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--white); font-weight: 600;">
+                <div class="faq-item ck-faq-item">
+                    <div class="faq-question ck-faq-q">
                         <span>Tem mensalidade?</span>
-                        <i class="fas fa-chevron-down" style="color: var(--yellow-primary); transition: transform 0.3s;"></i>
+                        <i class="fas fa-chevron-down ck-faq-chevron"></i>
                             </div>
-                    <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
-                        <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
+                    <div class="faq-answer ck-faq-a">
+                        <div class="ck-faq-body">
                             O ConectaKing oferece planos anuais e mensais. Você escolhe o formato de pagamento que melhor se adapta ao seu negócio. Todas as atualizações esto incluídas no período contratado.
                         </div>
                     </div>
                             </div>
-                <div class="faq-item" style="background: var(--black-absolute); border: 1px solid rgba(255, 199, 0, 0.2); border-radius: 12px; margin-bottom: 16px; overflow: hidden;">
-                    <div class="faq-question" style="padding: 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--white); font-weight: 600;">
+                <div class="faq-item ck-faq-item">
+                    <div class="faq-question ck-faq-q">
                         <span>Funciona em qualquer celular?</span>
-                        <i class="fas fa-chevron-down" style="color: var(--yellow-primary); transition: transform 0.3s;"></i>
+                        <i class="fas fa-chevron-down ck-faq-chevron"></i>
                         </div>
-                    <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
-                        <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
+                    <div class="faq-answer ck-faq-a">
+                        <div class="ck-faq-body">
                             Sim. O ConectaKing usa tecnologia NFC, disponível na maioria dos smartphones modernos (Android e iPhone). Não é necessário instalar nenhum aplicativo.
                     </div>
                             </div>
                         </div>
-                <div class="faq-item" style="background: var(--black-absolute); border: 1px solid rgba(255, 199, 0, 0.2); border-radius: 12px; margin-bottom: 16px; overflow: hidden;">
-                    <div class="faq-question" style="padding: 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--white); font-weight: 600;">
+                <div class="faq-item ck-faq-item">
+                    <div class="faq-question ck-faq-q">
                         <span>Posso atualizar depois?</span>
-                        <i class="fas fa-chevron-down" style="color: var(--yellow-primary); transition: transform 0.3s;"></i>
+                        <i class="fas fa-chevron-down ck-faq-chevron"></i>
                     </div>
-                    <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
-                        <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
+                    <div class="faq-answer ck-faq-a">
+                        <div class="ck-faq-body">
                             Sim, quantas vezes quiser. Você pode atualizar seus links, informações e personalização a qualquer momento, sem custos adicionais.
                             </div>
                         </div>
                     </div>
-                <div class="faq-item" style="background: var(--black-absolute); border: 1px solid rgba(255, 199, 0, 0.2); border-radius: 12px; margin-bottom: 16px; overflow: hidden;">
-                    <div class="faq-question" style="padding: 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--white); font-weight: 600;">
+                <div class="faq-item ck-faq-item">
+                    <div class="faq-question ck-faq-q">
                         <span>?0 seguro?</span>
-                        <i class="fas fa-chevron-down" style="color: var(--yellow-primary); transition: transform 0.3s;"></i>
+                        <i class="fas fa-chevron-down ck-faq-chevron"></i>
                     </div>
-                    <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
-                        <div style="padding: 0 24px 24px; color: rgba(245, 245, 245, 0.8); line-height: 1.8;">
+                    <div class="faq-answer ck-faq-a">
+                        <div class="ck-faq-body">
                             Sim. O ConectaKing usa tecnologia NFC confiável e segura. Você tem controle total sobre o que compartilha e todas as informações são protegidas.
                             </div>
                         </div>
@@ -354,7 +354,7 @@
     <!-- CTA Final Estratgico -->
     <section class="section" style="background: linear-gradient(135deg, var(--black-absolute) 0%, var(--red-dark) 100%); padding: 100px 0; text-align: center; position: relative; overflow: hidden;">
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(220, 38, 38, 0.2) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1;">
+        <div class="container ck-container-1200-z">
             <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: var(--white); margin-bottom: 1.5rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(220, 38, 38, 0.2); line-height: 1.3;">
                 Não espere mais.<br>Comece a vender hoje.
             </h2>
@@ -374,7 +374,7 @@
 
     <!-- Footer -->
     <footer style="background: var(--black-absolute); border-top: 2px solid rgba(255, 199, 0, 0.2); padding: 60px 0 30px; margin-top: 80px;">
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <div class="container ck-container-1200">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; margin-bottom: 40px;">
                 <div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
@@ -391,29 +391,29 @@
                     </div>
                 </div>
                 <div>
-                    <h3 style="font-family: 'Cinzel', serif; color: var(--yellow-primary); margin-bottom: 20px; font-size: 1.2rem;">Navegação</h3>
-                    <ul style="list-style: none;">
-                        <li style="margin-bottom: 12px;"><a href="#como-funciona" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Como Funciona</a></li>
-                        <li style="margin-bottom: 12px;"><a href="#beneficios" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Benefícios</a></li>
-                        <li style="margin-bottom: 12px;"><a href="#planos" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Planos</a></li>
-                        <li style="margin-bottom: 12px;"><a href="#faq" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">FAQ</a></li>
+                    <h3 class="ck-heading-gold">Navegação</h3>
+                    <ul class="ck-list-none">
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="#como-funciona" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Como Funciona</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="#beneficios" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Benefícios</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="#planos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Planos</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="#faq" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">FAQ</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h3 style="font-family: 'Cinzel', serif; color: var(--yellow-primary); margin-bottom: 20px; font-size: 1.2rem;">Suporte</h3>
-                    <ul style="list-style: none;">
-                        <li style="margin-bottom: 12px;" id="footer-login-item"><a href="/login" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
-                        <li style="margin-bottom: 12px; display: none;" id="footer-access-panel-item"><a href="/dashboard" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
-                        <li style="margin-bottom: 12px;"><a href="/registro" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
-                        <li style="margin-bottom: 12px;"><a href="#planos" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Falar com Vendedor</a></li>
-                        <li style="margin-bottom: 12px;"><a href="https://www.instagram.com/conectaking" target="_blank" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Instagram</a></li>
+                    <h3 class="ck-heading-gold">Suporte</h3>
+                    <ul class="ck-list-none">
+                        <li class="ck-mb-12" id="footer-login-item"><a class="ck-link-muted" href="/login" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
+                        <li style="margin-bottom: 12px; display: none;" id="footer-access-panel-item"><a class="ck-link-muted" href="/dashboard" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="/registro" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="#planos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Falar com Vendedor</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="https://www.instagram.com/conectaking" target="_blank" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Instagram</a></li>
                     </ul>
                     </div>
                 <div>
-                    <h3 style="font-family: 'Cinzel', serif; color: var(--yellow-primary); margin-bottom: 20px; font-size: 1.2rem;">Legal</h3>
-                    <ul style="list-style: none;">
-                        <li style="margin-bottom: 12px;"><a href="/termos" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Termos de Servío</a></li>
-                        <li style="margin-bottom: 12px;"><a href="/privacidade" style="color: rgba(245, 245, 245, 0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Poltica de Privacidade</a></li>
+                    <h3 class="ck-heading-gold">Legal</h3>
+                    <ul class="ck-list-none">
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="/termos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Termos de Servío</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="/privacidade" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Poltica de Privacidade</a></li>
                     </ul>
                 </div>
             </div>
@@ -427,7 +427,7 @@
     <!-- CTA Final Fixo Mobile -->
     <div style="position: fixed; bottom: 0; left: 0; right: 0; background: var(--black-absolute); border-top: 3px solid var(--yellow-primary); padding: 20px; z-index: 999; box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9); display: none;" id="cta-fixed-mobile">
         <div style="max-width: 1200px; margin: 0 auto;">
-            <a href="#planos" class="btn btn-primary" style="width: 100%;">
+            <a href="#planos" class="btn btn-primary ck-w-full">
                 <i class="fas fa-crown"></i> Quero meu ConectaKing agora
             </a>
         </div>

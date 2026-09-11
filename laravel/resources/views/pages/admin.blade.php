@@ -34,7 +34,7 @@
             <section id="overview-pane" class="content-pane active">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>Visão Geral da Plataforma</h2>
-                    <button id="refresh-data-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">
+                    <button id="refresh-data-btn" class="btn btn-secondary ck-btn-md">
                         <i class="fas fa-sync-alt"></i> Atualizar
                     </button>
                 </div>
@@ -93,8 +93,8 @@
                 </div>
 
                 <!-- Seção de Analytics Avançado -->
-                <div style="margin-top: 40px;">
-                    <h3 style="margin-bottom: 20px; color: var(--text);">
+                <div class="ck-mt-40">
+                    <h3 class="ck-mb-20-text">
                         <i class="fas fa-chart-area"></i> Analytics Avançado
                     </h3>
                     
@@ -144,8 +144,8 @@
                 </div>
 
                 <!-- Top Performers -->
-                <div style="margin-top: 40px;">
-                    <h3 style="margin-bottom: 20px; color: var(--text);">
+                <div class="ck-mt-40">
+                    <h3 class="ck-mb-20-text">
                         <i class="fas fa-trophy"></i> Top Performers
                     </h3>
                     <div class="top-performers-grid">
@@ -159,8 +159,8 @@
                 </div>
 
                 <!-- Lista Completa de Perfis -->
-                <div style="margin-top: 40px;">
-                    <h3 style="margin-bottom: 20px; color: var(--text);">
+                <div class="ck-mt-40">
+                    <h3 class="ck-mb-20-text">
                         <i class="fas fa-list"></i> Lista Completa de Perfis
                     </h3>
                     <div style="margin-bottom: 15px;">
@@ -179,31 +179,31 @@
                 <h2>Gerenciar Usuários</h2>
                 
                 <!-- Cards de Estatísticas Rápidas -->
-                <div class="stats-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                    <div class="stat-card-mini stat-card-clickable" data-user-expiration-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os usuários" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Total de Usuários</span>
+                <div class="stats-cards-grid ck-grid-stats">
+                    <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os usuários">
+                        <div class="ck-flex-between">
+                            <span class="ck-label-dark">Total de Usuários</span>
                             <i class="fas fa-users" style="color: var(--primary); font-size: 1.5rem;"></i>
                         </div>
                         <div id="stat-total-users" style="font-size: 2rem; font-weight: 800; color: var(--primary);">0</div>
                     </div>
-                    <div class="stat-card-mini stat-card-clickable" data-user-expiration-filter="active" role="button" tabindex="0" aria-label="Filtrar: usuários ativos" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Usuários Ativos</span>
+                    <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="active" role="button" tabindex="0" aria-label="Filtrar: usuários ativos">
+                        <div class="ck-flex-between">
+                            <span class="ck-label-dark">Usuários Ativos</span>
                             <i class="fas fa-check-circle" style="color: #2ecc71; font-size: 1.5rem;"></i>
                         </div>
                         <div id="stat-active-users" style="font-size: 2rem; font-weight: 800; color: #2ecc71;">0</div>
                     </div>
-                    <div class="stat-card-mini stat-card-clickable" data-user-expiration-filter="expired" role="button" tabindex="0" aria-label="Filtrar: usuários vencidos" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Usuários Vencidos</span>
+                    <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="expired" role="button" tabindex="0" aria-label="Filtrar: usuários vencidos">
+                        <div class="ck-flex-between">
+                            <span class="ck-label-dark">Usuários Vencidos</span>
                             <i class="fas fa-exclamation-triangle" style="color: #e74c3c; font-size: 1.5rem;"></i>
                         </div>
                         <div id="stat-expired-users" style="font-size: 2rem; font-weight: 800; color: #e74c3c;">0</div>
                     </div>
-                    <div class="stat-card-mini stat-card-clickable" data-user-expiration-filter="expiring_soon" role="button" tabindex="0" aria-label="Filtrar: expirando em 7 dias" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Expirando em 7 dias</span>
+                    <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="expiring_soon" role="button" tabindex="0" aria-label="Filtrar: expirando em 7 dias">
+                        <div class="ck-flex-between">
+                            <span class="ck-label-dark">Expirando em 7 dias</span>
                             <i class="fas fa-clock" style="color: #f39c12; font-size: 1.5rem;"></i>
                         </div>
                         <div id="stat-expiring-soon-users" style="font-size: 2rem; font-weight: 800; color: #f39c12;">0</div>
@@ -211,19 +211,19 @@
                 </div>
                 
                 <!-- Filtros Avançados -->
-                <div class="advanced-filters" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-                        <h3 style="margin: 0; color: var(--text-light); font-size: 1.1rem; font-weight: 600;">
+                <div class="advanced-filters ck-card-pad-mb">
+                    <div class="ck-flex-between-15">
+                        <h3 class="ck-card-title">
                             <i class="fas fa-filter"></i> Filtros Avançados
                         </h3>
-                        <button id="toggle-advanced-filters" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                        <button id="toggle-advanced-filters" class="btn btn-secondary ck-btn-sm">
                             <i class="fas fa-chevron-down"></i> Mostrar
                         </button>
                     </div>
-                    <div id="advanced-filters-content" style="display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div id="advanced-filters-content">
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Tipo de Conta</label>
-                            <select id="filter-account-type" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Tipo de Conta</label>
+                            <select class="ck-input-admin" id="filter-account-type">
                                 <option value="">Todos os tipos</option>
                                 <option value="free">Free</option>
                                 <option value="adm_principal">ADM Principal</option>
@@ -238,8 +238,8 @@
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Status Assinatura</label>
-                            <select id="filter-subscription-status" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Status Assinatura</label>
+                            <select class="ck-input-admin" id="filter-subscription-status">
                                 <option value="">Todos os status</option>
                                 <option value="active">Ativo</option>
                                 <option value="expired">Expirado</option>
@@ -247,23 +247,23 @@
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Status Admin</label>
-                            <select id="filter-is-admin" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Status Admin</label>
+                            <select class="ck-input-admin" id="filter-is-admin">
                                 <option value="">Todos</option>
                                 <option value="true">Sim</option>
                                 <option value="false">Não</option>
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Data de Criação (De)</label>
-                            <input type="date" id="filter-created-from" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Data de Criação (De)</label>
+                            <input class="ck-input-admin" type="date" id="filter-created-from">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Data de Criação (Até)</label>
-                            <input type="date" id="filter-created-to" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Data de Criação (Até)</label>
+                            <input class="ck-input-admin" type="date" id="filter-created-to">
                         </div>
-                        <div style="display: flex; align-items: flex-end; gap: 10px;">
-                            <button id="apply-advanced-filters" class="btn btn-primary" style="flex: 1;">
+                        <div class="ck-flex-end-gap">
+                            <button id="apply-advanced-filters" class="btn btn-primary ck-flex-1">
                                 <i class="fas fa-check"></i> Aplicar Filtros
                             </button>
                             <button id="clear-advanced-filters" class="btn btn-secondary">
@@ -275,8 +275,8 @@
                 
                 <!-- Indicador de filtros ativos + Limpar tudo -->
                 <div id="users-filters-active-bar" class="filters-active-bar" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: rgba(255,199,0,0.08); border: 1px solid var(--primary); border-radius: 8px; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <span id="users-filters-active-text" style="font-size: 0.9rem; color: var(--text-light);"></span>
-                    <button type="button" id="users-clear-all-filters-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                    <span class="ck-text-light-09" id="users-filters-active-text"></span>
+                    <button type="button" id="users-clear-all-filters-btn" class="btn btn-secondary ck-btn-sm">
                         <i class="fas fa-times-circle"></i> Limpar todos os filtros
                     </button>
                 </div>
@@ -318,22 +318,22 @@
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                        <div id="user-count" class="selected-count" style="margin: 0;" aria-live="polite">0 usuário(s)</div>
-                        <span id="users-page-range" style="color: var(--text-dark); font-size: 0.9rem;"></span>
+                    <div class="ck-flex-wrap-12">
+                        <div id="user-count" class="selected-count ck-m-0" aria-live="polite">0 usuário(s)</div>
+                        <span class="ck-text-dark-09" id="users-page-range"></span>
                     </div>
                     
                     <!-- Colunas visíveis + Paginação + Exportar -->
                     <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                         <div class="dropdown-columns-wrap">
-                            <button type="button" id="users-columns-toggle" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" aria-haspopup="true" aria-expanded="false" aria-label="Mostrar ou ocultar colunas">
+                            <button type="button" id="users-columns-toggle" class="btn btn-secondary ck-btn-sm" aria-haspopup="true" aria-expanded="false" aria-label="Mostrar ou ocultar colunas">
                                 <i class="fas fa-columns"></i> Colunas
                             </button>
-                            <div id="users-columns-dropdown" class="dropdown-columns" role="menu" aria-label="Colunas visíveis" style="display: none;"></div>
+                            <div id="users-columns-dropdown" class="dropdown-columns ck-hidden" role="menu" aria-label="Colunas visíveis"></div>
                         </div>
                         <label style="color: var(--text-dark); font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
                             <span>Itens por página:</span>
-                            <select id="users-per-page" aria-label="Itens por página" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <select class="ck-input-sm" id="users-per-page" aria-label="Itens por página">
                                 <option value="25">25</option>
                                 <option value="50" selected>50</option>
                                 <option value="100">100</option>
@@ -341,7 +341,7 @@
                                 <option value="all">Todos</option>
                             </select>
                         </label>
-                        <button id="export-all-users-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;" aria-label="Exportar todos os usuários">
+                        <button id="export-all-users-btn" class="btn btn-secondary ck-btn-md" aria-label="Exportar todos os usuários">
                             <i class="fas fa-file-export"></i> Exportar Todos
                         </button>
                     </div>
@@ -350,7 +350,7 @@
                 <!-- Ações em Massa para Usuários Selecionados -->
                 <div id="user-bulk-actions" class="bulk-actions" style="display: none; margin-bottom: 15px; padding: 15px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);" role="region" aria-label="Ações em massa">
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <span id="user-selected-count" style="color: var(--text-light); font-weight: 600;">0 usuários selecionados</span>
+                        <span class="ck-text-light-bold" id="user-selected-count">0 usuários selecionados</span>
                         <button id="delete-selected-users-btn" class="btn btn-danger" aria-label="Deletar usuários selecionados">
                             <i class="fas fa-trash"></i> Deletar Selecionados
                         </button>
@@ -372,7 +372,7 @@
                     </div>
                 </div>
                 
-                <div id="users-table-loading" class="table-loading-overlay" style="display: none;" aria-hidden="true">
+                <div id="users-table-loading" class="table-loading-overlay ck-hidden" aria-hidden="true">
                     <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
                     <span>Carregando...</span>
                 </div>
@@ -396,7 +396,7 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                <div id="users-empty-state" class="table-empty-state" style="display: none;">
+                <div id="users-empty-state" class="table-empty-state ck-hidden">
                     <i class="fas fa-search" aria-hidden="true"></i>
                     <h4>Nenhum usuário encontrado</h4>
                     <p>Não há resultados para os filtros ou busca atuais. Tente outros termos ou limpe os filtros.</p>
@@ -404,11 +404,11 @@
                 </div>
                 
                 <!-- Paginação -->
-                <nav id="users-pagination" class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding: 15px;" aria-label="Paginação da lista de usuários">
+                <nav id="users-pagination" class="pagination ck-flex-center-pad" aria-label="Paginação da lista de usuários">
                     <button id="users-prev-page" class="btn btn-secondary" disabled aria-label="Página anterior">
                         <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
                     </button>
-                    <span id="users-page-info" style="color: var(--text-light); font-weight: 600;" aria-live="polite">Página 1 de 1</span>
+                    <span class="ck-text-light-bold" id="users-page-info" aria-live="polite">Página 1 de 1</span>
                     <button id="users-next-page" class="btn btn-secondary" disabled aria-label="Próxima página">
                         Próxima <i class="fas fa-chevron-right" aria-hidden="true"></i>
                     </button>
@@ -423,7 +423,7 @@
             </p>
             <div class="branding-form-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); max-width: 560px;">
                 <input type="hidden" id="default-logo-url" value="">
-                <div class="input-group" style="margin-bottom: 16px;">
+                <div class="input-group ck-mb-16">
                     <label>Logo do rodapé</label>
                     <div id="default-logo-upload-area" class="image-upload-area" style="border: 2px dashed var(--border-color, #444); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; background: var(--bg-light, #1a1a1a); min-height: 120px; display: flex; align-items: center; justify-content: center;">
                         <div id="default-logo-upload-placeholder">
@@ -440,16 +440,16 @@
                     </div>
                     <input type="file" id="default-logo-file-input" accept="image/png,image/jpeg,image/jpg" style="position: absolute; left: -9999px; width: 1px; height: 1px;">
                 </div>
-                <div class="input-group" style="margin-bottom: 16px;">
+                <div class="input-group ck-mb-16">
                     <label for="default-logo-size">Tamanho (px) - entre 20 e 420</label>
                     <input type="number" id="default-logo-size" min="20" max="420" value="60" class="modal-input-text" style="width: 100%; max-width: 120px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text);">
                 </div>
-                <div class="input-group" style="margin-bottom: 20px;">
+                <div class="input-group ck-mb-20">
                     <label for="default-logo-link">Link ao clicar na logo (opcional)</label>
                     <input type="url" id="default-logo-link" class="modal-input-text" placeholder="https://..." style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text);">
                 </div>
-                <div id="default-logo-size-preview" style="margin-bottom: 20px;">
-                    <span style="color: var(--text-dark); font-size: 0.9rem;">Como aparece no rodapé:</span>
+                <div class="ck-mb-20" id="default-logo-size-preview">
+                    <span class="ck-text-dark-09">Como aparece no rodapé:</span>
                     <div id="default-logo-size-preview-img" style="margin-top: 8px; min-height: 40px;"></div>
                 </div>
                 <button type="button" id="save-default-branding-btn" class="btn btn-primary">
@@ -463,31 +463,31 @@
             <h2>Gerenciar Códigos de Registro</h2>
             
             <!-- Cards de Estatísticas para Códigos -->
-            <div class="stats-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                <div class="stat-card-mini stat-card-clickable" data-code-quick-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os códigos" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Total de Códigos</span>
+            <div class="stats-cards-grid ck-grid-stats">
+                <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os códigos">
+                    <div class="ck-flex-between">
+                        <span class="ck-label-dark">Total de Códigos</span>
                         <i class="fas fa-key" style="color: var(--primary); font-size: 1.5rem;"></i>
                     </div>
                     <div id="stat-total-codes" style="font-size: 2rem; font-weight: 800; color: var(--primary);">0</div>
                 </div>
-                <div class="stat-card-mini stat-card-clickable" data-code-quick-filter="available" role="button" tabindex="0" aria-label="Filtrar: códigos disponíveis" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Códigos Disponíveis</span>
+                <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="available" role="button" tabindex="0" aria-label="Filtrar: códigos disponíveis">
+                    <div class="ck-flex-between">
+                        <span class="ck-label-dark">Códigos Disponíveis</span>
                         <i class="fas fa-check-circle" style="color: #2ecc71; font-size: 1.5rem;"></i>
                     </div>
                     <div id="stat-available-codes" style="font-size: 2rem; font-weight: 800; color: #2ecc71;">0</div>
                 </div>
-                <div class="stat-card-mini stat-card-clickable" data-code-quick-filter="claimed" role="button" tabindex="0" aria-label="Filtrar: códigos utilizados" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Códigos Utilizados</span>
+                <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="claimed" role="button" tabindex="0" aria-label="Filtrar: códigos utilizados">
+                    <div class="ck-flex-between">
+                        <span class="ck-label-dark">Códigos Utilizados</span>
                         <i class="fas fa-check" style="color: #3498db; font-size: 1.5rem;"></i>
                     </div>
                     <div id="stat-used-codes" style="font-size: 2rem; font-weight: 800; color: #3498db;">0</div>
                 </div>
-                <div class="stat-card-mini stat-card-clickable" data-code-quick-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os códigos" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Taxa de Uso</span>
+                <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os códigos">
+                    <div class="ck-flex-between">
+                        <span class="ck-label-dark">Taxa de Uso</span>
                         <i class="fas fa-percentage" style="color: #f39c12; font-size: 1.5rem;"></i>
                     </div>
                     <div id="stat-usage-rate" style="font-size: 2rem; font-weight: 800; color: #f39c12;">0%</div>
@@ -520,38 +520,38 @@
                 </div>
                 
                 <!-- Filtros Avançados para Códigos -->
-                <div class="advanced-filters" style="background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-                        <h3 style="margin: 0; color: var(--text-light); font-size: 1.1rem; font-weight: 600;">
+                <div class="advanced-filters ck-card-pad-mb">
+                    <div class="ck-flex-between-15">
+                        <h3 class="ck-card-title">
                             <i class="fas fa-filter"></i> Filtros Avançados
                         </h3>
-                        <button id="toggle-advanced-filters-codes" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                        <button id="toggle-advanced-filters-codes" class="btn btn-secondary ck-btn-sm">
                             <i class="fas fa-chevron-down"></i> Mostrar
                         </button>
                     </div>
-                    <div id="advanced-filters-content-codes" style="display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div id="advanced-filters-content-codes">
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Status</label>
-                            <select id="filter-code-status" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Status</label>
+                            <select class="ck-input-admin" id="filter-code-status">
                                 <option value="">Todos</option>
                                 <option value="available">Disponível</option>
                                 <option value="used">Utilizado</option>
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Gerado por</label>
-                            <input type="text" id="filter-code-generator" placeholder="Email do gerador" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Gerado por</label>
+                            <input class="ck-input-admin" type="text" id="filter-code-generator" placeholder="Email do gerador">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Data de Criação (De)</label>
-                            <input type="date" id="filter-code-created-from" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Data de Criação (De)</label>
+                            <input class="ck-input-admin" type="date" id="filter-code-created-from">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Data de Criação (Até)</label>
-                            <input type="date" id="filter-code-created-to" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                            <label class="ck-label-block">Data de Criação (Até)</label>
+                            <input class="ck-input-admin" type="date" id="filter-code-created-to">
                         </div>
-                        <div style="display: flex; align-items: flex-end; gap: 10px;">
-                            <button id="apply-advanced-filters-codes" class="btn btn-primary" style="flex: 1;">
+                        <div class="ck-flex-end-gap">
+                            <button id="apply-advanced-filters-codes" class="btn btn-primary ck-flex-1">
                                 <i class="fas fa-check"></i> Aplicar Filtros
                             </button>
                             <button id="clear-advanced-filters-codes" class="btn btn-secondary">
@@ -562,8 +562,8 @@
                 </div>
                 
                 <!-- Filtros rápidos: Cadastrados / Não cadastrados -->
-                <div class="expiration-filters codes-quick-filters" role="group" aria-label="Filtro por uso do código" style="margin-bottom: 12px;">
-                    <span style="color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">Exibir:</span>
+                <div class="expiration-filters codes-quick-filters ck-mb-12" role="group" aria-label="Filtro por uso do código">
+                    <span class="ck-label-dark">Exibir:</span>
                     <button type="button" id="code-filter-all-btn" class="btn btn-secondary filter-btn active" data-code-filter="all">
                         <i class="fas fa-list"></i> Todos
                     </button>
@@ -577,8 +577,8 @@
                 
                 <!-- Indicador de filtros ativos (códigos) -->
                 <div id="codes-filters-active-bar" class="filters-active-bar" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: rgba(255,199,0,0.08); border: 1px solid var(--primary); border-radius: 8px; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <span id="codes-filters-active-text" style="font-size: 0.9rem; color: var(--text-light);"></span>
-                    <button type="button" id="codes-clear-all-filters-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                    <span class="ck-text-light-09" id="codes-filters-active-text"></span>
+                    <button type="button" id="codes-clear-all-filters-btn" class="btn btn-secondary ck-btn-sm">
                         <i class="fas fa-times-circle"></i> Limpar todos os filtros
                     </button>
                 </div>
@@ -594,19 +594,19 @@
                     <button id="export-all-codes-btn" class="btn btn-secondary" aria-label="Exportar todos os códigos">
                         <i class="fas fa-file-export"></i> Exportar Todos
                     </button>
-                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                        <div id="codes-count" class="selected-count" style="margin: 0;" aria-live="polite">0 códigos</div>
-                        <span id="codes-page-range" style="color: var(--text-dark); font-size: 0.9rem;"></span>
+                    <div class="ck-flex-wrap-12">
+                        <div id="codes-count" class="selected-count ck-m-0" aria-live="polite">0 códigos</div>
+                        <span class="ck-text-dark-09" id="codes-page-range"></span>
                     </div>
                     <div class="dropdown-columns-wrap">
-                        <button type="button" id="codes-columns-toggle" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" aria-haspopup="true" aria-expanded="false" aria-label="Mostrar ou ocultar colunas">
+                        <button type="button" id="codes-columns-toggle" class="btn btn-secondary ck-btn-sm" aria-haspopup="true" aria-expanded="false" aria-label="Mostrar ou ocultar colunas">
                             <i class="fas fa-columns"></i> Colunas
                         </button>
-                        <div id="codes-columns-dropdown" class="dropdown-columns" role="menu" aria-label="Colunas visíveis" style="display: none;"></div>
+                        <div id="codes-columns-dropdown" class="dropdown-columns ck-hidden" role="menu" aria-label="Colunas visíveis"></div>
                     </div>
                     <label style="color: var(--text-dark); font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
                         <span>Itens por página:</span>
-                        <select id="codes-per-page" aria-label="Itens por página" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-light);">
+                        <select class="ck-input-sm" id="codes-per-page" aria-label="Itens por página">
                             <option value="25">25</option>
                             <option value="50" selected>50</option>
                             <option value="100">100</option>
@@ -635,7 +635,7 @@
             </div>
             
             <!-- Loading e Tabela de Códigos -->
-            <div id="codes-table-loading" class="table-loading-overlay" style="display: none;" aria-hidden="true">
+            <div id="codes-table-loading" class="table-loading-overlay ck-hidden" aria-hidden="true">
                 <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
                 <span>Carregando...</span>
             </div>
@@ -660,7 +660,7 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <div id="codes-empty-state" class="table-empty-state" style="display: none;">
+            <div id="codes-empty-state" class="table-empty-state ck-hidden">
                 <i class="fas fa-search" aria-hidden="true"></i>
                 <h4>Nenhum código encontrado</h4>
                 <p>Não há resultados para os filtros ou busca atuais. Tente outros termos ou limpe os filtros.</p>
@@ -668,11 +668,11 @@
             </div>
             
             <!-- Paginação para Códigos -->
-            <nav id="codes-pagination" class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding: 15px;" aria-label="Paginação da lista de códigos">
+            <nav id="codes-pagination" class="pagination ck-flex-center-pad" aria-label="Paginação da lista de códigos">
                 <button id="codes-prev-page" class="btn btn-secondary" disabled aria-label="Página anterior">
                     <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
                 </button>
-                <span id="codes-page-info" style="color: var(--text-light); font-weight: 600;" aria-live="polite">Página 1 de 1</span>
+                <span class="ck-text-light-bold" id="codes-page-info" aria-live="polite">Página 1 de 1</span>
                 <button id="codes-next-page" class="btn btn-secondary" disabled aria-label="Próxima página">
                     Próxima <i class="fas fa-chevron-right" aria-hidden="true"></i>
                 </button>
@@ -697,7 +697,7 @@
             </div>
             <div class="modal-body">
                 <div id="profile-analytics-content">
-                    <p style="color: var(--text-dark); text-align: center;">Carregando detalhes...</p>
+                    <p class="ck-text-dark-center">Carregando detalhes...</p>
                 </div>
             </div>
         </div>
@@ -712,7 +712,7 @@
             </div>
             <div class="modal-body">
                 <div id="admin-user-dashboard-content">
-                    <p style="color: var(--text-dark); text-align: center;">Carregando...</p>
+                    <p class="ck-text-dark-center">Carregando...</p>
                 </div>
             </div>
         </div>
@@ -776,7 +776,7 @@
             </select>
         </div>
 
-        <div class="input-group" id="max-invites-group" style="display: none;">
+        <div class="input-group ck-hidden" id="max-invites-group">
             <label for="modal-max-invites">Máximo de Convites</label>
             <input type="number" id="modal-max-invites" class="modal-input-text" min="0">
         </div>
@@ -798,13 +798,13 @@
         <div class="input-group">
             <label for="modal-profile-slug">Slug público (Informações)</label>
             <input type="text" id="modal-profile-slug" class="modal-input-text" readonly tabindex="-1" style="opacity:.85;cursor:default;">
-            <small style="display:block;margin-top:6px;opacity:.75;font-size:0.8rem;">Só leitura — o cliente altera isto no painel (Informações). Ex.: adrianokingg</small>
+            <small class="ck-hint">Só leitura — o cliente altera isto no painel (Informações). Ex.: adrianokingg</small>
         </div>
 
         <div class="input-group">
             <label for="modal-activation-code">Código de ativação / pulseira (camuflado)</label>
             <input type="text" id="modal-activation-code" class="modal-input-text" maxlength="32" placeholder="Ex: ADRIANO-KING" autocomplete="off">
-            <small style="display:block;margin-top:6px;opacity:.75;font-size:0.8rem;">Vai na tag NFC. Redireciona para o slug público acima (não o substitui).</small>
+            <small class="ck-hint">Vai na tag NFC. Redireciona para o slug público acima (não o substitui).</small>
         </div>
 
         <div class="input-group">

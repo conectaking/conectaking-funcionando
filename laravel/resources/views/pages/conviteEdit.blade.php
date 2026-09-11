@@ -126,7 +126,7 @@
     <div class="card">
       <h2>Preview e estatísticas</h2>
       <p class="stats">Visualizações: <strong id="view_count">0</strong> (últimos 7 dias: <strong id="views_7">0</strong>)</p>
-      <p style="margin-top:10px">
+      <p class="ck-mt-10">
         <button type="button" class="btn btn-secondary" id="btn-preview"><i class="fas fa-link"></i> Gerar link de preview</button>
         <button type="button" class="btn btn-secondary" id="btn-ver-preview" style="margin-left:8px" title="Atualiza o preview ao lado"><i class="fas fa-eye"></i> Ver preview</button>
       </p>
@@ -137,7 +137,7 @@
   <div class="preview-panel">
     <h3><i class="fas fa-eye"></i> Preview do convite</h3>
     <div class="preview-placeholder" id="preview-placeholder">Gere o link de preview e clique em &quot;Ver preview&quot; para ver como está ficando.</div>
-    <iframe id="preview-iframe" style="display:none" title="Preview do convite"></iframe>
+    <iframe class="ck-hidden" id="preview-iframe" title="Preview do convite"></iframe>
   </div>
   </div>
 

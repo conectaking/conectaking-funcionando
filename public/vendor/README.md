@@ -1,12 +1,5 @@
-# Vendor estático (fallback)
+# Vendor estático
 
-Produção preferencial via Vite/npm (`vendor-globals.js`, `fontawesome.css`, `pdf-lib` no kingDocs).
+Pastas npm (chartjs, leaflet, cropper, sortable, jspdf, html2pdf, html5-qrcode, qrcode*, fontawesome, pdf-lib) foram **removidas** — tudo via Vite/`vendor-globals.js` / `fontawesome.css` / import em `kingDocs.js`.
 
-Pastas em `/vendor/` ficam como fallback de cache antigo / SW — podem ser removidas numa janela dedicada após smoke longo.
-
-| Pasta | npm / Vite |
-|-------|------------|
-| fontawesome | `@fortawesome/fontawesome-free` |
-| chartjs, leaflet, cropperjs, sortablejs | `vendor-globals.js` |
-| jspdf, html2pdf, html5-qrcode, qrcode* | `vendor-globals.js` |
-| pdf-lib | `pdf-lib` importado em `kingDocs.js` |
+Esta pasta fica só com este README. Não reintroduzir cópias estáticas sem necessidade.

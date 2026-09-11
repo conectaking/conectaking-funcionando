@@ -9,7 +9,7 @@
     <div class="doc-preview" id="doc-preview">
         <header class="doc-header">
             <div class="doc-header-left">
-                <img id="doc-logo-header" class="doc-header-logo" src="" alt="Logo" style="display: none;">
+                <img id="doc-logo-header" class="doc-header-logo ck-hidden" src="" alt="Logo">
                 <span id="doc-logo-placeholder" style="font-size: 12px; opacity: 0.9;">Sua logo</span>
             </div>
             <div class="doc-header-right">
@@ -18,7 +18,7 @@
             </div>
         </header>
         <div class="doc-header-bar"></div>
-        <div class="doc-logo-block" id="doc-logo-block" style="display: none;">
+        <div class="doc-logo-block ck-hidden" id="doc-logo-block">
             <img id="doc-logo-img" src="" alt="Logo">
         </div>
         <div class="doc-columns">
@@ -62,15 +62,15 @@
                 <span id="total-geral">R$ 0,00</span>
             </div>
         </div>
-        <div class="doc-block" id="block-condicoes" style="display: none;">
+        <div class="doc-block ck-hidden" id="block-condicoes">
             <h4>Condições de pagamento</h4>
             <p id="condicoes-pagamento"></p>
         </div>
-        <div class="doc-block" id="block-observacoes" style="display: none;">
+        <div class="doc-block ck-hidden" id="block-observacoes">
             <h4>Observações</h4>
             <p id="observacoes"></p>
         </div>
-        <div class="doc-block" id="block-pix" style="display: none;">
+        <div class="doc-block ck-hidden" id="block-pix">
             <h4>Pagamento via PIX</h4>
             <div class="flex flex-wrap gap-4 items-start">
                 <div id="pix-qr-wrap" class="flex-shrink-0"></div>
@@ -85,7 +85,7 @@
             <span id="meta-data"></span>
             <span id="meta-validade"></span>
         </div>
-        <div class="doc-notas-fiscais" id="block-notas-fiscais" style="display: none;">
+        <div class="doc-notas-fiscais ck-hidden" id="block-notas-fiscais">
             <h4>Notas fiscais</h4>
             <div id="notas-fiscais-preview"></div>
         </div>

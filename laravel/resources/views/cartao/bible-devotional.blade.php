@@ -55,7 +55,7 @@
     @else
         <div class="empty">
             <p>Não há devocional cadastrado para o dia {{ $day }}.</p>
-            <p style="margin-top:12px"><a href="{{ $todayUrl }}">Ir para o dia de hoje</a></p>
+            <p class="ck-mt-12"><a href="{{ $todayUrl }}">Ir para o dia de hoje</a></p>
         </div>
     @endif
 
