@@ -31,6 +31,9 @@ COPY laravel/composer.json laravel/composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 
 COPY laravel/ ./
+# Reinstala após o COPY completo: o lock pode ter mudado e o layer anterior do
+# composer install pode estar em cache sem pacotes novos (ex.: sentry).
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 COPY --from=assets /app/public/build /app/public/build
 # Vendor estático (FA/Chart/etc.) também em /app/public para Caddy servir sem PHP
 COPY --from=assets /app/legacy-public/vendor /app/public/vendor
