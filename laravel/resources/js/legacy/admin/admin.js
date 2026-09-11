@@ -4346,6 +4346,10 @@ if (deleteUserBtn) {
         });
     }
 
+    if (typeof window.__ckBindAdminTotpToggle === 'function') {
+        window.__ckBindAdminTotpToggle({ apiBase: API_BASE }).catch(function () {});
+    }
+
     // Fechar modal de analytics de perfil
     const closeProfileAnalyticsBtn = document.getElementById('close-profile-analytics-btn');
     const profileAnalyticsModal = document.getElementById('profile-analytics-modal');

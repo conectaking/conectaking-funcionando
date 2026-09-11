@@ -157,8 +157,11 @@ Route::middleware('jwt')->group(function () {
 });
 
 Route::middleware(['admin', 'audit'])->group(function () {
+    Route::get('/api/admin/totp/status', [\App\Http\Controllers\Auth\AdminTotpController::class, 'status']);
     Route::post('/api/admin/totp/setup', [\App\Http\Controllers\Auth\AdminTotpController::class, 'setup']);
     Route::post('/api/admin/totp/confirm', [\App\Http\Controllers\Auth\AdminTotpController::class, 'confirm']);
+    Route::post('/api/admin/totp/enable', [\App\Http\Controllers\Auth\AdminTotpController::class, 'enable']);
+    Route::post('/api/admin/totp/disable', [\App\Http\Controllers\Auth\AdminTotpController::class, 'disable']);
     Route::get('/api/admin/bible/prosperidade', [BibleProsperidadeAdminController::class, 'index']);
     Route::get('/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
     Route::post('/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);

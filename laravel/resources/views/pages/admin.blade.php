@@ -38,6 +38,19 @@
                         <i class="fas fa-sync-alt"></i> Atualizar
                     </button>
                 </div>
+                <div class="ck-admin-2fa-card" id="admin-2fa-card">
+                    <div class="ck-admin-2fa-card-text">
+                        <h3><i class="fas fa-shield-alt"></i> 2FA da conta admin</h3>
+                        <p>Só a sua conta de administrador. Clientes não usam isso. Desative em manutenção e reative quando quiser — o autenticador continua o mesmo.</p>
+                    </div>
+                    <div class="ck-admin-2fa-card-actions">
+                        <label class="ck-admin-2fa-switch">
+                            <input type="checkbox" id="admin-2fa-toggle" disabled>
+                            <span class="ck-admin-2fa-slider"></span>
+                        </label>
+                        <span class="ck-admin-2fa-state" id="admin-2fa-state">…</span>
+                    </div>
+                </div>
                 <!-- Métricas Principais -->
                 <div class="stats-grid">
                     <div class="stat-card">

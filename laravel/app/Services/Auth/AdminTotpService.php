@@ -2,7 +2,6 @@
 
 namespace App\Services\Auth;
 
-use App\Support\SchemaMeta;
 use App\Support\Totp;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +16,80 @@ class AdminTotpService
     public function isEnabled(object $user): bool
     {
         return ! empty($user->totp_enabled_at) && ! empty($user->totp_secret_encrypted);
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function status(string $userId): array
+    {
+        if (! Schema::hasColumn('users', 'totp_secret_encrypted')) {
+            return ['status' => 503, 'body' => ['success' => false, 'message' => '2FA ainda não migrado.']];
+        }
+        $user = DB::selectOne(
+            'SELECT totp_secret_encrypted, totp_enabled_at FROM users WHERE id = ? LIMIT 1',
+            [$userId]
+        );
+        $configured = $user && ! empty($user->totp_secret_encrypted);
+        $enabled = $configured && ! empty($user->totp_enabled_at);
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'configured' => $configured,
+            'enabled' => $enabled,
+        ]];
+    }
+
+    /**
+     * Liga o 2FA sem recriar o secret (já configurado no autenticador).
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function enable(string $userId): array
+    {
+        $st = $this->status($userId);
+        if ($st['status'] !== 200) {
+            return $st;
+        }
+        if (! $st['body']['configured']) {
+            return ['status' => 400, 'body' => [
+                'success' => false,
+                'needsSetup' => true,
+                'message' => 'Configure o autenticador antes de ativar.',
+            ]];
+        }
+        if ($st['body']['enabled']) {
+            return ['status' => 200, 'body' => ['success' => true, 'enabled' => true, 'configured' => true, 'message' => '2FA já estava ativo.']];
+        }
+        DB::update('UPDATE users SET totp_enabled_at = NOW() WHERE id = ?', [$userId]);
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'enabled' => true,
+            'configured' => true,
+            'message' => '2FA ativado.',
+        ]];
+    }
+
+    /**
+     * Desliga o desafio no login; mantém o secret para religar depois.
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function disable(string $userId): array
+    {
+        if (! Schema::hasColumn('users', 'totp_secret_encrypted')) {
+            return ['status' => 503, 'body' => ['success' => false, 'message' => '2FA ainda não migrado.']];
+        }
+        DB::update('UPDATE users SET totp_enabled_at = NULL WHERE id = ?', [$userId]);
+        $st = $this->status($userId);
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'enabled' => false,
+            'configured' => (bool) ($st['body']['configured'] ?? false),
+            'message' => '2FA desativado. O autenticador continua válido para quando reativar.',
+        ]];
     }
 
     /**

@@ -53,4 +53,25 @@ class AdminTotpController extends Controller
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function status(Request $request)
+    {
+        $r = $this->totp->status((string) $request->attributes->get('auth_user_id'));
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function enable(Request $request)
+    {
+        $r = $this->totp->enable((string) $request->attributes->get('auth_user_id'));
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function disable(Request $request)
+    {
+        $r = $this->totp->disable((string) $request->attributes->get('auth_user_id'));
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
 }

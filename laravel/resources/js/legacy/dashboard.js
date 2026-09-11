@@ -4187,6 +4187,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (isAdmin) admLink.classList.remove('ck-hidden');
                 else admLink.classList.add('ck-hidden');
             }
+            if (isAdmin && !window.__ckAdminTotpBound && typeof window.__ckBindAdminTotpToggle === 'function') {
+                window.__ckAdminTotpBound = true;
+                window.__ckBindAdminTotpToggle({
+                    apiBase: API_URL,
+                    rowId: 'admin-2fa-row',
+                }).catch(function () {});
+            }
+            const row2fa = document.getElementById('admin-2fa-row');
+            if (row2fa && !isAdmin) {
+                row2fa.classList.add('ck-hidden');
+                row2fa.style.display = 'none';
+            }
             const dev365AdminLink = document.getElementById('dev365-admin-link');
             if (dev365AdminLink) {
                 dev365AdminLink.style.display = isAdmin ? 'flex' : 'none';
