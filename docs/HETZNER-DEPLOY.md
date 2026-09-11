@@ -55,7 +55,7 @@ O entrypoint do container `laravel` já corre `php artisan schedule:run` a cada 
 (`laravel/docker-entrypoint.sh`). **Não** configure cron no host para o mesmo comando
 (duplica jobs).
 
-Serviços esperados: `db`, `redis`, `laravel`, `queue`.
+Serviços esperados: `db`, `redis`, `laravel`, `queue`, `queue-faces`, `scheduler`.
 
 ## Checklist pós-deploy
 
@@ -65,7 +65,9 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 docker exec conectaking-laravel php artisan migrate --force --no-interaction
 ```
 
-Health saudável: `"status":"ok"`, `"queue":"redis"`, `"redis":true`.  
+Health saudável: `"status":"ok"`.  
 Queue saudável: healthcheck por processo `queue:work` (não porta 2019).
+Worker faces: fila `ks-faces`. Scheduler dedicado (não no entrypoint do laravel).
+Off-box: `CK_BACKUP_OFFBOX_CMD` — ver `scripts/backup-postgres-vps.sh`. Docs: `EDGE-SECURITY.md`, `SECRETS-RUNBOOK.md`.
 
 Ver também `docs/FULL-PHP-MIGRATION.md`, `README.md` e `laravel/.env.example.conectaking`.
