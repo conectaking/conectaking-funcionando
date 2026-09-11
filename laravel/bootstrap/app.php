@@ -77,10 +77,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        if (! empty(env('SENTRY_LARAVEL_DSN')) && class_exists(\Sentry\Laravel\Integration::class)) {
-            $exceptions->reportable(function (\Throwable $e): void {
-                \Sentry\Laravel\Integration::captureUnhandledException($e);
-            });
+        if (class_exists(\Sentry\Laravel\Integration::class)) {
+            \Sentry\Laravel\Integration::handles($exceptions);
         }
 
         $exceptions->shouldRenderJsonWhen(fn ($request, \Throwable $e) =>
