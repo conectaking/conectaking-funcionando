@@ -43,6 +43,7 @@ export default defineConfig({
                 'resources/js/pages/salesPageEdit.js',
                 'resources/js/pages/guestListEdit.js',
                 'resources/js/pages/zerar-mes.js',
+                'resources/js/pages/business.js',
                 'resources/js/pages/kingSelectionSuccess.js',
                 'resources/js/pages/kingDocsShare.js',
                 'resources/js/pages/kingDocs.js',

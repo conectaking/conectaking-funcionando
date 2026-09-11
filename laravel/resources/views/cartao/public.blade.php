@@ -113,7 +113,7 @@
             <header class="vitrine-hero-header">
                 <div class="vitrine-hero-media">
                     @if($heroUrl !== '')
-                        <img class="vitrine-hero-img" src="{{ $heroUrl }}" alt="{{ $d['display_name'] ?? 'Vitrine' }}" decoding="async">
+                        <img class="vitrine-hero-img" src="{{ $heroUrl }}" alt="{{ $d['display_name'] ?? 'Vitrine' }}" loading="eager" decoding="async" fetchpriority="high">
                     @else
                         <div class="vitrine-hero-placeholder">
                             <strong>{{ $d['display_name'] ?? 'Vitrine' }}</strong>
@@ -144,17 +144,21 @@
                 <div class="ck-cp-5c6489">
                     @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
                         <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
-                             alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient ck-cp-9380eb"
+                             alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient ck-cp-9380eb" loading="lazy" decoding="async"
                             >
                     @else
                         <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
-                             alt="Foto de Perfil" class="{{ $avatarClass }} ck-cp-90b3e1"
+                             alt="Foto de Perfil" class="{{ $avatarClass }} ck-cp-90b3e1" loading="eager" decoding="async" fetchpriority="high"
                             >
                     @endif
                 </div>
                 <h1 class="profile-name">{{ $d['display_name'] ?? 'Nome do Usuário' }}</h1>
                 @if(trim((string) ($d['bio'] ?? '')) !== '')
-                    <p class="profile-bio">{{ $d['bio'] }}</p>
+                    @php $bioText = trim((string) $d['bio']); $bioLong = mb_strlen($bioText) > 140; @endphp
+                    <p class="profile-bio{{ $bioLong ? ' profile-bio--clamp' : '' }}" id="profile-bio">{{ $bioText }}</p>
+                    @if($bioLong)
+                        <button type="button" class="profile-bio-toggle" id="profile-bio-toggle" aria-expanded="false">Ver mais</button>
+                    @endif
                 @endif
             </header>
         @endif
@@ -221,10 +225,10 @@
                     <div class="profile-banner-container">
                         @if($primary && $primary !== '#')
                             <a href="{{ $primary }}" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
-                                <img src="{{ $img }}" alt="{{ $title !== '' ? $title : 'Banner' }}">
+                                <img src="{{ $img }}" alt="{{ $title !== '' ? $title : 'Banner' }}" loading="lazy" decoding="async">
                             </a>
                         @else
-                            <img src="{{ $img }}" alt="{{ $title !== '' ? $title : 'Banner' }}">
+                            <img src="{{ $img }}" alt="{{ $title !== '' ? $title : 'Banner' }}" loading="lazy" decoding="async">
                         @endif
                     </div>
 

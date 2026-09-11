@@ -878,7 +878,7 @@ $bladePages = [
     'dashboard-recibos-orcamentos', 'clientes-recibos-orcamentos', 'configuracoes-recibos-orcamentos',
     'termos', 'privacidade', 'index', 'bible', 'bibliaking',
     'admin-devocionais-365',
-    'responsesList', 'conviteEdit', 'arquetipo-resultados',
+    'responsesList', 'conviteEdit', 'arquetipo-resultados', 'business',
 ];
 if (! config('conectaking.finance_standby')) {
     $bladePages[] = 'zerar-mes';

@@ -20,6 +20,7 @@ class CartaoPublicService
         'kingselection', 'upload', 'uploads', 'vcard', 'log', 'card', 'download',
         'health', 'static', 'js', 'css', 'img', 'assets', 'public', 'loja', 'up',
         'portaria', 'guest-list', 'kingdocs', 'documentos', 'checkoutconfig',
+        'business',
     ];
 
     /**
@@ -197,7 +198,12 @@ class CartaoPublicService
      */
     public function getApiData(string $identifier, string $origin): array
     {
-        $user = $this->findUser(trim($identifier));
+        $raw = trim($identifier);
+        if ($raw === '' || in_array(strtolower($raw), self::RESERVED, true)) {
+            return ['type' => 'notFound', 'message' => 'Perfil não encontrado'];
+        }
+
+        $user = $this->findUser($raw);
         if (!$user) {
             return ['type' => 'notFound', 'message' => 'Perfil não encontrado'];
         }

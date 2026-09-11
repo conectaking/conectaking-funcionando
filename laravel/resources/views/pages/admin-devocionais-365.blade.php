@@ -18,7 +18,9 @@
 
         <div class="auth-bar">
             <label class="ck-ad365-6c0d09">Sessão admin (cookie). Bearer opcional só para sync:
-                <input type="password" class="token-input" id="token-manual" placeholder="Opcional: Bearer para sync cookie" autocomplete="off">
+                <form class="token-form" id="token-form" onsubmit="return false;">
+                    <input type="password" class="token-input" id="token-manual" name="bearer_token" placeholder="Opcional: Bearer para sync cookie" autocomplete="off">
+                </form>
             </label>
             <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-cookie"></i> Sync cookie</button>
         </div>

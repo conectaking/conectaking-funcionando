@@ -65,7 +65,7 @@
     <nav class="sidebar-nav">
         <a href="#" class="nav-link active" data-target="editar-pane" title="Editar Conecta King"><i class="fas fa-pencil-alt"></i> <span>Editar Conecta King</span></a>
         <a href="#" class="nav-link ck-hidden" data-target="separacao-pacotes-pane" id="separacao-pacotes-link" title="Separação de Pacotes"><i class="fas fa-layer-group"></i> <span>Separação de Pacotes</span></a>
-        <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira" @if(config('conectaking.finance_standby')) hidden aria-hidden="true" @endif><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
+        <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
         <a href="/kingForms" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
         <a href="/kingSelection?v=2026-09-08-no-render" class="nav-link nav-link-by-plan ck-hidden" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
         <a href="/bibliaking" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
@@ -90,7 +90,7 @@
         <a href="/admin-devocionais-365" class="nav-link ck-hidden" id="dev365-admin-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
         <a href="#" class="nav-link ck-hidden" data-target="personalizar-link-pane" id="personalizar-link-link" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
         <a href="#" class="nav-link" data-target="assinatura-pane" id="assinatura-link"><i class="fas fa-crown"></i> <span>Assinatura</span></a>
-        <a href="business/?only=logo" class="nav-link ck-hidden" id="personalizacao-logo-link" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
+        <a href="/business?only=logo" class="nav-link ck-hidden" id="personalizacao-logo-link" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
         <a href="#" id="logout-btn" class="nav-link" title="Sair"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a>
     </div>
 </aside>

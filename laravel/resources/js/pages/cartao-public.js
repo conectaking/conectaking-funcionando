@@ -103,6 +103,23 @@ import '../vendor-globals.js';
         });
     }
 
+    var bioToggle = document.getElementById('profile-bio-toggle');
+    var bioEl = document.getElementById('profile-bio');
+    if (bioToggle && bioEl) {
+        bioToggle.addEventListener('click', function () {
+            var expanded = bioEl.classList.toggle('is-expanded');
+            if (expanded) {
+                bioEl.classList.remove('profile-bio--clamp');
+                bioToggle.textContent = 'Ver menos';
+                bioToggle.setAttribute('aria-expanded', 'true');
+            } else {
+                bioEl.classList.add('profile-bio--clamp');
+                bioToggle.textContent = 'Ver mais';
+                bioToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
     var shareButton = document.getElementById('share-btn');
     if (shareButton) {
         shareButton.addEventListener('click', async function () {
