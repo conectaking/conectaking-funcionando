@@ -168,8 +168,8 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
         var fk = tr.getAttribute('data-fk');
         var fid = fieldBlockFid(tr);
         if (!fid) return;
-        var st = tr.querySelector('' + fid + '');
-        var sf = tr.querySelector('' + fid + '');
+        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
         rows.push({
           fk: fk,
           st: !!(st && st.checked),
@@ -182,7 +182,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     if (extraRoot) {
       extraRoot.querySelectorAll('.xd-check:checked').forEach(function (ch) {
         var id = ch.getAttribute('data-fid');
-        var lab = extraRoot.querySelector('.xd-label[data-fid="' + id + '');
+        var lab = extraRoot.querySelector('.xd-label[data-fid="' + id + '"]');
         extraFileIds.push({ id: id, label: lab ? lab.value : '' });
       });
     }
@@ -210,8 +210,8 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
         var saved = state.rows.find(function (r) { return r.fk === fk; });
         var fid = fieldBlockFid(tr);
         if (!fid) return;
-        var st = tr.querySelector('' + fid + '');
-        var sf = tr.querySelector('' + fid + '');
+        var st = tr.querySelector('.st[data-fid="' + fid + '"]');
+        var sf = tr.querySelector('.sf[data-fid="' + fid + '"]');
         if (!saved) {
           if (st) st.checked = false;
           if (sf) sf.checked = false;
@@ -227,9 +227,9 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     if (extraRoot) {
       extraRoot.querySelectorAll('.xd-check').forEach(function (ch) { ch.checked = false; });
       (state.extraFileIds || []).forEach(function (ex) {
-        var ch = extraRoot.querySelector('.xd-check[data-fid="' + ex.id + '');
+        var ch = extraRoot.querySelector('.xd-check[data-fid="' + ex.id + '"]');
         if (ch) ch.checked = true;
-        var lab = extraRoot.querySelector('.xd-label[data-fid="' + ex.id + '');
+        var lab = extraRoot.querySelector('.xd-label[data-fid="' + ex.id + '"]');
         if (lab && ex.label != null) lab.value = ex.label;
       });
     }
@@ -278,7 +278,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     });
     return best;
   }
-  /** ltimo ficheiro deste tipo (para pré-visualização / link rápido) */
+  /** Último ficheiro deste tipo (para pré-visualização / link rápido) */
   function getLatestFileForDocType(docType) {
     var t = String(docType).trim();
     var best = null;
@@ -579,33 +579,33 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     var hasFile = it.docType && fileExistsForDocType(it.docType);
     var canFile = !!it.docType;
     var showText = !!(it.group && it.key);
-    var dtAttr = it.docType ? '' + escapeAttr(it.docType) + '' : '';
-    var gAttr = it.group ? '' + escapeAttr(it.group) + '' : '';
-    var kAttr = it.key ? '' + escapeAttr(it.key) + '' : '';
+    var dtAttr = it.docType ? ' data-doc-type="' + escapeAttr(it.docType) + '"' : '';
+    var gAttr = it.group ? ' data-gid="' + escapeAttr(it.group) + '"' : '';
+    var kAttr = it.key ? ' data-key="' + escapeAttr(it.key) + '"' : '';
     var modes = '';
     if (canFile) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-sf"/> Foto/PDF</label>';
     if (showText) modes += '<label class="kd-sc-mode"><input type="checkbox" class="kd-sc-st"/> Texto</label>';
     var valHint = '';
     if (it.group && it.key && fieldData[it.group] && String(fieldData[it.group][it.key] || '').trim()) {
       var v = String(fieldData[it.group][it.key]).trim();
-      valHint = '<div class="dc-val-hint" title="' + escapeAttr(v) + '' + escapeHtml(v.length > 32 ? v.slice(0, 32) + '' : v) + '</div>';
+      valHint = '<div class="dc-val-hint" title="' + escapeAttr(v) + '">' + escapeHtml(v.length > 32 ? v.slice(0, 32) + '…' : v) + '</div>';
     }
     var status = '';
     var dateLine = '';
     if (hasFile) {
-      status = 'o" Ver pré-visualização';
+      status = '✓ Ver pré-visualização';
       var lastD = latestForDocType(it.docType);
-      if (lastD) dateLine = '<div class="dc-date">ltimo: ' + escapeHtml(formatShortDate(lastD)) + '</div>';
+      if (lastD) dateLine = '<div class="dc-date">Último: ' + escapeHtml(formatShortDate(lastD)) + '</div>';
     } else if (canFile) {
       status = 'Envia em Dados';
     } else if (valHint) {
-      status = 'o" Texto preenchido';
+      status = '✓ Texto preenchido';
     } else {
       status = 'Marca Texto';
     }
     var cls = 'doc-card doc-card--share doc-card--browse';
     if (hasFile) cls += ' doc-card--has-file';
-    return '' + cls + '' + dtAttr + gAttr + kAttr + '>' +
+    return '<div class="' + cls + '"' + dtAttr + gAttr + kAttr + '>' +
       '<div class="dc-icon" aria-hidden="true">' + (it.icon || '') + '</div>' +
       '<div class="dc-title">' + escapeHtml(it.label) + '</div>' +
       valHint +
@@ -625,7 +625,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
       }
     }
     if (gid && key) {
-      return root.querySelector('.doc-card--share[data-gid="' + gid + '' + key + '');
+      return root.querySelector('.doc-card--share[data-gid="' + gid + '"][data-key="' + key + '"]');
     }
     return null;
   }
@@ -860,7 +860,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
         var meta = document.createElement('p');
         meta.className = 'sub';
         meta.style.margin = '0 0 .45rem';
-        meta.textContent = '#' + f.id + ' Â· ' + (f.doc_type || '') + ' Â· ' + (f.mime || '');
+        meta.textContent = '#' + f.id + ' · ' + (f.doc_type || '') + ' · ' + (f.mime || '');
         wrap.appendChild(meta);
         if (mime.indexOf('image/') === 0) {
           var img = document.createElement('img');
@@ -1196,8 +1196,8 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
   function applyFieldModeToBlock(block, mode) {
     var m = normalizePresetMode(mode);
     var fid = fieldBlockFid(block);
-    var st = block.querySelector('' + fid + '');
-    var sf = block.querySelector('' + fid + '');
+    var st = block.querySelector('.st[data-fid="' + fid + '"]');
+    var sf = block.querySelector('.sf[data-fid="' + fid + '"]');
     var fk = block.getAttribute('data-fk') || '';
     var parts = fk.split('|');
     var g = parts[0];
@@ -1221,10 +1221,10 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
       });
     }
     if (!f) return;
-    var ch = root.querySelector('.xd-check[data-fid="' + f.id + '');
+    var ch = root.querySelector('.xd-check[data-fid="' + f.id + '"]');
     if (!ch) return;
     ch.checked = true;
-    var lab = root.querySelector('.xd-label[data-fid="' + f.id + '');
+    var lab = root.querySelector('.xd-label[data-fid="' + f.id + '"]');
     if (lab && !String(lab.value || '').trim()) {
       var preset = DOC_CARD_PRESETS.find(function (p) { return normalizeDocTypeKey(p.docType) === normalizeDocTypeKey(f.doc_type); });
       lab.value = preset ? preset.label : (f.doc_type || 'Documento');
@@ -1345,9 +1345,9 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     var last = latestForDocType(dt);
     var cls = 'kd-dados-doc-status' + (has ? ' has-file' : '');
     var txt = has
-      ? ('' + escapeHtml(docTypeLabel(dt)) + ' no cofre' + (last ? ' Â· ' + escapeHtml(formatShortDate(last)) : ''))
+      ? ('' + escapeHtml(docTypeLabel(dt)) + ' no cofre' + (last ? ' · ' + escapeHtml(formatShortDate(last)) : ''))
       : ('Sem ficheiro — envia foto ou PDF');
-    return '' + cls + '" data-doc-type="' + escapeAttr(dt) + '' + txt + '</span>';
+    return '<span class="' + cls + '" data-doc-type="' + escapeAttr(dt) + '">' + txt + '</span>';
   }
   function bindDadosUploadButtons(root) {
     if (!root) return;
@@ -1366,7 +1366,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
       var last = latestForDocType(dt);
       span.className = 'kd-dados-doc-status' + (has ? ' has-file' : '');
       span.textContent = has
-        ? ('' + docTypeLabel(dt) + ' no cofre' + (last ? ' Â· ' + formatShortDate(last) : ''))
+        ? ('' + docTypeLabel(dt) + ' no cofre' + (last ? ' · ' + formatShortDate(last) : ''))
         : 'Sem ficheiro — envia foto ou PDF';
     });
   }
@@ -1406,26 +1406,26 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
         const canonDt = docHint ? vaultDocTypeKeyForHint(docHint) : null;
         if (canonDt) {
           html += '<div class="kd-dados-field">';
-          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '' + escapeHtml(k) + '' + escapeAttr(v) + '';
+          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeAttr(g.id) + '" data-k="' + escapeAttr(k) + '" value="' + escapeAttr(v) + '"/></div>';
           html += '<div class="kd-dados-doc-row">' + dadosDocStatusHtml(docHint);
           html += '<button type="button" class="btn secondary kd-dados-upload-btn" data-doc-type="' + escapeAttr(canonDt) + '" style="font-size:.76rem;padding:.35rem .65rem">Enviar foto/PDF</button></div>';
           html += '</div>';
         } else {
-          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeHtml(g.id) + '' + escapeHtml(k) + '' + escapeAttr(v) + '';
+          html += '<div class="row"><label>' + escapeHtml(k) + '</label><input type="text" data-g="' + escapeAttr(g.id) + '" data-k="' + escapeAttr(k) + '" value="' + escapeAttr(v) + '"/></div>';
         }
       });
       html += '</div></details>';
     });
     html += '<details class="kd-collapsible" open><summary>Documentos no cofre (enviar ficheiros)</summary><div class="kd-collapsible-body">';
     html += '<p class="sub" style="margin-top:0">Cada cartão abre o explorador para esse tipo. Depois marca o que queres partilhar em <strong>Documentos</strong>.</p>';
-    html += '<div class="doc-panel-card"><div class="doc-badge" role="status"><span aria-hidden="true">Y"Z</span> Enviar ao cofre</div>';
+    html += '<div class="doc-panel-card"><div class="doc-badge" role="status"><span aria-hidden="true">📄</span> Enviar ao cofre</div>';
     html += '<div id="doc-upload-root" class="doc-grid"></div>';
     html += '<div class="kd-custom-doctypes" id="kd-custom-doctypes-wrap">';
     html += '<p class="group" style="margin:0 0 .5rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Tipos extra (nome + ícone)</p>';
     html += '<div class="kd-custom-doctype-form" style="position:relative">';
     html += '<input type="text" id="kd-cdt-label" placeholder="Nome (ex.: Passaporte)" maxlength="60"/>';
-    html += '<span class="kd-cdt-emoji-wrap"><input type="text" id="kd-cdt-icon" maxlength="8" value="Y"Z" style="max-width:3.2rem"/>';
-    html += '<button type="button" class="btn secondary" id="kd-cdt-emoji-btn" style="padding:.35rem .5rem;font-size:1rem">Y~?</button>';
+    html += '<span class="kd-cdt-emoji-wrap"><input type="text" id="kd-cdt-icon" maxlength="8" value="📄" style="max-width:3.2rem"/>';
+    html += '<button type="button" class="btn secondary" id="kd-cdt-emoji-btn" style="padding:.35rem .5rem;font-size:1rem">😀</button>';
     html += '<div id="kd-cdt-emoji-pop" class="kd-cdt-emoji-pop" hidden></div></span>';
     html += '<button type="button" class="btn secondary" id="kd-cdt-add">Adicionar tipo</button></div>';
     html += '<ul id="kd-cdt-list" class="kd-cdt-list"></ul></div></div>';
@@ -1504,7 +1504,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     var manual = document.getElementById('kd-sc-emoji-manual');
     if (!grid) return;
     grid.innerHTML = KD_EMOJI_PICKER.map(function (emo) {
-      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '' + escapeAttr(emo) + '' + escapeAttr(emo) + '' + emo + '</button>';
+      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '" title="' + escapeAttr(emo) + '" aria-label="' + escapeAttr(emo) + '">' + emo + '</button>';
     }).join('');
     grid.querySelectorAll('.kd-emoji-opt').forEach(function (btn) {
       btn.onclick = function (e) {
@@ -1547,7 +1547,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     var iconInp = document.getElementById('kd-cdt-icon');
     if (!grid || !btn || !KD_EMOJI_PICKER.length) return;
     grid.innerHTML = KD_EMOJI_PICKER.map(function (emo) {
-      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '' + escapeAttr(emo) + '' + emo + '</button>';
+      return '<button type="button" class="kd-emoji-opt" data-emoji="' + escapeAttr(emo) + '" title="' + escapeAttr(emo) + '">' + emo + '</button>';
     }).join('');
     grid.querySelectorAll('.kd-emoji-opt').forEach(function (b) {
       b.onclick = function (ev) {
@@ -1792,8 +1792,8 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
       var sel = fileExistsForDocType(p.docType);
       var cls = 'doc-card' + (sel ? ' selected' : '');
       var lastD = latestForDocType(p.docType);
-      var dateLine = lastD ? '<div class="dc-date">ltimo envio: ' + escapeHtml(formatShortDate(lastD)) + '</div>' : '';
-      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '' + escapeAttr(p.label) + '' +
+      var dateLine = lastD ? '<div class="dc-date">Último envio: ' + escapeHtml(formatShortDate(lastD)) + '</div>' : '';
+      return '<button type="button" class="' + cls + '" data-doc-type="' + escapeAttr(p.docType) + '">' +
         '<div class="dc-icon" aria-hidden="true">' + p.icon + '</div>' +
         '<div class="dc-title">' + escapeHtml(p.label) + '</div>' +
         '<div class="dc-status">' + (sel ? '' : 'Toca para enviar') + '</div>' +
@@ -1889,8 +1889,8 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     if (!filesList.length) { el.innerHTML = '<p class="sub">Ainda não tens ficheiros no cofre. Usa a aba <strong>Dados</strong> (secção Documentos) para enviar o primeiro.</p>'; renderUnifiedShareCards(); refreshDadosFieldDocStatuses(); return; }
     el.innerHTML = filesList.map(f => {
       var dt = f.created_at ? formatShortDate(new Date(f.created_at)) : '';
-      return '<div class="file-row"><span>#' + f.id + '' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
-        (dt ? ' <span style="opacity:.78;font-size:.78rem">Â· ' + escapeHtml(dt) + '</span>' : '') +
+      return '<div class="file-row"><span>#' + f.id + ' · ' + escapeHtml(f.doc_type) + ' <code>' + escapeHtml(f.mime || '') + '</code>' +
+        (dt ? ' <span style="opacity:.78;font-size:.78rem">· ' + escapeHtml(dt) + '</span>' : '') +
         '</span><button type="button" class="btn secondary btn-del-file" data-id="' + f.id + '">Apagar</button></div>';
     }).join('');
     el.querySelectorAll('.btn-del-file').forEach(b => {
@@ -1960,8 +1960,8 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     var arr = loadCustomShortcuts();
     if (!arr.length) { host.innerHTML = ''; return; }
     host.innerHTML = arr.map(function (it) {
-      var img = it.imageDataUrl ? '' + escapeAttr(it.imageDataUrl) + '" alt="" class="kd-atalho-img"/>' : '<span aria-hidden="true">' + escapeHtml(it.icon || '') + '</span>';
-      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">âš™</button></span>';
+      var img = it.imageDataUrl ? '<img src="' + escapeAttr(it.imageDataUrl) + '" alt="" class="kd-atalho-img"/>' : '<span aria-hidden="true">' + escapeHtml(it.icon || '') + '</span>';
+      return '<span class="kd-atalho-item"><button type="button" class="btn-atalho" data-custom-id="' + escapeAttr(it.id) + '" title="Aplicar: ' + escapeAttr(it.name) + '">' + img + ' <span>' + escapeHtml(it.name) + '</span></button><button type="button" class="btn secondary kd-atalho-cog" data-edit-id="' + escapeAttr(it.id) + '" aria-label="Editar atalho" title="Editar">⚙</button></span>';
     }).join('');
     host.querySelectorAll('[data-custom-id]').forEach(function (btn) {
       btn.onclick = function () { applyCustomShortcut(this.getAttribute('data-custom-id')); };
@@ -1984,7 +1984,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     if (!list) return;
     list.forEach(function (entry) { applyPresetToShareCard(entry); });
     clearAtalhoActive();
-    var b = document.querySelector('.btn-atalho[data-custom-id="' + id + '');
+    var b = document.querySelector('.btn-atalho[data-custom-id="' + id + '"]');
     if (b) b.classList.add('active');
     syncDocPreviewFromShareCards();
     updateSharePreview();
@@ -1997,7 +1997,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     clearAllShareCards();
     list.forEach(function (entry) { applyPresetToShareCard(entry); });
     clearAtalhoActive();
-    var activeBtn = document.querySelector('.btn-atalho[data-preset="' + presetId + '');
+    var activeBtn = document.querySelector('.btn-atalho[data-preset="' + presetId + '"]');
     if (activeBtn) activeBtn.classList.add('active');
     syncDocPreviewFromShareCards();
     updateSharePreview();
@@ -2172,7 +2172,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     let idx = 0;
     let html = '';
     GROUPS.forEach(function (g) {
-      html += '<div class="kd-share-cat" data-gid="' + escapeAttr(g.id) + '';
+      html += '<div class="kd-share-cat" data-gid="' + escapeAttr(g.id) + '">';
       html += '<div class="kd-share-cat-head">';
       html += '<span class="kd-share-cat-ico" aria-hidden="true">' + (g.icon || '') + '</span>';
       html += '<span class="kd-share-cat-title">' + escapeHtml(g.title) + '</span>';
@@ -2184,7 +2184,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
       g.keys.forEach(function (k) {
         const fid = idPrefix + (idx++);
         const fk = g.id + '|' + k;
-        html += '<div class="kd-field-block kd-share-field-card" data-fk="' + escapeAttr(fk) + '';
+        html += '<div class="kd-field-block kd-share-field-card" data-fk="' + escapeAttr(fk) + '">';
         html += '<div class="kd-share-field-card-head">';
         html += '<span class="kd-share-field-card-ico" aria-hidden="true">' + (g.icon || '') + '</span>';
         html += '<span class="kd-share-field-name">' + escapeHtml(k) + '</span>';
@@ -2200,7 +2200,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     wrap.querySelectorAll('[data-select-all-gid]').forEach(function (btn) {
       btn.onclick = function () {
         var gid = this.getAttribute('data-select-all-gid');
-        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '');
+        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
         if (!cat) return;
         cat.querySelectorAll('.kd-field-block .st').forEach(function (c) { c.checked = true; });
         cat.querySelectorAll('.kd-field-block .sf').forEach(function (c) { c.checked = true; });
@@ -2211,7 +2211,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     wrap.querySelectorAll('[data-clear-all-gid]').forEach(function (btn) {
       btn.onclick = function () {
         var gid = this.getAttribute('data-clear-all-gid');
-        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '');
+        var cat = wrap.querySelector('.kd-share-cat[data-gid="' + gid + '"]');
         if (!cat) return;
         cat.querySelectorAll('.kd-field-block .st').forEach(function (c) { c.checked = false; });
         cat.querySelectorAll('.kd-field-block .sf').forEach(function (c) { c.checked = false; });
@@ -2245,7 +2245,7 @@ if (typeof window !== 'undefined' && !window.PDFLib) {
     if (!w) return;
     if (!filesList.length) { w.innerHTML = '<p class="sub">Sem ficheiros.</p>'; return; }
     w.innerHTML = filesList.map(function (f) {
-      return '<div class="row" style="grid-template-columns:1fr 120px;"><label><input type="checkbox" class="xd-check" data-fid="' + f.id + '' + f.id + ' ' + escapeHtml(f.doc_type) + '</label><input type="text" class="xd-label" data-fid="' + f.id + '" placeholder="Rótulo"/></div>';
+      return '<div class="row" style="grid-template-columns:1fr 120px;"><label><input type="checkbox" class="xd-check" data-fid="' + f.id + '"/> #' + f.id + ' ' + escapeHtml(f.doc_type) + '</label><input type="text" class="xd-label" data-fid="' + f.id + '" placeholder="Rótulo"/></div>';
     }).join('');
   }
   function renderExtraDocs() {

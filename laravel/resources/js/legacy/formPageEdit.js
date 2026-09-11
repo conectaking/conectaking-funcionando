@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+(function bootFormPageEdit() {
+    const runFormPageEdit = () => {
     const API_URL = String(window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin).replace(/\/$/, '');
     let currentItemId = null;
     let formFields = [];
@@ -12882,7 +12883,14 @@ document.addEventListener('DOMContentLoaded', () => {
         setupKeyboardShortcuts();
         setupPreviewModeButtons();
     }, 1500);
-});
+    }; // end runFormPageEdit
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runFormPageEdit);
+    } else {
+        runFormPageEdit();
+    }
+})();
 
 // Função global para lidar com clique no botão Lista de Convidados (fallback)
 function handleGuestListClick(event) {

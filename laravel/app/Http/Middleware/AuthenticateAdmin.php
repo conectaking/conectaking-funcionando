@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\Auth\JwtService;
+use App\Support\ClientIp;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ class AuthenticateAdmin
     {
         $allow = trim((string) env('ADMIN_IP_ALLOWLIST', ''));
         if ($allow !== '') {
-            $client = (string) $request->ip();
+            $client = ClientIp::from($request);
             $ok = false;
             foreach (array_filter(array_map('trim', explode(',', $allow))) as $entry) {
                 if ($entry === $client || (str_contains($entry, '/') && $this->cidrMatch($client, $entry))) {
@@ -31,6 +32,7 @@ class AuthenticateAdmin
                 return response()->json([
                     'success' => false,
                     'message' => 'Acesso admin bloqueado para este IP.',
+                    'client_ip' => $client,
                 ], 403)->header('X-Conecta-Engine', 'laravel');
             }
         }

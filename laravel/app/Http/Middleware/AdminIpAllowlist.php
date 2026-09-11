@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ClientIp;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,7 +20,7 @@ class AdminIpAllowlist
             return $next($request);
         }
 
-        $client = (string) $request->ip();
+        $client = ClientIp::from($request);
         $allowed = false;
         foreach (array_filter(array_map('trim', explode(',', $raw))) as $entry) {
             if ($this->matchIp($client, $entry)) {
@@ -32,6 +33,7 @@ class AdminIpAllowlist
             return response()->json([
                 'success' => false,
                 'message' => 'Acesso admin bloqueado para este IP.',
+                'client_ip' => $client,
             ], 403)->header('X-Conecta-Engine', 'laravel');
         }
 

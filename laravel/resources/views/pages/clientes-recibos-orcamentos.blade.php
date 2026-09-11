@@ -20,7 +20,7 @@
         </a>
         <a href="/dashboard-recibos-orcamentos?abrir=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
             <span class="material-icons-outlined">request_quote</span>
-            <span class="text-[10px] font-semibold uppercase">OrÃ§amentos</span>
+            <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
         </a>
     </nav>
     <div class="flex flex-col gap-6 mt-6">
@@ -38,7 +38,7 @@
     <div class="max-w-4xl mx-auto w-full">
         <header class="mb-6 lg:mb-8">
             <h1 class="text-2xl sm:text-3xl font-bold dark:text-white mb-2">Clientes</h1>
-            <p class="text-slate-500 dark:text-slate-400">Cadastre clientes para preencher automaticamente ao criar recibos e orÃ§amentos. Ao digitar o nome do cliente, o sistema sugere os cadastrados.</p>
+            <p class="text-slate-500 dark:text-slate-400">Cadastre clientes para preencher automaticamente ao criar recibos e orçamentos. Ao digitar o nome do cliente, o sistema sugere os cadastrados.</p>
         </header>
 
         <section class="bg-white dark:bg-card-dark p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-border-dark mb-6">
@@ -49,15 +49,15 @@
             <form id="form-cliente" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nome</label>
-                    <input name="nome" id="cliente-nome" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Nome completo ou razÃ£o social" type="text" required/>
+                    <input name="nome" id="cliente-nome" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Nome completo ou razão social" type="text" required/>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">CPF/CNPJ</label>
                     <input name="cpf_cnpj" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="000.000.000-00" type="text"/>
                 </div>
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">EndereÃ§o</label>
-                    <input name="endereco" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Rua, nÃºmero, bairro, cidade" type="text"/>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Endereço</label>
+                    <input name="endereco" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Rua, número, bairro, cidade" type="text"/>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Contato</label>
@@ -79,10 +79,10 @@
             <div id="lista-clientes" class="space-y-2 max-h-96 overflow-y-auto">
                 <!-- preenchido via JS -->
             </div>
-            <p id="empty-clientes" class="text-slate-500 text-sm hidden">Nenhum cliente cadastrado. Cadastre acima ou marque "Cadastrar este cliente" ao salvar um recibo/orÃ§amento.</p>
+            <p id="empty-clientes" class="text-slate-500 text-sm hidden">Nenhum cliente cadastrado. Cadastre acima ou marque "Cadastrar este cliente" ao salvar um recibo/orçamento.</p>
         </section>
 
-        <p class="mt-6 text-slate-500 text-sm">No <a href="/dashboard-recibos-orcamentos" class="text-primary font-medium hover:underline">painel</a>, escolha <a href="/dashboard-recibos-orcamentos?abrir=recibo" class="text-primary font-medium hover:underline">Recibo</a> ou <a href="/dashboard-recibos-orcamentos?abrir=orcamento" class="text-primary font-medium hover:underline">OrÃ§amento</a> para criar novo ou continuar um existente. Ao editar, digite o nome do cliente para buscar na lista.</p>
+        <p class="mt-6 text-slate-500 text-sm">No <a href="/dashboard-recibos-orcamentos" class="text-primary font-medium hover:underline">painel</a>, escolha <a href="/dashboard-recibos-orcamentos?abrir=recibo" class="text-primary font-medium hover:underline">Recibo</a> ou <a href="/dashboard-recibos-orcamentos?abrir=orcamento" class="text-primary font-medium hover:underline">Orçamento</a> para criar novo ou continuar um existente. Ao editar, digite o nome do cliente para buscar na lista.</p>
     </div>
 </main>
 

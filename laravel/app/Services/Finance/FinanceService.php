@@ -416,6 +416,18 @@ class FinanceService
         $totalIncome = $incomePaid + $incomePending;
         $totalExpense = $expensePaid + $expensePending;
 
+        $prevParams = $profileId !== null
+            ? [$userId, $dateFrom, $profileId]
+            : [$userId, $dateFrom, $userId];
+        $prevRow = DB::selectOne(
+            "SELECT COALESCE(SUM(t.amount), 0) as total
+             FROM finance_transactions t
+             WHERE t.user_id = ? AND t.type = 'EXPENSE' AND t.status = 'PENDING'
+             AND t.transaction_date < ?::date {$profileFilter}",
+            $prevParams
+        );
+        $pendingExpensePreviousMonths = (float) ($prevRow->total ?? 0);
+
         $stats = [
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
@@ -424,7 +436,7 @@ class FinanceService
             'totalRecebido' => $incomePaid,
             'totalPago' => $expensePaid,
             'pendingExpense' => $expensePending,
-            'pendingExpensePreviousMonths' => 0,
+            'pendingExpensePreviousMonths' => $pendingExpensePreviousMonths,
             'pendingIncome' => $incomePending,
             'pendenciasReceber' => $incomePending,
             'pendenciasPagar' => $expensePending,
@@ -1077,8 +1089,9 @@ class FinanceService
 
         $trabajos = [];
         $recibos = [];
-        if (Schema::hasTable('finance_king_sync')) {
-            $profileKey = $profileId !== null ? (string) $profileId : '';
+        $profileKey = $profileId !== null ? (string) $profileId : '';
+        $kingPayload = $this->loadKingDataFromItems($userId, $profileKey);
+        if ($kingPayload === null && Schema::hasTable('finance_king_sync')) {
             $sync = DB::selectOne(
                 'SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1',
                 [$userId, $profileKey]
@@ -1094,50 +1107,51 @@ class FinanceService
                 $decoded = is_string($sync->data) ? json_decode($sync->data, true) : (array) $sync->data;
                 $data = is_array($decoded) ? $decoded : [];
             }
-            $arr = is_array($data['trabalhos'] ?? null) ? $data['trabalhos'] : [];
-            $isMonthly = $scope === 'monthly';
-            foreach ($arr as $t) {
-                if (! is_array($t)) {
-                    continue;
+            $kingPayload = $this->normalizeKingData($data);
+        }
+        $arr = is_array($kingPayload['trabalhos'] ?? null) ? $kingPayload['trabalhos'] : [];
+        $isMonthly = $scope === 'monthly';
+        foreach ($arr as $t) {
+            if (! is_array($t)) {
+                continue;
+            }
+            if ($isMonthly && ! empty($t['pagamentos']) && is_array($t['pagamentos'])) {
+                $totalT = 0.0;
+                $ultima = null;
+                foreach ($t['pagamentos'] as $p) {
+                    if (! is_array($p)) {
+                        continue;
+                    }
+                    $totalT += (float) ($p['valor'] ?? 0);
+                    $dt = substr((string) ($p['data'] ?? $p['dataPagamento'] ?? $t['data'] ?? ''), 0, 10);
+                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dt) && ($ultima === null || $dt > $ultima)) {
+                        $ultima = $dt;
+                    }
                 }
-                if ($isMonthly && ! empty($t['pagamentos']) && is_array($t['pagamentos'])) {
-                    $totalT = 0.0;
-                    $ultima = null;
+                if ($totalT > 0 && $ultima && $ultima >= $dateFrom && $ultima <= $dateTo) {
+                    $trabajos[] = [
+                        'origem' => 'trabalho',
+                        'descricao' => $t['descricao'] ?? $t['servico'] ?? 'Trabalho',
+                        'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
+                        'valor' => $totalT,
+                        'data' => $ultima,
+                    ];
+                }
+            } elseif (! $isMonthly) {
+                $v = (float) ($t['valor_recebido'] ?? 0);
+                if ($v <= 0 && ! empty($t['pagamentos']) && is_array($t['pagamentos'])) {
                     foreach ($t['pagamentos'] as $p) {
-                        if (! is_array($p)) {
-                            continue;
-                        }
-                        $totalT += (float) ($p['valor'] ?? 0);
-                        $dt = substr((string) ($p['data'] ?? $p['dataPagamento'] ?? $t['data'] ?? ''), 0, 10);
-                        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dt) && ($ultima === null || $dt > $ultima)) {
-                            $ultima = $dt;
-                        }
+                        $v += (float) (($p['valor'] ?? 0));
                     }
-                    if ($totalT > 0 && $ultima && $ultima >= $dateFrom && $ultima <= $dateTo) {
-                        $trabajos[] = [
-                            'origem' => 'trabalho',
-                            'descricao' => $t['descricao'] ?? $t['servico'] ?? 'Trabalho',
-                            'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
-                            'valor' => $totalT,
-                            'data' => $ultima,
-                        ];
-                    }
-                } elseif (! $isMonthly) {
-                    $v = (float) ($t['valor_recebido'] ?? 0);
-                    if ($v <= 0 && ! empty($t['pagamentos']) && is_array($t['pagamentos'])) {
-                        foreach ($t['pagamentos'] as $p) {
-                            $v += (float) (($p['valor'] ?? 0));
-                        }
-                    }
-                    if ($v > 0) {
-                        $trabajos[] = [
-                            'origem' => 'trabalho',
-                            'descricao' => $t['descricao'] ?? $t['servico'] ?? 'Trabalho',
-                            'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
-                            'valor' => $v,
-                            'data' => $t['data'] ?? $t['data_trabalho'] ?? null,
-                        ];
-                    }
+                }
+                if ($v > 0) {
+                    $trabajos[] = [
+                        'origem' => 'trabalho',
+                        'descricao' => $t['descricao'] ?? $t['servico'] ?? 'Trabalho',
+                        'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
+                        'valor' => $v,
+                        'data' => $t['data'] ?? $t['data_trabalho'] ?? null,
+                    ];
                 }
             }
         }

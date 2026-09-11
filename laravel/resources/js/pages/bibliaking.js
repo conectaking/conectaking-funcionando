@@ -61,6 +61,32 @@ import '@mod/js/ck-csrf.js';
 
             function json(res) { return res.json(); }
 
+            async function resolveBibleItemId() {
+                if (itemId) return itemId;
+                try {
+                    var res = await apiFetch('/api/profile');
+                    if (res.status === 401) return null;
+                    var body = await res.json();
+                    var items = (body && body.items) || (body && body.data && body.data.items) || [];
+                    if (!Array.isArray(items)) items = [];
+                    var bible = items.find(function (it) { return it && it.item_type === 'bible'; });
+                    if (bible && bible.id) {
+                        itemId = String(bible.id);
+                        try {
+                            sessionStorage.setItem(SESSION_KEY, itemId);
+                            sessionStorage.setItem('bible_item_id', itemId);
+                            var u = new URL(window.location.href);
+                            u.searchParams.set('itemId', itemId);
+                            window.history.replaceState({}, '', u.pathname + u.search);
+                        } catch (e) {}
+                        return itemId;
+                    }
+                } catch (e) {}
+                return null;
+            }
+
+            itemId = await resolveBibleItemId();
+
             if (!itemId) {
                 hide(elLoad);
                 show(elNoItem);
