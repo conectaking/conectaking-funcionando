@@ -367,7 +367,10 @@ import '@css/pages/index-extra.css';
             if (lbl) lbl.textContent = 'Instalar agora (1 toque)';
         });
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register(new URL('sw.js', window.location.href).href).catch(function() {});
+            // Stub SW desativado (fatia 14) — limpa registos antigos
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+                regs.forEach(function (r) { r.unregister(); });
+            }).catch(function () {});
         }
         function installPWA(platform) {
             if (platform === 'android' && deferredPrompt) {

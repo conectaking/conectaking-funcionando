@@ -96,17 +96,17 @@ Route::get('/guest-list/register/{token}', [GuestListPublicController::class, 'r
 Route::post('/api/guest-lists/public/register/{token}', [GuestListPublicController::class, 'registerSubmit'])->where('token', $cardSlug);
 Route::get('/guest-list/confirm/{identifier}', [GuestListPublicController::class, 'confirmPage'])->where('identifier', $cardSlug);
 Route::post('/api/guest-lists/public/confirm/{token}', [GuestListPublicController::class, 'confirmSubmit'])->where('token', $cardSlug);
-Route::get('/portaria/{token}', [GuestListPublicController::class, 'portariaPage'])->where('token', $cardSlug);
+Route::get('/portaria/{token}', [GuestListPublicController::class, 'portariaPage'])->where('token', $cardSlug)->middleware('throttle:60,1');
 Route::post('/portaria/{token}/checkin/{guestId}', [GuestListPublicController::class, 'portariaCheckin'])
-    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+']);
+    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+'])->middleware('throttle:30,1');
 Route::get('/guest-list/view-full/{token}', function (string $token) {
     return redirect('/portaria/'.$token, 301)->header('X-Conecta-Engine', 'laravel');
 })->where('token', $cardSlug);
 Route::post('/guest-list/view-full/{token}/checkin/{guestId}', [GuestListPublicController::class, 'portariaCheckin'])
-    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+']);
-Route::get('/guest-list/verify/qr/{qrToken}', [GuestListPublicController::class, 'verifyQr'])->where('qrToken', $cardSlug);
-Route::post('/guest-list/confirm/qr/{qrToken}', [GuestListPublicController::class, 'confirmQr'])->where('qrToken', $cardSlug);
-Route::post('/guest-list/confirm/cpf', [GuestListPublicController::class, 'confirmBySearch']);
+    ->where(['token' => $cardSlug, 'guestId' => '[0-9]+'])->middleware('throttle:30,1');
+Route::get('/guest-list/verify/qr/{qrToken}', [GuestListPublicController::class, 'verifyQr'])->where('qrToken', $cardSlug)->middleware('throttle:30,1');
+Route::post('/guest-list/confirm/qr/{qrToken}', [GuestListPublicController::class, 'confirmQr'])->where('qrToken', $cardSlug)->middleware('throttle:20,1');
+Route::post('/guest-list/confirm/cpf', [GuestListPublicController::class, 'confirmBySearch'])->middleware('throttle:15,1');
 Route::post('/log/view/{userId}', [AnalyticsLogController::class, 'view'])->where('userId', $userId)->middleware('throttle:120,1');
 Route::post('/log/click/item/{itemId}', [AnalyticsLogController::class, 'clickItem'])->where('itemId', '[0-9]+')->middleware('throttle:120,1');
 Route::post('/log/vcard/{userId}', [AnalyticsLogController::class, 'vcard'])->where('userId', $userId)->middleware('throttle:60,1');
@@ -622,6 +622,9 @@ Route::middleware(['jwt', 'module:finance'])->group(function () {
         Route::get('/api/finance/reports/categories', [\App\Http\Controllers\Finance\FinanceController::class, 'reportCategories']);
         Route::post('/api/finance/transfer', [\App\Http\Controllers\Finance\FinanceController::class, 'transfer']);
         Route::post('/api/finance/upload', [\App\Http\Controllers\Finance\FinanceController::class, 'uploadAttachment']);
+        Route::get('/api/finance/attachments/{ownerId}/{filename}', [\App\Http\Controllers\Finance\FinanceController::class, 'downloadAttachment'])
+            ->where('ownerId', '[0-9a-fA-F\-]{8,64}')
+            ->where('filename', '[a-f0-9]{32}\.(jpg|png|gif|webp|pdf)');
         Route::post('/api/finance/serasa/import-preview', [\App\Http\Controllers\Finance\FinanceController::class, 'serasaImportPreview']);
         Route::post('/api/finance/serasa/import-image-preview', [\App\Http\Controllers\Finance\FinanceController::class, 'serasaImportImagePreview']);
     });
@@ -880,10 +883,6 @@ Route::get('/checkoutConfig.html', fn () => response('Checkout/pagamento online 
 Route::get('/config.js', function () {
     return app(\App\Http\Controllers\FrontLegacyController::class)->page(request(), 'config.js');
 });
-// Vendor estático (FA, Chart, Leaflet, Cropper…) — paths aninhados
-Route::get('/vendor/{path}', function (\Illuminate\Http\Request $request, string $path) {
-    return app(\App\Http\Controllers\FrontLegacyController::class)->page($request, 'vendor/'.$path);
-})->where('path', '.*');
 Route::get('/{asset}', [\App\Http\Controllers\FrontLegacyController::class, 'page'])
     ->where('asset', '^(?!build/).+\\.(js|css|map|png|jpg|jpeg|webp|svg|woff2?|ttf|ico|json)$');
 Route::get('/{slug}/{storeSlug}', [SatellitePublicController::class, 'salesStore'])->where(['slug' => $cardSlug, 'storeSlug' => $cardSlug]);

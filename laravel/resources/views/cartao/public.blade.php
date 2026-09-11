@@ -18,7 +18,7 @@
     $logoSize = (int)($d['company_logo_size'] ?? 60);
 @endphp
 <!DOCTYPE html>
-<html lang="pt-BR" style="background-color: {{ $bgColor }};">
+<html lang="pt-BR" class="ck-page-bg">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -28,11 +28,13 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     @vite(['resources/css/fontawesome.css', 'resources/css/fonts.css', 'resources/js/pages/cartao-public.js'])
 <meta property="og:title" content="{{ $d['display_name'] ?? 'Conecta King' }}">
-    <meta property="og:description" content="{{ $ogDescription }}">
-    <meta property="og:image" content="{{ $ogImageUrl }}">
-    <meta property="og:url" content="{{ $ogPageUrl }}">
-    <style>
+<meta property="og:description" content="{{ $ogDescription }}">
+<meta property="og:image" content="{{ $ogImageUrl }}">
+<meta property="og:url" content="{{ $ogPageUrl }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         :root {
+            --page-bg: {{ $bgColor }};
+            --bg-overlay-opacity: {{ $bgOpacity }};
             --ck-font: '{{ $font }}', sans-serif;
             --ck-text: {{ $textColor }};
             --btn-r: {{ $btn['r'] }};
@@ -49,6 +51,13 @@
             --btn-align: {{ $alignValue ?? 'center' }};
             --logo-max: {{ max(24, min($logoSize, 90)) }}px;
         }
+        html.ck-page-bg { background-color: var(--page-bg); }
+        .background-image-overlay-img { opacity: var(--bg-overlay-opacity); }
+        .wifi-ssid-value { display: block; }
+        .profile-link-logo--sized { object-fit: contain; }
+        .profile-link-logo--rounded { object-fit: contain; border-radius: 8px; }
+        .carousel-wrapper-public { display: flex; width: calc(var(--ck-carousel-n, 1) * 100%); }
+        .carousel-slide-public { width: calc(100% / var(--ck-carousel-n, 1)); flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -56,7 +65,7 @@
 @endif
 
 @if($hasBgImage)
-    <img class="background-image-overlay-img" src="{{ $d['background_image_url'] }}" alt="" aria-hidden="true" decoding="async" style="opacity: {{ $bgOpacity }};">
+    <img class="background-image-overlay-img" src="{{ $d['background_image_url'] }}" alt="" aria-hidden="true" decoding="async">
 @endif
 
 <div class="profile-page-wrapper profile-layout-{{ $cardLayout }}">
@@ -157,10 +166,10 @@
                         $n = max(count($slides), 1);
                     @endphp
                     @if(count($slides) > 0)
-                        <div class="carousel-container-public" id="{{ $carouselId }}" data-slides="{{ count($slides) }}">
-                            <div class="carousel-wrapper-public" style="width: {{ $n * 100 }}%;">
+                        <div class="carousel-container-public" id="{{ $carouselId }}" data-slides="{{ count($slides) }}" data-n="{{ $n }}">
+                            <div class="carousel-wrapper-public" data-n="{{ $n }}">
                                 @foreach($slides as $slide)
-                                    <div class="carousel-slide-public" style="width: {{ 100 / $n }}%;">
+                                    <div class="carousel-slide-public">
                                         <img src="{{ $slide }}" alt="{{ $title !== '' ? $title : 'Carrossel' }}" loading="lazy">
                                     </div>
                                 @endforeach
@@ -189,7 +198,7 @@
                     @else
                         <a href="{{ $spUrl }}" class="profile-link" @if($spUrl !== '#') target="_blank" rel="noopener noreferrer" @endif data-item-id="{{ $item['id'] ?? '' }}">
                             @if($spHasLogo)
-                                <img src="{{ $img }}" alt="" class="profile-link-logo" style="width:{{ $spLogoSize }}px;height:{{ $spLogoSize }}px;object-fit:contain;">
+                                <img src="{{ $img }}" alt="" class="profile-link-logo profile-link-logo--sized" width="{{ $spLogoSize }}" height="{{ $spLogoSize }}">
                             @else
                                 <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-store') }}"></i>
                             @endif
@@ -222,7 +231,7 @@
                         @else
                             <a href="{{ $formUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
                                 @if($hasBtnLogo)
-                                    <img src="{{ $btnLogo }}" alt="" class="profile-link-logo" style="width:{{ $btnLogoSize }}px;height:{{ $btnLogoSize }}px;object-fit:contain;border-radius:8px;">
+                                    <img src="{{ $btnLogo }}" alt="" class="profile-link-logo profile-link-logo--rounded" width="{{ $btnLogoSize }}" height="{{ $btnLogoSize }}">
                                 @else
                                     <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-wpforms') }}"></i>
                                 @endif
@@ -264,7 +273,7 @@
                             data-profile-slug="{{ $profile_slug }}"
                             data-products='@json($item['products'] ?? [])'>
                         @if($catLogo)
-                            <img src="{{ $img }}" alt="" class="profile-link-logo" style="width:{{ $catSize }}px;height:{{ $catSize }}px;object-fit:contain;">
+                            <img src="{{ $img }}" alt="" class="profile-link-logo profile-link-logo--sized" width="{{ $catSize }}" height="{{ $catSize }}">
                         @else
                             <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-store') }}"></i>
                         @endif
@@ -443,7 +452,7 @@
         <h4 id="wifi-modal-title">Conectar ao Wi‑Fi</h4>
         <div class="wifi-ssid-block ck-cp-41db5c">
             <span class="wifi-ssid-label">Nome da rede</span>
-            <strong id="wifi-ssid-visible" class="wifi-ssid-value" style="display:block;"></strong>
+            <strong id="wifi-ssid-visible" class="wifi-ssid-value"></strong>
         </div>
         <p class="wifi-modal-hint">Escaneie o QR Code ou copie a senha.</p>
         <div class="ck-cp-d50492" id="wifi-qrcode-image"></div>

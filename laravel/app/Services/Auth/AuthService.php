@@ -130,8 +130,12 @@ class AuthService
         if ($email === '' || $password === '' || $registrationCode === '') {
             return ['status' => 400, 'body' => ['success' => false, 'message' => 'E-mail, senha e código são obrigatórios.']];
         }
-        if (strlen($password) < 6) {
-            return ['status' => 400, 'body' => ['success' => false, 'message' => 'Senha deve ter no mínimo 6 caracteres.']];
+        $strength = \App\Support\PasswordRules::validate($password);
+        if (! $strength['valid']) {
+            return ['status' => 400, 'body' => [
+                'success' => false,
+                'message' => $strength['errors'][0] ?? 'Senha inválida.',
+            ]];
         }
         if (! SchemaMeta::hasTable('registration_codes') || ! SchemaMeta::hasTable('users')) {
             return ['status' => 503, 'body' => ['success' => false, 'message' => 'Registro indisponível.']];

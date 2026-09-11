@@ -2,21 +2,13 @@
 
 namespace App\Services\Account;
 
+use App\Support\PlanCodeResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class ModulesService
 {
-    private const ACCOUNT_TYPE_TO_PLAN = [
-        'individual' => 'basic',
-        'basic' => 'basic',
-        'pro' => 'pro',
-        'premium' => 'premium',
-        'business' => 'business',
-        'empresa' => 'business',
-    ];
-
     /**
      * @return array{status:int, body:array<string,mixed>}
      */
@@ -27,28 +19,35 @@ class ModulesService
 
         if ($planCodeQuery) {
             $accountType = $planCodeQuery;
-            $planCode = $this->normalize(self::ACCOUNT_TYPE_TO_PLAN[$planCodeQuery] ?? $planCodeQuery);
+            $planCode = PlanCodeResolver::fromAccountType($planCodeQuery);
         } else {
-            $user = DB::selectOne('SELECT id, account_type, subscription_id FROM users WHERE id = ? LIMIT 1', [$userId]);
+            $user = DB::selectOne(
+                'SELECT id, account_type, subscription_id, subscription_status FROM users WHERE id = ? LIMIT 1',
+                [$userId]
+            );
             if (! $user) {
                 return ['status' => 404, 'body' => ['message' => 'Usuário não encontrado.']];
             }
             $accountType = $user->account_type ?? null;
-            if (! empty($user->subscription_id)) {
+            $subStatus = strtolower((string) ($user->subscription_status ?? ''));
+            $subExpired = in_array($subStatus, ['expired', 'cancelled', 'canceled', 'inactive'], true);
+            if (! empty($user->subscription_id) && ! $subExpired) {
                 try {
                     $plan = DB::selectOne(
                         'SELECT plan_code, is_active FROM subscription_plans WHERE id = ? LIMIT 1',
                         [$user->subscription_id]
                     );
                     if ($plan && filter_var($plan->is_active ?? true, FILTER_VALIDATE_BOOLEAN)) {
-                        $planCode = $this->normalize((string) ($plan->plan_code ?? ''));
+                        $planCode = PlanCodeResolver::normalize((string) ($plan->plan_code ?? ''));
                     }
                 } catch (\Throwable $e) {
                     Log::warning('modules.plan', ['error' => $e->getMessage()]);
                 }
             }
             if (! $planCode) {
-                $planCode = $this->normalize(self::ACCOUNT_TYPE_TO_PLAN[(string) $accountType] ?? (string) $accountType ?: 'basic');
+                $planCode = $subExpired
+                    ? 'free'
+                    : PlanCodeResolver::fromAccountType((string) $accountType);
             }
         }
         if (! $planCode) {
@@ -190,15 +189,5 @@ class ModulesService
             'success' => true,
             'modules' => array_values($modulesMap),
         ]];
-    }
-
-    private function normalize(string $code): string
-    {
-        $c = strtolower(trim($code));
-        if ($c === '' || $c === 'start' || $c === 'king_start') {
-            return 'basic';
-        }
-
-        return $c;
     }
 }

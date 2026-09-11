@@ -183,12 +183,13 @@ import '@css/pages/login-inline.css';
             messageDiv.className = 'message success';
           }
 
-          if (data.token) {
+          if (data.success || data.token) {
             // Cookie HttpOnly vem no Set-Cookie — não guardar JWT no localStorage (XSS).
             try { localStorage.setItem('conectaKingSession', '1'); } catch (_) {}
             try { localStorage.removeItem('conectaKingToken'); } catch (_) {}
             try { localStorage.removeItem('conectaKingRefreshToken'); } catch (_) {}
             try { localStorage.removeItem('refreshToken'); } catch (_) {}
+            try { localStorage.removeItem('token'); } catch (_) {}
           }
           // refresh_token HttpOnly via Set-Cookie — não gravar no localStorage.
           if (data.user) {

@@ -336,6 +336,7 @@ class FinanceController extends Controller
 
     public function uploadAttachment(Request $request)
     {
+        $userId = (string) $request->attributes->get('auth_user_id');
         $file = $request->file('file');
         $url = null;
         if ($file) {
@@ -354,9 +355,9 @@ class FinanceController extends Controller
                 'application/pdf' => 'pdf',
                 default => 'bin',
             };
-            $safeBase = preg_replace('/[^a-zA-Z0-9._-]/', '', pathinfo($file->getClientOriginalName() ?: 'file', PATHINFO_FILENAME)) ?: 'file';
-            $name = 'finance_'.time().'_'.$safeBase.'.'.$ext;
-            $destDir = public_path('uploads/finance');
+            $id = bin2hex(random_bytes(16));
+            $name = $id.'.'.$ext;
+            $destDir = storage_path('app/private/finance/'.$userId);
             if (! is_dir($destDir)) {
                 @mkdir($destDir, 0775, true);
             }
@@ -364,11 +365,46 @@ class FinanceController extends Controller
                 return response()->json(['success' => false, 'message' => 'Falha ao gravar anexo.'], 500)
                     ->header('X-Conecta-Engine', 'laravel');
             }
-            $url = '/uploads/finance/'.$name;
+            // URL autenticada (não pública sob /uploads/)
+            $url = '/api/finance/attachments/'.$userId.'/'.$name;
         }
         $r = $this->finance->uploadAttachment($url);
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function downloadAttachment(Request $request, string $ownerId, string $filename)
+    {
+        $userId = (string) $request->attributes->get('auth_user_id');
+        if ($userId === '' || ! hash_equals($userId, $ownerId)) {
+            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $safe = basename($filename);
+        if (! preg_match('/^[a-f0-9]{32}\.(jpg|png|gif|webp|pdf)$/i', $safe)) {
+            return response()->json(['success' => false, 'message' => 'Anexo inválido.'], 400)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $path = storage_path('app/private/finance/'.$ownerId.'/'.$safe);
+        if (! is_file($path)) {
+            return response()->json(['success' => false, 'message' => 'Anexo não encontrado.'], 404)
+                ->header('X-Conecta-Engine', 'laravel');
+        }
+        $mime = match (strtolower(pathinfo($safe, PATHINFO_EXTENSION))) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'pdf' => 'application/pdf',
+            default => 'application/octet-stream',
+        };
+
+        return response()->file($path, [
+            'Content-Type' => $mime,
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+            'X-Conecta-Engine' => 'laravel',
+        ]);
     }
 
     public function serasaImportPreview(Request $request)

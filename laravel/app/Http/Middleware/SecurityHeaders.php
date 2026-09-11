@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\Vite;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Headers de segurança + CSP com nonce (scripts).
- * Injeta nonce em todo <script> HTML sem nonce, p/ Vite + /config.js + /vendor + inline residual.
+ * Headers de segurança + CSP com nonce (scripts e styles).
  */
 class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
         $nonce = Vite::useCspNonce();
+        view()->share('cspNonce', $nonce);
 
         /** @var Response $response */
         $response = $next($request);
@@ -23,6 +23,13 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff', false);
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN', false);
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin', false);
+        if ($request->isSecure()) {
+            $response->headers->set(
+                'Strict-Transport-Security',
+                'max-age=31536000; includeSubDomains',
+                false
+            );
+        }
 
         $path = trim($request->path(), '/');
         $cameraOk = $this->allowsCamera($path);
@@ -36,10 +43,9 @@ class SecurityHeaders
         }
 
         $this->injectScriptNonces($response, $nonce);
+        $this->injectStyleNonces($response, $nonce);
 
         if (! $response->headers->has('Content-Security-Policy')) {
-            // script: self + nonce (sem unsafe-inline).
-            // style: unsafe-inline mantido p/ :root dinâmico do cartão + poucos style="" (Blade/JS toggles).
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",
@@ -47,7 +53,7 @@ class SecurityHeaders
                 "frame-ancestors 'self'",
                 "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
                 "script-src 'self' 'nonce-{$nonce}'",
-                "style-src 'self' 'unsafe-inline'",
+                "style-src 'self' 'nonce-{$nonce}'",
                 "font-src 'self' data:",
                 "img-src 'self' data: blob: https:",
                 "media-src 'self' blob: https:",
@@ -63,32 +69,41 @@ class SecurityHeaders
 
     private function injectScriptNonces(Response $response, string $nonce): void
     {
+        $this->injectTagNonces($response, $nonce, 'script');
+    }
+
+    private function injectStyleNonces(Response $response, string $nonce): void
+    {
+        $this->injectTagNonces($response, $nonce, 'style');
+    }
+
+    private function injectTagNonces(Response $response, string $nonce, string $tag): void
+    {
         $contentType = (string) $response->headers->get('Content-Type', '');
         if ($contentType !== '' && ! str_contains($contentType, 'text/html')) {
             return;
         }
 
         $content = $response->getContent();
-        if (! is_string($content) || $content === '' || ! str_contains($content, '<script')) {
+        if (! is_string($content) || $content === '' || ! str_contains($content, '<'.$tag)) {
             return;
         }
 
         $updated = preg_replace_callback(
-            '/<script(\s[^>]*)?>/i',
-            static function (array $m) use ($nonce): string {
+            '/<'.$tag.'(\s[^>]*)?>/i',
+            static function (array $m) use ($nonce, $tag): string {
                 $attrs = $m[1] ?? '';
                 if ($attrs !== '' && preg_match('/\bnonce\s*=/', $attrs)) {
                     return $m[0];
                 }
 
-                return '<script nonce="'.htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8').'"'.($attrs === '' ? '' : $attrs).'>';
+                return '<'.$tag.' nonce="'.htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8').'"'.($attrs === '' ? '' : $attrs).'>';
             },
             $content
         );
 
         if (is_string($updated) && $updated !== $content) {
             $response->setContent($updated);
-            // Conteúdo mudou: evita Content-Length stale
             if ($response->headers->has('Content-Length')) {
                 $response->headers->set('Content-Length', (string) strlen($updated));
             }

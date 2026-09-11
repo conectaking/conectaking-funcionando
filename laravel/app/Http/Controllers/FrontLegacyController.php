@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\SchemaMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -22,52 +21,22 @@ class FrontLegacyController extends Controller
             $dbOk = false;
         }
 
+        $redisOk = true;
         $queueConn = strtolower((string) (env('QUEUE_CONNECTION') ?: 'sync'));
-        $redisOk = null;
-        $queuePending = null;
         if ($queueConn === 'redis') {
-            $redisOk = false;
             try {
                 \Illuminate\Support\Facades\Redis::connection()->ping();
-                $redisOk = true;
-                try {
-                    $queuePending = (int) \Illuminate\Support\Facades\Redis::connection()->llen('queues:default');
-                } catch (\Throwable) {
-                    $queuePending = null;
-                }
             } catch (\Throwable) {
                 $redisOk = false;
             }
         }
 
-        $failedJobs = null;
-        if ($dbOk && SchemaMeta::hasTable('failed_jobs')) {
-            try {
-                $failedJobs = (int) (DB::selectOne('SELECT COUNT(*)::int AS n FROM failed_jobs')->n ?? 0);
-            } catch (\Throwable) {
-                $failedJobs = null;
-            }
-        }
+        $ok = $dbOk && $redisOk;
 
-        $ok = $dbOk && ($redisOk !== false);
-        $body = [
-            'status' => $ok ? 'ok' : 'degraded',
-            'engine' => 'laravel',
-            'db' => $dbOk,
-            'queue' => $queueConn,
-            'time' => gmdate('c'),
-        ];
-        if ($redisOk !== null) {
-            $body['redis'] = $redisOk;
-        }
-        if ($queuePending !== null) {
-            $body['queue_pending'] = $queuePending;
-        }
-        if ($failedJobs !== null) {
-            $body['failed_jobs'] = $failedJobs;
-        }
-
-        return response()->json($body, $ok ? 200 : 503)->header('X-Conecta-Engine', 'laravel');
+        return response()->json(
+            ['status' => $ok ? 'ok' : 'degraded'],
+            $ok ? 200 : 503
+        )->header('X-Conecta-Engine', 'laravel');
     }
 
     /** Base pública da API (mesmo host / FrankenPHP). */

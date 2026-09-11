@@ -215,11 +215,6 @@
   window.CONECTAKING_API_BASE = window.CONECTAKING_API_BASE || apiBase;
   var nativeFetch = window.fetch;
   if (!nativeFetch) return;
-  function getToken() {
-    try {
-      return (localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || sessionStorage.getItem('token') || '');
-    } catch (e) { return ''; }
-  }
   function readCkCsrf() {
     try {
       var m = document.cookie.match(/(?:^|; )ck_csrf=([^;]*)/);
@@ -252,11 +247,7 @@
     if (isApiUrl) {
       if (opts.credentials == null) opts.credentials = 'include';
       var headers = opts.headers || (opts.headers = {});
-      var existingAuth = readHeader(headers, 'Authorization') || readHeader(headers, 'authorization');
-      if (!existingAuth) {
-        var token = getToken();
-        if (token && token !== 'null' && token !== 'undefined') writeHeader(headers, 'Authorization', 'Bearer ' + token);
-      }
+      // Auth via cookie HttpOnly + credentials:include (sem Bearer do LS)
       if (isMutating(opts.method || (input && input.method) || 'GET')) {
         if (!readHeader(headers, 'X-CK-CSRF') && !readHeader(headers, 'X-XSRF-TOKEN')) {
           var csrf = readCkCsrf();

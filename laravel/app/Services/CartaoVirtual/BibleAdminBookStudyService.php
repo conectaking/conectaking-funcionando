@@ -2,7 +2,6 @@
 
 namespace App\Services\CartaoVirtual;
 
-use App\Support\BackgroundArtisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -292,7 +291,7 @@ class BibleAdminBookStudyService
             'updatedAt' => $nowMs,
         ];
         Cache::put($this->jobCacheKey($jobId), $job, now()->addHours(12));
-        BackgroundArtisan::run('book-study:run-ai-job', $jobId);
+        \App\Jobs\RunBookStudyAiJob::dispatch($jobId);
 
         return ['ok' => true, 'jobId' => $jobId, 'total' => count($bookIds)];
     }

@@ -259,7 +259,7 @@ class BibleProsperidadeAdminService
         ];
         \Illuminate\Support\Facades\Cache::put($this->jobCacheKey($jobId), $job, now()->addHours(6));
 
-        \App\Support\BackgroundArtisan::run('prosperidade:run-range-job', $jobId);
+        \App\Jobs\RunProsperidadeRangeJob::dispatch($jobId);
 
         return ['ok' => true, 'jobId' => $jobId, 'total' => $total];
     }

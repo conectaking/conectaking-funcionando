@@ -77,6 +77,11 @@ class AccountService
      */
     public function upgrade(string $actorId, array $body): array
     {
+        $admin = DB::selectOne('SELECT is_admin FROM users WHERE id = ? LIMIT 1', [$actorId]);
+        if (! $admin || ! filter_var($admin->is_admin ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return ['status' => 403, 'body' => ['message' => 'Acesso negado. Apenas administradores.']];
+        }
+
         $target = (string) ($body['targetUserId'] ?? '');
         $newPlan = (string) ($body['newPlan'] ?? '');
         if (! in_array($newPlan, ['individual', 'individual_com_logo', 'business_owner', 'free'], true)) {
@@ -85,7 +90,34 @@ class AccountService
         if ($target === '') {
             return ['status' => 400, 'body' => ['message' => 'targetUserId obrigatório.']];
         }
-        DB::update('UPDATE users SET account_type = ? WHERE id = ?', [$newPlan, $target]);
+
+        $exists = DB::selectOne('SELECT id FROM users WHERE id = ? LIMIT 1', [$target]);
+        if (! $exists) {
+            return ['status' => 404, 'body' => ['message' => 'Usuário não encontrado.']];
+        }
+
+        // Plano efetivo: account_type + limpar subscription para não mascarar com plano antigo
+        if ($newPlan === 'free') {
+            DB::update(
+                "UPDATE users
+                 SET account_type = 'free',
+                     subscription_id = NULL,
+                     subscription_status = 'expired',
+                     subscription_expires_at = NULL
+                 WHERE id = ?",
+                [$target]
+            );
+        } else {
+            DB::update(
+                "UPDATE users
+                 SET account_type = ?,
+                     subscription_id = NULL,
+                     subscription_status = 'active',
+                     subscription_expires_at = NULL
+                 WHERE id = ?",
+                [$newPlan, $target]
+            );
+        }
 
         return ['status' => 200, 'body' => ['message' => "Usuário {$target} atualizado para o plano {$newPlan}!"]];
     }

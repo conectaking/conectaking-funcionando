@@ -3,17 +3,20 @@
 namespace App\Jobs;
 
 use App\Services\CartaoVirtual\KingSelectionFaceService;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
-class ProcessGalleryFacesJob implements ShouldQueue
+class ProcessGalleryFacesJob implements ShouldQueue, ShouldBeUnique
 {
     use Queueable;
 
     public int $tries = 2;
 
     public int $timeout = 3600;
+
+    public int $uniqueFor = 3600;
 
     public function __construct(
         public int $galleryId,
@@ -22,6 +25,11 @@ class ProcessGalleryFacesJob implements ShouldQueue
         public string $speedMode,
     ) {
         $this->onQueue('default');
+    }
+
+    public function uniqueId(): string
+    {
+        return 'ks-faces:'.$this->galleryId;
     }
 
     public function handle(KingSelectionFaceService $faces): void

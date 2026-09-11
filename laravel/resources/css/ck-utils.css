@@ -1,5 +1,6 @@
 /* Utilitários comuns — reduzir style="" repetidos */
 .ck-hidden { display: none; }
+.kd-display-contents { display: contents; }
 .ck-block { display: block; }
 .ck-flex { display: flex; }
 .ck-flex-1 { flex: 1; }

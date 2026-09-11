@@ -12,6 +12,15 @@ import '@css/pages/arquetipo-resultados.css';
 
   const ARQUETIPOS_NAMES = { inocente:'O Inocente', sabio:'O Sbio', explorador:'O Explorador', criador:'O Criador', governante:'O Governante', mago:'O Mago', amante:'O Amante', heroi:'O Heri', bufao:'O Bufo', cidadao:'O Cidado', cuidador:'O Cuidador', revolucionario:'O Revolucionrio' };
 
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function showErr(msg) {
     const el = document.getElementById('err');
     el.textContent = msg || '';
@@ -47,7 +56,7 @@ import '@css/pages/arquetipo-resultados.css';
       leads.forEach(function(l, idx) {
         var dt = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '-';
         var arq = l.arquetipo_resultado ? (ARQUETIPOS_NAMES[l.arquetipo_resultado] || (l.arquetipo_resultado.charAt(0).toUpperCase() + l.arquetipo_resultado.slice(1))) : '-';
-        html += '<tr class="tr-main" data-idx="' + idx + '"><td>' + dt + '</td><td>' + (l.nome || '-') + '</td><td>' + (l.email || '-') + '</td><td>' + arq + '</td><td><button type="button" class="btn btn-primary btn-sm btn-detalhe" data-idx="' + idx + '" style="padding:6px 12px;font-size:0.8rem;"><i class="fas fa-chevron-down"></i> Ver detalhes</button></td></tr>';
+        html += '<tr class="tr-main" data-idx="' + idx + '"><td>' + escapeHtml(dt) + '</td><td>' + escapeHtml(l.nome || '-') + '</td><td>' + escapeHtml(l.email || '-') + '</td><td>' + escapeHtml(arq) + '</td><td><button type="button" class="btn btn-primary btn-sm btn-detalhe" data-idx="' + idx + '" style="padding:6px 12px;font-size:0.8rem;"><i class="fas fa-chevron-down"></i> Ver detalhes</button></td></tr>';
       });
       tbody.innerHTML = html;
 
@@ -68,16 +77,16 @@ import '@css/pages/arquetipo-resultados.css';
           var entries = Object.keys(scores).map(function(k) { return { key: k, score: scores[k] }; }).filter(function(x) { return typeof x.score === 'number'; }).sort(function(a, b) { return b.score - a.score; });
           var maxScore = entries.length ? Math.max.apply(null, entries.map(function(x) { return x.score; })) : 1;
           var card = '<div class="detalhe-card"><div class="secao"><h4>Contato</h4><div class="grid">';
-          card += '<div class="item"><strong>Nome</strong>' + (l.nome || '-') + '</div>';
-          card += '<div class="item"><strong>E-mail</strong>' + (l.email || '-') + '</div>';
-          card += '<div class="item"><strong>Data</strong>' + (l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '-') + '</div>';
-          if (l.whatsapp) card += '<div class="item"><strong>WhatsApp</strong>' + l.whatsapp + '</div>';
-          if (l.instagram) card += '<div class="item"><strong>Instagram</strong>' + l.instagram + '</div>';
+          card += '<div class="item"><strong>Nome</strong>' + escapeHtml(l.nome || '-') + '</div>';
+          card += '<div class="item"><strong>E-mail</strong>' + escapeHtml(l.email || '-') + '</div>';
+          card += '<div class="item"><strong>Data</strong>' + escapeHtml(l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '-') + '</div>';
+          if (l.whatsapp) card += '<div class="item"><strong>WhatsApp</strong>' + escapeHtml(l.whatsapp) + '</div>';
+          if (l.instagram) card += '<div class="item"><strong>Instagram</strong>' + escapeHtml(l.instagram) + '</div>';
           card += '</div></div><div class="secao"><h4>Top 3 arqutipos (pontuao)</h4><ul>';
           entries.slice(0, 3).forEach(function(x, pos) {
             var nomeArq = ARQUETIPOS_NAMES[x.key] || (x.key.charAt(0).toUpperCase() + x.key.slice(1));
             var pct = maxScore ? Math.round((x.score / maxScore) * 100) : 0;
-            card += '<li><span><strong>' + (pos + 1) + '</strong> ' + nomeArq + ' - ' + x.score + ' pts</span><span style="min-width:80px;"><div class="arq-bar"><div class="arq-bar-fill" style="width:' + pct + '%;"></div></div></span></li>';
+            card += '<li><span><strong>' + (pos + 1) + '</strong> ' + escapeHtml(nomeArq) + ' - ' + escapeHtml(String(x.score)) + ' pts</span><span style="min-width:80px;"><div class="arq-bar"><div class="arq-bar-fill" style="width:' + pct + '%;"></div></div></span></li>';
           });
           card += '</ul></div>';
           if (entries.length > 3) {
@@ -85,7 +94,7 @@ import '@css/pages/arquetipo-resultados.css';
             entries.slice(3, 12).forEach(function(x) {
               var nomeArq = ARQUETIPOS_NAMES[x.key] || (x.key.charAt(0).toUpperCase() + x.key.slice(1));
               var pct = maxScore ? Math.round((x.score / maxScore) * 100) : 0;
-              card += '<li><span>' + nomeArq + ' - ' + x.score + ' pts</span><span style="min-width:80px;"><div class="arq-bar"><div class="arq-bar-fill" style="width:' + pct + '%;"></div></div></span></li>';
+              card += '<li><span>' + escapeHtml(nomeArq) + ' - ' + escapeHtml(String(x.score)) + ' pts</span><span style="min-width:80px;"><div class="arq-bar"><div class="arq-bar-fill" style="width:' + pct + '%;"></div></div></span></li>';
             });
             card += '</ul></div>';
           }

@@ -5,6 +5,7 @@ namespace App\Services\CartaoVirtual;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Support\PlanCodeResolver;
 use App\Support\SafeIconClass;
 
 class ProfileItemsService
@@ -341,14 +342,27 @@ class ProfileItemsService
     {
         try {
             $u = DB::selectOne(
-                'SELECT u.account_type, u.subscription_id, sp.plan_code
+                'SELECT u.account_type, u.subscription_id, u.subscription_status, sp.plan_code, sp.is_active
                  FROM users u
                  LEFT JOIN subscription_plans sp ON u.subscription_id = sp.id::text
                  WHERE u.id = ? LIMIT 1',
                 [$userId]
             );
-            $planCode = $u->plan_code ?? $u->account_type ?? null;
-            if (!$planCode) {
+            if (! $u) {
+                return ['allowed' => true, 'current' => 0, 'limit' => null, 'message' => 'ok'];
+            }
+            $subStatus = strtolower((string) ($u->subscription_status ?? ''));
+            $subExpired = in_array($subStatus, ['expired', 'cancelled', 'canceled', 'inactive'], true);
+            $planCode = null;
+            if (! empty($u->subscription_id) && ! $subExpired && filter_var($u->is_active ?? true, FILTER_VALIDATE_BOOLEAN)) {
+                $planCode = PlanCodeResolver::normalize((string) ($u->plan_code ?? ''));
+            }
+            if (! $planCode) {
+                $planCode = $subExpired
+                    ? 'free'
+                    : PlanCodeResolver::fromAccountType((string) ($u->account_type ?? ''));
+            }
+            if ($planCode === '') {
                 return ['allowed' => true, 'current' => 0, 'limit' => null, 'message' => 'ok'];
             }
             $lim = DB::selectOne(

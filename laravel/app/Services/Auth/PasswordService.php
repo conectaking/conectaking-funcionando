@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Support\SmtpMailer;
+use App\Support\PasswordRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -51,11 +52,8 @@ class PasswordService
         $send = $this->mail->send((string) $user->email, 'Recuperação de Senha - Conecta King', $html);
         if (! ($send['success'] ?? false)) {
             Log::error('password.forgot.mail', ['error' => $send['error'] ?? 'fail', 'userId' => $user->id]);
-
-            return ['status' => 503, 'body' => [
-                'success' => false,
-                'message' => 'Não foi possível enviar o e-mail de recuperação. Tente novamente em alguns minutos.',
-            ]];
+            // Mesma resposta genérica (não enumerar e-mail via 503)
+            return ['status' => 200, 'body' => ['success' => true, 'message' => $okMsg]];
         }
 
         return ['status' => 200, 'body' => ['success' => true, 'message' => $okMsg]];
@@ -96,15 +94,7 @@ class PasswordService
      */
     private function validatePasswordStrength(string $password): array
     {
-        $errors = [];
-        if (strlen($password) < 6) {
-            $errors[] = 'Senha inválida. Use no mínimo 6 caracteres, com maiúscula, minúscula e número.';
-        }
-        if (! preg_match('/[A-Z]/', $password) || ! preg_match('/[a-z]/', $password) || ! preg_match('/[0-9]/', $password)) {
-            $errors[] = 'Senha inválida. Use no mínimo 6 caracteres, com maiúscula, minúscula e número.';
-        }
-
-        return ['valid' => $errors === [], 'errors' => array_values(array_unique($errors))];
+        return PasswordRules::validate($password);
     }
 
     private function emailLocalPartWithoutDots(string $email): string

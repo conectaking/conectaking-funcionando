@@ -1,4 +1,21 @@
 var __ckDashLog = function () { try { if (localStorage.getItem('ck_debug') === '1') console.log.apply(console, arguments); } catch (e) {} };
+function __ckEscapeHtml(s) {
+    return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+function __ckSafeUrl(u) {
+    const s = String(u || '').trim();
+    if (!s) return '';
+    try {
+        const url = new URL(s, window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:') return url.href;
+    } catch (e) {}
+    return '';
+}
 document.addEventListener('DOMContentLoaded', async () => {
     __ckDashLog('Dashboard iniciando... v2026-08-13-banner-url-models');
 
@@ -37,8 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!user) {
         try {
             const headers = { Accept: 'application/json' };
-            const t = (window.CkAuth && window.CkAuth.lsToken) ? window.CkAuth.lsToken() : (localStorage.getItem('conectaKingToken') || '');
-            if (t) headers.Authorization = 'Bearer ' + t;
             const r = await fetch('/api/account/status', { credentials: 'include', headers, cache: 'no-store' });
             if (r.ok) {
                 const st = await r.json();
@@ -86,7 +101,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return p.endsWith('/login.html') || p.endsWith('login.html') || /\/login\/?$/.test(p);
     }
 
-    let token = localStorage.getItem('conectaKingToken');
+    let token = '';
+    try {
+        localStorage.removeItem('conectaKingToken');
+        localStorage.removeItem('token');
+        localStorage.removeItem('conectaKingRefreshToken');
+        localStorage.removeItem('refreshToken');
+    } catch (e) {}
     const hostLower = (typeof window !== 'undefined' && window.location && window.location.hostname)
         ? String(window.location.hostname).toLowerCase()
         : '';
@@ -168,18 +189,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = kingSelectionAdminUrl();
     };
 
-    // Função para atualizar headers com o token atual (Bearer só se LS tiver; cookie HttpOnly via credentials)
+    // Auth via cookie HttpOnly + credentials:include (sem Bearer no LS)
     function getHeaders() {
-        const currentToken = localStorage.getItem('conectaKingToken') || token || '';
-        const h = { 'Content-Type': 'application/json' };
-        if (currentToken) h.Authorization = `Bearer ${currentToken}`;
-        return h;
+        return { 'Content-Type': 'application/json' };
     }
 
     function getAuthHeaders() {
-        const currentToken = localStorage.getItem('conectaKingToken') || token || '';
         const h = {};
-        if (currentToken) h.Authorization = `Bearer ${currentToken}`;
         try {
             if (window.CkCsrf && typeof window.CkCsrf.attachToHeaders === 'function') {
                 return window.CkCsrf.attachToHeaders(h, 'POST');
@@ -3727,23 +3743,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
                         ${products.map(product => `
-                            <div class="product-item-card" data-product-id="${product.id}" style="background: var(--card-background-color, #1C1C21); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color, #2C2C2F); display: flex; flex-direction: column;">
+                            <div class="product-item-card" data-product-id="${__ckEscapeHtml(product.id)}" style="background: var(--card-background-color, #1C1C21); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color, #2C2C2F); display: flex; flex-direction: column;">
                                 <div style="width: 100%; height: 200px; margin-bottom: 12px; border-radius: 8px; overflow: hidden; background: var(--background-color, #0D0D0F); display: flex; align-items: center; justify-content: center;">
-                                    ${product.image_url ? 
-                                        `<img src="${product.image_url}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;" alt="${product.name}">` 
+                                    ${__ckSafeUrl(product.image_url) ? 
+                                        `<img src="${__ckEscapeHtml(__ckSafeUrl(product.image_url))}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;" alt="${__ckEscapeHtml(product.name || '')}">` 
                                         : '<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #2C2C2F;"><i class="fas fa-image" style="font-size: 3rem; color: #666;"></i></div>'
                                     }
                                 </div>
                                 <div style="flex: 1; min-width: 0;">
-                                    <div style="font-weight: 600; color: var(--text, #ECECEC); margin-bottom: 6px; font-size: 1rem; word-wrap: break-word;">${product.name}</div>
-                                    ${product.description ? `<div style="font-size: 0.85rem; color: var(--text-dark, #A1A1A1); margin-bottom: 8px; line-height: 1.4; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${product.description}</div>` : ''}
+                                    <div style="font-weight: 600; color: var(--text, #ECECEC); margin-bottom: 6px; font-size: 1rem; word-wrap: break-word;">${__ckEscapeHtml(product.name || '')}</div>
+                                    ${product.description ? `<div style="font-size: 0.85rem; color: var(--text-dark, #A1A1A1); margin-bottom: 8px; line-height: 1.4; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${__ckEscapeHtml(product.description)}</div>` : ''}
                                     <div style="font-size: 1.1rem; color: var(--dourado-principal, #FFC700); font-weight: 700; margin-bottom: 12px;">R$ ${(parseFloat(product.price) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                 </div>
                                 <div style="display: flex; gap: 8px; margin-top: auto;">
-                                    <button type="button" class="edit-product-btn" data-product-id="${product.id}" data-item-id="${itemId}" style="flex: 1; padding: 10px; background: #2C2C2F; color: var(--text, #ECECEC); border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                    <button type="button" class="edit-product-btn" data-product-id="${__ckEscapeHtml(product.id)}" data-item-id="${__ckEscapeHtml(itemId)}" style="flex: 1; padding: 10px; background: #2C2C2F; color: var(--text, #ECECEC); border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
                                         <i class="fas fa-edit"></i> Editar
                                     </button>
-                                    <button type="button" class="delete-product-btn" data-product-id="${product.id}" data-item-id="${itemId}" style="padding: 10px 15px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    <button type="button" class="delete-product-btn" data-product-id="${__ckEscapeHtml(product.id)}" data-item-id="${__ckEscapeHtml(itemId)}" style="padding: 10px 15px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer;">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>

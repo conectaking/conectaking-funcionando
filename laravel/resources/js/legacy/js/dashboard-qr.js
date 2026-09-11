@@ -269,30 +269,38 @@ function generateQRCode() {
 
     qrContainer.innerHTML = '';
 
-    if (typeof QRCode === 'undefined') {
-        console.error('Biblioteca QRCode não está carregada');
-        return;
-    }
-
-    try {
-        if (qrCodeInstance) {
-            try { qrCodeInstance.clear(); } catch (e) {}
-            qrCodeInstance = null;
+    const finishQr = function () {
+        if (typeof QRCode === 'undefined') {
+            console.error('Biblioteca QRCode não está carregada');
+            return;
         }
 
-        qrCodeInstance = new QRCode(qrContainer, {
-            text: userUrl,
-            width: 280,
-            height: 280,
-            colorDark: '#000000',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
-        });
-        window.generateQRCode = generateQRCode;
-        setTimeout(function () { composeShareQrArt(); }, 80);
-        console.log('QR Code gerado com sucesso para:', userUrl);
-    } catch (error) {
-        console.error('Erro ao gerar QR Code:', error);
+        try {
+            if (qrCodeInstance) {
+                try { qrCodeInstance.clear(); } catch (e) {}
+                qrCodeInstance = null;
+            }
+
+            qrCodeInstance = new QRCode(qrContainer, {
+                text: userUrl,
+                width: 280,
+                height: 280,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            window.generateQRCode = generateQRCode;
+            setTimeout(function () { composeShareQrArt(); }, 80);
+            console.log('QR Code gerado com sucesso para:', userUrl);
+        } catch (error) {
+            console.error('Erro ao gerar QR Code:', error);
+        }
+    };
+
+    if (typeof window.ckEnsureQRCode === 'function') {
+        window.ckEnsureQRCode().then(finishQr).catch(finishQr);
+    } else {
+        finishQr();
     }
 }
 

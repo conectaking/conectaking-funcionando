@@ -75,5 +75,26 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->shouldRenderJsonWhen(fn ($request, \Throwable $e) =>
+            $request->is('api/*') || $request->expectsJson()
+        );
+
+        $exceptions->render(function (\Throwable $e, $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+            $status = 500;
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+            }
+            $message = $status >= 500
+                ? 'Erro interno do servidor.'
+                : ($e->getMessage() !== '' ? $e->getMessage() : 'Requisição inválida.');
+            $body = ['success' => false, 'message' => $message];
+            if (config('app.debug')) {
+                $body['debug'] = ['exception' => $e::class, 'message' => $e->getMessage()];
+            }
+
+            return response()->json($body, $status)->header('X-Conecta-Engine', 'laravel');
+        });
     })->create();

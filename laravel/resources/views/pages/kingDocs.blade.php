@@ -55,7 +55,7 @@
               <button type="button" class="btn-atalho" data-preset="enviarNf" title="Dados fiscais e sede">Enviar NF</button>
               <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="enviarNf" aria-label="Personalizar Enviar NF" title="Personalizar">⚙</button>
             </span>
-            <span id="kd-custom-atalhos-inner" class="atalhos-btns" style="display:contents"></span>
+            <span id="kd-custom-atalhos-inner" class="atalhos-btns kd-display-contents"></span>
             <button type="button" class="btn secondary ck-kd-a96a46" id="btn-add-custom-atalho">+ Criar atalho</button>
           </div>
         </div>

@@ -44,7 +44,7 @@
           <input type="file" id="thank_you_file" accept="image/*" class="hidden" />
           <div class="ks-btn-wrap">
             <button type="button" id="btnEnviarLogo" class="ks-btn ks-btn-primary">Enviar logo</button>
-            <button type="button" id="btnRemoverLogo" class="ks-btn" style="display:none;">Remover logo</button>
+            <button type="button" id="btnRemoverLogo" class="ks-btn ck-hidden">Remover logo</button>
           </div>
           <div id="thank_you_preview_wrap" class="ks-preview-wrap hidden">
             <img id="thank_you_preview" src="" alt="Preview logo" />

@@ -34,8 +34,8 @@ services:
         "--appendonly", "yes",
         "--appendfsync", "everysec",
         "--save", "",
-        "--maxmemory", "192mb",
-        "--maxmemory-policy", "allkeys-lru",
+        "--maxmemory", "256mb",
+        "--maxmemory-policy", "noeviction",
       ]
     volumes:
       - redisdata:/data
@@ -77,6 +77,8 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-conectaking}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       SESSION_DRIVER: redis
+      SESSION_SECURE_COOKIE: "true"
+      SESSION_SAME_SITE: lax
       CACHE_STORE: redis
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
       REDIS_CLIENT: phpredis
@@ -135,9 +137,9 @@ services:
         "redis",
         "--sleep=2",
         "--tries=3",
-        "--max-time=1800",
+        "--max-time=3700",
         "--max-jobs=40",
-        "--memory=192",
+        "--memory=256",
       ]
     depends_on:
       db:
@@ -163,6 +165,8 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-conectaking}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       SESSION_DRIVER: redis
+      SESSION_SECURE_COOKIE: "true"
+      SESSION_SAME_SITE: lax
       CACHE_STORE: redis
       QUEUE_CONNECTION: redis
       REDIS_CLIENT: phpredis

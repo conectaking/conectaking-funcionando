@@ -30,6 +30,11 @@ function normalizeWhatsAppDigits(raw) {
     return String(raw).replace(/\D/g, '');
 }
 
+/** Safe JS string literal for inline handlers / HTML embedding */
+function jsStringLiteral(value) {
+    return JSON.stringify(String(value ?? ''));
+}
+
 function getDefaultSalesWhatsAppNumber(plan = null) {
     // Prioridade:
     // 1) Número vindo do plano (API)
@@ -304,7 +309,7 @@ function renderPlanCardDashboard(plan, modules = null, pricingMode = 'monthly') 
                 <a href="https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(finalWhatsappMessage)}" target="_blank" class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">
                     <i class="fab fa-whatsapp"></i> Assinar agora
                 </a>
-                <button class="btn btn-secondary" style="width: 100%;" onclick="copyPixKey('${pix || ''}')">
+                <button class="btn btn-secondary" style="width: 100%;" onclick="copyPixKey(${jsStringLiteral(pix || '')})">
                     <i class="fas fa-copy"></i> Copiar Chave PIX
                 </button>
             </div>
@@ -524,7 +529,7 @@ function renderPlanCardPublic(plan, modules = null, pricingMode = 'monthly') {
                 <a href="https://wa.me/${normalizeWhatsAppDigits(whatsappNumber)}?text=${encodeURIComponent(finalMessageWithMode)}" target="_blank" class="plan-btn plan-btn-primary">
                     <i class="fas fa-clock"></i> ${ctaText}
                 </a>
-                <button class="plan-btn plan-btn-secondary" type="button" onclick="copyPixKey('${pixKey.replace(/'/g, "\\'")}')">
+                <button class="plan-btn plan-btn-secondary" type="button" onclick="copyPixKey(${jsStringLiteral(pixKey)})">
                     <i class="fas fa-copy"></i> Copiar Chave PIX
                 </button>
             </div>

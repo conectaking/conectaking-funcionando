@@ -109,7 +109,7 @@ class RequireCookieCsrf
 
     private function isAuthBootstrapPath(string $path): bool
     {
-        return in_array($path, [
+        $exact = [
             'api/auth/login',
             'api/auth/refresh',
             'api/auth/logout',
@@ -125,6 +125,31 @@ class RequireCookieCsrf
             'api/king-selection/client/clear-session-cookie',
             'api/king-selection/client/redeem-access',
             'api/king-selection/public/enroll-face-anonymous',
-        ], true);
+            // Beacons públicos (visitante pode ter cookie de sessão do painel)
+            'api/bible/prosperidade/mark-read',
+            'api/bible/devotional/mark-read',
+            'api/bible/mark-read',
+            'api/bible/reset-progress',
+            'guest-list/confirm/cpf',
+            'api/inquiry/submit',
+        ];
+        if (in_array($path, $exact, true)) {
+            return true;
+        }
+
+        $prefixes = [
+            'api/guest-lists/public/register/',
+            'api/guest-lists/public/confirm/',
+            'portaria/',
+            'guest-list/view-full/',
+            'guest-list/confirm/qr/',
+        ];
+        foreach ($prefixes as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

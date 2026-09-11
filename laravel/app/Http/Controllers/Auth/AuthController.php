@@ -91,9 +91,12 @@ class AuthController extends Controller
         $body = is_array($r['body'] ?? null) ? $r['body'] : [];
         $token = (string) ($body['token'] ?? '');
         $refresh = (string) ($body['refreshToken'] ?? '');
-        // Não devolver refresh no JSON (fica só no cookie HttpOnly).
+        // Não devolver JWT no JSON (fica só no cookie HttpOnly).
         if (array_key_exists('refreshToken', $body)) {
             unset($body['refreshToken']);
+        }
+        if (array_key_exists('token', $body)) {
+            unset($body['token']);
         }
         $response = response()->json($body, $r['status'])->header('X-Conecta-Engine', 'laravel');
         if ($r['status'] >= 200 && $r['status'] < 300 && $token !== '') {

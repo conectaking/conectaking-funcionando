@@ -98,5 +98,24 @@ export default defineConfig({
     build: {
         // Painel legado é grande; evita aviso/ruído no CI
         chunkSizeWarningLimit: 2500,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules/chart.js')) return 'vendor-chart';
+                    if (id.includes('node_modules/leaflet')) return 'vendor-leaflet';
+                    if (id.includes('node_modules/qrcode')) return 'vendor-qrcode';
+                    if (
+                        id.includes('node_modules/jspdf')
+                        || id.includes('html2pdf')
+                        || id.includes('html5-qrcode')
+                    ) {
+                        return 'vendor-pdf-qr';
+                    }
+                },
+            },
+        },
+    },
+    esbuild: {
+        drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
     },
 });

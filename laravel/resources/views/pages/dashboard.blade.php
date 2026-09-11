@@ -845,7 +845,7 @@
                 </div>
                 
                 <!-- Aba de Módulos por Plano -->
-                <div id="tab-content-modules" class="tab-content-separation" style="display: block;">
+                <div id="tab-content-modules" class="tab-content-separation">
                     <div class="module-availability-container">
                         <div class="module-availability-header">
                             <p class="ck-text-muted-mb20">

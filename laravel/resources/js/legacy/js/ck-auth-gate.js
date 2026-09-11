@@ -1,17 +1,13 @@
 /**
  * Gate de autenticação cookie-first (Conecta King).
- * Preferência: cookie HttpOnly `token` via credentials:include.
- * Fallback: localStorage conectaKingToken (sessões antigas).
+ * Auth: cookie HttpOnly `token` via credentials:include.
  */
 (function (global) {
   'use strict';
 
   function lsToken() {
-    try {
-      return localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
-    } catch (e) {
-      return '';
-    }
+    // Cookie-only — não ler JWT do localStorage.
+    return '';
   }
 
   function markSession() {
@@ -26,6 +22,7 @@
       localStorage.removeItem('conectaKingRefreshToken');
       localStorage.removeItem('conectaKingSession');
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
     } catch (e) {}
   }
 
@@ -49,12 +46,10 @@
    * @returns {Promise<boolean>}
    */
   async function requireAuth(loginPath) {
-    // Sempre validar sessão (cookie ou Bearer). LS sozinho não basta — JWT stale bloqueava cookie.
     if (await probeCookieAuth()) {
       return true;
     }
-    // Probe falhou: limpar LS inválido se existir
-    if (lsToken()) clearSession();
+    clearSession();
     var dest = loginPath || '/login';
     var ru = encodeURIComponent(global.location.href);
     global.location.href = dest + (dest.indexOf('?') >= 0 ? '&' : '?') + 'returnUrl=' + ru;

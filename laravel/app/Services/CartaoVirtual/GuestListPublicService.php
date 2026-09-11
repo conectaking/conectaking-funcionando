@@ -585,26 +585,35 @@ class GuestListPublicService
         $isNumeric = $clean !== '' && ctype_digit($clean);
 
         try {
-            if ($isNumeric && strlen($clean) >= 3) {
-                if (strlen($clean) < 11) {
-                    $rows = DB::select(
-                        "SELECT * FROM guests
-                         WHERE guest_list_id = ?
-                           AND document IS NOT NULL AND document != ''
-                           AND LENGTH(REGEXP_REPLACE(document, '[^0-9]', '', 'g')) >= ?
-                           AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') LIKE ?
-                         ORDER BY created_at DESC LIMIT 10",
-                        [$listId, strlen($clean), $clean.'%']
-                    );
-                } else {
-                    $rows = DB::select(
-                        "SELECT * FROM guests
-                         WHERE guest_list_id = ?
-                           AND document IS NOT NULL AND document != ''
-                           AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') = ?",
-                        [$listId, $clean]
-                    );
-                }
+            if ($isNumeric && strlen($clean) === 11 && $this->isValidCpf($clean)) {
+                $rows = DB::select(
+                    "SELECT * FROM guests
+                     WHERE guest_list_id = ?
+                       AND document IS NOT NULL AND document != ''
+                       AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') = ?",
+                    [$listId, $clean]
+                );
+            } elseif ($isNumeric && strlen($clean) >= 10 && strlen($clean) <= 13) {
+                // Telefone / WhatsApp — nunca buscar como documento/CPF
+                $rows = DB::select(
+                    "SELECT * FROM guests
+                     WHERE guest_list_id = ?
+                       AND (
+                         REGEXP_REPLACE(COALESCE(whatsapp, ''), '[^0-9]', '', 'g') LIKE ?
+                         OR REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '', 'g') LIKE ?
+                       )
+                     ORDER BY name ASC LIMIT 10",
+                    [$listId, '%'.$clean, '%'.$clean]
+                );
+            } elseif ($isNumeric) {
+                // Prefixo numérico curto: não faz check-in automático; exige CPF completo
+                return [
+                    'status' => 400,
+                    'body' => [
+                        'success' => false,
+                        'message' => 'Informe o CPF completo (11 dígitos) ou busque por nome/e-mail.',
+                    ],
+                ];
             } else {
                 $pattern = '%'.$searchTerm.'%';
                 $rows = DB::select(
@@ -644,6 +653,28 @@ class GuestListPublicService
         }
         if ($rows === []) {
             return ['status' => 404, 'body' => ['success' => false, 'message' => 'Nenhum convidado encontrado com os dados informados']];
+        }
+        // Auto check-in só com match único de CPF completo válido (não por telefone/nome parcial)
+        $autoCheckin = $isNumeric && strlen($clean) === 11 && $this->isValidCpf($clean);
+        if (! $autoCheckin) {
+            $g = $rows[0];
+            $doc = (string) ($g->document ?? '');
+
+            return [
+                'status' => 200,
+                'body' => [
+                    'success' => false,
+                    'partial' => true,
+                    'message' => 'Convidado encontrado. Confirme o check-in na lista.',
+                    'matches' => 1,
+                    'suggestions' => [[
+                        'id' => $g->id,
+                        'name' => $g->name,
+                        'email' => $g->email ?: '-',
+                        'cpf' => $doc !== '' ? (strlen($doc) > 3 ? substr($doc, 0, 3).'***.***-**' : '***') : '-',
+                    ]],
+                ],
+            ];
         }
         $guest = $rows[0];
         if (($guest->status ?? '') === 'checked_in') {
@@ -685,6 +716,25 @@ class GuestListPublicService
                 'guest' => $row ? (array) $row : null,
             ],
         ];
+    }
+
+    private function isValidCpf(string $digits): bool
+    {
+        if (strlen($digits) !== 11 || preg_match('/^(\d)\1{10}$/', $digits)) {
+            return false;
+        }
+        for ($t = 9; $t < 11; $t++) {
+            $sum = 0;
+            for ($i = 0; $i < $t; $i++) {
+                $sum += (int) $digits[$i] * (($t + 1) - $i);
+            }
+            $digit = ((10 * $sum) % 11) % 10;
+            if ((int) $digits[$t] !== $digit) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

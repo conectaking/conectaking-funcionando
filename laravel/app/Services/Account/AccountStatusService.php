@@ -33,7 +33,9 @@ class AccountStatusService
 
         $planCode = null;
         $subscriptionId = $user->subscription_id ?? null;
-        if ($subscriptionId) {
+        $subStatus = strtolower((string) ($user->subscription_status ?? ''));
+        $subExpired = in_array($subStatus, ['expired', 'cancelled', 'canceled', 'inactive'], true);
+        if ($subscriptionId && ! $subExpired) {
             try {
                 $plan = DB::selectOne(
                     'SELECT plan_code, plan_name, is_active FROM subscription_plans WHERE id = ? LIMIT 1',
@@ -47,7 +49,11 @@ class AccountStatusService
             }
         }
         if (! $planCode) {
-            $planCode = PlanCodeResolver::fromAccountType((string) ($user->account_type ?? ''));
+            if ($subExpired) {
+                $planCode = 'free';
+            } else {
+                $planCode = PlanCodeResolver::fromAccountType((string) ($user->account_type ?? ''));
+            }
         }
         if (! $planCode) {
             $planCode = 'basic';

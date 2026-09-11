@@ -323,12 +323,23 @@ class BiblePublicController extends Controller
         ])->header('X-Conecta-Engine', 'laravel');
     }
 
+    private function resolveOptionalUserId(Request $request): ?string
+    {
+        $userId = $request->attributes->get('auth_user_id')
+            ?? $request->attributes->get('userId');
+        $user = $request->user();
+        if (! $userId && $user) {
+            $userId = $user->userId ?? $user->id ?? null;
+        }
+
+        return is_string($userId) && $userId !== '' ? $userId : (is_scalar($userId) && $userId !== null && $userId !== '' ? (string) $userId : null);
+    }
+
     public function prosperidadeMarkRead(Request $request)
     {
         $body = $request->all();
         $visitorId = $body['visitor_id'] ?? $body['visitorId'] ?? null;
-        $userId = $request->attributes->get('userId')
-            ?? ($request->user()->userId ?? null);
+        $userId = $this->resolveOptionalUserId($request);
         $activationNumber = $body['activation_number'] ?? $body['activationNumber'] ?? null;
         $slug = isset($body['slug']) ? (string) $body['slug'] : null;
         if (!$activationNumber) {
@@ -349,7 +360,7 @@ class BiblePublicController extends Controller
         }
         try {
             $result = $this->prosperidade->markRead(
-                is_string($userId) ? $userId : null,
+                $userId,
                 is_string($visitorId) ? $visitorId : null,
                 $activationNumber,
                 $slug
@@ -373,7 +384,7 @@ class BiblePublicController extends Controller
 
     public function prosperidadeReadStatus(Request $request)
     {
-        $userId = $request->attributes->get('userId');
+        $userId = $this->resolveOptionalUserId($request);
         $visitorId = $request->query('visitor_id');
         $days = $request->query('activations') ?? $request->query('activation_numbers');
         if (!$userId && !$visitorId) {
@@ -384,7 +395,7 @@ class BiblePublicController extends Controller
             ])->header('X-Conecta-Engine', 'laravel');
         }
         $read = $this->prosperidade->getReadStatus(
-            is_string($userId) ? $userId : null,
+            $userId,
             is_string($visitorId) ? $visitorId : null,
             $days
         );
@@ -400,7 +411,7 @@ class BiblePublicController extends Controller
     {
         $body = $request->all();
         $visitorId = $body['visitor_id'] ?? $body['visitorId'] ?? $request->query('visitor_id');
-        $userId = $request->attributes->get('userId');
+        $userId = $this->resolveOptionalUserId($request);
         $dayOfYear = $body['day_of_year'] ?? $body['dayOfYear'] ?? $request->query('day_of_year');
         $userNote = $body['user_note'] ?? $body['userNote'] ?? null;
         $slug = $body['slug'] ?? $request->query('slug');
@@ -422,7 +433,7 @@ class BiblePublicController extends Controller
         }
         try {
             $result = $this->devotionals->markRead(
-                is_string($userId) ? $userId : null,
+                $userId,
                 is_string($visitorId) ? $visitorId : null,
                 $dayOfYear,
                 is_string($userNote) ? $userNote : null,
@@ -447,7 +458,7 @@ class BiblePublicController extends Controller
 
     public function devotionalReadStatus(Request $request)
     {
-        $userId = $request->attributes->get('userId');
+        $userId = $this->resolveOptionalUserId($request);
         $visitorId = $request->query('visitor_id')
             ?? $request->input('visitor_id')
             ?? $request->input('visitorId');
@@ -460,7 +471,7 @@ class BiblePublicController extends Controller
             ])->header('X-Conecta-Engine', 'laravel');
         }
         $read = $this->devotionals->getReadStatus(
-            is_string($userId) ? $userId : null,
+            $userId,
             is_string($visitorId) ? $visitorId : null,
             $days
         );

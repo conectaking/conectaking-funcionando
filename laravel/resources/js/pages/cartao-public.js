@@ -214,8 +214,12 @@ import '../vendor-globals.js';
     // Carrossel simples
     document.querySelectorAll('.carousel-container-public').forEach(function (el) {
         var total = parseInt(el.getAttribute('data-slides') || '0', 10);
-        if (total < 2) return;
+        var n = parseInt(el.getAttribute('data-n') || String(total) || '1', 10) || 1;
         var wrapper = el.querySelector('.carousel-wrapper-public');
+        if (wrapper) {
+            wrapper.style.setProperty('--ck-carousel-n', String(n));
+        }
+        if (total < 2) return;
         var indicators = el.querySelectorAll('.carousel-indicator-public');
         var idx = 0;
         function go(i) {
@@ -236,7 +240,7 @@ import '../vendor-globals.js';
     // Catálogo de produtos (modal simplificado)
     var catalogOverlay = document.createElement('div');
     catalogOverlay.className = 'ck-catalog-overlay';
-    catalogOverlay.innerHTML = '<div class="ck-catalog-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h3 style="margin:0;color:#ececec;">Loja</h3><button type="button" class="ck-catalog-close" style="background:none;border:0;color:#fff;font-size:28px;cursor:pointer;">&times;</button></div><div class="ck-catalog-grid"></div></div>';
+    catalogOverlay.innerHTML = '<div class="ck-catalog-panel"><div class="ck-catalog-header"><h3 class="ck-catalog-title">Loja</h3><button type="button" class="ck-catalog-close" aria-label="Fechar">&times;</button></div><div class="ck-catalog-grid"></div></div>';
     document.body.appendChild(catalogOverlay);
     catalogOverlay.querySelector('.ck-catalog-close').addEventListener('click', function () {
         catalogOverlay.classList.remove('active');
