@@ -6,8 +6,6 @@
   <title>KingSelection - Revisão</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-  
   <style>
     .ks-img-loading{filter: blur(18px); transform: scale(1.03); opacity:.85}
     .ks-viewer{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.72);z-index:80}
@@ -125,7 +123,7 @@
   </div>
 
   <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionReview.js'])
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionReview.js'])
 </body>
 </html>
 

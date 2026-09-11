@@ -4,49 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Partilha King Docs</title>
-<style>
-    :root { --bg:#f7f4ef; --card:#fff; --ink:#1a1714; --muted:#5a5550; --accent:#2d5a3d; --border:#e2ddd7; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:1rem; }
-    .wrap { max-width: 560px; margin: 0 auto; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; box-shadow: 0 2px 16px rgba(0,0,0,.06); }
-    .head { text-align: center; margin-bottom: 1rem; }
-    .kd-share-avatar {
-      width: 96px; height: 96px; margin: 0 auto .85rem; border-radius: 50%;
-      overflow: hidden; border: 3px solid var(--border);
-      box-shadow: 0 4px 16px rgba(0,0,0,.08); background: #e8e4df;
-    }
-    .kd-share-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    h1 { font-family: 'Playfair Display', serif; font-size: 1.35rem; margin: 0; }
-    .tag { font-size: .58rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
-    .sec { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--border); }
-    .sec h2 { font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 .5rem; }
-    .line { display: flex; justify-content: flex-start; gap: .5rem; font-size: .88rem; margin: .35rem 0; align-items: flex-start; flex-wrap: wrap; }
-    .line > div .kd-preview-slot--inline { width: 100%; text-align: center; margin: .35rem 0 .5rem; }
-    .line label { color: var(--muted); font-size: .72rem; min-width: 90px; }
-    .line .val { word-break: break-word; flex: 1; text-align: right; }
-    .actions { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: flex-end; margin-top: .25rem; }
-    .btn { padding: .28rem .55rem; font-size: .72rem; border-radius: 6px; border: 1px solid var(--border); background: #fafafa; cursor: pointer; font-family: inherit; }
-    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .pwd { margin: 1rem 0; }
-    .pwd input { width: 100%; padding: .5rem; border-radius: 8px; border: 1px solid var(--border); }
-    .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; align-items: center; }
-    .bad { color: #c0392b; font-size: .88rem; }
-    .hint { font-size: .78rem; color: var(--muted); margin-top: .5rem; }
-    .kd-preview-slot { margin: .5rem 0; min-height: 1rem; }
-    .kd-preview-slot--inline { margin: .4rem 0 .5rem; width: 100%; }
-    .kd-share-preview-img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); display: block; background: #faf9f7; }
-    .kd-share-preview-pdf { width: 100%; min-height: 280px; border: 1px solid var(--border); border-radius: 10px; background: #1a1a1a; }
-    .kd-preview-loading { font-size: .78rem; color: var(--muted); margin: .25rem 0; }
-    .kd-toast {
-      position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%) translateY(120%);
-      max-width: min(92vw, 360px); padding: .65rem 1rem; font-size: .85rem;
-      background: var(--ink); color: #fff; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.2);
-      z-index: 9999; opacity: 0; transition: transform .28s ease, opacity .28s ease; pointer-events: none;
-    }
-    .kd-toast.kd-toast--show { transform: translateX(-50%) translateY(0); opacity: 1; }
-    .kd-toast.kd-toast--err { background: #8b2e2e; }
-  </style>
+
 </head>
 <body>
   <div class="wrap">

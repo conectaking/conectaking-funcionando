@@ -6,8 +6,6 @@
   <title>KingSelection - Galeria</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-  
   <style>
     :root{
       --ks-accent:#facc15;
@@ -146,7 +144,7 @@
   </div>
 
   <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionGallery.js'])
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionGallery.js'])
 </body>
 </html>
 

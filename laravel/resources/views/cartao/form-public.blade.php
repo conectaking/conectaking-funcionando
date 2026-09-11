@@ -17,7 +17,7 @@
         $headerImg = $form['header_image_url'] ?? null;
     @endphp
     <style>
-        :root {
+:root {
             --primary: {{ $primary }};
             --secondary: {{ $secondary }};
             --bg: {{ $bg }};
@@ -26,70 +26,16 @@
             --bar: {{ $bar }};
             --sep: {{ $sep }};
         }
-        * { box-sizing: border-box; }
-        body {
-            margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-            background: var(--bg); color: var(--text); min-height:100vh; position:relative;
-        }
-        @if($bgImg)
+
+@if($bgImg)
         body::before {
             content:''; position:fixed; inset:0; z-index:0;
             background: url('{{ $bgImg }}') center/cover no-repeat;
             opacity: {{ max(0, min(1, $bgOp)) }}; pointer-events:none;
         }
         @endif
-        .wrap { position:relative; z-index:1; max-width: 640px; margin: 0 auto; padding: 28px 16px 64px; }
-        .card {
-            background: var(--card); border-radius: 16px; padding: 0 0 28px;
-            box-shadow: 0 12px 40px rgba(0,0,0,.12); overflow:hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            min-height: 88px; position:relative;
-            @if($headerImg) background-image: url('{{ $headerImg }}'); background-size:cover; background-position:center; @endif
-        }
-        .body { padding: 22px 22px 0; }
-        .logo { max-width: 88px; max-height: 88px; margin: -40px 0 12px; border-radius: 14px; border:3px solid var(--card); background:var(--card); display:block; object-fit:cover; }
-        h1 { font-size: 1.45rem; margin: 0 0 8px; line-height:1.25; }
-        p.desc { opacity: .85; margin: 0 0 8px; line-height:1.5; }
-        .meta { font-size:.88rem; opacity:.75; margin: 0 0 18px; }
-        .field { margin: 0 0 18px; padding-bottom: 16px; border-bottom: 1px solid var(--sep); }
-        .field:last-of-type { border-bottom:0; }
-        .field.hidden-cond { display:none !important; }
-        .lab { display:flex; align-items:flex-start; gap:8px; font-size:.95rem; margin: 0 0 10px; font-weight:600; }
-        .lab .bar { width:3px; min-height:18px; background:var(--bar); border-radius:2px; margin-top:2px; flex-shrink:0; }
-        .req { color: #c62828; }
-        input[type=text], input[type=email], input[type=tel], input[type=number], input[type=url],
-        input[type=date], input[type=time], input[type=datetime-local], input[type=file],
-        textarea, select {
-            width:100%; padding:13px 14px; border:2px solid #dadce0; border-radius:12px;
-            font: inherit; background:#fff; color: var(--text);
-        }
-        input:focus, textarea:focus, select:focus { outline:none; border-color: var(--primary); }
-        textarea { min-height: 110px; resize: vertical; }
-        .opts { display:flex; flex-direction:column; gap:10px; }
-        .opt { font-weight:500; display:flex; align-items:center; gap:10px; margin:0; padding:10px 12px;
-               border:1px solid #e0e0e0; border-radius:10px; cursor:pointer; }
-        .opt:has(input:checked) { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, white); }
-        .opt input { width:auto; margin:0; }
-        .scale, .rating { display:flex; flex-wrap:wrap; gap:8px; }
-        .scale label, .rating label {
-            min-width:40px; text-align:center; padding:10px 8px; border:1px solid #dadce0; border-radius:10px; cursor:pointer;
-        }
-        .scale input, .rating input { display:none; }
-        .scale label:has(input:checked), .rating label:has(input:checked) {
-            background: var(--primary); color:#fff; border-color: var(--primary);
-        }
-        .follow { margin-top:12px; display:none; }
-        .follow.show { display:block; }
-        button[type=submit] {
-            margin-top: 8px; width:100%; padding:15px; border:0; border-radius:12px;
-            background:var(--primary); color:#fff; font-weight:700; font-size:1rem; cursor:pointer;
-        }
-        button[type=submit]:disabled { opacity:.6; cursor:wait; }
-        .ok { display:none; margin-top:16px; padding:14px; background:#e8f8ef; color:#146c2e; border-radius:10px; }
-        .err { display:none; margin-top:16px; padding:14px; background:#fdecea; color:#8a1f11; border-radius:10px; }
-        .hint { font-size:.8rem; opacity:.65; margin-top:6px; }
+
+@if($headerImg) background-image: url('{{ $headerImg }}'); background-size:cover; background-position:center; @endif
     </style>
     @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-form-public.js'])
 </head>

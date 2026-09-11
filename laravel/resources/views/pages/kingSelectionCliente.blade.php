@@ -12,9 +12,7 @@
   @endisset
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png" />
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png" />
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" crossorigin="anonymous" />
-  
-</head>
+  </head>
 <body>
   <!-- Capa do evento (modo público, configurvel no painel) -->
   <div id="ks-entry-splash" class="ks-hidden" style="position:fixed;inset:0;z-index:360;background:radial-gradient(120% 80% at 50% 0%,#1a1a1a 0%,#000 55%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0;overflow:auto" aria-hidden="true">
@@ -563,6 +561,6 @@
       <i class="fas fa-paper-plane"></i> Confirmar seleção
     </button>
   </div>
-  @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionCliente.js'])
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionCliente.js'])
 </body>
 </html>

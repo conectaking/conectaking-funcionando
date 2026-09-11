@@ -1,4 +1,5 @@
 import '../../css/fonts.css';
+import '@css/pages/cartao-form-success.css';
 import '../vendor-globals.js';
 
 (function () {

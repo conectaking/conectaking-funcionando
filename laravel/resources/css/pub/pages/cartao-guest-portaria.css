@@ -1,0 +1,37 @@
+/* from laravel/resources/views/cartao/guest-portaria.blade.php */
+
+* { box-sizing: border-box; }
+        body { margin:0; font-family: system-ui, sans-serif; background: linear-gradient(135deg, var(--bg), #1C1C21); color: var(--text); min-height:100vh; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 20px 14px 72px; }
+        h1 { color: var(--primary); margin: 0 0 6px; font-size: 1.5rem; }
+        .sub { opacity:.8; margin-bottom: 16px; }
+        .stats { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+        .stat { background:rgba(255,255,255,.06); border:1px solid rgba(255,199,0,.2); border-radius:10px; padding:10px 12px; min-width:110px; }
+        .stat b { display:block; color:var(--primary); font-size:1.2rem; }
+        .tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+        input[type=search], input[type=text] {
+            flex:1; min-width:180px; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
+            background:rgba(0,0,0,.35); color:var(--text); font:inherit;
+        }
+        button, .btn {
+            padding:11px 14px; border:0; border-radius:10px; background:var(--primary); color:#111; font-weight:700; cursor:pointer;
+        }
+        .btn.secondary { background:transparent; color:var(--primary); border:1px solid rgba(255,199,0,.4); }
+        .tabs { display:flex; flex-wrap:wrap; gap:6px; margin: 12px 0 14px; }
+        .tab { padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.15); background:transparent; color:var(--text); cursor:pointer; }
+        .tab.on { background:rgba(255,199,0,.18); border-color:var(--primary); color:var(--primary); font-weight:700; }
+        .card { background:rgba(28,28,33,.92); border:1px solid rgba(255,199,0,.18); border-radius:14px; overflow:hidden; }
+        .row { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.07); }
+        .row:last-child { border-bottom:0; }
+        .name { font-weight:600; }
+        .meta { font-size:.8rem; opacity:.7; }
+        .badge { font-size:.72rem; padding:3px 8px; border-radius:999px; border:1px solid rgba(255,199,0,.35); color:var(--primary); white-space:nowrap; }
+        .panel { display:none; }
+        .panel.on { display:block; }
+        #qr-reader { width:100%; max-width:420px; margin:12px auto; }
+        .msg { margin-top:10px; padding:10px 12px; border-radius:10px; display:none; }
+        .msg.ok { display:block; background:rgba(40,160,80,.2); color:#9BE7B0; }
+        .msg.err { display:block; background:rgba(180,40,40,.25); color:#FFB4A8; }
+        .header-img { width:100%; max-height:220px; object-fit:cover; border-radius:14px; margin-bottom:14px; display:block; }
+        .empty { text-align:center; padding:28px; opacity:.7; }
+        .checkin-btn { font-size:.82rem; padding:8px 10px; }

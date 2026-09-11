@@ -4,86 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bíblia — painel</title>
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-<style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #0c0c0e;
-            background-image: linear-gradient(180deg, #0c0c0e 0%, #141418 50%, #18181c 100%);
-            color: #E8E8E8;
-            min-height: 100vh;
-            padding: 20px;
-            padding-bottom: max(24px, env(safe-area-inset-bottom));
-        }
-        .wrap { max-width: 720px; margin: 0 auto; }
-        .hero { text-align: center; margin-bottom: 20px; }
-        .hero i { font-size: 2.25rem; color: #FFC700; margin-bottom: 10px; }
-        .hero h1 { font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 600; color: #ECECEC; }
-        .hero p { color: #A1A1A1; font-size: .9rem; margin-top: 8px; line-height: 1.45; }
-        .card {
-            background: rgba(28, 28, 33, 0.96);
-            border: 1px solid rgba(255, 199, 0, 0.22);
-            border-radius: 16px;
-            padding: 22px 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-        }
-        .card h2 { font-size: 0.95rem; color: #A1A1A1; margin-bottom: 12px; font-weight: 600; }
-        .progress-bar {
-            height: 10px;
-            background: rgba(255,199,0,0.12);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .progress-bar > span {
-            display: block; height: 100%;
-            background: linear-gradient(90deg, #d4a012, #FFC700);
-            border-radius: 6px; transition: width 0.4s ease;
-        }
-        .progress-stats { font-size: 0.9rem; color: #ccc; margin-top: 10px; line-height: 1.5; }
-        .ref { font-family: 'Lora', serif; color: #FFC700; font-weight: 600; margin-bottom: 12px; }
-        .verse-text { font-family: 'Lora', serif; font-size: 1.1rem; line-height: 1.65; color: #ECECEC; }
-        .reflexao { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.9rem; color: #B8B8B8; font-style: italic; }
-        .btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 12px 18px; border-radius: 12px; font-size: 0.92rem; font-weight: 600;
-            border: none; cursor: pointer; font-family: inherit; text-decoration: none;
-            margin-top: 12px; margin-right: 8px;
-        }
-        .btn-primary { background: #FFC700; color: #111; }
-        .btn-secondary { background: rgba(255,255,255,0.08); color: #ECECEC; border: 1px solid rgba(255,255,255,0.15); }
-        .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-        .msg { padding: 14px 16px; border-radius: 12px; font-size: 0.92rem; line-height: 1.45; margin-bottom: 14px; }
-        .msg-error { background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.45); color: #f5a097; }
-        .msg-warn { background: rgba(255,199,0,0.1); border: 1px solid rgba(255,199,0,0.35); color: #e8d4a0; }
-        .msg-info { background: rgba(52,152,219,0.12); border: 1px solid rgba(52,152,219,0.35); color: #9ecfef; }
-        .hidden { display: none !important; }
-        .loading { text-align: center; padding: 40px; color: #A1A1A1; }
-        .loading i { color: #FFC700; font-size: 2rem; margin-bottom: 12px; }
-        .top-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 8px; }
-        .hub-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 4px;
-        }
-        .hub-card {
-            display: flex; flex-direction: column; gap: 6px;
-            padding: 14px 12px; border-radius: 12px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #ECECEC; text-decoration: none;
-            transition: border-color .15s, background .15s;
-        }
-        .hub-card:hover { border-color: rgba(255,199,0,0.45); background: rgba(255,199,0,0.08); text-decoration: none; }
-        .hub-card i { color: #FFC700; font-size: 1.1rem; }
-        .hub-card strong { font-size: .88rem; }
-        .hub-card span { font-size: .75rem; color: #A1A1A1; line-height: 1.35; }
-    </style>
     <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/bibliaking.js'])
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/bibliaking.js'])
 </head>
 <body>
     <div class="wrap">

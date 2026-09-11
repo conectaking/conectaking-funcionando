@@ -1,5 +1,6 @@
 /** zerar-mes — Vite entry (extracted inline) */
 import '@mod/js/ck-auth-gate.js';
+import '@css/pages/zerar-mes.css';
 
 (function() {
             // Mesma regra do dashboard: produção por padrão; API local só com ?api=local ou localStorage useLocalApi

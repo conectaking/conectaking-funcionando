@@ -1,4 +1,5 @@
 import '@mod/js/ck-auth-gate.js';
+import '@css/pages/admin-devocionais-365.css';
 
 await (window.CkAuth && typeof window.CkAuth.requireAuth === 'function'
   ? window.CkAuth.requireAuth('/login')

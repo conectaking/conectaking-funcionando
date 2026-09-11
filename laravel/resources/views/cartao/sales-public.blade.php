@@ -5,23 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $page['store_title'] ?? 'Loja' }}</title>
     <style>
-        :root {
+:root {
             --bg: {{ $page['background_color'] ?? '#0D0D0F' }};
             --text: {{ $page['text_color'] ?? '#ECECEC' }};
             --btn: {{ $page['button_color'] ?? '#FFC700' }};
             --btnText: {{ $page['button_text_color'] ?? '#111' }};
         }
-        body { margin:0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
-        .wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
-        h1 { margin: 0 0 8px; }
-        .desc { opacity:.85; margin-bottom: 28px; }
-        .grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
-        .item { background: rgba(255,255,255,.04); border-radius:12px; overflow:hidden; }
-        .item img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:#222; }
-        .item .meta { padding:12px; }
-        .price { font-weight:700; color: var(--btn); }
-        .wa { display:inline-block; margin-top:10px; padding:10px 14px; border-radius:8px; background:var(--btn); color:var(--btnText); text-decoration:none; font-weight:700; }
     </style>
+    @vite(['resources/css/fonts.css', 'resources/css/pub/pages/cartao-sales-public.css'])
 </head>
 <body>
 <div class="wrap">

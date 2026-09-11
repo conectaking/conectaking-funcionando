@@ -1,5 +1,6 @@
 /** kingDocs — Vite entry (extracted inline, icons sanitized) */
 import '../vendor-globals.js';
+import '@css/pages/kingDocs.css';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
 

@@ -8,8 +8,7 @@
     <title>Nova senha - Conecta King</title>
     <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
     <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-<style>
+    <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -102,7 +101,7 @@
         <div class="back" style="margin-top: 16px;"><a href="/"><i class="fas fa-arrow-left"></i> Voltar ao início</a></div>
     </div>
     @if ($token !== '')
-    @vite(['resources/js/pages/resetar-senha.js'])
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/resetar-senha.js'])
     @endif
 </body>
 </html>

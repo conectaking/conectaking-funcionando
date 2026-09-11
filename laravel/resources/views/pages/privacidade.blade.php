@@ -6,7 +6,6 @@
     <title>Política de Privacidade - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -77,6 +76,7 @@
             text-decoration: underline;
         }
     </style>
+    @vite(['resources/css/fontawesome.css'])
 </head>
 <body>
     <div class="container">

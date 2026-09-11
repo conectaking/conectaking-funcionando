@@ -5,40 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Inscrição — {{ $guestList['event_title'] ?? 'Evento' }}</title>
     <style>
-        :root {
+:root {
             --primary: {{ $guestList['primary_color'] ?? '#FFC700' }};
             --text: {{ $guestList['text_color'] ?? '#ECECEC' }};
             --bg: {{ $guestList['background_color'] ?? '#0D0D0F' }};
         }
-        * { box-sizing: border-box; }
-        body {
-            margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--bg), #1C1C21); color: var(--text); min-height:100vh;
-            @if(!empty($guestList['background_image_url']))
+
+@if(!empty($guestList['background_image_url']))
             background-image: url('{{ $guestList['background_image_url'] }}');
             background-size: cover; background-position: center; background-attachment: fixed;
             @endif
-        }
-        .wrap { max-width:560px; margin:0 auto; padding:32px 16px 64px; }
-        h1 { color: var(--primary); font-size:1.7rem; margin:0 0 8px; text-align:center; }
-        .sub { text-align:center; opacity:.8; margin-bottom:24px; }
-        .card { background: rgba(28,28,33,.92); border:1px solid rgba(255,199,0,.2); border-radius:16px; padding:22px; }
-        label { display:block; font-size:.88rem; font-weight:600; margin:14px 0 6px; }
-        input, textarea, select {
-            width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
-            background: rgba(0,0,0,.35); color: var(--text); font: inherit;
-        }
-        .req { color: var(--primary); }
-        button {
-            margin-top:20px; width:100%; padding:14px; border:0; border-radius:12px;
-            background: var(--primary); color:#111; font-weight:800; cursor:pointer; font-size:1rem;
-        }
-        button:disabled { opacity:.6; }
-        .ok,.err { display:none; margin-top:14px; padding:12px; border-radius:10px; }
-        .ok { background:rgba(40,160,80,.2); color:#9BE7B0; }
-        .err { background:rgba(180,40,40,.25); color:#FFB4A8; }
-        .full { text-align:center; padding:24px; color: var(--primary); }
-        .header-img { width:100%; border-radius:16px; margin-bottom:20px; display:block; }
     </style>
     @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-guest-register.js'])
 </head>

@@ -1,3 +1,4 @@
+import '@css/pages/kingDocsShare.css';
 /** kingDocsShare — Vite entry (extracted inline) */
 (function () {
       try {

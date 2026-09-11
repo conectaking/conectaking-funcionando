@@ -8,8 +8,7 @@
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
 <!-- Navegação para páginas externas do sidebar (King Docs, Bíblia, etc.):
          o dashboard.js faz preventDefault em .nav-link — permitir sair do SPA. -->
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <script src="/config.js?v=2026-09-09-vite1"></script>
+<script src="/config.js?v=2026-09-09-vite1"></script>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -19,7 +18,7 @@
     
     <!-- Stubs: se o .js abaixo falhar (404 no deploy), dashboard.js ainda encontra as funções. O ficheiro real substitui estes no load. -->
 
-@vite(['resources/js/pages/dashboard.js'])
+@vite(['resources/css/fontawesome.css', 'resources/js/pages/dashboard.js'])
 </head>
 <body>
 

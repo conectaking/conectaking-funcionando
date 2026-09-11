@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editar Convite — ConectaKing</title>
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111; color: #eee; min-height: 100vh; padding: 20px; }
@@ -173,6 +172,6 @@
   </div>
 
       <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/conviteEdit.js'])
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/conviteEdit.js'])
 </body>
 </html>

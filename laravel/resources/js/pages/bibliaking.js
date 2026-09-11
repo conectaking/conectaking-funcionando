@@ -1,5 +1,6 @@
 /** Bibliaking / painel Bíblia — Vite entry (restored from biblePanel.ejs) */
 import '@mod/js/ck-auth-gate.js';
+import '@css/pages/bibliaking.css';
 import '@mod/js/ck-csrf.js';
 
 (async function () {

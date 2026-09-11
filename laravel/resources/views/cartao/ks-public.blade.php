@@ -20,19 +20,7 @@
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:image" content="{{ $og['ogImage'] }}">
     @endif
-    <style>
-        body { margin:0; font-family: system-ui, sans-serif; background:#0D0D0F; color:#ECECEC; min-height:100vh; }
-        .wrap { max-width:560px; margin:0 auto; padding:32px 16px 64px; text-align:center; }
-        h1 { font-size:1.6rem; color:#FFC700; margin:0 0 8px; }
-        .meta { opacity:.7; font-size:.95rem; margin-bottom:20px; }
-        .cover { width:100%; max-height:360px; object-fit:cover; border-radius:16px; background:#16161a; margin:0 0 20px; }
-        .badge { display:inline-block; padding:6px 12px; border-radius:999px; background:rgba(255,199,0,.12);
-                 border:1px solid rgba(255,199,0,.35); color:#FFC700; font-size:.85rem; margin-bottom:16px; }
-        .btn { display:inline-block; margin-top:8px; padding:14px 22px; background:#FFC700; color:#111; font-weight:700;
-               border-radius:12px; text-decoration:none; }
-        .btn.secondary { background:transparent; color:#FFC700; border:1px solid rgba(255,199,0,.4); margin-left:8px; }
-        .note { margin-top:28px; font-size:.85rem; opacity:.55; line-height:1.5; }
-    </style>
+    
     @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-ks-public.js'])
 </head>
 <body>

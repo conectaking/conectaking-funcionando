@@ -39,11 +39,7 @@
     <meta property="og:image:type" content="image/jpeg">
     
     <!-- Fonts -->
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    
-    
-    
-    </head>
+</head>
     <body>
     <!-- Header Vermelho/Preto -->
     <header class="header">
@@ -439,6 +435,6 @@
 
     
     <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/index.js'])
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/index.js'])
 </body>
 </html>

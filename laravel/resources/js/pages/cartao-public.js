@@ -1,4 +1,5 @@
 import '../../css/fonts.css';
+import '@css/pages/cartao-public-extra.css';
 import '@css/css/profile.css';
 import '@css/css/profile-wifi.css';
 import '../vendor-globals.js';

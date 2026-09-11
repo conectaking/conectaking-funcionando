@@ -5,46 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }}</title>
     <style>
-        :root { --primary: {{ $record['primary_color'] ?? '#FFC700' }}; }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0; font-family: system-ui, sans-serif;
-            background: linear-gradient(160deg, #0D0D0F, #1C1C21);
-            color: #ECECEC; min-height: 100vh; padding: 20px;
+        :root {
+            --primary: {{ $record['primary_color'] ?? '#FFC700' }};
+            --preview-bg: {{ $record['background_color'] ?? '#0D0D0F' }};
+            --preview-text: {{ $record['text_color'] ?? '#ECECEC' }};
         }
-        .wrap { max-width: 920px; margin: 0 auto; }
-        h1 { color: var(--primary); font-size: 1.4rem; margin: 0 0 8px; }
-        .sub { opacity: .7; margin-bottom: 20px; }
-        .card {
-            background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
-            border-radius: 14px; padding: 20px; margin-bottom: 16px;
-        }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-        label { display: block; font-size: .8rem; opacity: .8; margin-bottom: 6px; }
-        input[type=color] {
-            width: 100%; height: 44px; border: none; border-radius: 8px; background: transparent; cursor: pointer;
-        }
-        input[type=text], input[type=url], input[type=number], select {
-            width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.15);
-            background: #16161a; color: #ECECEC;
-        }
-        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
-        button, .back {
-            border: none; border-radius: 10px; padding: 12px 18px; font-weight: 700; cursor: pointer; text-decoration: none;
-        }
-        button { background: var(--primary); color: #111; }
-        button:disabled { opacity: .6; cursor: wait; }
-        .back { background: rgba(255,199,0,.12); color: #FFC700; border: 1px solid rgba(255,199,0,.3); }
-        #msg { margin-top: 12px; display: none; }
-        #msg.ok { display: block; color: #7dffa0; }
-        #msg.err { display: block; color: #ff8a8a; }
-        .preview {
-            margin-top: 8px; border-radius: 12px; padding: 24px; text-align: center;
-            background: {{ $record['background_color'] ?? '#0D0D0F' }};
-            color: {{ $record['text_color'] ?? '#ECECEC' }};
-            border: 1px solid rgba(255,255,255,.1);
-        }
-        .preview h2 { color: {{ $record['primary_color'] ?? '#FFC700' }}; margin: 0 0 8px; }
     </style>
     @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-guest-customize.js'])
 </head>

@@ -1,4 +1,5 @@
 import '../../css/fonts.css';
+import '@css/pages/cartao-guest-register.css';
 import '../vendor-globals.js';
 
 (function () {

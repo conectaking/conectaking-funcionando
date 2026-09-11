@@ -1,4 +1,5 @@
 import '../../css/fonts.css';
+import '@css/pages/cartao-bible-study.css';
 import '../vendor-globals.js';
 
 (function () {

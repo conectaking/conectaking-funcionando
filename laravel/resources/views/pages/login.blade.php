@@ -9,9 +9,8 @@
     <title>Login - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/login.js'])
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/login.js'])
 </head>
 <body>
     <div class="auth-background"></div>

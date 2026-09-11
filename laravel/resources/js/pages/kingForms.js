@@ -1,4 +1,5 @@
 import '@css/style.css';
+import '@css/pages/kingForms.css';
 import '@css/dashboard.css';
 import '@mod/js/ck-auth-gate.js';
 (function () {

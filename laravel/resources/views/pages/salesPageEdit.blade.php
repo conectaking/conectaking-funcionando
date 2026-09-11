@@ -6,8 +6,7 @@
     <title>Editar Página de Vendas - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <script src="/config.js?v=2026-09-09-vite1"></script>
+<script src="/config.js?v=2026-09-09-vite1"></script>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
@@ -15,7 +14,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <!-- Cache-bust CSS - v2025-01-31-04 --><!-- CSS CRÍTICO INLINE PARA MOBILE - Garantir scroll funcionando -->
-    @vite(['resources/js/pages/salesPageEdit.js'])
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/salesPageEdit.js'])
 </head>
 <body class="sales-page-edit-page">
     <div class="dashboard-layout">

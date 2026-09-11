@@ -26,17 +26,15 @@
     <meta http-equiv="Pragma" content="cache">
     <title>{{ $d['display_name'] ?? 'Conecta King' }}</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
-    @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-public.js'])
-<link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    @vite(['resources/css/fontawesome.css', 'resources/css/fonts.css', 'resources/js/pages/cartao-public.js'])
 <meta property="og:title" content="{{ $d['display_name'] ?? 'Conecta King' }}">
     <meta property="og:description" content="{{ $ogDescription }}">
     <meta property="og:image" content="{{ $ogImageUrl }}">
     <meta property="og:url" content="{{ $ogPageUrl }}">
     <style>
-        body, h1, p, span { font-family: '{{ $font }}', sans-serif !important; }
-        .profile-name, .profile-bio { color: {{ $textColor }} !important; }
-        .profile-avatar { border: none !important; }
         :root {
+            --ck-font: '{{ $font }}', sans-serif;
+            --ck-text: {{ $textColor }};
             --btn-r: {{ $btn['r'] }};
             --btn-g: {{ $btn['g'] }};
             --btn-b: {{ $btn['b'] }};
@@ -47,64 +45,10 @@
             --card-b: {{ $card['b'] }};
             --card-opacity: {{ $d['card_opacity'] ?? 1 }};
             --btn-font-size: {{ $btnFont }};
+            --btn-text: {{ $btnText }};
+            --btn-align: {{ $alignValue ?? 'center' }};
+            --logo-max: {{ max(24, min($logoSize, 90)) }}px;
         }
-        .profile-card {
-            background-color: rgba(var(--card-r), var(--card-g), var(--card-b), var(--card-opacity)) !important;
-        }
-        .profile-link, .profile-button-pix, .profile-button-pix-qrcode {
-            background-color: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity)) !important;
-            color: {{ $btnText }} !important;
-            border-radius: var(--btn-border-radius) !important;
-            justify-content: {{ $alignValue ?? 'center' }} !important;
-            font-size: var(--btn-font-size) !important;
-            display: flex !important;
-            align-items: center !important;
-        }
-        .profile-link i, .profile-button-pix i, .profile-button-pix-qrcode i {
-            color: {{ $btnText }} !important;
-        }
-        .profile-actions {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-            margin: 8px 0 4px;
-        }
-        .profile-actions .profile-link {
-            flex: 1;
-            margin: 0;
-        }
-.profile-banner-container { width: 100%; margin: 10px 0; background: transparent !important; }
-        .profile-banner-container img { width: 100%; height: auto; display: block; border-radius: 12px; }
-        .ck-footer-logo { text-align: center; margin: 28px 0 10px; }
-        .ck-footer-logo img, .branding-logo-custom { max-height: {{ max(24, min($logoSize, 90)) }}px; }
-        .share-button-corner {
-            background-color: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity)) !important;
-            color: {{ $btnText }} !important;
-        }
-        .texto-bloco {
-            width: 100%; margin: 12px 0; padding: 16px; border-radius: 14px;
-            background: rgba(20, 60, 40, 0.85); color: #fff; text-align: left; font-size: 0.95rem; line-height: 1.45;
-        }
-        .profile-embed-item { width: 100%; margin: 12px 0; border-radius: 12px; overflow: hidden; }
-        .youtube-embed-container { position: relative; padding-bottom: 56.25%; height: 0; background: #000; }
-        .youtube-embed-container iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-        .instagram-embed-container iframe { width: 100%; min-height: 480px; border: 0; border-radius: 12px; }
-        .carousel-container-public { width: 100%; border-radius: 12px; overflow: hidden; position: relative; margin: 10px 0; }
-        .carousel-wrapper-public { display: flex; transition: transform .45s ease; }
-        .carousel-slide-public { flex-shrink: 0; }
-        .carousel-slide-public img { width: 100%; display: block; }
-        .carousel-indicators-public { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 2; }
-        .carousel-indicator-public { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.45); border: 0; padding: 0; cursor: pointer; }
-        .carousel-indicator-public.active { background: #fff; }
-        .guest-list-stats-mini { font-size: 11px; opacity: .7; margin-top: 2px; width: 100%; text-align: inherit; }
-        .ck-catalog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 9999; overflow: auto; display: none; }
-        .ck-catalog-overlay.active { display: block; }
-        .ck-catalog-panel { max-width: 960px; margin: 4vh auto; background: #141417; border-radius: 16px; padding: 20px; }
-        .ck-catalog-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 16px; }
-        .ck-catalog-card { background: #1c1c21; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
-        .ck-catalog-card img { width: 100%; height: 160px; object-fit: contain; background: #0d0d0f; }
-        .ck-catalog-card .body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .ck-catalog-card .price { color: #ffc700; font-weight: 700; }
     </style>
 </head>
 <body>

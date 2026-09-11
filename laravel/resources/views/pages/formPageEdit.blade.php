@@ -6,9 +6,9 @@
     <title>Editar King Forms - Dashboard</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css"><script src="/config.js?v=2026-09-09-vite1"></script>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
     
-    @vite(['resources/js/pages/formPageEdit.js'])
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/formPageEdit.js'])
 </head>
 <body class="form-edit-page form-edit-page-body">
     <div class="form-edit-header">

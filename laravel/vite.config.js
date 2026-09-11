@@ -15,6 +15,13 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/css/fonts.css',
+                'resources/css/fontawesome.css',
+                'resources/css/pub/pages/cartao-sales-public.css',
+                'resources/css/pub/pages/cartao-bible-whole.css',
+                'resources/css/pub/pages/cartao-bible-salmo.css',
+                'resources/css/pub/pages/cartao-bible-plan.css',
+                'resources/css/pub/pages/cartao-bible-hub.css',
+                'resources/css/pub/pages/cartao-inactive.css',
                 'resources/js/app.js',
                 'resources/js/pages/login.js',
                 'resources/js/pages/registro.js',

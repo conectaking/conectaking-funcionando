@@ -1,5 +1,6 @@
 /** recibos-orcamentos — Vite entry (extracted inline) */
 import '@css/css/recibos-modulo-mobile.css';
+import '@css/pages/recibos-orcamentos.css';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
 

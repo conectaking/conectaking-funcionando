@@ -1,4 +1,5 @@
 import '../../css/fonts.css';
+import '@css/pages/cartao-ks-public.css';
 import '../vendor-globals.js';
 
 window.__KS_BOOT_GALLERY_META = {

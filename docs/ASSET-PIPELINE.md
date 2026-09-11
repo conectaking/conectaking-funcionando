@@ -2,28 +2,24 @@
 
 ## Unificado
 - **JS:** `laravel/resources/js/legacy/` via `@mod`
-- **CSS de página:** `laravel/resources/css/pub/` via `@css` (incl. `pages/*.css` extraídos das Blades)
-- **Fontes:** `resources/css/fonts.css` (self-host via `@fontsource` + material-icons)
-- **Vendor npm:** Chart.js, Leaflet, Sortable, Cropper 1.6, jsPDF, html2pdf, html5-qrcode, QRCode → `resources/js/vendor-globals.js`
-- **Cartão / portaria / bíblia:** entries Vite `resources/js/pages/cartao-*.js` + boot Blade `__CK_BOOT_*` (nonce CSP)
-- **Inlines do painel:** `resources/js/inline/` importados pelos entries
-- **CSP:** `script-src 'self' 'nonce-…'` (sem `'unsafe-inline'`). `style-src` ainda `'unsafe-inline'` (atributos `style=""` e CSS dinâmico Blade no cartão)
+- **CSS de página:** `laravel/resources/css/pub/` via `@css` (incl. `pages/*.css`)
+- **Fontes:** `resources/css/fonts.css` (`@fontsource` + material-icons)
+- **Ícones:** `resources/css/fontawesome.css` (`@fortawesome/fontawesome-free` via Vite) — sem `/vendor/fontawesome` nas Blades
+- **Vendor npm:** Chart/Leaflet/Sortable/Cropper/jsPDF/html2pdf/html5-qrcode/QR → `vendor-globals.js`
+- **Cartão:** entries `cartao-*.js` + boots `__CK_BOOT_*`; CSS estático em `pages/cartao-*.css`; tokens dinâmicos ficam em `<style>:root{…}</style>` mínimo
+- **CSP:** `script-src 'self' 'nonce-…'`. `style-src` ainda `'unsafe-inline'` (`style=""` + `:root` dinâmico)
 
 ## Exceções em `public/`
-- `config.js` (API_BASE + CSRF/Bearer; `/api-config.js` é alias)
+- `config.js` (+ alias `/api-config.js`)
 - `sw.js`, `cache-buster.js`, `main.js`
-- `guestListEditKingForms.js` → redirect `/guestListEdit`
 - `js/recibos-modulo-nav.js`
-- `vendor/fontawesome`, `vendor/pdf-lib` (+ fallbacks opcionais)
+- `vendor/pdf-lib` (+ fallbacks opcionais; Font Awesome vendor pode permanecer como backup)
 
-## Extracção CSS
-Script: `laravel/scripts/extract-blade-styles.mjs` — move `<style>` estático para `resources/css/pub/pages/`.
-Blocos com `{{ }}` / `@if` ficam na Blade (ex.: cores do cartão).
+## Scripts
+- `extract-blade-styles.mjs`, `extract-cartao-split-styles.mjs`, `split-dynamic-cartao-styles.mjs`, `wire-page-css.mjs`
 
 ## Residual
-- CSS dinâmico no cartão (`form-public`, `public`, `form-success`)
-- Inline `style=""` attributes (impedem CSP style estrito)
-- KS blades grandes (`kingSelectionProject`, `kingSelectionCliente`) ainda com CSS inline
-- Font Awesome ainda via `/vendor/fontawesome`
+- Atributos `style=""` em massa (dashboard/admin/index)
+- `vendor/pdf-lib` ainda lazy em kingDocs
 
 **Regra:** código novo só em `laravel/resources/{js,css}` + Vite.

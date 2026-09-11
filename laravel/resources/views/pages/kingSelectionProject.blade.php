@@ -10,9 +10,7 @@
   <title>KingSelection - Projeto</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-
-</head>
+  </head>
 
 <body>
   <div class="ks-top">
@@ -1716,7 +1714,7 @@
 
 @endverbatim
   <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
 </body>
 
 </html>
