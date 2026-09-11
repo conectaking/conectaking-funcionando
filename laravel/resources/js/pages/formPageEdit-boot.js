@@ -37,7 +37,6 @@
                                     setTimeout(() => notification.remove(), 300);
                                 }, 3000);
                             } else {
-                                console.log('', message);
                             }
                         } finally {
                             setTimeout(() => {
@@ -236,7 +235,6 @@
                             const customizePortariaBtn = document.getElementById('customize-portaria-btn');
                             
                             if (customizePortariaBtn) {
-                                console.log('Habilitando botão de personalização da portaria para item:', id);
                                 // Remover todos os event listeners anteriores
                                 const newBtn = customizePortariaBtn.cloneNode(true);
                                 customizePortariaBtn.parentNode.replaceChild(newBtn, customizePortariaBtn);
@@ -273,7 +271,6 @@
                                         }
                                         const url = `${apiBaseUrl}/api/guest-lists/${id}/customize-portaria`;
                                         
-                                        console.log('Abrindo página de personalização da portaria');
                                         window.open(url, '_blank');
                                     });
                                 }
@@ -286,7 +283,6 @@
                             const customizePortariaBtn = document.getElementById('customize-portaria-btn');
                             
                             if (customizePortariaBtn) {
-                                console.log('O Desabilitando botão de personalização da portaria');
                                 // Remover listeners e desabilitar
                                 const newBtn = customizePortariaBtn.cloneNode(true);
                                 customizePortariaBtn.parentNode.replaceChild(newBtn, customizePortariaBtn);
@@ -484,9 +480,6 @@
                         // Same-origin (Laravel local ou produção)
                         const apiBaseUrl = String(window.API_URL || window.API_BASE || window.location.origin || '').replace(/\/$/, '');
                         
-                        console.log(`[GUEST_LIST] Enviando requisição PUT para ${apiBaseUrl}/api/profile/items/digital_form/${itemId}`);
-                        console.log(`[GUEST_LIST] Body:`, requestBody);
-                        console.log(`[GUEST_LIST] Token presente:`, !!token);
                         
                         const response = await fetch(`${apiBaseUrl}/api/profile/items/digital_form/${itemId}`, {
                             method: 'PUT',
@@ -517,13 +510,6 @@
                             responseData = {};
                         }
                         
-                        console.log(`[GUEST_LIST] Resposta recebida:`, {
-                            status: response.status,
-                            statusText: response.statusText,
-                            ok: response.ok,
-                            responseData: responseData,
-                            responseText: responseText.substring(0, 500)
-                        });
                         
                         if (response.ok) {
                             // Atualizar seção - buscar guestListSection se não estiver disponível
@@ -591,15 +577,12 @@
                                     } catch (error) {
                                         console.error('Erro ao mostrar mensagem de sucesso:', error);
                                         // Fallback para console.log se showSuccessMessage falhar
-                                        console.log(successMessage);
                                         window._showingSuccessMessage = false;
                                     }
                                 } else {
                                     // Se já está mostrando, usar console.log como fallback
-                                    console.log(successMessage);
                                 }
                             } else {
-                                console.log(successMessage);
                             }
                         } else {
                             // Tratar diferentes tipos de erro

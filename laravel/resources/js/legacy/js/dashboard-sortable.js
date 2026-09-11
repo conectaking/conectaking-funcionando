@@ -113,7 +113,6 @@ async function saveItemOrder(itemsOrder) {
         });
 
         await Promise.all(updatePromises);
-        console.log('Ordem dos módulos atualizada com sucesso');
     } catch (error) {
         console.error('Erro ao salvar ordem dos módulos:', error);
     }
@@ -148,7 +147,6 @@ function initSortable() {
         return;
     }
 
-    console.log(` Inicializando Sortable (mobile: ${window.innerWidth <= 768}, ${items.length} itens, ${handles.length} handles)`);
 
     // Destruir instância anterior se existir
     if (SELECTORS.itemsContainer.sortable) {
@@ -162,7 +160,6 @@ function initSortable() {
         ('ontouchstart' in window) ||
         (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
 
-    console.log(`Detecção mobile: ${isMobile} (width: ${window.innerWidth}, touch: ${'ontouchstart' in window}, maxTouchPoints: ${navigator.maxTouchPoints})`);
 
     SELECTORS.itemsContainer.sortable = new Sortable(SELECTORS.itemsContainer, {
         animation: 150,
@@ -202,7 +199,6 @@ function initSortable() {
         // Callback para quando começar a arrastar
         onStart: function (evt) {
             try {
-                console.log('YY Drag iniciado', { item: evt.item, index: evt.oldIndex, isMobile: isMobile });
 
                 // Prevenir seleção de texto
                 document.body.style.userSelect = 'none';
@@ -255,7 +251,6 @@ function initSortable() {
         // Callback para quando terminar de arrastar
         onEnd: function (evt) {
             try {
-                console.log('Drag finalizado', { oldIndex: evt.oldIndex, newIndex: evt.newIndex });
 
                 // Restaurar scroll da página
                 if (isMobile) {
@@ -303,7 +298,6 @@ function initSortable() {
 
                 // Salvar a nova ordem apenas se realmente mudou
                 if (newOrder.length > 0 && evt.oldIndex !== evt.newIndex) {
-                    console.log(`Salvando nova ordem (${newOrder.length} itens)`);
                     saveItemOrder(newOrder).catch(err => {
                         console.error('Erro ao salvar ordem:', err);
                     });
@@ -315,7 +309,6 @@ function initSortable() {
                 if (SELECTORS.itemsContainer && SELECTORS.itemsContainer.sortable) {
                     // Garantir que não está desabilitado
                     SELECTORS.itemsContainer.sortable.option('disabled', false);
-                    console.log('Sortable ainda ativo e habilitado após drag - pode arrastar novamente');
                 } else {
                     console.warn('Sortable não encontrado após drag - reinicializando...');
                     setTimeout(() => {
@@ -339,7 +332,6 @@ function initSortable() {
         }
     });
 
-    console.log('Sortable inicializado - movimento livre habilitado para TODOS os mobiles');
 
     // Adicionar event listeners para botões de seta
     setupMoveButtons();
@@ -351,7 +343,6 @@ function initSortable() {
         SELECTORS.itemsContainer.sortable.option('invertSwap', false); // false = desliza contínuo
         SELECTORS.itemsContainer.sortable.option('scroll', true);
         SELECTORS.itemsContainer.sortable.option('fallbackOnBody', false); // mantém no container no mobile
-        console.log('Sortable movimento livre (invertSwap:false fallbackOnBody:false) para mobile');
     }
 }
 

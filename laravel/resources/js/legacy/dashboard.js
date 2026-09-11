@@ -4168,21 +4168,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             const admLink = document.getElementById('adm-link');
             if (admLink) {
                 admLink.style.display = isAdmin ? 'flex' : 'none';
+                if (isAdmin) admLink.classList.remove('ck-hidden');
+                else admLink.classList.add('ck-hidden');
             }
             const dev365AdminLink = document.getElementById('dev365-admin-link');
             if (dev365AdminLink) {
                 dev365AdminLink.style.display = isAdmin ? 'flex' : 'none';
+                if (isAdmin) dev365AdminLink.classList.remove('ck-hidden');
+                else dev365AdminLink.classList.add('ck-hidden');
             }
             const personalizacaoLogoLink = document.getElementById('personalizacao-logo-link');
             if (personalizacaoLogoLink) {
                 const planosComPersonalizarLogo = ['king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate'];
                 const showLogo = planosComPersonalizarLogo.includes(accountType);
                 personalizacaoLogoLink.style.display = showLogo ? 'flex' : 'none';
+                if (showLogo) personalizacaoLogoLink.classList.remove('ck-hidden');
+                else personalizacaoLogoLink.classList.add('ck-hidden');
             }
 
             const separacaoLink = document.getElementById('separacao-pacotes-link');
             if (separacaoLink) {
                 separacaoLink.style.display = isAdmin ? 'block' : 'none';
+                if (isAdmin) separacaoLink.classList.remove('ck-hidden');
+                else separacaoLink.classList.add('ck-hidden');
             }
         }
 

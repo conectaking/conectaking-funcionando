@@ -157,7 +157,6 @@ async function handleDashboardPhotoUpload(imageFile) {
             window.lastProfileData.details.profile_image_url = finalUrl;
         }
 
-        console.log('Foto de perfil atualizada com sucesso:', finalUrl);
 
     } catch (error) {
         console.error('Erro no upload da foto de perfil:', error);
@@ -303,14 +302,6 @@ async function handleImageUpload(imageFile, itemElement) {
             const itemDestInput = document.querySelector('.item[data-id="' + itemId + '"] .item-destination-url-input');
             const hiddenInput = hiddenInputInGroup || editModalInputHidden || editModalInput || itemDestInput;
 
-            console.log('Procurando input hidden para itemId:', itemId);
-            console.log('Inputs encontrados:', {
-                hiddenInputInGroup: !!hiddenInputInGroup,
-                editModalInputHidden: !!editModalInputHidden,
-                editModalInput: !!editModalInput,
-                itemDestInput: !!itemDestInput,
-                hiddenInput: !!hiddenInput
-            });
 
             if (hiddenInput) {
                 try {
@@ -346,8 +337,6 @@ async function handleImageUpload(imageFile, itemElement) {
                         destUrlHiddenInput.value = JSON.stringify(images);
                     }
 
-                    console.log(`Banner agora tem ${images.length} imagem${images.length !== 1 ? 'ns' : ''}`);
-                    console.log('Imagens:', images);
 
                     // Renderizar imagens - tentar no modal primeiro, depois no item
                     setTimeout(() => {
@@ -547,7 +536,6 @@ async function handleImageUpload(imageFile, itemElement) {
             bannerPreview.style.display = 'block';
             const placeholder = bannerPreview.closest('.image-upload-area')?.querySelector('.preview-placeholder');
             if (placeholder) placeholder.style.display = 'none';
-            console.log(`[BANNER] Preview atualizado no modal:`, finalUrl);
         } else {
             console.warn(`[BANNER] Preview #edit-banner-preview não encontrado`);
         }
@@ -574,8 +562,6 @@ async function handleImageUpload(imageFile, itemElement) {
                 editImageUrlInput.value = finalUrl;
                 // Disparar evento change para garantir que outros listeners sejam notificados
                 editImageUrlInput.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log(`[BANNER] Campo #edit-image-url atualizado no modal para item ${bannerItemId}:`, finalUrl);
-                console.log(`[BANNER] Valor do campo após atualização:`, editImageUrlInput.value);
             } else {
                 console.error(`[BANNER] Campo #edit-image-url NÃO encontrado no modal para item ${bannerItemId}`);
                 console.error(`[BANNER] Tentativas de busca:`, {
@@ -593,7 +579,6 @@ async function handleImageUpload(imageFile, itemElement) {
             const listImageInput = listItem?.querySelector('.item-image-url-input');
             if (listImageInput) {
                 listImageInput.value = finalUrl;
-                console.log(`[BANNER] Campo .item-image-url-input atualizado na lista para item ${bannerItemId}:`, finalUrl);
             } else {
                 console.warn(`[BANNER] Campo .item-image-url-input não encontrado na lista para item ${bannerItemId}`);
             }
@@ -604,23 +589,19 @@ async function handleImageUpload(imageFile, itemElement) {
                     const originalData = JSON.parse(listItem.dataset.originalData);
                     originalData.image_url = finalUrl;
                     listItem.dataset.originalData = JSON.stringify(originalData);
-                    console.log(`[BANNER] originalData atualizado para item ${bannerItemId}`);
                 } catch (e) {
                     console.warn('Erro ao atualizar originalData:', e);
                 }
             }
         }
 
-        console.log('[BANNER] Imagem do banner atualizada:', finalUrl);
 
         // Salvar automaticamente após upload bem-sucedido
         if (bannerItemId) {
-            console.log(`Y' [BANNER] Salvando banner ${bannerItemId} automaticamente após upload...`);
             try {
                 // Pequeno delay para garantir que todos os campos foram atualizados
                 await new Promise(resolve => setTimeout(resolve, 500));
                 await saveBannerItem(bannerItemId);
-                console.log(`[BANNER] Banner ${bannerItemId} salvo automaticamente após upload`);
             } catch (saveError) {
                 console.error(`[BANNER] Erro ao salvar banner automaticamente:`, saveError);
                 // Não mostrar alerta aqui para não interromper o fluxo

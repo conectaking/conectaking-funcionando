@@ -1,3 +1,4 @@
+import '@css/pages/kingSelectionReview.css';
 ﻿/** King Selection Review — migrado de public/kingSelectionReview.js para Vite (sem @legacy). */
 document.addEventListener('DOMContentLoaded', () => {
   const API_URL = (window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || 'https://www.conectaking.com.br').replace(/\/$/, '');

@@ -63,25 +63,25 @@
     
     <nav class="sidebar-nav">
         <a href="#" class="nav-link active" data-target="editar-pane" title="Editar Conecta King"><i class="fas fa-pencil-alt"></i> <span>Editar Conecta King</span></a>
-        <a href="#" class="nav-link" data-target="separacao-pacotes-pane" id="separacao-pacotes-link" title="Separação de Pacotes" style="display: none;"><i class="fas fa-layer-group"></i> <span>Separação de Pacotes</span></a>
-        <a href="#" class="nav-link nav-link-by-plan" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira" style="display: none;"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
+        <a href="#" class="nav-link ck-hidden" data-target="separacao-pacotes-pane" id="separacao-pacotes-link" title="Separação de Pacotes"><i class="fas fa-layer-group"></i> <span>Separação de Pacotes</span></a>
+        <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
         <a href="/kingForms" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
-        <a href="/kingSelection?v=2026-09-08-no-render" class="nav-link nav-link-by-plan" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection" style="display: none;"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
+        <a href="/kingSelection?v=2026-09-08-no-render" class="nav-link nav-link-by-plan ck-hidden" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
         <a href="/bibliaking" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
         <a href="/kingDocs" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
-        <a href="/recibos-orcamentos" class="nav-link nav-link-by-plan" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos" style="display: none;"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
+        <a href="/recibos-orcamentos" class="nav-link nav-link-by-plan ck-hidden" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
         <a href="#" class="nav-link" data-target="relatorios-pane" title="Relatórios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
         <a href="#" class="nav-link" data-target="compartilhar-pane" title="Compartilhar"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></a>
-        <a href="#" class="nav-link nav-link-by-plan" data-module="branding" data-target="branding-pane" id="branding-link" title="Personalização da Marca" style="display: none;"><i class="fas fa-palette"></i> <span>Personalização da Marca</span></a>
+        <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="branding" data-target="branding-pane" id="branding-link" title="Personalização da Marca"><i class="fas fa-palette"></i> <span>Personalização da Marca</span></a>
     </nav>
     
     <div class="sidebar-footer">
         <div class="footer-section-title">DADOS GERAIS DA CONTA</div>
-        <a href="/admin/" class="nav-link" id="adm-link" style="display: none;"><i class="fas fa-user-shield"></i> <span>ADM</span></a>
-        <a href="/admin-devocionais-365" class="nav-link" id="dev365-admin-link" style="display: none;"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
-        <a href="#" class="nav-link" data-target="personalizar-link-pane" id="personalizar-link-link" style="display: none;" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
+        <a href="/admin/" class="nav-link ck-hidden" id="adm-link"><i class="fas fa-user-shield"></i> <span>ADM</span></a>
+        <a href="/admin-devocionais-365" class="nav-link ck-hidden" id="dev365-admin-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
+        <a href="#" class="nav-link ck-hidden" data-target="personalizar-link-pane" id="personalizar-link-link" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
         <a href="#" class="nav-link" data-target="assinatura-pane" id="assinatura-link"><i class="fas fa-crown"></i> <span>Assinatura</span></a>
-        <a href="business/?only=logo" class="nav-link" id="personalizacao-logo-link" style="display: none;" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
+        <a href="business/?only=logo" class="nav-link ck-hidden" id="personalizacao-logo-link" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
         <a href="#" id="logout-btn" class="nav-link" title="Sair"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a>
     </div>
 </aside>
@@ -198,7 +198,7 @@
             <label>Logomarca na frente do texto (até 3)</label>
             <p class="input-hint" style="margin-top:4px;">A primeira logo aparece logo antes do nome/texto que rola. Você pode adicionar até 3.</p>
             <div id="vitrine-marquee-logos-list" style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;"></div>
-            <input type="file" id="vitrine-marquee-logo-input" accept="image/*" style="display:none;">
+            <input type="file" id="vitrine-marquee-logo-input" accept="image/*" class="ck-hidden">
             <button type="button" id="vitrine-marquee-logo-add" class="btn btn-secondary" style="font-size:0.85rem;"><i class="fas fa-plus"></i> Adicionar logomarca</button>
         </div>
         <div class="input-group" style="margin-top:12px;">
@@ -334,7 +334,7 @@
                             </div>
                         </div>
 
-                        <div class="setting-item" id="bible-visibility-setting" style="display: none;">
+                        <div class="setting-item ck-hidden" id="bible-visibility-setting">
                             <div class="setting-label">
                                 <i class="fas fa-bible"></i>
                                 <span>Bíblia</span>
@@ -348,7 +348,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="setting-item" id="bible-verse-position-setting" style="display: none;">
+                        <div class="setting-item ck-hidden" id="bible-verse-position-setting">
                             <div class="setting-label">
                                 <i class="fas fa-arrows-alt-v"></i>
                                 <span>Palavra do Dia — posição</span>
@@ -362,7 +362,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="setting-item" id="bible-verse-size-setting" style="display: none;">
+                        <div class="setting-item ck-hidden" id="bible-verse-size-setting">
                             <div class="setting-label">
                                 <i class="fas fa-text-height"></i>
                                 <span>Palavra do Dia — tamanho</span>
@@ -421,7 +421,7 @@
                             </div>
                         </div>
                         
-                            <div id="background-image-container" style="display: none;">
+                            <div id="background-image-container" class="ck-hidden">
                                 <p class="input-hint" style="margin:0 0 10px;font-size:0.82rem;line-height:1.45;color:#9ca3af;">
                                     <strong style="color:#facc15">Antes de escolher o ficheiro:</strong> use foto grande em <strong>16:9</strong> (<strong>1920×1080</strong> px).
                                     No celular a foto é cortada nas laterais — o que importa (logo, rosto, texto) deve ficar na <strong>faixa central</strong>.
@@ -439,7 +439,7 @@
                                     </div>
                                     <div class="setting-control">
                                         <div id="background-upload-area" class="image-upload-area small-upload">
-                                            <input type="file" id="background-file-input" accept="image/*" style="display: none;">
+                                            <input type="file" id="background-file-input" accept="image/*" class="ck-hidden">
                                             <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik03NSA0MEM4NS4yODQzIDQwIDkzLjMzMzMgNDguMDQ5IDkzLjMzMzMgNTguMzMzM0M5My4zMzMzIDY4LjYxNzcgODUuMjg0MyA3Ni42NjY3IDc1IDc2LjY2NjdDNjQuNzE1NyA3Ni42NjY3IDU2LjY2NjcgNjguNjE3NyA1Ni42NjY3IDU4LjMzMzNDNTYuNjY2NyA0OC4wNDkgNjQuNzE1NyA0MCA3NSA0MFoiIGZpbGw9IiM2NjY2NjYiLz4KPHBhdGggZD0iTTQ1IDExMEM1NS4yODQzIDExMCA2My4zMzMzIDExOC4wNDkgNjMuMzMzMyAxMjguMzMzQzYzLjMzMzMgMTM4LjYxOCA1NS4yODQzIDE0Ni42NjcgNDUgMTQ2LjY2N0MzNC43MTU3IDE0Ni42NjcgMjYuNjY2NyAxMzguNjE4IDI2LjY2NjcgMTI4LjMzM0MyNi42NjY3IDExOC4wNDkgMzQuNzE1NyAxMTAgNDUgMTEwWiIgZmlsbD0iIzY2NjY2NiIvPgo8cGF0aCBkPSJNMTA1IDExMEMxMTUuMjg0IDExMCAxMjMuMzMzIDExOC4wNDkgMTIzLjMzMyAxMjguMzMzQzEyMy4zMzMgMTM4LjYxOCAxMTUuMjg0IDE0Ni42NjcgMTA1IDE0Ni42NjdDOTQuNzE1NyAxNDYuNjY3IDg2LjY2NjcgMTM4LjYxOCA4Ni42NjY3IDEyOC4zMzNDODYuNjY2NyAxMTguMDQ5IDk0LjcxNTcgMTEwIDEwNSAxMTBaIiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9Ijc1IiB5PSIxMzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiI+SW1hZ2VtPC90ZXh0Pgo8L3N2Zz4K" id="background-image-preview" class="banner-preview-thumb" alt="Preview Fundo"/>
                                             <div class="image-upload-text">
                                                 <p>Alterar Imagem</p>
@@ -616,7 +616,7 @@
             </main>
             
             <!-- Páginas adicionais que aparecem nas imagens -->
-            <main id="eventos-pane" class="main-content" data-pane style="display: none;">
+            <main id="eventos-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1>Últimos eventos</h1>
                 </header>
@@ -624,7 +624,7 @@
             </main>
             
 <!-- Página de Finanças -->
-            <main id="finance-pane" class="main-content" data-pane style="display: none;">
+            <main id="finance-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-wallet"></i> Gestão Financeira</h1>
                     <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
@@ -639,7 +639,7 @@
             </main>
             
             <!-- Página King Forms (mesma página, iframe) -->
-            <main id="king-forms-pane" class="main-content" data-pane style="display: none;">
+            <main id="king-forms-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-file-signature"></i> King Forms</h1>
                     <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
@@ -758,7 +758,7 @@
             </main>
             
             <!-- Página de Personalização da Marca -->
-            <main id="branding-pane" class="main-content" data-pane style="display: none;">
+            <main id="branding-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-palette"></i> Personalização da Marca</h1>
                     <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
@@ -826,7 +826,7 @@
             </main>
             
             <!-- Página de Separação de Pacotes (ADM) -->
-            <main id="separacao-pacotes-pane" class="main-content" data-pane style="display: none;">
+            <main id="separacao-pacotes-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1>Separação de Pacotes</h1>
                 </header>
@@ -863,7 +863,7 @@
                         </div>
                         
                         <div class="module-availability-actions" style="margin-top: 24px;">
-                            <button id="save-module-availability-btn" class="btn btn-primary" style="display: none;">
+                            <button id="save-module-availability-btn" class="btn btn-primary ck-hidden">
                                 <i class="fas fa-save"></i> Salvar Alterações
                             </button>
                         </div>
@@ -871,7 +871,7 @@
                 </div>
                 
                 <!-- Aba de Planos Individuais por Usuário -->
-                <div id="tab-content-individual" class="tab-content-separation" style="display: none;">
+                <div id="tab-content-individual" class="tab-content-separation ck-hidden">
                     <div class="individual-plans-container">
                         <div style="margin-bottom: 24px;">
                             <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
@@ -889,7 +889,7 @@
                 </div>
                 
                 <!-- Aba de Quantidade de Links -->
-                <div id="tab-content-link-limits" class="tab-content-separation" style="display: none;">
+                <div id="tab-content-link-limits" class="tab-content-separation ck-hidden">
                     <div class="link-limits-container">
                         <div class="link-limits-header">
                             <p style="color: var(--text-secondary, #888888); margin-bottom: 20px;">
@@ -914,10 +914,10 @@
                         </div>
                         
                         <div class="link-limits-actions" style="margin-top: 24px; display: flex; gap: 12px;">
-                            <button id="save-link-limits-btn" class="btn btn-primary" style="display: none;">
+                            <button id="save-link-limits-btn" class="btn btn-primary ck-hidden">
                                 <i class="fas fa-save"></i> Salvar Alterações
                             </button>
-                            <button id="reset-link-limits-btn" class="btn btn-secondary" onclick="resetLinkLimits()" style="display: none;">
+                            <button id="reset-link-limits-btn" class="btn btn-secondary ck-hidden" onclick="resetLinkLimits()">
                                 <i class="fas fa-undo"></i> Resetar para Ilimitado
                             </button>
                         </div>
@@ -926,7 +926,7 @@
             </main>
             
             <!-- Página de Assinatura -->
-            <main id="assinatura-pane" class="main-content" data-pane style="display: none;">
+            <main id="assinatura-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1>Assinatura</h1>
                 </header>
@@ -949,7 +949,7 @@
                     </div>
                     
                     <!-- Seção de Edição (apenas ADM) -->
-                    <div id="subscription-admin-section" style="display: none;">
+                    <div id="subscription-admin-section" class="ck-hidden">
                         <div class="subscription-admin-card">
                             <h2><i class="fas fa-edit"></i> Editar Planos (ADM)</h2>
                             <button id="edit-plans-btn" class="btn btn-primary">
@@ -964,7 +964,7 @@
             </main>
 
             <!-- Página de Personalizar Link do Site (APENAS ADM PRINCIPAL) -->
-            <main id="personalizar-link-pane" class="main-content" data-pane style="display: none;">
+            <main id="personalizar-link-pane" class="main-content ck-hidden" data-pane>
                 <header class="content-header">
                     <h1><i class="fas fa-link"></i> Personalizar Link do Site</h1>
                     <p style="color: var(--text-secondary, #888888); margin-top: 10px;">
@@ -1233,7 +1233,7 @@
                     </button>
                 </div>
                 
-                <div id="tutorial-steps" class="tutorial-steps" style="display: none;">
+                <div id="tutorial-steps" class="tutorial-steps ck-hidden">
                     <div class="tutorial-progress">
                         <div class="progress-bar">
                             <div id="tutorial-progress-bar" class="progress-fill"></div>
@@ -1246,13 +1246,13 @@
                     </div>
                     
                     <div class="tutorial-actions">
-                        <button class="btn btn-secondary" id="tutorial-prev-btn" style="display: none;">
+                        <button class="btn btn-secondary ck-hidden" id="tutorial-prev-btn">
                             <i class="fas fa-arrow-left"></i> Anterior
                         </button>
                         <button class="btn btn-primary" id="tutorial-next-btn">
                             Próximo <i class="fas fa-arrow-right"></i>
                         </button>
-                        <button class="btn btn-success" id="tutorial-complete-btn" style="display: none;">
+                        <button class="btn btn-success ck-hidden" id="tutorial-complete-btn">
                             <i class="fas fa-check"></i> Concluir Tutorial
                         </button>
                     </div>

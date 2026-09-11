@@ -1,0 +1,17 @@
+/* Utilitários comuns — reduzir style="" repetidos */
+.ck-hidden { display: none; }
+.ck-flex { display: flex; }
+.ck-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ck-flex-col { display: flex; flex-direction: column; }
+.ck-w-full { width: 100%; }
+.ck-m-0 { margin: 0; }
+.ck-text-center { text-align: center; }
+.ck-text-gold { color: #FFC700; }
+.ck-rounded-8 { border-radius: 8px; }
+.ck-rounded-12 { border-radius: 12px; }
+.ck-bg-white { background: #fff; }
+.ck-opacity-0 { opacity: 0; }

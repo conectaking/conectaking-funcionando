@@ -439,7 +439,7 @@
 </div>
 
 {{-- Modal Wi‑Fi --}}
-<div id="wifi-qrcode-modal" class="wifi-modal-overlay" aria-hidden="true" style="display:none;">
+<div id="wifi-qrcode-modal" class="wifi-modal-overlay ck-hidden" aria-hidden="true">
     <div class="wifi-modal-content" style="background:#111;color:#fff;max-width:360px;margin:10vh auto;padding:20px;border-radius:16px;position:relative;">
         <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar" style="position:absolute;right:12px;top:8px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;">&times;</button>
         <h4 id="wifi-modal-title">Conectar ao Wi‑Fi</h4>

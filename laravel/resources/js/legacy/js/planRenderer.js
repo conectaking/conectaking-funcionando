@@ -620,7 +620,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
             
             // Adicionar event listeners
             monthlyBtn.addEventListener('click', () => {
-                console.log('Toggle Mensal clicado');
                 monthlyBtn.style.background = 'var(--yellow-primary, #FFC700)';
                 monthlyBtn.style.color = 'var(--black-absolute, #0B0B0B)';
                 annualBtn.style.background = 'transparent';
@@ -644,7 +643,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
                     container = document.getElementById('plans-container');
                     if (container) {
                         window.plansContainer = container;
-                        console.log('Container encontrado pelo ID padrão');
                     }
                 }
                 
@@ -653,16 +651,8 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
                     plans = window.loadedPlansWithModules;
                 }
                 
-                console.log('Dados disponíveis:', {
-                    plans: plans?.length || 0,
-                    container: container ? 'encontrado' : 'não encontrado',
-                    containerId: container?.id,
-                    containerExists: !!container,
-                    firstPlan: plans?.[0]?.plan_name || 'N/A'
-                });
                 
                 if (plans && plans.length > 0 && container) {
-                    console.log('Renderizando planos mensais...');
                     renderPlansWithMode(plans, container, 'monthly');
                 } else {
                     console.error('O Dados ou container não disponíveis!', {
@@ -677,7 +667,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
                         console.error('O Container não encontrado! Tentando recarregar planos...');
                         // Tentar recarregar se a função estiver disponível
                         if (typeof loadPlans === 'function') {
-                            console.log('Y"" Tentando recarregar planos...');
                             loadPlans();
                         }
                     }
@@ -685,7 +674,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
             });
             
             annualBtn.addEventListener('click', () => {
-                console.log('Toggle Anual clicado');
                 annualBtn.style.background = 'var(--yellow-primary, #FFC700)';
                 annualBtn.style.color = 'var(--black-absolute, #0B0B0B)';
                 monthlyBtn.style.background = 'transparent';
@@ -709,7 +697,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
                     container = document.getElementById('plans-container');
                     if (container) {
                         window.plansContainer = container;
-                        console.log('Container encontrado pelo ID padrão');
                     }
                 }
                 
@@ -718,16 +705,8 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
                     plans = window.loadedPlansWithModules;
                 }
                 
-                console.log('Dados disponíveis:', {
-                    plans: plans?.length || 0,
-                    container: container ? 'encontrado' : 'não encontrado',
-                    containerId: container?.id,
-                    containerExists: !!container,
-                    firstPlan: plans?.[0]?.plan_name || 'N/A'
-                });
                 
                 if (plans && plans.length > 0 && container) {
-                    console.log('Renderizando planos anuais...');
                     renderPlansWithMode(plans, container, 'annual');
                 } else {
                     console.error('O Dados ou container não disponíveis!', {
@@ -742,7 +721,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
                         console.error('O Container não encontrado! Tentando recarregar planos...');
                         // Tentar recarregar se a função estiver disponível
                         if (typeof loadPlans === 'function') {
-                            console.log('Y"" Tentando recarregar planos...');
                             loadPlans();
                         }
                     }
@@ -772,7 +750,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
         }
         
         // Renderizar planos com o modo atual
-        console.log('YZ Renderizando planos iniciais com modo:', window.currentPricingMode);
         renderPlansWithMode(plansWithModules, container, window.currentPricingMode);
     } else {
         // Dashboard: adicionar toggle também
@@ -857,7 +834,6 @@ async function renderPlansShared(plans, containerId, isDashboard = false) {
  */
 function renderPlansWithMode(plansWithModules, container, mode = 'monthly') {
     try {
-        console.log('Y"" Renderizando planos com modo:', mode, 'Planos:', plansWithModules?.length);
         
         if (!container) {
             console.error('O Container não encontrado!');
@@ -870,7 +846,6 @@ function renderPlansWithMode(plansWithModules, container, mode = 'monthly') {
             return;
         }
         
-        console.log('YZ Iniciando renderização de', plansWithModules.length, 'planos no modo', mode);
         
         const html = plansWithModules.map((plan, index) => {
             try {
@@ -908,7 +883,6 @@ function renderPlansWithMode(plansWithModules, container, mode = 'monthly') {
             }
         }).filter(html => html !== '' && html !== null && html !== undefined).join('');
         
-        console.log('HTML gerado:', html.length, 'caracteres');
         
         if (!html || html.trim() === '') {
             console.error('O HTML vazio gerado!', {
@@ -932,7 +906,6 @@ function renderPlansWithMode(plansWithModules, container, mode = 'monthly') {
         }
         
         container.innerHTML = html;
-        console.log('Planos renderizados com sucesso:', plansWithModules.length, 'planos no modo', mode);
         
         // Re-aplicar observador de interseção se necessário
         if (typeof IntersectionObserver !== 'undefined') {

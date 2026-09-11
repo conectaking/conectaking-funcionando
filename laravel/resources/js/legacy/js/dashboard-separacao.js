@@ -233,7 +233,6 @@ window.handleModuleAvailabilityChange = async function (moduleType, planCode, is
         }
 
         // Feedback visual opcional (pode remover se não quiser)
-        console.log(`Módulo ${moduleType} para plano ${planCode} salvo automaticamente`);
         // Atualizar visibilidade dos botões do menu (Gestão Financeira, Contratos, Agenda) sem recarregar a página
         try {
             const statusRes = await env.safeFetch(`${env.API_URL}/api/account/status`, { headers: env.HEADERS_AUTH });
@@ -672,8 +671,6 @@ window.saveUserIndividualModules = async function (userId) {
             .filter(cb => cb.checked)
             .map(cb => cb.dataset.module);
 
-        console.log('[saveUserIndividualModules] Módulos selecionados:', selectedModules);
-        console.log('[saveUserIndividualModules] Total de checkboxes:', checkboxes.length);
 
         let maxFinanceProfiles = 1;
         const financeProfilesEl = document.getElementById('user-modules-finance-profiles');

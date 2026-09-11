@@ -2,6 +2,7 @@
  * Fontes self-host (substitui Google Fonts CDN).
  * Pesos usados nas Blades do ConectaKing.
  */
+@import './ck-utils.css';
 @import '@fontsource/inter/400.css';
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';

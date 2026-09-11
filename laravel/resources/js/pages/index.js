@@ -10,13 +10,11 @@ import '@css/pages/index-extra.css';
             const protocol = window.location.protocol;
             const hostname = window.location.hostname;
             API_URL = `${protocol}//${hostname}:8080`;
-            console.log('Servidor estático local detectado. Usando Laravel/FrankenPHP na porta 8080.');
         }
         
         // Em produção / Docker: mesma origem (já em location.origin)
         API_URL = String(API_URL || window.location.origin).replace(/\/$/, '');
         
-        console.log('API URL configurada:', API_URL);
         
         // Tornar API_URL disponível globalmente para planRenderer.js
         window.API_URL = API_URL;
@@ -97,7 +95,6 @@ import '@css/pages/index-extra.css';
         // Carregar planos - mesma lógica do dashboard
         async function loadPlans() {
             try {
-                console.log(' Tentando carregar planos de:', `${API_URL}/api/subscription/plans-public`);
                 
                 // Criar timeout manual para compatibilidade
                 const controller = new AbortController();
@@ -115,7 +112,6 @@ import '@css/pages/index-extra.css';
                 
                 clearTimeout(timeoutId);
                 
-                console.log(' Resposta recebida:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -128,7 +124,6 @@ import '@css/pages/index-extra.css';
                 if (data.success && data.plans && data.plans.length > 0) {
                     // Filtrar planos: excluir King Essential (king_base)
                     const filteredPlans = data.plans.filter(plan => plan.plan_code !== 'king_base');
-                    console.log(` Planos filtrados: ${filteredPlans.length} planos (excludo: King Essential)`);
                     
                     // Usar função compartilhada se disponível (garante sincronizao com dashboard)
                     if (typeof window.renderPlansShared === 'function') {

@@ -6,7 +6,6 @@
 (function() {
     'use strict';
     
-    console.log('Y"- Carregando integração KingForms - Lista de Convidados...');
     
     const API_URL = (window.API_URL || window.API_BASE || (window.API_CONFIG && window.API_CONFIG.baseURL) || window.location.origin || 'https://www.conectaking.com.br').replace(/\/$/, '');
     
@@ -37,7 +36,6 @@
             // Verificar se formPageEdit.js carregou (verificar se funções essenciais existem)
             if (typeof window.loadFormData === 'function' || typeof window.currentItemId !== 'undefined') {
                 clearInterval(interval);
-                console.log('formPageEdit.js detectado!');
                 callback();
             } else if (attempts >= maxAttempts) {
                 clearInterval(interval);
@@ -51,11 +49,9 @@
     async function loadGuestListForm() {
         const itemId = getItemIdFromUrl();
         if (!itemId) {
-            console.log('Nenhum itemId na URL - modo de listagem geral');
             return;
         }
         
-        console.log('Carregando lista de convidados:', itemId);
         
         try {
             const response = await fetch(`${API_URL}/api/guest-lists/${itemId}`, {
@@ -65,7 +61,6 @@
             
             if (response.ok) {
                 const guestListData = await response.json();
-                console.log('Dados da lista de convidados carregados:', guestListData);
                 
                 // Ativar modo lista de convidados
                 window.currentFormIsGuestList = true;
@@ -82,9 +77,7 @@
                     guestListInput.value = 'true';
                 }
                 
-                console.log('Modo Lista de Convidados ativado! ID:', itemId);
             } else if (response.status === 404) {
-                console.log('Não há lista de convidados associada a este formulário');
                 window.currentFormIsGuestList = false;
             } else {
                 throw new Error(`Erro ${response.status}: ${response.statusText}`);
@@ -106,13 +99,11 @@
             
             if (saveBtn) {
                 clearInterval(interval);
-                console.log('Botão de salvar encontrado!');
                 
                 // Verificar se já tem listener (para não adicionar múltiplos)
                 if (!saveBtn.dataset.listenerAdded) {
                     saveBtn.dataset.listenerAdded = 'true';
                     // O listener já deve estar no formPageEdit.js
-                    console.log('Botão de salvar configurado para modo lista de convidados');
                 }
             } else if (attempts >= maxAttempts) {
                 clearInterval(interval);
@@ -123,7 +114,6 @@
     
     // Inicializar quando o DOM estiver pronto
     function init() {
-        console.log('Y"" Inicializando integração KingForms - Lista de Convidados...');
         
         // Aguardar formPageEdit.js carregar primeiro
         waitForFormPageEdit(() => {

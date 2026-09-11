@@ -31,6 +31,7 @@
         "jspdf": "^2.5.1",
         "leaflet": "^1.9.4",
         "material-icons": "^1.13.14",
+        "pdf-lib": "^1.17.1",
         "qrcode": "^1.5.1",
         "sortablejs": "^1.15.7"
     }

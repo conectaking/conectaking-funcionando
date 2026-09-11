@@ -1,8 +1,12 @@
-/** kingDocs — Vite entry (extracted inline, icons sanitized) */
+import * as PDFLibNS from 'pdf-lib';
 import '../vendor-globals.js';
 import '@css/pages/kingDocs.css';
 import '@mod/js/ck-auth-gate.js';
 import '@mod/js/ck-csrf.js';
+
+if (typeof window !== 'undefined' && !window.PDFLib) {
+  window.PDFLib = PDFLibNS;
+}
 
 (function () {
       try {
@@ -687,16 +691,9 @@ import '@mod/js/ck-csrf.js';
     if (waSep) waSep.disabled = !extraSep.length;
   }
   function ensurePdfLib() {
-    return new Promise(function (resolve, reject) {
-      if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) return resolve(PDFLib);
-      var s = document.createElement('script');
-      s.src = '/vendor/pdf-lib/pdf-lib.min.js';
-      s.onload = function () {
-        if (typeof PDFLib !== 'undefined' && PDFLib.PDFDocument) resolve(PDFLib);
-        else reject(new Error('pdf-lib'));
-      };
-      s.onerror = function () { reject(new Error('pdf-lib')); };
-      document.head.appendChild(s);
+    return Promise.resolve(window.PDFLib || PDFLibNS).then(function (lib) {
+      if (!lib || !lib.PDFDocument) throw new Error('pdf-lib');
+      return lib;
     });
   }
   async function appendFileToUnifiedPdf(pdfDoc, PDFLibMod, f) {

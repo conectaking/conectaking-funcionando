@@ -1,3 +1,4 @@
+import '@css/pages/resetar-senha.css';
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('form');
   if (!form) return;

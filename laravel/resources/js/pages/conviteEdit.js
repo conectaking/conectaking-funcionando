@@ -1,5 +1,6 @@
 /** conviteEdit — Vite entry (extracted inline) */
 import '@mod/js/ck-auth-gate.js';
+import '@css/pages/conviteEdit.css';
 import '@mod/js/ck-csrf.js';
 
 (async function() {

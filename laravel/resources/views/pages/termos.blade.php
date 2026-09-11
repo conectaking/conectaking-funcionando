@@ -6,84 +6,8 @@
     <title>Termos de Serviço - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f5f5f5;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #2563eb;
-            margin-bottom: 10px;
-            font-size: 2rem;
-        }
-        h2 {
-            color: #1e40af;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-        }
-        p {
-            margin-bottom: 15px;
-            text-align: justify;
-        }
-        ul {
-            margin-left: 30px;
-            margin-bottom: 15px;
-        }
-        li {
-            margin-bottom: 8px;
-        }
-        .last-updated {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e5e5;
-        }
-        .contact {
-            background: #f0f9ff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 30px;
-        }
-        .contact strong {
-            color: #1e40af;
-        }
-        .warning {
-            background: #fef3c7;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #f59e0b;
-            margin: 20px 0;
-        }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-    </style>
-    @vite(['resources/css/fontawesome.css'])
+    
+    @vite(['resources/css/fontawesome.css', 'resources/css/pub/pages/termos.css'])
 </head>
 <body>
     <div class="container">

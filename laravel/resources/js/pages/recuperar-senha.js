@@ -1,3 +1,4 @@
+import '@css/pages/recuperar-senha.css';
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('form');
   const msg = document.getElementById('msg');

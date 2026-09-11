@@ -1,0 +1,13 @@
+/* from resources/views/pages/kingSelectionReview.blade.php */
+
+.ks-img-loading{filter: blur(18px); transform: scale(1.03); opacity:.85}
+    .ks-viewer{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.72);z-index:80}
+    .ks-viewer.active{display:flex}
+    .ks-viewer-card{width:min(1000px, 96vw);background:#0b0f1a;border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden}
+    .ks-viewer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:rgba(0,0,0,.35);border-bottom:1px solid rgba(255,255,255,.10)}
+    .ks-viewer-head .btn{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;border-radius:10px;padding:9px 10px;font-weight:900}
+    .ks-viewer-head .btn:hover{background:rgba(255,255,255,.12)}
+    .ks-viewer-img{width:100%;height:min(76vh, 820px);object-fit:contain;display:block;background:#000}
+    .ks-fab{position:absolute;inset:10px 10px auto auto;z-index:10}
+    .ks-checkbtn{width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.92);display:inline-flex;align-items:center;justify-content:center}
+    .ks-thank-you-card{box-shadow:0 24px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08)}

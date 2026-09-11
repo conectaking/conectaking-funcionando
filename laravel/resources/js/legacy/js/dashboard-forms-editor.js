@@ -225,7 +225,6 @@ function addQuestion(itemId) {
 // Editar pergunta
 function editQuestion(itemId, index, field) {
     // Similar ao addQuestion, mas preenchendo os campos
-    console.log('Editar pergunta:', index, field);
     // Implementação similar ao addQuestion, mas com dados pré-preenchidos
 }
 
@@ -345,13 +344,8 @@ document.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-edit-form-page');
         const itemId = btn.dataset.itemId || btn.dataset.id;
 
-        console.log('[DASHBOARD] Botão "Abrir Página de Edição Completa" clicado:', {
-            itemId,
-            dataset: btn.dataset
-        });
 
         if (itemId) {
-            console.log('[DASHBOARD] Redirecionando para /formPageEdit com itemId:', itemId);
             window.location.href = `/formPageEdit?itemId=${itemId}`;
         } else {
             console.error('[DASHBOARD] itemId não encontrado no botão btn-edit-form-page');

@@ -2,24 +2,19 @@
 
 ## Unificado
 - **JS:** `laravel/resources/js/legacy/` via `@mod`
-- **CSS de página:** `laravel/resources/css/pub/` via `@css` (incl. `pages/*.css`)
-- **Fontes:** `resources/css/fonts.css` (`@fontsource` + material-icons)
-- **Ícones:** `resources/css/fontawesome.css` (`@fortawesome/fontawesome-free` via Vite) — sem `/vendor/fontawesome` nas Blades
-- **Vendor npm:** Chart/Leaflet/Sortable/Cropper/jsPDF/html2pdf/html5-qrcode/QR → `vendor-globals.js`
-- **Cartão:** entries `cartao-*.js` + boots `__CK_BOOT_*`; CSS estático em `pages/cartao-*.css`; tokens dinâmicos ficam em `<style>:root{…}</style>` mínimo
-- **CSP:** `script-src 'self' 'nonce-…'`. `style-src` ainda `'unsafe-inline'` (`style=""` + `:root` dinâmico)
+- **CSS de página:** `laravel/resources/css/pub/` via `@css` (`pages/*.css`)
+- **Fontes / utils:** `fonts.css` + `ck-utils.css` (`.ck-hidden`, `.ck-flex-center`, …)
+- **Ícones:** `fontawesome.css` (`@fortawesome/fontawesome-free`)
+- **Vendor npm:** Chart, Leaflet, Sortable, Cropper, jsPDF, html2pdf, html5-qrcode, QR, **pdf-lib** (kingDocs)
+- **Cartão:** entries + boots; CSS estático em ficheiros; `:root` dinâmico mínimo
+- **CSP:** `script-src` com nonce; `style-src` ainda `'unsafe-inline'` (restam `style=""`)
 
-## Exceções em `public/`
-- `config.js` (+ alias `/api-config.js`)
-- `sw.js`, `cache-buster.js`, `main.js`
-- `js/recibos-modulo-nav.js`
-- `vendor/pdf-lib` (+ fallbacks opcionais; Font Awesome vendor pode permanecer como backup)
-
-## Scripts
-- `extract-blade-styles.mjs`, `extract-cartao-split-styles.mjs`, `split-dynamic-cartao-styles.mjs`, `wire-page-css.mjs`
+## Exceções `public/`
+- `config.js`, `sw.js`, `cache-buster.js`, `main.js`, `js/recibos-modulo-nav.js`
+- `vendor/*` = fallback legado (FA/chart/etc. já via npm; pdf-lib também via npm agora)
 
 ## Residual
-- Atributos `style=""` em massa (dashboard/admin/index)
-- `vendor/pdf-lib` ainda lazy em kingDocs
+- Muitos `style=""` em dashboard/admin/index (parcialmente migrados para `.ck-hidden`)
+- Endurecer CSP `style-src` só depois de zerar inline styles
 
 **Regra:** código novo só em `laravel/resources/{js,css}` + Vite.

@@ -40,13 +40,6 @@
             }
         } catch (e) {}
 
-        console.log('[applyModulesVisibility] Aplicando visibilidade dos módulos:', {
-            hasFinance: user.hasFinance,
-            hasModoEmpresa: user.hasModoEmpresa,
-            hasBranding: user.hasBranding,
-            hasKingSelection: user.hasKingSelection,
-            hasDigitalForm: user.hasDigitalForm
-        });
 
         /** IDs estveis do dashboard - evita fallback por texto quando o HTML ainda não tem data-module. */
         var explicitSidebarIds = {
@@ -101,7 +94,6 @@
             }
             /* Não usar busca por texto: o seletor "aside a.nav-link" apanha Editar/Compartilhar e falsos positivos. */
             
-            console.log('[applyModulesVisibility] Módulo ' + item.module + ': show=' + show + ', encontrados ' + arr.length + ' elementos');
             
             arr.forEach(function (el) {
                 var target = resolveMenuRow(el);
@@ -114,11 +106,10 @@
                     target.style.display = '';
                     target.style.visibility = '';
                     target.removeAttribute('hidden');
-                    target.classList.remove('hidden', 'd-none');
-                    console.log('[applyModulesVisibility] ? Mostrando:', item.module, target);
+                    target.classList.remove('hidden', 'd-none', 'ck-hidden');
                 } else {
-                    target.style.display = 'none';
-                    console.log('[applyModulesVisibility] ? Ocultando:', item.module, target);
+                    target.style.display = '';
+                    target.classList.add('ck-hidden');
                 }
             });
         });
@@ -141,7 +132,7 @@
             if (nav) {
                 nav.style.display = '';
                 nav.style.visibility = '';
-                nav.classList.remove('hidden', 'd-none');
+                nav.classList.remove('hidden', 'd-none', 'ck-hidden');
             }
         } catch (e) {}
         sel.forEach(function (s) {
@@ -151,7 +142,7 @@
                 el.style.display = '';
                 el.style.visibility = '';
                 el.removeAttribute('hidden');
-                el.classList.remove('hidden', 'd-none');
+                el.classList.remove('hidden', 'd-none', 'ck-hidden');
             } catch (e2) {}
         });
     }
