@@ -20,7 +20,7 @@
     <p>{{ $message ?? 'Resposta enviada com sucesso!' }}</p>
 
     @if(!empty($showQr) && !empty($qrToken))
-        <p style="margin-top:20px;font-weight:600;">Seu QR Code de check-in</p>
+        <p class="ck-fs-4edd79">Seu QR Code de check-in</p>
         @if(!empty($guestName))
             <p class="meta">{{ $guestName }}</p>
         @endif

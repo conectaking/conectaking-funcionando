@@ -10,7 +10,7 @@
         <header class="doc-header">
             <div class="doc-header-left">
                 <img id="doc-logo-header" class="doc-header-logo ck-hidden" src="" alt="Logo">
-                <span id="doc-logo-placeholder" style="font-size: 12px; opacity: 0.9;">Sua logo</span>
+                <span class="ck-dp-a57fae" id="doc-logo-placeholder">Sua logo</span>
             </div>
             <div class="doc-header-right">
                 <p class="doc-header-titulo" id="doc-titulo">OR?AMENTO</p>
@@ -91,8 +91,8 @@
         </div>
         <div class="doc-footer">Obrigado pela preferência.</div>
     </div>
-    <div class="no-print doc-buttons-bar" style="position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 20px; text-align: center; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; background: #e8e8e8; border-top: 2px solid #1e3a5f; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.12);">
-        <button type="button" id="btn-exportar-pdf" class="px-5 py-2.5 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="display: inline-flex; background: #0d9488; border: 2px solid #0f766e;">
+    <div class="no-print doc-buttons-bar ck-dp-ec5ddb">
+        <button type="button" id="btn-exportar-pdf" class="px-5 py-2.5 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity ck-dp-fd4114">
             ? Baixar PDF (como está na tela)
         </button>
         <button type="button" id="btn-imprimir" class="px-5 py-2.5 rounded-lg bg-slate-600 text-white font-medium hover:opacity-90 transition-opacity">

@@ -13,9 +13,9 @@
     <div id="err" class="err"></div>
     <div id="ok" class="ok"></div>
 
-    <p style="margin-bottom:20px">
+    <p class="ck-ce-49f14f">
       <button type="button" class="btn btn-primary" id="btn-save"><i class="fas fa-save"></i> Salvar convite</button>
-      <a href="/dashboard" class="btn btn-secondary" style="margin-left:10px;text-decoration:none"><i class="fas fa-arrow-left"></i> Voltar</a>
+      <a href="/dashboard" class="btn btn-secondary ck-ce-624997"><i class="fas fa-arrow-left"></i> Voltar</a>
     </p>
 
     <div class="card">
@@ -128,7 +128,7 @@
       <p class="stats">Visualizações: <strong id="view_count">0</strong> (últimos 7 dias: <strong id="views_7">0</strong>)</p>
       <p class="ck-mt-10">
         <button type="button" class="btn btn-secondary" id="btn-preview"><i class="fas fa-link"></i> Gerar link de preview</button>
-        <button type="button" class="btn btn-secondary" id="btn-ver-preview" style="margin-left:8px" title="Atualiza o preview ao lado"><i class="fas fa-eye"></i> Ver preview</button>
+        <button type="button" class="btn btn-secondary ck-ce-5dd2a6" id="btn-ver-preview" title="Atualiza o preview ao lado"><i class="fas fa-eye"></i> Ver preview</button>
       </p>
       <p class="preview-link" id="preview_url"></p>
     </div>

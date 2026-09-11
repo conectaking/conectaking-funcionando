@@ -29,17 +29,17 @@
             @endif
         </div>
     @else
-        <div class="card"><p style="opacity:.7">Sem capítulos definidos para este dia.</p></div>
+        <div class="card"><p class="ck-bpl-2a1f67">Sem capítulos definidos para este dia.</p></div>
     @endif
 
     @if(!empty($plan['devocional']) && (!empty($plan['devocional']['titulo']) || !empty($plan['devocional']['reflexao'])))
         <div class="card">
             <h2>Devocional do dia</h2>
             @if(!empty($plan['devocional']['titulo']))
-                <div style="font-weight:600;margin-bottom:8px">{{ $plan['devocional']['titulo'] }}</div>
+                <div class="ck-bpl-d77151">{{ $plan['devocional']['titulo'] }}</div>
             @endif
             @if(!empty($plan['devocional']['versiculo_ref']))
-                <div style="color:#FFC700;margin-bottom:8px;font-family:system-ui,sans-serif;font-size:.9rem">{{ $plan['devocional']['versiculo_ref'] }}</div>
+                <div class="ck-bpl-0b3f1e">{{ $plan['devocional']['versiculo_ref'] }}</div>
             @endif
             @if(!empty($plan['devocional']['reflexao']))
                 <div class="body">{{ \Illuminate\Support\Str::limit($plan['devocional']['reflexao'], 400) }}</div>

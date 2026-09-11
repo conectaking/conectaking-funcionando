@@ -38,3 +38,6 @@ button:disabled { opacity: .6; cursor: wait; }
     border: 1px solid rgba(255,255,255,.1);
 }
 .preview h2 { color: var(--primary); margin: 0 0 8px; }
+
+/* auto-extracted from resources/views/cartao/guest-customize.blade.php */
+.ck-gcu-8a359a { margin-top:16px; }

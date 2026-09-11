@@ -14,7 +14,7 @@
         <div class="page-header">
             <div class="header-top">
                 <div class="header-title">
-                    <i class="fas fa-users" style="font-size: 2rem; color: #FFC700;"></i>
+                    <i class="fas fa-users ck-rl-0eebb9"></i>
                     <h1 id="page-title">Confirmação de Check-in</h1>
                 </div>
                 <a href="#" id="btn-voltar" class="btn-voltar" onclick="event.preventDefault(); return false;">
@@ -29,7 +29,7 @@
         
         <div class="content-section">
             <div id="loading" class="loading">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 16px;"></i>
+                <i class="fas fa-spinner fa-spin ck-rl-11b181"></i>
                 <div>Carregando dados...</div>
             </div>
             
@@ -58,15 +58,15 @@
                             </p>
                             
                             <!-- Botão Criar Múltiplos Links -->
-                            <button onclick="showCreateMultipleCadastroLinksModal()" 
-                                    style="margin-top: 20px; width: 100%; padding: 14px 24px; background: #000; border: 2px solid #43e97b; border-radius: 10px; color: #43e97b; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; box-sizing: border-box;"
+                            <button class="ck-rl-543f30" onclick="showCreateMultipleCadastroLinksModal()" 
+                                   
                                     onmouseover="this.style.background='#43e97b'; this.style.color='#000';"
                                     onmouseout="this.style.background='#000'; this.style.color='#43e97b';">
                                 <i class="fas fa-plus-circle"></i> Criar Novo Link Personalizado
                             </button>
                             
                             <!-- Lista de Links Personalizados Criados -->
-                            <div id="cadastro-links-list" style="margin-top: 20px;">
+                            <div class="ck-rl-5fa693" id="cadastro-links-list">
                                 <!-- Links personalizados serão inseridos aqui via JavaScript -->
                             </div>
                         </div>
@@ -95,34 +95,34 @@
                             </div>
                             
                             <!-- Link Personalizado (visível apenas quando slug estiver ativo) -->
-                            <div class="link-card-input-group" id="link-portaria-personalizado-group" style="display: none; margin-bottom: 12px;">
+                            <div class="link-card-input-group ck-rl-56bb4e" id="link-portaria-personalizado-group">
                                 <input type="text" id="link-portaria-personalizado" readonly placeholder="Link personalizado...">
-                                <button class="link-card-btn portaria" onclick="copyLinkToClipboard('link-portaria-personalizado', event)" style="background: linear-gradient(135deg, #FFC700, #FFA500); white-space: normal; word-wrap: break-word; overflow-wrap: break-word;">
+                                <button class="link-card-btn portaria ck-rl-d0e1b8" onclick="copyLinkToClipboard('link-portaria-personalizado', event)">
                                     <i class="fas fa-copy"></i> Copiar Link Personalizado
                                 </button>
                             </div>
                             
-                            <div style="margin-top: 12px; padding: 12px; background: rgba(74,144,226,0.1); border-radius: 8px; border: 1px solid rgba(74,144,226,0.3);">
-                                <label style="display: block; color: #ECECEC; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                            <div class="ck-rl-2aa823">
+                                <label class="ck-rl-032f7c">
                                     <i class="fas fa-link"></i> Personalizar Link (Slug)
                                 </label>
-                                <div style="display: flex; gap: 8px; align-items: stretch; width: 100%; max-width: 100%; box-sizing: border-box;">
-                                    <input type="text" id="portaria-slug-input" 
+                                <div class="ck-rl-eb8e6a">
+                                    <input class="ck-rl-c49e80" type="text" id="portaria-slug-input" 
                                            placeholder="Ex: portaria-2026, conecta-portaria" 
-                                           style="flex: 1; padding: 10px 12px; background: rgba(255,255,255,0.05); border: 2px solid rgba(74,144,226,0.3); border-radius: 8px; color: #ECECEC; font-size: 13px; min-width: 0; max-width: 100%; box-sizing: border-box; word-break: break-all; overflow-wrap: anywhere;"
+                                          
                                            pattern="[a-z0-9_-]+" 
                                            title="Apenas letras minúsculas, números, hífens e underscores">
-                                    <button onclick="savePortariaSlug(event)" 
-                                            style="padding: 10px 20px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; box-sizing: border-box;">
+                                    <button class="ck-rl-7b5040" onclick="savePortariaSlug(event)" 
+                                           >
                                         <i class="fas fa-save"></i> Salvar
                                     </button>
-                                    <button onclick="clearPortariaSlug()" 
-                                            style="padding: 10px 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; cursor: pointer; font-weight: 600; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                                    <button class="ck-rl-ad0629" onclick="clearPortariaSlug()" 
+                                           >
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
-                                <p style="color: #A1A1A1; font-size: 11px; margin-top: 8px; line-height: 1.4;">
-                                    <i class="fas fa-info-circle"></i> Crie um link curto e fácil de compartilhar. Ex: "portaria-2026" criará o link: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">/portaria/portaria-2026</code>
+                                <p class="ck-rl-316642">
+                                    <i class="fas fa-info-circle"></i> Crie um link curto e fácil de compartilhar. Ex: "portaria-2026" criará o link: <code class="ck-rl-7c7ee5">/portaria/portaria-2026</code>
                                 </p>
                             </div>
                         </div>
@@ -171,7 +171,7 @@
                 <!-- Controles Administrativos -->
                 <div id="admin-controls" class="admin-controls ck-hidden">
                     <div class="admin-controls-left">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ECECEC; font-weight: 600;">
+                        <label class="ck-rl-53d37e">
                             <input type="checkbox" id="select-all-checkbox" class="guest-checkbox">
                             Selecionar Todos
                         </label>

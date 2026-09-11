@@ -16,7 +16,7 @@
     <div id="kf-list-view" class="kf-container">
         <div class="kf-header">
             <div class="kf-header-left">
-                <a href="/dashboard" class="kf-btn kf-btn-secondary" id="kf-btn-back" style="text-decoration: none;"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+                <a href="/dashboard" class="kf-btn kf-btn-secondary ck-kf-bc605c" id="kf-btn-back"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
                 <h1><i class="fas fa-file-signature"></i> King Forms</h1>
             </div>
             <button type="button" class="kf-btn kf-btn-primary" id="kf-btn-new">

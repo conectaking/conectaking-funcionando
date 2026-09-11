@@ -22,3 +22,7 @@ body { margin:0; font-family: Georgia, 'Times New Roman', serif; background:#0D0
         .indice a.on { background:rgba(255,199,0,.22); color:#0d0d10; font-weight:700; }
         .warn { color:#FFC700; font-family:system-ui,sans-serif; margin-bottom:14px; }
         #mark-status { font-family:system-ui,sans-serif; font-size:.85rem; color:#A1A1A1; margin-left:8px; }
+
+/* auto-extracted from resources/views/cartao/bible-prosperidade.blade.php */
+.ck-bp-4b126f { color:#FFC700;font-weight:600; }
+.ck-bp-286b21 { font-size:1.2rem;margin-bottom:4px; }

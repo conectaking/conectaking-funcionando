@@ -8,6 +8,6 @@
     @vite(['resources/js/pages/bible.js'])
 </head>
 <body>
-    <p style="font-family:system-ui,sans-serif;padding:1.5rem;color:#ccc">A abrir o painel da Bíblia…</p>
+    <p class="ck-bi-607525">A abrir o painel da Bíblia…</p>
 </body>
 </html>

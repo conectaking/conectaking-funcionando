@@ -8,22 +8,22 @@
 <body>
     <!-- admin-dev365-ui: gerar-por-ia + checkboxes + remover-seleccionados — se não vir isto no "Ver código-fonte", o ficheiro no servidor está desactualizado -->
     <div class="wrap">
-        <h1 style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <span style="display:inline-flex;align-items:center;gap:10px"><i class="fas fa-book-bible"></i> Bíblia &amp; Devocionais (ADM)</span>
-            <a class="btn btn-secondary" href="/admin/" id="btn-voltar-dashboard" style="text-decoration:none" title="Voltar à tela anterior"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <h1 class="ck-ad365-739949">
+            <span class="ck-ad365-c78809"><i class="fas fa-book-bible"></i> Bíblia &amp; Devocionais (ADM)</span>
+            <a class="btn btn-secondary ck-ad365-80d654" href="/admin/" id="btn-voltar-dashboard" title="Voltar à tela anterior"><i class="fas fa-arrow-left"></i> Voltar</a>
         </h1>
         <p class="sub">Admin da Bíblia no cartão: <strong>Devocional 365</strong>, <strong>Prosperidade antes de dormir</strong> (Do Fracasso ao Legado), plano de leitura e estudos por livro. Requer token de administrador.</p>
 
         <div id="flash"></div>
 
         <div class="auth-bar">
-            <label style="flex:1;min-width:220px">Sessão admin (cookie). Bearer opcional só para sync:
+            <label class="ck-ad365-6c0d09">Sessão admin (cookie). Bearer opcional só para sync:
                 <input type="password" class="token-input" id="token-manual" placeholder="Opcional: Bearer para sync cookie" autocomplete="off">
             </label>
             <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-cookie"></i> Sync cookie</button>
         </div>
-        <div class="auth-bar" style="margin-top:-8px">
-            <label style="flex:1;min-width:260px">URL base da API (opcional — vazio = mesma origem Laravel — ex.: <code style="color:#7dd3fc">https://www.conectaking.com.br</code>)
+        <div class="auth-bar ck-ad365-0e283d">
+            <label class="ck-ad365-a58e8b">URL base da API (opcional — vazio = mesma origem Laravel — ex.: <code class="ck-ad365-f0440e">https://www.conectaking.com.br</code>)
                 <input type="text" class="token-input" id="api-base-url" placeholder="Deixe vazio para usar o mesmo domínio desta página" autocomplete="off">
             </label>
             <button type="button" class="btn btn-secondary" id="btn-save-api-base"><i class="fas fa-link"></i> Guardar URL</button>
@@ -40,7 +40,7 @@
         <section id="panel-dev365" class="panel active">
             <div class="card">
                 <h2><i class="fas fa-palette"></i> Temas por mês (servidor / base de dados)</h2>
-                <p style="margin-bottom:12px"><strong>Carregar do servidor</strong> busca Janeiro–Dezembro gravados na base de dados. <strong>Guardar no servidor</strong> grava os 12 meses na base (e espelha num ficheiro de backup). Também pode importar/exportar JSON no computador com os botões à parte. A geração com IA usa a URL da API + token.</p>
+                <p class="ck-ad365-da12f2"><strong>Carregar do servidor</strong> busca Janeiro–Dezembro gravados na base de dados. <strong>Guardar no servidor</strong> grava os 12 meses na base (e espelha num ficheiro de backup). Também pode importar/exportar JSON no computador com os botões à parte. A geração com IA usa a URL da API + token.</p>
                 <input class="ck-hidden" type="file" id="themes-file-input" accept=".json,application/json" aria-hidden="true">
                 <div class="row">
                     <div>
@@ -53,7 +53,7 @@
                     <button type="button" class="btn btn-secondary" id="btn-themes-export"><i class="fas fa-download"></i> Exportar JSON</button>
                     <button type="button" class="btn btn-secondary" id="btn-themes-generate-all"><i class="fas fa-magic"></i> Gerar linha para os 12 meses (automático)</button>
                 </div>
-                <div id="themes-months-host" style="margin-top:14px"></div>
+                <div class="ck-ad365-d6f2af" id="themes-months-host"></div>
             </div>
 
             <div class="card" id="card-batch-job">
@@ -69,9 +69,9 @@
                 <div class="row ck-mt-8">
                     <button type="button" class="btn" id="btn-batch-sync"><i class="fas fa-play"></i> Gerar agora (síncrono)</button>
                     <button type="button" class="btn btn-secondary" id="btn-batch-async"><i class="fas fa-server"></i> Gerar em segundo plano (servidor)</button>
-                    <button type="button" class="btn btn-secondary" id="btn-batch-stop" style="display:none;border-color:rgba(220,80,80,0.5);color:#f5a097"><i class="fas fa-stop"></i> Parar</button>
+                    <button type="button" class="btn btn-secondary ck-ad365-83319a" id="btn-batch-stop"><i class="fas fa-stop"></i> Parar</button>
                 </div>
-                <div id="batch-job-panel" style="display:none;margin-top:14px">
+                <div class="ck-ad365-3ac041" id="batch-job-panel">
                     <div class="progress-wrap"><div class="progress-bar" id="batch-progress-bar"></div></div>
                     <p class="job-status" id="batch-job-status"></p>
                 </div>
@@ -79,7 +79,7 @@
 
             <div class="card">
                 <h2><i class="fas fa-robot"></i> Gerar com IA — por dia ou por mês civil</h2>
-                <p style="margin-bottom:14px">Use os atalhos abaixo ou a tabela. Cada pedido chama a API neste servidor (OpenAI via <code>OPENAI_API_KEY</code> no ambiente).</p>
+                <p class="ck-ad365-2b583d">Use os atalhos abaixo ou a tabela. Cada pedido chama a API neste servidor (OpenAI via <code>OPENAI_API_KEY</code> no ambiente).</p>
                 <div class="row">
                     <div>
                         <label for="gen-day">Dia do ano (1—365)</label>
@@ -105,7 +105,7 @@
                             <option value="cunha">Estilo cunha</option>
                         </select>
                     </div>
-                    <div style="padding-bottom:8px;font-size:0.82rem;color:#888">
+                    <div class="ck-ad365-dd8f0c">
                         <input type="hidden" id="gen-full" value="1">
                         Geração <strong>sempre completa</strong>: novo título, nova passagem e textos (a IA evita repetir versículos já usados no mês).
                     </div>
@@ -126,7 +126,7 @@
                     </div>
                     <div>
                         <label for="gen-delay">Intervalo entre dias (ms)</label>
-                        <input type="number" id="gen-delay" min="0" value="400" style="width:90px">
+                        <input class="ck-ad365-581be4" type="number" id="gen-delay" min="0" value="400">
                     </div>
                     <button type="button" class="btn" id="btn-gen-whole-month"><i class="fas fa-calendar-check"></i> Gerar todo o mês</button>
                 </div>
@@ -138,7 +138,7 @@
                 <div class="row">
                     <div>
                         <label for="filtro-dia">Filtrar por número do dia</label>
-                        <input type="text" id="filtro-dia" placeholder="ex.: 94 ou 9" style="width:140px">
+                        <input class="ck-ad365-830eb9" type="text" id="filtro-dia" placeholder="ex.: 94 ou 9">
                     </div>
                     <div>
                         <label for="filtro-mes">Filtrar por mês civil</label>
@@ -156,7 +156,7 @@
                     <button type="button" class="btn btn-secondary" id="btn-reload-table"><i class="fas fa-sync"></i> Atualizar lista</button>
                 </div>
                 <div class="month-grid" id="month-quick-btns"></div>
-                <div style="overflow:auto;margin-top:14px">
+                <div class="ck-ad365-a19103">
                     <table>
                         <thead>
                             <tr>
@@ -180,17 +180,17 @@
                 <div class="row">
                     <button type="button" class="btn btn-secondary" id="btn-pros-reload-grid"><i class="fas fa-sync"></i> Recarregar grid</button>
                     <button type="button" class="btn btn-secondary" id="btn-pros-export"><i class="fas fa-download"></i> Exportar JSON</button>
-                    <label class="btn btn-secondary" style="cursor:pointer;margin:0"><i class="fas fa-upload"></i> Importar JSON<input class="ck-hidden" type="file" id="pros-import-file" accept=".json"></label>
+                    <label class="btn btn-secondary ck-ad365-9a9e5f"><i class="fas fa-upload"></i> Importar JSON<input class="ck-hidden" type="file" id="pros-import-file" accept=".json"></label>
                 </div>
                 <div class="row ck-mt-12">
-                    <div><label for="pros-batch-start">Lote IA — início</label><input type="number" id="pros-batch-start" min="1" max="31" value="1" style="width:70px"></div>
-                    <div><label for="pros-batch-end">fim</label><input type="number" id="pros-batch-end" min="1" max="31" value="7" style="width:70px"></div>
-                    <div><label for="pros-batch-delay">delay ms</label><input type="number" id="pros-batch-delay" value="800" style="width:80px"></div>
+                    <div><label for="pros-batch-start">Lote IA — início</label><input class="ck-ad365-ec6626" type="number" id="pros-batch-start" min="1" max="31" value="1"></div>
+                    <div><label for="pros-batch-end">fim</label><input class="ck-ad365-ec6626" type="number" id="pros-batch-end" min="1" max="31" value="7"></div>
+                    <div><label for="pros-batch-delay">delay ms</label><input class="ck-ad365-8573ba" type="number" id="pros-batch-delay" value="800"></div>
                     <button type="button" class="btn" id="btn-pros-batch-async"><i class="fas fa-robot"></i> Gerar lote (async)</button>
                 </div>
                 <p class="job-status" id="pros-batch-status"></p>
                 <div class="progress-wrap ck-hidden" id="pros-batch-progress-wrap"><div class="progress-bar" id="pros-batch-progress-bar"></div></div>
-                <div class="grid-31 ck-mt-16" id="pros-grid-31"><p style="color:#888">Carregue o grid (token + URL da API acima).</p></div>
+                <div class="grid-31 ck-mt-16" id="pros-grid-31"><p class="ck-ad365-8b490e">Carregue o grid (token + URL da API acima).</p></div>
             </div>
             <div class="card ck-hidden" id="pros-editor-panel">
                 <h2>Ativação <span id="pros-ed-num">1</span> — <span id="pros-ed-status"></span></h2>
@@ -214,7 +214,7 @@
                     <div class="field-pros"><label>Decreto de entrada</label><textarea id="pros-f-decreto" rows="2"></textarea></div>
                     <div class="field-pros"><label>1. Fundamento sagrado</label><textarea id="pros-f-fundamento" rows="5"></textarea></div>
                     <div class="field-pros"><label>2. Extração de prosperidade</label><textarea id="pros-f-diagnostico"></textarea></div>
-                    <p style="font-size:0.82rem;color:#FFC700;margin:12px 0 6px"><strong>Frases de impacto do KING (4)</strong></p>
+                    <p class="ck-ad365-d15df0"><strong>Frases de impacto do KING (4)</strong></p>
                     <div class="field-pros"><label>Frase 1</label><textarea id="pros-f-frase-1" rows="2"></textarea></div>
                     <div class="field-pros"><label>Frase 2</label><textarea id="pros-f-frase-2" rows="2"></textarea></div>
                     <div class="field-pros"><label>Frase 3</label><textarea id="pros-f-frase-3" rows="2"></textarea></div>
@@ -230,14 +230,14 @@
                     <div class="field-pros"><label>Sentença diária</label><textarea id="pros-f-sentenca"></textarea></div>
                     <div class="field-pros"><label>Próximo episódio</label><textarea id="pros-f-proximo"></textarea></div>
                 </div>
-                <div id="pros-panel-preview" class="panel-ed"><div id="pros-preview-host" style="font-size:0.9rem;color:#ccc"></div></div>
-                <div class="row" style="margin-top:16px;flex-wrap:wrap">
+                <div id="pros-panel-preview" class="panel-ed"><div class="ck-ad365-6f78a0" id="pros-preview-host"></div></div>
+                <div class="row ck-ad365-f6037c">
                     <button type="button" class="btn" id="btn-pros-save-activation"><i class="fas fa-save"></i> Salvar ativação</button>
                     <button type="button" class="btn btn-secondary" id="btn-pros-save"><i class="fas fa-file-alt"></i> Salvar rascunho</button>
-                    <button type="button" class="btn" id="btn-pros-publish" style="background:#2a2a2a;border:1px solid #FFC700;color:#FFC700"><i class="fas fa-check"></i> Publicar</button>
+                    <button type="button" class="btn ck-ad365-2df897" id="btn-pros-publish"><i class="fas fa-check"></i> Publicar</button>
                     <button type="button" class="btn btn-secondary" id="btn-pros-unpublish"><i class="fas fa-eye-slash"></i> Despublicar</button>
                 </div>
-                <p id="pros-save-hint" style="font-size:0.82rem;color:#888;margin-top:10px"></p>
+                <p class="ck-ad365-003536" id="pros-save-hint"></p>
             </div>
         </section>
 
@@ -254,9 +254,9 @@
                     <a class="btn btn-secondary" href="#" id="link-biblia-api"><i class="fas fa-link"></i> Bíblia (URL da API)</a>
                     <a class="btn btn-secondary" href="/dashboard"><i class="fas fa-th-large"></i> Ir ao painel</a>
                 </div>
-                <p style="margin-top:14px;font-size:0.85rem;color:#666">Se um dos links falhar, experimente o outro (ficheiro estático vs. servidor da API).</p>
+                <p class="ck-ad365-f552d0">Se um dos links falhar, experimente o outro (ficheiro estático vs. servidor da API).</p>
             </div>
-            <div class="card" style="border-color:rgba(52,152,219,0.35)">
+            <div class="card ck-ad365-a2d500">
                 <h2><i class="fas fa-magic"></i> IA para o Devocional 365 neste plano</h2>
                 <p>O conteúdo que o visitante lê em <strong>Devocional diário</strong> na Bíblia pública vem do mesmo registo que você gera aqui. Use <strong>Gerar este dia</strong> ou <strong>Gerar todo o mês</strong> na aba Devocionais 365, ou os atalhos rápidos:</p>
                 <div class="row">
@@ -270,22 +270,22 @@
                 <h2><i class="fas fa-book-reader"></i> Estudo por livro</h2>
                 <p>Envie Word/PDF <strong>ou</strong> use <strong>Gerar por IA</strong> (entre Enviar e Remover) para criar um estudo longo e completo (como o de Gênesis no site). Requer a URL da API e token acima. Máx. 15 MB por ficheiro.</p>
                 <div class="row ck-mt-10">
-                    <div style="flex:1;min-width:200px">
+                    <div class="ck-ad365-7b1dd1">
                         <label for="study-book-search">Pesquisar livro (nome ou código, ex.: jo, Salmos)</label>
-                        <input type="text" id="study-book-search" placeholder="Filtrar lista—" style="width:100%;max-width:320px">
+                        <input class="ck-ad365-573d81" type="text" id="study-book-search" placeholder="Filtrar lista—">
                     </div>
                     <button type="button" class="btn btn-secondary" id="btn-study-reload"><i class="fas fa-sync"></i> Atualizar lista de livros</button>
-                    <button type="button" class="btn btn-secondary" id="btn-study-bulk-remove" style="border-color:rgba(220,80,80,0.45);color:#f5a097"><i class="fas fa-trash-alt"></i> Remover estudos seleccionados</button>
+                    <button type="button" class="btn btn-secondary ck-ad365-e563ca" id="btn-study-bulk-remove"><i class="fas fa-trash-alt"></i> Remover estudos seleccionados</button>
                 </div>
-                <div style="overflow:auto;margin-top:14px">
+                <div class="ck-ad365-a19103">
                     <table>
                         <thead>
                             <tr>
-                                <th style="width:40px;text-align:center" title="Seleccionar para remover em massa"><input type="checkbox" id="study-select-all" aria-label="Seleccionar todos os livros visíveis"></th>
+                                <th class="ck-ad365-9d9216" title="Seleccionar para remover em massa"><input type="checkbox" id="study-select-all" aria-label="Seleccionar todos os livros visíveis"></th>
                                 <th>Livro</th>
                                 <th>Estado</th>
                                 <th>Importar</th>
-                                <th style="min-width:200px">Enviar · Gerar por IA · Remover</th>
+                                <th class="ck-ad365-47b618">Enviar · Gerar por IA · Remover</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-study-books"><tr><td colspan="5">Carregue a lista.</td></tr></tbody>
@@ -310,7 +310,7 @@
 
     <div id="modal-ver" class="modal-bg" role="dialog">
         <div class="modal">
-            <h2 style="color:#FFC700;margin-bottom:12px;font-size:1.05rem" id="modal-ver-title">Devocional</h2>
+            <h2 class="ck-ad365-ca7a31" id="modal-ver-title">Devocional</h2>
             <pre id="modal-ver-body"></pre>
             <button type="button" class="btn btn-secondary ck-mt-16" id="modal-ver-close"><i class="fas fa-times"></i> Fechar</button>
         </div>

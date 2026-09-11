@@ -16,7 +16,7 @@
         </div>
         <div id="state-loading" class="loading"><i class="fas fa-spinner fa-spin"></i><div>A carregar…</div></div>
         <div id="state-no-item" class="hidden">
-            <div class="msg msg-warn">Abra a Bíblia pelo menu do <strong>painel principal</strong> (módulo Bíblia), ou use <code style="color:#FFC700">/bibliaking?itemId=</code> com o ID do seu módulo.</div>
+            <div class="msg msg-warn">Abra a Bíblia pelo menu do <strong>painel principal</strong> (módulo Bíblia), ou use <code class="ck-bk-0979c7">/bibliaking?itemId=</code> com o ID do seu módulo.</div>
             <a class="btn btn-secondary" href="/dashboard"><i class="fas fa-th-large"></i> Painel principal</a>
             <a class="btn btn-secondary" href="/login"><i class="fas fa-sign-in-alt"></i> Entrar</a>
         </div>
@@ -47,7 +47,7 @@
             <div class="card" id="card-progress">
                 <h2><i class="fas fa-chart-line"></i> Progresso de leitura</h2>
                 <div class="progress-stats" id="progress-stats"></div>
-                <div class="progress-bar" title="Capítulos lidos"><span id="progress-chapters-pct" style="width:0%"></span></div>
+                <div class="progress-bar" title="Capítulos lidos"><span class="ck-bk-d2fba0" id="progress-chapters-pct"></span></div>
             </div>
             <div class="card" id="card-verse">
                 <h2><i class="fas fa-sun"></i> Versículo do dia</h2>
@@ -55,7 +55,7 @@
                 <div class="verse-text" id="vod-text"></div>
                 <div class="reflexao" id="vod-reflexao"></div>
                 <button type="button" class="btn btn-secondary" id="btn-mark-vod"><i class="far fa-check-circle"></i> Marcar versículo do dia como lido</button>
-                <span id="vod-mark-msg" style="display:block;margin-top:10px;font-size:0.85rem;color:#888;"></span>
+                <span class="ck-bk-abb751" id="vod-mark-msg"></span>
             </div>
         </div>
     </div>

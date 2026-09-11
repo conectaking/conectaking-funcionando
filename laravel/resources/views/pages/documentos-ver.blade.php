@@ -4,12 +4,6 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Comprovante de Serviço - King</title>
-
-<style>
-    body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-    .ios-status-bar { height: 44px; }
-  </style>
-  <style>body { min-height: max(884px, 100dvh); }</style>
 </head>
 <body class="documentos-ver-page bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 antialiased transition-colors duration-300">
   <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col relative pb-32">
@@ -102,7 +96,7 @@
   <div id="loading" class="fixed inset-0 bg-background-dark flex items-center justify-center z-50">
     <p class="text-primary font-semibold">Carregando...</p>
   </div>
-  <div id="notfound" style="display:none; padding:40px; text-align:center; color:#94a3b8;">
+  <div class="ck-dv-5991c5" id="notfound">
     <p>Documento não encontrado ou link inválido.</p>
   </div>
 

@@ -13,7 +13,7 @@
 </head>
 <body>
   <div class="ks-header">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%">
+    <div class="ck-kse-8cc3d9">
       <div>
         <div class="ks-title"><i class="fas fa-check-double"></i> KingSelection <span class="ks-small" id="ks-itemid"></span></div>
         <div class="ks-sub">Workspace . Galerias</div>
@@ -27,7 +27,7 @@
 
   <div class="ks-wrap">
     <div class="ks-topbar">
-      <div style="position:relative;flex:1">
+      <div class="ck-kse-9ec9e5">
         <i class="fas fa-search ks-search-ico" aria-hidden="true"></i>
         <input id="ks-search" class="ks-search" placeholder="Procurar projeto, cliente ou slug..." autocomplete="off" />
       </div>
@@ -44,7 +44,7 @@
   <div class="ks-drawer-overlay" id="ks-drawer-overlay" aria-hidden="true"></div>
   <div class="ks-drawer" id="ks-drawer">
     <div class="ks-drawer-header">
-      <div style="font-weight:800" id="ks-drawer-title">Galeria</div>
+      <div class="ck-kse-2b9532" id="ks-drawer-title">Galeria</div>
       <button class="ks-btn secondary" id="ks-drawer-close"><i class="fas fa-times"></i></button>
     </div>
     <div class="ks-drawer-body">
@@ -78,7 +78,7 @@
       <div class="ks-field">
         <label>Resumo</label>
         <div class="ks-small">Selecionadas: <b id="ks-selected-count">0</b> . Fotos: <b id="ks-photos-count">0</b></div>
-        <div class="ks-small" id="ks-feedback-box" style="display:none;margin-top:8px;padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.04)"></div>
+        <div class="ks-small ck-kse-eda51d" id="ks-feedback-box"></div>
       </div>
 
       <div class="ks-row">
@@ -91,7 +91,7 @@
             <option value="finalizado">Finalizado</option>
           </select>
         </div>
-        <div class="ks-field" style="justify-content:flex-end">
+        <div class="ks-field ck-kse-455f8c">
           <button class="ks-btn primary" id="ks-save-status"><i class="fas fa-save"></i> Salvar</button>
         </div>
       </div>
@@ -110,7 +110,7 @@
   <div class="ks-modal" id="ks-new-modal" aria-hidden="true">
     <div class="ks-modal-card">
       <div class="ks-modal-head">
-        <div style="font-weight:900">Nova galeria</div>
+        <div class="ck-kse-b3f627">Nova galeria</div>
         <button class="ks-btn secondary" id="ks-new-close"><i class="fas fa-times"></i></button>
       </div>
       <div class="ks-modal-body">
@@ -140,8 +140,8 @@
               <option value="Arquitetura / Imóveis">Arquitetura / Imóveis</option>
               <option value="__outra__">Outra (digitar abaixo)</option>
             </select>
-            <input id="ks-new-category-custom" type="text" placeholder="Digite a categoria" autocomplete="off" style="display:none;margin-top:8px;width:100%;box-sizing:border-box" />
-            <div class="ks-small" id="ks-new-category-hint" style="margin-top:6px">Escolha uma categoria ou use "Outra" para um nome personalizado.</div>
+            <input class="ck-kse-652def" id="ks-new-category-custom" type="text" placeholder="Digite a categoria" autocomplete="off" />
+            <div class="ks-small ck-kse-fe7b49" id="ks-new-category-hint">Escolha uma categoria ou use "Outra" para um nome personalizado.</div>
           </div>
         </div>
         <div class="ks-row">
@@ -152,8 +152,8 @@
         </div>
         <div class="ks-field">
           <label>Data do trabalho</label>
-          <div id="ks-new-work-date" class="ks-small" style="padding:12px;border-radius:12px;border:1px solid var(--ks-line);background:rgba(255,255,255,.04);color:#fff"></div>
-          <div class="ks-small" style="margin-top:6px">Preenchida automaticamente com a data de hoje ao criar (servidor).</div>
+          <div id="ks-new-work-date" class="ks-small ck-kse-8690f6"></div>
+          <div class="ks-small ck-kse-fe7b49">Preenchida automaticamente com a data de hoje ao criar (servidor).</div>
         </div>
         <div class="ks-row">
         <div class="ks-field">
@@ -188,9 +188,9 @@
           </div>
         </div>
         <div class="ks-small ck-mb-10">Se "Seleção mínima" não existir no banco ainda, tudo funciona como "Livre" (opcional rodar a migration depois).</div>
-        <div class="ks-field" style="flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap">
-          <input type="checkbox" id="ks-new-watermark" checked style="width:18px;height:18px;accent-color:var(--ks-accent)" />
-          <label for="ks-new-watermark" style="margin:0;text-transform:none;letter-spacing:normal;font-weight:800;font-size:13px;color:var(--ks-text)">Aplicar marca d'gua nas fotos desta galeria</label>
+        <div class="ks-field ck-kse-49f564">
+          <input class="ck-kse-b3c7cc" type="checkbox" id="ks-new-watermark" checked />
+          <label class="ck-kse-ffb83a" for="ks-new-watermark">Aplicar marca d'gua nas fotos desta galeria</label>
         </div>
       </div>
       <div class="ks-modal-foot">
@@ -204,7 +204,7 @@
   <div class="ks-modal" id="ks-export-modal" aria-hidden="true">
     <div class="ks-modal-card">
       <div class="ks-modal-head">
-        <div style="font-weight:900">Exportar fotos</div>
+        <div class="ck-kse-b3f627">Exportar fotos</div>
         <button class="ks-btn secondary" id="ks-export-close"><i class="fas fa-times"></i></button>
       </div>
       <div class="ks-modal-body">

@@ -75,3 +75,8 @@
         .hub-card i { color: #FFC700; font-size: 1.1rem; }
         .hub-card strong { font-size: .88rem; }
         .hub-card span { font-size: .75rem; color: #A1A1A1; line-height: 1.35; }
+
+/* auto-extracted from resources/views/pages/bibliaking.blade.php */
+.ck-bk-0979c7 { color:#FFC700; }
+.ck-bk-d2fba0 { width:0%; }
+.ck-bk-abb751 { display:block;margin-top:10px;font-size:0.85rem;color:#888; }

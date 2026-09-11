@@ -49,3 +49,6 @@
         .error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; }
         .summary { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; font-size: 0.9rem; color: var(--text2); }
         .summary span strong { color: var(--text); margin-right: 4px; }
+
+/* auto-extracted from resources/views/pages/zerar-mes.blade.php */
+.ck-zm-9c9cee { margin-top: 12px; }

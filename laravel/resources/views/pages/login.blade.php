@@ -23,7 +23,7 @@
                 <p>Acesse sua ponte de conexão</p>
             </div>
 
-            <div id="localhost-hint" class="localhost-hint" style="display: none; margin-bottom: 16px; padding: 12px; background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.35); border-radius: 8px; font-size: 13px; color: #e6c200; text-align: left;"></div>
+            <div id="localhost-hint" class="localhost-hint ck-lg-e9c2a7"></div>
             <form id="login-form" novalidate>
                 <div class="input-group">
                     <label for="email">E-mail</label>
@@ -43,8 +43,8 @@
 
             <div id="message" class="message"></div>
 
-            <p class="auth-link" style="margin-top: 20px; margin-bottom: 8px;">
-                <a href="/recuperar-senha" style="color: #ffd700; text-decoration: none; font-weight: 600;">
+            <p class="auth-link ck-lg-d0a507">
+                <a class="ck-lg-9cf536" href="/recuperar-senha">
                     <i class="fas fa-key"></i> Esqueceu sua senha?
                 </a>
             </p>

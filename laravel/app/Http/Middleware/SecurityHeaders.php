@@ -38,8 +38,8 @@ class SecurityHeaders
         $this->injectScriptNonces($response, $nonce);
 
         if (! $response->headers->has('Content-Security-Policy')) {
-            // script: self + nonce (sem unsafe-inline). style ainda unsafe-inline (estilos Blade).
-            // Fontes self-host; Google Fonts removido do CSP.
+            // script: self + nonce (sem unsafe-inline).
+            // style: unsafe-inline mantido p/ :root dinâmico do cartão + poucos style="" (Blade/JS toggles).
             $csp = implode('; ', [
                 "default-src 'self'",
                 "base-uri 'self'",

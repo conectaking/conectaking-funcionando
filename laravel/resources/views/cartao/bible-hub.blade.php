@@ -11,7 +11,7 @@
 <div class="wrap">
     <p class="nav"><a href="{{ $profileUrl }}">← Voltar ao perfil</a></p>
     <h1>Bíblia</h1>
-    <p class="nav" style="opacity:.75;margin-top:-4px;margin-bottom:12px">Leitura pública · Devocionais · Planos</p>
+    <p class="nav ck-bh-7c02c7">Leitura pública · Devocionais · Planos</p>
     <p class="nav">Tradução: {{ strtoupper($translation) }}</p>
     @if(!empty($verse))
         <div class="verse">
@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    <p class="nav" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:14px">
+    <p class="nav ck-bh-7791b0">
         <a href="{{ $devotionalUrl ?? ('/'.$slug.'/biblia/devocional') }}">Devocional 365</a>
         <a href="{{ $salmoUrl ?? ('/'.$slug.'/biblia/salmo') }}">Salmo</a>
         <a href="{{ $planUrl ?? ('/'.$slug.'/biblia/plano') }}">Plano</a>
@@ -37,30 +37,30 @@
     </p>
     @if(!empty($salmo['texto']))
         <div class="verse ck-mt-8">
-            <div style="font-family:system-ui,sans-serif;font-size:.8rem;color:#FFC700;margin-bottom:8px">Salmo do dia</div>
+            <div class="ck-bh-49e2ca">Salmo do dia</div>
             @if(!empty($salmo['ref']))<div class="ref">{{ $salmo['ref'] }}</div>@endif
-            <div style="font-size:1rem">{{ $salmo['texto'] }}</div>
+            <div class="ck-bh-951b72">{{ $salmo['texto'] }}</div>
             <p class="nav ck-mt-12-mb-0"><a href="{{ $salmoUrl }}">Abrir →</a></p>
         </div>
     @endif
     @if(!empty($plan['summary']) || !empty($plan['book_id']))
         <div class="verse ck-mt-12">
-            <div style="font-family:system-ui,sans-serif;font-size:.8rem;color:#FFC700;margin-bottom:8px">Plano · dia {{ $devotionalDay ?? '' }}</div>
-            <div style="font-weight:600">{{ $plan['summary'] ?? ($plan['book_id'].' '.$plan['chapter_from']) }}</div>
+            <div class="ck-bh-49e2ca">Plano · dia {{ $devotionalDay ?? '' }}</div>
+            <div class="ck-bh-eed0f8">{{ $plan['summary'] ?? ($plan['book_id'].' '.$plan['chapter_from']) }}</div>
             <p class="nav ck-mt-12-mb-0"><a href="{{ $planUrl }}">Abrir plano →</a></p>
         </div>
     @endif
     @if(!empty($devotionalToday['titulo']) || !empty($devotionalToday['reflexao']))
         <div class="verse ck-mt-8">
-            <div style="font-family:system-ui,sans-serif;font-size:.8rem;color:#FFC700;margin-bottom:8px">Devocional 365</div>
+            <div class="ck-bh-49e2ca">Devocional 365</div>
             @if(!empty($devotionalToday['titulo']))
-                <div style="font-weight:600;margin-bottom:8px">{{ $devotionalToday['titulo'] }}</div>
+                <div class="ck-bh-d77151">{{ $devotionalToday['titulo'] }}</div>
             @endif
             @if(!empty($devotionalToday['versiculo_ref']))
                 <div class="ref">{{ $devotionalToday['versiculo_ref'] }}</div>
             @endif
             @if(!empty($devotionalToday['reflexao']))
-                <div style="font-size:1rem;opacity:.9">{{ \Illuminate\Support\Str::limit($devotionalToday['reflexao'], 220) }}</div>
+                <div class="ck-bh-2c18ac">{{ \Illuminate\Support\Str::limit($devotionalToday['reflexao'], 220) }}</div>
             @endif
             <p class="nav ck-mt-12-mb-0"><a href="{{ $devotionalUrl }}">Ler completo →</a></p>
         </div>

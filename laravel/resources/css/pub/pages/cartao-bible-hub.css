@@ -12,3 +12,6 @@ body { margin:0; font-family: Georgia, 'Times New Roman', serif; background:#0D0
         .book { background:rgba(255,255,255,.04); border-radius:10px; padding:10px 12px; font-size:.92rem; }
         .book small { display:block; opacity:.55; margin-top:4px; font-family: system-ui, sans-serif; font-size:.75rem; }
         .nav { font-family: system-ui, sans-serif; font-size:.9rem; margin-bottom: 8px; }
+
+/* auto-extracted from resources/views/cartao/bible-hub.blade.php */
+.ck-bh-7791b0 { margin-top:20px;display:flex;flex-wrap:wrap;gap:14px; }

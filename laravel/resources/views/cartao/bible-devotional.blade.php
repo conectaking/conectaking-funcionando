@@ -16,8 +16,8 @@
     </div>
     <div class="day">Devocional 365 · Dia {{ $day }}</div>
     @if(!empty($devotional['tema_mes']) || !empty($devotional['tema_ano']))
-        <p style="text-align:center;font-family:system-ui,sans-serif;font-size:.82rem;color:#A1A1A1;margin:0 0 14px;line-height:1.45">
-            @if(!empty($devotional['tema_mes']))<span>Tema do mês: <strong style="color:#FFC700">{{ $devotional['tema_mes'] }}</strong></span>@endif
+        <p class="ck-bd-6ce1d5">
+            @if(!empty($devotional['tema_mes']))<span>Tema do mês: <strong class="ck-bd-0979c7">{{ $devotional['tema_mes'] }}</strong></span>@endif
             @if(!empty($devotional['tema_mes']) && !empty($devotional['tema_ano'])) · @endif
             @if(!empty($devotional['tema_ano']))<span>Tema do ano: {{ $devotional['tema_ano'] }}</span>@endif
         </p>

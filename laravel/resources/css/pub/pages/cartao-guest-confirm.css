@@ -16,3 +16,6 @@ body { margin:0; font-family:system-ui,sans-serif; background:linear-gradient(13
         .ok { background:rgba(40,160,80,.2); color:#9BE7B0; }
         .err { background:rgba(180,40,40,.25); color:#FFB4A8; }
         .empty { text-align:center; opacity:.75; padding:24px; }
+
+/* auto-extracted from resources/views/cartao/guest-confirm.blade.php */
+

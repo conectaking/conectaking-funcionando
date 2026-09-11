@@ -22,7 +22,7 @@
             <span id="event-title">Lista de Convidados</span>
         </h1>
         <div class="header-actions">
-            <button class="btn btn-secondary" onclick="deleteGuestList()" style="background: rgba(255, 68, 68, 0.1); border-color: #ff4444; color: #ff4444;">
+            <button class="btn btn-secondary ck-gl-4c7da8" onclick="deleteGuestList()">
                 <i class="fas fa-trash"></i> Excluir Lista
             </button>
             <button class="btn btn-secondary" onclick="goBackToDashboard()">
@@ -54,42 +54,42 @@
         <!-- Aba: Convidados Cadastrados -->
         <div id="tab-registered" class="tab-content">
             <!-- Seção de Campos Customizados -->
-            <div class="link-section" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05)); border: 2px solid rgba(74, 144, 226, 0.3);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <h3 style="color: #4A90E2; margin: 0;">
+            <div class="link-section ck-gl-1e6637">
+                <div class="ck-gl-294406">
+                    <h3 class="ck-gl-ecce22">
                         <i class="fas fa-sliders-h"></i> Personalização do Formulrio
                     </h3>
                     <label class="ck-flex-gap-8">
-                        <input type="checkbox" id="use-custom-form" onchange="toggleCustomForm()" style="width: 20px; height: 20px; cursor: pointer;">
+                        <input class="ck-gl-5ef9a4" type="checkbox" id="use-custom-form" onchange="toggleCustomForm()">
                         <span>Usar campos customizados (KingForms)</span>
                     </label>
                 </div>
-                <div id="custom-form-builder" style="display: none; margin-top: 16px;">
-                    <p style="color: var(--text-dark, #A1A1A1); margin-bottom: 16px; font-size: 14px;">
+                <div class="ck-gl-9474b6" id="custom-form-builder">
+                    <p class="ck-gl-39446f">
                         Personalize o formulrio de inscrio com campos customizados. Se desativado, será usado o formulrio padr</p>
-                    <button onclick="openCustomFieldsEditor()" class="btn btn-secondary" style="width: 100%; padding: 12px; margin-bottom: 12px;">
+                    <button onclick="openCustomFieldsEditor()" class="btn btn-secondary ck-gl-55a442">
                         <i class="fas fa-edit"></i> Editar Campos Customizados
                     </button>
-                    <div id="custom-fields-preview" style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 13px; color: var(--text-dark, #A1A1A1);">
+                    <div class="ck-gl-88c597" id="custom-fields-preview">
                         <i class="fas fa-info-circle"></i> Nenhum campo customizado definido. Clique em "Editar Campos Customizados" para comear.
                     </div>
                 </div>
             </div>
             
-            <div class="link-section" style="background: linear-gradient(135deg, rgba(255,199,0,0.1), rgba(255,199,0,0.05)); border: 2px solid rgba(255,199,0,0.3);">
-                <h3 style="color: var(--dourado-principal, #FFC700); margin-bottom: 12px;">
+            <div class="link-section ck-gl-f0a650">
+                <h3 class="ck-gl-e4c9a0">
                     <i class="fas fa-link"></i> Link Pblico de Inscrio
                 </h3>
-                <p style="color: var(--text, #ECECEC); margin-bottom: 20px; font-size: 15px; line-height: 1.6;">
+                <p class="ck-gl-b5a0a4">
                     <strong>Compartilhe este link</strong> para que as pessoas possam se inscrever no evento. Quando algum preencher o formulrio atravdeste link, os dados seráo salvos <strong>diretamente nesta lista</strong> e aparecero na aba "Convidados Cadastrados".
                 </p>
-                <div class="link-box" style="display: flex; gap: 12px; align-items: center;">
-                    <input type="text" class="link-input" id="registration-link" readonly style="flex: 1; padding: 14px 16px; background: var(--background-color, #0D0D0F); border: 2px solid var(--border-color, #2C2C2F); border-radius: 12px; color: var(--text, #ECECEC); font-size: 14px; font-family: monospace;">
-                    <button class="btn-copy" onclick="copyToClipboard('registration-link', event)" style="padding: 14px 24px; background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                <div class="link-box ck-gl-bc6560">
+                    <input type="text" class="link-input ck-gl-efba8d" id="registration-link" readonly>
+                    <button class="btn-copy ck-gl-6f57c8" onclick="copyToClipboard('registration-link', event)">
                         <i class="fas fa-copy"></i> Copiar Link
                     </button>
                 </div>
-                <p style="color: var(--text-dark, #A1A1A1); margin-top: 12px; font-size: 13px;">
+                <p class="ck-gl-dad417">
                     <i class="fas fa-info-circle"></i> Envie este link por WhatsApp, email ou qualquer outro meio. As pessoas que preencherem aparecero aqui automaticamente.
                 </p>
             </div>
@@ -99,14 +99,14 @@
             </div>
             
             <!-- Busca -->
-            <div style="margin-bottom: 20px; display: flex; gap: 12px; align-items: center;">
-                <div style="flex: 1; position: relative;">
-                    <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-dark, #A1A1A1);"></i>
-                    <input type="text" id="search-registered" placeholder="Buscar convidados cadastrados..." 
+            <div class="ck-gl-7cfd4d">
+                <div class="ck-gl-5346d9">
+                    <i class="fas fa-search ck-gl-fd556e"></i>
+                    <input class="ck-gl-fa30b4" type="text" id="search-registered" placeholder="Buscar convidados cadastrados..." 
                            oninput="filterGuests('registered', this.value)"
-                           style="width: 100%; padding: 12px 16px 12px 48px; background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; color: var(--text, #ECECEC); font-size: 14px;">
+                          >
                 </div>
-                <button onclick="exportToPDF('registered')" class="btn btn-secondary" style="padding: 12px 20px;">
+                <button onclick="exportToPDF('registered')" class="btn btn-secondary ck-gl-885b48">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </button>
             </div>
@@ -130,7 +130,7 @@
         <div id="tab-confirmation" class="tab-content">
             <div class="link-section">
                 <h3><i class="fas fa-link"></i> Link Pblico de Confirmao</h3>
-                <p style="color: var(--text-dark, #A1A1A1); margin-bottom: 16px;">
+                <p class="ck-gl-8de580">
                     Compartilhe este link para que as pessoas possam confirmar a presena dos convidados. Quem tiver o link pode acessar esta aba e confirmar convidados.
                 </p>
                 <div class="link-box">
@@ -146,14 +146,14 @@
             </div>
             
             <!-- Busca -->
-            <div style="margin-bottom: 20px; display: flex; gap: 12px; align-items: center;">
-                <div style="flex: 1; position: relative;">
-                    <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-dark, #A1A1A1);"></i>
-                    <input type="text" id="search-confirmation" placeholder="Buscar convidados para confirma.." 
+            <div class="ck-gl-7cfd4d">
+                <div class="ck-gl-5346d9">
+                    <i class="fas fa-search ck-gl-fd556e"></i>
+                    <input class="ck-gl-fa30b4" type="text" id="search-confirmation" placeholder="Buscar convidados para confirma.." 
                            oninput="filterGuests('confirmation', this.value)"
-                           style="width: 100%; padding: 12px 16px 12px 48px; background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; color: var(--text, #ECECEC); font-size: 14px;">
+                          >
                 </div>
-                <button onclick="exportToPDF('confirmation')" class="btn btn-secondary" style="padding: 12px 20px;">
+                <button onclick="exportToPDF('confirmation')" class="btn btn-secondary ck-gl-885b48">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </button>
             </div>
@@ -175,25 +175,25 @@
         
         <!-- Aba: Convidados Confirmados -->
         <div id="tab-confirmed" class="tab-content">
-            <div class="link-section" style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05)); border: 2px solid rgba(74, 144, 226, 0.3);">
-                <h3 style="color: #4A90E2; margin-bottom: 12px;"><i class="fas fa-eye"></i> Link Pblico de Visualizao Completa (Portaria)</h3>
-                <p style="color: var(--text, #ECECEC); margin-bottom: 20px; font-size: 15px; line-height: 1.6;">
+            <div class="link-section ck-gl-4777d3">
+                <h3 class="ck-gl-ee6781"><i class="fas fa-eye"></i> Link Pblico de Visualizao Completa (Portaria)</h3>
+                <p class="ck-gl-b5a0a4">
                     <strong>Compartilhe este link com a pessoa da portaria</strong> para que ela possa ver todas as abas (Cadastrados, para Confirmao e Confirmados) em uma nica página pblica.
                 </p>
                 <div class="link-box">
-                    <input type="text" class="link-input" id="public-view-link" readonly style="flex: 1; padding: 14px 16px; background: var(--background-color, #0D0D0F); border: 2px solid var(--border-color, #2C2C2F); border-radius: 12px; color: var(--text, #ECECEC); font-size: 14px; font-family: monospace;">
-                    <button class="btn-copy" onclick="copyToClipboard('public-view-link', event)" style="padding: 14px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); color: #fff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                    <input type="text" class="link-input ck-gl-efba8d" id="public-view-link" readonly>
+                    <button class="btn-copy ck-gl-719d3e" onclick="copyToClipboard('public-view-link', event)">
                         <i class="fas fa-copy"></i> Copiar Link
                     </button>
                 </div>
-                <p style="color: var(--text-dark, #A1A1A1); margin-top: 12px; font-size: 13px;">
+                <p class="ck-gl-dad417">
                     <i class="fas fa-info-circle"></i> A pessoa da portaria poder ver todas as informaes dos convidados em uma página nica e completa.
                 </p>
             </div>
             
             <div class="link-section">
                 <h3><i class="fas fa-link"></i> Link Pblico para Ver Confirmados</h3>
-                <p style="color: var(--text-dark, #A1A1A1); margin-bottom: 16px;">
+                <p class="ck-gl-8de580">
                     Compartilhe este link para que as pessoas possam ver a lista de convidados confirmados. Quem tiver o link pode acessar esta aba.
                 </p>
                 <div class="link-box">
@@ -209,14 +209,14 @@
             </div>
             
             <!-- Busca -->
-            <div style="margin-bottom: 20px; display: flex; gap: 12px; align-items: center;">
-                <div style="flex: 1; position: relative;">
-                    <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-dark, #A1A1A1);"></i>
-                    <input type="text" id="search-confirmed" placeholder="Buscar convidados confirmados..." 
+            <div class="ck-gl-7cfd4d">
+                <div class="ck-gl-5346d9">
+                    <i class="fas fa-search ck-gl-fd556e"></i>
+                    <input class="ck-gl-fa30b4" type="text" id="search-confirmed" placeholder="Buscar convidados confirmados..." 
                            oninput="filterGuests('confirmed', this.value)"
-                           style="width: 100%; padding: 12px 16px 12px 48px; background: var(--card-background-color, #1C1C21); border: 1px solid var(--border-color, #2C2C2F); border-radius: 12px; color: var(--text, #ECECEC); font-size: 14px;">
+                          >
                 </div>
-                <button onclick="exportToPDF('confirmed')" class="btn btn-secondary" style="padding: 12px 20px;">
+                <button onclick="exportToPDF('confirmed')" class="btn btn-secondary ck-gl-885b48">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </button>
             </div>
@@ -239,20 +239,20 @@
         <!-- Aba: Links -->
         <div id="tab-links" class="tab-content active">
             <!-- Links para Compartilhar -->
-            <div class="link-section" style="background: linear-gradient(135deg, rgba(37, 211, 102, 0.1), rgba(37, 211, 102, 0.05)); border: 2px solid rgba(37, 211, 102, 0.3); margin-bottom: 24px;">
-                <h3 style="color: #25D366; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <div class="link-section ck-gl-f02528">
+                <h3 class="ck-gl-23f0b6">
                     <i class="fas fa-link"></i> Links para Compartilhar
                 </h3>
                 
                 <!-- Links de Cadastro Personalizados -->
-                <div style="margin-bottom: 24px;">
-                    <h4 style="color: var(--text, #ECECEC); margin-bottom: 8px; font-size: 16px; font-weight: 600;">
+                <div class="ck-gl-8d7033">
+                    <h4 class="ck-gl-f0acb1">
                         Links de Cadastro Personalizados
                     </h4>
-                    <p style="color: var(--text-dark, #A1A1A1); margin-bottom: 16px; font-size: 14px; line-height: 1.6;">
+                    <p class="ck-gl-6eeacc">
                         Crie e gerencie links personalizados para cadastro. Crie links personalizados para as pessoas se inscreverem. Cada link pode ter sua prpria descrição, validade e limite de usos.
                     </p>
-                    <button onclick="openCreateLinkModal()" class="btn-create-link" style="margin-bottom: 16px; padding: 12px 20px; background: linear-gradient(135deg, #25D366, #1DB954); color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center; width: 100%; max-width: 300px;">
+                    <button onclick="openCreateLinkModal()" class="btn-create-link ck-gl-628329">
                         <i class="fas fa-plus"></i> Criar Novo Link Personalizado
                     </button>
                     <div id="personalized-links-list">
@@ -261,32 +261,32 @@
                 </div>
                 
                 <!-- Link da Portaria -->
-                <div id="portaria-link-section" style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05)); border: 2px solid rgba(74, 144, 226, 0.3); border-radius: 12px; padding: 20px; margin-top: 24px; display: block !important; visibility: visible !important; overflow: visible !important;">
-                    <h4 style="color: #4A90E2; margin-bottom: 8px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <div class="ck-gl-3141c1" id="portaria-link-section">
+                    <h4 class="ck-gl-6ee1ec">
                         <i class="fas fa-building"></i> Link da Portaria
                     </h4>
-                    <p style="color: var(--text-dark, #A1A1A1); margin-bottom: 16px; font-size: 14px; line-height: 1.6;">
+                    <p class="ck-gl-6eeacc">
                         Para confirmar chegada dos convidados. Envie este link para o porteiro/recepcionista. Ele poder ver a lista completa, buscar convidados e confirmar presenas.
                     </p>
-                    <div class="link-box" style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
-                        <input type="text" class="link-input" id="portaria-link" readonly style="flex: 1; padding: 14px 16px; background: var(--background-color, #0D0D0F); border: 2px solid var(--border-color, #2C2C2F); border-radius: 12px; color: var(--text, #ECECEC); font-size: 14px; font-family: monospace; word-break: break-all;">
-                        <button class="btn-copy" onclick="copyToClipboard('portaria-link', event)" style="padding: 14px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); color: #fff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                    <div class="link-box ck-gl-00f0d1">
+                        <input type="text" class="link-input ck-gl-eaf047" id="portaria-link" readonly>
+                        <button class="btn-copy ck-gl-719d3e" onclick="copyToClipboard('portaria-link', event)">
                             <i class="fas fa-copy"></i> Copiar
                         </button>
                     </div>
                     
                     <!-- Personalizar Link (Slug) -->
-                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(74, 144, 226, 0.2);">
-                        <label style="color: var(--text, #ECECEC); font-size: 14px; font-weight: 600; margin-bottom: 8px; display: block;">
+                    <div class="ck-gl-9375d9">
+                        <label class="ck-gl-b6cf64">
                             Personalizar Link (Slug)
                         </label>
-                        <div class="link-box" style="display: flex; gap: 12px; align-items: center;">
-                            <input type="text" class="link-input" id="portaria-slug-input" placeholder="ex: kingsuces" style="flex: 1; padding: 12px 16px; background: var(--background-color, #0D0D0F); border: 2px solid var(--border-color, #2C2C2F); border-radius: 12px; color: var(--text, #ECECEC); font-size: 14px;">
-                            <button onclick="savePortariaSlug()" class="btn-copy" style="padding: 12px 24px; background: linear-gradient(135deg, #4A90E2, #357ABD); color: #fff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                        <div class="link-box ck-gl-bc6560">
+                            <input type="text" class="link-input ck-gl-899351" id="portaria-slug-input" placeholder="ex: kingsuces">
+                            <button onclick="savePortariaSlug()" class="btn-copy ck-gl-a864d4">
                                 <i class="fas fa-save"></i> Salvar
                             </button>
                         </div>
-                        <p style="color: var(--text-dark, #A1A1A1); margin-top: 8px; font-size: 12px;">
+                        <p class="ck-gl-0986f3">
                             Crie um link curto e fcil de compartilhar. Ex: seusite.com/portaria/kingsuces
                         </p>
                     </div>
@@ -319,9 +319,9 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div style="color: var(--text-dark, #A1A1A1); margin-bottom: 24px; padding: 16px; background: rgba(255, 199, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 199, 0, 0.3);">
-                <p style="margin: 0; line-height: 1.6;">
-                    <strong style="color: var(--dourado-principal, #FFC700);">Integrao com KingForms</strong><br>
+            <div class="ck-gl-f037ae">
+                <p class="ck-gl-bf1659">
+                    <strong class="ck-gl-03ce61">Integrao com KingForms</strong><br>
                     Você pode criar um formulrio personalizado para a inscriOs campos padrão (Nome, WhatsApp, CPF) seráo sempre includos automaticamente.
                 </p>
             </div>

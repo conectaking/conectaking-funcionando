@@ -3,6 +3,7 @@
  */
 import '@css/style.css';
 import '@css/auth.css';
+import '@css/pages/login-inline.css';
 
 (function initLoginPage() {
   'use strict';

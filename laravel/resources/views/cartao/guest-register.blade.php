@@ -40,7 +40,7 @@
                 Inscrições fechadas no momento.
             @endif
             @if(!empty($maxGuests))
-                <p style="margin-top:10px;opacity:.75;font-size:.9rem">{{ $currentCount }} / {{ $maxGuests }}</p>
+                <p class="ck-gr-bc1455">{{ $currentCount }} / {{ $maxGuests }}</p>
             @endif
         </div>
     @else

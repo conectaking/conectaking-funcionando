@@ -151,3 +151,8 @@
                 user-drag: none !important;
             }
         }
+
+/* auto-extracted from resources/views/pages/salesPageEdit.blade.php */
+.ck-spe-8d7976 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ck-spe-e6fcc1 { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: var(--text-dark, #A1A1A1); }
+.ck-spe-529a82 { display: flex; gap: 24px; flex-wrap: wrap; }

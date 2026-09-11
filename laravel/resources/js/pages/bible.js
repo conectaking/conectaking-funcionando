@@ -1,4 +1,6 @@
 /** /bible → painel /bibliaking (evita loop) */
+import '@css/pages/bible-inline.css';
+
 (function () {
   var search = window.location.search || '';
   try {

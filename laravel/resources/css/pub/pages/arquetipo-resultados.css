@@ -27,3 +27,6 @@
     .err { background: rgba(239,68,68,.15); color: #fecaca; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: none; }
     .err.show { display: block; }
     .empty { color: #666; padding: 40px; text-align: center; }
+
+/* auto-extracted from resources/views/pages/arquetipo-resultados.blade.php */
+.ck-ar-49f14f { margin-bottom:20px; }

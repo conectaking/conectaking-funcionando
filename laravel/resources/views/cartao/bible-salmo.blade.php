@@ -26,7 +26,7 @@
             @endif
         </div>
     @else
-        <p style="text-align:center;opacity:.7">Salmo não disponível.</p>
+        <p class="ck-bsa-c5dfab">Salmo não disponível.</p>
     @endif
 </div>
 </body>

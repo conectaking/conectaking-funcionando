@@ -30,3 +30,12 @@
         padding: 2rem 3rem;
     }
 }
+
+/* from recibos Blade <style> tags */
+body.recibos-modulo-page {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body.recibos-modulo-page::-webkit-scrollbar { width: 8px; }
+body.recibos-modulo-page::-webkit-scrollbar-track { background: #171717; }
+body.recibos-modulo-page::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }

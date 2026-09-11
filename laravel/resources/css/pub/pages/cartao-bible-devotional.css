@@ -27,3 +27,7 @@ body { margin:0; font-family: Georgia, 'Times New Roman', serif; background:#0D0
         .btn-mark { padding:10px 14px; border-radius:10px; border:1px solid rgba(255,199,0,.4); background:rgba(255,199,0,.12);
                     color:#FFC700; font-weight:600; cursor:pointer; }
         #mark-status { font-size:.85rem; color:#A1A1A1; }
+
+/* auto-extracted from resources/views/cartao/bible-devotional.blade.php */
+.ck-bd-6ce1d5 { text-align:center;font-family:system-ui,sans-serif;font-size:.82rem;color:#A1A1A1;margin:0 0 14px;line-height:1.45; }
+.ck-bd-0979c7 { color:#FFC700; }

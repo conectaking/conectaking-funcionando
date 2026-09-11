@@ -366,3 +366,8 @@
     .ks-wrap {
       padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
     }
+
+/* auto-extracted from resources/views/pages/kingSelectionEdit.blade.php */
+.ck-kse-8cc3d9 { display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%; }
+.ck-kse-eda51d { display:none;margin-top:8px;padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.04); }
+.ck-kse-652def { display:none;margin-top:8px;width:100%;box-sizing:border-box; }

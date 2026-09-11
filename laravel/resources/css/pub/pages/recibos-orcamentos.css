@@ -97,3 +97,6 @@ body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
             background: #d4af37;
         }
         .bottom-nav-safe { padding-bottom: env(safe-area-inset-bottom, 0); }
+
+/* auto-extracted from resources/views/pages/recibos-orcamentos.blade.php */
+

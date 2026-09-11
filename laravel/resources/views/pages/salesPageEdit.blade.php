@@ -147,13 +147,13 @@
                     </div>
                     <div class="form-group ck-hidden" id="logo-size-group">
                         <label for="button-logo-size">Tamanho da Logo (em pixels)</label>
-                        <div class="input-group range-slider" style="margin-bottom: 15px;">
-                            <div class="range-slider-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <label style="margin: 0; color: var(--text, #ECECEC);">Tamanho: <span id="logo-size-value">24</span>px</label>
-                                <input type="number" id="button-logo-size" class="form-input" value="24" min="20" max="600" step="1" style="width: 80px; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color, #2C2C2F); background: var(--card-background-color, #1C1C21); color: var(--text, #ECECEC); text-align: center;">
+                        <div class="input-group range-slider ck-spe-4a3180">
+                            <div class="range-slider-header ck-spe-8d7976">
+                                <label class="ck-spe-8bc1ba">Tamanho: <span id="logo-size-value">24</span>px</label>
+                                <input type="number" id="button-logo-size" class="form-input ck-spe-60a710" value="24" min="20" max="600" step="1">
                             </div>
                             <input class="ck-w-full" type="range" id="button-logo-size-slider" value="24" min="20" max="600" step="5">
-                            <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: var(--text-dark, #A1A1A1);">
+                            <div class="ck-spe-e6fcc1">
                                 <span>20px</span>
                                 <span>600px</span>
                             </div>
@@ -168,7 +168,7 @@
                     </h2>
                     <p class="form-help ck-mb-12">Como a página de vendas aparece no seu cartão virtual (igual ao King Forms).</p>
                     <div class="form-group">
-                        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                        <div class="ck-spe-529a82">
                             <label class="ck-flex-gap-8">
                                 <input type="radio" name="card-display-format" value="button" id="card-format-button" checked>
                                 <span>Botão</span>
@@ -269,13 +269,13 @@
                             </div>
                             <div class="view-size-controls-edit">
                                 <button class="size-btn-edit active" data-size="small" title="Pequeno">
-                                    <i class="fas fa-square" style="font-size: 0.7rem;"></i>
+                                    <i class="fas fa-square ck-spe-cb8a8e"></i>
                                 </button>
                                 <button class="size-btn-edit" data-size="medium" title="Médio">
-                                    <i class="fas fa-square" style="font-size: 0.85rem;"></i>
+                                    <i class="fas fa-square ck-spe-933a8e"></i>
                                 </button>
                                 <button class="size-btn-edit" data-size="large" title="Grande">
-                                    <i class="fas fa-square" style="font-size: 1rem;"></i>
+                                    <i class="fas fa-square ck-spe-ba04dc"></i>
                                 </button>
                             </div>
                         </div>
@@ -328,7 +328,7 @@
                 <!-- Métricas Gerais -->
                 <div class="analytics-metrics">
                     <div class="metric-card">
-                        <div class="metric-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                        <div class="metric-icon ck-spe-1b8f34">
                             <i class="fas fa-eye"></i>
                         </div>
                         <div class="metric-info">
@@ -337,7 +337,7 @@
                         </div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <div class="metric-icon ck-spe-790a38">
                             <i class="fas fa-mouse-pointer"></i>
                         </div>
                         <div class="metric-info">
@@ -346,7 +346,7 @@
                         </div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                        <div class="metric-icon ck-spe-0bc5ce">
                             <i class="fas fa-shopping-cart"></i>
                         </div>
                         <div class="metric-info">
@@ -355,7 +355,7 @@
                         </div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                        <div class="metric-icon ck-spe-1ca509">
                             <i class="fab fa-whatsapp"></i>
                         </div>
                         <div class="metric-info">
@@ -372,35 +372,35 @@
                         <div class="funnel-step">
                             <div class="funnel-label">Visualizações da Página</div>
                             <div class="funnel-bar">
-                                <div class="funnel-fill" id="funnel-page-views" style="width: 100%"></div>
+                                <div class="funnel-fill ck-spe-16000c" id="funnel-page-views"></div>
                             </div>
                             <div class="funnel-value" id="funnel-page-views-value">0</div>
                         </div>
                         <div class="funnel-step">
                             <div class="funnel-label">Visualizações de Produtos</div>
                             <div class="funnel-bar">
-                                <div class="funnel-fill" id="funnel-product-views" style="width: 0%"></div>
+                                <div class="funnel-fill ck-spe-034359" id="funnel-product-views"></div>
                             </div>
                             <div class="funnel-value" id="funnel-product-views-value">0 <span class="funnel-percent">(0%)</span></div>
                         </div>
                         <div class="funnel-step">
                             <div class="funnel-label">Cliques em Produtos</div>
                             <div class="funnel-bar">
-                                <div class="funnel-fill" id="funnel-product-clicks" style="width: 0%"></div>
+                                <div class="funnel-fill ck-spe-034359" id="funnel-product-clicks"></div>
                             </div>
                             <div class="funnel-value" id="funnel-product-clicks-value">0 <span class="funnel-percent">(0%)</span></div>
                         </div>
                         <div class="funnel-step">
                             <div class="funnel-label">Adicionados ao Carrinho</div>
                             <div class="funnel-bar">
-                                <div class="funnel-fill" id="funnel-add-to-cart" style="width: 0%"></div>
+                                <div class="funnel-fill ck-spe-034359" id="funnel-add-to-cart"></div>
                             </div>
                             <div class="funnel-value" id="funnel-add-to-cart-value">0 <span class="funnel-percent">(0%)</span></div>
                         </div>
                         <div class="funnel-step">
                             <div class="funnel-label">Checkouts (WhatsApp)</div>
                             <div class="funnel-bar">
-                                <div class="funnel-fill" id="funnel-checkout" style="width: 0%"></div>
+                                <div class="funnel-fill ck-spe-034359" id="funnel-checkout"></div>
                             </div>
                             <div class="funnel-value" id="funnel-checkout-value">0 <span class="funnel-percent">(0%)</span></div>
                         </div>

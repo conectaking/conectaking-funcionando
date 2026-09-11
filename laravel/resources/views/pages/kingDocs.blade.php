@@ -22,7 +22,7 @@
         <input type="text" id="sh-name" class="kd-hero-name" placeholder="Seu nome" autocomplete="name"/>
         <div id="kd-hero-dirty-banner" class="kd-dirty-banner kd-hero-dirty-banner" hidden>
           <span>Tens alterações por guardar no servidor.</span>
-          <button type="button" class="btn" id="kd-hero-save-quick" style="font-size:.78rem;padding:.4rem .75rem">Guardar no servidor</button>
+          <button type="button" class="btn ck-kd-43147a" id="kd-hero-save-quick">Guardar no servidor</button>
         </div>
         <p class="kd-hero-name-hint">O nome do topo e «Nome Completo» ficam iguais. Clica <strong>Guardar no servidor</strong> para gravar.</p>
         <p class="kd-hero-sub">Selecione o que quiser compartilhar e copie com um clique</p>
@@ -56,7 +56,7 @@
               <button type="button" class="btn secondary kd-atalho-cog" data-edit-preset="enviarNf" aria-label="Personalizar Enviar NF" title="Personalizar">⚙</button>
             </span>
             <span id="kd-custom-atalhos-inner" class="atalhos-btns" style="display:contents"></span>
-            <button type="button" class="btn secondary" id="btn-add-custom-atalho" style="font-size:.78rem;padding:.38rem .75rem;border-radius:999px">+ Criar atalho</button>
+            <button type="button" class="btn secondary ck-kd-a96a46" id="btn-add-custom-atalho">+ Criar atalho</button>
           </div>
         </div>
         </div>
@@ -73,7 +73,7 @@
     </div>
 
     <div id="p-dados" class="panel active" role="tabpanel" aria-labelledby="tab-p-dados"></div>
-    <input type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"/>
+    <input class="ck-kd-e221cb" type="file" id="doc-file-hidden" accept="image/*,.pdf,application/pdf" tabindex="-1" aria-hidden="true"/>
 
     <div id="p-docs" class="panel" role="tabpanel" aria-labelledby="tab-p-docs">
       <p class="sub">Todos os itens no <strong>mesmo estilo de cartão</strong> (ícone grande, como RG e CNH). Marca <strong>Texto</strong> e/ou <strong>Foto/PDF</strong>. Preenche os valores na aba <strong>Dados</strong>.</p>
@@ -83,15 +83,15 @@
             <div class="doc-badge" role="status"><span aria-hidden="true"><i class="fas fa-clipboard-list"></i></span> O que incluir no link</div>
             <div class="kd-docs-share-toolbar">
               <p class="kd-share-summary" id="share-confirm-hint">Marca Texto e/ou Foto/PDF nos cartões; o resumo aparece à direita.</p>
-              <button type="button" class="btn secondary" id="btn-share-fields-clear" style="font-size:.74rem;flex-shrink:0">Limpar seleção</button>
+              <button type="button" class="btn secondary ck-kd-6851cc" id="btn-share-fields-clear">Limpar seleção</button>
             </div>
             <div class="kd-doc-vault-row">
               <div class="kd-doc-vault-grid-col">
-                <p class="sub" style="margin:0 0 .5rem;font-size:.72rem">Secções: documentos, dados pessoais, contato, morada, etc. — cada um com o seu ícone. <strong>+ Novo tipo</strong> em <strong>Dados</strong>.</p>
+                <p class="sub ck-kd-7bff3d">Secções: documentos, dados pessoais, contato, morada, etc. — cada um com o seu ícone. <strong>+ Novo tipo</strong> em <strong>Dados</strong>.</p>
                 <div id="doc-browse-root" class="doc-grid"></div>
               </div>
               <div class="kd-doc-vault-preview-col doc-vault-preview kd-preview-unified-column" id="doc-vault-preview-wrap" aria-label="Pré-visualização: ficheiros e resumo do link">
-                <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge ck-hidden" id="doc-preview-sel-badge" aria-live="polite"></span><span class="doc-preview-drag-hint" id="doc-preview-drag-hint" style="display:none;margin-left:.35rem;opacity:.85;font-weight:600"> · Arrasta para ordenar</span></div>
+                <div class="preview-header preview-header--vault">Pré-visualização dos ficheiros <span class="badge ck-hidden" id="doc-preview-sel-badge" aria-live="polite"></span><span class="doc-preview-drag-hint ck-kd-d414fb" id="doc-preview-drag-hint"> · Arrasta para ordenar</span></div>
                 <div id="doc-preview-body" class="preview-body doc-preview-body--inline kd-preview-files-scroll">
                   <p class="preview-empty">Clica nos documentos à esquerda (podes escolher vários).</p>
                 </div>
@@ -134,7 +134,7 @@
     <div id="p-partilha" class="panel" role="tabpanel" aria-labelledby="tab-p-partilha">
       <div class="kd-share-head">
         <h2>Partilhar</h2>
-        <p class="sub" style="margin-bottom:0">Aqui envias a <strong>foto do topo do link</strong> (upload — fica no cofre), defines <strong>prazo</strong>, <strong>senha</strong> e <strong>limite de vistas</strong>, geras o URL e geres a <strong>lista dos teus links</strong>. O que vai no link escolhes em <strong>Documentos</strong>.</p>
+        <p class="sub ck-kd-ef0b7a">Aqui envias a <strong>foto do topo do link</strong> (upload — fica no cofre), defines <strong>prazo</strong>, <strong>senha</strong> e <strong>limite de vistas</strong>, geras o URL e geres a <strong>lista dos teus links</strong>. O que vai no link escolhes em <strong>Documentos</strong>.</p>
       </div>
       <div class="kd-trust-strip" role="note">
         <strong>Antes de gerar</strong>
@@ -146,7 +146,7 @@
       </div>
 
       <div class="kd-models-bar">
-        <span class="kd-models-title">Os teus modelos <span style="font-weight:400;text-transform:none;letter-spacing:0">(guardados neste dispositivo)</span></span>
+        <span class="kd-models-title">Os teus modelos <span class="ck-kd-729b36">(guardados neste dispositivo)</span></span>
         <div class="kd-models-row">
           <input type="text" id="kd-model-name" placeholder="Nome do modelo" maxlength="40" aria-label="Nome do modelo"/>
           <button type="button" class="btn secondary" id="btn-save-model">Guardar seleção atual</button>
@@ -154,29 +154,29 @@
         <div class="kd-models-chips" id="kd-models-chips"></div>
       </div>
 
-      <div class="doc-panel-card" style="margin-top:1rem">
+      <div class="doc-panel-card ck-kd-2239d6">
         <div class="doc-badge" role="status"><span aria-hidden="true">T️</span> Opções do link</div>
-        <p class="sub" style="margin-top:.5rem">Foto do topo do link (upload), tempo de vida e proteção; depois gera o link.</p>
-        <div class="row" style="grid-template-columns: 160px 1fr; margin-bottom:.8rem;">
+        <p class="sub ck-kd-b310ca">Foto do topo do link (upload), tempo de vida e proteção; depois gera o link.</p>
+        <div class="row ck-kd-34e0c4">
           <label>Foto no link</label>
           <div>
             <input type="hidden" id="sh-profile-file-id" value=""/>
             <input type="file" id="sh-profile-file" accept="image/*"/>
-            <p class="kd-hint" style="margin:.35rem 0 0">A imagem é guardada no cofre (tipo <strong>FOTO PESSOAL</strong>) e aparece no topo da partilha — não precisas de URL.</p>
-            <div id="sh-profile-preview-wrap" style="display:none;margin-top:.5rem"></div>
-            <button type="button" class="btn secondary" id="sh-profile-clear" style="display:none;margin-top:.4rem;font-size:.78rem">Remover foto do link</button>
+            <p class="kd-hint ck-kd-7a794c">A imagem é guardada no cofre (tipo <strong>FOTO PESSOAL</strong>) e aparece no topo da partilha — não precisas de URL.</p>
+            <div class="ck-kd-e64b83" id="sh-profile-preview-wrap"></div>
+            <button type="button" class="btn secondary ck-kd-4ad031" id="sh-profile-clear">Remover foto do link</button>
           </div>
         </div>
-        <div style="display:grid; gap:.6rem; max-width: 420px;">
-          <div class="row" style="grid-template-columns: 160px 1fr;">
+        <div class="ck-kd-296511">
+          <div class="row ck-kd-798c29">
             <label>Expira em (horas)</label>
             <input type="number" id="sh-hours" value="24" min="1" max="720"/>
           </div>
-          <div class="row" style="grid-template-columns: 160px 1fr;">
+          <div class="row ck-kd-798c29">
             <label>Senha (opcional)</label>
             <input type="password" id="sh-pass" placeholder="Vazio = sem senha"/>
           </div>
-          <div class="row" style="grid-template-columns: 160px 1fr; align-items: start;">
+          <div class="row ck-kd-d36eeb">
             <label>Máx. visualizações</label>
             <div>
               <input type="number" id="sh-maxv" placeholder="Vazio = ilimitado" min="1" aria-describedby="hint-maxv"/>
@@ -184,13 +184,13 @@
             </div>
           </div>
         </div>
-        <p style="margin-top:1rem;"><button type="button" class="btn" id="btn-create-link">Gerar link seguro</button></p>
+        <p class="ck-kd-0cf8f9"><button type="button" class="btn" id="btn-create-link">Gerar link seguro</button></p>
         <div id="share-out"></div>
       </div>
 
-      <div class="doc-panel-card" style="margin-top:1.25rem">
+      <div class="doc-panel-card ck-kd-b700c0">
         <div class="doc-badge" role="status"><span aria-hidden="true">Y"-</span> Os meus links</div>
-        <p class="sub" style="margin-top:.5rem">Copia, partilha, <strong>revoga</strong> (invalida) ou <strong>exclui</strong> (remove da lista). <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
+        <p class="sub ck-kd-b310ca">Copia, partilha, <strong>revoga</strong> (invalida) ou <strong>exclui</strong> (remove da lista). <strong>Expirados</strong> ou <strong>revogados</strong> deixam de abrir.</p>
         <div class="kd-links-bulk">
           <button type="button" class="btn secondary" id="btn-links-revoke-sel">Revogar selecionados</button>
           <button type="button" class="btn bad" id="btn-links-delete-sel">Excluir selecionados</button>
@@ -215,9 +215,9 @@
       <div class="kd-modal-backdrop" id="kd-qr-backdrop"></div>
       <div class="kd-modal-box" role="dialog" aria-modal="true" aria-labelledby="kd-qr-title">
         <h3 id="kd-qr-title">QR Code do link</h3>
-        <p class="sub" style="margin:0 0 .5rem">Escaneia com o telemóvel. Trata o link como confidencial.</p>
+        <p class="sub ck-kd-8818f0">Escaneia com o telemóvel. Trata o link como confidencial.</p>
         <div id="kd-qr-wrap"></div>
-        <p style="margin:0"><button type="button" class="btn secondary" id="kd-qr-close">Fechar</button></p>
+        <p class="ck-kd-116966"><button type="button" class="btn secondary" id="kd-qr-close">Fechar</button></p>
       </div>
     </div>
 
@@ -225,7 +225,7 @@
       <div class="kd-modal-backdrop" id="kd-shortcut-backdrop"></div>
       <div class="kd-modal-box kd-modal-box--wide kd-modal-box--xlarge" role="dialog" aria-modal="true" aria-labelledby="kd-shortcut-title">
         <h3 id="kd-shortcut-title">Novo atalho</h3>
-        <p class="sub" style="margin:0 0 .75rem">Define o <strong>nome</strong> e o que entra no atalho (campos e documentos). Isto fica guardado neste dispositivo.</p>
+        <p class="sub ck-kd-289514">Define o <strong>nome</strong> e o que entra no atalho (campos e documentos). Isto fica guardado neste dispositivo.</p>
         <input type="hidden" id="kd-sc-edit-id" value=""/>
         <div class="kd-modal-field">
           <label for="kd-sc-name">Nome do atalho</label>
@@ -251,13 +251,13 @@
           <label for="kd-sc-img">Foto / ícone (opcional, máx. ~80 KB)</label>
           <input type="file" id="kd-sc-img" accept="image/*"/>
         </div>
-        <p class="group" style="margin:.5rem 0 .35rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">O que o atalho inclui (texto / ficheiro por campo)</p>
+        <p class="group ck-kd-5e043a">O que o atalho inclui (texto / ficheiro por campo)</p>
         <div class="kd-sc-modal-scroll" id="kd-sc-modal-scroll">
           <div class="share-grid" id="kd-sc-share-grid"></div>
-          <h3 class="group" style="margin-top:.85rem;font-size:.78rem;">Documentos extra (só ficheiro)</h3>
+          <h3 class="group ck-kd-4afe5b">Documentos extra (só ficheiro)</h3>
           <div id="kd-sc-extra-docs"></div>
         </div>
-        <p class="kd-hint" style="margin:.35rem 0 0">Ao abrir, copiamos a seleção atual da página para editares. Podes <strong>substituir tudo</strong> marcando outra combinação.</p>
+        <p class="kd-hint ck-kd-7a794c">Ao abrir, copiamos a seleção atual da página para editares. Podes <strong>substituir tudo</strong> marcando outra combinação.</p>
         <div class="kd-modal-actions kd-sc-actions">
           <button type="button" class="btn bad" id="kd-sc-delete" hidden>Excluir</button>
           <span class="kd-sc-actions-fill" aria-hidden="true"></span>

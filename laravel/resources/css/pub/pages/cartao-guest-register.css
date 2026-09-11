@@ -27,3 +27,6 @@
         .err { background:rgba(180,40,40,.25); color:#FFB4A8; }
         .full { text-align:center; padding:24px; color: var(--primary); }
         .header-img { width:100%; border-radius:16px; margin-bottom:20px; display:block; }
+
+/* auto-extracted from resources/views/cartao/guest-register.blade.php */
+.ck-gr-bc1455 { margin-top:10px;opacity:.75;font-size:.9rem; }

@@ -46,7 +46,7 @@
         <div id="empty" class="empty card ck-hidden">
             <i class="fas fa-inbox"></i>
             <p>Nenhum lançamento neste mês.</p>
-            <a href="/dashboard#finance" class="btn btn-outline" style="margin-top: 12px;">Voltar ao painel</a>
+            <a href="/dashboard#finance" class="btn btn-outline ck-zm-9c9cee">Voltar ao painel</a>
         </div>
     </div>
 

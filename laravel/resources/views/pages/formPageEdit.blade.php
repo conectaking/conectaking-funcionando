@@ -12,7 +12,7 @@
 </head>
 <body class="form-edit-page form-edit-page-body">
     <div class="form-edit-header">
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="ck-fpe2-c9a733">
             <a href="/kingForms" target="_top" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Voltar
             </a>
@@ -30,10 +30,10 @@
                 <div class="sidebar-section-title">Adicionar Elementos</div>
                 
                 <!-- Busca de Perguntas -->
-                <div style="padding: 0 16px 12px 16px;">
-                    <div style="position: relative;">
-                        <input type="text" id="search-questions-input" placeholder="Buscar perguntas..." style="width: 100%; padding: 10px 36px 10px 12px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); border-radius: 8px; color: #ECECEC; font-size: 14px; transition: all 0.3s;" onfocus="this.style.borderColor='#FFC700'; this.style.background='rgba(255,199,0,0.1)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';">
-                        <button id="clear-search-btn" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #A1A1A1; cursor: pointer; padding: 4px; display: none; font-size: 14px;" title="Limpar busca">
+                <div class="ck-fpe-dc36b9">
+                    <div class="ck-fpe-50666a">
+                        <input class="ck-fpe-892057" type="text" id="search-questions-input" placeholder="Buscar perguntas..." onfocus="this.style.borderColor='#FFC700'; this.style.background='rgba(255,199,0,0.1)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';">
+                        <button class="ck-fpe2-70e5b5" id="clear-search-btn" title="Limpar busca">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -91,83 +91,83 @@
         </div>
         
         <!-- Preview Area -->
-        <div class="form-edit-preview" style="display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden;">
+        <div class="form-edit-preview ck-fpe2-0dd877">
             <!-- Barra de Controles da Pré-visualização -->
-            <div class="preview-controls-bar" style="position: sticky; top: 0; z-index: 1000; background: linear-gradient(135deg, #1C1C21 0%, #0D0D0F 100%); padding: 16px 24px; border-bottom: 2px solid rgba(255,199,0,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <h3 style="margin: 0; color: #ECECEC; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-eye" style="color: #FFC700;"></i>
+            <div class="preview-controls-bar ck-fpe2-7613ab">
+                <div class="ck-fpe2-c9a733">
+                    <h3 class="ck-fpe2-0c9f24">
+                        <i class="fas fa-eye ck-fpe-13e70b"></i>
                         Pré-visualização
                     </h3>
-                    <div class="preview-separator" style="width: 2px; height: 24px; background: rgba(255,255,255,0.1);"></div>
-                    <div class="preview-mode-buttons" style="display: flex; gap: 8px;">
-                        <button id="preview-mode-desktop" class="preview-mode-btn active" style="padding: 8px 16px; background: linear-gradient(135deg, rgba(255,199,0,0.2), rgba(255,199,0,0.1)); border: 2px solid #FFC700; border-radius: 8px; color: #FFC700; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
+                    <div class="preview-separator ck-fpe-6c9375"></div>
+                    <div class="preview-mode-buttons ck-fpe2-693434">
+                        <button id="preview-mode-desktop" class="preview-mode-btn active ck-fpe2-cd479f" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
                             <i class="fas fa-desktop"></i>
                             Desktop
                         </button>
-                        <button id="preview-mode-mobile" class="preview-mode-btn" style="padding: 8px 16px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); border-radius: 8px; color: #A1A1A1; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.borderColor='rgba(255,199,0,0.3)'; this.style.color='#FFC700';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#A1A1A1';">
+                        <button id="preview-mode-mobile" class="preview-mode-btn ck-fpe2-b015db" onmouseover="this.style.borderColor='rgba(255,199,0,0.3)'; this.style.color='#FFC700';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#A1A1A1';">
                             <i class="fas fa-mobile-alt"></i>
                             Celular
                         </button>
                     </div>
                 </div>
-                <div style="font-size: 12px; color: #A1A1A1;">
+                <div class="ck-fpe-67e95f">
                     <i class="fas fa-info-circle"></i>
                     Visualização idêntica ao formulário público
                 </div>
             </div>
-            <div class="form-preview-container" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; background: #f8f9fa; min-height: 100%; display: block !important; visibility: visible !important; opacity: 1 !important;">
+            <div class="form-preview-container ck-fpe2-95a3e6">
                 <!-- Estrutura idêntica ao formulário público -->
-                <div class="preview-form-wrapper" style="max-width: 1000px; margin: 0 auto;">
+                <div class="preview-form-wrapper ck-fpe-a03f6a">
                     <!-- Header Image -->
-                    <div id="preview-header-image-container" style="display: none; position: relative; width: 100%; overflow: hidden; margin-bottom: 0; line-height: 0; background: #0a0a0a;">
-                        <img id="preview-header-image" style="width: 100%; height: auto; max-width: 100%; object-fit: contain; object-position: center center; display: block;">
-                        <button id="remove-header-image-preview" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; z-index: 10;">
+                    <div class="ck-fpe2-7649aa" id="preview-header-image-container">
+                        <img class="ck-fpe2-101db9" id="preview-header-image">
+                        <button class="ck-fpe2-5d459b" id="remove-header-image-preview">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
                     <!-- Header (simulado) -->
-                    <header class="preview-form-header" style="background: linear-gradient(135deg, var(--preview-primary-color, #4A90E2) 0%, rgba(74, 144, 226, 0.9) 100%); color: white; padding: 24px; border-radius: 0; box-shadow: 0 2px 16px rgba(0,0,0,0.12); margin-bottom: 0;">
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <h1 class="preview-form-title" contenteditable="true" id="preview-title" data-placeholder="Formulário sem título" style="margin: 0; font-size: 32px; font-weight: 700; flex: 1; letter-spacing: -0.5px; line-height: 1.2; color: white; word-wrap: break-word; overflow-wrap: break-word;">Formulário sem título</h1>
+                    <header class="preview-form-header ck-fpe-b60d56">
+                        <div class="ck-fpe2-3619f8">
+                            <h1 class="preview-form-title ck-fpe-b34d3f" contenteditable="true" id="preview-title" data-placeholder="Formulário sem título">Formulário sem título</h1>
                         </div>
                     </header>
                     
                     <!-- Main Content - Layout do formulário (preview) -->
-                    <main class="preview-form-container" style="padding: 40px 0 80px 0; position: relative; z-index: 5; min-height: calc(100vh - 200px);">
-                        <div class="preview-container" style="max-width: 1000px; margin: 0 auto; padding: 0 24px;">
-                            <div class="preview-checkout-layout" style="display: grid; grid-template-columns: 1fr; gap: 32px; align-items: start;">
+                    <main class="preview-form-container ck-fpe-579a15">
+                        <div class="preview-container ck-fpe-5c93eb">
+                            <div class="preview-checkout-layout ck-fpe2-247c92">
                                 <!-- Coluna Principal - Formulário -->
                                 <div class="preview-checkout-main">
                                     <!-- Descrição -->
-                                    <div id="preview-description-container" style="display: none; background: var(--preview-card-color, #ffffff); padding: 32px 40px; border-radius: 20px; margin-bottom: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); position: relative;">
-                                        <button id="remove-description-btn" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.05); border: none; color: #5f6368; cursor: pointer; padding: 8px 12px; font-size: 14px; border-radius: 8px; opacity: 0.6; transition: opacity 0.2s; display: none;" title="Remover descrição" onmouseover="this.style.opacity='1'; this.style.background='rgba(0,0,0,0.1)';" onmouseout="this.style.opacity='0.6'; this.style.background='rgba(0,0,0,0.05)';">
+                                    <div class="ck-fpe2-b80dda" id="preview-description-container">
+                                        <button class="ck-fpe2-11d566" id="remove-description-btn" title="Remover descrição" onmouseover="this.style.opacity='1'; this.style.background='rgba(0,0,0,0.1)';" onmouseout="this.style.opacity='0.6'; this.style.background='rgba(0,0,0,0.05)';">
                                             <i class="fas fa-times"></i>
                                         </button>
-                                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--preview-primary-color, #4A90E2), rgba(74, 144, 226, 0.7)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+                                        <div class="ck-fpe2-7f1517">
+                                            <div class="ck-fpe2-79c1e2">
                                                 <i class="fas fa-info-circle"></i>
                                             </div>
-                                            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: var(--preview-text-color, #202124);">Informações</h2>
+                                            <h2 class="ck-fpe-923943">Informações</h2>
                                         </div>
-                                        <p class="preview-form-description" contenteditable="true" id="preview-description" data-placeholder="Descrição do formulário" style="margin: 0; padding-left: 52px; line-height: 1.9; color: var(--preview-text-color, #333); font-size: 16px; font-weight: 400; letter-spacing: 0.2px; word-wrap: break-word; overflow-wrap: break-word;">Descrição do formulário</p>
+                                        <p class="preview-form-description ck-fpe-5d08ed" contenteditable="true" id="preview-description" data-placeholder="Descrição do formulário">Descrição do formulário</p>
                                     </div>
 
                                     <!-- Formulário -->
-                                    <form class="preview-digital-form" style="background: var(--preview-card-color, white); padding: 48px 56px; border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.06); position: relative; overflow: hidden;">
-                                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--preview-primary-color, #4A90E2), rgba(74, 144, 226, 0.6));"></div>
+                                    <form class="preview-digital-form ck-fpe-dea2e6">
+                                        <div class="ck-fpe-d041d7"></div>
                                         
-                                        <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e8eaed;">
-                                            <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--preview-text-color, #202124); letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
-                                                <div style="width: 6px; height: 32px; background: linear-gradient(180deg, var(--preview-primary-color, #4A90E2), rgba(74, 144, 226, 0.6)); border-radius: 3px;"></div>
+                                        <div class="ck-fpe-c0a1e1">
+                                            <h2 class="ck-fpe2-e2792a">
+                                                <div class="ck-fpe-3e0cf7"></div>
                                                 Preencha os dados
                                             </h2>
-                                            <p style="margin: 12px 0 0 18px; color: #5f6368; font-size: 14px;">Todos os campos marcados com * são obrigatórios</p>
+                                            <p class="ck-fpe-88192b">Todos os campos marcados com * são obrigatórios</p>
                                         </div>
                                         
                                         <!-- Campos Dinâmicos -->
-                                        <div id="preview-questions-container" style="min-height: 200px;">
+                                        <div class="ck-fpe-70cbde" id="preview-questions-container">
                                             <div class="add-question-placeholder" id="add-question-placeholder">
                                                 <i class="fas fa-plus-circle"></i>
                                                 <div>Adicione a primeira pergunta</div>
@@ -175,10 +175,10 @@
                                         </div>
                                         
                                         <!-- Botão Enviar -->
-                                        <button type="button" class="preview-submit-btn" style="width: 100%; padding: 16px 24px; background: linear-gradient(135deg, #25D366, #20BA5A); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: default; margin-top: 32px; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);">
-                                            <i class="fab fa-whatsapp" style="font-size: 20px;"></i>
+                                        <button type="button" class="preview-submit-btn ck-fpe2-0f1883">
+                                            <i class="fab fa-whatsapp ck-fpe-4ef9d2"></i>
                                             <span>Enviar via WhatsApp</span>
-                                            <i class="fas fa-arrow-right" style="font-size: 14px; margin-left: auto;"></i>
+                                            <i class="fas fa-arrow-right ck-fpe-fb8ad4"></i>
                                         </button>
                                     </form>
                                 </div>
@@ -260,10 +260,10 @@
                 </button>
             </div>
             <div id="questions-container">
-                <div style="text-align: center; padding: 40px; color: var(--text-dark, #A1A1A1);">
-                    <i class="fas fa-question-circle" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+                <div class="ck-fpe-53c292">
+                    <i class="fas fa-question-circle ck-fpe-aba3c5"></i>
                     <p>Nenhuma pergunta adicionada ainda.</p>
-                    <p style="font-size: 0.9rem; margin-top: 10px;">Clique em "Adicionar Pergunta" para começar.</p>
+                    <p class="ck-fpe-db0b67">Clique em "Adicionar Pergunta" para começar.</p>
                 </div>
             </div>
             <input type="hidden" id="form-fields-json">
@@ -271,8 +271,8 @@
         
         <div class="form-tab-content" data-tab-content="responses">
             <div id="responses-dashboard">
-                <div style="text-align: center; padding: 40px; color: var(--text-dark, #A1A1A1);">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 15px;"></i>
+                <div class="ck-fpe-53c292">
+                    <i class="fas fa-spinner fa-spin ck-fpe-918199"></i>
                     <p>Carregando respostas...</p>
                 </div>
             </div>

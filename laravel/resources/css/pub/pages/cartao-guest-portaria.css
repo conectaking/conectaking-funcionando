@@ -35,3 +35,6 @@
         .header-img { width:100%; max-height:220px; object-fit:cover; border-radius:14px; margin-bottom:14px; display:block; }
         .empty { text-align:center; padding:28px; opacity:.7; }
         .checkin-btn { font-size:.82rem; padding:8px 10px; }
+
+/* auto-extracted from resources/views/cartao/guest-portaria.blade.php */
+.ck-gp-01ef7f { display:flex;gap:8px;align-items:center; }

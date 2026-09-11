@@ -48,7 +48,7 @@
 
     <div class="pager">
         @if(!empty($prevUrl))<a class="btn secondary" href="{{ $prevUrl }}">← Anterior</a>@endif
-        <span style="color:#FFC700;font-weight:600">Ativação {{ $n }}</span>
+        <span class="ck-bp-4b126f">Ativação {{ $n }}</span>
         @if(!empty($nextUrl))<a class="btn secondary" href="{{ $nextUrl }}">Próxima →</a>@endif
         @if(!empty($a))
             <button type="button" class="btn" id="btn-mark-read">Marcar como lido</button>
@@ -64,7 +64,7 @@
             </a></p>
         @endif
     @elseif($a)
-        <h1 style="font-size:1.2rem;margin-bottom:4px">{{ $a['titulo'] ?? ('Ativação '.$n) }}</h1>
+        <h1 class="ck-bp-286b21">{{ $a['titulo'] ?? ('Ativação '.$n) }}</h1>
         <p class="sub">{{ $a['proverbs_ref'] ?? ('Provérbios '.$n) }}</p>
         @foreach($sections as [$key, $title, $highlight])
             @php $txt = trim((string) ($a[$key] ?? '')); @endphp

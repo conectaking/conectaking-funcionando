@@ -32,7 +32,7 @@
 
         <main class="main-content">
             <section id="overview-pane" class="content-pane active">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="ck-ad-e018b7">
                     <h2>Visão Geral da Plataforma</h2>
                     <button id="refresh-data-btn" class="btn btn-secondary ck-btn-md">
                         <i class="fas fa-sync-alt"></i> Atualizar
@@ -138,7 +138,7 @@
                     </div>
 
                     <!-- Tabela de Usuários Ativos vs Vencidos -->
-                    <div id="users-active-expired-table-container" style="margin-top: 30px;">
+                    <div class="ck-ad-3c5a73" id="users-active-expired-table-container">
                         <!-- Conteúdo será inserido via JavaScript -->
                     </div>
                 </div>
@@ -149,10 +149,10 @@
                         <i class="fas fa-trophy"></i> Top Performers
                     </h3>
                     <div class="top-performers-grid">
-                        <div class="top-performers-card" style="grid-column: 1 / -1;">
+                        <div class="top-performers-card ck-ad-d5b433">
                             <h4><i class="fas fa-star"></i> Top 20 Perfis Mais Visualizados</h4>
-                            <div id="top-viewed-profiles" class="top-list" style="max-height: 600px;">
-                                <p style="color: var(--text-dark);">Carregando...</p>
+                            <div id="top-viewed-profiles" class="top-list ck-ad-eb6e6d">
+                                <p class="ck-ad-ea1137">Carregando...</p>
                             </div>
                         </div>
                     </div>
@@ -163,13 +163,13 @@
                     <h3 class="ck-mb-20-text">
                         <i class="fas fa-list"></i> Lista Completa de Perfis
                     </h3>
-                    <div style="margin-bottom: 15px;">
-                        <input type="text" id="profile-search-input" placeholder="?? Pesquisar por nome ou email..." 
-                               style="width: 100%; max-width: 400px; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text); font-size: 0.95rem;">
+                    <div class="ck-ad-4a3180">
+                        <input class="ck-ad-6f2c58" type="text" id="profile-search-input" placeholder="?? Pesquisar por nome ou email..." 
+                              >
                     </div>
                     <div class="profiles-list-container">
                         <div id="all-profiles-list" class="profiles-list">
-                            <p style="color: var(--text-dark); text-align: center; padding: 20px;">Carregando perfis...</p>
+                            <p class="ck-ad-e4d4ad">Carregando perfis...</p>
                         </div>
                     </div>
                 </div>
@@ -183,30 +183,30 @@
                     <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os usuários">
                         <div class="ck-flex-between">
                             <span class="ck-label-dark">Total de Usuários</span>
-                            <i class="fas fa-users" style="color: var(--primary); font-size: 1.5rem;"></i>
+                            <i class="fas fa-users ck-ad-20952f"></i>
                         </div>
-                        <div id="stat-total-users" style="font-size: 2rem; font-weight: 800; color: var(--primary);">0</div>
+                        <div class="ck-ad-f02af0" id="stat-total-users">0</div>
                     </div>
                     <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="active" role="button" tabindex="0" aria-label="Filtrar: usuários ativos">
                         <div class="ck-flex-between">
                             <span class="ck-label-dark">Usuários Ativos</span>
-                            <i class="fas fa-check-circle" style="color: #2ecc71; font-size: 1.5rem;"></i>
+                            <i class="fas fa-check-circle ck-ad-fb6a54"></i>
                         </div>
-                        <div id="stat-active-users" style="font-size: 2rem; font-weight: 800; color: #2ecc71;">0</div>
+                        <div class="ck-ad-b9f919" id="stat-active-users">0</div>
                     </div>
                     <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="expired" role="button" tabindex="0" aria-label="Filtrar: usuários vencidos">
                         <div class="ck-flex-between">
                             <span class="ck-label-dark">Usuários Vencidos</span>
-                            <i class="fas fa-exclamation-triangle" style="color: #e74c3c; font-size: 1.5rem;"></i>
+                            <i class="fas fa-exclamation-triangle ck-ad-ba70cf"></i>
                         </div>
-                        <div id="stat-expired-users" style="font-size: 2rem; font-weight: 800; color: #e74c3c;">0</div>
+                        <div class="ck-ad-c9121a" id="stat-expired-users">0</div>
                     </div>
                     <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-user-expiration-filter="expiring_soon" role="button" tabindex="0" aria-label="Filtrar: expirando em 7 dias">
                         <div class="ck-flex-between">
                             <span class="ck-label-dark">Expirando em 7 dias</span>
-                            <i class="fas fa-clock" style="color: #f39c12; font-size: 1.5rem;"></i>
+                            <i class="fas fa-clock ck-ad-f46854"></i>
                         </div>
-                        <div id="stat-expiring-soon-users" style="font-size: 2rem; font-weight: 800; color: #f39c12;">0</div>
+                        <div class="ck-ad-ea9aa7" id="stat-expiring-soon-users">0</div>
                     </div>
                 </div>
                 
@@ -274,20 +274,20 @@
                 </div>
                 
                 <!-- Indicador de filtros ativos + Limpar tudo -->
-                <div id="users-filters-active-bar" class="filters-active-bar" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: rgba(255,199,0,0.08); border: 1px solid var(--primary); border-radius: 8px; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div id="users-filters-active-bar" class="filters-active-bar ck-ad-46cc56">
                     <span class="ck-text-light-09" id="users-filters-active-text"></span>
                     <button type="button" id="users-clear-all-filters-btn" class="btn btn-secondary ck-btn-sm">
                         <i class="fas fa-times-circle"></i> Limpar todos os filtros
                     </button>
                 </div>
                 
-                <div class="filter-actions" style="margin-bottom: 6px; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <div style="position: relative; width: 100%; max-width: 420px;">
+                <div class="filter-actions ck-ad-eae8e0">
+                    <div class="ck-ad-4990df">
                         <label for="user-search-input" class="sr-only">Pesquisar por nome ou e-mail</label>
-                        <i class="fas fa-search" style="position:absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dark);" aria-hidden="true"></i>
-                        <input type="text" id="user-search-input" placeholder="Pesquisar por nome ou e-mail (Enter para buscar)" 
+                        <i class="fas fa-search ck-ad-6ae11d" aria-hidden="true"></i>
+                        <input class="ck-ad-590349" type="text" id="user-search-input" placeholder="Pesquisar por nome ou e-mail (Enter para buscar)" 
                                aria-label="Pesquisar usuários por nome ou e-mail" autocomplete="off"
-                               style="width: 100%; padding: 10px 12px 10px 36px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text);">
+                              >
                     </div>
                     
                     <!-- Filtros de Vencimento para Usuários -->
@@ -299,7 +299,7 @@
                     </div>
                     <!-- Filtro por inatividade (dias sem uso) -->
                     <div class="inactivity-filters" role="group" aria-label="Filtro por inatividade">
-                        <span style="color: var(--text-dark); font-size: 0.85rem;">Inativos:</span>
+                        <span class="ck-ad-4c0525">Inativos:</span>
                         <button type="button" id="user-filter-inactive-30" class="btn btn-secondary filter-btn btn-sm" data-inactive-days="30">30 dias</button>
                         <button type="button" id="user-filter-inactive-60" class="btn btn-secondary filter-btn btn-sm" data-inactive-days="60">60 dias</button>
                         <button type="button" id="user-filter-inactive-90" class="btn btn-secondary filter-btn btn-sm" data-inactive-days="90">90 dias</button>
@@ -317,21 +317,21 @@
                     </button>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0; flex-wrap: wrap; gap: 10px;">
+                <div class="ck-ad-d61bb9">
                     <div class="ck-flex-wrap-12">
                         <div id="user-count" class="selected-count ck-m-0" aria-live="polite">0 usuário(s)</div>
                         <span class="ck-text-dark-09" id="users-page-range"></span>
                     </div>
                     
                     <!-- Colunas visíveis + Paginação + Exportar -->
-                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div class="ck-ad-dc40cc">
                         <div class="dropdown-columns-wrap">
                             <button type="button" id="users-columns-toggle" class="btn btn-secondary ck-btn-sm" aria-haspopup="true" aria-expanded="false" aria-label="Mostrar ou ocultar colunas">
                                 <i class="fas fa-columns"></i> Colunas
                             </button>
                             <div id="users-columns-dropdown" class="dropdown-columns ck-hidden" role="menu" aria-label="Colunas visíveis"></div>
                         </div>
-                        <label style="color: var(--text-dark); font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                        <label class="ck-ad-98b4d6">
                             <span>Itens por página:</span>
                             <select class="ck-input-sm" id="users-per-page" aria-label="Itens por página">
                                 <option value="25">25</option>
@@ -348,8 +348,8 @@
                 </div>
                 
                 <!-- Ações em Massa para Usuários Selecionados -->
-                <div id="user-bulk-actions" class="bulk-actions" style="display: none; margin-bottom: 15px; padding: 15px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);" role="region" aria-label="Ações em massa">
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div id="user-bulk-actions" class="bulk-actions ck-ad-98eb5a" role="region" aria-label="Ações em massa">
+                    <div class="ck-ad-c593ec">
                         <span class="ck-text-light-bold" id="user-selected-count">0 usuários selecionados</span>
                         <button id="delete-selected-users-btn" class="btn btn-danger" aria-label="Deletar usuários selecionados">
                             <i class="fas fa-trash"></i> Deletar Selecionados
@@ -373,7 +373,7 @@
                 </div>
                 
                 <div id="users-table-loading" class="table-loading-overlay ck-hidden" aria-hidden="true">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+                    <i class="fas fa-spinner fa-spin ck-ad-cac731"></i>
                     <span>Carregando...</span>
                 </div>
                 <div class="table-container" id="users-table-container">
@@ -417,45 +417,45 @@
 
         <section id="branding-pane" class="content-pane">
             <h2>Logomarca padrão</h2>
-            <p class="branding-description" style="color: var(--text-dark); margin-bottom: 20px; max-width: 640px;">
+            <p class="branding-description ck-ad-4de9c2">
                 Esta logo será exibida no rodapé do cartão de <strong>todas as contas que ainda não definiram a própria</strong>. 
                 Contas em modo empresa que já alteraram a logo no painel delas não são afetadas - a alteração daqui não substitui a logo delas.
             </p>
-            <div class="branding-form-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); max-width: 560px;">
+            <div class="branding-form-card ck-ad-b4ae68">
                 <input type="hidden" id="default-logo-url" value="">
                 <div class="input-group ck-mb-16">
                     <label>Logo do rodapé</label>
-                    <div id="default-logo-upload-area" class="image-upload-area" style="border: 2px dashed var(--border-color, #444); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; background: var(--bg-light, #1a1a1a); min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                    <div id="default-logo-upload-area" class="image-upload-area ck-ad-a43cab">
                         <div id="default-logo-upload-placeholder">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: var(--primary, #FFC700); margin-bottom: 12px;"></i>
-                            <p style="margin: 0; color: var(--text, #ECECEC); font-size: 0.95rem;">Clique para fazer upload da logo</p>
-                            <p style="margin: 6px 0 0; color: var(--text-dark, #888); font-size: 0.85rem;">PNG ou JPG, até 5MB. Deixe vazio para usar o logo Conecta King.</p>
+                            <i class="fas fa-cloud-upload-alt ck-ad-04d2f2"></i>
+                            <p class="ck-ad-5a376f">Clique para fazer upload da logo</p>
+                            <p class="ck-ad-df15ca">PNG ou JPG, até 5MB. Deixe vazio para usar o logo Conecta King.</p>
                         </div>
-                        <div id="default-logo-upload-preview" style="display: none; flex-direction: column; align-items: center; width: 100%;">
-                            <img id="default-logo-preview-img" src="" alt="Preview da logo" style="max-height: 80px; max-width: 200px; width: auto; height: auto; object-fit: contain; margin-bottom: 10px;">
-                            <button type="button" id="default-logo-remove-btn" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;">
+                        <div class="ck-ad-64fcb8" id="default-logo-upload-preview">
+                            <img class="ck-ad-b52b58" id="default-logo-preview-img" src="" alt="Preview da logo">
+                            <button type="button" id="default-logo-remove-btn" class="btn btn-secondary ck-ad-f1fc6d">
                                 <i class="fas fa-times"></i> Remover logo
                             </button>
                         </div>
                     </div>
-                    <input type="file" id="default-logo-file-input" accept="image/png,image/jpeg,image/jpg" style="position: absolute; left: -9999px; width: 1px; height: 1px;">
+                    <input class="ck-ad-7f910f" type="file" id="default-logo-file-input" accept="image/png,image/jpeg,image/jpg">
                 </div>
                 <div class="input-group ck-mb-16">
                     <label for="default-logo-size">Tamanho (px) - entre 20 e 420</label>
-                    <input type="number" id="default-logo-size" min="20" max="420" value="60" class="modal-input-text" style="width: 100%; max-width: 120px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text);">
+                    <input type="number" id="default-logo-size" min="20" max="420" value="60" class="modal-input-text ck-ad-b828cb">
                 </div>
                 <div class="input-group ck-mb-20">
                     <label for="default-logo-link">Link ao clicar na logo (opcional)</label>
-                    <input type="url" id="default-logo-link" class="modal-input-text" placeholder="https://..." style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text);">
+                    <input type="url" id="default-logo-link" class="modal-input-text ck-ad-bd6aa3" placeholder="https://...">
                 </div>
                 <div class="ck-mb-20" id="default-logo-size-preview">
                     <span class="ck-text-dark-09">Como aparece no rodapé:</span>
-                    <div id="default-logo-size-preview-img" style="margin-top: 8px; min-height: 40px;"></div>
+                    <div class="ck-ad-4ed27f" id="default-logo-size-preview-img"></div>
                 </div>
                 <button type="button" id="save-default-branding-btn" class="btn btn-primary">
                     <i class="fas fa-save"></i> Salvar logomarca padrão
                 </button>
-                <span id="default-branding-message" style="margin-left: 12px; color: var(--text-dark); font-size: 0.9rem;"></span>
+                <span class="ck-ad-347424" id="default-branding-message"></span>
             </div>
         </section>
 
@@ -467,30 +467,30 @@
                 <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os códigos">
                     <div class="ck-flex-between">
                         <span class="ck-label-dark">Total de Códigos</span>
-                        <i class="fas fa-key" style="color: var(--primary); font-size: 1.5rem;"></i>
+                        <i class="fas fa-key ck-ad-20952f"></i>
                     </div>
-                    <div id="stat-total-codes" style="font-size: 2rem; font-weight: 800; color: var(--primary);">0</div>
+                    <div class="ck-ad-f02af0" id="stat-total-codes">0</div>
                 </div>
                 <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="available" role="button" tabindex="0" aria-label="Filtrar: códigos disponíveis">
                     <div class="ck-flex-between">
                         <span class="ck-label-dark">Códigos Disponíveis</span>
-                        <i class="fas fa-check-circle" style="color: #2ecc71; font-size: 1.5rem;"></i>
+                        <i class="fas fa-check-circle ck-ad-fb6a54"></i>
                     </div>
-                    <div id="stat-available-codes" style="font-size: 2rem; font-weight: 800; color: #2ecc71;">0</div>
+                    <div class="ck-ad-b9f919" id="stat-available-codes">0</div>
                 </div>
                 <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="claimed" role="button" tabindex="0" aria-label="Filtrar: códigos utilizados">
                     <div class="ck-flex-between">
                         <span class="ck-label-dark">Códigos Utilizados</span>
-                        <i class="fas fa-check" style="color: #3498db; font-size: 1.5rem;"></i>
+                        <i class="fas fa-check ck-ad-144315"></i>
                     </div>
-                    <div id="stat-used-codes" style="font-size: 2rem; font-weight: 800; color: #3498db;">0</div>
+                    <div class="ck-ad-3e388c" id="stat-used-codes">0</div>
                 </div>
                 <div class="stat-card-mini stat-card-clickable ck-card-pad-click" data-code-quick-filter="all" role="button" tabindex="0" aria-label="Filtrar: todos os códigos">
                     <div class="ck-flex-between">
                         <span class="ck-label-dark">Taxa de Uso</span>
-                        <i class="fas fa-percentage" style="color: #f39c12; font-size: 1.5rem;"></i>
+                        <i class="fas fa-percentage ck-ad-f46854"></i>
                     </div>
-                    <div id="stat-usage-rate" style="font-size: 2rem; font-weight: 800; color: #f39c12;">0%</div>
+                    <div class="ck-ad-ea9aa7" id="stat-usage-rate">0%</div>
                 </div>
             </div>
             
@@ -576,7 +576,7 @@
                 </div>
                 
                 <!-- Indicador de filtros ativos (códigos) -->
-                <div id="codes-filters-active-bar" class="filters-active-bar" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: rgba(255,199,0,0.08); border: 1px solid var(--primary); border-radius: 8px; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div id="codes-filters-active-bar" class="filters-active-bar ck-ad-46cc56">
                     <span class="ck-text-light-09" id="codes-filters-active-text"></span>
                     <button type="button" id="codes-clear-all-filters-btn" class="btn btn-secondary ck-btn-sm">
                         <i class="fas fa-times-circle"></i> Limpar todos os filtros
@@ -584,7 +584,7 @@
                 </div>
                 
                 <!-- Seção de Filtros e Ações -->
-                <div class="filter-actions" style="flex-wrap: wrap; gap: 10px;">
+                <div class="filter-actions ck-ad-aa2bc5">
                     <label for="filter-input" class="sr-only">Filtrar códigos por código, link ou e-mail</label>
                     <input type="text" id="filter-input" placeholder="Filtrar por código, link ou e-mail (Enter para buscar)" aria-label="Filtrar códigos" autocomplete="off">
                     
@@ -604,7 +604,7 @@
                         </button>
                         <div id="codes-columns-dropdown" class="dropdown-columns ck-hidden" role="menu" aria-label="Colunas visíveis"></div>
                     </div>
-                    <label style="color: var(--text-dark); font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                    <label class="ck-ad-98b4d6">
                         <span>Itens por página:</span>
                         <select class="ck-input-sm" id="codes-per-page" aria-label="Itens por página">
                             <option value="25">25</option>
@@ -628,15 +628,15 @@
             </div>
             
             <!-- Legenda de cores (vencimento) -->
-            <div class="codes-legend" style="display: flex; align-items: center; gap: 16px; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-dark); flex-wrap: wrap;">
-                <span><span class="legend-dot" style="background: #2ecc71;"></span> Em dia / Sem expiração</span>
-                <span><span class="legend-dot" style="background: #f39c12;"></span> Vence em até 30 dias</span>
-                <span><span class="legend-dot" style="background: #e74c3c;"></span> Vencido</span>
+            <div class="codes-legend ck-ad-96d6b6">
+                <span><span class="legend-dot ck-ad-8c165e"></span> Em dia / Sem expiração</span>
+                <span><span class="legend-dot ck-ad-ca3e48"></span> Vence em até 30 dias</span>
+                <span><span class="legend-dot ck-ad-50a69f"></span> Vencido</span>
             </div>
             
             <!-- Loading e Tabela de Códigos -->
             <div id="codes-table-loading" class="table-loading-overlay ck-hidden" aria-hidden="true">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+                <i class="fas fa-spinner fa-spin ck-ad-cac731"></i>
                 <span>Carregando...</span>
             </div>
             <div class="table-container" id="codes-table-container">
@@ -682,11 +682,11 @@
     </div>
     <!-- Modal de Detalhes de Analytics do Perfil -->
     <div id="profile-analytics-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 1200px; max-height: 95vh; overflow-y: auto;">
-            <div class="modal-header" style="position: sticky; top: 0; background: var(--bg-light); z-index: 10; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 16px;">
+        <div class="modal-content ck-ad-f4096e">
+            <div class="modal-header ck-ad-c7d95c">
                 <h4 id="profile-analytics-title">Detalhes de Analytics</h4>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <select id="analytics-period-selector" style="padding: 8px 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text); border-radius: 6px; font-size: 0.9rem;">
+                <div class="ck-ad-410624">
+                    <select class="ck-ad-fb33f9" id="analytics-period-selector">
                         <option value="7">últimos 7 dias</option>
                         <option value="30" selected>últimos 30 dias</option>
                         <option value="90">últimos 90 dias</option>
@@ -705,8 +705,8 @@
 
     <!-- Modal Dashboard do Usuário (Admin - visão completa por cliente) -->
     <div id="admin-user-dashboard-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 1000px; max-height: 95vh; overflow-y: auto;">
-            <div class="modal-header" style="position: sticky; top: 0; background: var(--bg-light); z-index: 10; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px;">
+        <div class="modal-content ck-ad-fedcc7">
+            <div class="modal-header ck-ad-64c3f7">
                 <h4 id="admin-user-dashboard-title">Dashboard do usuário</h4>
                 <button id="close-admin-user-dashboard-btn" class="close-btn">&times;</button>
             </div>
@@ -726,11 +726,11 @@
                 <button id="close-auto-delete-modal-btn" class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="color: var(--text-dark); margin-bottom: 20px;">
+                <p class="ck-ad-3a88d7">
                     Configure a exclusão automática de usuários vencidos. Os usuários serão excluídos após X dias da data de expiração da assinatura.
                 </p>
                 <div id="auto-delete-configs-list"></div>
-                <div class="input-group" style="margin-top: 20px;">
+                <div class="input-group ck-ad-5fa693">
                     <label for="new-auto-delete-days">Dias após expiração para excluir:</label>
                     <input type="number" id="new-auto-delete-days" min="1" placeholder="60" class="modal-input-text">
                 </div>
@@ -739,7 +739,7 @@
                         <input type="checkbox" id="new-auto-delete-active"> Ativar exclusão automática
                     </label>
                 </div>
-                <button id="save-auto-delete-config-btn" class="btn btn-primary" style="margin-top: 15px;">
+                <button id="save-auto-delete-config-btn" class="btn btn-primary ck-ad-b62ee5">
                     <i class="fas fa-save"></i> Salvar Configuração
                 </button>
             </div>
@@ -797,7 +797,7 @@
 
         <div class="input-group">
             <label for="modal-profile-slug">Slug público (Informações)</label>
-            <input type="text" id="modal-profile-slug" class="modal-input-text" readonly tabindex="-1" style="opacity:.85;cursor:default;">
+            <input type="text" id="modal-profile-slug" class="modal-input-text ck-ad-beb4cc" readonly tabindex="-1">
             <small class="ck-hint">Só leitura — o cliente altera isto no painel (Informações). Ex.: adrianokingg</small>
         </div>
 

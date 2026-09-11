@@ -137,7 +137,7 @@
                                 <label class="opt"><input type="radio" class="ynwt" name="{{ $fid }}" value="Não"><span>Não</span></label>
                             </div>
                             <div class="follow" data-follow-for="{{ $fid }}">
-                                @if($followLabel)<div class="lab" style="margin-top:4px"><span class="bar"></span><span>{{ $followLabel }}</span></div>@endif
+                                @if($followLabel)<div class="lab ck-fp-96ad60"><span class="bar"></span><span>{{ $followLabel }}</span></div>@endif
                                 <input type="text" name="{{ $fid }}_text" placeholder="{{ $ph !== '' ? $ph : 'Sua resposta' }}">
                             </div>
 

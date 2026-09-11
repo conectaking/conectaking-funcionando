@@ -16,7 +16,7 @@
 <body>
 <div class="wrap">
     <a class="back" href="javascript:history.back()">← Voltar</a>
-    <h1 style="margin-top:16px;">{{ $title }}</h1>
+    <h1 class="ck-gcu-8a359a">{{ $title }}</h1>
     <p class="sub">Item #{{ $profileItemId }} · {{ $kind }}</p>
 
     <form id="form" class="card">

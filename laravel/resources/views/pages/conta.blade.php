@@ -111,7 +111,7 @@
                         <p>Status: <span id="plan-status" class="status-badge">...</span></p>
                         <p id="plan-details">...</p>
                         
-                        <a href="https://api.whatsapp.com/send?phone=+5511988161364&text=Ol%C3%A1%21%20Gostaria%20de%20renovar%20minha%20assinatura%20do%20Conecta%20King." target="_blank" class="btn btn-primary" id="renew-button" style="display: none; margin-top: 1rem;">
+                        <a href="https://api.whatsapp.com/send?phone=+5511988161364&text=Ol%C3%A1%21%20Gostaria%20de%20renovar%20minha%20assinatura%20do%20Conecta%20King." target="_blank" class="btn btn-primary ck-ct-5a89b1" id="renew-button">
                             Renovar Assinatura
                         </a>
                     </div>

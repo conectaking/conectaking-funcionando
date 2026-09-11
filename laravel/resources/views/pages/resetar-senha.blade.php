@@ -34,7 +34,7 @@
         <div class="msg error">Link inválido ou expirado. Solicite uma nova recuperação de senha.</div>
         <div class="back"><a href="/recuperar-senha"><i class="fas fa-key"></i> Recuperar senha</a></div>
         @endif
-        <div class="back" style="margin-top: 16px;"><a href="/"><i class="fas fa-arrow-left"></i> Voltar ao início</a></div>
+        <div class="back ck-rs-d265a6"><a href="/"><i class="fas fa-arrow-left"></i> Voltar ao início</a></div>
     </div>
     @if ($token !== '')
     @vite(['resources/css/fontawesome.css', 'resources/js/pages/resetar-senha.js'])

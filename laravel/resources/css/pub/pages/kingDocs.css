@@ -549,3 +549,6 @@
     .kd-badge-bad { background: #fde8e8; color: #922b21; }
     .file-list-skel .skel-line { height: 10px; background: linear-gradient(90deg, #eceae7 0%, #f5f3ef 50%, #eceae7 100%); background-size: 200% 100%; animation: kdSkel 1.2s ease infinite; border-radius: 4px; margin-bottom: .5rem; }
     @keyframes kdSkel { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* auto-extracted from resources/views/pages/kingDocs.blade.php */
+

@@ -55,7 +55,7 @@
                 <a href="#faq" class="nav-link">FAQ</a>
             </nav>
                     <div class="nav-buttons">
-                        <a href="#" class="btn btn-secondary" id="landing-sair-btn" style="display: none !important;" title="Encerrar sessão e entrar com outra conta">
+                        <a href="#" class="btn btn-secondary ck-ix-9656c9" id="landing-sair-btn" title="Encerrar sessão e entrar com outra conta">
                             <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Sair</span>
                         </a>
                         <a href="/login" class="btn btn-secondary" id="login-btn">Login</a>
@@ -108,21 +108,21 @@
         </section>
 
     <!-- Preview do Carto Virtual -->
-    <section class="section" style="background: var(--graphite); padding: 50px 0;">
+    <section class="section ck-ix-8800b7">
         <div class="container ck-container-1200">
-            <div class="section-header" style="margin-bottom: 30px;">
-                <h2 style="position: relative; display: inline-block; color: var(--white); font-family: 'Cinzel', serif;">
+            <div class="section-header ck-ix-dd7272">
+                <h2 class="ck-ix-d12637">
                     Veja Nosso Carto Virtual em Ao
                 </h2>
                 <p>Visualize como funciona o ConectaKing na prtica</p>
                 </div>
-            <div style="max-width: 600px; margin: 40px auto; position: relative;">
-                <div style="background: var(--black-absolute); border: 3px solid var(--yellow-primary); border-radius: 24px; padding: 20px; box-shadow: 0 30px 90px rgba(255, 199, 0, 0.3); position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--yellow-primary), var(--red-primary));"></div>
-                    <div style="height: 500px; overflow: hidden; border-radius: 16px;">
-                        <iframe id="card-preview-iframe" src="https://tag.conectaking.com.br/adrianokingg" frameborder="0" style="width: 100%; height: 100%; border: none; border-radius: 16px;"></iframe>
+            <div class="ck-ix-3c8d3f">
+                <div class="ck-ix-3f6e8d">
+                    <div class="ck-ix-e5e8bd"></div>
+                    <div class="ck-ix-6cfd8e">
+                        <iframe class="ck-ix-aa7a58" id="card-preview-iframe" src="https://tag.conectaking.com.br/adrianokingg" frameborder="0"></iframe>
                     </div>
-                    <div style="margin-top: 16px; text-align: center;">
+                    <div class="ck-ix-d1b3fe">
                         <a href="https://tag.conectaking.com.br/adrianokingg" target="_blank" class="btn btn-primary ck-w-full">
                             <i class="fas fa-external-link-alt"></i> Ver Carto Completo
                         </a>
@@ -133,44 +133,44 @@
         </section>
 
     <!-- CTA Intermedirio 1 -->
-    <section class="section" style="background: linear-gradient(135deg, var(--black-absolute) 0%, var(--red-dark) 100%); padding: 60px 0; text-align: center; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
+    <section class="section ck-ix-8a066a">
+        <div class="ck-ix-0ab009"></div>
         <div class="container ck-container-1200-z">
-            <h3 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3vw, 2.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);">
+            <h3 class="ck-ix-247950">
                 Profissionais de sucesso não trocam cartes.<br>Eles trocam conexões.
             </h3>
-            <a href="#planos" class="btn btn-primary" style="animation: glow 2s ease-in-out infinite;">
+            <a href="#planos" class="btn btn-primary ck-ix-d95d00">
                 <i class="fas fa-rocket"></i> Quero Minha Conexo Agora
             </a>
         </div>
     </section>
 
     <!-- Como Funciona -->
-    <section id="como-funciona" class="section" style="background: var(--graphite); padding: 60px 0;">
+    <section id="como-funciona" class="section ck-ix-554fcc">
         <div class="container ck-container-1200">
             <div class="section-header">
-                <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);">
+                <h2 class="ck-ix-78406c">
                     Como Funciona
                 </h2>
-                <p style="color: rgba(245, 245, 245, 0.8); font-size: 1.1rem;">Sem aplicativo. Sem papel. Sem fric</p>
+                <p class="ck-ix-37bb63">Sem aplicativo. Sem papel. Sem fric</p>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; margin-top: 60px;">
+            <div class="ck-ix-53c586">
                 <div class="card fade-in">
-                    <div style="width: 80px; height: 80px; background: var(--yellow-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2rem; color: var(--black-absolute); box-shadow: 0 10px 30px rgba(255, 199, 0, 0.3);">
+                    <div class="ck-ix-076bc6">
                         <i class="fas fa-hand-pointer"></i>
                     </div>
                     <h3 class="ck-heading-cinzel-center">1. Encoste</h3>
                     <p class="ck-text-muted-center">Aproxime o celular do seu ConectaKing NFC</p>
                 </div>
                 <div class="card fade-in">
-                    <div style="width: 80px; height: 80px; background: var(--yellow-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2rem; color: var(--black-absolute); box-shadow: 0 10px 30px rgba(255, 199, 0, 0.3);">
+                    <div class="ck-ix-076bc6">
                         <i class="fas fa-link"></i>
                 </div>
                     <h3 class="ck-heading-cinzel-center">2. Conecte</h3>
                     <p class="ck-text-muted-center">Seu perfil digital abre instantaneamente</p>
                     </div>
                 <div class="card fade-in">
-                    <div style="width: 80px; height: 80px; background: var(--yellow-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2rem; color: var(--black-absolute); box-shadow: 0 10px 30px rgba(255, 199, 0, 0.3);">
+                    <div class="ck-ix-076bc6">
                         <i class="fas fa-chart-line"></i>
                     </div>
                     <h3 class="ck-heading-cinzel-center">3. Converta</h3>
@@ -181,12 +181,12 @@
         </section>
 
     <!-- CTA Estratgico 1 -->
-    <section class="section" style="background: linear-gradient(135deg, var(--red-dark) 0%, var(--black-absolute) 100%); padding: 80px 0; text-align: center;">
+    <section class="section ck-ix-c054f7">
         <div class="container ck-container-1200">
-            <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--white); margin-bottom: 1.5rem;">
+            <h2 class="ck-ix-651430">
                 Sua marca não pede aten<br>Ela impe respeito.
             </h2>
-            <p style="font-size: 1.2rem; color: rgba(245, 245, 245, 0.9); margin-bottom: 2rem;">
+            <p class="ck-ix-cde788">
                 Transforme cada contato em uma oportunidade real de negócio
             </p>
             <a href="#planos" class="btn btn-primary btn-lg">
@@ -196,52 +196,52 @@
     </section>
 
     <!-- Benefícios -->
-    <section id="beneficios" class="section" style="background: var(--black-absolute);">
+    <section id="beneficios" class="section ck-ix-df3688">
         <div class="container ck-container-1200">
             <div class="section-header">
-                <h2 style="position: relative; display: inline-block; color: var(--white); font-family: 'Cinzel', serif;">
+                <h2 class="ck-ix-d12637">
                     Por Que Escolher o ConectaKing?
                 </h2>
                 <p>Resultados reais para profissionais que pensam grande</p>
                 </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 60px;">
-                <div class="card fade-in" style="animation: float 4s ease-in-out infinite;">
-                    <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem;">
+            <div class="ck-ix-67e4c4">
+                <div class="card fade-in ck-ix-40395e">
+                    <div class="ck-ix-9ac385">
                         <i class="fas fa-crown"></i>
             </div>
                     <h3 class="ck-heading-cinzel">Autoridade Profissional Instantnea</h3>
                     <p class="ck-text-muted">Projete confiana e profissionalismo desde o primeiro contato. Seu carto digital fala por você.</p>
                 </div>
-                <div class="card fade-in" style="animation: float 4.5s ease-in-out infinite; animation-delay: 0.2s;">
-                    <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2s ease-in-out infinite;">
+                <div class="card fade-in ck-ix-2cd543">
+                    <div class="ck-ix-256dcd">
                         <i class="fas fa-rocket"></i>
             </div>
                     <h3 class="ck-heading-cinzel">Mais Impacto em Reuníes e Eventos</h3>
                     <p class="ck-text-muted">Destaque-se em networking, feiras e encontros profissionais com tecnologia de ponta.</p>
                 </div>
-                <div class="card fade-in" style="animation: float 5s ease-in-out infinite; animation-delay: 0.4s;">
-                    <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.2s ease-in-out infinite;">
+                <div class="card fade-in ck-ix-8f0a3c">
+                    <div class="ck-ix-eddda4">
                         <i class="fas fa-sync-alt"></i>
                     </div>
                     <h3 class="ck-heading-cinzel">Atualizaes Ilimitadas</h3>
                     <p class="ck-text-muted">Mude links, adicione informações e atualize seu perfil quantas vezes precisar, sem custos extras.</p>
                 </div>
-                <div class="card fade-in" style="animation: float 4.8s ease-in-out infinite; animation-delay: 0.6s;">
-                    <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.4s ease-in-out infinite;">
+                <div class="card fade-in ck-ix-2f8030">
+                    <div class="ck-ix-7ee99b">
                         <i class="fas fa-leaf"></i>
                     </div>
                     <h3 class="ck-heading-cinzel">Sustentvel e Reutilizvel</h3>
                     <p class="ck-text-muted">Elimine o desperdcio de cartes de papel. Um ConectaKing dura para sempre.</p>
                 </div>
-                <div class="card fade-in" style="animation: float 5.2s ease-in-out infinite; animation-delay: 0.8s;">
-                    <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.6s ease-in-out infinite;">
+                <div class="card fade-in ck-ix-c6de4f">
+                    <div class="ck-ix-07d152">
                         <i class="fas fa-network-wired"></i>
                     </div>
                     <h3 class="ck-heading-cinzel">Centralizao Total da Presença Digital</h3>
                     <p class="ck-text-muted">Todos os seus links, redes sociais e informações em um único lugar profissional.</p>
                 </div>
-                <div class="card fade-in" style="animation: float 5.5s ease-in-out infinite; animation-delay: 1s;">
-                    <div style="width: 60px; height: 60px; background: rgba(255, 199, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--yellow-primary); font-size: 1.5rem; animation: pulse 2.8s ease-in-out infinite;">
+                <div class="card fade-in ck-ix-44adfc">
+                    <div class="ck-ix-51d5ba">
                         <i class="fas fa-shield-alt"></i>
                     </div>
                     <h3 class="ck-heading-cinzel">Segurana e Privacidade</h3>
@@ -252,57 +252,57 @@
     </section>
 
     <!-- CTA Estratgico 2 -->
-    <section class="section" style="background: var(--black-absolute); padding: 80px 0; text-align: center; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
+    <section class="section ck-ix-f9a77c">
+        <div class="ck-ix-0ab009"></div>
         <div class="container ck-container-1200-z">
-            <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3rem); color: var(--white); margin-bottom: 1.5rem; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); position: relative; display: inline-block;">
+            <h2 class="ck-ix-74e673">
                 Pare de perder oportunidades.<br>Comece a criar conexões que vendem.
             </h2>
-            <p style="font-size: 1.2rem; color: rgba(245, 245, 245, 0.9); margin-bottom: 2rem;">
+            <p class="ck-ix-cde788">
                 Junte-se a centenas de profissionais que já estão revolucionando seu networking
             </p>
-            <a href="#planos" class="btn btn-primary btn-lg" style="animation: glow 2s ease-in-out infinite;">
+            <a href="#planos" class="btn btn-primary btn-lg ck-ix-d95d00">
                 <i class="fas fa-rocket"></i> Quero Transformar Meu Networking Agora
             </a>
         </div>
 </section>
 
     <!-- CTA Antes dos Planos -->
-    <section class="section" style="background: linear-gradient(135deg, var(--red-dark) 0%, var(--black-absolute) 100%); padding: 60px 0; text-align: center; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.12) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
+    <section class="section ck-ix-3f19d1">
+        <div class="ck-ix-9d755b"></div>
         <div class="container ck-container-1200-z">
-            <h3 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3vw, 2.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);">
+            <h3 class="ck-ix-247950">
                 Escolha o plano que transforma seu networking em vendas reais.
             </h3>
-            <p style="font-size: 1.1rem; color: rgba(245, 245, 245, 0.8); margin-bottom: 1.5rem;">
+            <p class="ck-ix-26fc4b">
                 Planos flexveis para profissionais que querem resultados, não promessas.
             </p>
                 </div>
     </section>
 
     <!-- Planos -->
-    <section id="planos" class="section pricing" style="padding-top: 40px;">
+    <section id="planos" class="section pricing ck-ix-74b1d6">
         <div class="container ck-container-1200">
-            <div class="section-header" style="position: relative; margin-bottom: 40px;">
-                <h2 style="position: relative; display: inline-block; color: var(--white); font-family: 'Cinzel', serif; text-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2);">
+            <div class="section-header ck-ix-50f774">
+                <h2 class="ck-ix-61e975">
                     Escolha Seu Plano
                 </h2>
                 <p>Planos anuais e mensais disponveis. Resultados imediatos e duradouros.</p>
             </div>
             <div class="pricing-grid" id="plans-container">
-                <p style="text-align: center; grid-column: 1 / -1; color: rgba(245, 245, 245, 0.7);">Carregando planos...</p>
+                <p class="ck-ix-c9b8e7">Carregando planos...</p>
                 </div>
             </div>
         </section>
 
     <!-- FAQ -->
-    <section id="faq" class="section" style="background: var(--graphite);">
+    <section id="faq" class="section ck-ix-63f1f0">
         <div class="container ck-container-1200">
             <div class="section-header">
                 <h2>Perguntas Frequentes</h2>
                 <p>Tire suas dvidas sobre o ConectaKing</p>
                 </div>
-            <div style="max-width: 800px; margin: 60px auto 0;">
+            <div class="ck-ix-f8c54a">
                 <div class="faq-item ck-faq-item">
                     <div class="faq-question ck-faq-q">
                         <span>Tem mensalidade?</span>
@@ -352,19 +352,19 @@
         </section>
 
     <!-- CTA Final Estratgico -->
-    <section class="section" style="background: linear-gradient(135deg, var(--black-absolute) 0%, var(--red-dark) 100%); padding: 100px 0; text-align: center; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(220, 38, 38, 0.2) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite;"></div>
+    <section class="section ck-ix-bbf4c5">
+        <div class="ck-ix-b24b34"></div>
         <div class="container ck-container-1200-z">
-            <h2 style="font-family: 'Cinzel', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: var(--white); margin-bottom: 1.5rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(220, 38, 38, 0.2); line-height: 1.3;">
+            <h2 class="ck-ix-61b320">
                 Não espere mais.<br>Comece a vender hoje.
             </h2>
-            <p style="font-size: 1.3rem; color: rgba(245, 245, 245, 0.9); margin-bottom: 2.5rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.8;">
+            <p class="ck-ix-b24dfc">
                 Cada dia sem o ConectaKing é um dia perdido de conexões e vendas. Garanta seu lugar entre os profissionais que estão dominando o networking digital.
             </p>
-            <a href="#planos" class="btn btn-primary btn-lg" style="font-size: 1.2rem; padding: 22px 50px; animation: glow 2s ease-in-out infinite;">
+            <a href="#planos" class="btn btn-primary btn-lg ck-ix-083b98">
                 <i class="fas fa-crown"></i> Quero Meu ConectaKing Agora
             </a>
-            <p style="margin-top: 20px; color: rgba(245, 245, 245, 0.6); font-size: 0.9rem;">
+            <p class="ck-ix-2cc7c8">
                 <i class="fas fa-shield-alt"></i> Garantia de satisfao | <i class="fas fa-sync-alt"></i> Atualizaes ilimitadas | <i class="fas fa-headset"></i> Suporte prioritrio
             </p>
             </div>
@@ -373,19 +373,19 @@
     
 
     <!-- Footer -->
-    <footer style="background: var(--black-absolute); border-top: 2px solid rgba(255, 199, 0, 0.2); padding: 60px 0 30px; margin-top: 80px;">
+    <footer class="ck-ix-c106d8">
         <div class="container ck-container-1200">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; margin-bottom: 40px;">
+            <div class="ck-ix-32963c">
                 <div>
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                        <img src="/logo.png" alt="ConectaKing" style="height: 40px;">
-                        <span style="font-family: 'Cinzel', serif; font-size: 1.3rem; font-weight: 700; color: var(--yellow-primary);">CONECTAKING</span>
+                    <div class="ck-ix-a0185c">
+                        <img class="ck-ix-b62d66" src="/logo.png" alt="ConectaKing">
+                        <span class="ck-ix-78a687">CONECTAKING</span>
                     </div>
-                    <p style="color: rgba(245, 245, 245, 0.7); line-height: 1.8; margin-bottom: 20px;">
+                    <p class="ck-ix-3b5f7f">
                         A nova era da conexão digital. Transforme cada contato em uma oportunidade real com tecnologia NFC premium.
                     </p>
-                    <div style="display: flex; gap: 15px;">
-                        <a href="https://www.instagram.com/conectaking" target="_blank" style="width: 40px; height: 40px; background: rgba(255, 199, 0, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--yellow-primary); text-decoration: none; transition: all 0.3s;" onmouseover="this.style.background='var(--yellow-primary)'; this.style.color='var(--black-absolute)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.background='rgba(255, 199, 0, 0.1)'; this.style.color='var(--yellow-primary)'; this.style.transform='translateY(0)';">
+                    <div class="ck-ix-0bac17">
+                        <a class="ck-ix-043935" href="https://www.instagram.com/conectaking" target="_blank" onmouseover="this.style.background='var(--yellow-primary)'; this.style.color='var(--black-absolute)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.background='rgba(255, 199, 0, 0.1)'; this.style.color='var(--yellow-primary)'; this.style.transform='translateY(0)';">
                             <i class="fab fa-instagram"></i>
                         </a>
                     </div>
@@ -403,7 +403,7 @@
                     <h3 class="ck-heading-gold">Suporte</h3>
                     <ul class="ck-list-none">
                         <li class="ck-mb-12" id="footer-login-item"><a class="ck-link-muted" href="/login" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
-                        <li style="margin-bottom: 12px; display: none;" id="footer-access-panel-item"><a class="ck-link-muted" href="/dashboard" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
+                        <li class="ck-ix-62d461" id="footer-access-panel-item"><a class="ck-link-muted" href="/dashboard" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
                         <li class="ck-mb-12"><a class="ck-link-muted" href="/registro" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
                         <li class="ck-mb-12"><a class="ck-link-muted" href="#planos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Falar com Vendedor</a></li>
                         <li class="ck-mb-12"><a class="ck-link-muted" href="https://www.instagram.com/conectaking" target="_blank" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Instagram</a></li>
@@ -417,16 +417,16 @@
                     </ul>
                 </div>
             </div>
-            <div style="text-align: center; padding-top: 30px; border-top: 1px solid rgba(255, 199, 0, 0.1); color: rgba(245, 245, 245, 0.6);">
+            <div class="ck-ix-a6c657">
                 <p>&copy; 2025 ConectaKing. Todos os direitos reservados.</p>
-                <p style="margin-top: 8px; font-size: 0.9rem;">Desenvolvido com <i class="fas fa-heart" style="color: var(--red-primary);"></i> para profissionais que pensam grande</p>
+                <p class="ck-ix-eec01a">Desenvolvido com <i class="fas fa-heart ck-ix-3c9ec7"></i> para profissionais que pensam grande</p>
             </div>
         </div>
     </footer>
 
     <!-- CTA Final Fixo Mobile -->
-    <div style="position: fixed; bottom: 0; left: 0; right: 0; background: var(--black-absolute); border-top: 3px solid var(--yellow-primary); padding: 20px; z-index: 999; box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9); display: none;" id="cta-fixed-mobile">
-        <div style="max-width: 1200px; margin: 0 auto;">
+    <div class="ck-ix-34cce3" id="cta-fixed-mobile">
+        <div class="ck-ix-e42940">
             <a href="#planos" class="btn btn-primary ck-w-full">
                 <i class="fas fa-crown"></i> Quero meu ConectaKing agora
             </a>

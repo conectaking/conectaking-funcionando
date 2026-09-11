@@ -9,7 +9,7 @@
   <div class="layout">
     <h1><i class="fas fa-file-invoice-dollar"></i> Orçamentos</h1>
     <div id="err" class="err"></div>
-    <p style="margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center">
+    <p class="ck-or-ccddb0">
       <a href="/recibos-orcamentos" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar à página anterior</a>
       <a href="/dashboard" class="btn btn-secondary"><i class="fas fa-home"></i> Voltar ao dashboard</a>
     </p>
@@ -58,8 +58,8 @@
         <div class="row"><span class="label">WhatsApp</span><br><span id="detail-whatsapp">-</span></div>
         <div class="row"><span class="label">Profissão</span><br><span id="detail-profissao">-</span></div>
         <div class="row"><span class="label">Ticket</span><br><span id="detail-ticket"></span></div>
-        <div class="row"><span class="label">Por qu (classificao)</span><br><span id="detail-reason" style="color:#aaa;">-</span></div>
-        <div class="row"><span class="label">Recomendao</span><br><span id="detail-recommendation" style="color:#facc15;">-</span></div>
+        <div class="row"><span class="label">Por qu (classificao)</span><br><span class="ck-or-a3cb96" id="detail-reason">-</span></div>
+        <div class="row"><span class="label">Recomendao</span><br><span class="ck-or-862b5e" id="detail-recommendation">-</span></div>
         <div class="row"><span class="label">Respostas do formulrio</span><br><ul id="detail-respostas" class="respostas-lista">-</ul></div>
         <div class="row">
           <label class="label">Alterar status</label>
@@ -77,7 +77,7 @@
           <button type="button" class="btn btn-secondary" id="btn-close-modal">Fechar</button>
           <button type="button" class="btn btn-danger" id="btn-delete"><i class="fas fa-trash-alt"></i> Excluir</button>
         </div>
-        <button type="button" class="btn btn-primary" id="btn-save-status" style="background:#facc15;color:#000;">Salvar status</button>
+        <button type="button" class="btn btn-primary ck-or-732f33" id="btn-save-status">Salvar status</button>
       </div>
     </div>
   </div>

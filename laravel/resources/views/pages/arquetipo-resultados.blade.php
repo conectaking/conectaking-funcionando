@@ -10,7 +10,7 @@
   <div class="layout">
     <h1><i class="fas fa-user-check"></i> Testes de Arqutipo</h1>
     <div id="err" class="err"></div>
-    <p style="margin-bottom:20px">
+    <p class="ck-ar-49f14f">
       <a href="/dashboard" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar ao dashboard</a>
     </p>
 

@@ -1,4 +1,5 @@
 /** documentos-ver — Vite entry (extracted inline) */
+import '@css/pages/documentos-ver.css';
 
 (function() {
   const params = new URLSearchParams(window.location.search || '');

@@ -3,14 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Painel â€” Recibos e OrÃ§amentos | ConectaKing</title>
-
-<style>
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #171717; }
-        ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
-    </style>
+    <title>Painel — Recibos e Orçamentos | ConectaKing</title>
     @vite(['resources/css/app.css', 'resources/js/pages/dashboard-recibos-orcamentos.js'])
 </head>
 <body data-recibos-nav="painel" class="recibos-modulo-page bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">

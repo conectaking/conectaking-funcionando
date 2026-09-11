@@ -10,3 +10,6 @@ body { margin:0; font-family: system-ui, sans-serif; background: var(--bg); colo
         .item .meta { padding:12px; }
         .price { font-weight:700; color: var(--btn); }
         .wa { display:inline-block; margin-top:10px; padding:10px 14px; border-radius:8px; background:var(--btn); color:var(--btnText); text-decoration:none; font-weight:700; }
+
+/* auto-extracted from resources/views/cartao/sales-public.blade.php */
+

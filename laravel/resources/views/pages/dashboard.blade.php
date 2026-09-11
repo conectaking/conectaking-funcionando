@@ -124,36 +124,36 @@
  <div id="modelos-editor" class="editor-pane active">
     <div class="info-section-header">
         <h4><i class="fas fa-layer-group"></i> Modelos de Cartão</h4>
-        <p style="color: var(--text-dark, #A1A1A1); margin: 8px 0 0; font-size: 0.9rem;">Escolha o layout do seu cartão. O Modelo Clássico é o atual; o Modelo Vitrine usa arte no topo e faixa rolante.</p>
+        <p class="ck-db-e050d4">Escolha o layout do seu cartão. O Modelo Clássico é o atual; o Modelo Vitrine usa arte no topo e faixa rolante.</p>
     </div>
-    <div class="card-layout-selector" id="card-layout-selector" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:20px 0;">
-        <button type="button" class="card-layout-card active" data-layout="classic" id="card-layout-classic" style="text-align:left;padding:16px;border-radius:14px;border:2px solid var(--dourado-principal,#FFC700);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);cursor:pointer;">
-            <div style="font-weight:700;margin-bottom:6px;"><i class="fas fa-id-card"></i> Modelo Clássico</div>
-            <div style="font-size:0.85rem;color:var(--text-dark,#A1A1A1);line-height:1.4;">Avatar, nome, bio e módulos em coluna — o cartão que você já usa.</div>
+    <div class="card-layout-selector ck-db-16363f" id="card-layout-selector">
+        <button type="button" class="card-layout-card active ck-db-3158e7" data-layout="classic" id="card-layout-classic">
+            <div class="ck-db-0e2afc"><i class="fas fa-id-card"></i> Modelo Clássico</div>
+            <div class="ck-db-f6ac6d">Avatar, nome, bio e módulos em coluna — o cartão que você já usa.</div>
         </button>
-        <button type="button" class="card-layout-card" data-layout="vitrine" id="card-layout-vitrine" style="text-align:left;padding:16px;border-radius:14px;border:2px solid rgba(255,255,255,0.12);background:var(--card-background-color,#1C1C21);color:var(--text,#ECECEC);cursor:pointer;">
-            <div style="font-weight:700;margin-bottom:6px;"><i class="fas fa-panorama"></i> Modelo Vitrine</div>
-            <div style="font-size:0.85rem;color:var(--text-dark,#A1A1A1);line-height:1.4;">Arte larga no topo, faixa de texto rolante, banners e bloco texto com botão.</div>
+        <button type="button" class="card-layout-card ck-db-777626" data-layout="vitrine" id="card-layout-vitrine">
+            <div class="ck-db-0e2afc"><i class="fas fa-panorama"></i> Modelo Vitrine</div>
+            <div class="ck-db-f6ac6d">Arte larga no topo, faixa de texto rolante, banners e bloco texto com botão.</div>
         </button>
     </div>
 
-    <div id="vitrine-settings-panel" style="display:none;margin-top:8px;padding:20px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.2);">
-        <h5 style="margin:0 0 12px;color:var(--text,#ECECEC);"><i class="fas fa-image"></i> Arte do topo (proporção 16:9)</h5>
-        <a href="img/guia-arte-vitrine-1920x1080.png" download="guia-arte-vitrine-1920x1080.png" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:8px;margin:0 0 14px;font-size:0.85rem;text-decoration:none;">
+    <div class="ck-db-1fe563" id="vitrine-settings-panel">
+        <h5 class="ck-db-b019c1"><i class="fas fa-image"></i> Arte do topo (proporção 16:9)</h5>
+        <a href="img/guia-arte-vitrine-1920x1080.png" download="guia-arte-vitrine-1920x1080.png" class="btn btn-secondary ck-db-2d95ad">
             <i class="fas fa-download"></i> Baixar guia de medidas
         </a>
-        <div id="vitrine-hero-upload-area" class="photo-upload-area" style="width:100%;max-width:480px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;position:relative;cursor:pointer;border:2px dashed rgba(255,255,255,0.2);background:#111;">
-            <img id="vitrine-hero-preview" src="" alt="Arte Vitrine" style="width:100%;height:100%;object-fit:cover;display:none;">
-            <div id="vitrine-hero-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#A1A1A1;padding:16px;text-align:center;">
-                <i class="fas fa-cloud-upload-alt" style="font-size:1.8rem;color:var(--dourado-principal,#FFC700);"></i>
+        <div id="vitrine-hero-upload-area" class="photo-upload-area ck-db-f1ec84">
+            <img class="ck-db-3a8281" id="vitrine-hero-preview" src="" alt="Arte Vitrine">
+            <div class="ck-db-45ae9d" id="vitrine-hero-placeholder">
+                <i class="fas fa-cloud-upload-alt ck-db-ad3ec4"></i>
                 <span>Clique para enviar a arte do topo</span>
-                <span style="font-size:0.8rem;opacity:0.85;">Você poderá ajustar o enquadramento (16:9)</span>
+                <span class="ck-db-292511">Você poderá ajustar o enquadramento (16:9)</span>
             </div>
-            <input type="file" id="vitrine-hero-file-input" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:5;">
+            <input class="ck-db-75c55c" type="file" id="vitrine-hero-file-input" accept="image/*">
         </div>
-        <button type="button" id="vitrine-hero-remove-btn" class="btn btn-secondary" style="margin-top:10px;display:none;"><i class="fas fa-trash"></i> Remover arte</button>
+        <button type="button" id="vitrine-hero-remove-btn" class="btn btn-secondary ck-db-7b4333"><i class="fas fa-trash"></i> Remover arte</button>
 
-        <div class="input-group" style="margin-top:20px;">
+        <div class="input-group ck-db-9eb125">
             <label for="vitrine-marquee-text">Texto da faixa rolante</label>
             <input type="text" id="vitrine-marquee-text" placeholder="Ex: PRÓXIMA TURMA: 18 a 20 de Setembro | Santos/SP" maxlength="200">
             <p class="input-hint">Aparece logo abaixo da arte, passando de lado. A logomarca (se houver) fica na frente do texto.</p>
@@ -164,24 +164,24 @@
                 <label class="ck-flex-gap-6"><input type="radio" name="vitrine-marquee-bg-type" value="solid" checked> Cor sólida</label>
                 <label class="ck-flex-gap-6"><input type="radio" name="vitrine-marquee-bg-type" value="gradient"> Degradê</label>
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;align-items:flex-end;">
+            <div class="ck-db-875a65">
                 <div>
                     <label class="ck-hint-dark" for="vitrine-marquee-color1">Cor 1 (fundo)</label>
-                    <input type="color" id="vitrine-marquee-color1" value="#2A2A2E" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
+                    <input class="ck-db-286eb5" type="color" id="vitrine-marquee-color1" value="#2A2A2E">
                 </div>
                 <div id="vitrine-marquee-color2-wrap">
                     <label class="ck-hint-dark" for="vitrine-marquee-color2">Cor 2 (degradê)</label>
-                    <input type="color" id="vitrine-marquee-color2" value="#FFC700" style="width:52px;height:36px;border:none;background:transparent;cursor:pointer;">
+                    <input class="ck-db-286eb5" type="color" id="vitrine-marquee-color2" value="#FFC700">
                 </div>
             </div>
-            <div style="margin-top:16px;padding:14px;border-radius:10px;border:1px solid rgba(255,199,0,0.35);background:rgba(255,199,0,0.06);">
-                <label for="vitrine-marquee-text-color" style="display:block;font-weight:600;color:var(--text,#ECECEC);margin-bottom:8px;">
+            <div class="ck-db-d8c9dc">
+                <label class="ck-db-280c25" for="vitrine-marquee-text-color">
                     <i class="fas fa-font"></i> Cor do texto da faixa rolante
                 </label>
-                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                    <input type="color" id="vitrine-marquee-text-color" value="#FFC700" style="width:56px;height:40px;border:none;background:transparent;cursor:pointer;">
-                    <input type="text" id="vitrine-marquee-text-color-hex" value="#FFC700" maxlength="7" placeholder="#FFC700" style="width:110px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#111;color:#ECECEC;">
-                    <span style="font-size:0.8rem;color:var(--text-dark,#A1A1A1);">Escolha a cor ou digite o código (#RRGGBB)</span>
+                <div class="ck-db-f2f0b3">
+                    <input class="ck-db-87dc0b" type="color" id="vitrine-marquee-text-color" value="#FFC700">
+                    <input class="ck-db-6efe3a" type="text" id="vitrine-marquee-text-color-hex" value="#FFC700" maxlength="7" placeholder="#FFC700">
+                    <span class="ck-db-85d1a1">Escolha a cor ou digite o código (#RRGGBB)</span>
                 </div>
             </div>
             <p class="input-hint">No degradê, o fundo da faixa vai da Cor 1 para a Cor 2. A cor do texto é independente.</p>
@@ -196,20 +196,20 @@
         </div>
         <div class="input-group">
             <label>Logomarca na frente do texto (até 3)</label>
-            <p class="input-hint" style="margin-top:4px;">A primeira logo aparece logo antes do nome/texto que rola. Você pode adicionar até 3.</p>
-            <div id="vitrine-marquee-logos-list" style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;"></div>
+            <p class="input-hint ck-db-a3a556">A primeira logo aparece logo antes do nome/texto que rola. Você pode adicionar até 3.</p>
+            <div class="ck-db-989c32" id="vitrine-marquee-logos-list"></div>
             <input type="file" id="vitrine-marquee-logo-input" accept="image/*" class="ck-hidden">
-            <button type="button" id="vitrine-marquee-logo-add" class="btn btn-secondary" style="font-size:0.85rem;"><i class="fas fa-plus"></i> Adicionar logomarca</button>
+            <button type="button" id="vitrine-marquee-logo-add" class="btn btn-secondary ck-db-22d055"><i class="fas fa-plus"></i> Adicionar logomarca</button>
         </div>
-        <div class="input-group" style="margin-top:12px;">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <div class="input-group ck-db-9374e8">
+            <label class="ck-db-4868a8">
                 <input type="checkbox" id="vitrine-show-footer">
                 Mostrar rodapé com nome e direitos reservados
             </label>
         </div>
-        <div id="vitrine-live-mini-preview" style="margin-top:20px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);background:#f2f2f4;max-width:420px;">
-            <div id="vitrine-mini-hero" style="aspect-ratio:16/9;background:#1a1a1f;display:flex;align-items:center;justify-content:center;color:#888;font-size:0.85rem;">Preview da arte</div>
-            <div id="vitrine-mini-marquee" style="background:#2a2a2e;color:#FFC700;padding:8px 12px;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px;">Faixa rolante</div>
+        <div class="ck-db-a42dcb" id="vitrine-live-mini-preview">
+            <div class="ck-db-d938d3" id="vitrine-mini-hero">Preview da arte</div>
+            <div class="ck-db-fd4a3b" id="vitrine-mini-marquee">Faixa rolante</div>
         </div>
     </div>
 </div>
@@ -227,7 +227,7 @@
                 <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=" alt="Avatar do Usuário" id="dashboard-photo-preview">
                 <div class="upload-overlay"><i class="fas fa-pencil-alt"></i></div>
                 <div class="upload-loader"></div>
-                <input type="file" id="dashboard-photo-file-input" accept="image/*" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
+                <input class="ck-db-49296c" type="file" id="dashboard-photo-file-input" accept="image/*">
             </div>
             
             <div class="info-editor-fields-inner">
@@ -422,15 +422,15 @@
                         </div>
                         
                             <div id="background-image-container" class="ck-hidden">
-                                <p class="input-hint" style="margin:0 0 10px;font-size:0.82rem;line-height:1.45;color:#9ca3af;">
-                                    <strong style="color:#facc15">Antes de escolher o ficheiro:</strong> use foto grande em <strong>16:9</strong> (<strong>1920×1080</strong> px).
+                                <p class="input-hint ck-db-5e9a86">
+                                    <strong class="ck-db-dee14c">Antes de escolher o ficheiro:</strong> use foto grande em <strong>16:9</strong> (<strong>1920×1080</strong> px).
                                     No celular a foto é cortada nas laterais — o que importa (logo, rosto, texto) deve ficar na <strong>faixa central</strong>.
                                 </p>
-                                <a href="img/guia-fundo-cartao-1920x1080.png" download="guia-fundo-cartao-1920x1080.png" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:8px;margin:0 0 14px;font-size:0.85rem;text-decoration:none;">
+                                <a href="img/guia-fundo-cartao-1920x1080.png" download="guia-fundo-cartao-1920x1080.png" class="btn btn-secondary ck-db-2d95ad">
                                     <i class="fas fa-download"></i> Baixar guia de medidas (Photoshop)
                                 </a>
-                                <p class="input-hint" style="margin:0 0 14px;font-size:0.78rem;line-height:1.4;color:#9ca3af;">
-                                    O PNG tem a <strong style="color:#facc15">borda dourada do desktop</strong>, o <strong style="color:#fff">risco tracejado do mobile</strong> no meio e o círculo para a logomarca. Abra no Photoshop como camada de cima e enquadre a arte.
+                                <p class="input-hint ck-db-a6fad3">
+                                    O PNG tem a <strong class="ck-db-dee14c">borda dourada do desktop</strong>, o <strong class="ck-db-729d2f">risco tracejado do mobile</strong> no meio e o círculo para a logomarca. Abra no Photoshop como camada de cima e enquadre a arte.
                                 </p>
                                 <div class="setting-item">
                                     <div class="setting-label">
@@ -578,7 +578,7 @@
                                 <i class="fas fa-border-style"></i>
                                 <span>Curvatura da Borda</span>
                             </div>
-                            <div class="setting-control" style="flex-direction:column;align-items:stretch;gap:10px">
+                            <div class="setting-control ck-db-6691b5">
                                 <div class="segmented-control">
                                     <input type="radio" id="radius-preset-all" name="radius-preset" value="all" checked>
                                     <label for="radius-preset-all">Uniforme</label>
@@ -605,7 +605,7 @@
                                     <label>Base Esq.<input type="number" id="radius-bl" min="0" value="12"></label>
                                     <label>Base Dir.<input type="number" id="radius-br" min="0" value="12"></label>
                                 </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                                <div class="ck-db-c6926f">
                                     <small id="button-border-radius-value">12px 12px 12px 12px</small>
                                     <button id="save-radius-default-btn" class="btn btn-secondary" type="button" title="Salvar esses valores como padrão">Aplicar como padrão</button>
                                 </div>
@@ -631,8 +631,8 @@
                         Controle suas receitas, despesas, contas e orçamentos
                     </p>
                 </header>
-                <div id="finance-content" style="padding: 20px;">
-                    <p style="color: var(--text-secondary, #888888); text-align: center; padding: 40px;">
+                <div class="ck-db-f8d354" id="finance-content">
+                    <p class="ck-db-b4058b">
                         Carregando módulo financeiro...
                     </p>
                 </div>
@@ -646,8 +646,8 @@
                         Crie e gerencie vários formulários. Edite e apague na lista abaixo.
                     </p>
                 </header>
-                <div id="king-forms-content" style="padding: 0; height: calc(100vh - 140px); min-height: 400px;">
-                    <iframe id="king-forms-iframe" src="about:blank" title="King Forms" style="width: 100%; height: 100%; border: none; border-radius: 12px; background: var(--bg-primary, #0D0D0F);"></iframe>
+                <div class="ck-db-851de4" id="king-forms-content">
+                    <iframe class="ck-db-b125cd" id="king-forms-iframe" src="about:blank" title="King Forms"></iframe>
                 </div>
             </main>
             
@@ -695,11 +695,11 @@
 
                 <!-- Seção de Detalhes Completos dos Links -->
                 <div class="ck-mt-40">
-                    <h3 style="color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <h3 class="ck-db-3bbf37">
                         <i class="fas fa-list"></i> Detalhes Completos dos Seus Links
                     </h3>
-                    <div id="all-links-details" style="display: grid; gap: 15px;">
-                        <p style="color: var(--text-dark); text-align: center; padding: 20px;">Carregando detalhes dos links...</p>
+                    <div class="ck-db-330c9b" id="all-links-details">
+                        <p class="ck-db-e4d4ad">Carregando detalhes dos links...</p>
                     </div>
                 </div>
             </main>
@@ -714,12 +714,12 @@
                             <h4>QR Code da sua Tag</h4>
                             <p class="qr-art-hint">Escolha um tema. A logomarca entra no centro e o PNG sai pronto para o cliente imprimir ou postar.</p>
                             <div id="qr-theme-picker" class="qr-theme-picker" role="listbox" aria-label="Temas do QR Code">
-                                <button type="button" class="qr-theme-chip active" data-qr-theme="rei"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#FFC700,#1a1408)"></span>Rei</button>
-                                <button type="button" class="qr-theme-chip" data-qr-theme="classico"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#fff,#C9A227)"></span>Clássico</button>
-                                <button type="button" class="qr-theme-chip" data-qr-theme="noite"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#0ea5e9,#0b1220)"></span>Noite</button>
-                                <button type="button" class="qr-theme-chip" data-qr-theme="ouro"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#fde68a,#92400e)"></span>Ouro</button>
-                                <button type="button" class="qr-theme-chip" data-qr-theme="vinho"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#7f1d1d,#f59e0b)"></span>Vinho</button>
-                                <button type="button" class="qr-theme-chip" data-qr-theme="minimal"><span class="qr-theme-swatch" style="background:linear-gradient(135deg,#111,#888)"></span>Minimal</button>
+                                <button type="button" class="qr-theme-chip active" data-qr-theme="rei"><span class="qr-theme-swatch ck-db-1f668c"></span>Rei</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="classico"><span class="qr-theme-swatch ck-db-ebdda8"></span>Clássico</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="noite"><span class="qr-theme-swatch ck-db-e86160"></span>Noite</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="ouro"><span class="qr-theme-swatch ck-db-368076"></span>Ouro</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="vinho"><span class="qr-theme-swatch ck-db-2745ba"></span>Vinho</button>
+                                <button type="button" class="qr-theme-chip" data-qr-theme="minimal"><span class="qr-theme-swatch ck-db-84cd4c"></span>Minimal</button>
                             </div>
                             <label class="qr-logo-toggle">
                                 <input type="checkbox" id="qr-include-logo" checked>
@@ -772,9 +772,9 @@
                         <h3 class="ck-dash-h">
                             <i class="fas fa-eye"></i> Preview do Logo
                         </h3>
-                        <div id="branding-preview-container" style="background: #000; border-radius: 8px; padding: 40px; text-align: center; min-height: 200px; display: flex; align-items: center; justify-content: center;">
-                            <img id="branding-logo-preview" src="" alt="Logo da Empresa" style="max-width: 100%; max-height: 200px; object-fit: contain; display: none;" />
-                            <p id="branding-no-logo" style="color: var(--text-secondary, #888888);">Nenhum logo configurado</p>
+                        <div class="ck-db-b6297f" id="branding-preview-container">
+                            <img class="ck-db-a19f2b" id="branding-logo-preview" src="" alt="Logo da Empresa" />
+                            <p class="ck-db-5558d6" id="branding-no-logo">Nenhum logo configurado</p>
                         </div>
                     </div>
                     
@@ -810,13 +810,13 @@
                                 <small class="ck-text-muted-sm">URL para onde o logo redirecionará quando clicado</small>
                             </div>
                             
-                            <div style="display: flex; gap: 12px; margin-top: 32px;">
-                                <button type="button" onclick="clearBranding()" 
-                                        style="flex: 1; padding: 14px; border-radius: 8px; border: 2px solid var(--border-color, #333); background: transparent; color: var(--text-secondary, #888888); cursor: pointer; font-weight: 600;">
+                            <div class="ck-db-48b122">
+                                <button class="ck-db-86dddc" type="button" onclick="clearBranding()" 
+                                       >
                                     Limpar
                                 </button>
-                                <button type="submit" 
-                                        style="flex: 2; padding: 14px; border-radius: 8px; border: none; background: var(--dourado-principal, #FFD700); color: #000; cursor: pointer; font-weight: 700;">
+                                <button class="ck-db-13e7e7" type="submit" 
+                                       >
                                     <i class="fas fa-save"></i> Salvar Personalização
                                 </button>
                             </div>
@@ -832,14 +832,14 @@
                 </header>
                 
                 <!-- Abas de navegação -->
-                <div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--border-color, #333);">
-                    <button id="tab-modules" class="tab-button active" onclick="switchSeparationTab('modules')" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 2px solid var(--dourado-principal, #FFD700); color: var(--dourado-principal, #FFD700); font-weight: 600; cursor: pointer;">
+                <div class="ck-db-2e4831">
+                    <button id="tab-modules" class="tab-button active ck-db-73b6d7" onclick="switchSeparationTab('modules')">
                         Módulos por Plano
                     </button>
-                    <button id="tab-individual" class="tab-button" onclick="switchSeparationTab('individual')" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary, #888888); font-weight: 600; cursor: pointer;">
+                    <button id="tab-individual" class="tab-button ck-db-c615da" onclick="switchSeparationTab('individual')">
                         Planos Individuais por Usuário
                     </button>
-                    <button id="tab-link-limits" class="tab-button" onclick="switchSeparationTab('link-limits')" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary, #888888); font-weight: 600; cursor: pointer;">
+                    <button id="tab-link-limits" class="tab-button ck-db-c615da" onclick="switchSeparationTab('link-limits')">
                         Quantidade de Links
                     </button>
                 </div>
@@ -853,8 +853,8 @@
                             </p>
                             <div class="ck-mb-16">
                                 <label class="ck-label-muted" for="module-filter-input">Filtrar por módulo</label>
-                                <input type="text" id="module-filter-input" placeholder="Ex: Banner, Carrossel, King Forms..." 
-                                    style="width: 100%; max-width: 320px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--graphite, #1F1F1F); color: var(--text-primary, #FFF); font-size: 0.95rem;">
+                                <input class="ck-db-3a6061" type="text" id="module-filter-input" placeholder="Ex: Banner, Carrossel, King Forms..." 
+                                   >
                             </div>
                         </div>
                         
@@ -862,7 +862,7 @@
                             <p>Carregando módulos...</p>
                         </div>
                         
-                        <div class="module-availability-actions" style="margin-top: 24px;">
+                        <div class="module-availability-actions ck-db-ef7a9d">
                             <button id="save-module-availability-btn" class="btn btn-primary ck-hidden">
                                 <i class="fas fa-save"></i> Salvar Alterações
                             </button>
@@ -873,7 +873,7 @@
                 <!-- Aba de Planos Individuais por Usuário -->
                 <div id="tab-content-individual" class="tab-content-separation ck-hidden">
                     <div class="individual-plans-container">
-                        <div style="margin-bottom: 24px;">
+                        <div class="ck-db-8d7033">
                             <p class="ck-text-muted-mb20">
                                 Configure planos individuais para usuários específicos. Exemplo: permitir que um usuário tenha acesso ao módulo Carrossel mesmo sem ter o plano completo.
                             </p>
@@ -895,13 +895,13 @@
                             <p class="ck-text-muted-mb20">
                                 Configure a quantidade máxima de links por tipo de módulo em cada plano. Deixe em branco para ilimitado.
                             </p>
-                            <div style="margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
-                                <div style="flex: 1; min-width: 200px;">
+                            <div class="ck-db-113f1f">
+                                <div class="ck-db-72b66b">
                                     <label class="ck-label-muted" for="link-limits-filter-module">Filtrar por módulo</label>
                                     <input class="ck-input-graphite" type="text" id="link-limits-filter-module" placeholder="Ex: Banner, WhatsApp..." 
                                        >
                                 </div>
-                                <div style="flex: 1; min-width: 200px;">
+                                <div class="ck-db-72b66b">
                                     <label class="ck-label-muted" for="link-limits-filter-plan">Filtrar por plano</label>
                                     <input class="ck-input-graphite" type="text" id="link-limits-filter-plan" placeholder="Ex: King Start, King Prime..." 
                                        >
@@ -909,11 +909,11 @@
                             </div>
                         </div>
                         
-                        <div id="link-limits-grid" class="link-limits-grid" style="overflow-x: auto;">
+                        <div id="link-limits-grid" class="link-limits-grid ck-db-42d445">
                             <p>Carregando limites...</p>
                         </div>
                         
-                        <div class="link-limits-actions" style="margin-top: 24px; display: flex; gap: 12px;">
+                        <div class="link-limits-actions ck-db-cf2c90">
                             <button id="save-link-limits-btn" class="btn btn-primary ck-hidden">
                                 <i class="fas fa-save"></i> Salvar Alterações
                             </button>
@@ -955,7 +955,7 @@
                             <button id="edit-plans-btn" class="btn btn-primary">
                                 <i class="fas fa-edit"></i> Editar Planos
                             </button>
-                            <div id="plans-edit-form" style="display: none; margin-top: 20px;">
+                            <div class="ck-db-712f1f" id="plans-edit-form">
                                 <!-- Formulário de edição será preenchido via JavaScript -->
                             </div>
                         </div>
@@ -978,10 +978,10 @@
                         <h3 class="ck-dash-h">
                             <i class="fas fa-eye"></i> Preview da Imagem
                         </h3>
-                        <div id="link-preview-image-container" style="background: #000; border-radius: 8px; padding: 20px; text-align: center; min-height: 400px; display: flex; align-items: center; justify-content: center;">
-                            <img id="link-preview-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200' viewBox='0 0 400 200'%3E%3Crect fill='%231a1a1a' width='400' height='200'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14'%3EPreview da imagem%3C/text%3E%3C/svg%3E" alt="Preview" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+                        <div class="ck-db-792137" id="link-preview-image-container">
+                            <img class="ck-db-bc47bf" id="link-preview-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200' viewBox='0 0 400 200'%3E%3Crect fill='%231a1a1a' width='400' height='200'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14'%3EPreview da imagem%3C/text%3E%3C/svg%3E" alt="Preview" />
                         </div>
-                        <p style="color: var(--text-secondary, #888888); margin-top: 15px; font-size: 0.9rem; text-align: center;">
+                        <p class="ck-db-ef2a27">
                             Esta é a imagem que aparecerá quando o link do site for compartilhado
                         </p>
                     </div>
@@ -1009,7 +1009,7 @@
                                 <small class="ck-text-muted-sm">Texto secundário exibido na preview (máx. 100 caracteres)</small>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                            <div class="ck-db-75bb5d">
                                 <div class="form-group">
                                     <label class="ck-label-primary">
                                         <i class="fas fa-fill"></i> Cor de Fundo 1
@@ -1031,7 +1031,7 @@
                                 </div>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                            <div class="ck-db-50ce5e">
                                 <div class="form-group">
                                     <label class="ck-label-primary">
                                         <i class="fas fa-font"></i> Cor do Texto Principal
@@ -1053,7 +1053,7 @@
                                 </div>
                             </div>
                             
-                            <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
+                            <div class="ck-db-48a0a1">
                                 <button type="button" id="link-preview-reset-btn" class="btn btn-secondary ck-px-12-py-24">
                                     <i class="fas fa-undo"></i> Restaurar Padrão
                                 </button>
@@ -1089,8 +1089,8 @@
                     <i class="fas fa-share-alt"></i>
                     <i class="fas fa-user"></i>
                 </div>
-                <div class="preview-branding-wrap" style="text-align:center;margin-top:10px;min-height:28px;">
-                    <img id="preview-branding-logo" src="" alt="Logo" style="display:none; max-height:60px; width:auto; object-fit:contain;">
+                <div class="preview-branding-wrap ck-db-4762fe">
+                    <img class="ck-db-189f2a" id="preview-branding-logo" src="" alt="Logo">
                 </div>
             </div>
         </div>

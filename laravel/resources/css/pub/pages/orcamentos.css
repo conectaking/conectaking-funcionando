@@ -38,3 +38,9 @@
     .btn-danger { background: rgba(239,68,68,.2); color: #fca5a5; border: 1px solid rgba(239,68,68,.4); }
     .btn-danger:hover { background: rgba(239,68,68,.3); }
     .empty { color: #666; padding: 40px; text-align: center; }
+
+/* auto-extracted from resources/views/pages/orcamentos.blade.php */
+.ck-or-ccddb0 { margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.ck-or-a3cb96 { color:#aaa; }
+.ck-or-862b5e { color:#facc15; }
+.ck-or-732f33 { background:#facc15;color:#000; }

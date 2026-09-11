@@ -11,3 +11,6 @@ body { margin:0; font-family: system-ui, sans-serif; background:#0D0D0F; color:#
                border-radius:12px; text-decoration:none; }
         .btn.secondary { background:transparent; color:#FFC700; border:1px solid rgba(255,199,0,.4); margin-left:8px; }
         .note { margin-top:28px; font-size:.85rem; opacity:.55; line-height:1.5; }
+
+/* auto-extracted from resources/views/cartao/ks-public.blade.php */
+

@@ -66,17 +66,15 @@
         </button>
 
         <header class="profile-header">
-            <div style="position: relative; display: inline-block;">
+            <div class="ck-cp-5c6489">
                 @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
                     <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
-                         alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient"
-                         style="outline:none!important;border:none!important;box-shadow:none!important;
-                         -webkit-mask-image:linear-gradient(to bottom,black 0%,black 50%,rgba(0,0,0,.98) 65%,rgba(0,0,0,.9) 75%,rgba(0,0,0,.7) 85%,rgba(0,0,0,.4) 92%,rgba(0,0,0,.1) 97%,transparent 100%);
-                         mask-image:linear-gradient(to bottom,black 0%,black 50%,rgba(0,0,0,.98) 65%,rgba(0,0,0,.9) 75%,rgba(0,0,0,.7) 85%,rgba(0,0,0,.4) 92%,rgba(0,0,0,.1) 97%,transparent 100%);">
+                         alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient ck-cp-9380eb"
+                        >
                 @else
                     <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
-                         alt="Foto de Perfil" class="{{ $avatarClass }}"
-                         style="outline:none!important;border:none!important;box-shadow:none!important;">
+                         alt="Foto de Perfil" class="{{ $avatarClass }} ck-cp-90b3e1"
+                        >
                 @endif
             </div>
             <h1 class="profile-name">{{ $d['display_name'] ?? 'Nome do Usuário' }}</h1>
@@ -91,13 +89,13 @@
         @endphp
 
         @if($hasVerse && $versePos === 'top')
-            <a href="/{{ $profile_slug }}/biblia" class="verse-of-day-box verse-size-{{ $verseSize }}" style="display:block;text-decoration:none;color:inherit;" title="Abrir Bíblia">
+            <a href="/{{ $profile_slug }}/biblia" class="verse-of-day-box verse-size-{{ $verseSize }} ck-cp-c9458d" title="Abrir Bíblia">
                 <div class="verse-of-day-ref">{{ $verseOfDay['ref'] ?? 'Versículo do Dia' }}</div>
                 <div class="verse-of-day-text">"{{ $verseOfDay['texto'] }}"</div>
                 @if(!empty($verseOfDay['reflexao']))
                     <div class="verse-of-day-reflexao">{{ $verseOfDay['reflexao'] }}</div>
                 @endif
-                <div style="margin-top:10px;font-size:.78rem;opacity:.75;font-family:system-ui,sans-serif;">Abrir Bíblia →</div>
+                <div class="ck-cp-114bb6">Abrir Bíblia →</div>
             </a>
         @endif
 
@@ -186,7 +184,7 @@
                     @endphp
                     @if(($item['sales_page_display_format'] ?? 'button') === 'banner' && !empty($item['sales_page_banner_image_url']))
                         <a href="{{ $spUrl }}" class="banner-link" @if($spUrl !== '#') target="_blank" rel="noopener noreferrer" @endif data-item-id="{{ $item['id'] ?? '' }}">
-                            <img src="{{ $item['sales_page_banner_image_url'] }}" alt="{{ $spTitle }}" style="width:100%;border-radius:16px;">
+                            <img class="ck-cp-1c5ec1" src="{{ $item['sales_page_banner_image_url'] }}" alt="{{ $spTitle }}">
                         </a>
                     @else
                         <a href="{{ $spUrl }}" class="profile-link" @if($spUrl !== '#') target="_blank" rel="noopener noreferrer" @endif data-item-id="{{ $item['id'] ?? '' }}">
@@ -214,10 +212,10 @@
                         @if($fmt === 'banner')
                             <a href="{{ $formUrl }}" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
                                 @if(!empty($fd['banner_image_url']))
-                                    <img src="{{ $fd['banner_image_url'] }}" alt="{{ $formTitle }}" style="width:100%;border-radius:16px;">
+                                    <img class="ck-cp-1c5ec1" src="{{ $fd['banner_image_url'] }}" alt="{{ $formTitle }}">
                                 @else
-                                    <div style="min-height:160px;border-radius:16px;background:#1c1c21;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.35);">
-                                        <i class="fas fa-image" style="font-size:2rem;"></i>
+                                    <div class="ck-cp-4074da">
+                                        <i class="fas fa-image ck-cp-e14c89"></i>
                                     </div>
                                 @endif
                             </a>
@@ -242,9 +240,9 @@
                         $glLogo = $img !== '' && !str_contains($img, 'placeholder');
                     @endphp
                     @if($reg !== '#' && $reg !== '')
-                        <a href="{{ $reg }}" class="profile-link guest-list-item" data-item-id="{{ $item['id'] ?? '' }}" target="_blank" rel="noopener noreferrer" style="flex-wrap:wrap;">
+                        <a href="{{ $reg }}" class="profile-link guest-list-item ck-cp-9deb4d" data-item-id="{{ $item['id'] ?? '' }}" target="_blank" rel="noopener noreferrer">
                             @if($glLogo)
-                                <img src="{{ $img }}" alt="" class="profile-link-logo" style="max-width:24px;max-height:24px;border-radius:8px;">
+                                <img src="{{ $img }}" alt="" class="profile-link-logo ck-cp-4d5236">
                             @else
                                 <i class="fas fa-users"></i>
                             @endif
@@ -360,8 +358,8 @@
                         <div class="texto-bloco">
                             {!! nl2br(e(trim($bodyText))) !!}
                             @if($cta !== '')
-                                <div style="margin-top:10px;">
-                                    <a href="{{ $cta }}" class="profile-link" target="_blank" rel="noopener noreferrer" style="display:inline-flex;width:auto;padding:10px 16px;">
+                                <div class="ck-cp-d8a81e">
+                                    <a href="{{ $cta }}" class="profile-link ck-cp-47a258" target="_blank" rel="noopener noreferrer">
                                         <span>{{ $cfg['button_label'] ?? 'Saiba mais' }}</span>
                                     </a>
                                 </div>
@@ -396,7 +394,7 @@
                     @if($href !== '#')
                         <a href="{{ $href }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
                             @if($img !== '' && !str_contains($img, 'placeholder'))
-                                <img src="{{ $img }}" alt="" class="profile-link-logo logo-png" style="width:24px;height:24px;object-fit:contain;">
+                                <img src="{{ $img }}" alt="" class="profile-link-logo logo-png ck-cp-fdea56">
                             @else
                                 <i class="{{ $icon }}"></i>
                             @endif
@@ -414,13 +412,13 @@
         </section>
 
         @if($hasVerse && $versePos === 'bottom')
-            <a href="/{{ $profile_slug }}/biblia" class="verse-of-day-box verse-of-day-box--bottom verse-size-{{ $verseSize }}" style="display:block;text-decoration:none;color:inherit;" title="Abrir Bíblia">
+            <a href="/{{ $profile_slug }}/biblia" class="verse-of-day-box verse-of-day-box--bottom verse-size-{{ $verseSize }} ck-cp-c9458d" title="Abrir Bíblia">
                 <div class="verse-of-day-ref">{{ $verseOfDay['ref'] ?? 'Versículo do Dia' }}</div>
                 <div class="verse-of-day-text">"{{ $verseOfDay['texto'] }}"</div>
                 @if(!empty($verseOfDay['reflexao']))
                     <div class="verse-of-day-reflexao">{{ $verseOfDay['reflexao'] }}</div>
                 @endif
-                <div style="margin-top:10px;font-size:.78rem;opacity:.75;font-family:system-ui,sans-serif;">Abrir Bíblia →</div>
+                <div class="ck-cp-114bb6">Abrir Bíblia →</div>
             </a>
         @endif
 
@@ -440,17 +438,17 @@
 
 {{-- Modal Wi‑Fi --}}
 <div id="wifi-qrcode-modal" class="wifi-modal-overlay ck-hidden" aria-hidden="true">
-    <div class="wifi-modal-content" style="background:#111;color:#fff;max-width:360px;margin:10vh auto;padding:20px;border-radius:16px;position:relative;">
-        <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close" aria-label="Fechar" style="position:absolute;right:12px;top:8px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;">&times;</button>
+    <div class="wifi-modal-content ck-cp-a55ecb">
+        <button type="button" id="wifi-modal-close-btn" class="wifi-modal-close ck-cp-444c69" aria-label="Fechar">&times;</button>
         <h4 id="wifi-modal-title">Conectar ao Wi‑Fi</h4>
-        <div class="wifi-ssid-block" style="margin:12px 0;">
+        <div class="wifi-ssid-block ck-cp-41db5c">
             <span class="wifi-ssid-label">Nome da rede</span>
             <strong id="wifi-ssid-visible" class="wifi-ssid-value" style="display:block;"></strong>
         </div>
         <p class="wifi-modal-hint">Escaneie o QR Code ou copie a senha.</p>
-        <div id="wifi-qrcode-image" style="display:flex;justify-content:center;margin:12px 0;background:#fff;padding:12px;border-radius:8px;"></div>
+        <div class="ck-cp-d50492" id="wifi-qrcode-image"></div>
         <div class="wifi-password-row">Senha: <strong id="wifi-password-visible"></strong></div>
-        <button type="button" id="wifi-copy-password-btn" class="profile-link" style="margin-top:12px;width:100%;">Copiar senha</button>
+        <button type="button" id="wifi-copy-password-btn" class="profile-link ck-cp-39a9a7">Copiar senha</button>
     </div>
 </div>
 

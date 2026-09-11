@@ -20,3 +20,8 @@ body { margin:0; font-family: Georgia, 'Times New Roman', serif; background:#0D0
         form.jump { display:flex; gap:8px; justify-content:center; margin-top:16px; font-family:system-ui,sans-serif; }
         form.jump input { width:72px; padding:8px; border-radius:8px; border:1px solid #333; background:#111; color:#ECECEC; }
         form.jump button { padding:8px 12px; border:0; border-radius:8px; background:#FFC700; color:#111; font-weight:700; cursor:pointer; }
+
+/* auto-extracted from resources/views/cartao/bible-plan.blade.php */
+.ck-bpl-2a1f67 { opacity:.7; }
+.ck-bpl-d77151 { font-weight:600;margin-bottom:8px; }
+.ck-bpl-0b3f1e { color:#FFC700;margin-bottom:8px;font-family:system-ui,sans-serif;font-size:.9rem; }

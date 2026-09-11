@@ -49,8 +49,8 @@
         <button class="ks-btn" id="ks-panel" title="Ir para o painel"><i class="fas fa-house"></i> Painel</button>
         <button class="ks-btn" id="ks-share"><i class="fas fa-share"></i> Compartilhar</button>
         <button class="ks-btn ks-btn-primary" id="ks-publish"><i class="fas fa-bullhorn"></i> Publicar</button>
-        <button class="ks-btn" id="ks-delete-project" title="Excluir projeto inteiro"
-          style="color:#f87171;border-color:rgba(248,113,113,.45)"><i class="fas fa-trash"></i> Excluir projeto</button>
+        <button class="ks-btn ck-ksp-b0f322" id="ks-delete-project" title="Excluir projeto inteiro"
+         ><i class="fas fa-trash"></i> Excluir projeto</button>
       </div>
     </div>
 
@@ -120,7 +120,7 @@
                     id="ks-activity-count-revisao">0</span></div>
                 <div id="ks-activity-list-revisao"></div>
               </div>
-              <div class="ks-abo-group" style="border-bottom:0">
+              <div class="ks-abo-group ck-ksp-6d9a07">
                 <div class="ks-abo-ghead"><span>Finalizado</span><span class="ks-abo-count"
                     id="ks-activity-count-finalizado">0</span></div>
                 <div id="ks-activity-list-finalizado"></div>
@@ -137,7 +137,7 @@
                       <span id="ks-activity-email">-</span>
                       <span class="opacity-40 ks-activity-contact-sep"> • </span>
                       <span id="ks-activity-phone">-</span>
-                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-open-whatsapp" style="margin-left:8px;padding:4px 9px">
+                      <button type="button" class="ks-btn ks-btn-sm ck-ksp-639564" id="ks-activity-open-whatsapp">
                         <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
                       </button>
                     </div>
@@ -149,7 +149,7 @@
                     <div class="ks-abo-client-sub ck-mt-8">
                       <span class="ks-abo-badge" id="ks-activity-badge">-</span>
                     </div>
-                    <div class="ks-abo-client-sub" id="ks-activity-sales-mini" style="margin-top:6px;display:none">
+                    <div class="ks-abo-client-sub ck-ksp-4a237a" id="ks-activity-sales-mini">
                       <span class="ks-abo-badge ck-hidden" id="ks-activity-sales-pending-mini"></span>
                       <span class="ks-abo-badge ck-hidden" id="ks-activity-sales-approved-mini"></span>
                     </div>
@@ -178,7 +178,7 @@
                         title="Apaga a rodada atual e exclui o cadastro do cliente nesta galeria.">
                         <i class="fas fa-user-slash"></i> Excluir rodada + cadastro
                       </button>
-                      <div class="text-xs ks-muted" style="line-height:1.4;margin-top:6px">
+                      <div class="text-xs ks-muted ck-ksp-d13b34">
                         <b>Excluir só rodada:</b> remove apenas a seleção atual. &nbsp;|&nbsp;
                         <b>Excluir rodada + cadastro:</b> remove seleção e cadastro do cliente.
                       </div>
@@ -224,7 +224,7 @@
                 </div>
               </div>
 
-              <div class="ks-abo-box ks-abo-tabsbox" style="padding:0">
+              <div class="ks-abo-box ks-abo-tabsbox ck-ksp-41d7d7">
                 <div class="ks-abo-tabs">
                   <div class="ks-abo-tab active" data-abo-tab="photos">Fotos selecionadas</div>
                   <div class="ks-abo-tab" data-abo-tab="comments">Comentários</div>
@@ -269,7 +269,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <button type="button" class="ks-btn" id="ks-r2-refresh"><i class="fas fa-rotate"></i> Atualizar inventário</button>
               <button type="button" class="ks-btn" id="btn-cleanup-r2-dry"><i class="fas fa-search"></i> Verificar órfãos</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
+              <button type="button" class="ks-btn ck-ksp-7eb7e6" id="btn-cleanup-r2"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
             </div>
           </div>
 
@@ -410,7 +410,7 @@
             </div>
             <div class="ks-field md:col-span-2">
               <label>Mensagem de acesso</label>
-              <textarea class="ks-input mt-2" id="f-mensagem" style="min-height:120px"></textarea>
+              <textarea class="ks-input mt-2 ck-ksp-2faa5e" id="f-mensagem"></textarea>
             </div>
             <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div class="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-1">Cliente(s) e acesso</div>
@@ -521,7 +521,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div class="text-xs text-amber-100 uppercase tracking-widest font-extrabold">Top pendências</div>
                   <div class="flex items-center gap-2">
-                    <select id="ks-sales-top-pending-period" class="ks-input" style="min-width:120px;padding:4px 8px;font-size:12px;line-height:1.2">
+                    <select id="ks-sales-top-pending-period" class="ks-input ck-ksp-40ff10">
                       <option value="today">Hoje</option>
                       <option value="week" selected>Semana</option>
                       <option value="month">Mês</option>
@@ -553,7 +553,7 @@
                 </div>
                 <div class="ks-field md:col-span-2">
                   <label>Instruções para pagamento</label>
-                  <textarea class="ks-input mt-2" id="ks-sales-pix-instructions" style="min-height:90px" placeholder="Ex.: Envie o comprovante logo após o pagamento para liberar o download."></textarea>
+                  <textarea class="ks-input mt-2 ck-ksp-92e99a" id="ks-sales-pix-instructions" placeholder="Ex.: Envie o comprovante logo após o pagamento para liberar o download."></textarea>
                   <div class="mt-2">
                     <button class="ks-btn" id="ks-sales-pix-generate" type="button"><i class="fas fa-wand-magic-sparkles"></i> Gerar instrução automática</button>
                   </div>
@@ -606,7 +606,7 @@
                   <input class="ks-input flex-1 min-w-[200px]" id="ks-sales-client-search" placeholder="Buscar cliente por nome ou e-mail..." />
                   <div class="flex items-center gap-2 shrink-0">
                     <label for="ks-sales-clients-filter" class="text-[11px] text-slate-400 whitespace-nowrap">Filtrar:</label>
-                    <select id="ks-sales-clients-filter" class="ks-input" style="min-width:200px;padding:8px 10px;font-size:13px">
+                    <select id="ks-sales-clients-filter" class="ks-input ck-ksp-da2e99">
                       <option value="all">Tudo</option>
                       <option value="received">Com valor recebido</option>
                       <option value="missing">Com falta a receber</option>
@@ -665,16 +665,16 @@
               </div>
               <div class="mt-3 flex items-center gap-2 flex-wrap">
                 <button class="ks-btn" id="ks-sales-payment-confirm" type="button"><i class="fas fa-check"></i> Pagamento confirmado</button>
-                <button class="ks-btn" id="ks-sales-payment-adiantamento" type="button" style="border-color:rgba(45,212,191,.7);background:rgba(13,148,136,.16);color:#ccfbf1;font-weight:800" title="Registra um pagamento parcial: soma ao recebido nesta rodada até quitar o combinado (sem substituir o acumulado)."><i class="fas fa-coins"></i> Registrar adiantamento</button>
-                <button class="ks-btn" id="ks-sales-payment-courtesy-rest" type="button" style="border-color:rgba(167,139,250,.75);background:rgba(139,92,246,.18);color:#ede9fe;font-weight:800" title="Abonar o que falta como cortesia e encerrar o pacote"><i class="fas fa-hand-holding-heart"></i> Cortesia no restante</button>
+                <button class="ks-btn ck-ksp-1ce19a" id="ks-sales-payment-adiantamento" type="button" title="Registra um pagamento parcial: soma ao recebido nesta rodada até quitar o combinado (sem substituir o acumulado)."><i class="fas fa-coins"></i> Registrar adiantamento</button>
+                <button class="ks-btn ck-ksp-295c03" id="ks-sales-payment-courtesy-rest" type="button" title="Abonar o que falta como cortesia e encerrar o pacote"><i class="fas fa-hand-holding-heart"></i> Cortesia no restante</button>
                 <button class="ks-btn" id="ks-sales-payment-fix-amount" type="button"><i class="fas fa-pen"></i> Corrigir valor pago</button>
                 <button class="ks-btn" id="ks-sales-payment-reject" type="button"><i class="fas fa-xmark"></i> Recusar comprovante</button>
                 <button class="ks-btn" id="ks-sales-payment-pending" type="button"><i class="fas fa-rotate-left"></i> Comprovante em espera</button>
-                <button class="ks-btn" id="ks-sales-payment-undo-confirm" type="button" style="border-color:rgba(251,191,36,.75);background:rgba(245,158,11,.14);color:#fef3c7;font-weight:800" title="Zera recebido/cortesia e volta a aguardar comprovante (desfaz confirmação por engano)"><i class="fas fa-undo"></i> Desfazer confirmação</button>
-                <button class="ks-btn" id="ks-sales-payment-bless" type="button" style="background:rgba(139,92,246,.22);border-color:rgba(167,139,250,.85);color:#ede9fe;font-weight:900"><i class="fas fa-gift"></i> Abençoado (sem pagamento)</button>
+                <button class="ks-btn ck-ksp-0962be" id="ks-sales-payment-undo-confirm" type="button" title="Zera recebido/cortesia e volta a aguardar comprovante (desfaz confirmação por engano)"><i class="fas fa-undo"></i> Desfazer confirmação</button>
+                <button class="ks-btn ck-ksp-6dfe1c" id="ks-sales-payment-bless" type="button"><i class="fas fa-gift"></i> Abençoado (sem pagamento)</button>
                 <button class="ks-btn" id="ks-sales-open-proof" type="button"><i class="fas fa-image"></i> Ver comprovante</button>
-                <button class="ks-btn" id="ks-sales-open-client-whats" type="button" style="background:rgba(16,185,129,.20);border-color:rgba(16,185,129,.68);color:#d1fae5;font-weight:900"><i class="fab fa-whatsapp"></i> WhatsApp do cliente</button>
-                <button class="ks-btn" id="ks-sales-photos-all-pending" type="button" style="border-color:rgba(245,158,11,.65);background:rgba(234,179,8,.14);color:#fde68a;font-weight:800"><i class="fas fa-hourglass-half"></i> Aguardando liberação (todas)</button>
+                <button class="ks-btn ck-ksp-272a83" id="ks-sales-open-client-whats" type="button"><i class="fab fa-whatsapp"></i> WhatsApp do cliente</button>
+                <button class="ks-btn ck-ksp-446b07" id="ks-sales-photos-all-pending" type="button"><i class="fas fa-hourglass-half"></i> Aguardando liberação (todas)</button>
                 <button class="ks-btn" id="ks-sales-approve-all" type="button"><i class="fas fa-check-double"></i> Aprovar todas (original)</button>
                 <p class="text-xs text-slate-400 mt-2 max-w-3xl leading-relaxed" id="ks-sales-payment-extra-hint"><b>Pagamento confirmado:</b> pergunta se soma ou substitui o acumulado. <b>Registrar adiantamento:</b> só soma ao recebido (pagamento parcial até quitar). Entrada e parcelas do restante ficam em <b>Valores combinados</b>. <b>Cortesia no restante:</b> abona o saldo. <b>Comprovante em espera / Desfazer:</b> como antes.</p>
               </div>
@@ -682,7 +682,7 @@
                 <div id="ks-sales-proof-meta" class="text-xs ks-muted"></div>
                 <div id="ks-sales-proof-empty" class="text-xs ks-muted mt-2">Nenhum comprovante anexado nesta rodada.</div>
                 <div class="mt-2 rounded-lg overflow-hidden border border-slate-700 hidden" id="ks-sales-proof-img-wrap">
-                  <img id="ks-sales-proof-img" alt="Comprovante do cliente" style="width:100%;max-height:360px;object-fit:contain;background:#0b0b0b;display:block" />
+                  <img class="ck-ksp-76aac4" id="ks-sales-proof-img" alt="Comprovante do cliente" />
                 </div>
               </div>
               <input type="file" id="ks-sales-edited-file" accept="image/*" class="hidden" />
@@ -779,8 +779,8 @@
           <div class="mt-5 ks-field">
             <label>Mensagem completa (edite livremente — WhatsApp ou e-mail)</label>
             <p class="text-xs ks-muted mt-1 mb-0">Com <b>acesso privado</b> e <b>um</b> cliente na lista, o modelo automático inclui <b>e-mail e senha</b>. Em <b>autocadastro</b> ou <b>fotos vendidas</b>, a mensagem automática leva só o link. Pode editar à vontade. <b>Restaurar modelo</b> recalcula a partir das configurações atuais.</p>
-            <textarea id="ks-links-full-msg" class="ks-input mt-2" rows="11"
-              style="font-size:13px;line-height:1.45;resize:vertical"></textarea>
+            <textarea id="ks-links-full-msg" class="ks-input mt-2 ck-ksp-5d4445" rows="11"
+             ></textarea>
             <div class="flex gap-2 mt-3 flex-wrap items-center">
               <button type="button" class="ks-btn" id="ks-links-ai-full" title="Usar a IA do sistema (OpenAI) para gerar a mensagem completa"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
               <button type="button" class="ks-btn" id="ks-links-full-reset" title="Substituir pelo modelo automático (nome do projeto + link + opcional)"><i class="fas fa-rotate-left"></i> Restaurar modelo</button>
@@ -806,7 +806,7 @@
               <div class="ks-field">
                 <label>Pré-visualização</label>
                 <div class="rounded-lg overflow-hidden border border-slate-200 bg-black/70 mt-2">
-                  <img id="ks-link-cover-preview" alt="Prévia da capa do link" style="width:100%;height:220px;object-fit:contain;background:#0b0b0b;display:block" />
+                  <img class="ck-ksp-236262" id="ks-link-cover-preview" alt="Prévia da capa do link" />
                 </div>
                 <div id="ks-link-cover-current-source" class="text-xs ks-muted mt-2">Origem atual: foto da galeria</div>
               </div>
@@ -936,14 +936,14 @@
                 </div>
 
                 <div class="mt-4">
-                  <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">
+                  <div class="text-xs ks-muted font-extrabold ck-ksp-a04b09">
                     Adicionar cliente</div>
                   <div class="mt-2 flex items-center gap-2">
                     <div class="flex-1 relative">
-                      <i class="fas fa-search" aria-hidden="true"
-                        style="position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.75;color:var(--ks-accent)"></i>
-                      <input id="ks-client-search" class="ks-input" placeholder="Digite o nome ou e-mail do cliente"
-                        style="padding-left:44px" />
+                      <i class="fas fa-search ck-ksp-3f7b6e" aria-hidden="true"
+                       ></i>
+                      <input id="ks-client-search" class="ks-input ck-ksp-1e7433" placeholder="Digite o nome ou e-mail do cliente"
+                        />
                     </div>
                     <button class="ks-btn ks-btn-primary" id="ks-client-add" title="Adicionar cliente"><i
                         class="fas fa-plus"></i></button>
@@ -951,7 +951,7 @@
                 </div>
 
                 <div class="mt-6">
-                  <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">
+                  <div class="text-xs ks-muted font-extrabold ck-ksp-a04b09">
                     Clientes cadastrados (<span id="ks-client-count">0</span>)
                   </div>
 
@@ -1206,13 +1206,13 @@
                   <div class="flex flex-wrap gap-3 items-end">
                     <div class="text-center">
                       <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Retrato</div>
-                      <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:112px;aspect-ratio:3/4;max-height:180px">
+                      <div class="ks-wm-frame mx-auto bg-zinc-900/50 ck-ksp-881840">
                         <img id="wm-file-default-portrait" class="w-full h-full object-contain" alt="Marca Conecta King — retrato" src="./marca%20dagua%20KingSelection%20vertical.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_vertical.png'" />
                       </div>
                     </div>
                     <div class="text-center">
                       <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Paisagem</div>
-                      <div class="ks-wm-frame mx-auto bg-zinc-900/50" style="width:168px;aspect-ratio:16/9;max-height:110px">
+                      <div class="ks-wm-frame mx-auto bg-zinc-900/50 ck-ksp-80fd34">
                         <img id="wm-file-default-landscape" class="w-full h-full object-contain" alt="Marca Conecta King — paisagem" src="./marca%20dagua%20KingSelection%20horizontal.png" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='marca_dagua_kingselection_horizontal.png'" />
                       </div>
                     </div>
@@ -1226,13 +1226,13 @@
                   <div class="flex flex-wrap gap-4 items-start">
                     <div>
                       <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Retrato (vertical)</div>
-                      <div class="ks-wm-frame" id="wm-file-frame-p" style="width:120px;aspect-ratio:3/4;max-height:160px">
+                      <div class="ks-wm-frame ck-ksp-7e7812" id="wm-file-frame-p">
                         <img id="wm-file-preview-p" class="hidden w-full h-full object-contain" alt="marca retrato" />
                       </div>
                     </div>
                     <div>
                       <div class="text-[11px] font-extrabold text-zinc-300 mb-1">Paisagem (horizontal)</div>
-                      <div class="ks-wm-frame" id="wm-file-frame-l" style="width:168px;aspect-ratio:16/9;max-height:100px">
+                      <div class="ks-wm-frame ck-ksp-30585b" id="wm-file-frame-l">
                         <img id="wm-file-preview-l" class="hidden w-full h-full object-contain" alt="marca paisagem" />
                       </div>
                     </div>
@@ -1451,8 +1451,8 @@
   </div>
 
   <!-- Viewer (ampliar foto) -->
-  <div id="p-viewer" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.70);z-index:9999;touch-action:none">
+  <div id="p-viewer" class="fixed inset-0 hidden items-center justify-center p-4 ck-ksp-84a7af"
+   >
     <div class="bg-white w-full max-w-5xl rounded-2xl overflow-hidden border border-slate-200 shadow-2xl">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
         <div class="min-w-0">
@@ -1466,14 +1466,14 @@
           <button class="ks-btn" id="p-viewer-close"><i class="fas fa-times"></i></button>
         </div>
       </div>
-      <div class="relative bg-black flex items-center justify-center min-h-[200px]" id="p-viewer-area"
-        style="touch-action:pan-y pinch-zoom">
+      <div class="relative bg-black flex items-center justify-center min-h-[200px] ck-ksp-aad979" id="p-viewer-area"
+       >
         <button class="absolute left-3 top-1/2 -translate-y-1/2 ks-ico z-10" id="p-viewer-prev" title="Anterior"><i
             class="fas fa-chevron-left"></i></button>
         <button class="absolute right-3 top-1/2 -translate-y-1/2 ks-ico z-10" id="p-viewer-next" title="Próxima"><i
             class="fas fa-chevron-right"></i></button>
-        <img id="p-viewer-img" src="" alt="foto"
-          style="max-width:100%;max-height:72vh;width:auto;height:auto;object-fit:contain;display:block;touch-action:none"
+        <img class="ck-ksp-3e2c98" id="p-viewer-img" src="" alt="foto"
+         
           draggable="false" />
       </div>
       <div class="px-4 py-3 flex justify-center gap-2 flex-wrap hidden" id="p-viewer-dots" aria-hidden="true"></div>
@@ -1481,8 +1481,8 @@
   </div>
 
   <!-- Modal: Dashboard vendas — detalhe recebido / falta / cortesia -->
-  <div id="ks-sales-dash-detail-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:125;" aria-hidden="true">
+  <div id="ks-sales-dash-detail-modal" class="fixed inset-0 hidden items-center justify-center p-4 ck-ksp-1b6cc8"
+    aria-hidden="true">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
         <div class="font-extrabold text-slate-900" id="ks-sales-dash-detail-title">Detalhe</div>
@@ -1496,8 +1496,8 @@
   </div>
 
   <!-- Modal: Cliente (Adicionar/Editar) -->
-  <div id="ks-client-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:120;" aria-hidden="true">
+  <div id="ks-client-modal" class="fixed inset-0 hidden items-center justify-center p-4 ck-ksp-f8f107"
+    aria-hidden="true">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
         <div class="font-extrabold" id="ks-client-modal-title">Adicionar cliente</div>
@@ -1529,7 +1529,7 @@
           </div>
           <div class="ks-field">
             <label>Nota (opcional)</label>
-            <textarea id="ks-client-form-note" class="ks-input mt-2" style="min-height:110px;font-size:13px"></textarea>
+            <textarea id="ks-client-form-note" class="ks-input mt-2 ck-ksp-b34f9f"></textarea>
           </div>
         </div>
       </div>
@@ -1541,8 +1541,8 @@
   </div>
 
   <!-- Modal: Compartilhar acesso do cliente -->
-  <div id="ks-client-share-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:120;" aria-hidden="true">
+  <div id="ks-client-share-modal" class="fixed inset-0 hidden items-center justify-center p-4 ck-ksp-f8f107"
+    aria-hidden="true">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
         <div class="font-extrabold">Compartilhar acesso</div>
@@ -1551,7 +1551,7 @@
       </div>
       <div class="p-5">
         <div class="rounded-2xl border border-white/10 bg-black/30 p-4">
-          <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">Dados de
+          <div class="text-xs ks-muted font-extrabold ck-ksp-a04b09">Dados de
             acesso do cliente</div>
           <div class="mt-3 text-sm">
             <div><span class="text-white/60">Link:</span> <span class="ks-link" id="ks-client-share-link">-</span></div>
@@ -1574,8 +1574,8 @@
   </div>
 
   <!-- Modal: dados do cliente (atividades) — copiar nome, e-mail, telefone -->
-  <div id="ks-act-contact-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:125;" aria-hidden="true">
+  <div id="ks-act-contact-modal" class="fixed inset-0 hidden items-center justify-center p-4 ck-ksp-1b6cc8"
+    aria-hidden="true">
     <div class="bg-white ks-modal-light w-full max-w-md rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
         <div class="font-extrabold text-slate-900">Dados do cliente</div>
@@ -1610,8 +1610,8 @@
   </div>
 
   <!-- Export modal simples -->
-  <div id="ks-export-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:120;">
+  <div id="ks-export-modal" class="fixed inset-0 hidden items-center justify-center p-4 ck-ksp-f8f107"
+   >
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <div class="font-extrabold">Exportar fotos</div>
@@ -1635,9 +1635,9 @@
         </div>
         <p id="ks-export-all-hint" class="text-xs text-slate-500 mt-2 leading-relaxed min-h-[1.25rem]"></p>
         <div id="ks-export-filter-block" class="hidden mt-3">
-          <textarea id="ks-export-filter-input" class="ks-input" rows="3"
+          <textarea id="ks-export-filter-input" class="ks-input ck-ksp-5e0faa" rows="3"
             placeholder="IDs do sistema (ex.: 1642) ou código no ficheiro (3, ADR0003) — vírgula ou linha"
-            style="font-size:13px"></textarea>
+           ></textarea>
           <div class="mt-2 flex flex-wrap gap-2 items-center">
             <button type="button" id="ks-export-filter-apply" class="ks-btn flex items-center gap-2">
               <i class="fas fa-search" aria-hidden="true"></i> Aplicar filtro
@@ -1652,8 +1652,8 @@
           <button type="button" class="ks-btn" data-exp="finder">Finder (Mac)</button>
           <button type="button" class="ks-btn" data-exp="windows">Windows</button>
         </div>
-        <textarea id="ks-export-ta" class="ks-input ks-export-ta mt-4"
-          style="min-height:160px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:12px"></textarea>
+        <textarea id="ks-export-ta" class="ks-input ks-export-ta mt-4 ck-ksp-b706b2"
+         ></textarea>
         <button class="ks-btn ks-btn-primary mt-4 w-full" id="ks-export-copy"><i class="fas fa-copy"></i>
           Copiar</button>
       </div>
@@ -1675,9 +1675,9 @@
               class="px-4 py-3 border-b border-white/10 text-xs font-extrabold tracking-[0.18em] uppercase text-white/70">
               Atual na galeria</div>
             <div class="p-3">
-              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40" style="aspect-ratio: 4 / 3;">
-                <img id="ks-dupe-img-old" alt="foto atual" decoding="async" fetchpriority="low"
-                  style="width:100%;height:100%;object-fit:contain;display:block;background:#000" />
+              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40 ck-ksp-c6f843">
+                <img class="ck-ksp-60d1e7" id="ks-dupe-img-old" alt="foto atual" decoding="async" fetchpriority="low"
+                  />
               </div>
               <div class="mt-2 text-xs text-white/70 font-mono truncate" id="ks-dupe-old-name">-</div>
             </div>
@@ -1687,9 +1687,9 @@
               class="px-4 py-3 border-b border-white/10 text-xs font-extrabold tracking-[0.18em] uppercase text-white/70">
               Nova (que você selecionou)</div>
             <div class="p-3">
-              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40" style="aspect-ratio: 4 / 3;">
-                <img id="ks-dupe-img-new" alt="nova foto" decoding="async" fetchpriority="low"
-                  style="width:100%;height:100%;object-fit:contain;display:block;background:#000" />
+              <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40 ck-ksp-c6f843">
+                <img class="ck-ksp-60d1e7" id="ks-dupe-img-new" alt="nova foto" decoding="async" fetchpriority="low"
+                  />
               </div>
               <div class="mt-2 text-xs text-white/70 font-mono truncate" id="ks-dupe-new-name">-</div>
             </div>

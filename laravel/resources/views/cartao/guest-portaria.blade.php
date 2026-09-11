@@ -71,7 +71,7 @@
                                 @if(!empty($g['whatsapp']) || !empty($g['phone'])) · {{ $g['whatsapp'] ?? $g['phone'] }}@endif
                             </div>
                         </div>
-                        <div style="display:flex;gap:8px;align-items:center">
+                        <div class="ck-gp-01ef7f">
                             <span class="badge">{{ $g['status'] ?? '' }}</span>
                             @if(($g['status'] ?? '') !== 'checked_in')
                                 <button type="button" class="checkin-btn" data-id="{{ $g['id'] }}">Check-in</button>

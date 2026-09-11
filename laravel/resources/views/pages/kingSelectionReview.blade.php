@@ -104,7 +104,7 @@
       </div>
       <div class="relative">
         <button type="button" class="ks-fab ks-checkbtn" id="ks-v-prev" title="Anterior"><i class="fas fa-chevron-left"></i></button>
-        <button type="button" class="ks-fab ks-checkbtn" style="right:54px" id="ks-v-next" title="Prxima"><i class="fas fa-chevron-right"></i></button>
+        <button type="button" class="ks-fab ks-checkbtn ck-ksr-052ac1" id="ks-v-next" title="Prxima"><i class="fas fa-chevron-right"></i></button>
         <img id="ks-v-img" class="ks-viewer-img" alt="foto" />
       </div>
     </div>

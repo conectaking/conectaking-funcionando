@@ -1,0 +1,12 @@
+/* documentos-ver — page chrome */
+.documentos-ver-page {
+  font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  min-height: max(884px, 100dvh);
+}
+.documentos-ver-page .ios-status-bar {
+  height: 44px;
+}
+
+/* auto-extracted from resources/views/pages/documentos-ver.blade.php */
+.ck-dv-5991c5 { display:none; padding:40px; text-align:center; color:#94a3b8; }
