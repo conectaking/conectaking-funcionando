@@ -1,9 +1,11 @@
-﻿name = "kingselection-r2"
+name = "kingselection-r2"
 main = "src/index.js"
 compatibility_date = "2026-02-02"
+# Preenchido no deploy via CLOUDFLARE_ACCOUNT_ID (também em wrangler se estável)
+# account_id = "..."
 
-# Rota para r2.conectaking.com.br (obrigatÃ³rio para upload funcionar)
-# Formato explÃ­cito: array de objetos sÃ³ com pattern e zone_name
+# Rota para r2.conectaking.com.br (obrigatório para upload funcionar)
+# Formato explícito: array de objetos só com pattern e zone_name
 routes = [
   { pattern = "r2.conectaking.com.br/*", zone_name = "conectaking.com.br" }
 ]

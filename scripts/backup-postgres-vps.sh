@@ -19,7 +19,7 @@ fi
 POSTGRES_USER=$(grep -E '^POSTGRES_USER=' "$BASE/.env.prod" | tail -1 | cut -d= -f2- | tr -d '\r' | sed 's/^"//;s/"$//')
 POSTGRES_DB=$(grep -E '^POSTGRES_DB=' "$BASE/.env.prod" | tail -1 | cut -d= -f2- | tr -d '\r' | sed 's/^"//;s/"$//')
 POSTGRES_PASSWORD=$(grep -E '^POSTGRES_PASSWORD=' "$BASE/.env.prod" | tail -1 | cut -d= -f2- | tr -d '\r' | sed 's/^"//;s/"$//')
-CK_BACKUP_OFFBOX_CMD=$(grep -E '^CK_BACKUP_OFFBOX_CMD=' "$BASE/.env.prod" | tail -1 | cut -d= -f2- | tr -d '\r' | sed 's/^"//;s/"$//' || true)
+CK_BACKUP_OFFBOX_CMD=$(grep -E '^CK_BACKUP_OFFBOX_CMD=' "$BASE/.env.prod" | tail -1 | cut -d= -f2- | tr -d '\r' | sed "s/^['\"]//;s/['\"]$//" || true)
 
 POSTGRES_USER="${POSTGRES_USER:-conectaking}"
 POSTGRES_DB="${POSTGRES_DB:-conectaking}"
