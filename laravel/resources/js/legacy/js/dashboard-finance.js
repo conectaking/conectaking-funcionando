@@ -39,6 +39,34 @@
             if (typeof c.safeFetch === 'function') return c.safeFetch(url, options);
             var opts = Object.assign({ credentials: 'include' }, options || {});
             return __rawFetch(url, opts);
+        },
+        /** Busca todas as páginas de /api/finance/transactions (até maxPages). */
+        fetchAllTransactions: async function (queryParams) {
+            var base = (typeof this.API_URL !== 'undefined' ? this.API_URL : '') + '/api/finance/transactions';
+            var pageSize = 500;
+            var offset = 0;
+            var all = [];
+            var maxPages = 20;
+            for (var page = 0; page < maxPages; page++) {
+                var qs = new URLSearchParams(queryParams || {});
+                qs.set('limit', String(pageSize));
+                qs.set('offset', String(offset));
+                var res = await __rawFetch(base + '?' + qs.toString(), {
+                    credentials: 'include',
+                    headers: this.HEADERS_AUTH
+                });
+                if (!res.ok) break;
+                var json = await res.json();
+                var payload = json.data || json;
+                var rows = Array.isArray(payload) ? payload : (payload.data || payload.transactions || []);
+                if (!Array.isArray(rows) || rows.length === 0) break;
+                all = all.concat(rows);
+                var hasMore = !!(payload && payload.hasMore);
+                if (!hasMore && rows.length < pageSize) break;
+                if (!hasMore) break;
+                offset += rows.length;
+            }
+            return all;
         }
     };
 
@@ -2312,11 +2340,9 @@ window.showKingFinancePane = async function () {
         }
     } catch (e) { }
     try {
-        const txRes = await fetch(`${env.API_URL}/api/finance/transactions?limit=200&dateFrom=${monthStart}&dateTo=${monthEnd}${profileId ? '&profile_id=' + profileId : ''}`, { headers: env.HEADERS_AUTH });
-        if (txRes.ok) {
-            const txData = (await txRes.json()).data || {};
-            transactions = Array.isArray(txData) ? txData : (txData.data || txData.transactions || []);
-        }
+        const q = { limit: '500', dateFrom: monthStart, dateTo: monthEnd };
+        if (profileId) q.profile_id = profileId;
+        transactions = await env.fetchAllTransactions(q);
     } catch (e) { }
     try {
         const cardRes = await fetch(`${env.API_URL}/api/finance/cards`, { headers: env.HEADERS_AUTH });
@@ -3022,17 +3048,13 @@ window.loadFinanceTransactions = async function () {
         const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
         const dateTo = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${lastDay}`;
         const profileId = window.currentFinanceProfileId || localStorage.getItem('finance_current_profile_id') || '';
-        const url = `${env.API_URL}/api/finance/transactions?limit=500&orderBy=transaction_date&orderDir=DESC&dateFrom=${dateFrom}&dateTo=${dateTo}${profileId ? `&profile_id=${profileId}` : ''}`;
-
-        const response = await fetch(url, {
-            headers: env.HEADERS_AUTH
-        });
-
+        const qLoad = { orderBy: 'transaction_date', orderDir: 'DESC', dateFrom: dateFrom, dateTo: dateTo };
+        if (profileId) qLoad.profile_id = profileId;
         let apiTransactions = [];
-        if (response.ok) {
-            const responseData = await response.json();
-            const result = responseData.data || responseData;
-            apiTransactions = Array.isArray(result) ? result : (result.data || result.transactions || []);
+        try {
+            apiTransactions = await env.fetchAllTransactions(qLoad);
+        } catch (e) {
+            apiTransactions = [];
         }
 
         const kingDb = window._kingFinanceDb || { fluxo: [], trabalhos: [], bens: [], cartoes: [], dividas: [], terceiros: [] };
@@ -4120,17 +4142,13 @@ window.initFinanceChart = function (period = '1M') {
     // Criar gráfico usando Chart.js (lazy)
     const paintFinanceChart = function () {
     if (typeof Chart !== 'undefined') {
-        // Buscar transações do perfil atual para o gráfico (usa último dia real do mês, ex: fev=28)
-        fetch(`${env.API_URL}/api/finance/transactions?limit=1000&orderBy=transaction_date&orderDir=ASC&dateFrom=${dateFromStr}&dateTo=${dateToStr}${profileIdChart ? '&profile_id=' + profileIdChart : ''}`, {
-            headers: env.HEADERS_AUTH
-        })
-            .then(res => res.json())
-            .then(responseData => {
-                const transactions = Array.isArray(responseData.data) ? responseData.data : (responseData.data?.data || []);
-
+        const qChart = { orderBy: 'transaction_date', orderDir: 'ASC', dateFrom: dateFromStr, dateTo: dateToStr };
+        if (profileIdChart) qChart.profile_id = profileIdChart;
+        env.fetchAllTransactions(qChart)
+            .then(transactions => {
                 // Agrupar por dia
                 const dailyData = {};
-                transactions.forEach(t => {
+                (transactions || []).forEach(t => {
                     const date = new Date(t.transaction_date || t.date || t.created_at);
                     const dateKey = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                     if (!dailyData[dateKey]) {
@@ -4369,11 +4387,9 @@ window.showGeneralBalanceModal = async function () {
             avgMonthlyExpense = parseFloat(media.mediaDespesas || 0);
         }
         if (monthlyAverages.length === 0) {
-            const transactionsResponse = await fetch(`${env.API_URL}/api/finance/transactions?limit=1000${profileIdDetail ? '&profile_id=' + profileIdDetail : ''}`, {
-                headers: env.HEADERS_AUTH
-            });
-            const transactionsData = await transactionsResponse.json();
-            const allTransactions = Array.isArray(transactionsData.data) ? transactionsData.data : (Array.isArray(transactionsData.data?.data) ? transactionsData.data.data : []);
+            const qAvg = {};
+            if (profileIdDetail) qAvg.profile_id = profileIdDetail;
+            const allTransactions = await env.fetchAllTransactions(qAvg);
             const now = new Date();
             for (let i = 11; i >= 0; i--) {
                 const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -4392,11 +4408,9 @@ window.showGeneralBalanceModal = async function () {
             avgMonthlyIncome = monthlyAverages.reduce((sum, m) => sum + m.income, 0) / 12;
             avgMonthlyExpense = monthlyAverages.reduce((sum, m) => sum + m.expense, 0) / 12;
         }
-        const transactionsResponse = await fetch(`${env.API_URL}/api/finance/transactions?limit=1000${profileIdDetail ? '&profile_id=' + profileIdDetail : ''}`, {
-            headers: env.HEADERS_AUTH
-        });
-        const transactionsData = await transactionsResponse.json();
-        const allTransactions = Array.isArray(transactionsData.data) ? transactionsData.data : (transactionsData.data?.data || []);
+        const qAll = {};
+        if (profileIdDetail) qAll.profile_id = profileIdDetail;
+        const allTransactions = await env.fetchAllTransactions(qAll);
 
         const totalIncome = allTransactions
             .filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID')

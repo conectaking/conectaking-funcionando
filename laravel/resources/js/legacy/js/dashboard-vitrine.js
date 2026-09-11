@@ -1,9 +1,9 @@
 /**
  * Dashboard - Modelo Vitrine (isolado do restante do editor).
- * Expe: window.applyVitrineDetails, window.getVitrineDetailsForSave
+ * Expõe: window.DashboardVitrine, window.applyVitrineDetails, window.getVitrineDetailsForSave
  *
  * Bugfix: não sobrescrever texto/cores/logos locais com dados antigos do servidor
- * enquanto o usuário est editando (dirty). Sempre ler o DOM no save.
+ * enquanto o usuário está editando (dirty). Sempre ler o DOM no save.
  */
 (function () {
     'use strict';
@@ -117,7 +117,7 @@
         if (avatarSel) {
             avatarSel.style.opacity = state.cardLayout === 'vitrine' ? '0.45' : '1';
             avatarSel.title = state.cardLayout === 'vitrine'
-                ? 'No Modelo Vitrine o topo  a arte. Formato do avatar vale no Clsico.'
+                ? 'No Modelo Vitrine o topo é a arte. Formato do avatar vale no Clássico.'
                 : '';
         }
         syncBgTypeUI();
@@ -148,6 +148,53 @@
         });
     }
 
+    function updatePhoneMockupPreview() {
+        const screen = document.getElementById('preview-screen');
+        if (!screen) return;
+        const card = screen.querySelector('.preview-card') || screen;
+        const classicHeader = card.querySelector('.preview-header');
+        let vitrineBlock = document.getElementById('preview-vitrine-block');
+
+        if (state.cardLayout === 'vitrine') {
+            if (classicHeader) classicHeader.style.display = 'none';
+            if (!vitrineBlock) {
+                vitrineBlock = document.createElement('div');
+                vitrineBlock.id = 'preview-vitrine-block';
+                vitrineBlock.style.cssText = 'width:100%;margin:0 0 12px;overflow:hidden;border-radius:12px;';
+                if (classicHeader && classicHeader.parentNode) {
+                    classicHeader.parentNode.insertBefore(vitrineBlock, classicHeader);
+                } else {
+                    card.insertBefore(vitrineBlock, card.firstChild);
+                }
+            }
+            vitrineBlock.style.display = 'block';
+
+            let heroHtml;
+            if (state.heroUrl) {
+                heroHtml = '<div style="width:100%;aspect-ratio:16/9;background:#1a1a1f;overflow:hidden;">' +
+                    '<img src="' + state.heroUrl.replace(/"/g, '&quot;') + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                    '</div>';
+            } else {
+                heroHtml = '<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1c1c21,#2a2a32);display:flex;align-items:center;justify-content:center;color:#888;font-size:0.8rem;">Preview da arte</div>';
+            }
+
+            let logosHtml = '';
+            state.marqueeLogos.slice(0, 3).forEach(function (url) {
+                logosHtml += '<img src="' + url.replace(/"/g, '&quot;') + '" alt="" style="height:16px;width:auto;object-fit:contain;flex-shrink:0;">';
+            });
+            const marqueeText = state.marqueeText || 'Faixa rolante';
+            const marqueeHtml = '<div style="background:' + marqueeBackgroundCss() + ';color:' + state.marqueeTextColor +
+                ';padding:8px 10px;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;">' +
+                logosHtml +
+                '<span style="color:' + state.marqueeTextColor + ';">' + marqueeText.replace(/</g, '&lt;') + '</span></div>';
+
+            vitrineBlock.innerHTML = heroHtml + marqueeHtml;
+        } else {
+            if (classicHeader) classicHeader.style.display = '';
+            if (vitrineBlock) vitrineBlock.style.display = 'none';
+        }
+    }
+
     function updateMiniPreview() {
         const hero = $('vitrine-mini-hero');
         const mq = $('vitrine-mini-marquee');
@@ -162,7 +209,7 @@
             mq.style.background = marqueeBackgroundCss();
             mq.style.color = state.marqueeTextColor;
             let html = '';
-            state.marqueeLogos.slice(0, 2).forEach(function (url) {
+            state.marqueeLogos.slice(0, 3).forEach(function (url) {
                 html += '<img src="' + url.replace(/"/g, '&quot;') + '" alt="" style="height:18px;width:auto;object-fit:contain;">';
             });
             html += '<span style="color:' + state.marqueeTextColor + ';">' + (state.marqueeText || 'Faixa rolante (digite o texto acima)') + '</span>';
@@ -186,6 +233,7 @@
         }
         const tcHex = $('vitrine-marquee-text-color-hex');
         if (tcHex && document.activeElement !== tcHex) tcHex.value = state.marqueeTextColor;
+        updatePhoneMockupPreview();
     }
 
     async function uploadImageFile(file) {
@@ -521,6 +569,13 @@
     window.applyVitrineDetails = applyVitrineDetails;
     window.getVitrineDetailsForSave = getVitrineDetailsForSave;
     window.applyVitrineHeroFromCrop = applyVitrineHeroFromCrop;
+    window.DashboardVitrine = {
+        updateMiniPreview: updateMiniPreview,
+        setLayoutUI: setLayoutUI,
+        applyVitrineDetails: applyVitrineDetails,
+        getVitrineDetailsForSave: getVitrineDetailsForSave,
+        applyVitrineHeroFromCrop: applyVitrineHeroFromCrop
+    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

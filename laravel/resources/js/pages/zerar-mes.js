@@ -94,24 +94,34 @@ import '@css/pages/zerar-mes.css';
             showLoading(true);
             const { dateFrom, dateTo } = buildDateRange(month, year);
             const profileId = localStorage.getItem('finance_current_profile_id') || '';
-            const url = API_URL + '/api/finance/transactions?limit=500&orderBy=transaction_date&orderDir=ASC&dateFrom=' + dateFrom + '&dateTo=' + dateTo + (profileId ? '&profile_id=' + profileId : '');
             try {
-                const res = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
-                if (res.status === 401) {
-                    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
-                    return;
+                transactions = [];
+                var offset = 0;
+                var pageSize = 500;
+                for (var page = 0; page < 20; page++) {
+                    var url = API_URL + '/api/finance/transactions?limit=' + pageSize + '&offset=' + offset + '&orderBy=transaction_date&orderDir=ASC&dateFrom=' + dateFrom + '&dateTo=' + dateTo + (profileId ? '&profile_id=' + profileId : '');
+                    const res = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
+                    if (res.status === 401) {
+                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+                        return;
+                    }
+                    if (!res.ok) {
+                        const err = await res.json().catch(function() { return {}; });
+                        showError(err.message || err.error?.message || 'Erro ao carregar lançamentos.');
+                        showLoading(false);
+                        document.getElementById('empty').style.display = 'block';
+                        document.getElementById('empty').querySelector('p').textContent = 'Não foi possível carregar os lançamentos.';
+                        return;
+                    }
+                    const data = await res.json();
+                    var payload = data.data || data;
+                    var rows = (payload && payload.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+                    if (!Array.isArray(rows) || rows.length === 0) break;
+                    transactions = transactions.concat(rows);
+                    if (!payload.hasMore && rows.length < pageSize) break;
+                    if (!payload.hasMore) break;
+                    offset += rows.length;
                 }
-                if (!res.ok) {
-                    const err = await res.json().catch(function() { return {}; });
-                    showError(err.message || err.error?.message || 'Erro ao carregar lançamentos.');
-                    showLoading(false);
-                    document.getElementById('empty').style.display = 'block';
-                    document.getElementById('empty').querySelector('p').textContent = 'Não foi possível carregar os lançamentos.';
-                    return;
-                }
-                const data = await res.json();
-                transactions = (data.data && data.data.data) ? data.data.data : (data.data || []);
-                if (!Array.isArray(transactions)) transactions = [];
             } catch (e) {
                 showError('Erro de conexão: ' + e.message);
                 transactions = [];

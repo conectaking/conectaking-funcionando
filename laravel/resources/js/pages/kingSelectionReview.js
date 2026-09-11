@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     finishBtn.disabled = !ok;
     if (finishBtnTop) finishBtnTop.disabled = !ok;
     if (!ok) {
-      finishBtn.title = `Selecione no mÃ­nimo ${minSel} foto(s)`;
+      finishBtn.title = `Selecione no mínimo ${minSel} foto(s)`;
       if (finishBtnTop) finishBtnTop.title = finishBtn.title;
     } else {
       finishBtn.title = '';
@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     titleEl.textContent = g?.nome_projeto || 'Galeria';
     renderSelected(g, selectedIds);
     if (g && g.locked) {
-      showError('Sua seleÃ§Ã£o jÃ¡ foi enviada. Aguarde a revisÃ£o ou peÃ§a reativaÃ§Ã£o ao fotÃ³grafo.');
+      showError('Sua seleção já foi enviada. Aguarde a revisão ou peça reativação ao fotógrafo.');
       finishBtn.disabled = true;
     }
   }
@@ -298,11 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data.message || 'Erro ao finalizar');
       if (data.success) {
         const count = data.selectionCount ?? 0;
-        const name = data.photographerDisplayName || 'FotÃ³grafo';
-        const nomeCliente = (data.clientDisplayName || '').trim() || (data.projectName || '').trim() || 'vocÃª';
+        const name = data.photographerDisplayName || 'Fotógrafo';
+        const nomeCliente = (data.clientDisplayName || '').trim() || (data.projectName || '').trim() || 'você';
         const cfg = data.thankYouConfig || {};
         const replaceAll = (s) => String(s).replace(/\{\{nome_cliente\}\}/gi, nomeCliente).replace(/\{\{nome\}\}/g, name).replace(/\{\{quantidade\}\}/g, String(count));
-        let msg = replaceAll(cfg.message || `Obrigado por selecionar as fotos do ${name}. VocÃª escolheu ${count} foto(s).`);
+        let msg = replaceAll(cfg.message || `Obrigado por selecionar as fotos do ${name}. Você escolheu ${count} foto(s).`);
         let titulo = replaceAll(cfg.title || 'Obrigado!');
         showThankYou({
           titulo,

@@ -148,10 +148,17 @@ class FrontLegacyController extends Controller
             return 'no-cache, no-store, must-revalidate, max-age=0';
         }
 
-        return str_ends_with($mime, 'html; charset=UTF-8')
-            ? 'no-cache, no-store, must-revalidate'
-            : (preg_match('/-[A-Za-z0-9_-]{6,}\.(js|css)$/', $base)
-                ? 'public, max-age=31536000, immutable'
-                : 'public, max-age=86400');
+        if (str_ends_with($mime, 'html; charset=UTF-8')) {
+            return 'no-cache, no-store, must-revalidate';
+        }
+        // Vite hashed assets: long cache. Legacy unhashed JS/CSS: short TTL so deploys pick up faster.
+        if (preg_match('/-[A-Za-z0-9_-]{6,}\.(js|css)$/', $base)) {
+            return 'public, max-age=31536000, immutable';
+        }
+        if (preg_match('/\.(js|css)$/', $base)) {
+            return 'public, max-age=300, must-revalidate';
+        }
+
+        return 'public, max-age=86400';
     }
 }

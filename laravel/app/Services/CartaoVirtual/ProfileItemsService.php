@@ -145,6 +145,7 @@ class ProfileItemsService
             );
             $item = (array) $row;
             $this->afterCreate((int) $item['id'], $type, $body);
+            CartaoPublicService::forgetCardCache($userId);
 
             return ['status' => 201, 'body' => $item];
         } catch (\Throwable $e) {
@@ -201,6 +202,7 @@ class ProfileItemsService
             'UPDATE profile_items SET '.implode(', ', $sets).' WHERE id = ? AND user_id = ? RETURNING *',
             $vals
         );
+        CartaoPublicService::forgetCardCache($userId);
 
         return ['status' => 200, 'body' => (array) $row];
     }
@@ -266,6 +268,7 @@ class ProfileItemsService
                 }
             }
             DB::delete('DELETE FROM profile_items WHERE id = ? AND user_id = ?', [$id, $userId]);
+            CartaoPublicService::forgetCardCache($userId);
 
             return ['status' => 200, 'body' => ['message' => 'Item removido com sucesso!']];
         } catch (\Throwable $e) {

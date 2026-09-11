@@ -234,6 +234,7 @@ class ProfileTypedItemsService
         if (!$row) {
             return ['status' => 404, 'body' => ['message' => "{$label} não encontrado ou não foi atualizado."]];
         }
+        CartaoPublicService::forgetCardCache($userId);
 
         return ['status' => 200, 'body' => (array) $row];
     }

@@ -31,8 +31,8 @@ import '@mod/js/ck-auth-gate.js';
                 var empty = document.getElementById('kf-empty');
                 empty.remove();
                 list.innerHTML = '<div class="kf-empty" id="kf-empty">' +
-                    '<p><strong>VocÃª precisa estar logado para usar o King Forms.</strong></p>' +
-                    '<p>Abra o painel, faÃ§a login e depois abra &quot;King Forms&quot; pelo menu lateral.</p>' +
+                    '<p><strong>Você precisa estar logado para usar o King Forms.</strong></p>' +
+                    '<p>Abra o painel, faça login e depois abra &quot;King Forms&quot; pelo menu lateral.</p>' +
                     '<a href="/dashboard" class="kf-btn kf-btn-primary" style="margin-top:16px;text-decoration:none;"><i class="fas fa-external-link-alt"></i> Abrir painel</a>' +
                     '</div>';
                 document.getElementById('kf-btn-new').style.display = 'none';
@@ -48,13 +48,13 @@ import '@mod/js/ck-auth-gate.js';
                     .then(function (r) {
                         if (r.status === 401) {
                             showLoginRequired();
-                            return Promise.reject(new Error('NÃ£o autorizado'));
+                            return Promise.reject(new Error('Não autorizado'));
                         }
                         return r.json();
                     })
                     .then(function (data) {
                         if (!data || data.success === false) {
-                            empty.textContent = 'Erro ao carregar. FaÃ§a login no painel e tente novamente.';
+                            empty.textContent = 'Erro ao carregar. Faça login no painel e tente novamente.';
                             empty.classList.remove('kf-empty');
                             return;
                         }
@@ -62,27 +62,27 @@ import '@mod/js/ck-auth-gate.js';
                         empty.remove();
                         list.innerHTML = '';
                         if (items.length === 0) {
-                            list.innerHTML = '<div class="kf-empty" id="kf-empty"><p>Nenhum formulÃ¡rio ainda.</p><p>Crie um usando o botÃ£o acima e depois edite perguntas e aparÃªncia.</p></div>';
+                            list.innerHTML = '<div class="kf-empty" id="kf-empty"><p>Nenhum formulário ainda.</p><p>Crie um usando o botão acima e depois edite perguntas e aparência.</p></div>';
                             return;
                         }
                         items.forEach(function (item) {
-                            var title = item.title || (item.digital_form_data && item.digital_form_data.form_title) || 'FormulÃ¡rio King';
+                            var title = item.title || (item.digital_form_data && item.digital_form_data.form_title) || 'Formulário King';
                             var card = document.createElement('div');
                             card.className = 'kf-card';
                             card.innerHTML = '<div class="kf-card-title"><i class="fas fa-file-signature"></i><span>' + escapeHtml(title) + '</span></div>' +
                                 '<div class="kf-card-actions">' +
                                 '<a href="/kingForms?edit=' + encodeURIComponent(item.id) + '" class="kf-btn kf-btn-secondary"><i class="fas fa-pencil-alt"></i> Editar</a>' +
                                 '<a href="/responsesList?itemId=' + encodeURIComponent(item.id) + '" class="kf-btn kf-btn-secondary"><i class="fas fa-inbox"></i> Respostas</a>' +
-                                '<button type="button" class="kf-btn kf-btn-danger kf-btn-delete" data-item-id="' + encodeURIComponent(item.id) + '" title="Apagar formulÃ¡rio"><i class="fas fa-trash-alt"></i> Apagar</button>' +
+                                '<button type="button" class="kf-btn kf-btn-danger kf-btn-delete" data-item-id="' + encodeURIComponent(item.id) + '" title="Apagar formulário"><i class="fas fa-trash-alt"></i> Apagar</button>' +
                                 '</div>';
                             list.appendChild(card);
                         });
                     })
                     .catch(function (err) {
-                        if (err && err.message === 'NÃ£o autorizado') return;
+                        if (err && err.message === 'Não autorizado') return;
                         var emptyEl = document.getElementById('kf-empty');
                         if (emptyEl) {
-                            emptyEl.textContent = 'Erro ao carregar. FaÃ§a login no painel e tente novamente.';
+                            emptyEl.textContent = 'Erro ao carregar. Faça login no painel e tente novamente.';
                             emptyEl.classList.remove('kf-empty');
                         }
                     });
@@ -104,12 +104,12 @@ import '@mod/js/ck-auth-gate.js';
                     method: 'POST',
                     credentials: 'include',
                     headers: getHeaders(),
-                    body: JSON.stringify({ item_type: 'digital_form', title: 'FormulÃ¡rio King', is_active: false, display_order: 999 })
+                    body: JSON.stringify({ item_type: 'digital_form', title: 'Formulário King', is_active: false, display_order: 999 })
                 })
                     .then(function (r) {
                         if (r.status === 401) {
                             showLoginRequired();
-                            return Promise.reject(new Error('NÃ£o autorizado'));
+                            return Promise.reject(new Error('Não autorizado'));
                         }
                         return r.json();
                     })
@@ -118,20 +118,20 @@ import '@mod/js/ck-auth-gate.js';
                             window.location.href = '/kingForms?edit=' + encodeURIComponent(data.id);
                             return;
                         } else {
-                            alert(data && data.message ? data.message : 'Erro ao criar formulÃ¡rio.');
+                            alert(data && data.message ? data.message : 'Erro ao criar formulário.');
                         }
                     })
                     .catch(function (err) {
-                        if (err && err.message !== 'NÃ£o autorizado') alert('Erro ao criar formulÃ¡rio.');
+                        if (err && err.message !== 'Não autorizado') alert('Erro ao criar formulário.');
                     })
-                    .finally(function () { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Criar novo formulÃ¡rio'; });
+                    .finally(function () { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Criar novo formulário'; });
             });
             document.getElementById('kf-list-view').addEventListener('click', function (e) {
                 var delBtn = e.target.closest('.kf-btn-delete');
                 if (!delBtn) return;
                 e.preventDefault();
                 var id = delBtn.getAttribute('data-item-id');
-                if (!id || !confirm('Tem certeza que deseja apagar este formulÃ¡rio? Esta aÃ§Ã£o nÃ£o pode ser desfeita.')) return;
+                if (!id || !confirm('Tem certeza que deseja apagar este formulário? Esta ação não pode ser desfeita.')) return;
                 delBtn.disabled = true;
                 delBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Apagando...';
                 fetch(API_URL + '/api/profile/items/' + encodeURIComponent(id), {
@@ -140,7 +140,7 @@ import '@mod/js/ck-auth-gate.js';
                     headers: getHeaders()
                 })
                     .then(function (r) {
-                        if (r.status === 401) { showLoginRequired(); return Promise.reject(new Error('NÃ£o autorizado')); }
+                        if (r.status === 401) { showLoginRequired(); return Promise.reject(new Error('Não autorizado')); }
                         if (!r.ok) return r.json().then(function (d) { throw new Error(d.message || 'Erro ao apagar'); });
                         return r.json();
                     })
@@ -149,11 +149,11 @@ import '@mod/js/ck-auth-gate.js';
                         if (card) card.remove();
                         var list = document.getElementById('kf-list');
                         if (list && list.querySelectorAll('.kf-card').length === 0) {
-                            list.innerHTML = '<div class="kf-empty" id="kf-empty"><p>Nenhum formulÃ¡rio ainda.</p><p>Crie um usando o botÃ£o acima e depois edite perguntas e aparÃªncia.</p></div>';
+                            list.innerHTML = '<div class="kf-empty" id="kf-empty"><p>Nenhum formulário ainda.</p><p>Crie um usando o botão acima e depois edite perguntas e aparência.</p></div>';
                         }
                     })
                     .catch(function (err) {
-                        if (err && err.message !== 'NÃ£o autorizado') alert(err.message || 'Erro ao apagar formulÃ¡rio.');
+                        if (err && err.message !== 'Não autorizado') alert(err.message || 'Erro ao apagar formulário.');
                         delBtn.disabled = false;
                         delBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Apagar';
                     });

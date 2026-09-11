@@ -114,7 +114,7 @@ import '@mod/js/ck-auth-gate.js';
                     btn.textContent = 'Salvo!';
                     setTimeout(function() { btn.textContent = origText; btn.disabled = false; }, 1500);
                 })
-                .catch(function() { btn.textContent = origText; btn.disabled = false; alert('Erro ao salvar. Verifique se estÃ¡ autenticado.'); });
+                .catch(function() { btn.textContent = origText; btn.disabled = false; alert('Erro ao salvar. Verifique se está autenticado.'); });
         } else {
             var btn = document.getElementById('btn-salvar-cores');
             btn.textContent = 'Salvo!';
@@ -151,7 +151,7 @@ import '@mod/js/ck-auth-gate.js';
                         applyCoresToUI(cab, des, bg, esc);
                         try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cabecalho: cab, destaque: des, fundo: bg })); localStorage.setItem(ESCURIR_KEY, esc ? '1' : '0'); } catch (e) {}
                     }
-                    /* SÃ³ a logo fixa do mÃ³dulo (default_logo_url). NÃ£o usar companyLogoUrl do perfil — era isso que ?otrazia a logo de volta— apÃ³s remover. */
+                    /* Só a logo fixa do módulo (default_logo_url). Não usar companyLogoUrl do perfil — era isso que trazia a logo de volta— após remover. */
                     if (d.defaultLogoUrl && String(d.defaultLogoUrl).trim()) {
                         applyLogoToUI(String(d.defaultLogoUrl).trim());
                     } else {
@@ -292,7 +292,7 @@ import '@mod/js/ck-auth-gate.js';
                     .then(function(url) {
                         if (url) applyLogoToUI(url);
                     })
-                    .catch(function(err) { alert(err.message || 'Erro ao salvar a logo. Verifique se estÃ¡ autenticado.'); })
+                    .catch(function(err) { alert(err.message || 'Erro ao salvar a logo. Verifique se está autenticado.'); })
                     .finally(function() { if (btn) { btn.disabled = false; btn.textContent = 'Usar esta logo'; } });
             } else if (logoPendingDataUrl && logoPendingDataUrl.length > 100 && API_SETTINGS) {
                 fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ defaultLogoUrl: logoPendingDataUrl }), credentials: 'include' })
@@ -336,7 +336,7 @@ import '@mod/js/ck-auth-gate.js';
             fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ defaultLogoUrl: null }), credentials: 'include' })
                 .then(function(r) { if (!r.ok) throw new Error('Falha ao remover.'); return r.json(); })
                 .then(function() { applyLogoToUI(''); })
-                .catch(function() { alert('NÃ£o foi possÃ­vel remover a logo fixa. Verifique se estÃ¡ autenticado.'); });
+                .catch(function() { alert('Não foi possível remover a logo fixa. Verifique se está autenticado.'); });
         } else {
             applyLogoToUI('');
         }
@@ -352,11 +352,11 @@ import '@mod/js/ck-auth-gate.js';
             btn.textContent = 'Salvando...';
             fetch(API_SETTINGS, { method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ condicoesPagamentoPadrao: val }), credentials: 'include' })
                 .then(function(r) { if (!r.ok) throw new Error('Erro ao salvar.'); btn.textContent = 'Salvo!'; setTimeout(function() { btn.textContent = orig; btn.disabled = false; }, 1500); })
-                .catch(function() { btn.textContent = orig; btn.disabled = false; alert('Erro ao salvar. Verifique se estÃ¡ autenticado.'); });
+                .catch(function() { btn.textContent = orig; btn.disabled = false; alert('Erro ao salvar. Verifique se está autenticado.'); });
         } else {
             var btn = document.getElementById('btn-salvar-condicoes-padrao');
             btn.textContent = 'Salvo!';
-            setTimeout(function() { btn.textContent = 'Salvar texto padrÃ£o'; }, 1500);
+            setTimeout(function() { btn.textContent = 'Salvar texto padrão'; }, 1500);
         }
     }
     document.getElementById('btn-salvar-condicoes-padrao').onclick = saveCondicoesPadrao;

@@ -564,6 +564,7 @@ function updateVcardPreviewButton(buttonEl) {
 function updateLivePreviewFromForm() {
     if (!window.currentProfileData || !window.currentProfileData.details) return;
     const { details } = window.currentProfileData;
+    const isVitrineLayout = String(details.card_layout || 'classic').toLowerCase() === 'vitrine';
 
     SELECTORS.previewName.textContent = SELECTORS.displayNameInput.value || 'Seu Nome';
     SELECTORS.previewBio.textContent = SELECTORS.bioInput.value || 'Sua biografia...';
@@ -575,9 +576,20 @@ function updateLivePreviewFromForm() {
     SELECTORS.previewAvatar.style.borderColor = SELECTORS.backgroundColorPicker.value;
     env.setAvatarSrc(SELECTORS.previewAvatar, avatarUrl);
 
-    // Aplicar formato do avatar no preview
-    const avatarFormat = details.avatar_format || 'circular';
-    env.applyAvatarFormatToPreview(SELECTORS.previewAvatar, avatarFormat);
+    // Aplicar formato do avatar no preview (no Clássico; Vitrine usa hero no topo)
+    if (!isVitrineLayout) {
+        const avatarFormat = details.avatar_format || 'circular';
+        env.applyAvatarFormatToPreview(SELECTORS.previewAvatar, avatarFormat);
+    }
+
+    if (isVitrineLayout && window.DashboardVitrine && typeof window.DashboardVitrine.updateMiniPreview === 'function') {
+        window.DashboardVitrine.updateMiniPreview();
+    } else if (!isVitrineLayout) {
+        const classicHeader = document.querySelector('#preview-screen .preview-header');
+        if (classicHeader) classicHeader.style.display = '';
+        const vitrineBlock = document.getElementById('preview-vitrine-block');
+        if (vitrineBlock) vitrineBlock.style.display = 'none';
+    }
 
     const vcardToggleChecked = document.querySelector('input[name="vcard-toggle"]:checked');
     const showVcard = vcardToggleChecked ? vcardToggleChecked.value === 'true' : true;

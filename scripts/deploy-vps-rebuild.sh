@@ -24,7 +24,7 @@ rm -rf public/vendor/chartjs public/vendor/leaflet public/vendor/cropperjs \
   public/vendor/html5-qrcode public/vendor/qrcode public/vendor/qrcodejs \
   public/vendor/fontawesome public/vendor/pdf-lib 2>/dev/null || true
 
-docker compose -f docker-compose.prod.yml --env-file .env.prod build laravel queue
+docker compose -f docker-compose.prod.yml --env-file .env.prod build laravel queue scheduler queue-faces
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps laravel
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans
 

@@ -120,7 +120,7 @@ import '@mod/js/ck-auth-gate.js';
         var total = docsMeta.total || loaded;
         loadMoreBtn.disabled = !!docsMeta.loading;
         loadMoreBtn.textContent = docsMeta.loading
-            ? 'A carregarâ€¦'
+            ? 'A carregar…'
             : ('Carregar mais (' + loaded + ' de ' + total + ')');
     }
 

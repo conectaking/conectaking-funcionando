@@ -68,6 +68,39 @@ Artisan::command('maintenance:failed-jobs-alert', function () {
     return 0;
 })->purpose('Alerta se houver jobs falhados na fila');
 
+Artisan::command('maintenance:uptime-selfcheck', function () {
+    $base = rtrim((string) (config('app.url') ?: env('APP_URL', 'http://127.0.0.1:8080')), '/');
+    $url = $base.'/health';
+    $ok = false;
+    $status = 0;
+    $body = '';
+    try {
+        $ctx = stream_context_create(['http' => ['timeout' => 8, 'ignore_errors' => true]]);
+        $raw = @file_get_contents($url, false, $ctx);
+        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
+            $status = (int) $m[1];
+        }
+        $body = is_string($raw) ? $raw : '';
+        $json = json_decode($body, true);
+        $ok = $status >= 200 && $status < 300 && is_array($json) && (($json['status'] ?? '') === 'ok');
+    } catch (\Throwable $e) {
+        $body = $e->getMessage();
+    }
+    if (! $ok) {
+        app(\App\Services\OpsAlertService::class)->error('uptime.health_failed', [
+            'url' => $url,
+            'http_status' => $status,
+            'body' => mb_substr($body, 0, 300),
+        ]);
+        $this->error("health FAIL status={$status} url={$url}");
+
+        return 1;
+    }
+    $this->info('health ok');
+
+    return 0;
+})->purpose('Self-check /health → alerta Sentry se cair');
+
 Artisan::command('maintenance:ops-alert {title} {--level=error}', function (string $title) {
     $level = strtolower((string) $this->option('level')) === 'warn' ? 'warn' : 'error';
     $svc = app(\App\Services\OpsAlertService::class);
@@ -100,4 +133,8 @@ Schedule::command('maintenance:cleanup')
 
 Schedule::command('maintenance:failed-jobs-alert')
     ->hourly()
+    ->withoutOverlapping();
+
+Schedule::command('maintenance:uptime-selfcheck')
+    ->everyFiveMinutes()
     ->withoutOverlapping();

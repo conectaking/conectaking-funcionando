@@ -282,10 +282,10 @@ import '@css/pages/index-extra.css';
                             
                             ${isStart ? `
                             <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 199, 0, 0.2);">
-                                <strong style="color: var(--yellow-primary); font-size: 0.95rem;">â€¢ Você tem acesso a todos os módulos, menos estes que estão abaixo:</strong>
+                                <strong style="color: var(--yellow-primary); font-size: 0.95rem;">• Você tem acesso a todos os módulos, menos estes que estão abaixo:</strong>
                             </li>
                             <li style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 199, 0, 0.1);">
-                                <strong style="color: rgba(245, 245, 245, 0.6); font-size: 0.9rem;">â€¢ Não Incluído:</strong>
+                                <strong style="color: rgba(245, 245, 245, 0.6); font-size: 0.9rem;">• Não Incluído:</strong>
                             </li>
                             ${!features.can_edit_logo ? '<li style="padding-left: 8px; opacity: 0.6;"><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4); margin-right: 8px;"></i> Logomarca editável</li>' : ''}
                             ${modules.unavailable.map(module => `<li style="padding-left: 8px; opacity: 0.6;"><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4); margin-right: 8px;"></i> ${module}</li>`).join('')}
@@ -296,7 +296,7 @@ import '@css/pages/index-extra.css';
                             
                             ${isPrime && modules.available.length > 0 ? `
                             <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 199, 0, 0.2);">
-                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">â€¢ Módulos Incluídos:</strong>
+                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">• Módulos Incluídos:</strong>
                             </li>
                             ${modules.available.map(module => `<li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> ${module}</li>`).join('')}
                             <li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> Link Personalizado</li>
@@ -304,7 +304,7 @@ import '@css/pages/index-extra.css';
                             
                             ${isCorporate ? `
                             <li style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 199, 0, 0.2);">
-                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">â€¢ Todos os Módulos Disponíveis:</strong>
+                                <strong style="color: var(--yellow-primary); font-size: 0.9rem;">• Todos os Módulos Disponíveis:</strong>
                             </li>
                             ${modules.available.length > 0 ? modules.available.map(module => `<li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> ${module}</li>`).join('') : ''}
                             <li style="padding-left: 8px;"><i class="fas fa-check" style="color: var(--yellow-primary); margin-right: 8px;"></i> Link Personalizado</li>

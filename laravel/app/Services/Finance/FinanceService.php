@@ -56,36 +56,57 @@ class FinanceService
      */
     public function transactions(string $userId, array $query): array
     {
-        $limit = min(500, max(1, (int) ($query['limit'] ?? 200)));
+        // Com filtro de datas permite até 2000; sem filtro mantém 500.
+        $hasDateFilter = ! empty($query['dateFrom']) || ! empty($query['dateTo']);
+        $maxCap = $hasDateFilter ? 2000 : 500;
+        $limit = min($maxCap, max(1, (int) ($query['limit'] ?? 200)));
+        $offset = max(0, (int) ($query['offset'] ?? 0));
         $sql = 'SELECT t.*, c.name as category_name, c.color as category_color, c.icon as category_icon, a.name as account_name
                 FROM finance_transactions t
                 LEFT JOIN finance_categories c ON t.category_id = c.id
                 LEFT JOIN finance_accounts a ON t.account_id = a.id
                 WHERE t.user_id = ?';
+        $countSql = 'SELECT COUNT(*)::int AS c FROM finance_transactions t WHERE t.user_id = ?';
         $params = [$userId];
+        $countParams = [$userId];
         if (! empty($query['profile_id'])) {
             $sql .= ' AND t.profile_id = ?';
+            $countSql .= ' AND t.profile_id = ?';
             $params[] = (int) $query['profile_id'];
+            $countParams[] = (int) $query['profile_id'];
         }
         if (! empty($query['dateFrom'])) {
             $sql .= ' AND t.transaction_date >= ?::date';
+            $countSql .= ' AND t.transaction_date >= ?::date';
             $params[] = $query['dateFrom'];
+            $countParams[] = $query['dateFrom'];
         }
         if (! empty($query['dateTo'])) {
             $sql .= ' AND t.transaction_date <= ?::date';
+            $countSql .= ' AND t.transaction_date <= ?::date';
             $params[] = $query['dateTo'];
+            $countParams[] = $query['dateTo'];
         }
         $orderBy = in_array($query['orderBy'] ?? '', ['transaction_date', 'amount', 'created_at'], true)
             ? $query['orderBy']
             : 'transaction_date';
         $orderDir = strtoupper((string) ($query['orderDir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
-        $sql .= " ORDER BY t.{$orderBy} {$orderDir}, t.id DESC LIMIT ?";
+        $sql .= " ORDER BY t.{$orderBy} {$orderDir}, t.id DESC LIMIT ? OFFSET ?";
         $params[] = $limit;
+        $params[] = $offset;
         $rows = DB::select($sql, $params);
+        $total = (int) (DB::selectOne($countSql, $countParams)->c ?? 0);
+        $hasMore = ($offset + count($rows)) < $total;
 
         return ['status' => 200, 'body' => [
             'success' => true,
-            'data' => ['data' => $rows, 'total' => count($rows)],
+            'data' => [
+                'data' => $rows,
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+                'hasMore' => $hasMore,
+            ],
             'error' => null,
             'message' => null,
         ]];
@@ -1020,8 +1041,8 @@ class FinanceService
         $now = now();
         $dateFrom = $dateFrom ?: $now->format('Y-m-01');
         $dateTo = $dateTo ?: $now->format('Y-m-t');
-        // Cap estável (espelha transactions): evita full-dump em contas antigas
-        $rowLimit = 500;
+        // Cap estável com filtro de datas; sem filtro mantém 500.
+        $rowLimit = (! empty($dateFrom) || ! empty($dateTo) || $scope === 'accumulated') ? 2000 : 500;
 
         if ($profileId !== null) {
             $params = [$userId, $dateFrom, $dateTo, $profileId];
