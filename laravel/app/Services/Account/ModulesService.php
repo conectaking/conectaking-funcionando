@@ -190,4 +190,89 @@ class ModulesService
             'modules' => array_values($modulesMap),
         ]];
     }
+
+    /**
+     * Admin: atualiza disponibilidade módulo×plano (Separação de Pacotes).
+     *
+     * @param  array<string,mixed>  $payload
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function updatePlanAvailability(array $payload): array
+    {
+        if (! Schema::hasTable('module_plan_availability')) {
+            return ['status' => 503, 'body' => [
+                'success' => false,
+                'message' => 'Tabela module_plan_availability indisponível.',
+            ]];
+        }
+
+        $updates = $payload['updates'] ?? null;
+        if (! is_array($updates) || $updates === []) {
+            return ['status' => 400, 'body' => [
+                'success' => false,
+                'message' => 'Envie { updates: [{ module_type, plan_code, is_available }] }.',
+            ]];
+        }
+
+        $saved = 0;
+        try {
+            DB::transaction(function () use ($updates, &$saved): void {
+                foreach ($updates as $row) {
+                    if (! is_array($row)) {
+                        continue;
+                    }
+                    $moduleType = trim((string) ($row['module_type'] ?? ''));
+                    $planCode = trim((string) ($row['plan_code'] ?? ''));
+                    if ($moduleType === '' || $planCode === '') {
+                        continue;
+                    }
+                    if (strlen($moduleType) > 64 || strlen($planCode) > 64) {
+                        continue;
+                    }
+                    $raw = $row['is_available'] ?? false;
+                    $isAvailable = $raw === true || $raw === 1 || $raw === '1' || $raw === 'true';
+
+                    $exists = DB::selectOne(
+                        'SELECT id FROM module_plan_availability WHERE module_type = ? AND plan_code = ? LIMIT 1',
+                        [$moduleType, $planCode]
+                    );
+                    if ($exists) {
+                        DB::update(
+                            'UPDATE module_plan_availability
+                             SET is_available = ?, updated_at = CURRENT_TIMESTAMP
+                             WHERE module_type = ? AND plan_code = ?',
+                            [$isAvailable, $moduleType, $planCode]
+                        );
+                    } else {
+                        DB::insert(
+                            'INSERT INTO module_plan_availability (module_type, plan_code, is_available)
+                             VALUES (?, ?, ?)',
+                            [$moduleType, $planCode, $isAvailable]
+                        );
+                    }
+                    $saved++;
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('modules.updatePlanAvailability', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => [
+                'success' => false,
+                'message' => 'Erro ao salvar disponibilidade dos módulos.',
+            ]];
+        }
+
+        if ($saved === 0) {
+            return ['status' => 400, 'body' => [
+                'success' => false,
+                'message' => 'Nenhuma atualização válida recebida.',
+            ]];
+        }
+
+        return ['status' => 200, 'body' => [
+            'success' => true,
+            'message' => 'Disponibilidade atualizada.',
+            'saved' => $saved,
+        ]];
+    }
 }

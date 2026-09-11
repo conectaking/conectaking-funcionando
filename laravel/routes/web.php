@@ -704,6 +704,8 @@ Route::middleware(['jwt', 'module:king_docs'])->group(function () use ($kd) {
 Route::get('/api/modules/plan-availability-public', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailabilityPublic']);
 Route::middleware(['admin', 'audit'])->group(function () {
     Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
+    Route::put('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'updatePlanAvailability'])
+        ->middleware('throttle:60,1');
         $linkPreview = \App\Http\Controllers\Admin\PersonalizarLinkController::class;
     Route::get('/api/admin/link-preview-config', [$linkPreview, 'getConfig']);
         Route::post('/api/admin/link-preview-config', [$linkPreview, 'saveConfig']);
