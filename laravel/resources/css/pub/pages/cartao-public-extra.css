@@ -9,13 +9,26 @@ body, h1, p, span { font-family: var(--ck-font) !important; }
     background-color: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity)) !important;
     color: var(--btn-text) !important;
     border-radius: var(--btn-border-radius) !important;
-    justify-content: var(--btn-align) !important;
+    justify-content: var(--btn-align, flex-start) !important;
     font-size: var(--btn-font-size) !important;
     display: flex !important;
     align-items: center !important;
+    gap: 12px;
+}
+.profile-link > span,
+.profile-button-pix > span,
+.profile-button-pix-qrcode > span {
+    flex: 0 1 auto;
+    text-align: var(--btn-text-align, left);
+}
+.profile-link-logo {
+    margin-right: 0;
+    flex-shrink: 0;
 }
 .profile-link i, .profile-button-pix i, .profile-button-pix-qrcode i {
     color: var(--btn-text) !important;
+    flex-shrink: 0;
+    margin-right: 0 !important;
 }
 .profile-actions {
     display: flex;
@@ -42,7 +55,21 @@ body, h1, p, span { font-family: var(--ck-font) !important; }
 .profile-embed-item { width: 100%; margin: 12px 0; border-radius: 12px; overflow: hidden; }
 .youtube-embed-container { position: relative; padding-bottom: 56.25%; height: 0; background: #000; }
 .youtube-embed-container iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.instagram-embed-container iframe { width: 100%; min-height: 480px; border: 0; border-radius: 12px; }
+.profile-embed-item.instagram-embed-container {
+    height: auto;
+    min-height: 0;
+    background: #0d0d0f;
+}
+.profile-embed-item.instagram-embed-container iframe {
+    width: 100%;
+    height: 480px;
+    max-height: 80vh;
+    min-height: 0;
+    border: 0;
+    border-radius: 12px;
+    display: block;
+    background: #0d0d0f;
+}
 .carousel-container-public { width: 100%; border-radius: 12px; overflow: hidden; position: relative; margin: 10px 0; }
 .carousel-wrapper-public { display: flex; transition: transform .45s ease; width: calc(var(--ck-carousel-n, 1) * 100%); }
 .carousel-slide-public { flex-shrink: 0; width: calc(100% / var(--ck-carousel-n, 1)); }
@@ -64,8 +91,31 @@ body, h1, p, span { font-family: var(--ck-font) !important; }
 .ck-catalog-card .price { color: #ffc700; font-weight: 700; }
 
 /* auto-extracted from resources/views/cartao/public.blade.php */
-.ck-cp-5c6489 { position: relative; display: inline-block; }
+.ck-cp-5c6489 { position: relative; display: inline-block; vertical-align: top; line-height: 0; }
+.ck-cp-90b3e1 { outline:none!important;border:none!important;box-shadow:none!important; }
 .ck-cp-c9458d { display:block;text-decoration:none;color:inherit; }
 .ck-cp-4074da { min-height:160px;border-radius:16px;background:#1c1c21;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.35); }
 .ck-cp-47a258 { display:inline-flex;width:auto;padding:10px 16px; }
 .ck-cp-d50492 { display:flex;justify-content:center;margin:12px 0;background:#fff;padding:12px;border-radius:8px; }
+
+/* restored from abc298b diff (paired) for laravel/resources/views/cartao/public.blade.php */
+
+.ck-cp-114bb6 { margin-top:10px;font-size:.78rem;opacity:.75;font-family:system-ui,sans-serif; }
+.ck-cp-1c5ec1 { width:100%;border-radius:16px; }
+.ck-cp-39a9a7 { margin-top:12px;width:100%; }
+.ck-cp-4074da { min-height:160px;border-radius:16px;background:#1c1c21;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.35); }
+.ck-cp-41db5c { margin:12px 0; }
+.ck-cp-444c69 { position:absolute;right:12px;top:8px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer; }
+.ck-cp-47a258 { display:inline-flex;width:auto;padding:10px 16px; }
+.ck-cp-4d5236 { max-width:24px;max-height:24px;border-radius:8px; }
+.ck-cp-5c6489 { position: relative; display: inline-block; vertical-align: top; line-height: 0; }
+.ck-cp-90b3e1 { outline:none!important;border:none!important;box-shadow:none!important; }
+.ck-cp-9380eb { outline:none!important;border:none!important;box-shadow:none!important; }
+.ck-cp-9deb4d { flex-wrap:wrap; }
+.ck-cp-a55ecb { background:#111;color:#fff;max-width:360px;margin:10vh auto;padding:20px;border-radius:16px;position:relative; }
+.ck-cp-c9458d { display:block;text-decoration:none;color:inherit; }
+.ck-cp-d50492 { display:flex;justify-content:center;margin:12px 0;background:#fff;padding:12px;border-radius:8px; }
+.ck-cp-d8a81e { margin-top:10px; }
+.ck-cp-e14c89 { font-size:2rem; }
+.ck-cp-fdea56 { width:24px;height:24px;object-fit:contain; }
+

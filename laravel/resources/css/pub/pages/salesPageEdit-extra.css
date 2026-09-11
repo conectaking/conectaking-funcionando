@@ -156,3 +156,22 @@
 .ck-spe-8d7976 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .ck-spe-e6fcc1 { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: var(--text-dark, #A1A1A1); }
 .ck-spe-529a82 { display: flex; gap: 24px; flex-wrap: wrap; }
+
+/* restored from abc298b diff (paired) for laravel/resources/views/pages/salesPageEdit.blade.php */
+
+.ck-spe-034359 { width: 0% }
+.ck-spe-0bc5ce { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.ck-spe-16000c { width: 100% }
+.ck-spe-1b8f34 { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.ck-spe-1ca509 { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.ck-spe-4a3180 { margin-bottom: 15px; }
+.ck-spe-529a82 { display: flex; gap: 24px; flex-wrap: wrap; }
+.ck-spe-60a710 { width: 80px; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color, #2C2C2F); background: var(--card-background-color, #1C1C21); color: var(--text, #ECECEC); text-align: center; }
+.ck-spe-790a38 { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.ck-spe-8bc1ba { margin: 0; color: var(--text, #ECECEC); }
+.ck-spe-8d7976 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ck-spe-933a8e { font-size: 0.85rem; }
+.ck-spe-ba04dc { font-size: 1rem; }
+.ck-spe-cb8a8e { font-size: 0.7rem; }
+.ck-spe-e6fcc1 { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: var(--text-dark, #A1A1A1); }
+

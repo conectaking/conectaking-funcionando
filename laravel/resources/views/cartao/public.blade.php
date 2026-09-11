@@ -49,6 +49,7 @@
             --btn-font-size: {{ $btnFont }};
             --btn-text: {{ $btnText }};
             --btn-align: {{ $alignValue ?? 'center' }};
+            --btn-text-align: {{ ($alignValue ?? 'center') === 'flex-end' ? 'right' : (($alignValue ?? 'center') === 'center' ? 'center' : 'left') }};
             --logo-max: {{ max(24, min($logoSize, 90)) }}px;
         }
         html.ck-page-bg { background-color: var(--page-bg); }
@@ -74,21 +75,82 @@
             <i class="fas fa-share-alt"></i>
         </button>
 
-        <header class="profile-header">
-            <div class="ck-cp-5c6489">
-                @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
-                    <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
-                         alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient ck-cp-9380eb"
-                        >
-                @else
-                    <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
-                         alt="Foto de Perfil" class="{{ $avatarClass }} ck-cp-90b3e1"
-                        >
+        @if($cardLayout === 'vitrine')
+            @php
+                $heroUrl = trim((string) ($d['vitrine_hero_url'] ?? ''));
+                $marqueeText = trim((string) ($d['vitrine_marquee_text'] ?? ($d['display_name'] ?? '')));
+                $marqueeSpeed = strtolower((string) ($d['vitrine_marquee_speed'] ?? 'normal'));
+                if (! in_array($marqueeSpeed, ['slow', 'normal', 'fast'], true)) {
+                    $marqueeSpeed = 'normal';
+                }
+                $marqueeBgType = strtolower((string) ($d['vitrine_marquee_bg_type'] ?? 'solid')) === 'gradient' ? 'gradient' : 'solid';
+                $marqueeC1 = $d['vitrine_marquee_color1'] ?? '#2A2A2E';
+                $marqueeC2 = $d['vitrine_marquee_color2'] ?? '#FFC700';
+                $marqueeTextColor = $d['vitrine_marquee_text_color'] ?? '#FFC700';
+                $marqueeLogos = $d['vitrine_marquee_logos'] ?? [];
+                if (is_string($marqueeLogos)) {
+                    $decoded = json_decode($marqueeLogos, true);
+                    $marqueeLogos = is_array($decoded) ? $decoded : [];
+                }
+                if (! is_array($marqueeLogos)) {
+                    $marqueeLogos = [];
+                }
+                $marqueeLogos = array_values(array_filter(array_map(static function ($u) {
+                    $u = trim((string) $u);
+                    return $u !== '' ? $u : null;
+                }, $marqueeLogos)));
+                $marqueeStyle = $marqueeBgType === 'gradient'
+                    ? 'background:linear-gradient(90deg,'.$marqueeC1.','.$marqueeC2.');--vitrine-marquee-text:'.$marqueeTextColor
+                    : 'background:'.$marqueeC1.';--vitrine-marquee-text:'.$marqueeTextColor;
+            @endphp
+            <header class="vitrine-hero-header">
+                <div class="vitrine-hero-media">
+                    @if($heroUrl !== '')
+                        <img class="vitrine-hero-img" src="{{ $heroUrl }}" alt="{{ $d['display_name'] ?? 'Vitrine' }}" decoding="async">
+                    @else
+                        <div class="vitrine-hero-placeholder">
+                            <strong>{{ $d['display_name'] ?? 'Vitrine' }}</strong>
+                            <span>Arte do topo</span>
+                        </div>
+                    @endif
+                </div>
+            </header>
+            @if($marqueeText !== '' || count($marqueeLogos) > 0)
+                <div class="vitrine-marquee vitrine-marquee--{{ $marqueeSpeed }}" style="{{ $marqueeStyle }}">
+                    <div class="vitrine-marquee-track">
+                        @for($loopN = 0; $loopN < 2; $loopN++)
+                            <div class="vitrine-marquee-group">
+                                @foreach($marqueeLogos as $logoUrl)
+                                    <img class="vitrine-marquee-logo" src="{{ $logoUrl }}" alt="" decoding="async">
+                                @endforeach
+                                @if($marqueeText !== '')
+                                    <span class="vitrine-marquee-text">{{ $marqueeText }}</span>
+                                @endif
+                                <span class="vitrine-marquee-sep" aria-hidden="true">•</span>
+                            </div>
+                        @endfor
+                    </div>
+                </div>
+            @endif
+        @else
+            <header class="profile-header">
+                <div class="ck-cp-5c6489">
+                    @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
+                        <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
+                             alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient ck-cp-9380eb"
+                            >
+                    @else
+                        <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
+                             alt="Foto de Perfil" class="{{ $avatarClass }} ck-cp-90b3e1"
+                            >
+                    @endif
+                </div>
+                <h1 class="profile-name">{{ $d['display_name'] ?? 'Nome do Usuário' }}</h1>
+                @if(trim((string) ($d['bio'] ?? '')) !== '')
+                    <p class="profile-bio">{{ $d['bio'] }}</p>
                 @endif
-            </div>
-            <h1 class="profile-name">{{ $d['display_name'] ?? 'Nome do Usuário' }}</h1>
-            <p class="profile-bio">{{ ($d['bio'] ?? '') !== '' ? $d['bio'] : 'Biografia do usuário.' }}</p>
-        </header>
+            </header>
+        @endif
 
         @php
             $vd = $verseDisplay ?? ['position' => 'top', 'size' => 'normal'];
@@ -431,7 +493,7 @@
             </a>
         @endif
 
-        @if(!empty($d['company_logo_url']))
+        @if(!empty($d['company_logo_url']) && ($cardLayout !== 'vitrine' || filter_var($d['vitrine_show_footer'] ?? false, FILTER_VALIDATE_BOOLEAN)))
             <div class="branding-logo ck-footer-logo">
                 @if(!empty($d['company_logo_link']))
                     <a href="{{ \App\Support\SafeUrl::publicHref($d['company_logo_link'] ?? '') }}" target="_blank" rel="noopener noreferrer">

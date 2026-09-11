@@ -30,9 +30,15 @@ if ! docker ps --format '{{.Names}}' | grep -qx conectaking-db; then
 fi
 
 echo "backup start $STAMP -> $FILE"
-docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" conectaking-db \
+if ! docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" conectaking-db \
   pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-acl \
-  | gzip -c > "$FILE.tmp"
+  | gzip -c > "$FILE.tmp"; then
+  echo "backup dump FAIL" >&2
+  docker exec conectaking-laravel php artisan maintenance:ops-alert "backup.postgres_dump_failed" --level=error \
+    >/dev/null 2>&1 || true
+  rm -f "$FILE.tmp"
+  exit 1
+fi
 mv -f "$FILE.tmp" "$FILE"
 ls -lh "$FILE"
 
@@ -46,6 +52,8 @@ if [[ -n "${CK_BACKUP_OFFBOX_CMD:-}" ]]; then
     echo "backup offbox ok"
   else
     echo "backup offbox FAIL" >&2
+    docker exec conectaking-laravel php artisan maintenance:ops-alert "backup.offbox_failed" --level=error \
+      >/dev/null 2>&1 || true
     exit 2
   fi
 else

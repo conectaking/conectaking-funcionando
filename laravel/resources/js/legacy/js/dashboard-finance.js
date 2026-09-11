@@ -966,11 +966,26 @@ window.initFinancePane = async function () {
                 container.innerHTML = '<p style="color:#64748b;text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Carregando metas...</p>';
                 var profileIdMeta = localStorage.getItem('finance_current_profile_id') || '';
                 var urlMeta = (typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals' + (profileIdMeta ? '?profile_id=' + encodeURIComponent(profileIdMeta) : '');
-                var headersMeta = typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })();
-                fetch(urlMeta, { headers: headersMeta }).then(function (r) { return r.json(); }).then(function (data) {
-                    var goals = (data.data && data.data.goals) ? data.data.goals : (data.goals || []);
-                    var earned = (data.data && data.data.total_income_earned != null) ? Number(data.data.total_income_earned) : Number(data.total_income_earned || 0);
-                    var goalsBreakdown = (data.data && data.data.income_breakdown) ? data.data.income_breakdown : (data.income_breakdown || { itens: [], total: 0 });
+                var headersMeta = env.HEADERS_AUTH || {};
+                Promise.all([
+                    fetch(urlMeta, { headers: headersMeta, credentials: 'include' }).then(function (r) { return r.json(); }),
+                    fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/income-breakdown?scope=accumulated' + (profileIdMeta ? '&profile_id=' + encodeURIComponent(profileIdMeta) : ''), { headers: headersMeta, credentials: 'include' }).then(function (r) { return r.ok ? r.json() : { data: { itens: [], total: 0 } }; }).catch(function () { return { data: { itens: [], total: 0 } }; })
+                ]).then(function (results) {
+                    var data = results[0] || {};
+                    var incomePayload = results[1] || {};
+                    var rawGoals = data.data;
+                    var goals = Array.isArray(rawGoals) ? rawGoals
+                        : (rawGoals && Array.isArray(rawGoals.goals) ? rawGoals.goals
+                            : (Array.isArray(data.goals) ? data.goals : []));
+                    var incomeData = incomePayload.data || incomePayload || {};
+                    var goalsBreakdown = (rawGoals && rawGoals.income_breakdown) ? rawGoals.income_breakdown
+                        : (data.income_breakdown || { itens: incomeData.itens || [], total: Number(incomeData.total) || 0 });
+                    if (!goalsBreakdown.itens && Array.isArray(incomeData.itens)) {
+                        goalsBreakdown = { itens: incomeData.itens || [], total: Number(incomeData.total) || 0 };
+                    }
+                    var earned = (rawGoals && rawGoals.total_income_earned != null) ? Number(rawGoals.total_income_earned)
+                        : (data.total_income_earned != null ? Number(data.total_income_earned)
+                            : Number(goalsBreakdown.total || incomeData.total || 0));
                     window._financeGoalsBreakdown = goalsBreakdown;
                     var fmtMeta = function (v) { return (Number(v) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
                     var fmtDateMeta = function (d) { if (!d || String(d).length < 10) return ''; var p = String(d).slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
@@ -979,7 +994,7 @@ window.initFinancePane = async function () {
                         var targetVal = Number(g.target_value) || 0;
                         var targetDate = g.target_date ? new Date(String(g.target_date).slice(0, 10)) : null;
                         var daysLeft = targetDate ? Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)) : 0;
-                        var daysStr = daysLeft > 0 ? 'Faltam ' + daysLeft + ' dias' : (daysLeft === 0 ? 'ltimo dia' : 'Data passou');
+                        var daysStr = daysLeft > 0 ? 'Faltam ' + daysLeft + ' dias' : (daysLeft === 0 ? 'Último dia' : 'Data passou');
                         var pct = targetVal > 0 ? Math.min(100, Math.round((earned / targetVal) * 100)) : 0;
                         var remaining = Math.max(0, targetVal - earned);
                         var remainingStr = remaining <= 0 ? 'Meta atingida!' : 'R$ ' + fmtMeta(remaining);
@@ -1066,9 +1081,9 @@ window.initFinancePane = async function () {
                         var pctD = (Number(c.valor) || 0) > 0 ? Math.round((pago / (c.valor || 1)) * 100) : 100;
                         var pagamentosHtmlT = (c.pagamentos || []).length ? '<div style="margin-bottom:0.75rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 6px 0;">Pagamentos (clique em Excluir para remover um pagamento errado)</p>' + (c.pagamentos || []).map(function (p, pIdx) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:8px;"><span style="font-size:11px;color:#cbd5e1;">R$ ' + fmt(Number(p.valor) || 0) + ' em ' + formatPayDateT(p) + '</span><div style="display:flex;gap:6px;"><button type="button" onclick="event.stopPropagation(); window._kingFinanceEditarPagamentoTerceiro && window._kingFinanceEditarPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Editar"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="event.stopPropagation(); window._kingFinanceExcluirPagamentoTerceiro && window._kingFinanceExcluirPagamentoTerceiro(\'' + (person.id || '').replace(/'/g, "\\'") + '\',\'' + (c.id || '').replace(/'/g, "\\'") + '\',' + pIdx + ')" style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;cursor:pointer;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;" title="Excluir este pagamento"><i class="fas fa-trash"></i></button></div></div>'; }).join('') + '</div>' : '';
                         var vencStr = (c.dataVencimento || '').trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(vencStr)) { var pt = vencStr.split('-'); vencStr = pt[2] + '/' + pt[1] + '/' + pt[0]; }
-                        var tipoLabel = (c.tipo === 'recorrente') ? 'Mensal' : 'nica vez';
+                        var tipoLabel = (c.tipo === 'recorrente') ? 'Mensal' : 'Única vez';
                         var subtituloConta = (vencStr || tipoLabel) ? '<p style="font-size:10px;color:#94a3b8;margin:0 0 6px 0;">Venc: ' + (vencStr || '-') + ' · ' + tipoLabel + '</p>' : '';
-                        return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:#94a3b8;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 45) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">VALOR DA NEGOCIA—fO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
+                        return '<div class="kf-card" style="' + styleKfCard + 'border-left:4px solid #8b5cf6;"><div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;align-items:center;"><span style="font-size:12px;font-weight:800;color:#94a3b8;">' + num + '.</span><h4 style="font-size:14px;font-weight:800;margin:0;flex:1;">' + (c.nomeConta || 'Conta').replace(/</g, ' ').slice(0, 45) + '</h4><div style="display:flex;gap:6px;"><button type="button" onclick="window._kingFinanceEditContaTerceiro && window._kingFinanceEditContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:1px solid rgba(139,92,246,0.5);color:#a78bfa;cursor:pointer;padding:4px 8px;border-radius:8px;" title="Editar conta"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="window._kingFinanceDeleteContaTerceiro && window._kingFinanceDeleteContaTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="background:none;border:none;color:#64748b;cursor:pointer;" title="Excluir esta conta"><i class="fas fa-trash"></i></button></div></div>' + subtituloConta + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;"><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">TOTAL LIQUIDADO</p><p style="font-size:16px;font-weight:800;color:#86efac;margin:0;">R$ ' + fmt(pago) + '</p><p style="font-size:10px;color:#94a3b8;margin:0;">' + pctD + '% Completo</p></div><div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:1rem;"><p style="font-size:9px;font-weight:800;color:#94a3b8;margin:0 0 4px 0;">VALOR DA NEGOCIAÇÃO</p><p style="font-size:16px;font-weight:800;color:#f59e0b;margin:0 0 6px 0;">R$ ' + fmt(restante) + '</p><button type="button" onclick="event.stopPropagation(); window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.35);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">Pagar mais</button></div></div>' + pagamentosHtmlT + '<div style="height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:0.75rem;"><div style="height:100%;width:' + pctD + '%;background:#8b5cf6;border-radius:999px;"></div></div><button type="button" onclick="window._kingFinanceRegistrarPagamentoTerceiro && window._kingFinanceRegistrarPagamentoTerceiro(\'' + person.id + '\',\'' + c.id + '\')" style="width:100%;padding:12px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer;">Efetuar pagamento</button></div>';
                     }).join('');
                     contentArea = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;"><h4 style="font-size:1rem;font-weight:800;color:#a78bfa;margin:0;">' + (person.nome || 'Pessoa').replace(/</g, ' ') + '</h4><div style="display:flex;gap:8px;"><button type="button" onclick="window._kingFinanceImportarTerceirosImagem && window._kingFinanceImportarTerceirosImagem()" style="padding:8px 16px;background:rgba(34,197,94,0.25);color:#86efac;border:1px solid rgba(34,197,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-image" style="margin-right:6px;"></i>Importar imagem</button><button type="button" onclick="window._kingFinanceEditTerceiro && window._kingFinanceEditTerceiro(\'' + person.id + '\')" style="padding:8px 16px;background:rgba(139,92,246,0.25);color:#a78bfa;border:1px solid rgba(139,92,246,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-pencil-alt" style="margin-right:6px;"></i>Editar pessoa</button><button type="button" onclick="window._kingFinanceOpenModal(\'contaPessoa\', \'' + person.id + '\')" style="padding:8px 16px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Nova conta</button><button type="button" onclick="if(confirm(\'Excluir esta pessoa e todas as contas?\')) window._kingFinanceDelete(\'terceiros\',\'' + person.id + '\')" style="padding:8px 16px;background:rgba(244,63,94,0.25);color:#fda4af;border:1px solid rgba(244,63,94,0.5);border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;"><i class="fas fa-trash" style="margin-right:6px;"></i>Excluir pessoa</button></div></div><div style="display:flex;flex-direction:column;gap:1rem;">' + cardsContas + '</div>';
                 }
@@ -1241,7 +1256,7 @@ window.initFinancePane = async function () {
                     var profileId = localStorage.getItem('finance_current_profile_id') || null;
                     var body = { name: name.trim(), target_value: parseFloat(target_value), target_date: target_date };
                     if (profileId) body.profile_id = parseInt(profileId, 10);
-                    fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, (typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })())), body: JSON.stringify(body) })
+                    fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, (env.HEADERS_AUTH)), body: JSON.stringify(body) })
                         .then(function (r) { return r.json(); })
                         .then(function (data) {
                             if (data.success !== false && !data.error) {
@@ -1254,7 +1269,7 @@ window.initFinancePane = async function () {
                 d.querySelector('#meta-modal-cancel').onclick = function () { if (d.parentNode) d.parentNode.removeChild(d); };
             };
             window._kingFinanceDeleteMeta = function (id) {
-                fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals/' + id, { method: 'DELETE', headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })() })
+                fetch((typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/goals/' + id, { method: 'DELETE', headers: env.HEADERS_AUTH })
                     .then(function (r) { if (r.ok) { if (window.renderUnifiedKingTab) window.renderUnifiedKingTab('meta'); } else { return r.json().then(function (d) { alert(d.message || 'Erro ao excluir.'); }); } })
                     .catch(function () { alert('Erro ao excluir meta.'); });
             };
@@ -3218,7 +3233,7 @@ window.openFinanceDetailModal = async function (type) {
             var lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
             var monthEnd = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + lastDay;
             var urlInc = (typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/income-breakdown?scope=monthly&dateFrom=' + monthStart + '&dateTo=' + monthEnd + (profileIdInc ? '&profile_id=' + encodeURIComponent(profileIdInc) : '');
-            var resInc = await fetch(urlInc, { headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })() });
+            var resInc = await fetch(urlInc, { headers: env.HEADERS_AUTH });
             if (resInc.ok) {
                 var dataIncPayload = await resInc.json();
                 var dataInc = dataIncPayload.data || dataIncPayload;
@@ -3261,7 +3276,7 @@ window.openFinanceDetailModal = async function (type) {
             try {
                 var profileIdBreakdown = localStorage.getItem('finance_current_profile_id') || '';
                 var urlBreakdown = (typeof env.API_URL !== 'undefined' ? env.API_URL : '') + '/api/finance/income-breakdown?scope=accumulated' + (profileIdBreakdown ? '&profile_id=' + encodeURIComponent(profileIdBreakdown) : '');
-                var resBreakdown = await fetch(urlBreakdown, { headers: typeof getAuthHeaders === 'function' ? env.getAuthHeaders() : (function(){ var t=localStorage.getItem('conectaKingToken')||''; var h={}; if(t) h.Authorization='Bearer '+t; return h; })() });
+                var resBreakdown = await fetch(urlBreakdown, { headers: env.HEADERS_AUTH });
                 if (resBreakdown.ok) {
                     var dataBreakdown = await resBreakdown.json();
                     var result = dataBreakdown.data || dataBreakdown;
@@ -4297,12 +4312,37 @@ window.financeBuildPrintContent = function (tipo) {
     return '<div style="padding:24px;font-family:sans-serif;color:#111;"><h1 style="font-size:1.5rem;">' + titulo + ' - ' + mesNome + '</h1>' + body + '<p style="margin-top:24px;font-size:0.85rem;color:#666;">Gerado em ' + new Date().toLocaleString('pt-BR') + '</p></div>';
 };
 
+window._financePrintBalance = function (tipo) {
+    var t = tipo || 'geral';
+    if (t === 'meta') {
+        if (window.switchUnifiedFinanceTab) window.switchUnifiedFinanceTab('meta');
+        setTimeout(function () { window.print(); }, 800);
+        return;
+    }
+    var existing = document.getElementById('finance-print-wrap');
+    if (existing) existing.remove();
+    var styleEl = document.getElementById('finance-print-style');
+    if (styleEl) styleEl.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'finance-print-wrap';
+    wrap.style.cssText = 'position:fixed;left:0;top:0;width:100%;min-height:100vh;background:#fff;color:#111;padding:24px;z-index:999999;visibility:hidden;';
+    wrap.innerHTML = (typeof window.financeBuildPrintContent === 'function' ? window.financeBuildPrintContent(t) : '<p>Sem conteúdo para imprimir.</p>');
+    document.body.appendChild(wrap);
+    var style = document.createElement('style');
+    style.id = 'finance-print-style';
+    style.textContent = '@media print{body *{visibility:hidden !important}#finance-print-wrap,#finance-print-wrap *{visibility:visible !important}#finance-print-wrap{position:fixed !important;left:0 !important;top:0 !important;width:100% !important;min-height:100vh !important;background:#fff !important;color:#000 !important;z-index:999999 !important;display:block !important}}';
+    document.head.appendChild(style);
+    window.print();
+    setTimeout(function () { wrap.remove(); if (style.parentNode) style.remove(); }, 800);
+};
+
 window.showGeneralBalanceModal = async function () {
     try {
         const profileIdDetail = localStorage.getItem('finance_current_profile_id') || '';
-        const now = new Date();
-        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-        const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
+        const selMonth = window.currentFinanceMonth !== undefined ? window.currentFinanceMonth : new Date().getMonth();
+        const selYear = window.currentFinanceYear !== undefined ? window.currentFinanceYear : new Date().getFullYear();
+        const monthStart = `${selYear}-${String(selMonth + 1).padStart(2, '0')}-01`;
+        const monthEnd = `${selYear}-${String(selMonth + 1).padStart(2, '0')}-${new Date(selYear, selMonth + 1, 0).getDate()}`;
         const dashboardUrl = `${env.API_URL}/api/finance/dashboard?dateFrom=${monthStart}&dateTo=${monthEnd}${profileIdDetail ? '&profile_id=' + profileIdDetail : ''}`;
         const response = await fetch(dashboardUrl, {
             headers: env.HEADERS_AUTH

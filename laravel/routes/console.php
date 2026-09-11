@@ -54,7 +54,10 @@ Artisan::command('maintenance:failed-jobs-alert', function () {
         return 1;
     }
     if ($n > 0) {
-        \Illuminate\Support\Facades\Log::warning('queue.failed_jobs', ['count' => $n]);
+        app(\App\Services\OpsAlertService::class)->warn('queue.failed_jobs', [
+            'count' => $n,
+            'hint' => 'docker exec conectaking-laravel php artisan queue:failed',
+        ]);
         $this->warn("failed_jobs={$n} — revise: docker exec conectaking-laravel php artisan queue:failed");
         $this->warn('Retry: php artisan queue:retry all | Flush: php artisan queue:flush');
 
@@ -64,6 +67,20 @@ Artisan::command('maintenance:failed-jobs-alert', function () {
 
     return 0;
 })->purpose('Alerta se houver jobs falhados na fila');
+
+Artisan::command('maintenance:ops-alert {title} {--level=error}', function (string $title) {
+    $level = strtolower((string) $this->option('level')) === 'warn' ? 'warn' : 'error';
+    $svc = app(\App\Services\OpsAlertService::class);
+    if ($level === 'warn') {
+        $svc->warn($title, ['source' => 'cli']);
+    } else {
+        $svc->error($title, ['source' => 'cli']);
+    }
+    $this->info('alert sent: '.$title);
+
+    return 0;
+})->purpose('Envia alerta ops (log + Sentry) — usado pelo backup do host');
+
 
 // Timezone: America/Sao_Paulo (mesmo horário civil do Node na VPS BR)
 Schedule::command('maintenance:expire-subscriptions-morning')
