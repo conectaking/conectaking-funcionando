@@ -25,12 +25,19 @@
     <meta http-equiv="Cache-Control" content="public, max-age=30">
     <meta http-equiv="Pragma" content="cache">
     <title>{{ $d['display_name'] ?? 'Conecta King' }}</title>
+    <meta name="theme-color" content="{{ $bgColor }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
+    <link rel="apple-touch-icon" href="{{ $ogImageUrl ?? 'https://i.ibb.co/60sW9k75/logo.png' }}">
     @vite(['resources/css/fontawesome.css', 'resources/css/fonts.css', 'resources/js/pages/cartao-public.js'])
 <meta property="og:title" content="{{ $d['display_name'] ?? 'Conecta King' }}">
 <meta property="og:description" content="{{ $ogDescription }}">
 <meta property="og:image" content="{{ $ogImageUrl }}">
 <meta property="og:url" content="{{ $ogPageUrl }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="{{ $ogDescription }}">
     <style nonce="{{ $cspNonce ?? '' }}">
         :root {
             --page-bg: {{ $bgColor }};
@@ -69,7 +76,7 @@
     <img class="background-image-overlay-img" src="{{ $d['background_image_url'] }}" alt="" aria-hidden="true" decoding="async">
 @endif
 
-<div class="profile-page-wrapper profile-layout-{{ $cardLayout }}">
+<div class="profile-page-wrapper profile-layout-{{ $cardLayout }}" data-profile-slug="{{ $profile_slug ?? '' }}">
     <div class="profile-card">
         <button type="button" class="share-button-corner" id="share-btn" title="Compartilhar">
             <i class="fas fa-share-alt"></i>
@@ -133,7 +140,7 @@
                 </div>
             @endif
         @else
-            <header class="profile-header">
+            <header class="profile-header{{ trim((string) ($d['bio'] ?? '')) === '' ? ' profile-header--no-bio' : '' }}">
                 <div class="ck-cp-5c6489">
                     @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
                         <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"

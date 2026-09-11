@@ -128,6 +128,30 @@ body {
 }
 .profile-name { font-size: 2rem; font-weight: 800; margin: 0 0 8px 0; }
 .profile-bio { font-size: 1.1rem; line-height: 1.6; margin: 0; padding: 0 16px; }
+.profile-header--no-bio {
+    margin-bottom: 10px;
+}
+.ck-share-toast {
+    position: fixed;
+    left: 50%;
+    bottom: max(24px, env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(12px);
+    background: rgba(20, 20, 23, 0.94);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    z-index: 10050;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+}
+.ck-share-toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
 
 /* Quadradinho Palavra do Dia + Reflexão (Bíblia) */
 .verse-of-day-box {
@@ -280,7 +304,10 @@ body {
     }
     
     .profile-header {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
+    }
+    .profile-header--no-bio {
+        margin-bottom: 8px;
     }
     
     .profile-avatar { 
@@ -377,11 +404,17 @@ body {
     
     .profile-embed-item.instagram-embed-container {
         height: auto;
-        min-height: 300px;
+        min-height: 0;
+        background: transparent;
     }
     
     .profile-embed-item.instagram-embed-container iframe {
         min-width: 100%;
+        width: 100%;
+        height: min(420px, 70vh);
+        min-height: 0;
+        max-height: 70vh;
+        background: #0d0d0f;
     }
     
     .branding-logo {
@@ -908,7 +941,7 @@ body.light-theme .branding-logo span {
 
 .profile-embed-item.instagram-embed-container iframe {
     width: 100%;
-    height: 480px;
+    height: min(480px, 75vh);
     max-height: 80vh;
     min-height: 0;
     min-width: 0;

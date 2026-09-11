@@ -82,6 +82,10 @@
                     show = true;
                 }
             }
+            /* Standby produto: esconde Gestão Financeira sem apagar código/API. */
+            if (item.module === 'finance' && typeof window !== 'undefined' && window.CK_FINANCE_STANDBY === true) {
+                show = false;
+            }
             
             var arr = Array.prototype.slice.call(
                 document.querySelectorAll('#sidebar .sidebar-nav a.nav-link[data-module="' + item.module + '"]')

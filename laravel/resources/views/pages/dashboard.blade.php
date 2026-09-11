@@ -9,6 +9,7 @@
 <!-- Navegação para páginas externas do sidebar (King Docs, Bíblia, etc.):
          o dashboard.js faz preventDefault em .nav-link — permitir sair do SPA. -->
 <script src="/config.js?v=2026-09-09-vite1"></script>
+    <script>window.CK_FINANCE_STANDBY = {{ config('conectaking.finance_standby') ? 'true' : 'false' }};</script>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -64,7 +65,7 @@
     <nav class="sidebar-nav">
         <a href="#" class="nav-link active" data-target="editar-pane" title="Editar Conecta King"><i class="fas fa-pencil-alt"></i> <span>Editar Conecta King</span></a>
         <a href="#" class="nav-link ck-hidden" data-target="separacao-pacotes-pane" id="separacao-pacotes-link" title="Separação de Pacotes"><i class="fas fa-layer-group"></i> <span>Separação de Pacotes</span></a>
-        <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
+        <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira" @if(config('conectaking.finance_standby')) hidden aria-hidden="true" @endif><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
         <a href="/kingForms" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
         <a href="/kingSelection?v=2026-09-08-no-render" class="nav-link nav-link-by-plan ck-hidden" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
         <a href="/bibliaking" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>

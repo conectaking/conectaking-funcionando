@@ -70,4 +70,4 @@ Queue saudável: healthcheck por processo `queue:work` (não porta 2019).
 Worker faces: fila `ks-faces`. Scheduler dedicado (não no entrypoint do laravel).
 Off-box: `CK_BACKUP_OFFBOX_CMD` — ver `scripts/backup-postgres-vps.sh`. Docs: `EDGE-SECURITY.md`, `SECRETS-RUNBOOK.md`.
 
-Ver também `docs/FULL-PHP-MIGRATION.md`, `README.md` e `laravel/.env.example.conectaking`.
+Ver também `docs/OPS-RUNBOOK.md` (deploy/rollback/incidente), `docs/FULL-PHP-MIGRATION.md`, `README.md` e `laravel/.env.example.conectaking`.

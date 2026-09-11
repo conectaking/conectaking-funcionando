@@ -106,19 +106,48 @@ import '../vendor-globals.js';
     var shareButton = document.getElementById('share-btn');
     if (shareButton) {
         shareButton.addEventListener('click', async function () {
+            var slugEl = document.querySelector('[data-profile-slug]');
+            var slug = (slugEl && slugEl.getAttribute('data-profile-slug')) || '';
+            var shareUrl = slug
+                ? (window.location.origin + '/' + slug.replace(/^\/+/, ''))
+                : window.location.href.split('#')[0];
             var shareData = {
                 title: document.title,
                 text: 'Confira meu cartão de visita digital Conecta King!',
-                url: window.location.origin + '/{{ $profile_slug }}'
+                url: shareUrl
             };
+            function toast(msg) {
+                var t = document.getElementById('ck-share-toast');
+                if (!t) {
+                    t = document.createElement('div');
+                    t.id = 'ck-share-toast';
+                    t.setAttribute('role', 'status');
+                    t.className = 'ck-share-toast';
+                    document.body.appendChild(t);
+                }
+                t.textContent = msg;
+                t.classList.add('is-visible');
+                clearTimeout(t._hide);
+                t._hide = setTimeout(function () { t.classList.remove('is-visible'); }, 2200);
+            }
             if (navigator.share) {
-                try { await navigator.share(shareData); } catch (e) {}
+                try {
+                    await navigator.share(shareData);
+                } catch (e) {
+                    if (e && e.name === 'AbortError') return;
+                    try {
+                        await navigator.clipboard.writeText(shareData.url);
+                        toast('Link copiado!');
+                    } catch (err) {
+                        toast('Não foi possível compartilhar.');
+                    }
+                }
             } else {
                 try {
                     await navigator.clipboard.writeText(shareData.url);
-                    alert('Link do perfil copiado!');
+                    toast('Link do perfil copiado!');
                 } catch (e) {
-                    alert('Não foi possível copiar o link.');
+                    toast('Não foi possível copiar o link.');
                 }
             }
         });

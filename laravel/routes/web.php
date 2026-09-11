@@ -878,8 +878,14 @@ $bladePages = [
     'dashboard-recibos-orcamentos', 'clientes-recibos-orcamentos', 'configuracoes-recibos-orcamentos',
     'termos', 'privacidade', 'index', 'bible', 'bibliaking',
     'admin-devocionais-365',
-    'responsesList', 'conviteEdit', 'zerar-mes', 'arquetipo-resultados',
+    'responsesList', 'conviteEdit', 'arquetipo-resultados',
 ];
+if (! config('conectaking.finance_standby')) {
+    $bladePages[] = 'zerar-mes';
+} else {
+    Route::get('/zerar-mes', fn () => redirect('/dashboard', 302));
+    Route::get('/zerar-mes.html', fn () => redirect('/dashboard', 302));
+}
 Route::get('/admin-planos', fn () => redirect('/admin', 301));
 Route::get('/admin-planos.html', fn () => redirect('/admin', 301));
 Route::get('/admin-prosperidade-31', fn () => redirect('/admin-devocionais-365#prosperidade', 301));
