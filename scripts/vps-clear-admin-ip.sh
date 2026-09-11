@@ -1,6 +1,5 @@
 #!/bin/bash
 set -euo pipefail
-# Clear IP allowlist so admin APIs work (CF/proxy IP mismatch).
 ENV=/opt/conectaking/.env.prod
 python3 - <<'PY'
 from pathlib import Path
@@ -16,10 +15,11 @@ for line in lines:
 if not found:
     out.append("ADMIN_IP_ALLOWLIST=")
 p.write_text("\n".join(out) + "\n")
-print("ADMIN_IP_ALLOWLIST cleared")
+print("ADMIN_IP_ALLOWLIST cleared (disabled)")
 PY
 cd /opt/conectaking
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps laravel queue queue-faces scheduler
-sleep 10
-docker exec conectaking-laravel printenv ADMIN_IP_ALLOWLIST || echo "(empty)"
+sleep 8
+val="$(docker exec conectaking-laravel printenv ADMIN_IP_ALLOWLIST || true)"
+echo "ADMIN_IP_ALLOWLIST=[${val}]"
 echo DONE
