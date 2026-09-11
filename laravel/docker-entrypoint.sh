@@ -1,12 +1,6 @@
 #!/bin/sh
 set -eu
 
-# Scheduler leve: um schedule:run por minuto (em vez de schedule:work --verbose 24/7).
-(
-  while true; do
-    php /app/artisan schedule:run --no-ansi >> /proc/1/fd/1 2>> /proc/1/fd/2 || true
-    sleep 60
-  done
-) &
-
+# Scheduler vive no serviço Docker `scheduler` (compose prod).
+# Este entrypoint só sobe o FrankenPHP.
 exec frankenphp run --config /app/Caddyfile

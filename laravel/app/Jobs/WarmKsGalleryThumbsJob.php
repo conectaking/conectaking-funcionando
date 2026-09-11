@@ -11,7 +11,7 @@ class WarmKsGalleryThumbsJob implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 1;
+    public int $tries = 2;
 
     public int $timeout = 900;
 
@@ -24,14 +24,22 @@ class WarmKsGalleryThumbsJob implements ShouldQueue
 
     public function handle(KingSelectionMediaService $media): void
     {
-        try {
-            $n = $media->warmGalleryThumbs($this->galleryId, $this->limit, 360);
-            Log::info('ks.thumbs.warm', ['galleryId' => $this->galleryId, 'ok' => $n]);
-        } catch (\Throwable $e) {
-            Log::warning('ks.thumbs.warm.fail', [
-                'galleryId' => $this->galleryId,
-                'error' => $e->getMessage(),
-            ]);
+        $result = $media->warmGalleryThumbsDetailed($this->galleryId, $this->limit, 360);
+        $ok = (int) ($result['ok'] ?? 0);
+        $failed = (int) ($result['failed'] ?? 0);
+        $total = (int) ($result['total'] ?? 0);
+
+        Log::info('ks.thumbs.warm', [
+            'galleryId' => $this->galleryId,
+            'ok' => $ok,
+            'failed' => $failed,
+            'total' => $total,
+        ]);
+
+        if ($total > 0 && ($failed / $total) > 0.2) {
+            throw new \RuntimeException(
+                "Warm thumbs parcial: {$failed}/{$total} falhas (gallery {$this->galleryId})"
+            );
         }
     }
 }

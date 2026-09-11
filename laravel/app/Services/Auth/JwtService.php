@@ -68,6 +68,11 @@ class JwtService
         return $header.'.'.$body.'.'.$sig;
     }
 
+    public function parseExpiresInSeconds(string $expiresIn): int
+    {
+        return $this->parseExpiresIn($expiresIn);
+    }
+
     private function parseExpiresIn(string $expiresIn): int
     {
         if (preg_match('/^(\d+)([smhd])$/i', trim($expiresIn), $m)) {

@@ -6,12 +6,8 @@
     <title>ConectaKing - Sua Presença Digital. Um Toque. Poder Absoluto.</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="manifest" href="/manifest.json">
+    {{-- PWA desativada (fatia 30): sem manifest/SW — ver docs/STAGING.md / A11Y --}}
     <meta name="theme-color" content="#DC2626">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="ConectaKing">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="description" content="O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium. Planos anuais e mensais disponveis. Atualizaes em tempo real.">
     
     <!-- Open Graph / Facebook / WhatsApp -->

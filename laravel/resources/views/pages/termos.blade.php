@@ -3,150 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Termos de Serviço - Conecta King</title>
+    <title>Termos de Uso - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    
     @vite(['resources/css/fontawesome.css', 'resources/css/pub/pages/termos.css'])
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Voltar para página inicial</a>
-        
-        <h1>Termos de Serviço</h1>
-        <p><strong>Conecta King - Agenda Inteligente</strong></p>
-        
-        <p class="last-updated">Última atualização: 22 de janeiro de 2026</p>
+        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <h1>Termos de Uso</h1>
+        <p><strong>Conecta King</strong></p>
+        <p class="last-updated">Última atualização: 11 de setembro de 2026</p>
 
         <div class="warning">
-            <strong>Importante:</strong> Ao utilizar o serviço de Agenda Inteligente do Conecta King,
-            você concorda com estes Termos de Serviço. Se você não concordar, não utilize o serviço.
+            <strong>Importante:</strong> Ao criar conta ou usar a plataforma, aceita estes Termos e a
+            <a href="/privacidade">Política de Privacidade</a>.
         </div>
 
-        <h2>1. Aceitação dos Termos</h2>
-        <p>
-            Ao acessar e utilizar o serviço de Agenda Inteligente do Conecta King,
-            você concorda em cumprir e estar vinculado a estes Termos de Serviço. Se você não concordar com qualquer parte destes termos, não deve utilizar o serviço.
-        </p>
-
-        <h2>2. Descrição do Serviço</h2>
-        <p>
-            O Conecta King oferece um serviço de agendamento inteligente que permite:
-        </p>
+        <h2>1. O serviço</h2>
+        <p>A Conecta King disponibiliza ferramentas digitais, incluindo (conforme o plano):</p>
         <ul>
-            <li>Gerenciar disponibilidade de horários</li>
-            <li>Permitir que clientes agendem reuniões ou trabalhos</li>
-            <li>Integração automática com Google Calendar</li>
-            <li>Criação automática de eventos e links do Google Meet</li>
-            <li>Envio de convites de calendário para você e seus clientes</li>
+            <li>Cartão / perfil digital público</li>
+            <li>King Selection (galerias, clientes, reconhecimento facial opcional)</li>
+            <li>King Forms e Portaria</li>
+            <li>King Docs e recibos/orçamentos</li>
+            <li>Módulo Bíblia / devocionais</li>
+            <li>Gestão Financeira</li>
         </ul>
 
-        <h2>3. Requisitos de Uso</h2>
-        <p>Para utilizar o serviço, você deve:</p>
+        <h2>2. Conta e elegibilidade</h2>
         <ul>
-            <li>Ter uma conta válida no Conecta King</li>
-            <li>Ter uma conta Google válida</li>
-            <li>Autorizar o acesso ao seu Google Calendar</li>
-            <li>Fornecer informações precisas e atualizadas</li>
-            <li>Ser maior de 18 anos ou ter autorização de responsável legal</li>
+            <li>É responsável pela confidencialidade da conta e por atividade nela.</li>
+            <li>Deve fornecer dados verdadeiros e manter e-mail acessível.</li>
+            <li>Planos e limites de módulos seguem a configuração comercial vigente.</li>
         </ul>
 
-        <h2>4. Uso Aceitável</h2>
-        <p>Você concorda em NÃO:</p>
+        <h2>3. Uso aceitável</h2>
+        <p>É proibido usar a plataforma para:</p>
         <ul>
-            <li>Usar o serviço para atividades ilegais ou não autorizadas</li>
-            <li>Interferir ou interromper o funcionamento do serviço</li>
-            <li>Tentar acessar áreas restritas do sistema</li>
-            <li>Usar o serviço para spam ou envio de mensagens não solicitadas</li>
-            <li>Abusar ou sobrecarregar o sistema com requisições excessivas</li>
-            <li>Compartilhar suas credenciais de acesso com terceiros</li>
+            <li>Atividades ilegais, fraude, spam ou phishing</li>
+            <li>Conteúdo que viole direitos de terceiros</li>
+            <li>Tentativas de abuso, scraping agressivo ou exploração de falhas</li>
+            <li>Armazenar material ilícito em uploads (incluindo galerias KS)</li>
         </ul>
 
-        <h2>5. Integração com Google Calendar</h2>
-        <p>
-            Ao conectar seu Google Calendar, você autoriza o Conecta King a:
-        </p>
-        <ul>
-            <li>Ler informações do seu calendário para verificar disponibilidade</li>
-            <li>Criar eventos de agendamento em seu calendário</li>
-            <li>Modificar eventos relacionados aos agendamentos</li>
-            <li>Criar links do Google Meet quando necessário</li>
-        </ul>
-        <p>
-            Você pode revogar este acesso a qualquer momento através das configurações
-            da sua conta Google ou removendo a conexão no Conecta King.
-        </p>
+        <h2>4. Conteúdo do utilizador</h2>
+        <p>Mantém a titularidade do conteúdo que carrega. Concede-nos licença limitada para alojar, processar e exibir o necessário à prestação do serviço (incluindo CDN/R2 e processamento de imagem/face quando ativado).</p>
 
-        <h2>6. Responsabilidades do Usuário</h2>
-        <p>Você é responsável por:</p>
-        <ul>
-            <li>Manter a segurança de sua conta e credenciais</li>
-            <li>Gerenciar corretamente sua disponibilidade e horários</li>
-            <li>Confirmar ou cancelar agendamentos de forma adequada</li>
-            <li>Fornecer informações precisas aos clientes</li>
-            <li>Respeitar os compromissos agendados através do sistema</li>
-        </ul>
+        <h2>5. Disponibilidade e alterações</h2>
+        <p>Esforçamo-nos por manter o serviço disponível, sem garantia de uptime absoluto. Podemos alterar funcionalidades, planos e estes Termos; alterações materiais serão publicadas com nova data.</p>
 
-        <h2>7. Disponibilidade do Serviço</h2>
-        <p>
-            Nos esforçamos para manter o serviço disponível 24/7, mas não garantimos
-            disponibilidade ininterrupta. O serviço pode estar temporariamente indisponível
-            devido a manutenção, atualizações ou circunstâncias fora de nosso controle.
-        </p>
+        <h2>6. Limitação de responsabilidade</h2>
+        <p>Na medida permitida por lei, a Conecta King não responde por danos indiretos, lucros cessantes ou perda de dados decorrente de uso indevido, força maior ou falhas de terceiros (cloud, ISP, etc.).</p>
 
-        <h2>8. Limitação de Responsabilidade</h2>
-        <p>
-            O Conecta King não se responsabiliza por:
-        </p>
-        <ul>
-            <li>Perdas ou danos resultantes do uso ou incapacidade de usar o serviço</li>
-            <li>Conflitos de agendamento causados por informações incorretas fornecidas pelo usuário</li>
-            <li>Problemas relacionados ao Google Calendar ou serviços de terceiros</li>
-            <li>Interrupções temporárias do serviço</li>
-        </ul>
+        <h2>7. Rescisão</h2>
+        <p>Pode solicitar exclusão da conta (ver Privacidade / área Conta). Podemos suspender contas por violação destes Termos ou risco de segurança.</p>
 
-        <h2>9. Propriedade Intelectual</h2>
-        <p>
-            Todo o conteúdo, funcionalidades e tecnologia do Conecta King são propriedade
-            do Conecta King e protegidos por leis de propriedade intelectual.
-            Você não pode copiar, modificar ou distribuir o serviço sem autorização.
-        </p>
+        <h2>8. Lei aplicável</h2>
+        <p>Estes Termos regem-se pelas leis do Brasil. Foro da comarca do prestador, salvo regra imperativa em contrário.</p>
 
-        <h2>10. Modificações dos Termos</h2>
-        <p>
-            Reservamos o direito de modificar estes Termos de Serviço a qualquer momento.
-            Alterações significativas serão comunicadas através do email cadastrado ou
-            por meio de aviso no aplicativo. O uso continuado do serviço após as alterações
-            constitui aceitação dos novos termos.
-        </p>
-
-        <h2>11. Rescisão</h2>
-        <p>
-            Podemos suspender ou encerrar seu acesso ao serviço a qualquer momento,
-            com ou sem aviso prévio, por violação destes Termos de Serviço ou por
-            qualquer outro motivo que consideremos apropriado.
-        </p>
-
-        <h2>12. Lei Aplicável</h2>
-        <p>
-            Estes Termos de Serviço são regidos pelas leis do Brasil.
-            Qualquer disputa será resolvida nos tribunais competentes do Brasil.
-        </p>
-
-        <h2>13. Contato</h2>
-        <div class="contact">
-            <p>
-                Para questões sobre estes Termos de Serviço, entre em contato:
-            </p>
-            <p>
-                <strong>Email:</strong> conectaking@gmail.com<br>
-                <strong>Serviço:</strong> Conecta King - Agenda Inteligente
-            </p>
-        </div>
-
-        <p class="last-updated">
-            © 2026 Conecta King. Todos os direitos reservados.
-        </p>
+        <h2>9. Contacto</h2>
+        <p><a href="mailto:security@conectaking.com.br">security@conectaking.com.br</a> · <a href="/privacidade">Privacidade</a></p>
     </div>
 </body>
 </html>

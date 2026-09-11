@@ -151,6 +151,39 @@ export default {
         return new Response(JSON.stringify({ success: false, message: 'Arquivo é obrigatório (field: file).' }), { status: 400, headers: cors });
       }
 
+      const MAX_BYTES = parseInt(env.KS_MAX_UPLOAD_BYTES || '26214400', 10); // 25MB
+      const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (file.size > MAX_BYTES) {
+        return new Response(JSON.stringify({
+          success: false,
+          message: `Arquivo maior que o limite (${Math.round(MAX_BYTES / 1024 / 1024)}MB).`,
+        }), { status: 413, headers: cors });
+      }
+      const mime = String(file.type || '').toLowerCase();
+      if (mime && !ALLOWED.includes(mime)) {
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'MIME não permitido. Use JPEG, PNG, WebP ou GIF.',
+        }), { status: 415, headers: cors });
+      }
+      // Magic bytes (quando disponíveis)
+      try {
+        const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+        const isJpeg = head[0] === 0xFF && head[1] === 0xD8 && head[2] === 0xFF;
+        const isPng = head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4E && head[3] === 0x47;
+        const isGif = head[0] === 0x47 && head[1] === 0x49 && head[2] === 0x46;
+        const isWebp = head[0] === 0x52 && head[1] === 0x49 && head[2] === 0x46 && head[3] === 0x46
+          && head[8] === 0x57 && head[9] === 0x45 && head[10] === 0x42 && head[11] === 0x50;
+        if (!(isJpeg || isPng || isGif || isWebp)) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: 'Conteúdo do arquivo não é uma imagem válida.',
+          }), { status: 415, headers: cors });
+        }
+      } catch (_) {
+        // se não der para ler magic, MIME já foi checado
+      }
+
       const ext = extFromFilenameOrType(file.name, file.type);
       const objectKey = `galleries/${galleryId}/${crypto.randomUUID()}.${ext}`;
 

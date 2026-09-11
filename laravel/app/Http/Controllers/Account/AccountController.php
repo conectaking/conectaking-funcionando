@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Services\Account\AccountService;
+use App\Services\Account\LgpdService;
 use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
-    public function __construct(private readonly AccountService $account)
-    {
+    public function __construct(
+        private readonly AccountService $account,
+        private readonly LgpdService $lgpd,
+    ) {
     }
 
     public function details(Request $request)
@@ -36,6 +39,23 @@ class AccountController extends Controller
     public function upgrade(Request $request)
     {
         $r = $this->account->upgrade((string) $request->attributes->get('auth_user_id'), $request->all());
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function exportData(Request $request)
+    {
+        $r = $this->lgpd->export((string) $request->attributes->get('auth_user_id'));
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function deleteRequest(Request $request)
+    {
+        $r = $this->lgpd->requestDeletion(
+            (string) $request->attributes->get('auth_user_id'),
+            (string) $request->input('password', '')
+        );
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }

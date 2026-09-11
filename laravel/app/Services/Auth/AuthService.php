@@ -41,6 +41,34 @@ class AuthService
             return ['status' => 401, 'body' => ['success' => false, 'message' => 'Credenciais inválidas.']];
         }
 
+        $isAdmin = filter_var($user->is_admin ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($isAdmin && ! empty($user->totp_enabled_at) && ! empty($user->totp_secret_encrypted)) {
+            $challenge = app(AdminTotpService::class)->challengeToken((string) $user->id);
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'requiresTotp' => true,
+                'totpToken' => $challenge,
+                'message' => 'Informe o código 2FA.',
+            ]];
+        }
+
+        return $this->loginSuccessBody($user);
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function finalizeLoginForUser(object $user): array
+    {
+        return $this->loginSuccessBody($user);
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    private function loginSuccessBody(object $user): array
+    {
         [$access, $refresh] = $this->tokenPair($user);
         $this->saveRefreshToken((string) $user->id, $refresh);
 
@@ -253,7 +281,9 @@ class AuthService
             DB::table('refresh_tokens')->insert([
                 'user_id' => $userId,
                 'token' => $token,
-                'expires_at' => now()->addDays(30),
+                'expires_at' => now()->addSeconds(
+                    $this->jwt->parseExpiresInSeconds((string) (env('JWT_REFRESH_EXPIRES_IN') ?: '30d'))
+                ),
                 'created_at' => now(),
             ]);
         } catch (\Throwable $e) {

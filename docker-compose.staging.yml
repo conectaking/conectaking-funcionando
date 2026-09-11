@@ -1,0 +1,20 @@
+# services:
+#   ... herdados de prod com overrides
+# Uso: docker compose -f docker-compose.prod.yml -f docker-compose.staging.yml --env-file .env.staging up -d
+
+services:
+  laravel:
+    environment:
+      APP_ENV: staging
+      APP_DEBUG: "false"
+      APP_URL: ${APP_URL:-https://staging.conectaking.com.br}
+  queue:
+    environment:
+      APP_ENV: staging
+      APP_URL: ${APP_URL:-https://staging.conectaking.com.br}
+  queue-faces:
+    environment:
+      APP_ENV: staging
+  scheduler:
+    environment:
+      APP_ENV: staging

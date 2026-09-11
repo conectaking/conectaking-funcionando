@@ -5,115 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Política de Privacidade - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-    
     @vite(['resources/css/fontawesome.css', 'resources/css/pub/pages/privacidade.css'])
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Voltar para página inicial</a>
-        
+        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Voltar</a>
         <h1>Política de Privacidade</h1>
-        <p><strong>Conecta King</strong></p>
-        
-        <p class="last-updated">Última atualização: 22 de janeiro de 2026</p>
+        <p><strong>Conecta King</strong> — plataforma de cartão digital, King Selection, King Forms, King Docs, Bíblia e Gestão Financeira.</p>
+        <p class="last-updated">Última atualização: 11 de setembro de 2026</p>
 
-        <h2>1. Introdução</h2>
-        <p>
-            Esta Política de Privacidade descreve como o Conecta King ("nós", "nosso" ou "aplicativo")
-            coleta, usa e protege suas informações quando você utiliza nosso serviço de Agenda Inteligente
-            integrado com o Google Calendar.
-        </p>
+        <h2>1. Controlador e contacto</h2>
+        <p>O responsável pelo tratamento é a operação Conecta King. Pedidos LGPD: <a href="mailto:security@conectaking.com.br">security@conectaking.com.br</a> ou área <a href="/conta">Conta</a> (exportação / exclusão).</p>
+        <p>Ver também: <a href="/termos">Termos de Uso</a> · <a href="/.well-known/security.txt">security.txt</a></p>
 
-        <h2>2. Informações que Coletamos</h2>
-        <p>Quando você utiliza a integração com Google Calendar, coletamos as seguintes informações:</p>
+        <h2>2. Dados que tratamos</h2>
         <ul>
-            <li><strong>Dados do Google Calendar:</strong> Acesso para criar, visualizar e gerenciar eventos em seu calendário</li>
-            <li><strong>Informações de Agendamento:</strong> Nome, email, telefone e outras informações fornecidas durante o agendamento</li>
-            <li><strong>Dados de Autenticação:</strong> Tokens de acesso OAuth do Google (criptografados e armazenados de forma segura)</li>
-            <li><strong>Informações de Uso:</strong> Logs de atividades relacionadas aos agendamentos</li>
+            <li><strong>Conta:</strong> e-mail, senha (hash), tipo de plano, preferências de perfil.</li>
+            <li><strong>Cartão digital:</strong> nome, bio, links, imagens, módulos (PIX, Wi‑Fi, formulários, etc.).</li>
+            <li><strong>King Selection:</strong> fotos de galeria (armazenamento R2/Cloudflare), metadados de face (AWS Rekognition quando ativo), dados de clientes/seleção.</li>
+            <li><strong>King Forms / Portaria:</strong> respostas de formulários, listas de convidados (nome, documento, contacto).</li>
+            <li><strong>King Docs / Recibos:</strong> documentos e dados fiscais que o utilizador carregar.</li>
+            <li><strong>Finance:</strong> lançamentos, anexos (PDF/imagem) em armazenamento privado autenticado.</li>
+            <li><strong>Técnicos:</strong> cookies HttpOnly de sessão, CSRF, logs de acesso, IP (auditoria/segurança).</li>
         </ul>
 
-        <h2>3. Como Usamos suas Informações</h2>
-        <p>Utilizamos suas informações exclusivamente para:</p>
+        <h2>3. Finalidades e bases legais (LGPD)</h2>
         <ul>
-            <li>Criar e gerenciar eventos de agendamento no Google Calendar</li>
-            <li>Verificar disponibilidade de horários</li>
-            <li>Enviar convites de calendário para você e seus clientes</li>
-            <li>Gerar links do Google Meet para reuniões online</li>
-            <li>Melhorar nossos serviços e experiência do usuário</li>
+            <li>Execução de contrato — prestar os módulos contratados.</li>
+            <li>Legítimo interesse — segurança, prevenção de abuso, melhoria do produto.</li>
+            <li>Consentimento — quando aplicável (ex.: envio de e-mails opcionais).</li>
+            <li>Obrigação legal — quando a lei exigir retenção.</li>
         </ul>
 
-        <h2>4. Compartilhamento de Informações</h2>
-        <p>
-            <strong>Não compartilhamos, vendemos ou alugamos suas informações pessoais para terceiros.</strong>
-        </p>
-        <p>
-            Seus dados são compartilhados apenas quando necessário para:
-        </p>
+        <h2>4. Subprocessadores</h2>
         <ul>
-            <li>Fornecer o serviço de agendamento (criar eventos no Google Calendar)</li>
-            <li>Cumprir obrigações legais</li>
-            <li>Proteger nossos direitos e segurança</li>
+            <li>Hetzner (hospedagem VPS / UE)</li>
+            <li>Cloudflare (CDN, DNS, Worker R2)</li>
+            <li>AWS (Rekognition, quando King Selection face estiver ativo)</li>
+            <li>Provedor SMTP configurado pelo operador (envio de e-mails transacionais)</li>
         </ul>
 
-        <h2>5. Segurança dos Dados</h2>
-        <p>
-            Implementamos medidas de segurança técnicas e organizacionais para proteger suas informações:
-        </p>
+        <h2>5. Partilha</h2>
+        <p>Não vendemos dados pessoais. Partilha ocorre só com subprocessadores necessários ao serviço, obrigações legais ou proteção de direitos.</p>
+
+        <h2>6. Segurança</h2>
         <ul>
-            <li>Criptografia de tokens OAuth usando chaves seguras</li>
-            <li>Acesso restrito aos dados apenas para funcionários autorizados</li>
-            <li>Monitoramento contínuo de segurança</li>
-            <li>Backup regular dos dados</li>
+            <li>HTTPS, HSTS, cookies HttpOnly, CSP com nonce</li>
+            <li>Anexos financeiros fora de pastas públicas</li>
+            <li>Rate-limit e controlos de acesso admin (incl. 2FA opcional)</li>
         </ul>
 
-        <h2>6. Seus Direitos</h2>
-        <p>Você tem o direito de:</p>
+        <h2>7. Os seus direitos</h2>
         <ul>
-            <li>Acessar suas informações pessoais</li>
-            <li>Corrigir dados incorretos</li>
-            <li>Solicitar a exclusão de seus dados</li>
-            <li>Revogar o acesso ao Google Calendar a qualquer momento</li>
-            <li>Exportar seus dados</li>
+            <li>Acesso e exportação (`GET /api/account/export` autenticado)</li>
+            <li>Correção de dados na área Conta</li>
+            <li>Eliminação (`POST /api/account/delete-request` com senha; prazo até 30 dias)</li>
+            <li>Oposição / limitação — contactar o e-mail acima</li>
         </ul>
 
-        <h2>7. Retenção de Dados</h2>
-        <p>
-            Mantemos suas informações apenas pelo tempo necessário para fornecer nossos serviços
-            ou conforme exigido por lei. Quando você revoga o acesso ao Google Calendar,
-            removemos seus tokens de autenticação imediatamente.
-        </p>
+        <h2>8. Retenção</h2>
+        <p>Dados de conta ativos enquanto a assinatura/conta existir. Backups podem reter cópias por período limitado. Pedidos de exclusão removem a conta e dados associados na medida técnica possível.</p>
 
-        <h2>8. Cookies e Tecnologias Similares</h2>
-        <p>
-            Utilizamos cookies e tecnologias similares para melhorar sua experiência,
-            autenticação e funcionalidade do serviço. Você pode gerenciar suas preferências
-            de cookies através das configurações do navegador.
-        </p>
+        <h2>9. Cookies</h2>
+        <p>Usamos cookies essenciais de autenticação (`token`, `refresh_token`, `ck_csrf`) — não para publicidade de terceiros.</p>
 
-        <h2>9. Alterações nesta Política</h2>
-        <p>
-            Podemos atualizar esta Política de Privacidade periodicamente.
-            Notificaremos você sobre mudanças significativas através do email cadastrado
-            ou por meio de aviso em nosso aplicativo.
-        </p>
-
-        <h2>10. Contato</h2>
-        <div class="contact">
-            <p>
-                Se você tiver dúvidas sobre esta Política de Privacidade ou sobre como tratamos seus dados,
-                entre em contato conosco:
-            </p>
-            <p>
-                <strong>Email:</strong> conectaking@gmail.com<br>
-                <strong>Serviço:</strong> Conecta King - Agenda Inteligente
-            </p>
-        </div>
-
-        <p class="last-updated">
-            © 2026 Conecta King. Todos os direitos reservados.
-        </p>
+        <h2>10. Alterações</h2>
+        <p>Alterações relevantes serão publicadas nesta página com nova data de atualização.</p>
     </div>
 </body>
 </html>

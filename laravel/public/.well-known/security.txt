@@ -1,0 +1,6 @@
+Contact: mailto:security@conectaking.com.br
+Contact: https://www.conectaking.com.br/privacidade
+Policy: https://www.conectaking.com.br/privacidade
+Preferred-Languages: pt-BR, en
+Canonical: https://www.conectaking.com.br/.well-known/security.txt
+Expires: 2027-01-01T00:00:00.000Z

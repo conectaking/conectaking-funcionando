@@ -35,7 +35,24 @@ Route::get('/health', [\App\Http\Controllers\FrontLegacyController::class, 'heal
 Route::get('/api/public-api-url', [\App\Http\Controllers\FrontLegacyController::class, 'publicApiUrl']);
 Route::get('/api-config.js', [\App\Http\Controllers\FrontLegacyController::class, 'apiConfigJs']);
 Route::get('/api/health', [\App\Http\Controllers\FrontLegacyController::class, 'health']);
+Route::get('/.well-known/security.txt', function () {
+    $path = public_path('.well-known/security.txt');
+    if (! is_file($path)) {
+        return response("Contact: mailto:security@conectaking.com.br\n", 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+        ]);
+    }
 
+    return response()->file($path, ['Content-Type' => 'text/plain; charset=UTF-8']);
+});
+Route::get('/robots.txt', function () {
+    $path = public_path('robots.txt');
+
+    return response()->file($path, ['Content-Type' => 'text/plain; charset=UTF-8']);
+});
+
+Route::post('/api/auth/admin/totp/verify', [\App\Http\Controllers\Auth\AdminTotpController::class, 'verify'])
+    ->middleware('throttle:20,1');
 Route::post('/api/password/forgot', [\App\Http\Controllers\Auth\PasswordController::class, 'forgot'])
     ->middleware('throttle:10,1');
 Route::post('/api/password/reset', [\App\Http\Controllers\Auth\PasswordController::class, 'reset'])
@@ -139,7 +156,9 @@ Route::middleware('jwt')->group(function () {
     Route::delete('/api/profile/items/{id}', [ProfileItemsController::class, 'destroy'])->where('id', '[0-9]+');
 });
 
-Route::middleware('admin')->group(function () {
+Route::middleware(['admin', 'audit'])->group(function () {
+    Route::post('/api/admin/totp/setup', [\App\Http\Controllers\Auth\AdminTotpController::class, 'setup']);
+    Route::post('/api/admin/totp/confirm', [\App\Http\Controllers\Auth\AdminTotpController::class, 'confirm']);
     Route::get('/api/admin/bible/prosperidade', [BibleProsperidadeAdminController::class, 'index']);
     Route::get('/api/admin/bible/prosperidade/export', [BibleProsperidadeAdminController::class, 'export']);
     Route::post('/api/admin/bible/prosperidade/import', [BibleProsperidadeAdminController::class, 'import']);
@@ -322,10 +341,15 @@ Route::middleware('ks.client')->group(function () {
 
 Route::middleware('jwt')->group(function () {
     Route::get('/api/account/status', [\App\Http\Controllers\Account\AccountStatusController::class, 'status']);
-        Route::get('/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'details']);
-        Route::put('/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'updateDetails']);
-        Route::put('/api/account/password', [\App\Http\Controllers\Account\AccountController::class, 'changePassword']);
-        Route::post('/api/account/upgrade', [\App\Http\Controllers\Account\AccountController::class, 'upgrade']);
+        Route::middleware('audit')->group(function () {
+            Route::get('/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'details']);
+            Route::put('/api/account/details', [\App\Http\Controllers\Account\AccountController::class, 'updateDetails']);
+            Route::put('/api/account/password', [\App\Http\Controllers\Account\AccountController::class, 'changePassword']);
+            Route::post('/api/account/upgrade', [\App\Http\Controllers\Account\AccountController::class, 'upgrade']);
+            Route::get('/api/account/export', [\App\Http\Controllers\Account\AccountController::class, 'exportData']);
+            Route::post('/api/account/delete-request', [\App\Http\Controllers\Account\AccountController::class, 'deleteRequest'])
+                ->middleware('throttle:5,1');
+        });
         Route::get('/api/account/debug-plan/{email}', [\App\Http\Controllers\Account\AccountController::class, 'debugPlan'])
         ->where('email', '[^/]+');
         Route::get('/api/subscription/info', [\App\Http\Controllers\Account\SubscriptionController::class, 'info']);
@@ -675,7 +699,7 @@ Route::middleware(['jwt', 'module:king_docs'])->group(function () use ($kd) {
     });
 
 Route::get('/api/modules/plan-availability-public', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailabilityPublic']);
-Route::middleware('admin')->group(function () {
+Route::middleware(['admin', 'audit'])->group(function () {
     Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
         $linkPreview = \App\Http\Controllers\Admin\PersonalizarLinkController::class;
     Route::get('/api/admin/link-preview-config', [$linkPreview, 'getConfig']);

@@ -174,8 +174,16 @@ class KingSelectionMediaService
      */
     public function warmGalleryThumbs(int $galleryId, int $limit = 80, int $maxSide = 360): int
     {
+        return (int) ($this->warmGalleryThumbsDetailed($galleryId, $limit, $maxSide)['ok'] ?? 0);
+    }
+
+    /**
+     * @return array{ok:int,failed:int,total:int,errors:list<string>}
+     */
+    public function warmGalleryThumbsDetailed(int $galleryId, int $limit = 80, int $maxSide = 360): array
+    {
         if ($galleryId < 1) {
-            return 0;
+            return ['ok' => 0, 'failed' => 0, 'total' => 0, 'errors' => []];
         }
         $limit = max(1, min(200, $limit));
         $rows = DB::select(
@@ -183,6 +191,8 @@ class KingSelectionMediaService
             [$galleryId]
         );
         $ok = 0;
+        $failed = 0;
+        $errors = [];
         foreach ($rows as $row) {
             $edited = trim((string) ($row->edited_file_path ?? ''));
             $fp = trim((string) ($row->file_path ?? ''));
@@ -190,13 +200,27 @@ class KingSelectionMediaService
             if ($path === '') {
                 continue;
             }
-            $r = $this->previewFromStoragePath($path, $maxSide, null);
-            if (($r['status'] ?? 500) === 200) {
-                $ok++;
+            try {
+                $r = $this->previewFromStoragePath($path, $maxSide, null);
+                if (($r['status'] ?? 500) === 200) {
+                    $ok++;
+                } else {
+                    $failed++;
+                    $errors[] = $path.': status '.($r['status'] ?? '?');
+                }
+            } catch (\Throwable $e) {
+                $failed++;
+                $errors[] = $path.': '.$e->getMessage();
+                Log::warning('ks.thumbs.warm.item', ['path' => $path, 'error' => $e->getMessage()]);
             }
         }
 
-        return $ok;
+        return [
+            'ok' => $ok,
+            'failed' => $failed,
+            'total' => $ok + $failed,
+            'errors' => array_slice($errors, 0, 20),
+        ];
     }
 
     private function writePreviewCache(?string $cacheFile, string $binary): void

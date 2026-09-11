@@ -26,7 +26,7 @@ class AutoSeparateGalleryJob implements ShouldQueue, ShouldBeUnique
         public string $speedMode,
         public float $minSimilarity,
     ) {
-        $this->onQueue('default');
+        $this->onQueue('ks-faces');
     }
 
     public function uniqueId(): string

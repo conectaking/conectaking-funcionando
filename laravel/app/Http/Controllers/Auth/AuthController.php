@@ -86,6 +86,14 @@ class AuthController extends Controller
     /**
      * @param  array{status:int, body:array<string,mixed>}  $r
      */
+    public function loginResponseWithCookies(Request $request, array $r): JsonResponse
+    {
+        return $this->jsonWithAuthCookies($request, $r);
+    }
+
+    /**
+     * @param  array{status:int, body:array<string,mixed>}  $r
+     */
     private function jsonWithAuthCookies(Request $request, array $r): JsonResponse
     {
         $body = is_array($r['body'] ?? null) ? $r['body'] : [];

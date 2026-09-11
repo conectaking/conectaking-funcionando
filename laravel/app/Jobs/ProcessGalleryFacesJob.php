@@ -24,7 +24,7 @@ class ProcessGalleryFacesJob implements ShouldQueue, ShouldBeUnique
         public int $concurrency,
         public string $speedMode,
     ) {
-        $this->onQueue('default');
+        $this->onQueue('ks-faces');
     }
 
     public function uniqueId(): string

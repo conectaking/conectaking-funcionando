@@ -93,6 +93,8 @@ services:
       BIBLE_AI_URL: ${BIBLE_AI_URL:-}
       KS_UPLOADS_PATH: /shared/uploads
       LEGACY_PUBLIC_PATH: /legacy/public
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
+      ADMIN_IP_ALLOWLIST: ${ADMIN_IP_ALLOWLIST:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -193,6 +195,143 @@ services:
       start_period: 25s
     mem_limit: 512m
     cpus: 0.75
+    networks:
+      - cknet
+
+  queue-faces:
+    build:
+      context: .
+      dockerfile: laravel/Dockerfile
+    container_name: conectaking-queue-faces
+    restart: unless-stopped
+    command:
+      [
+        "php",
+        "artisan",
+        "queue:work",
+        "redis",
+        "--queue=ks-faces,default",
+        "--sleep=2",
+        "--tries=3",
+        "--max-time=3700",
+        "--max-jobs=20",
+        "--memory=384",
+      ]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      laravel:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    environment:
+      APP_NAME: ConectaKing
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: https://www.conectaking.com.br
+      APP_KEY: ${LARAVEL_APP_KEY}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: ${LOG_LEVEL:-warning}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-conectaking}
+      DB_USERNAME: ${POSTGRES_USER:-conectaking}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SESSION_DRIVER: redis
+      SESSION_SECURE_COOKIE: "true"
+      SESSION_SAME_SITE: lax
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      KS_UPLOADS_PATH: /shared/uploads
+      LEGACY_PUBLIC_PATH: /legacy/public
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
+    volumes:
+      - api_uploads:/shared/uploads
+      - ./public:/legacy/public:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "php -r 'foreach (glob(\"/proc/[0-9]*/cmdline\") as $$f) { $$c=@file_get_contents($$f); if ($$c!==false && str_contains($$c, \"queue:work\")) exit(0);} exit(1);'",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    mem_limit: 640m
+    cpus: 0.75
+    networks:
+      - cknet
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: laravel/Dockerfile
+    container_name: conectaking-scheduler
+    restart: unless-stopped
+    command:
+      [
+        "sh",
+        "-c",
+        "while true; do php artisan schedule:run --no-ansi || echo \"schedule:run failed $$(date -u +%Y-%m-%dT%H:%M:%SZ)\" >&2; sleep 60; done",
+      ]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      laravel:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    environment:
+      APP_NAME: ConectaKing
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: https://www.conectaking.com.br
+      APP_KEY: ${LARAVEL_APP_KEY}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: ${LOG_LEVEL:-warning}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-conectaking}
+      DB_USERNAME: ${POSTGRES_USER:-conectaking}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SESSION_DRIVER: redis
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      KS_UPLOADS_PATH: /shared/uploads
+      LEGACY_PUBLIC_PATH: /legacy/public
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
+    volumes:
+      - api_uploads:/shared/uploads
+      - ./public:/legacy/public:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "php -r 'exit(0);'",
+        ]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    mem_limit: 256m
+    cpus: 0.25
     networks:
       - cknet
 

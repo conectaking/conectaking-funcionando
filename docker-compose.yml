@@ -1,6 +1,9 @@
 # Conecta King — local (só PHP): Postgres + Laravel/FrankenPHP
 # Uso: docker compose --env-file .env.docker up --build
 #
+# GERE secrets locais: powershell -File scripts/gen-local-secrets.ps1
+# NÃO use JWT_SECRET / APP_KEY de produção aqui.
+#
 # App:   http://localhost:8080
 # Health: http://localhost:8080/health
 

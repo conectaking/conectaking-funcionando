@@ -17,6 +17,24 @@ class AuthenticateAdmin
 
     public function handle(Request $request, Closure $next): Response
     {
+        $allow = trim((string) env('ADMIN_IP_ALLOWLIST', ''));
+        if ($allow !== '') {
+            $client = (string) $request->ip();
+            $ok = false;
+            foreach (array_filter(array_map('trim', explode(',', $allow))) as $entry) {
+                if ($entry === $client || (str_contains($entry, '/') && $this->cidrMatch($client, $entry))) {
+                    $ok = true;
+                    break;
+                }
+            }
+            if (! $ok) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Acesso admin bloqueado para este IP.',
+                ], 403)->header('X-Conecta-Engine', 'laravel');
+            }
+        }
+
         $token = $this->extractToken($request);
         if (!$token) {
             return response()->json([
@@ -87,5 +105,19 @@ class AuthenticateAdmin
         }
 
         return null;
+    }
+
+    private function cidrMatch(string $ip, string $cidr): bool
+    {
+        [$subnet, $bits] = array_pad(explode('/', $cidr, 2), 2, '32');
+        $bits = (int) $bits;
+        if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) || ! filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return false;
+        }
+        $ipLong = ip2long($ip);
+        $subLong = ip2long($subnet);
+        $mask = -1 << (32 - max(0, min(32, $bits)));
+
+        return ($ipLong & $mask) === ($subLong & $mask);
     }
 }

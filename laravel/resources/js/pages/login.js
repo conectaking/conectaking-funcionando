@@ -178,6 +178,24 @@ import '@css/pages/login-inline.css';
         }
 
         if (response.ok) {
+          if (data.requiresTotp && data.totpToken) {
+            const code = window.prompt('Código 2FA (app autenticador):');
+            if (!code) {
+              throw new Error('2FA cancelado');
+            }
+            const totpRes = await fetch(apiBase + '/api/auth/admin/totp/verify', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify({ totpToken: data.totpToken, code: String(code).trim() }),
+            });
+            const totpText = await totpRes.text();
+            data = totpText ? JSON.parse(totpText) : {};
+            if (!totpRes.ok || !data.success) {
+              throw new Error((data && data.message) || 'Código 2FA inválido');
+            }
+          }
+
           if (messageDiv) {
             messageDiv.textContent = data.message || 'Login realizado com sucesso!';
             messageDiv.className = 'message success';
