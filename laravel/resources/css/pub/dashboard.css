@@ -1895,6 +1895,10 @@ html.sortable-dragging-active {
   color: var(--text-secondary);
   font-weight: 600;
 }
+.sidebar-nav .nav-link.ck-hidden,
+.nav-link.ck-hidden {
+  display: none !important;
+}
 .sidebar-nav .nav-link:hover {
   border-color: var(--border-strong);
   color: var(--text-primary);

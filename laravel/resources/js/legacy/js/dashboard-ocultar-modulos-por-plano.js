@@ -112,7 +112,8 @@
                     target.removeAttribute('hidden');
                     target.classList.remove('hidden', 'd-none', 'ck-hidden');
                 } else {
-                    target.style.display = '';
+                    target.style.display = 'none';
+                    target.setAttribute('hidden', 'hidden');
                     target.classList.add('ck-hidden');
                 }
             });

@@ -1,5 +1,11 @@
 /* Utilitários comuns — reduzir style="" repetidos */
 .ck-hidden { display: none; }
+/* Sidebar: .nav-link { display:flex } tem a mesma especificidade e pode vencer .ck-hidden */
+.nav-link.ck-hidden,
+.sidebar-nav .nav-link.ck-hidden,
+a.nav-link.ck-hidden[hidden] {
+    display: none !important;
+}
 .kd-display-contents { display: contents; }
 .ck-block { display: block; }
 .ck-flex { display: flex; }
