@@ -75,11 +75,11 @@ Eventos sugeridos: `MESSAGES_UPSERT`.
 1. Login: `https://n8n.conectaking.com.br` (Basic Auth do `.env`).
 2. Importe `n8n/workflows/*.json`.
 3. Credenciais a criar na UI:
-   - OpenAI API
-   - HTTP Header Auth / login JWT Conecta King
-   - Google Sheets (opcional no MVP)
-   - Evolution API (apikey) para **enviar** respostas
-4. Ajuste `ADMIN_WHATSAPP` no nó Set / variáveis (E.164 só dígitos, ex. `5511999...`).
+   - Telegram API (token do BotFather)
+   - OpenAI API (opcional)
+   - Google Sheets (opcional)
+4. No `.env` do ck-agent: `ADMIN_TELEGRAM_ID`, `CK_AGENT_JWT` (JWT admin longo), `CK_BASE_URL`.
+   O agente usa o JWT para `POST /api/finance/transactions` e `POST /api/admin/codes/generate-manual`.
 5. Ative os workflows.
 
 ## Comandos úteis

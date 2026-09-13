@@ -19,9 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\RequireCookieCsrf::class);
         $middleware->append(\App\Http\Middleware\EnsureCsrfCookie::class);
 
-        // Bridge ck_csrf ↔ Laravel CSRF (VerifyCsrfToken custom)
+        // Bridge ck_csrf ↔ Laravel CSRF (ValidateCsrfToken no Laravel 11+)
         $middleware->web(replace: [
-            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class => \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class => \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
 
         // Except mínimo: públicos / bootstrap auth / beacons / stubs 410.

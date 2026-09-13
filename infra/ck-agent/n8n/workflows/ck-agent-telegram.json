@@ -1,215 +1,200 @@
-{
-  "name": "CK Agent — Telegram Admin vs Cliente",
-  "nodes": [
-    {
-      "parameters": {
-        "updates": ["message"],
-        "additionalFields": {}
-      },
-      "id": "tg01",
-      "name": "Telegram Trigger",
-      "type": "n8n-nodes-base.telegramTrigger",
-      "typeVersion": 1.1,
-      "position": [0, 300],
-      "webhookId": "ck-agent-telegram"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "a1",
-              "name": "adminId",
-              "value": "={{ $env.ADMIN_TELEGRAM_ID || '0' }}",
-              "type": "string"
-            },
-            {
-              "id": "a2",
-              "name": "senderId",
-              "value": "={{ String($json.message?.from?.id || '') }}",
-              "type": "string"
-            },
-            {
-              "id": "a3",
-              "name": "chatId",
-              "value": "={{ String($json.message?.chat?.id || '') }}",
-              "type": "string"
-            },
-            {
-              "id": "a4",
-              "name": "text",
-              "value": "={{ $json.message?.text || $json.message?.caption || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a5",
-              "name": "firstName",
-              "value": "={{ $json.message?.from?.first_name || 'cliente' }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "set01",
-      "name": "Normalizar",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [240, 300]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "c1",
-              "leftValue": "={{ $json.senderId }}",
-              "rightValue": "={{ $json.adminId }}",
-              "operator": { "type": "string", "operation": "equals" }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "if01",
-      "name": "É Admin?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [480, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "const text = String($json.text || '').trim();\nconst lower = text.toLowerCase();\nlet intent = 'chat';\nif (/gasto|despesa|paguei|comprei|r\\$|\\d+[.,]\\d{2}/i.test(text)) intent = 'finance';\nelse if (/c[oó]digo|gera(r)?\\s*c[oó]digo|ativa[cç][aã]o/i.test(text)) intent = 'code';\nelse if (/sentry|erro|bug|diagn[oó]stico|health|caiu|status|site/i.test(text)) intent = 'diag';\nreturn [{ json: { ...$json, intent } }];"
-      },
-      "id": "code01",
-      "name": "Intent Admin",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [720, 160]
-    },
-    {
-      "parameters": {
-        "method": "GET",
-        "url": "https://www.conectaking.com.br/health",
-        "options": { "timeout": 8000 }
-      },
-      "id": "http01",
-      "name": "CK Health",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [960, 40],
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const prev = $('Intent Admin').item.json;\nconst health = $('CK Health').item?.json || {};\nconst intent = prev.intent;\nlet msg = '';\nif (intent === 'diag') {\n  msg = `Diagnóstico Conecta King\\nHealth: ${JSON.stringify(health).slice(0,400)}\\n\\nCorreção de código continua no Cursor. Eu diagnostico e opero.`;\n} else if (intent === 'finance') {\n  msg = 'Modo financeiro recebido. Conecte credenciais OpenAI/Sheets/API finance no n8n para lançar automático. Pedido: ' + prev.text;\n} else if (intent === 'code') {\n  msg = 'Modo código ADM: conecte JWT admin + POST /api/admin/codes/generate-manual no n8n.';\n} else {\n  msg = 'Assistente Executivo (Telegram) online.\\nComandos: status / diagnóstico, lançar gasto, gerar código.';\n}\nreturn [{ json: { ...prev, outMessage: msg } }];"
-      },
-      "id": "code02",
-      "name": "Montar resposta Admin",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1200, 160]
-    },
-    {
-      "parameters": {
-        "jsCode": "const text = String($json.text || '').trim();\nconst name = $json.firstName || 'olá';\nlet msg = `Olá, ${name}! Sou o Assistente do Conecta King.\\n\\nPosso ajudar com acesso, planos e dúvidas.\\nSite: https://www.conectaking.com.br\\n\\nPara atendimento humano, diga: falar com o King.`;\nif (/senha|login|acesso/i.test(text)) msg = 'Acesse: https://www.conectaking.com.br/login — use e-mail e senha do cadastro. Esqueceu? Use \"Esqueci minha senha\" na tela de login.';\nif (/plano|pre[cç]o|valor/i.test(text)) msg = 'Planos: https://www.conectaking.com.br — código de ativação o King libera no ADM.';\nif (/humano|king|pessoa/i.test(text)) msg = 'Certo! Vou avisar o time. Em breve alguém retorna.';\nreturn [{ json: { ...$json, outMessage: msg, escalate: /humano|king|pessoa/i.test(text) } }];"
-      },
-      "id": "code03",
-      "name": "Resposta Cliente",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [720, 440]
-    },
-    {
-      "parameters": {
-        "operation": "sendMessage",
-        "chatId": "={{ $json.chatId }}",
-        "text": "={{ $json.outMessage }}",
-        "additionalFields": {
-          "appendAttribution": false
-        }
-      },
-      "id": "tg02",
-      "name": "Enviar Telegram",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [1480, 300]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
-          "conditions": [
-            {
-              "id": "e1",
-              "leftValue": "={{ $json.escalate }}",
-              "rightValue": true,
-              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "if02",
-      "name": "Escalar p/ Admin?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [960, 440]
-    },
-    {
-      "parameters": {
-        "operation": "sendMessage",
-        "chatId": "={{ $env.ADMIN_TELEGRAM_ID }}",
-        "text": "={{ 'Escalation cliente Telegram\\nDe: ' + $json.firstName + ' (' + $json.senderId + ')\\nMsg: ' + $json.text }}",
-        "additionalFields": {
-          "appendAttribution": false
-        }
-      },
-      "id": "tg03",
-      "name": "Avisar Admin",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [1200, 520]
-    }
-  ],
-  "connections": {
-    "Telegram Trigger": {
-      "main": [[{ "node": "Normalizar", "type": "main", "index": 0 }]]
-    },
-    "Normalizar": {
-      "main": [[{ "node": "É Admin?", "type": "main", "index": 0 }]]
-    },
-    "É Admin?": {
-      "main": [
-        [{ "node": "Intent Admin", "type": "main", "index": 0 }],
-        [{ "node": "Resposta Cliente", "type": "main", "index": 0 }]
-      ]
-    },
-    "Intent Admin": {
-      "main": [[{ "node": "CK Health", "type": "main", "index": 0 }]]
-    },
-    "CK Health": {
-      "main": [[{ "node": "Montar resposta Admin", "type": "main", "index": 0 }]]
-    },
-    "Montar resposta Admin": {
-      "main": [[{ "node": "Enviar Telegram", "type": "main", "index": 0 }]]
-    },
-    "Resposta Cliente": {
-      "main": [[{ "node": "Escalar p/ Admin?", "type": "main", "index": 0 }]]
-    },
-    "Escalar p/ Admin?": {
-      "main": [
-        [
-          { "node": "Avisar Admin", "type": "main", "index": 0 },
-          { "node": "Enviar Telegram", "type": "main", "index": 0 }
-        ],
-        [{ "node": "Enviar Telegram", "type": "main", "index": 0 }]
-      ]
-    }
-  },
-  "settings": { "executionOrder": "v1" },
-  "meta": { "templateCredsSetupCompleted": false }
-}
+{
+  "name": "CK Agent — Telegram Admin vs Cliente",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "tg01",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "webhookId": "ck-agent-telegram"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "adminId",
+              "value": "={{ $env.ADMIN_TELEGRAM_ID || '0' }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "senderId",
+              "value": "={{ String($json.message?.from?.id || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "chatId",
+              "value": "={{ String($json.message?.chat?.id || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "text",
+              "value": "={{ $json.message?.text || $json.message?.caption || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "firstName",
+              "value": "={{ $json.message?.from?.first_name || 'cliente' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set01",
+      "name": "Normalizar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.senderId }}",
+              "rightValue": "={{ $json.adminId }}",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if01",
+      "name": "É Admin?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String($json.text || '').trim();\nlet intent = 'chat';\nif (/gasto|despesa|paguei|comprei|conta|pagar|lan[cç]ar|r\\$|\\d+[.,]\\d{2}/i.test(text)) intent = 'finance';\nelse if (/c[oó]digo|gera(r)?\\s*c[oó]digo|ativa[cç][aã]o|king[-_\\s]?[a-z0-9]/i.test(text)) intent = 'code';\nelse if (/sentry|erro|bug|diagn[oó]stico|health|caiu|status|site/i.test(text)) intent = 'diag';\n\nlet amount = null;\nconst am = text.match(/r\\$\\s*(\\d+[.,]?\\d*)/i) || text.match(/(\\d+[.,]\\d{2})/) || text.match(/\\b(\\d{1,6})\\b/);\nif (am) amount = parseFloat(String(am[1]).replace(',', '.'));\n\nlet type = 'EXPENSE';\nif (/receita|recebi|entrou|ganhei/i.test(text)) type = 'INCOME';\nlet status = 'PENDING';\nif (/paguei|pago|já\\s*paguei|ja\\s*paguei/i.test(text)) status = 'PAID';\n\nlet description = text.replace(/r\\$\\s*\\d+[.,]?\\d*/ig, '').replace(/\\s+/g, ' ').trim().slice(0, 180) || 'Lançamento via Telegram';\n\nlet customCode = '';\nconst cm = text.match(/\\b(KING[-_\\s]?[A-Z0-9]+)\\b/i) || text.match(/c[oó]digo[^A-Za-z0-9]*([A-Z0-9][-_A-Z0-9]{2,})/i);\nif (cm) customCode = String(cm[1]).replace(/\\s+/g, '').toUpperCase().slice(0, 32);\n\nconst today = new Date().toISOString().slice(0, 10);\nreturn [{ json: { ...$json, intent, amount, type, status, description, customCode, transactionDate: today } }];"
+      },
+      "id": "code01",
+      "name": "Intent Admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst intent = prev.intent;\n\nasync function http(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      Accept: 'application/json',\n      'Content-Type': 'application/json',\n      ...(token ? { Authorization: 'Bearer ' + token } : {}),\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true,\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\nlet msg = '';\ntry {\n  if (intent === 'diag') {\n    const h = await http.call(this, 'GET', '/health');\n    msg = 'Diagnóstico Conecta King\\nHTTP ' + h.statusCode + '\\n' + JSON.stringify(h.body).slice(0, 400);\n  } else if (intent === 'finance') {\n    if (!token) {\n      msg = 'CK_AGENT_JWT não configurado no n8n. Peça ao Cursor para gerar o token.';\n    } else if (!prev.amount || !(prev.amount > 0)) {\n      msg = 'Não entendi o valor. Ex.: \"lançar despesa R$ 100 contas para pagar\"';\n    } else {\n      const body = {\n        type: prev.type || 'EXPENSE',\n        amount: Number(prev.amount),\n        description: prev.description || 'Lançamento via Telegram',\n        transaction_date: prev.transactionDate,\n        status: prev.status || 'PENDING',\n      };\n      const r = await http.call(this, 'POST', '/api/finance/transactions', body);\n      if (r.statusCode >= 200 && r.statusCode < 300) {\n        const row = (r.body && r.body.data) || {};\n        msg = 'Lançamento criado na Gestão Financeira.\\n' +\n          (body.type === 'INCOME' ? 'Receita' : 'Despesa') + ': R$ ' + body.amount.toFixed(2) +\n          '\\nStatus: ' + body.status +\n          '\\nDesc: ' + body.description +\n          (row.id ? '\\nID: ' + row.id : '');\n      } else {\n        msg = 'Falha ao lançar (' + r.statusCode + '): ' + JSON.stringify(r.body).slice(0, 300);\n      }\n    }\n  } else if (intent === 'code') {\n    if (!token) {\n      msg = 'CK_AGENT_JWT não configurado no n8n.';\n    } else if (!prev.customCode) {\n      msg = 'Informe o código. Ex.: \"gerar código KING-TESTTELE\"';\n    } else {\n      const r = await http.call(this, 'POST', '/api/admin/codes/generate-manual', {\n        customCode: prev.customCode,\n        expiresAt: null,\n      });\n      if (r.statusCode >= 200 && r.statusCode < 300) {\n        msg = 'Código criado: ' + prev.customCode;\n      } else {\n        msg = 'Falha ao criar código (' + r.statusCode + '): ' + JSON.stringify(r.body).slice(0, 300);\n      }\n    }\n  } else {\n    msg = 'Assistente Executivo (Telegram) online.\\nComandos:\\n• status / diagnóstico\\n• lançar despesa R$ 100 ...\\n• gerar código KING-XXXX';\n  }\n} catch (e) {\n  msg = 'Erro ao executar: ' + String(e.message || e).slice(0, 300);\n}\n\nreturn [{ json: { ...prev, outMessage: msg } }];"
+      },
+      "id": "code02",
+      "name": "Executar Admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String($json.text || '').trim();\nconst name = $json.firstName || 'olá';\nlet msg = `Olá, ${name}! Sou o Assistente do Conecta King.\\n\\nPosso ajudar com acesso, planos e dúvidas.\\nSite: https://www.conectaking.com.br\\n\\nPara atendimento humano, diga: falar com o King.`;\nif (/senha|login|acesso/i.test(text)) msg = 'Acesse: https://www.conectaking.com.br/login — use e-mail e senha do cadastro. Esqueceu? Use \"Esqueci minha senha\" na tela de login.';\nif (/plano|pre[cç]o|valor/i.test(text)) msg = 'Planos: https://www.conectaking.com.br — código de ativação o King libera no ADM.';\nif (/humano|king|pessoa/i.test(text)) msg = 'Certo! Vou avisar o time. Em breve alguém retorna.';\nreturn [{ json: { ...$json, outMessage: msg, escalate: /humano|king|pessoa/i.test(text) } }];"
+      },
+      "id": "code03",
+      "name": "Resposta Cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 440]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.outMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "tg02",
+      "name": "Enviar Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ $json.escalate }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if02",
+      "name": "Escalar p/ Admin?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [960, 440]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $env.ADMIN_TELEGRAM_ID }}",
+        "text": "={{ 'Escalation cliente Telegram\\nDe: ' + $json.firstName + ' (' + $json.senderId + ')\\nMsg: ' + $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "tg03",
+      "name": "Avisar Admin",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1200, 520]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "Normalizar", "type": "main", "index": 0 }]]
+    },
+    "Normalizar": {
+      "main": [[{ "node": "É Admin?", "type": "main", "index": 0 }]]
+    },
+    "É Admin?": {
+      "main": [
+        [{ "node": "Intent Admin", "type": "main", "index": 0 }],
+        [{ "node": "Resposta Cliente", "type": "main", "index": 0 }]
+      ]
+    },
+    "Intent Admin": {
+      "main": [[{ "node": "Executar Admin", "type": "main", "index": 0 }]]
+    },
+    "Executar Admin": {
+      "main": [[{ "node": "Enviar Telegram", "type": "main", "index": 0 }]]
+    },
+    "Resposta Cliente": {
+      "main": [[{ "node": "Escalar p/ Admin?", "type": "main", "index": 0 }]]
+    },
+    "Escalar p/ Admin?": {
+      "main": [
+        [
+          { "node": "Avisar Admin", "type": "main", "index": 0 },
+          { "node": "Enviar Telegram", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Enviar Telegram", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false }
+}
+
