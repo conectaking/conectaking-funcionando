@@ -35,7 +35,11 @@
         }
         @endif
 
-@if($headerImg) background-image: url('{{ $headerImg }}'); background-size:cover; background-position:center; @endif
+@if($headerImg)
+        .form-banner.has-image {
+            background-image: url('{{ $headerImg }}');
+        }
+@endif
     </style>
     @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-form-public.js'])
 </head>
@@ -54,12 +58,14 @@
         return (string) $opt;
     };
 @endphp
+<header class="form-banner{{ $headerImg ? ' has-image' : '' }}" role="presentation" aria-hidden="true">
+    <span class="form-banner__shine"></span>
+</header>
 <div class="wrap">
     <div class="card">
-        <div class="header"></div>
         <div class="body">
             @if(!empty($form['form_logo_url']))
-                <img class="logo" src="{{ $form['form_logo_url'] }}" alt="">
+                <img class="logo" src="{{ $form['form_logo_url'] }}" alt="{{ $form['form_title'] ?? 'Logo' }}">
             @endif
             <h1>{{ $form['form_title'] ?? 'Formulário' }}</h1>
             @if(!empty($form['form_description']))

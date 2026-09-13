@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bíblia &amp; Devocionais (ADM)</title>
-    </head>
+</head>
 <body>
     <!-- admin-dev365-ui: gerar-por-ia + checkboxes + remover-seleccionados — se não vir isto no "Ver código-fonte", o ficheiro no servidor está desactualizado -->
     <div class="wrap">

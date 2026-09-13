@@ -35,7 +35,7 @@
     <meta property="og:image:type" content="image/jpeg">
     
     <!-- Fonts -->
-</head>
+    </head>
     <body>
     <!-- Header Vermelho/Preto -->
     <header class="header">
