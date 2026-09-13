@@ -8,6 +8,7 @@ Guia curto: deploy, rollback e incidente. Detalhes em `HETZNER-DEPLOY.md`, `SECR
 - Compose: `docker-compose.prod.yml` + `.env.prod`
 - Serviços: `db`, `redis`, `laravel`, `queue`, `queue-faces`, `scheduler`
 - Sem Node/`api` — full Laravel/FrankenPHP
+- **Agente IA (separado):** `/opt/ck-agent` · ver `docs/CK-AGENT.md` (`n8n` + Evolution; não misturar com este compose)
 
 ## Deploy (rebuild limpo)
 
@@ -44,6 +45,7 @@ Nunca force-push nem apague volumes `pgdata` / `api_uploads` sem backup.
 | Admin 403 IP | `ADMIN_IP_ALLOWLIST` no `.env.prod` (vazio = aberto) |
 | Erros reais | Sentry projeto CONECTAKING · ignorar issues `Sentry smoke` (teste) |
 | Uptime | Cron `maintenance:uptime-selfcheck` a cada 5 min → OpsAlert/Sentry |
+| Agente WA / n8n | `cd /opt/ck-agent && docker compose ps`; docs `CK-AGENT.md` |
 
 ## Financeiro (standby)
 

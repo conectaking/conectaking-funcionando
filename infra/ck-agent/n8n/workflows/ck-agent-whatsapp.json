@@ -1,0 +1,172 @@
+{
+  "name": "CK Agent — WhatsApp Admin vs Cliente",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ck-agent-wa",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "wh01",
+      "name": "Webhook Evolution",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "ck-agent-wa"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "adminPhone",
+              "value": "={{ $env.ADMIN_WHATSAPP || '5511999999999' }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "sender",
+              "value": "={{ String($json.body?.data?.key?.remoteJid || $json.data?.key?.remoteJid || '').replace(/\\D/g,'').replace(/@.*/,'') }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "text",
+              "value": "={{ $json.body?.data?.message?.conversation || $json.body?.data?.message?.extendedTextMessage?.text || $json.data?.message?.conversation || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "instance",
+              "value": "={{ $json.body?.instance || $json.instance || 'conectaking' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set01",
+      "name": "Normalizar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.sender }}",
+              "rightValue": "={{ $json.adminPhone }}",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if01",
+      "name": "É Admin?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String($json.text || '').trim();\nconst lower = text.toLowerCase();\nlet intent = 'chat';\nif (/gasto|despesa|paguei|comprei|r\\$|\\d+[.,]\\d{2}/i.test(text)) intent = 'finance';\nelse if (/c[oó]digo|gera(r)?\\s*c[oó]digo|ativa[cç][aã]o/i.test(text)) intent = 'code';\nelse if (/sentry|erro|bug|diagn[oó]stico|health|caiu|status/i.test(text)) intent = 'diag';\nreturn [{ json: { ...$json, intent, replyHint: intent } }];"
+      },
+      "id": "code01",
+      "name": "Intent Admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 160]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.conectaking.com.br/health",
+        "options": { "timeout": 8000 }
+      },
+      "id": "http01",
+      "name": "CK Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 40],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const health = $('CK Health').item?.json || {};\nconst intent = $json.intent;\nlet msg = '';\nif (intent === 'diag') {\n  msg = `Diagnóstico Conecta King\\nHealth: ${JSON.stringify(health).slice(0,400)}\\n\\nSe precisar de correção de código, use o Cursor — eu só diagnostico e opero.`;\n} else if (intent === 'finance') {\n  msg = 'Modo financeiro: conecte OpenAI + Sheets + POST /api/finance/transactions neste fluxo (credenciais n8n). Por enquanto confirmo o pedido: ' + $json.text;\n} else if (intent === 'code') {\n  msg = 'Modo código ADM: conecte JWT admin + POST /api/admin/codes/generate-manual. Descreva o plano desejado.';\n} else {\n  msg = 'Assistente Executivo Conecta King online. Comandos: status/diagnóstico, lançar gasto, gerar código.';\n}\nreturn [{ json: { ...$json, outMessage: msg } }];"
+      },
+      "id": "code02",
+      "name": "Montar resposta Admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String($json.text || '').trim();\nlet msg = 'Olá! Sou o Assistente do Conecta King. Posso ajudar com acesso, planos e dúvidas gerais.\\n\\nSite: https://www.conectaking.com.br\\n\\nSe precisar de atendimento humano, diga \"falar com o King\".';\nif (/senha|login|acesso/i.test(text)) msg = 'Para acessar: https://www.conectaking.com.br/login — use o e-mail e a senha do cadastro. Esqueceu a senha? Use \"Esqueci minha senha\" na tela de login.';\nif (/plano|pre[cç]o|valor/i.test(text)) msg = 'Conheça os planos em https://www.conectaking.com.br — se quiser um código de ativação, o King libera pelo painel/ADM.';\nif (/humano|king|pessoa/i.test(text)) msg = 'Certo! Vou avisar o time. Em breve alguém retorna por aqui.';\nreturn [{ json: { ...$json, outMessage: msg, escalate: /humano|king|pessoa/i.test(text) } }];"
+      },
+      "id": "code03",
+      "name": "Resposta Cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evo.conectaking.com.br/message/sendText/{{ $json.instance }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.sender }}\",\n  \"text\": {{ JSON.stringify($json.outMessage) }}\n}",
+        "options": {}
+      },
+      "id": "http02",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1480, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Evolution": {
+      "main": [[{ "node": "Normalizar", "type": "main", "index": 0 }]]
+    },
+    "Normalizar": {
+      "main": [[{ "node": "É Admin?", "type": "main", "index": 0 }]]
+    },
+    "É Admin?": {
+      "main": [
+        [{ "node": "Intent Admin", "type": "main", "index": 0 }],
+        [{ "node": "Resposta Cliente", "type": "main", "index": 0 }]
+      ]
+    },
+    "Intent Admin": {
+      "main": [[{ "node": "CK Health", "type": "main", "index": 0 }]]
+    },
+    "CK Health": {
+      "main": [[{ "node": "Montar resposta Admin", "type": "main", "index": 0 }]]
+    },
+    "Montar resposta Admin": {
+      "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
+    },
+    "Resposta Cliente": {
+      "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false }
+}

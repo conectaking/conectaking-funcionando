@@ -1,0 +1,28 @@
+# Colar / mesclar em /etc/caddy/Caddyfile (NÃO substituir o bloco do www)
+# Depois: systemctl reload caddy
+#
+# DNS necessário (A → 46.225.100.64):
+#   n8n.conectaking.com.br
+#   evo.conectaking.com.br
+#
+# Gere hash Basic Auth: caddy hash-password --plaintext 'SUA_SENHA'
+
+n8n.conectaking.com.br {
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	reverse_proxy 127.0.0.1:5678
+}
+
+evo.conectaking.com.br {
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	# UI / manager: proteção extra via API key Evolution.
+	# Webhooks da Evolution → n8n usam URL pública do n8n (não precisam passar aqui).
+	reverse_proxy 127.0.0.1:8081
+}

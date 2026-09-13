@@ -1,0 +1,134 @@
+# CK Agent — stack isolado (n8n + Evolution API)
+# Não misturar com /opt/conectaking. Bind só em 127.0.0.1.
+# Uso: cd /opt/ck-agent && docker compose --env-file .env up -d
+
+name: ck-agent
+
+services:
+  n8n:
+    image: n8nio/n8n:1.109.1
+    container_name: ck-agent-n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      N8N_HOST: ${N8N_HOST:-n8n.conectaking.com.br}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://${N8N_HOST:-n8n.conectaking.com.br}/
+      N8N_EDITOR_BASE_URL: https://${N8N_HOST:-n8n.conectaking.com.br}/
+      GENERIC_TIMEZONE: America/Sao_Paulo
+      TZ: America/Sao_Paulo
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-king}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: 72
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      DB_TYPE: sqlite
+    volumes:
+      - n8n_data:/home/node/.n8n
+    mem_limit: 512m
+    cpus: 0.50
+    networks:
+      - ck-agent-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  evolution-postgres:
+    image: postgres:16-alpine
+    container_name: ck-agent-evo-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${EVO_POSTGRES_USER:-evolution}
+      POSTGRES_PASSWORD: ${EVO_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${EVO_POSTGRES_DB:-evolution}
+    volumes:
+      - evo_pg_data:/var/lib/postgresql/data
+    mem_limit: 256m
+    cpus: 0.25
+    networks:
+      - ck-agent-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  evolution-redis:
+    image: redis:7-alpine
+    container_name: ck-agent-evo-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    volumes:
+      - evo_redis_data:/data
+    mem_limit: 96m
+    cpus: 0.15
+    networks:
+      - ck-agent-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.2.3
+    container_name: ck-agent-evolution
+    restart: unless-stopped
+    depends_on:
+      evolution-postgres:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      SERVER_URL: https://${EVO_HOST:-evo.conectaking.com.br}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "true"
+      DEL_INSTANCE: "false"
+      LOG_LEVEL: ERROR,WARN
+      LANGUAGE: pt-BR
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${EVO_POSTGRES_USER:-evolution}:${EVO_POSTGRES_PASSWORD}@evolution-postgres:5432/${EVO_POSTGRES_DB:-evolution}?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: ck_agent_evolution
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://evolution-redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: ck_evo
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      RABBITMQ_ENABLED: "false"
+      S3_ENABLED: "false"
+      WEBHOOK_GLOBAL_ENABLED: "false"
+      CONFIG_SESSION_PHONE_CLIENT: ConectaKing
+      CONFIG_SESSION_PHONE_NAME: Chrome
+    volumes:
+      - evo_instances:/evolution/instances
+    mem_limit: 768m
+    cpus: 0.75
+    networks:
+      - ck-agent-net
+
+volumes:
+  n8n_data:
+  evo_pg_data:
+  evo_redis_data:
+  evo_instances:
+
+networks:
+  ck-agent-net:
+    name: ck-agent-net
+    driver: bridge

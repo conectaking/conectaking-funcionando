@@ -1,0 +1,88 @@
+{
+  "name": "CK Agent — Alerta Health (cron)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "cron01",
+      "name": "A cada 5 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.conectaking.com.br/health",
+        "options": { "timeout": 10000 }
+      },
+      "id": "http01",
+      "name": "GET Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if01",
+      "name": "Health ruim?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evo.conectaking.com.br/message/sendText/conectaking",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $env.ADMIN_WHATSAPP }}\",\n  \"text\": \"🚨 Alerta Conecta King\\n/health não está ok.\\nResposta: {{ JSON.stringify($json).slice(0,500) }}\"\n}",
+        "options": {}
+      },
+      "id": "http02",
+      "name": "Avisar Admin WA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 200]
+    }
+  ],
+  "connections": {
+    "A cada 5 min": {
+      "main": [[{ "node": "GET Health", "type": "main", "index": 0 }]]
+    },
+    "GET Health": {
+      "main": [[{ "node": "Health ruim?", "type": "main", "index": 0 }]]
+    },
+    "Health ruim?": {
+      "main": [
+        [{ "node": "Avisar Admin WA", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false }
+}
