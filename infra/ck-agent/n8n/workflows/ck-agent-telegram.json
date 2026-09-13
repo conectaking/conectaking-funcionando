@@ -104,7 +104,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const health = $('CK Health').item?.json || {};\nconst intent = $json.intent;\nlet msg = '';\nif (intent === 'diag') {\n  msg = `Diagnóstico Conecta King\\nHealth: ${JSON.stringify(health).slice(0,400)}\\n\\nCorreção de código continua no Cursor. Eu diagnostico e opero.`;\n} else if (intent === 'finance') {\n  msg = 'Modo financeiro recebido. Conecte credenciais OpenAI/Sheets/API finance no n8n para lançar automático. Pedido: ' + $json.text;\n} else if (intent === 'code') {\n  msg = 'Modo código ADM: conecte JWT admin + POST /api/admin/codes/generate-manual no n8n.';\n} else {\n  msg = 'Assistente Executivo (Telegram) online.\\nComandos: status / diagnóstico, lançar gasto, gerar código.';\n}\nreturn [{ json: { ...$json, outMessage: msg } }];"
+        "jsCode": "const prev = $('Intent Admin').item.json;\nconst health = $('CK Health').item?.json || {};\nconst intent = prev.intent;\nlet msg = '';\nif (intent === 'diag') {\n  msg = `Diagnóstico Conecta King\\nHealth: ${JSON.stringify(health).slice(0,400)}\\n\\nCorreção de código continua no Cursor. Eu diagnostico e opero.`;\n} else if (intent === 'finance') {\n  msg = 'Modo financeiro recebido. Conecte credenciais OpenAI/Sheets/API finance no n8n para lançar automático. Pedido: ' + prev.text;\n} else if (intent === 'code') {\n  msg = 'Modo código ADM: conecte JWT admin + POST /api/admin/codes/generate-manual no n8n.';\n} else {\n  msg = 'Assistente Executivo (Telegram) online.\\nComandos: status / diagnóstico, lançar gasto, gerar código.';\n}\nreturn [{ json: { ...prev, outMessage: msg } }];"
       },
       "id": "code02",
       "name": "Montar resposta Admin",
