@@ -92,12 +92,70 @@ docker stats --no-stream ck-agent-n8n ck-agent-evolution ck-agent-evo-pg ck-agen
 curl -sS http://127.0.0.1:8080/health   # site CK
 ```
 
-## Segurança
+## Canal atual: Telegram (sem custo de proxy)
 
-- Portas 5678/8081 **só** em `127.0.0.1`.
-- Não commitar `.env`.
-- Cliente nunca recebe tools de admin (IF no fluxo).
-- Retenção de executions n8n: 72h.
+WhatsApp/Evolution ficou pausado (IP Hetzner bloqueado pelo WA). O agente opera no **Telegram**.
+
+### 1) Criar o bot (2 minutos)
+
+1. No Telegram, abra **@BotFather**
+2. Envie `/newbot`
+3. Escolha nome (ex.: `Conecta King Assistente`) e username (ex.: `conectaking_bot`)
+4. Copie o **token** (parece `712345:AAH...`)
+
+### 2) Descobrir seu ID de admin
+
+1. Abra **@userinfobot** ou **@getidsbot**
+2. Copie seu **Id** numérico (ex.: `123456789`)
+
+### 3) No n8n
+
+1. **Credenciais** → nova **Telegram API** → cole o token do BotFather
+2. Importe:
+   - `ck-agent-telegram.json`
+   - `ck-agent-health-telegram.json`
+3. Nos nós Telegram, selecione essa credencial
+4. Em **Variáveis** do n8n (ou `.env` `ADMIN_TELEGRAM_ID`) coloque seu ID
+5. Ative os fluxos
+6. No Telegram, abra seu bot e envie `/start` depois `status`
+
+### 4) Clientes
+
+Quem conversar com o bot (e não for o seu ID) cai no **Modo Cliente**.
+
+Opcional: no `.env` da VPS:
+
+```bash
+ADMIN_TELEGRAM_ID=123456789
+```
+
+Depois: `cd /opt/ck-agent && docker compose --env-file .env up -d n8n`
+
+## Proxy residencial (WhatsApp / QR)
+
+Se o QR ficar em branco e `g.whatsapp.net` falhar na VPS, use **proxy residencial Brasil**.
+
+1. Compre um proxy residencial BR (HTTP ou SOCKS5) com usuário/senha.
+2. Em `/opt/ck-agent/.env` preencha:
+
+```bash
+EVO_PROXY_ENABLED=true
+EVO_PROXY_HOST=host.do.provedor.com
+EVO_PROXY_PORT=10000
+EVO_PROXY_PROTOCOL=http
+EVO_PROXY_USERNAME=seu_usuario
+EVO_PROXY_PASSWORD=sua_senha
+```
+
+3. Aplique:
+
+```bash
+bash /opt/ck-agent/apply-evo-proxy.sh
+```
+
+4. No Manager: **Get QR Code** e escaneie.
+
+Não use proxy datacenter “barato” genérico — o WhatsApp costuma bloquear igual.
 
 ## Se a RAM apertar
 

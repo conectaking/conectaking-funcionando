@@ -24,6 +24,8 @@ services:
       N8N_PROXY_HOPS: "1"
       N8N_SECURE_COOKIE: "true"
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # IDs usados nos workflows Telegram (defina no .env)
+      ADMIN_TELEGRAM_ID: ${ADMIN_TELEGRAM_ID:-}
       EXECUTIONS_DATA_PRUNE: "true"
       EXECUTIONS_DATA_MAX_AGE: 72
       N8N_DIAGNOSTICS_ENABLED: "false"
