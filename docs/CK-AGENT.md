@@ -78,8 +78,9 @@ Eventos sugeridos: `MESSAGES_UPSERT`.
    - Telegram API (token do BotFather)
    - OpenAI API (opcional)
    - Google Sheets (opcional)
-4. No `.env` do ck-agent: `ADMIN_TELEGRAM_ID`, `CK_AGENT_JWT` (JWT admin longo), `CK_BASE_URL`.
-   O agente usa o JWT para `POST /api/finance/transactions` e `POST /api/admin/codes/generate-manual`.
+4. No `.env` do ck-agent: `ADMIN_TELEGRAM_ID`, `CK_AGENT_JWT`, `CK_BASE_URL`, `OPENAI_API_KEY` (e opcional `OPENAI_MODEL=gpt-4o-mini`).
+   - Ações admin: finance + códigos via JWT
+   - Conversas admin/cliente: OpenAI (prompt do Conecta King)
 5. Ative os workflows.
 
 ## Comandos úteis

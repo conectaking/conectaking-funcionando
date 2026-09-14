@@ -28,6 +28,8 @@ services:
       ADMIN_TELEGRAM_ID: ${ADMIN_TELEGRAM_ID:-}
       CK_BASE_URL: ${CK_BASE_URL:-https://www.conectaking.com.br}
       CK_AGENT_JWT: ${CK_AGENT_JWT:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       EXECUTIONS_DATA_PRUNE: "true"
       EXECUTIONS_DATA_MAX_AGE: 72
       N8N_DIAGNOSTICS_ENABLED: "false"
