@@ -93,7 +93,21 @@ docker stats --no-stream ck-agent-n8n ck-agent-evolution ck-agent-evo-pg ck-agen
 curl -sS http://127.0.0.1:8080/health   # site CK
 ```
 
-## Canal atual: Telegram (sem custo de proxy)
+## Agente Telegram (IA)
+
+Fluxo: `infra/ck-agent/n8n/workflows/ck-agent-telegram.json` (já ativo na VPS).
+
+- **Voz:** Whisper (transcreve áudio do Telegram)
+- **Memória:** últimas ~12 mensagens por chat
+- **KB:** produto, planos ref., URLs, códigos
+- **Ações admin (só com ordem clara):**
+  - `lançar despesa R$ 100 descrição`
+  - `gerar código KING-NOME` (precisa hífen)
+  - `status` / `diagnóstico`
+- Perguntas sobre o produto **não** geram código
+
+Env no n8n: `OPENAI_API_KEY`, `OPENAI_MODEL`, `TELEGRAM_BOT_TOKEN`, `CK_AGENT_JWT`, `ADMIN_TELEGRAM_ID`.
+
 
 WhatsApp/Evolution ficou pausado (IP Hetzner bloqueado pelo WA). O agente opera no **Telegram**.
 
