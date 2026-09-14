@@ -6,7 +6,7 @@ name: ck-agent
 
 services:
   n8n:
-    image: n8nio/n8n:1.109.1
+    image: n8nio/n8n:2.38.7
     container_name: ck-agent-n8n
     restart: unless-stopped
     ports:
@@ -39,8 +39,8 @@ services:
       DB_SQLITE_POOL_SIZE: "2"
     volumes:
       - n8n_data:/home/node/.n8n
-    mem_limit: 512m
-    cpus: 0.50
+    mem_limit: 768m
+    cpus: 0.75
     networks:
       - ck-agent-net
     healthcheck:
