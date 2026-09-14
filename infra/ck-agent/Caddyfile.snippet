@@ -8,7 +8,12 @@
 # Gere hash Basic Auth: caddy hash-password --plaintext 'SUA_SENHA'
 
 n8n.conectaking.com.br {
-	encode gzip
+	# gzip em WebSocket quebra o /rest/push (UI “Offline” / AI Assistant)
+	@notWs {
+		not header Connection *Upgrade*
+		not header Upgrade websocket
+	}
+	encode @notWs gzip
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
