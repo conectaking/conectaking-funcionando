@@ -34,8 +34,6 @@ services:
       N8N_SENTRY_DSN: ${N8N_SENTRY_DSN:-}
       ENVIRONMENT: production
       DEPLOYMENT_NAME: ck-agent-n8n
-      # Evita "Offer expired" em Code nodes (runners externos)
-      N8N_RUNNERS_ENABLED: "false"
       EXECUTIONS_DATA_PRUNE: "true"
       EXECUTIONS_DATA_MAX_AGE: 72
       N8N_DIAGNOSTICS_ENABLED: "false"
