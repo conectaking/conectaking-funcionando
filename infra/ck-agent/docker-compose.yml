@@ -26,6 +26,7 @@ services:
       # SSE é mais estável atrás de Caddy/Cloudflare que WebSocket no /rest/push
       N8N_PUSH_BACKEND: sse
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      NODE_OPTIONS: --max-old-space-size=1400
       # IDs / token usados nos workflows Telegram (defina no .env)
       ADMIN_TELEGRAM_ID: ${ADMIN_TELEGRAM_ID:-}
       CK_BASE_URL: ${CK_BASE_URL:-https://www.conectaking.com.br}
@@ -46,8 +47,8 @@ services:
       DB_SQLITE_POOL_SIZE: "2"
     volumes:
       - n8n_data:/home/node/.n8n
-    mem_limit: 1024m
-    cpus: 0.75
+    mem_limit: 1536m
+    cpus: 1.0
     networks:
       - ck-agent-net
     healthcheck:
