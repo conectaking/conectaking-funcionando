@@ -31,6 +31,9 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      N8N_SENTRY_DSN: ${N8N_SENTRY_DSN:-}
+      ENVIRONMENT: production
+      DEPLOYMENT_NAME: ck-agent-n8n
       EXECUTIONS_DATA_PRUNE: "true"
       EXECUTIONS_DATA_MAX_AGE: 72
       N8N_DIAGNOSTICS_ENABLED: "false"
