@@ -16,6 +16,15 @@
 
 O `bootstrap/app.php` reporta exceções se o DSN estiver definido **e** o pacote instalado.
 
+## Alertas → King Assistente (Telegram)
+
+Fluxo desejado: **erro no Conecta King → Sentry/Ops → n8n → Telegram do admin**.
+
+1. Webhook n8n (já ativo): `https://n8n.conectaking.com.br/webhook/ck-agent-sentry`
+2. Laravel `OpsAlertService` envia para esse webhook se `CK_AGENT_ALERT_WEBHOOK` estiver no `.env` (e opcional `CK_SENTRY_WEBHOOK_SECRET`).
+3. No Sentry (UI): **Alerts → Create Alert Rule** → “Issue Alert” → Action **Send a notification via webhook** → URL acima. Assim issues novas/regressões também avisam o agente.
+4. Falhas do próprio workflow do agente usam o workflow **CK Agent — Error → Telegram**.
+
 ## Logs
 
 Produção: `LOG_CHANNEL=stderr` → `docker logs conectaking-laravel`.
