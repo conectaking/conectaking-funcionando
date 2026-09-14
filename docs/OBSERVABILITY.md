@@ -8,6 +8,9 @@
    ```
    SENTRY_LARAVEL_DSN=https://...@....ingest.sentry.io/...
    SENTRY_TRACES_SAMPLE_RATE=0.1
+
+   # CK Agent (n8n) — mesmo DSN ou projeto dedicado:
+   # em /opt/ck-agent/.env → N8N_SENTRY_DSN=... (compose já passa ao container)
    ```
 4. Redeploy `laravel`, `queue`, `queue-faces`, `scheduler`
 

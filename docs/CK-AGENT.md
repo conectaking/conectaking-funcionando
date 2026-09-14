@@ -78,6 +78,7 @@ Versão atual do compose: `n8nio/n8n:2.38.7` (backup em `/opt/ck-agent/backups/n
 2. Importe `n8n/workflows/*.json` se precisar.
 3. Credenciais na UI: Telegram API + OpenAI (e opcional Sheets).
 4. No `.env`: `ADMIN_TELEGRAM_ID`, `CK_AGENT_JWT`, `CK_BASE_URL`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`.
+5. Erros do processo n8n → Sentry via `N8N_SENTRY_DSN` (mesmo DSN do site / `SENTRY_LARAVEL_DSN`). `ENVIRONMENT=production` e `DEPLOYMENT_NAME=ck-agent-n8n`.
 5. Ative / publique o workflow.
 
 ## Comandos úteis
