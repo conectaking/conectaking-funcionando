@@ -72,16 +72,13 @@ Eventos sugeridos: `MESSAGES_UPSERT`.
 
 ## n8n
 
-1. Login: `https://n8n.conectaking.com.br` (Basic Auth do `.env`).
-2. Importe `n8n/workflows/*.json`.
-3. Credenciais a criar na UI:
-   - Telegram API (token do BotFather)
-   - OpenAI API (opcional)
-   - Google Sheets (opcional)
-4. No `.env` do ck-agent: `ADMIN_TELEGRAM_ID`, `CK_AGENT_JWT`, `CK_BASE_URL`, `OPENAI_API_KEY` (e opcional `OPENAI_MODEL=gpt-4o-mini`).
-   - Ações admin: finance + códigos via JWT
-   - Conversas admin/cliente: OpenAI (prompt do Conecta King)
-5. Ative os workflows.
+Versão atual do compose: `n8nio/n8n:2.38.7` (backup em `/opt/ck-agent/backups/n8n-*` antes de upgrades).
+
+1. Login: `https://n8n.conectaking.com.br` (conta owner do /setup).
+2. Importe `n8n/workflows/*.json` se precisar.
+3. Credenciais na UI: Telegram API + OpenAI (e opcional Sheets).
+4. No `.env`: `ADMIN_TELEGRAM_ID`, `CK_AGENT_JWT`, `CK_BASE_URL`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`.
+5. Ative / publique o workflow.
 
 ## Comandos úteis
 
