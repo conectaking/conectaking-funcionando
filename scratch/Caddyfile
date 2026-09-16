@@ -1,0 +1,50 @@
+conectaking.com.br {
+	redir https://www.conectaking.com.br{uri} 308
+}
+
+www.cnking.bio {
+	redir https://cnking.bio{uri} 308
+}
+
+www.conectaking.com.br, tag.conectaking.com.br, cnking.bio {
+	encode gzip
+	log {
+		output file /var/log/caddy/access.log
+		format json
+	}
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	@sensitive {
+		path /api/auth/* /api/password/* /guest-list/confirm/* /portaria/*
+	}
+	handle @sensitive {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8080
+	}
+}
+
+n8n.conectaking.com.br {
+	@notWs {
+		not header Connection *Upgrade*
+		not header Upgrade websocket
+	}
+	encode @notWs gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	reverse_proxy 127.0.0.1:5678
+}
+
+evo.conectaking.com.br {
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	reverse_proxy 127.0.0.1:8081
+}
