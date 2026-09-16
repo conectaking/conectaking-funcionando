@@ -22,7 +22,11 @@ conectaking.com.br {
 	redir https://www.conectaking.com.br{uri} 308
 }
 
-www.conectaking.com.br, tag.conectaking.com.br {
+www.cnking.bio {
+	redir https://cnking.bio{uri} 308
+}
+
+www.conectaking.com.br, tag.conectaking.com.br, cnking.bio {
 	encode gzip
 	header {
 		X-Content-Type-Options nosniff

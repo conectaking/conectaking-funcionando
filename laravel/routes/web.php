@@ -888,6 +888,10 @@ if (! config('conectaking.finance_standby')) {
     Route::get('/zerar-mes', fn () => redirect('/dashboard', 302));
     Route::get('/zerar-mes.html', fn () => redirect('/dashboard', 302));
 }
+
+Route::get('/dashboard-finance', fn () => redirect('/dashboard#finance', 301));
+Route::get('/dashboard-finance.html', fn () => redirect('/dashboard#finance', 301));
+Route::get('/finance', fn () => redirect('/dashboard#finance', 301));
 Route::get('/admin-planos', fn () => redirect('/admin', 301));
 Route::get('/admin-planos.html', fn () => redirect('/admin', 301));
 Route::get('/admin-prosperidade-31', fn () => redirect('/admin-devocionais-365#prosperidade', 301));
