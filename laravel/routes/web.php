@@ -8,6 +8,7 @@ use App\Http\Controllers\CartaoVirtual\BibleProsperidadeAdminController;
 use App\Http\Controllers\CartaoVirtual\BibleProgressController;
 use App\Http\Controllers\CartaoVirtual\BiblePublicController;
 use App\Http\Controllers\CartaoVirtual\CardPublicController;
+use App\Http\Controllers\CartaoVirtual\CardPwaController;
 use App\Http\Controllers\CartaoVirtual\GuestListCustomizeController;
 use App\Http\Controllers\CartaoVirtual\GuestListAdminController;
 use App\Http\Controllers\CartaoVirtual\GuestListPublicController;
@@ -77,6 +78,8 @@ Route::get('/api/profile/import-form-info', [ProfileFormExtrasController::class,
 // Paths públicos / editor
 Route::get('/card/{slug}', [CardPublicController::class, 'show'])->where('slug', $cardSlug);
 Route::get('/api/card/{slug}', [CardPublicController::class, 'api'])->where('slug', $cardSlug);
+// PWA Manifest dinâmico por cartão
+Route::get('/{slug}/manifest.json', [CardPwaController::class, 'manifest'])->where('slug', $cardSlug);
 Route::get('/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])->where('itemId', '[0-9]+');
 Route::get('/api/bible/verse-of-day', [BiblePublicController::class, 'verseOfDay']);
 Route::get('/api/bible/books', [BiblePublicController::class, 'books']);
@@ -145,6 +148,7 @@ Route::middleware('jwt')->group(function () {
     Route::put('/api/profile/items/pdf/{id}', [ProfileTypedItemsController::class, 'updatePdf'])->where('id', '[0-9]+');
     Route::put('/api/profile/items/digital_form/{id}', [ProfileTypedItemsController::class, 'updateDigitalForm'])->where('id', '[0-9]+');
     Route::get('/api/profile/items/digital_form/{id}/responses', [ProfileFormExtrasController::class, 'listResponses'])->where('id', '[0-9]+')->middleware('throttle:60,1');
+    Route::get('/api/profile/items/digital_form/{id}/responses/export-csv', [ProfileFormExtrasController::class, 'exportCsv'])->where('id', '[0-9]+')->middleware('throttle:10,1');
     Route::post('/api/profile/items/digital_form/{id}/responses/delete-bulk', [ProfileFormExtrasController::class, 'deleteResponsesBulk'])->where('id', '[0-9]+')->middleware('throttle:30,1');
     Route::delete('/api/profile/items/digital_form/{id}/responses/{responseId}', [ProfileFormExtrasController::class, 'deleteResponse'])->where(['id' => '[0-9]+', 'responseId' => '[0-9]+'])->middleware('throttle:60,1');
     Route::get('/api/profile/items/digital_form/{id}/dashboard', [ProfileFormExtrasController::class, 'dashboard'])->where('id', '[0-9]+')->middleware('throttle:60,1');

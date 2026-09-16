@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\CartaoVirtual\FormPublicService;
+use App\Services\CartaoVirtual\KingFormsNotificationService;
 use App\Support\SafeUrl;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -13,7 +15,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Injeta automaticamente o KingFormsNotificationService no FormPublicService
+        // quando o container resolve o serviço — sem mudar o construtor original.
+        $this->app->resolving(FormPublicService::class, function (FormPublicService $service, $app) {
+            $service->setNotifier($app->make(KingFormsNotificationService::class));
+        });
     }
 
     /**

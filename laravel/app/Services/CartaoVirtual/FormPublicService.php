@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Log;
 
 class FormPublicService
 {
+    private ?KingFormsNotificationService $notifier = null;
+
+    public function setNotifier(KingFormsNotificationService $notifier): void
+    {
+        $this->notifier = $notifier;
+    }
+
     /**
      * @return array{status:int, view?:string, data?:array<string,mixed>, message?:string}
      */
@@ -197,6 +204,11 @@ class FormPublicService
         $responseId = $this->insertFormResponse($id, $responseData, $name, $email, $phone, $guestId, $entryMode, null);
         if ($responseId === null && $cfg['send_mode'] !== 'whatsapp-only') {
             return ['status' => 500, 'body' => ['success' => false, 'message' => 'Erro ao salvar resposta.']];
+        }
+
+        // Notificação imediata no Telegram para o dono do formulário
+        if ($responseId !== null && $this->notifier) {
+            $this->notifier->notifyNewFormResponse($id, $name, $phone, $email);
         }
 
         $profileSlug = (string) ($item->profile_slug ?: $slug);

@@ -31,6 +31,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
     <link rel="apple-touch-icon" href="{{ $ogImageUrl ?? 'https://i.ibb.co/60sW9k75/logo.png' }}">
+    <link rel="manifest" href="/{{ $profile_slug ?? '' }}/manifest.json">
+    <meta name="apple-mobile-web-app-title" content="{{ $d['display_name'] ?? 'Meu Cartão' }}">
     @vite(['resources/css/fontawesome.css', 'resources/css/fonts.css', 'resources/js/pages/cartao-public.js'])
 <meta property="og:title" content="{{ $d['display_name'] ?? 'Conecta King' }}">
 <meta property="og:description" content="{{ $ogDescription }}">

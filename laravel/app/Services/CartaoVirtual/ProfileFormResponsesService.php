@@ -11,6 +11,112 @@ use Illuminate\Support\Facades\Log;
 class ProfileFormResponsesService
 {
     /**
+     * Exporta TODAS as respostas de um formulário como CSV.
+     * Inclui: ID, data, nome, email, telefone e todos os campos personalizados.
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function exportCsv(string $userId, string $itemId): array
+    {
+        $owned = $this->assertOwnedForm($userId, $itemId);
+        if ($owned !== null) {
+            return $owned;
+        }
+        $id = (int) $itemId;
+
+        try {
+            // Busca o título do formulário
+            $formInfo = DB::selectOne(
+                "SELECT COALESCE(dfi.form_title, pi.title, 'Formulário') AS title
+                 FROM profile_items pi
+                 LEFT JOIN digital_form_items dfi ON dfi.profile_item_id = pi.id
+                 WHERE pi.id = ?
+                 ORDER BY dfi.id DESC LIMIT 1",
+                [$id]
+            );
+            $formTitle = preg_replace('/[^A-Za-z0-9\-_]/', '_', (string) ($formInfo->title ?? 'formulario'));
+
+            // Busca todas as respostas (sem paginação para export)
+            $rows = DB::select(
+                'SELECT id, responder_name, responder_email, responder_phone,
+                        submitted_at, response_data, entry_mode, payment_status
+                 FROM digital_form_responses
+                 WHERE profile_item_id = ?
+                 ORDER BY submitted_at DESC',
+                [$id]
+            );
+
+            // Descobre todos os campos únicos presentes nas respostas
+            $allFields = [];
+            $parsedRows = [];
+            foreach ($rows as $row) {
+                $r = (array) $row;
+                $data = $r['response_data'] ?? null;
+                if (is_string($data)) {
+                    $parsed = json_decode($data, true);
+                    $r['response_data'] = is_array($parsed) ? $parsed : [];
+                } elseif (!is_array($r['response_data'])) {
+                    $r['response_data'] = [];
+                }
+                foreach (array_keys($r['response_data']) as $k) {
+                    $allFields[$k] = true;
+                }
+                $parsedRows[] = $r;
+            }
+            $dynamicFields = array_keys($allFields);
+
+            // Monta o CSV em memória
+            $output = fopen('php://temp', 'r+');
+
+            // Cabeçalho
+            $header = ['ID', 'Data/Hora', 'Nome', 'Email', 'Telefone', 'Modo', 'Status Pgto'];
+            foreach ($dynamicFields as $f) {
+                $header[] = $f;
+            }
+            fputcsv($output, $header);
+
+            // Linhas
+            foreach ($parsedRows as $r) {
+                $line = [
+                    $r['id'],
+                    $r['submitted_at'],
+                    $r['responder_name']  ?? '',
+                    $r['responder_email'] ?? '',
+                    $r['responder_phone'] ?? '',
+                    $r['entry_mode']      ?? 'lead',
+                    $r['payment_status']  ?? '',
+                ];
+                $rd = $r['response_data'];
+                foreach ($dynamicFields as $f) {
+                    $val = $rd[$f] ?? '';
+                    if (is_array($val)) {
+                        $val = implode(', ', array_map('strval', $val));
+                    }
+                    $line[] = (string) $val;
+                }
+                fputcsv($output, $line);
+            }
+
+            rewind($output);
+            $csvContent = stream_get_contents($output);
+            fclose($output);
+
+            return [
+                'status' => 200,
+                'body'   => [
+                    'csv'      => $csvContent,
+                    'filename' => "king-forms_{$formTitle}_" . date('Y-m-d') . '.csv',
+                    'count'    => count($parsedRows),
+                ],
+            ];
+        } catch (\Throwable $e) {
+            Log::error('profile.form.export_csv', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => ['message' => 'Erro ao exportar respostas.', 'error' => $e->getMessage()]];
+        }
+    }
+
+    /**
      * @return array{status:int, body:array<string, mixed>}
      */
     public function list(string $userId, string $itemId, ?string $mode = null, bool $checkoutOnly = false, int $limit = 100, int $offset = 0): array

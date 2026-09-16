@@ -90,6 +90,31 @@ class ProfileFormExtrasController extends Controller
         ));
     }
 
+    public function exportCsv(Request $request, string $id)
+    {
+        $result = $this->responses->exportCsv(
+            (string) $request->attributes->get('auth_user_id', ''),
+            $id
+        );
+
+        if ($result['status'] !== 200) {
+            return response()->json($result['body'], $result['status']);
+        }
+
+        $csv      = $result['body']['csv']      ?? '';
+        $filename = $result['body']['filename'] ?? 'respostas.csv';
+
+        // Adiciona BOM UTF-8 para compatibilidade com Excel
+        $bom = "\xEF\xBB\xBF";
+
+        return response($bom . $csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+            'X-Conecta-Engine'    => 'laravel',
+        ]);
+    }
+
     /**
      * @param  array{status:int, body:array<string, mixed>}  $result
      */
