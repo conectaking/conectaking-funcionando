@@ -1,0 +1,78 @@
+{
+  "id": "ckErrWfSentry01",
+  "name": "CK Agent \u2014 Error \u2192 Telegram",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e1",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst exec = j.execution || {};\nconst wf = j.workflow || {};\nconst last = exec.lastNodeExecuted || j.lastNodeExecuted || '?';\nconst err = exec.error || j.error || {};\nconst message = err.message || err.description || JSON.stringify(err).slice(0, 240);\nconst lines = [\n  '\u26a0\ufe0f *CK Agent \u2014 falha no workflow*',\n  `*Workflow:* ${wf.name || wf.id || '?'}`,\n  `*N\u00f3:* ${last}`,\n  `*Erro:* ${String(message).slice(0, 400)}`,\n  `*Exec:* ${exec.id || j.executionId || '?'}`,\n  '',\n  'Abra: https://n8n.conectaking.com.br',\n];\nreturn [{ json: {\n  outMessage: lines.join('\\n'),\n  chatId: String($env.ADMIN_TELEGRAM_ID || '78792434'),\n}}];\n"
+      },
+      "id": "e2",
+      "name": "Formatar Erro WF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.outMessage }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "e3",
+      "name": "Avisar Admin Erro",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram"
+        }
+      },
+      "webhookId": "tg-err-send"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Formatar Erro WF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Erro WF": {
+      "main": [
+        [
+          {
+            "node": "Avisar Admin Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

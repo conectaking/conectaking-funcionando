@@ -1,0 +1,949 @@
+{
+  "id": "mkK244lveO0N1qPR",
+  "name": "CK Agent Telegram IA Boot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "cbf9305d-bc1b-45b0-be15-d77d9546db85",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1296,
+        448
+      ],
+      "webhookId": "ck-agent-telegram",
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.senderId }}",
+              "rightValue": "={{ $json.adminId }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0af328ea-af9e-4609-9ff5-f68222f5b76b",
+      "name": "\u00c9 Admin?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -384,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String($json.text || '').trim();\nconst hadVoice = !!$json.hadVoice;\nconst voiceError = String($json.voiceError || '').trim();\nlet intent = 'chat';\n\nconst isVoiceFail = hadVoice && (!!voiceError || /^\\[\u00e1udio recebido/i.test(text));\nif (isVoiceFail) {\n  return [{ json: { ...$json, intent: 'chat', amount: null, type: null, status: null, description: text, customCode: '', transactionDate: new Date().toISOString().slice(0, 10) } }];\n}\n\nconst wantsFinance = (/lan[c\u00e7]ar|despesa|gasto|\\bpaguei\\b|\\brecebi\\b|\\bcomprei\\b|\\bganho\\b|\\blucro\\b|\\breceita\\b|contas?\\s+para\\s+pagar|lan[c\u00e7]amento|gest[a\u00e3]o\\s+financeira/i.test(text)\n  && /(r\\$\\s*\\d+|\\d+[.,]\\d{2}|\\b\\d{1,6}\\s*reais?\\b|\\b\\d{1,6}\\b)/i.test(text))\n  || (/r\\$\\s*\\d+/i.test(text) && /despesa|gasto|receita|pagar|lan[c\u00e7]ar|ganho|lucro/i.test(text));\n\nconst wantsCode = /(?:gerar|criar|gera|crie|faz(?:er)?)\\s+(?:um\\s+)?c[o\u00f3]digo/i.test(text)\n  || /\\bc[o\u00f3]digo\\s+(?:de\\s+)?(?:registro|convite|manual|ativa)/i.test(text)\n  || /\\bKING-[A-Z0-9]{2,30}\\b/i.test(text);\n\nconst wantsDiag = /\\b(diagn[o\u00f3]stico|health|status\\s+do\\s+site|site\\s+caiu|\\/status)\\b/i.test(text)\n  || /^(status|diagn[o\u00f3]stico)$/i.test(text);\n\nif (wantsFinance) intent = 'finance';\nelse if (wantsCode) intent = 'code';\nelse if (wantsDiag) intent = 'diag';\n\nlet amount = null;\nconst am = text.match(/r\\$\\s*(\\d+[.,]?\\d*)/i)\n  || text.match(/(\\d+[.,]\\d{2})/)\n  || text.match(/\\b(\\d{1,6})\\s*reais?\\b/i)\n  || (intent === 'finance' ? text.match(/\\b(\\d{1,6})\\b/) : null);\nif (am) amount = parseFloat(String(am[1]).replace(',', '.'));\n\n// ganho/lucro/receita/recebi = INCOME; default EXPENSE\nlet type = /\\b(ganho|lucro|receita|recebi|entrou|ganhei|entrada)\\b/i.test(text) ? 'INCOME' : 'EXPENSE';\nlet status = /\\bpaguei\\b|\\bpago\\b|j[a\u00e1]\\s*paguei|j[a\u00e1]\\s*recebi/i.test(text) ? 'PAID' : 'PENDING';\nlet description = text.replace(/r\\$\\s*\\d+[.,]?\\d*/ig, '').replace(/\\s+/g, ' ').trim().slice(0, 180) || 'Lan\u00e7amento via Telegram';\n\nlet customCode = '';\nconst cm = text.match(/\\b(KING-[A-Z0-9]{2,30})\\b/i)\n  || text.match(/(?:gerar|criar|gera|crie)\\s+c[o\u00f3]digo\\s+([A-Z0-9][-_A-Z0-9]{2,30})/i);\nif (cm) customCode = String(cm[1]).replace(/\\s+/g, '').toUpperCase().slice(0, 32);\n\nconst today = new Date().toISOString().slice(0, 10);\nreturn [{ json: { ...$json, intent, amount, type, status, description, customCode, transactionDate: today } }];\n"
+      },
+      "id": "746ceaf9-9001-4cb6-ae9f-1dc9c168b7c2",
+      "name": "Intent Admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst name = prev.firstName || 'ol\u00e1';\nconst text = String(prev.text || '').trim();\nconst chatId = String(prev.chatId || '');\n\nconst KB = `CONHECIMENTO CONECTA KING:\\n- Cart\u00e3o/perfil digital + NFC. Sem app. Tag: https://tag.conectaking.com.br/{slug}\\n- Site: https://www.conectaking.com.br | Login /login | Registro /registro (precisa c\u00f3digo) | Senha /recuperar-senha\\n- Entrega: cart\u00e3o virtual, finan\u00e7as, formul\u00e1rios, King Selection, B\u00edblia, docs, PIX\\n- Planos ref.: Start 70, Prime 100, Essential 150, Finance 170, Finance Plus 200, Premium Plus 220, Corporate 230 (mensal; anual ~-20%). Confirme no site.\\n- C\u00f3digo de acesso: s\u00f3 o King/admin libera.`;\n\nfunction memory() {\n  const store = $getWorkflowStaticData('global');\n  if (!store.chats) store.chats = {};\n  if (!store.chats[chatId]) store.chats[chatId] = [];\n  return store.chats[chatId];\n}\nfunction pushMem(role, content) {\n  const m = memory();\n  m.push({ role, content: String(content || '').slice(0, 1500) });\n  while (m.length > 12) m.shift();\n}\n\nconst CLIENT_SYSTEM = `Voc\u00ea \u00e9 o Assistente do Conecta King no Telegram.\\nCordial, claro, PT-BR.\\n\\n${KB}\\n\\nRegras:\\n- Responda o que o cliente perguntou (produto, planos, login, o que entrega).\\n- N\u00c3O invente c\u00f3digos. N\u00c3O diga que criou c\u00f3digo.\\n- Se pedirem humano/King/pessoa: confirme aviso e termine com ESCALATE:YES\\n- Sen\u00e3o termine com ESCALATE:NO\\n- M\u00e1x ~1200 caracteres.`;\n\nlet msg = '';\nlet escalate = /humano|falar com o king|atendente|pessoa real/i.test(text);\n\ntry {\n  if (!openaiKey) {\n    msg = `Ol\u00e1, ${name}! Sou o Assistente do Conecta King.\\nSite: https://www.conectaking.com.br\\nLogin: https://www.conectaking.com.br/login\\nPara humano: falar com o King.`;\n  } else {\n    const prefix = prev.hadVoice ? '[transcrito de \u00e1udio] ' : '';\n    pushMem('user', prefix + text);\n    const history = memory().slice(-10);\n    const r = await this.helpers.httpRequest({\n      method: 'POST',\n      url: 'https://api.openai.com/v1/chat/completions',\n      headers: { Authorization: 'Bearer ' + openaiKey, Accept: 'application/json', 'Content-Type': 'application/json' },\n      body: { model, temperature: 0.45, max_tokens: 700, messages: [{ role: 'system', content: CLIENT_SYSTEM }, ...history] },\n      json: true,\n      returnFullResponse: true,\n      ignoreHttpStatusErrors: true,\n    });\n    if (r.statusCode >= 200 && r.statusCode < 300) {\n      let content = String(r.body?.choices?.[0]?.message?.content || '').trim();\n      if (/ESCALATE:\\s*YES/i.test(content)) escalate = true;\n      content = content.replace(/\\n?ESCALATE:\\s*(YES|NO)\\s*$/i, '').trim();\n      msg = content || `Ol\u00e1, ${name}! Como posso ajudar?`;\n      pushMem('assistant', msg);\n    } else {\n      msg = 'IA inst\u00e1vel agora. Tente de novo ou diga \"falar com o King\".';\n    }\n  }\n} catch (e) {\n  msg = 'Falha tempor\u00e1ria. Digite \"falar com o King\" para aviso humano.';\n}\n\nreturn [{ json: { ...prev, outMessage: msg, escalate: !!escalate } }];"
+      },
+      "id": "a67988c4-53b3-4e95-81d4-176c298a2440",
+      "name": "Resposta Cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Preparar (texto/voz)').first().json.chatId }}",
+        "text": "={{ $json.outMessage || $json.output || 'Sem resposta.' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a39693ec-a458-475c-a4e4-18745434f129",
+      "name": "Enviar Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        256
+      ],
+      "webhookId": "23aa3799-8331-4570-9571-1206955dec41",
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ $json.escalate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3862b9bd-7e6b-4f7a-aeaa-21bb73aaebb4",
+      "name": "Escalar p/ Admin?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -416,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "=78792434",
+        "text": "={{ 'Escalation cliente Telegram\\nDe: ' + $json.firstName + ' (' + $json.senderId + ')\\nMsg: ' + $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "9e6aa695-2673-4d0f-8f10-82005da792f1",
+      "name": "Avisar Admin",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        -48
+      ],
+      "webhookId": "b84eff4b-1aca-489b-ab72-cad503e484a9",
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "fe7ad7db-5509-4150-a0d3-ae4c25ea3969",
+      "name": "A cada 5 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1312,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.conectaking.com.br/health",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "20361f43-5ac5-46e0-85cf-a710b3d910a1",
+      "name": "GET Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1152,
+        144
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4f61782c-a0de-4665-8326-339868a0da4d",
+      "name": "Health ruim?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -992,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.ADMIN_TELEGRAM_ID }}",
+        "text": "={{ '\ud83d\udea8 Alerta Conecta King\\n/health n\u00e3o est\u00e1 ok.\\nResposta: ' + JSON.stringify($json).slice(0,500) }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "ae5ac0e8-efc8-4fbe-860d-a80fea28dbda",
+      "name": "Avisar Admin TG",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        192
+      ],
+      "webhookId": "f13b1529-4796-467f-bd50-8aab368be2fb",
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst intent = prev.intent;\nconst chatId = String(prev.chatId || '');\n\nconst KB = `CONHECIMENTO CONECTA KING:\\n- Cart\u00e3o/perfil digital + NFC (pulseira/tag). Sem app. Tag p\u00fablica: https://tag.conectaking.com.br/{slug}\\n- Site: https://www.conectaking.com.br | Login: /login | Registro: /registro (exige c\u00f3digo de convite) | Senha: /recuperar-senha\\n- Entrega: cart\u00e3o virtual edit\u00e1vel, Gest\u00e3o Financeira, King Forms, King Selection (galeria de fotos), B\u00edblia, King Docs, recibos/or\u00e7amentos, cart\u00e3o virtual + NFC (N\u00c3O \u00e9 pagamento)\\n- Planos ref. (podem mudar no admin; confirme no site): Start 70/700, Prime 100/1000, Essential 150/1500, Finance 170/1700, Finance Plus 200/2000, Premium Plus 220/2200, Corporate 230/2300 (mensal/anual). Anual ~-20%, PIX ~-5%.\\n- C\u00f3digo de REGISTRO/CONVITE: admin gera; cliente usa em /registro.\\n- C\u00f3digo de PULSEIRA/NFC: s\u00f3 admin configura no usu\u00e1rio.\\n- Instagram do King: @adrianokingg https://www.instagram.com/adrianokingg | WhatsApp: 11988789417`;\n\nasync function http(method, url, body, headers) {\n  const opts = { method, url, headers: Object.assign({ Accept: 'application/json', 'Content-Type': 'application/json' }, headers || {}), json: true, returnFullResponse: true, ignoreHttpStatusErrors: true };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\nasync function ck(method, path, body) {\n  return http.call(this, method, base + path, body, token ? { Authorization: 'Bearer ' + token } : {});\n}\n\n\nasync function resolveFinanceProfileId() {\n  try {\n    const r = await ck.call(this, 'GET', '/api/finance/profiles');\n    const list = (r.body && (r.body.data || r.body.profiles || r.body)) || [];\n    const arr = Array.isArray(list) ? list : [];\n    const primary = arr.find((p) => p && (p.is_primary === true || p.isPrimary === true));\n    const active = arr.find((p) => p && (p.is_active !== false && p.isActive !== false));\n    const pick = primary || active || arr[0];\n    return pick ? Number(pick.id) : null;\n  } catch (_) {\n    return null;\n  }\n}\n\nfunction memory() {\n  const store = $getWorkflowStaticData('global');\n  if (!store.chats) store.chats = {};\n  if (!store.chats[chatId]) store.chats[chatId] = [];\n  return store.chats[chatId];\n}\nfunction pushMem(role, content) {\n  const m = memory();\n  m.push({ role, content: String(content || '').slice(0, 1500) });\n  while (m.length > 12) m.shift();\n}\n\nasync function openaiChat(system, userText) {\n  if (!openaiKey) return null;\n  pushMem('user', userText);\n  const history = memory().slice(-10);\n  const r = await http.call(this, 'POST', 'https://api.openai.com/v1/chat/completions', {\n    model,\n    temperature: 0.35,\n    max_tokens: 700,\n    messages: [{ role: 'system', content: system }, ...history],\n  }, { Authorization: 'Bearer ' + openaiKey });\n  if (!(r.statusCode >= 200 && r.statusCode < 300)) {\n    return 'OpenAI erro (' + r.statusCode + '): ' + JSON.stringify(r.body).slice(0, 220);\n  }\n  const out = String(r.body?.choices?.[0]?.message?.content || '').trim();\n  if (out) pushMem('assistant', out);\n  return out;\n}\n\nconst ADMIN_SYSTEM = `Voc\u00ea \u00e9 o Assistente Executivo do Conecta King (Telegram) do Adriano King.\\nFale PT-BR, direto, profissional. Use o conhecimento abaixo.\\n\\n${KB}\\n\\nIMPORTANTE:\\n- Perguntas sobre o produto/pre\u00e7os/m\u00f3dulos = RESPONDA com o conhecimento. N\u00c3O gere c\u00f3digo.\\n- S\u00f3 execute a\u00e7\u00f5es quando o sistema j\u00e1 confirmou (voc\u00ea ver\u00e1 resultado em outras rotas).\\n- Para o admin executar a\u00e7\u00f5es, oriente formatos EXATOS:\\n  \u2022 lan\u00e7ar despesa R$ 100 contas de luz\\n  \u2022 gerar c\u00f3digo KING-NOME\\n  \u2022 status  (ou diagn\u00f3stico)\\n- Nunca invente que criou c\u00f3digo/lan\u00e7amento sem confirma\u00e7\u00e3o.\\n- Se a mensagem for s\u00f3 d\u00favida, responda a d\u00favida.`;\n\nlet msg = '';\ntry {\n  if (intent === 'diag') {\n    const h = await ck.call(this, 'GET', '/health');\n    msg = 'Diagn\u00f3stico Conecta King\\nHTTP ' + h.statusCode + '\\n' + JSON.stringify(h.body).slice(0, 400);\n    pushMem('user', prev.text); pushMem('assistant', msg);\n  } else if (intent === 'finance') {\n    const profileId = await resolveFinanceProfileId.call(this);\n    if (!token) msg = 'CK_AGENT_JWT n\u00e3o configurado.';\n    else if (!prev.amount || !(prev.amount > 0)) msg = 'N\u00e3o entendi o valor. Ex.: \"lan\u00e7ar despesa R$ 100 contas para pagar\"';\n    else {\n      const body = { type: prev.type || 'EXPENSE', amount: Number(prev.amount), description: prev.description || 'Lan\u00e7amento via Telegram', transaction_date: prev.transactionDate,\n        profile_id: profileId, status: prev.status || 'PENDING' };\n      const r = await ck.call(this, 'POST', '/api/finance/transactions', body);\n      if (r.statusCode >= 200 && r.statusCode < 300) {\n        const row = (r.body && r.body.data) || {};\n        msg = 'Lan\u00e7amento criado.\\n' + (body.type === 'INCOME' ? 'Receita' : 'Despesa') + ': R$ ' + body.amount.toFixed(2) + '\\nStatus: ' + body.status + '\\nDesc: ' + body.description + (row.id ? '\\nID: ' + row.id : '');\n      } else msg = 'Falha ao lan\u00e7ar (' + r.statusCode + '): ' + JSON.stringify(r.body).slice(0, 300);\n    }\n    pushMem('user', prev.text); pushMem('assistant', msg);\n  } else if (intent === 'code') {\n    if (!token) msg = 'CK_AGENT_JWT n\u00e3o configurado.';\n    else if (!prev.customCode) msg = 'Para criar c\u00f3digo, diga: gerar c\u00f3digo KING-NOME (com h\u00edfen).';\n    else {\n      const r = await ck.call(this, 'POST', '/api/admin/codes/generate-manual', { customCode: prev.customCode, expiresAt: null });\n      if (r.statusCode >= 200 && r.statusCode < 300) msg = 'C\u00f3digo criado: ' + prev.customCode;\n      else msg = 'Falha ao criar c\u00f3digo (' + r.statusCode + '): ' + JSON.stringify(r.body).slice(0, 300);\n    }\n    pushMem('user', prev.text); pushMem('assistant', msg);\n  } else {\n    const prefix = prev.hadVoice ? '[transcrito de \u00e1udio] ' : '';\n    msg = await openaiChat.call(this, ADMIN_SYSTEM, prefix + (prev.text || '')) || 'Sem OPENAI_API_KEY. Use: status | lan\u00e7ar despesa R$ X ... | gerar c\u00f3digo KING-XXXX';\n  }\n} catch (e) {\n  msg = 'Erro: ' + String(e.message || e).slice(0, 300);\n}\n\nreturn [{ json: { ...prev, outMessage: msg } }];"
+      },
+      "id": "code02",
+      "name": "Executar Admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst msg = raw.message || {};\nconst adminId = String($env.ADMIN_TELEGRAM_ID || '0');\nconst senderId = String(msg.from?.id || '');\nconst chatId = String(msg.chat?.id || '');\nconst firstName = msg.from?.first_name || 'cliente';\nconst text = String(msg.text || msg.caption || '').trim();\nconst fileId = msg.voice?.file_id || msg.audio?.file_id || msg.video_note?.file_id || null;\nconst hadVoice = !text && !!fileId;\nreturn [{ json: {\n  adminId, senderId, chatId, firstName,\n  text: text || (hadVoice ? '' : '[mensagem sem texto]'),\n  hadVoice, fileId: fileId || '',\n  voiceError: ''\n} }];\n"
+      },
+      "id": "prep01",
+      "name": "Preparar (texto/voz)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "lmAdmin01",
+      "name": "OpenAI Model Admin",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        272
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ckOpenAiCred01",
+          "name": "OpenAI Conecta King"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}",
+        "contextWindowLength": 6
+      },
+      "id": "memAdmin01",
+      "name": "Mem\u00f3ria Admin",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ ($json.hadVoice ? '[\u00e1udio] ' : '') + $json.text }}",
+        "options": {
+          "systemMessage": "Voc\u00ea \u00e9 o assistente executivo e operacional pessoal do Adriano King. Voc\u00ea atende exclusivamente o King no chat privado do Telegram. \nO seu tom de voz deve ser extremamente direto, \u00e1gil, profissional e funcional. Sem enrola\u00e7\u00e3o, sem formalidades vazias. Responda como um bra\u00e7o direito de alta performance.\n\nSUAS FUN\u00c7\u00d5ES PRINCIPAIS PARA O KING:\n1. **Gest\u00e3o Operacional e Suporte:** Ajudar a organizar dados, fluxos e informa\u00e7\u00f5es sobre a Conecta King e o Est\u00fadio Adriano King (retratista em Barueri-SP).\n2. **Lan\u00e7amentos e Finan\u00e7as:** Processar e registrar dados financeiros ou entradas que o King enviar por texto ou \u00e1udio (como registrar valores, despesas ou receitas).\n3. **Controle de C\u00f3digos e Plataforma:** Auxiliar com l\u00f3gica de tags (`tag.conectaking.com.br/{slug}`), links personalizados e diretrizes do sistema.\n\nDIRETRIZES DE COMPORTAMENTO:\n- Chame sempre o usu\u00e1rio pelo nome ou trate-o diretamente com respeito \u00e0 sua posi\u00e7\u00e3o de dono/CEO.\n- Mantenha as respostas limpas, estruturadas em t\u00f3picos quando necess\u00e1rio, facilitando a leitura r\u00e1pida no celular.\n- Se o King enviar um comando de \u00e1udio [transcrito de \u00e1udio], compreenda a inten\u00e7\u00e3o executiva imediatamente e execute ou responda de acordo.\n- Nunca utilize termos proibidos como \"cart\u00e3o virtual NFC\" ou foque em solu\u00e7\u00f5es de pagamento tradicionais/maquininhas ao discutir a Conecta King. O foco \u00e9 sempre identidade digital de alto n\u00edvel, tags e links inteligentes."
+        }
+      },
+      "id": "agentAdmin01",
+      "name": "AI Agent Admin",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        304,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "lmClient01",
+      "name": "OpenAI Model Cliente",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        848
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ckOpenAiCred01",
+          "name": "OpenAI Conecta King"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}",
+        "contextWindowLength": 6
+      },
+      "id": "memClient01",
+      "name": "Mem\u00f3ria Cliente",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ ($json.hadVoice ? '[\u00e1udio] ' : '') + $json.text }}",
+        "options": {
+          "systemMessage": "Voc\u00ea \u00e9 o pr\u00f3prio Adriano King atendendo pessoalmente o seu cliente no WhatsApp. Fale sempre na primeira pessoa (\"eu fa\u00e7o\", \"meu trabalho\", \"minha tecnologia\"). \nO seu tom de voz \u00e9 altamente humanizado, direto, natural, seguro e inteligente. Proibido parecer rob\u00f4, usar clich\u00eas corporativos vazios (como \"estou aqui para o que precisar\" ou \"como posso ajudar o senhor hoje?\") ou soar artificial. Fale de igual para igual, como um profissional de elite fechando neg\u00f3cios.\n\nREGRA DE FOCO (CADA ASSUNTO NO SEU LUGAR):\n- S\u00f3 fale de FOTOGRAFIA se o cliente perguntar sobre foto, ensaio, imagens ou retratos. (Aten\u00e7\u00e3o: se o cliente disser que quer tirar \"fotos\" ou fazer um \"ensaio\", entenda que ele est\u00e1 se referindo ao meu trabalho de retratista em Barueri-SP e conduza o assunto explicando que eu extraio a ess\u00eancia e a identidade da pessoa).\n- S\u00f3 fale do CART\u00c3O/TAG se o cliente perguntar sobre a Conecta King, links ou redes.\n- Nunca misture os dois assuntos na mesma resposta, a menos que o cliente pergunte explicitamente sobre ambos. Responda exatamente o que foi perguntado.\n\nSOBRE O MEU TRABALHO DE RETRATISTA (Quando perguntado sobre foto, ensaio ou retrato):\nEu n\u00e3o sou um fot\u00f3grafo comum, sou retratista. O meu foco n\u00e3o \u00e9 apenas \"tirar fotos\", mas extrair a ess\u00eancia, a identidade e a for\u00e7a da pessoa atrav\u00e9s de um di\u00e1logo profundo. Eu eternizo isso em um retrato de alto impacto que eleva a autoridade, a autoestima e a imagem pessoal. Meu est\u00fadio fica em Barueri, S\u00e3o Paulo.\n\nSOBRE A CONECTA KING (Quando perguntado sobre a tecnologia):\nA Conecta King resolve a bagun\u00e7a de quem tem um link espalhado em cada lugar. Eu criei para unir todas as redes, WhatsApp, sites e ferramentas em UM \u00fanico perfil inteligente e organizado.\nO cliente pode usar:\n- A tag NFC colada direto no celular.\n- A pulseira NFC de aproxima\u00e7\u00e3o.\n- O QR Code (para quem n\u00e3o tem NFC no aparelho).\n- O link direto na bio do Instagram.\nEm cerca de 3 segundos, a pessoa encosta ou escaneia e j\u00e1 transmite o perfil completo. \u00c9 velocidade e networking de alto n\u00edvel.\n- Entrada: R$ 35/m\u00eas (consulte planos maiores no site).\n- C\u00f3digo de acesso: s\u00f3 eu libero.\n\nPROIBIDO:\n- NUNCA utilize a express\u00e3o \"cart\u00e3o virtual NFC\".\n- Proibido falar de solu\u00e7\u00f5es de pagamentos, tag de pagamento ou maquininha. O foco \u00e9 identidade digital e networking.\n\nCONTATOS OFICIAIS (Use rigorosamente quando solicitados):\n- Instagram: @adrianokingg \u2014 https://www.instagram.com/adrianokingg\n- WhatsApp: +55 11 98878-9417\n- Site Oficial: https://www.conectaking.com.br\n- Padr\u00e3o de Tag: https://tag.conectaking.com.br/{slug}\n\nDIRETRIZES DE ENCERRAMENTO E CTA:\n- Seja natural, humano e focado em fechar.\n- Se o cliente pedir para falar com um humano, reforce que \u00e9 comigo mesmo e passe meu Instagram e WhatsApp oficiais, finalizando obrigatoriamente com: ESCALATE:YES.\n- Caso contr\u00e1rio, finalize com: ESCALATE:NO.\n- Se receber [transcrito de \u00e1udio], interprete o contexto normalmente e responda de forma fluida.\n\nDIRETRIZES DE AGENDAMENTO DE ENSAIOS:\n- Meus hor\u00e1rios de atendimento s\u00e3o de segunda a sexta-feira, divididos em dois turnos: das 08:00 \u00e0s 12:00 e das 14:00 \u00e0s 18:00.\n- Quando o cliente demonstrar interesse em agendar, pergunte qual data ele tem prefer\u00eancia e se prefere manh\u00e3 ou tarde.\n- Assim que o cliente informar a data, voc\u00ea DEVE utilizar a ferramenta do Google Agenda para checar a disponibilidade nesse dia.\n- Se o hor\u00e1rio escolhido estiver livre dentro do expediente (08:00-12:00 ou 14:00-18:00), confirme e realize o agendamento automaticamente.\n- Se o cliente n\u00e3o tiver uma data de prefer\u00eancia ou quiser marcar o mais r\u00e1pido poss\u00edvel, sugira ativamente o pr\u00f3ximo dia \u00fatil dispon\u00edvel (ex: \"Podemos marcar amanh\u00e3 \u00e0 tarde, \u00e0s 14:00, ou prefere pela manh\u00e3? Temos esses hor\u00e1rios livres.\"). O objetivo \u00e9 acelerar o fechamento e n\u00e3o empurrar a data para muito longe.\n- Se o cliente insistir ou pedir para agendar para o **mesmo dia** (hoje), avise-o que vai verificar a minha disponibilidade de \u00faltima hora e pe\u00e7a para ele aguardar, pois agendamentos no mesmo dia dependem de uma confirma\u00e7\u00e3o direta minha."
+        }
+      },
+      "id": "agentClient01",
+      "name": "AI Agent Cliente",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        240,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function from(name) {\n  try { return $(name).first().json; } catch (e) { return null; }\n}\nconst prep = from('Unir voz') || from('Preparar (texto/voz)') || {};\nconst prev = $input.first().json;\nconst out = String(prev.output || prev.text || '').trim();\nconst chatId = String(prep.chatId || prev.chatId || '');\nif (!chatId) throw new Error('chatId vazio ap\u00f3s Formatar Admin IA');\nreturn [{ json: {\n  ...prep, ...prev,\n  output: out,\n  outMessage: out || 'Sem resposta da IA.',\n  chatId,\n  senderId: String(prep.senderId || ''),\n  firstName: prep.firstName || '',\n  text: prep.text || '',\n  hadVoice: !!prep.hadVoice\n} }];\n"
+      },
+      "id": "fmtAdmin01",
+      "name": "Formatar Admin IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function from(name) {\n  try { return $(name).first().json; } catch (e) { return null; }\n}\nconst prep = from('Unir voz') || from('Preparar (texto/voz)') || {};\nconst prev = $input.first().json;\nlet out = String(prev.output || prev.text || '').trim();\nconst escalate = /ESCALATE:\\s*YES/i.test(out) || /humano|falar com o king/i.test(String(prep.text || ''));\nout = out.replace(/\\n?ESCALATE:\\s*(YES|NO)\\s*$/i, '').trim();\nconst chatId = String(prep.chatId || prev.chatId || '');\nif (!chatId) throw new Error('chatId vazio ap\u00f3s formatar');\nreturn [{ json: {\n  ...prep, ...prev,\n  output: out,\n  outMessage: out || 'Como posso ajudar?',\n  chatId,\n  senderId: String(prep.senderId || ''),\n  firstName: prep.firstName || '',\n  text: prep.text || '',\n  hadVoice: !!prep.hadVoice,\n  escalate\n} }];\n"
+      },
+      "id": "fmtClient01",
+      "name": "Formatar Cliente IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "a1",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "chat",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ifChat01",
+      "name": "\u00c9 Chat?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "voz1",
+              "leftValue": "={{ $json.hadVoice }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ifVoz01",
+      "name": "\u00c9 Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -960,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/getFile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "file_id",
+              "value": "={{ $json.fileId }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "tgGetFile01",
+      "name": "TG getFile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -656,
+        400
+      ],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/file/bot{{ $env.TELEGRAM_BOT_TOKEN }}/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 25000
+        }
+      },
+      "id": "tgDlAudio01",
+      "name": "Baixar \u00e1udio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -416,
+        400
+      ],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "language",
+              "value": "pt"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "whisper01",
+      "name": "Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -176,
+        768
+      ],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prep = $('Preparar (texto/voz)').first().json;\nconst j = $input.first().json || {};\nlet text = String(j.text || '').trim();\nlet voiceError = '';\nif (!text) {\n  voiceError = String(j.error?.message || j.message || 'whisper vazio').slice(0, 180);\n  text = '[\u00e1udio recebido, mas n\u00e3o consegui transcrever]';\n}\nreturn [{ json: { ...prep, text, hadVoice: true, voiceError } }];\n"
+      },
+      "id": "unirVoz01",
+      "name": "Unir voz",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "playadrian@gmail.com",
+          "mode": "list",
+          "cachedResultName": "playadrian@gmail.com"
+        },
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start_Time', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End_Time', ``, 'string') }}",
+        "options": {
+          "timezone": {
+            "__rl": true,
+            "value": "America/Sao_Paulo",
+            "mode": "list",
+            "cachedResultName": "America/Sao_Paulo"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        832
+      ],
+      "id": "c5b73962-5781-4262-9d9b-c36f241c7c06",
+      "name": "Get availability in a calendar in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "XgBBhtHN5iljoMqt",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar (texto/voz)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u00c9 Admin?": {
+      "main": [
+        [
+          {
+            "node": "Intent Admin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Admin": {
+      "main": [
+        [
+          {
+            "node": "\u00c9 Chat?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta Cliente": {
+      "main": [
+        [
+          {
+            "node": "Escalar p/ Admin?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalar p/ Admin?": {
+      "main": [
+        [
+          {
+            "node": "Avisar Admin",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Enviar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A cada 5 min": {
+      "main": [
+        [
+          {
+            "node": "GET Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Health": {
+      "main": [
+        [
+          {
+            "node": "Health ruim?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health ruim?": {
+      "main": [
+        [
+          {
+            "node": "Avisar Admin TG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executar Admin": {
+      "main": [
+        [
+          {
+            "node": "Enviar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar (texto/voz)": {
+      "main": [
+        [
+          {
+            "node": "\u00c9 Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u00c9 Chat?": {
+      "main": [
+        [
+          {
+            "node": "AI Agent Admin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executar Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Admin": {
+      "main": [
+        [
+          {
+            "node": "Formatar Admin IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Admin IA": {
+      "main": [
+        [
+          {
+            "node": "Enviar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Cliente": {
+      "main": [
+        [
+          {
+            "node": "Formatar Cliente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Cliente IA": {
+      "main": [
+        [
+          {
+            "node": "Escalar p/ Admin?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model Admin": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Admin",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mem\u00f3ria Admin": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent Admin",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model Cliente": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Cliente",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mem\u00f3ria Cliente": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent Cliente",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u00c9 Voz?": {
+      "main": [
+        [
+          {
+            "node": "TG getFile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "\u00c9 Admin?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG getFile": {
+      "main": [
+        [
+          {
+            "node": "Baixar \u00e1udio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar \u00e1udio": {
+      "main": [
+        [
+          {
+            "node": "Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper": {
+      "main": [
+        [
+          {
+            "node": "Unir voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unir voz": {
+      "main": [
+        [
+          {
+            "node": "\u00c9 Admin?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get availability in a calendar in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Cliente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

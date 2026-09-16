@@ -1,0 +1,84 @@
+{
+  "id": "ckSentryAlert01",
+  "name": "CK Agent \u2014 Sentry/Ops Alertas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ck-agent-sentry",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "s1",
+      "name": "Webhook Sentry",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "ck-sentry-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst body = j.body || j;\nconst headers = j.headers || {};\nconst secret = String($env.CK_SENTRY_WEBHOOK_SECRET || '').trim();\nconst q = j.query || {};\nconst got = String(headers['x-ck-secret'] || headers['X-Ck-Secret'] || body.secret || q.secret || '').trim();\nconst looksSentry = !!(body.data && body.data.issue) || body.action === 'triggered' || !!body.resource;\nif (secret && got !== secret && !looksSentry) {\n  throw new Error('secret inv\u00e1lido');\n}\n\n// Sentry Issue Alert webhook OR OpsAlert custom payload\nlet title = body.action || body.title || 'alerta';\nlet issue = body.data?.issue || body.issue || body;\nlet project = body.project || issue?.project?.slug || issue?.project || 'conectaking';\nlet culprit = issue?.culprit || body.culprit || '';\nlet level = (issue?.level || body.level || 'error').toString().toUpperCase();\nlet url = issue?.web_url || issue?.url || body.url || 'https://conecta-king.sentry.io/issues/';\nlet msg = issue?.title || issue?.metadata?.value || body.message || body.title || JSON.stringify(body).slice(0, 240);\nlet envName = issue?.environment || body.environment || 'production';\nlet server = body.server_name || issue?.tags?.server_name || '';\n\nconst lines = [\n  '\ud83d\udea8 *Conecta King \u2014 alerta*',\n  `*N\u00edvel:* ${level}`,\n  `*Projeto:* ${project}`,\n  `*Ambiente:* ${envName}`,\n  server ? `*Origem:* ${server}` : '',\n  `*Erro:* ${String(msg).slice(0, 350)}`,\n  culprit ? `*Onde:* ${String(culprit).slice(0, 180)}` : '',\n  `*Sentry:* ${url}`,\n  '',\n  '_Reaja no admin ou pe\u00e7a detalhes ao King Assistente._',\n].filter(Boolean);\n\nreturn [{ json: {\n  outMessage: lines.join('\\n'),\n  chatId: String($env.ADMIN_TELEGRAM_ID || '78792434'),\n  level, project, msg: String(msg).slice(0, 200),\n}}];\n"
+      },
+      "id": "s2",
+      "name": "Formatar Alerta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.outMessage }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "s3",
+      "name": "Avisar Admin TG",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "MFt7IUN9HkKveUW8",
+          "name": "Telegram"
+        }
+      },
+      "webhookId": "tg-sentry-send"
+    }
+  ],
+  "connections": {
+    "Webhook Sentry": {
+      "main": [
+        [
+          {
+            "node": "Formatar Alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Alerta": {
+      "main": [
+        [
+          {
+            "node": "Avisar Admin TG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
