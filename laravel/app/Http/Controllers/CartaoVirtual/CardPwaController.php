@@ -29,8 +29,8 @@ class CardPwaController extends Controller
             return response()->json(['error' => 'not found'], 404);
         }
 
-        $data = $result['data'] ?? [];
-        $details = $data['details'] ?? [];
+        $data    = $result['data'] ?? [];
+        $details = $data['profile'] ?? $data['details'] ?? [];
 
         $name      = trim((string) ($details['display_name'] ?? $details['name'] ?? '')) ?: 'Meu Cartão';
         $shortName = mb_substr($name, 0, 12);
