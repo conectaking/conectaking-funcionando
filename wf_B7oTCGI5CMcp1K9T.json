@@ -4,7 +4,7 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nif (body.senderId) {\n  return [{ json: {\n    adminId: '0',\n    senderId: String(body.senderId),\n    chatId: String(body.senderId),\n    firstName: 'cliente',\n    text: String(body.text || '').trim() || '[mensagem sem texto]',\n    hadVoice: false,\n    fileId: '',\n    voiceError: ''\n  } }];\n}\nreturn [{ json: {\n  adminId: '0',\n  senderId: '',\n  chatId: '',\n  firstName: 'cliente',\n  text: '[mensagem sem texto]',\n  hadVoice: false,\n  fileId: '',\n  voiceError: ''\n} }];"
+        "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nif (body.senderId) {\n  const text = String(body.text || '').trim();\n  const fileId = String(body.fileId || '').trim();\n  const hadVoice = !text && !!fileId;\n  return [{ json: {\n    adminId: '0',\n    senderId: String(body.senderId),\n    chatId: String(body.senderId),\n    firstName: body.firstName || 'cliente',\n    text: text || (hadVoice ? '' : '[mensagem sem texto]'),\n    hadVoice,\n    fileId,\n    voiceError: ''\n  } }];\n}\nreturn [{ json: {\n  adminId: '0',\n  senderId: '',\n  chatId: '',\n  firstName: 'cliente',\n  text: '[mensagem sem texto]',\n  hadVoice: false,\n  fileId: '',\n  voiceError: ''\n} }];"
       },
       "id": "a0725258-f9c4-40a0-846b-c5aaebe359f5",
       "name": "Preparar (texto/voz)",
