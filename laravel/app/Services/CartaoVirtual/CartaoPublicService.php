@@ -330,7 +330,16 @@ class CartaoPublicService
             $type = (string) ($item['item_type'] ?? '');
 
             // Tipos removidos do produto
-            if (in_array($type, ['banner_carousel', 'agenda', 'contract'], true)) {
+            if (in_array($type, ['banner_carousel', 'contract'], true)) {
+                continue;
+            }
+
+            if ($type === 'agenda' || $type === 'booking') {
+                $item['url'] = '/' . ($profile->profile_slug ?? '') . '/agendar';
+                if (empty($item['title'])) {
+                    $item['title'] = '📅 Agendar Horário';
+                }
+                $out[] = $item;
                 continue;
             }
 

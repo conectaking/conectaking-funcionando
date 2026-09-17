@@ -80,6 +80,11 @@ Route::get('/card/{slug}', [CardPublicController::class, 'show'])->where('slug',
 Route::get('/api/card/{slug}', [CardPublicController::class, 'api'])->where('slug', $cardSlug);
 // PWA Manifest dinâmico por cartão
 Route::get('/{slug}/manifest.json', [CardPwaController::class, 'manifest'])->where('slug', $cardSlug);
+// King Agenda — Agendamento Online Público
+Route::get('/{slug}/agendar', [\App\Http\Controllers\Booking\BookingPublicController::class, 'publicPage'])->where('slug', $cardSlug);
+Route::get('/api/booking/public/{slug}/info', [\App\Http\Controllers\Booking\BookingPublicController::class, 'getPublicInfo'])->where('slug', $cardSlug);
+Route::get('/api/booking/public/{slug}/slots', [\App\Http\Controllers\Booking\BookingPublicController::class, 'getSlots'])->where('slug', $cardSlug);
+Route::post('/api/booking/public/{slug}/book', [\App\Http\Controllers\Booking\BookingPublicController::class, 'book'])->where('slug', $cardSlug)->middleware('throttle:30,1');
 Route::get('/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])->where('itemId', '[0-9]+');
 Route::get('/api/bible/verse-of-day', [BiblePublicController::class, 'verseOfDay']);
 Route::get('/api/bible/books', [BiblePublicController::class, 'books']);
@@ -158,6 +163,20 @@ Route::middleware('jwt')->group(function () {
     Route::put('/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
     Route::patch('/api/profile/items/{id}', [ProfileItemsController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/api/profile/items/{id}', [ProfileItemsController::class, 'destroy'])->where('id', '[0-9]+');
+
+    // King Agenda — APIs Administrativas
+    Route::get('/api/booking/settings', [\App\Http\Controllers\Booking\BookingAdminController::class, 'getSettings']);
+    Route::put('/api/booking/settings', [\App\Http\Controllers\Booking\BookingAdminController::class, 'saveSettings']);
+    Route::get('/api/booking/services', [\App\Http\Controllers\Booking\BookingAdminController::class, 'getServices']);
+    Route::post('/api/booking/services', [\App\Http\Controllers\Booking\BookingAdminController::class, 'createService']);
+    Route::put('/api/booking/services/{id}', [\App\Http\Controllers\Booking\BookingAdminController::class, 'updateService'])->where('id', '[0-9]+');
+    Route::delete('/api/booking/services/{id}', [\App\Http\Controllers\Booking\BookingAdminController::class, 'deleteService'])->where('id', '[0-9]+');
+    Route::get('/api/booking/professionals', [\App\Http\Controllers\Booking\BookingAdminController::class, 'getProfessionals']);
+    Route::post('/api/booking/professionals', [\App\Http\Controllers\Booking\BookingAdminController::class, 'createProfessional']);
+    Route::put('/api/booking/professionals/{id}', [\App\Http\Controllers\Booking\BookingAdminController::class, 'updateProfessional'])->where('id', '[0-9]+');
+    Route::delete('/api/booking/professionals/{id}', [\App\Http\Controllers\Booking\BookingAdminController::class, 'deleteProfessional'])->where('id', '[0-9]+');
+    Route::get('/api/booking/appointments', [\App\Http\Controllers\Booking\BookingAdminController::class, 'getAppointments']);
+    Route::put('/api/booking/appointments/{id}/status', [\App\Http\Controllers\Booking\BookingAdminController::class, 'updateAppointmentStatus'])->where('id', '[0-9]+');
 });
 
 Route::middleware(['admin', 'audit'])->group(function () {
@@ -888,6 +907,7 @@ $bladePages = [
     'kingDocs', 'kingDocsShare', 'kingForms',
     'documentos-preview', 'documentos-ver', 'orcamentos', 'recibos-orcamentos',
     'dashboard-recibos-orcamentos', 'clientes-recibos-orcamentos', 'configuracoes-recibos-orcamentos',
+    'dashboard-agenda',
     'termos', 'privacidade', 'index', 'bible', 'bibliaking',
     'admin-devocionais-365',
     'responsesList', 'conviteEdit', 'arquetipo-resultados', 'business',
@@ -899,6 +919,8 @@ if (! config('conectaking.finance_standby')) {
     Route::get('/zerar-mes.html', fn () => redirect('/dashboard', 302));
 }
 
+Route::get('/agenda', fn () => redirect('/dashboard-agenda', 301));
+Route::get('/agenda.html', fn () => redirect('/dashboard-agenda', 301));
 Route::get('/dashboard-finance', fn () => redirect('/dashboard#finance', 301));
 Route::get('/dashboard-finance.html', fn () => redirect('/dashboard#finance', 301));
 Route::get('/finance', fn () => redirect('/dashboard#finance', 301));
