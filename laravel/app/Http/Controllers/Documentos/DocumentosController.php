@@ -490,6 +490,26 @@ class DocumentosController extends Controller
             ->header('X-Conecta-Engine', 'laravel');
     }
 
+    public function whatsappLink(Request $request, string $id)
+    {
+        $r = $this->documentos->getWhatsAppShare(
+            (string) $request->attributes->get('auth_user_id'),
+            (int) $id
+        );
+
+        return $this->json($r);
+    }
+
+    public function marcarPago(Request $request, string $id)
+    {
+        $r = $this->documentos->marcarPago(
+            (string) $request->attributes->get('auth_user_id'),
+            (int) $id
+        );
+
+        return $this->json($r);
+    }
+
     /**
      * @param  array{status:int, body?:mixed, pdf?:string, filename?:string}  $r
      */

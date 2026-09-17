@@ -134,17 +134,80 @@ import '@mod/js/ck-auth-gate.js';
         row.dataset.id = doc.id;
         row.dataset.tipo = tipo;
         var editUrl = 'recibos-orcamentos?id=' + encodeURIComponent(doc.id);
+        var statusPago = doc.status === 'pago';
+        var statusBadge = statusPago
+            ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 ml-2">PAGO</span>'
+            : '';
+        var pagarBtn = (!statusPago && tipo === 'recibo')
+            ? '<button type="button" class="btn-marcar-pago-row p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Marcar como Pago e lançar no Financeiro" data-id="' + escapeHtmlAttr(doc.id) + '"><span class="material-icons-outlined text-lg">paid</span></button>'
+            : '';
+
         row.innerHTML = '<label class="flex-shrink-0 cursor-pointer"><input type="checkbox" class="doc-check rounded border-slate-300 text-primary focus:ring-primary" data-id="' + escapeHtmlAttr(doc.id) + '"/></label>' +
             '<div class="flex-1 flex items-center gap-2 min-w-0">' +
             '<a href="' + editUrl + '" class="flex-1 flex items-center justify-between no-underline text-inherit min-w-0 gap-2">' +
-            '<div class="min-w-0"><span class="font-medium dark:text-white">' + escapeHtml(titulo) + '</span><span class="text-sm ml-2 ' + (tipo === 'recibo' ? 'text-green-500' : 'text-blue-500') + '">' + label + '</span></div>' +
+            '<div class="min-w-0 flex items-center"><span class="font-medium dark:text-white truncate">' + escapeHtml(titulo) + '</span><span class="text-xs ml-2 flex-shrink-0 ' + (tipo === 'recibo' ? 'text-green-500' : 'text-blue-500') + '">' + label + '</span>' + statusBadge + '</div>' +
             '<span class="text-slate-500 text-sm flex-shrink-0">' + escapeHtml(dataDoc) + '</span></a>' +
             '<div class="flex items-center gap-0.5 flex-shrink-0">' +
+            pagarBtn +
+            '<button type="button" class="btn-whatsapp-row p-2 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors" title="Enviar no WhatsApp" data-id="' + escapeHtmlAttr(doc.id) + '"><span class="material-icons-outlined text-lg">chat</span></button>' +
             '<a href="' + editUrl + '" class="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors" title="Editar"><span class="material-icons-outlined text-lg">edit</span></a>' +
             '<button type="button" class="btn-duplicar p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors" title="Duplicar" data-id="' + escapeHtmlAttr(doc.id) + '"><span class="material-icons-outlined text-lg">content_copy</span></button>' +
             '<button type="button" class="btn-excluir p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors" title="Excluir" data-id="' + escapeHtmlAttr(doc.id) + '"><span class="material-icons-outlined text-lg">delete</span></button>' +
             '</div></div>';
         lista.appendChild(row);
+
+        var btnWa = row.querySelector('.btn-whatsapp-row');
+        if (btnWa) {
+            btnWa.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var idWa = this.dataset.id;
+                fetch(API + '/' + idWa + '/whatsapp-link', { credentials: 'include', headers: getAuthHeaders() })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        var d = (res && res.data) || res;
+                        if (d && d.whatsapp_url) {
+                            window.open(d.whatsapp_url, '_blank', 'noopener');
+                        } else {
+                            alert('Não foi possível gerar o link do WhatsApp.');
+                        }
+                    })
+                    .catch(function() { alert('Erro ao gerar link do WhatsApp.'); });
+            };
+        }
+
+        var btnPagarRow = row.querySelector('.btn-marcar-pago-row');
+        if (btnPagarRow) {
+            btnPagarRow.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var idPag = this.dataset.id;
+                if (!confirm('Deseja marcar este recibo como PAGO e criar lançamento na Gestão Financeira?')) return;
+                btnPagarRow.disabled = true;
+                fetch(API + '/' + idPag + '/marcar-pago', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res && res.success) {
+                        alert(res.message || 'Marcado como pago!');
+                        doc.status = 'pago';
+                        var oldRow = row;
+                        appendDocRow(doc);
+                        oldRow.replaceWith(lista.lastChild);
+                    } else {
+                        alert((res && res.message) || 'Erro ao processar.');
+                        btnPagarRow.disabled = false;
+                    }
+                })
+                .catch(function() {
+                    alert('Erro ao comunicar com o servidor.');
+                    btnPagarRow.disabled = false;
+                });
+            };
+        }
         row.querySelector('.btn-duplicar').onclick = function(e) {
             e.preventDefault();
             e.stopPropagation();

@@ -915,20 +915,67 @@ import '@mod/js/ck-csrf.js';
         if (tituloInp) tituloInp.value = doc.titulo || '';
         document.getElementById('btn-duplicar').classList.toggle('hidden', !docId);
         var isOrc = (doc.tipo || '').toLowerCase() === 'orcamento';
-        document.getElementById('btn-converter-recibo').classList.toggle('hidden', !docId || !isOrc);
+        var btnMarcarPago = document.getElementById('btn-marcar-pago');
+        if (btnMarcarPago) {
+            btnMarcarPago.classList.toggle('hidden', !docId || isOrc);
+            if (doc.status === 'pago') {
+                btnMarcarPago.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white font-medium text-sm transition-all cursor-default';
+                btnMarcarPago.innerHTML = '<span class="material-icons-outlined text-sm">check_circle</span> Pago';
+                btnMarcarPago.onclick = null;
+            } else {
+                btnMarcarPago.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600/20 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-600/30 transition-all font-medium text-sm';
+                btnMarcarPago.innerHTML = '<span class="material-icons-outlined text-sm">paid</span> Marcar como Pago';
+                btnMarcarPago.onclick = function() {
+                    if (!confirm('Deseja marcar este recibo como PAGO e gerar o lançamento na Gestão Financeira?')) return;
+                    btnMarcarPago.disabled = true;
+                    btnMarcarPago.textContent = 'Processando...';
+                    fetch('/api/documentos/' + docId + '/marcar-pago', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: typeof getAuthHeaders === 'function' ? getAuthHeaders({ 'Content-Type': 'application/json' }) : { 'Content-Type': 'application/json' }
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res && res.success) {
+                            alert(res.message || 'Recibo marcado como pago e integrado ao financeiro!');
+                            doc.status = 'pago';
+                            setFormDoc(doc);
+                        } else {
+                            alert((res && res.message) || 'Erro ao marcar como pago.');
+                            btnMarcarPago.disabled = false;
+                            btnMarcarPago.innerHTML = '<span class="material-icons-outlined text-sm">paid</span> Marcar como Pago';
+                        }
+                    })
+                    .catch(function() {
+                        alert('Erro ao comunicar com o servidor.');
+                        btnMarcarPago.disabled = false;
+                        btnMarcarPago.innerHTML = '<span class="material-icons-outlined text-sm">paid</span> Marcar como Pago';
+                    });
+                };
+            }
+        }
+
+        var e = doc.emitente_json || {};
+        var c = doc.cliente_json || {};
+
         if (linkToken) {
             document.getElementById('link-compartilhar-wrap').classList.remove('hidden');
             var baseUrl = (typeof window !== 'undefined' && (window.API_BASE || window.CONECTAKING_API_BASE)) ? (window.API_BASE || window.CONECTAKING_API_BASE).replace(/\/$/, '') : location.origin;
-            var shareUrl = baseUrl + '/documentos-preview?token=' + encodeURIComponent(linkToken);
+            var shareUrl = baseUrl + '/documentos-ver?token=' + encodeURIComponent(linkToken);
             document.getElementById('btn-copiar-link').onclick = function() {
                 navigator.clipboard.writeText(shareUrl).then(function() { alert('Link copiado!'); }).catch(function() {});
             };
-            document.getElementById('btn-whatsapp').href = 'https://wa.me/?text=' + encodeURIComponent('Confira seu documento: ' + shareUrl);
+            var clientPhone = String(c.contato || c.telefone || '').replace(/\D/g, '');
+            if (clientPhone.length >= 10 && clientPhone.length <= 11) clientPhone = '55' + clientPhone;
+            var saudacao = c.nome ? 'Olá, ' + c.nome + '!' : 'Olá!';
+            var docTipo = isOrc ? 'Orçamento' : 'Recibo';
+            var docNum = doc.numero_sequencial || doc.id || '1';
+            var msg = saudacao + ' Segue o link do seu *' + docTipo + ' #' + docNum + '* gerado no Conecta King:\n\n' + shareUrl + '\n\nQualquer dúvida, estou à disposição!';
+            var waUrl = clientPhone ? ('https://api.whatsapp.com/send?phone=' + clientPhone + '&text=' + encodeURIComponent(msg)) : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg));
+            document.getElementById('btn-whatsapp').href = waUrl;
         } else {
             document.getElementById('link-compartilhar-wrap').classList.add('hidden');
         }
-        var e = doc.emitente_json || {};
-        var c = doc.cliente_json || {};
         document.querySelector('input[name="emitente_nome"]').value = e.nome || '';
         document.querySelector('input[name="emitente_cpf"]').value = e.cpf_cnpj || '';
         document.querySelector('input[name="emitente_contato"]').value = e.contato || '';

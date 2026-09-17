@@ -90,7 +90,16 @@ import '@css/pages/documentos-ver.css';
       document.getElementById('doc-total').textContent = formatMoney(total);
 
       var shareUrl = window.location.href;
-      document.getElementById('btn-whatsapp').setAttribute('href', 'https://wa.me/?text=' + encodeURIComponent('Revise seu ' + (d.tipo === 'orcamento' ? 'oramento' : 'recibo') + ' aqui: ' + shareUrl));
+      var clientPhone = String(cliente.contato || cliente.telefone || '').replace(/\D/g, '');
+      if (clientPhone.length >= 10 && clientPhone.length <= 11) clientPhone = '55' + clientPhone;
+      var docTipo = d.tipo === 'orcamento' ? 'Orçamento' : 'Recibo';
+      var docNum = d.numero_sequencial || d.id || '1';
+      var saudacao = cliente.nome ? 'Olá, ' + cliente.nome + '!' : 'Olá!';
+      var msg = saudacao + ' Segue o seu ' + docTipo + ' #' + docNum + ' emitido pelo Conecta King:\n\n' + shareUrl + '\n\nQualquer dúvida, estou à disposição!';
+      var waUrl = clientPhone
+        ? ('https://api.whatsapp.com/send?phone=' + clientPhone + '&text=' + encodeURIComponent(msg))
+        : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg));
+      document.getElementById('btn-whatsapp').setAttribute('href', waUrl);
     })
     .catch(function() {
       document.getElementById('loading').style.display = 'none';

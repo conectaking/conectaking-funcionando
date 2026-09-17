@@ -87,6 +87,10 @@
                     <span class="material-icons-outlined text-sm">swap_horiz</span>
                     <span class="text-sm font-medium">Converter em Recibo</span>
                 </button>
+                <button type="button" id="btn-marcar-pago" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600/20 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-600/30 transition-all hidden" title="Marcar como Pago e lançar na Gestão Financeira">
+                    <span class="material-icons-outlined text-sm">paid</span>
+                    <span class="text-sm font-medium" id="btn-marcar-pago-text">Marcar como Pago</span>
+                </button>
                 <div id="link-compartilhar-wrap" class="flex items-center gap-2 hidden">
                     <button type="button" id="btn-copiar-link" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all">
                         <span class="material-icons-outlined text-sm">link</span>

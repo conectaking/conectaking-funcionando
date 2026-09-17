@@ -248,6 +248,188 @@ class DocumentosService
     }
 
     /**
+     * Gera link e mensagem formatada para envio direto no WhatsApp do cliente.
+     *
+     * @return array{status:int, body:mixed}
+     */
+    public function getWhatsAppShare(string $userId, int $id): array
+    {
+        if ($id < 1) {
+            return $this->fail('ID inválido', 400);
+        }
+        $doc = $this->fetchById($id, $userId);
+        if (! $doc) {
+            return $this->fail('Documento não encontrado', 404);
+        }
+
+        $isOrc = ($doc['tipo'] ?? '') === 'orcamento';
+        $tipoLabel = $isOrc ? 'Orçamento' : 'Recibo';
+        $numero = $doc['numero_sequencial'] ?? $doc['id'] ?? '1';
+        $cliente = is_array($doc['cliente_json'] ?? null) ? $doc['cliente_json'] : [];
+        $clienteNome = trim((string) ($cliente['nome'] ?? ''));
+        $clienteContato = trim((string) ($cliente['contato'] ?? $cliente['telefone'] ?? ''));
+
+        // Limpa telefone deixando apenas números
+        $digits = preg_replace('/\D/', '', $clienteContato);
+        if (strlen($digits) >= 10 && strlen($digits) <= 11) {
+            $digits = '55' . $digits;
+        }
+
+        $linkToken = (string) ($doc['link_token'] ?? '');
+        $baseUrl = rtrim((string) env('APP_URL', 'https://cnking.bio'), '/');
+        $shareUrl = $baseUrl . '/documentos-ver?token=' . urlencode($linkToken);
+
+        $saudacao = $clienteNome !== '' ? "Olá, {$clienteNome}!" : "Olá!";
+        $texto = "{$saudacao} Segue o link do seu *{$tipoLabel} nº {$numero}* emitido pelo Conecta King:\n\n{$shareUrl}\n\nQualquer dúvida, estou à disposição!";
+
+        $whatsappUrl = $digits !== ''
+            ? "https://api.whatsapp.com/send?phone={$digits}&text=" . rawurlencode($texto)
+            : "https://api.whatsapp.com/send?text=" . rawurlencode($texto);
+
+        return $this->ok([
+            'documento_id' => $id,
+            'tipo' => $doc['tipo'],
+            'numero' => $numero,
+            'cliente_nome' => $clienteNome,
+            'cliente_telefone' => $clienteContato,
+            'telefone_destinatario' => $digits,
+            'texto_mensagem' => $texto,
+            'share_url' => $shareUrl,
+            'whatsapp_url' => $whatsappUrl,
+        ]);
+    }
+
+    /**
+     * Marca o documento como PAGO e gera lançamento automático na Gestão Financeira.
+     *
+     * @return array{status:int, body:mixed}
+     */
+    public function marcarPago(string $userId, int $id): array
+    {
+        if ($id < 1) {
+            return $this->fail('ID inválido', 400);
+        }
+        $doc = $this->fetchById($id, $userId);
+        if (! $doc) {
+            return $this->fail('Documento não encontrado', 404);
+        }
+
+        // Calcula total dos itens
+        $itens = is_array($doc['itens_json'] ?? null) ? $doc['itens_json'] : [];
+        $total = 0.0;
+        foreach ($itens as $item) {
+            $val = (float) ($item['valor'] ?? 0);
+            if ($val > 0) {
+                $total += $val;
+            }
+        }
+        if ($total <= 0 && is_array($doc['anexos_json'] ?? null)) {
+            foreach ($doc['anexos_json'] as $anexo) {
+                $total += (float) ($anexo['valor'] ?? 0);
+            }
+        }
+
+        $financeTransactionId = $doc['finance_transaction_id'] ?? null;
+        $createdTx = null;
+
+        // Se ainda não tem transação vinculada e valor > 0, cria no Financeiro
+        if (! $financeTransactionId && $total > 0 && SchemaMeta::hasTable('finance_transactions')) {
+            $profileId = null;
+            if (SchemaMeta::hasTable('finance_profiles')) {
+                $prof = DB::selectOne(
+                    'SELECT id FROM finance_profiles WHERE user_id = ? AND is_active = TRUE ORDER BY is_primary DESC, id ASC LIMIT 1',
+                    [$userId]
+                );
+                $profileId = $prof ? (int) $prof->id : null;
+            }
+
+            $accountId = null;
+            if (SchemaMeta::hasTable('finance_accounts')) {
+                $acc = DB::selectOne(
+                    'SELECT id FROM finance_accounts WHERE user_id = ? AND is_active = TRUE ORDER BY is_default DESC, id ASC LIMIT 1',
+                    [$userId]
+                );
+                $accountId = $acc ? (int) $acc->id : null;
+            }
+
+            $categoryId = null;
+            if (SchemaMeta::hasTable('finance_categories')) {
+                $cat = DB::selectOne(
+                    "SELECT id FROM finance_categories WHERE user_id = ? AND type = 'INCOME' AND is_active = TRUE LIMIT 1",
+                    [$userId]
+                );
+                $categoryId = $cat ? (int) $cat->id : null;
+            }
+
+            $tipoDoc = ($doc['tipo'] ?? '') === 'orcamento' ? 'Orçamento' : 'Recibo';
+            $num = $doc['numero_sequencial'] ?? $doc['id'] ?? '1';
+            $titulo = trim((string) ($doc['titulo'] ?? ''));
+            $desc = "Recebimento: {$tipoDoc} #{$num}" . ($titulo !== '' ? " - {$titulo}" : '');
+            $desc = mb_substr($desc, 0, 255);
+
+            $cliente = is_array($doc['cliente_json'] ?? null) ? $doc['cliente_json'] : [];
+            $clienteNome = mb_substr(trim((string) ($cliente['nome'] ?? '')), 0, 100) ?: null;
+
+            $txDate = ! empty($doc['data_documento']) ? substr((string) $doc['data_documento'], 0, 10) : date('Y-m-d');
+
+            $txRow = DB::selectOne(
+                'INSERT INTO finance_transactions (
+                    user_id, type, amount, description, transaction_date,
+                    category_id, account_id, status, client_name, notes, profile_id, created_at, updated_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                 RETURNING id, amount, description, status, transaction_date',
+                [
+                    $userId,
+                    'INCOME',
+                    $total,
+                    $desc,
+                    $txDate,
+                    $categoryId,
+                    $accountId,
+                    'PAID',
+                    $clienteNome,
+                    "Lançamento automático referente ao {$tipoDoc} #{$num} emitido no King Docs",
+                    $profileId,
+                ]
+            );
+
+            if ($txRow) {
+                $financeTransactionId = (int) $txRow->id;
+                $createdTx = (array) $txRow;
+
+                // Atualiza o saldo da conta associada
+                if ($accountId) {
+                    try {
+                        DB::update(
+                            'UPDATE finance_accounts SET current_balance = current_balance + ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
+                            [$total, $accountId, $userId]
+                        );
+                    } catch (\Throwable) {
+                    }
+                }
+            }
+        }
+
+        // Atualiza o status do documento
+        if (SchemaMeta::hasColumn('documentos', 'status')) {
+            DB::update(
+                'UPDATE documentos SET status = ?, finance_transaction_id = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
+                ['pago', $financeTransactionId, $id, $userId]
+            );
+        }
+
+        $docAtualizado = $this->fetchById($id, $userId);
+
+        return $this->ok([
+            'documento' => $docAtualizado,
+            'status' => 'pago',
+            'valor_total' => $total,
+            'finance_transaction_id' => $financeTransactionId,
+            'finance_transaction' => $createdTx,
+        ], 'Documento marcado como PAGO e integrado à Gestão Financeira com sucesso!');
+    }
+
+    /**
      * @return array{status:int, body:mixed}
      */
     public function getSettings(string $userId): array
@@ -913,7 +1095,7 @@ class DocumentosService
         $values = [];
         $allowed = [
             'titulo', 'emitente_json', 'cliente_json', 'itens_json', 'anexos_json',
-            'observacoes', 'condicoes_pagamento', 'data_documento', 'validade_ate',
+            'observacoes', 'condicoes_pagamento', 'data_documento', 'validade_ate', 'status',
         ];
         foreach ($allowed as $key) {
             if (! array_key_exists($key, $data)) {

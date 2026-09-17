@@ -685,6 +685,8 @@ Route::middleware('jwt')->group(function () use ($doc) {
         Route::post('/api/documentos/{id}/nota-fiscal', [$doc, 'uploadNotaFiscalItem'])->whereNumber('id');
         Route::delete('/api/documentos/{id}/nota-fiscal', [$doc, 'removeNotaFiscalItem'])->whereNumber('id');
         Route::post('/api/documentos/{id}/processar-comprovante', [$doc, 'processarComprovante'])->whereNumber('id');
+        Route::get('/api/documentos/{id}/whatsapp-link', [$doc, 'whatsappLink'])->whereNumber('id');
+        Route::post('/api/documentos/{id}/marcar-pago', [$doc, 'marcarPago'])->whereNumber('id');
     });
 
 // ---------- King Docs ----------
