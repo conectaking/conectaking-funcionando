@@ -39,7 +39,7 @@ class KingSelectionAdminService
     /**
      * @return array{status:int, body:array<string,mixed>}
      */
-    public function listGalleries(string $userId, mixed $profileItemIdRaw): array
+    public function listGalleries(string $userId, mixed $profileItemIdRaw, bool $trashed = false): array
     {
         $profileItemId = (int) $profileItemIdRaw;
         if ($profileItemId < 1) {
@@ -49,10 +49,25 @@ class KingSelectionAdminService
             return ['status' => 403, 'body' => ['message' => 'Sem permissão para este módulo.']];
         }
 
-        $galleries = DB::select(
-            'SELECT * FROM king_galleries WHERE profile_item_id = ? ORDER BY id DESC',
-            [$profileItemId]
-        );
+        $hasDel = SchemaMeta::hasColumn('king_galleries', 'deleted_at');
+        if ($trashed) {
+            $galleries = $hasDel
+                ? DB::select(
+                    'SELECT * FROM king_galleries WHERE profile_item_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC, id DESC',
+                    [$profileItemId]
+                )
+                : [];
+        } else {
+            $galleries = $hasDel
+                ? DB::select(
+                    'SELECT * FROM king_galleries WHERE profile_item_id = ? AND deleted_at IS NULL ORDER BY id DESC',
+                    [$profileItemId]
+                )
+                : DB::select(
+                    'SELECT * FROM king_galleries WHERE profile_item_id = ? ORDER BY id DESC',
+                    [$profileItemId]
+                );
+        }
         $ids = array_map(static fn ($g) => (int) $g->id, $galleries);
         $selectionStats = [];
         $statusAgg = [];
@@ -150,6 +165,8 @@ class KingSelectionAdminService
             $row['selected_count'] = $selectionStats[$gid]['selected_count'] ?? 0;
             $row['feedback_cliente'] = $selectionStats[$gid]['feedback_cliente'] ?? null;
             $row['photos_count'] = $photosCountByGallery[$gid] ?? 0;
+            $row['is_trashed'] = ! empty($g->deleted_at);
+            $row['deleted_at'] = $g->deleted_at ?? null;
             $payload[] = $row;
         }
 
@@ -159,6 +176,7 @@ class KingSelectionAdminService
             'success' => true,
             'share_base_url' => $shareBase,
             'galleries' => $payload,
+            'trashed_view' => $trashed,
         ], static fn ($v) => $v !== null)];
     }
 
@@ -804,7 +822,7 @@ class KingSelectionAdminService
     /**
      * @return array{status:int, body:array<string,mixed>}
      */
-    public function deleteGallery(string $userId, int $galleryId): array
+    public function deleteGallery(string $userId, int $galleryId, bool $force = false): array
     {
         if ($galleryId < 1) {
             return ['status' => 400, 'body' => ['message' => 'galleryId inválido']];
@@ -812,6 +830,21 @@ class KingSelectionAdminService
         if (! $this->ownedGallery($userId, $galleryId)) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
         }
+
+        // Soft delete: retém na lixeira por segurança, a menos que force=true
+        if (! $force && SchemaMeta::hasColumn('king_galleries', 'deleted_at')) {
+            DB::update('UPDATE king_galleries SET deleted_at = NOW(), updated_at = NOW() WHERE id = ?', [$galleryId]);
+
+            return [
+                'status' => 200,
+                'body' => [
+                    'success' => true,
+                    'trashed' => true,
+                    'message' => 'Galeria movida para a lixeira com sucesso (retida com segurança por até 30 dias).',
+                ],
+            ];
+        }
+
         try {
             DB::delete('DELETE FROM king_photos WHERE gallery_id = ?', [$galleryId]);
         } catch (\Throwable) {
@@ -824,7 +857,27 @@ class KingSelectionAdminService
         }
         DB::delete('DELETE FROM king_galleries WHERE id = ?', [$galleryId]);
 
-        return ['status' => 200, 'body' => ['success' => true]];
+        return ['status' => 200, 'body' => ['success' => true, 'purged' => true]];
+    }
+
+    /**
+     * Restaura uma galeria da lixeira.
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function restoreGallery(string $userId, int $galleryId): array
+    {
+        if ($galleryId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'galleryId inválido']];
+        }
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
+        }
+        if (SchemaMeta::hasColumn('king_galleries', 'deleted_at')) {
+            DB::update('UPDATE king_galleries SET deleted_at = NULL, updated_at = NOW() WHERE id = ?', [$galleryId]);
+        }
+
+        return ['status' => 200, 'body' => ['success' => true, 'message' => 'Galeria restaurada com sucesso!']];
     }
 
     /**

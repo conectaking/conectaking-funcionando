@@ -391,6 +391,9 @@ Route::middleware('jwt')->group(function () {
         Route::delete('/api/king-selection/galleries/{id}', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'destroy'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:30,1');
+        Route::post('/api/king-selection/galleries/{id}/restore', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'restore'])
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:30,1');
         Route::post('/api/king-selection/galleries/{id}/photos', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'addPhoto'])
         ->where('id', '[0-9]+')
         ->middleware('throttle:120,1');

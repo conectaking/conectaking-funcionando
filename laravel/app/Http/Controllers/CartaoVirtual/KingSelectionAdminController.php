@@ -26,9 +26,11 @@ class KingSelectionAdminController extends Controller
 
     public function index(Request $request)
     {
+        $trashed = filter_var($request->query('trashed', false), FILTER_VALIDATE_BOOLEAN);
         $r = $this->admin->listGalleries(
             (string) $request->attributes->get('auth_user_id'),
-            $request->query('profileItemId') ?? $request->query('itemId') ?? $request->query('itemid')
+            $request->query('profileItemId') ?? $request->query('itemId') ?? $request->query('itemid'),
+            $trashed
         );
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
@@ -73,7 +75,19 @@ class KingSelectionAdminController extends Controller
 
     public function destroy(Request $request, string $id)
     {
+        $force = filter_var($request->query('force', $request->input('force', false)), FILTER_VALIDATE_BOOLEAN);
         $r = $this->admin->deleteGallery(
+            (string) $request->attributes->get('auth_user_id'),
+            (int) $id,
+            $force
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function restore(Request $request, string $id)
+    {
+        $r = $this->admin->restoreGallery(
             (string) $request->attributes->get('auth_user_id'),
             (int) $id
         );

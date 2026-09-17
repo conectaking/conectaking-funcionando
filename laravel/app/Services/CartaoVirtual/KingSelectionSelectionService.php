@@ -17,10 +17,17 @@ class KingSelectionSelectionService
     private const DEFAULT_THANK_YOU =
         'Obrigado, {{nome_cliente}}! Sua seleção foi recebida com sucesso. Você escolheu {{quantidade}} foto(s). Nosso retratista {{nome}} agradece pela confiança e pelo carinho.';
 
+    private ?KingSelectionNotificationService $notifier = null;
+
     public function __construct(
         private readonly JwtService $jwt,
         private readonly KingSelectionPasswordCrypto $passwordCrypto,
     ) {
+    }
+
+    public function setNotificationService(?KingSelectionNotificationService $notifier): void
+    {
+        $this->notifier = $notifier;
     }
 
     /**
@@ -384,9 +391,19 @@ class KingSelectionSelectionService
             $count = $selCount;
 
             $clientDisplayName = null;
+            $clientPhone = null;
+            $clientEmail = null;
             if ($cid && $hasClients) {
-                $cn = DB::selectOne('SELECT nome FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1', [$cid, $galleryId]);
-                $clientDisplayName = $cn && trim((string) ($cn->nome ?? '')) !== '' ? trim((string) $cn->nome) : null;
+                $cn = DB::selectOne('SELECT nome, email, telefone FROM king_gallery_clients WHERE id = ? AND gallery_id = ? LIMIT 1', [$cid, $galleryId]);
+                if ($cn) {
+                    $clientDisplayName = trim((string) ($cn->nome ?? '')) !== '' ? trim((string) $cn->nome) : null;
+                    $clientPhone = $cn->telefone ? trim((string) $cn->telefone) : null;
+                    $clientEmail = $cn->email ? trim((string) $cn->email) : null;
+                }
+            }
+
+            if ($this->notifier) {
+                $this->notifier->notifySelectionFinalized($galleryId, $clientDisplayName, $clientPhone, $clientEmail, $count, $feedback);
             }
 
             $thanks = $this->thankYouPayload($galleryId);
@@ -692,6 +709,10 @@ class KingSelectionSelectionService
             'tyh' => true,
         ], '14d');
 
+        if ($this->notifier) {
+            $this->notifier->notifySelectionFinalized($galleryId, $nome, $telefone, $emailNorm, $count, $feedback);
+        }
+
         return ['status' => 200, 'body' => [
             'success' => true,
             'token' => $token,
@@ -788,18 +809,19 @@ class KingSelectionSelectionService
         if ($galleryId < 1) {
             return null;
         }
+        $delClause = SchemaMeta::hasColumn('king_galleries', 'deleted_at') ? ' AND deleted_at IS NULL' : '';
         try {
             return DB::selectOne(
                 'SELECT id, status, access_mode, allow_self_signup, promo_enabled, nome_projeto,
                         thank_you_title, thank_you_message, thank_you_image_url, thank_you_photographer_name,
                         total_fotos_contratadas, min_selections
-                 FROM king_galleries WHERE id = ? LIMIT 1',
+                 FROM king_galleries WHERE id = ?' . $delClause . ' LIMIT 1',
                 [$galleryId]
             );
         } catch (\Throwable $e) {
             Log::warning('ks.loadGalleryRow', ['error' => $e->getMessage()]);
 
-            return DB::selectOne('SELECT id, status FROM king_galleries WHERE id = ? LIMIT 1', [$galleryId]);
+            return DB::selectOne('SELECT id, status FROM king_galleries WHERE id = ?' . $delClause . ' LIMIT 1', [$galleryId]);
         }
     }
 
