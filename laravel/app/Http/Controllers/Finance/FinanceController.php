@@ -327,6 +327,19 @@ class FinanceController extends Controller
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
 
+    public function cashFlow(Request $request)
+    {
+        $pid = $request->query('profile_id');
+        $months = (int) ($request->query('months') ?: 6);
+        $r = $this->finance->cashFlow(
+            (string) $request->attributes->get('auth_user_id'),
+            ($pid !== null && $pid !== '' && $pid !== 'undefined') ? (int) $pid : null,
+            $months
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
     public function transfer(Request $request)
     {
         $r = $this->finance->transfer((string) $request->attributes->get('auth_user_id'), $request->all());

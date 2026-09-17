@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $chapterData['bookName'] }} {{ $chapterData['chapter'] }} — Bíblia</title>
-    
+    <title>{{ $chapterData['bookName'] }} {{ $chapterData['chapter'] }} — Bíblia King</title>
+    <meta name="description" content="{{ $chapterData['bookName'] }} capítulo {{ $chapterData['chapter'] }} — Leia a Bíblia no Conecta King">
     @vite(['resources/css/fonts.css', 'resources/js/pages/cartao-bible-reader.js'])
 </head>
 <body>
@@ -28,8 +28,22 @@
         </details>
     @endif
 
+    <div class="reader-toolbar">
+        {{-- Controles de tema --}}
+        <div class="toolbar-group theme-group" aria-label="Tema de leitura">
+            <button type="button" class="btn-theme" id="btn-theme-dark" data-theme="dark" aria-label="Tema escuro" title="Escuro">🌙</button>
+            <button type="button" class="btn-theme" id="btn-theme-light" data-theme="light" aria-label="Tema claro" title="Claro">☀️</button>
+            <button type="button" class="btn-theme" id="btn-theme-sepia" data-theme="sepia" aria-label="Tema sépia" title="Sépia">📜</button>
+        </div>
+        {{-- Controles de fonte --}}
+        <div class="toolbar-group font-group" aria-label="Tamanho da fonte">
+            <button type="button" class="btn-font" id="btn-font-sm" aria-label="Diminuir fonte">A−</button>
+            <button type="button" class="btn-font" id="btn-font-lg" aria-label="Aumentar fonte">A+</button>
+        </div>
+    </div>
+
     <div class="actions">
-        <button type="button" class="btn-mark" id="btn-mark-read">Marcar como lido</button>
+        <button type="button" class="btn-mark" id="btn-mark-read">✅ Marcar como lido</button>
         <span class="mark-status" id="mark-status"></span>
     </div>
 

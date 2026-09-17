@@ -654,6 +654,7 @@ Route::middleware(['jwt', 'module:finance'])->group(function () {
         Route::post('/api/finance/budgets', [\App\Http\Controllers\Finance\FinanceController::class, 'createBudget']);
         Route::get('/api/finance/reports/summary', [\App\Http\Controllers\Finance\FinanceController::class, 'reportSummary']);
         Route::get('/api/finance/reports/categories', [\App\Http\Controllers\Finance\FinanceController::class, 'reportCategories']);
+        Route::get('/api/finance/reports/cash-flow', [\App\Http\Controllers\Finance\FinanceController::class, 'cashFlow']);
         Route::post('/api/finance/transfer', [\App\Http\Controllers\Finance\FinanceController::class, 'transfer']);
         Route::post('/api/finance/upload', [\App\Http\Controllers\Finance\FinanceController::class, 'uploadAttachment']);
         Route::get('/api/finance/attachments/{ownerId}/{filename}', [\App\Http\Controllers\Finance\FinanceController::class, 'downloadAttachment'])

@@ -914,7 +914,70 @@ window.initFinancePane = async function () {
             if (tabId === 'fluxo') {
                 const list = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10) }));
                 const canEdit = function(f) { return (typeof f.id === 'number' || (f.id != null && String(f.id).match(/^[0-9]+$/))); };
-                container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:800;color:var(--finance-text-primary);margin:0;">Fluxo de Caixa</h3><button type="button" onclick="window.showNovoLancamentoChoiceModal && window.showNovoLancamentoChoiceModal()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:12px;font-size:10px;font-weight:800;cursor:pointer;">+ Novo Lançamento</button></div><div style="display:flex;flex-direction:column;gap:0.75rem;">' + (list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento ou a aba Resumo.</p>' : list.map(f => '<div class="kf-card" style="' + styleKfCard + 'display:flex;justify-content:space-between;align-items:center;padding:1rem;gap:12px;"><div style="display:flex;align-items:center;gap:1rem;flex:1;min-width:0;"><span style="color:' + (f.tipo === 'receita' ? '#22c55e' : '#f43f5e') + ';">' + (f.tipo === 'receita' ? '+' : '-') + '</span><div style="min-width:0;"><p style="font-size:12px;font-weight:700;margin:0;">' + escapeHtmlFinance((f.descricao || '').slice(0, 40)) + '</p><p style="font-size:9px;color:#64748b;margin:4px 0 0 0;">' + escapeHtmlFinance(f.data) + '</p></div></div><span style="font-weight:800;color:' + (f.tipo === 'receita' ? '#22c55e' : '#f43f5e') + ';">R$ ' + fmt(f.valor) + '</span>' + (canEdit(f) ? '<button type="button" onclick="window.editFinanceTransaction && window.editFinanceTransaction(' + f.id + ')" style="padding:6px 12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Editar"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i>Editar</button>' : '') + '</div>').join('')) + '</div>';
+                container.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <h3 style="font-size:1.2rem;font-weight:800;color:var(--finance-text-primary);margin:0 0 4px 0;">Fluxo de Caixa Consolidado</h3>
+                            <p style="font-size:0.8rem;color:var(--finance-text-secondary);margin:0;">Visão cronológica de entradas, saídas e resultado líquido mês a mês.</p>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button type="button" onclick="window.loadFinanceCashFlowChart && window.loadFinanceCashFlowChart(6)" style="padding:8px 14px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:10px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;">6 Meses</button>
+                            <button type="button" onclick="window.loadFinanceCashFlowChart && window.loadFinanceCashFlowChart(12)" style="padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--finance-text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">12 Meses</button>
+                            <button type="button" onclick="window.showNovoLancamentoChoiceModal && window.showNovoLancamentoChoiceModal()" style="padding:8px 16px;background:var(--finance-indigo);color:#fff;border:none;border-radius:10px;font-size:0.8rem;font-weight:800;cursor:pointer;box-shadow:0 4px 15px rgba(59,130,246,0.3);">+ Novo Lançamento</button>
+                        </div>
+                    </div>
+
+                    <!-- Card do Gráfico de Fluxo de Caixa -->
+                    <div class="kf-card" style="${styleKfCard}margin-bottom:1.5rem;padding:1.5rem;border-radius:20px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                            <span style="font-size:0.85rem;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.05em;"><i class="fas fa-chart-area" style="color:var(--finance-neon-blue);margin-right:8px;"></i>Evolução de Entradas vs Saídas</span>
+                            <div id="finance-cashflow-legend" style="display:flex;gap:14px;font-size:0.75rem;">
+                                <span style="display:flex;align-items:center;gap:6px;color:#86efac;"><span style="width:10px;height:10px;background:#22c55e;border-radius:3px;"></span>Receitas</span>
+                                <span style="display:flex;align-items:center;gap:6px;color:#fca5a5;"><span style="width:10px;height:10px;background:#ef4444;border-radius:3px;"></span>Despesas</span>
+                                <span style="display:flex;align-items:center;gap:6px;color:#93c5fd;"><span style="width:10px;height:10px;background:#3b82f6;border-radius:3px;"></span>Saldo Líquido</span>
+                            </div>
+                        </div>
+                        <div style="height:240px;width:100%;position:relative;">
+                            <canvas id="finance-cashflow-chart" style="width:100%;height:100%;"></canvas>
+                        </div>
+                        <div id="finance-cashflow-metrics" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
+                            <div style="background:rgba(34,197,94,0.08);padding:12px;border-radius:12px;border:1px solid rgba(34,197,94,0.2);">
+                                <p style="font-size:10px;color:#86efac;margin:0 0 4px 0;font-weight:700;">TOTAL RECEITAS NO PERÍODO</p>
+                                <h4 id="cf-metric-income" style="font-size:1.15rem;font-weight:800;color:#22c55e;margin:0;">Carregando...</h4>
+                            </div>
+                            <div style="background:rgba(239,68,68,0.08);padding:12px;border-radius:12px;border:1px solid rgba(239,68,68,0.2);">
+                                <p style="font-size:10px;color:#fca5a5;margin:0 0 4px 0;font-weight:700;">TOTAL DESPESAS NO PERÍODO</p>
+                                <h4 id="cf-metric-expense" style="font-size:1.15rem;font-weight:800;color:#ef4444;margin:0;">Carregando...</h4>
+                            </div>
+                            <div style="background:rgba(59,130,246,0.08);padding:12px;border-radius:12px;border:1px solid rgba(59,130,246,0.2);">
+                                <p style="font-size:10px;color:#93c5fd;margin:0 0 4px 0;font-weight:700;">RESULTADO LÍQUIDO</p>
+                                <h4 id="cf-metric-net" style="font-size:1.15rem;font-weight:800;color:#3b82f6;margin:0;">Carregando...</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 style="font-size:0.95rem;font-weight:800;color:var(--finance-text-primary);margin:0 0 12px 0;"><i class="fas fa-list" style="margin-right:8px;color:#94a3b8;"></i>Lançamentos deste Mês</h4>
+                    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                        ${list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento ou a aba Resumo.</p>' : list.map(f => `
+                            <div class="kf-card" style="${styleKfCard}display:flex;justify-content:space-between;align-items:center;padding:1rem;gap:12px;">
+                                <div style="display:flex;align-items:center;gap:1rem;flex:1;min-width:0;">
+                                    <span style="color:${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};font-weight:800;font-size:1.1rem;">${f.tipo === 'receita' ? '+' : '-'}</span>
+                                    <div style="min-width:0;">
+                                        <p style="font-size:13px;font-weight:700;margin:0;color:#f1f5f9;">${escapeHtmlFinance((f.descricao || '').slice(0, 40))}</p>
+                                        <p style="font-size:10px;color:#64748b;margin:4px 0 0 0;">${escapeHtmlFinance(f.data)}</p>
+                                    </div>
+                                </div>
+                                <span style="font-weight:800;color:${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};font-size:1rem;">R$ ${fmt(f.valor)}</span>
+                                ${canEdit(f) ? `<button type="button" onclick="window.editFinanceTransaction && window.editFinanceTransaction(${f.id})" style="padding:6px 12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Editar"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i>Editar</button>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                // Renderiza o gráfico do fluxo de caixa
+                setTimeout(() => {
+                    if (window.loadFinanceCashFlowChart) window.loadFinanceCashFlowChart(6);
+                }, 80);
                 return;
             }
             if (tabId === 'trabalhos') {
@@ -4262,6 +4325,145 @@ window.initFinanceChart = function (period = '1M') {
         paintFinanceChart();
     }
 };
+
+// Carrega e desenha o gráfico e métricas consolidadas de Fluxo de Caixa
+window.loadFinanceCashFlowChart = function (months = 6) {
+    const canvas = document.getElementById('finance-cashflow-chart');
+    if (!canvas) return;
+
+    const profileId = localStorage.getItem('finance_current_profile_id') || '';
+    const url = `${env.API_URL}/api/finance/reports/cash-flow?months=${months}${profileId ? '&profile_id=' + encodeURIComponent(profileId) : ''}`;
+
+    fetch(url, { headers: env.HEADERS_AUTH })
+        .then(res => res.json())
+        .then(resData => {
+            if (!resData.success || !resData.data) return;
+            const data = resData.data;
+            const series = data.series || [];
+            const summary = data.summary || {};
+
+            // Atualiza métricas rápidas no card
+            const incEl = document.getElementById('cf-metric-income');
+            const expEl = document.getElementById('cf-metric-expense');
+            const netEl = document.getElementById('cf-metric-net');
+
+            if (incEl) incEl.textContent = `R$ ${formatCurrency(summary.total_income_paid || 0)}`;
+            if (expEl) expEl.textContent = `R$ ${formatCurrency(summary.total_expense_paid || 0)}`;
+            if (netEl) {
+                const netVal = Number(summary.net_paid) || 0;
+                netEl.textContent = `${netVal >= 0 ? '+' : ''}R$ ${formatCurrency(netVal)}`;
+                netEl.style.color = netVal >= 0 ? '#22c55e' : '#ef4444';
+            }
+
+            const paint = function () {
+                if (typeof Chart === 'undefined') return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                if (window.financeCashFlowChartInstance) {
+                    try { window.financeCashFlowChartInstance.destroy(); } catch (_) {}
+                }
+
+                const labels = series.map(s => s.label || s.month);
+                const incomeVals = series.map(s => Number(s.income_paid) || 0);
+                const expenseVals = series.map(s => Number(s.expense_paid) || 0);
+                const netVals = series.map(s => Number(s.net_paid) || 0);
+
+                window.financeCashFlowChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Receitas',
+                                data: incomeVals,
+                                backgroundColor: 'rgba(34, 197, 94, 0.75)',
+                                borderColor: '#22c55e',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8,
+                            },
+                            {
+                                type: 'bar',
+                                label: 'Despesas',
+                                data: expenseVals,
+                                backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                                borderColor: '#ef4444',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8,
+                            },
+                            {
+                                type: 'line',
+                                label: 'Resultado Líquido',
+                                data: netVals,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                borderWidth: 2.5,
+                                pointBackgroundColor: '#60a5fa',
+                                pointBorderColor: '#1e293b',
+                                pointRadius: 4,
+                                tension: 0.3,
+                                fill: false,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                titleColor: '#f1f5f9',
+                                bodyColor: '#cbd5e1',
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                borderWidth: 1,
+                                padding: 10,
+                                callbacks: {
+                                    label: function (ctx) {
+                                        const v = ctx.parsed.y;
+                                        return `${ctx.dataset.label}: R$ ${formatCurrency(v)}`;
+                                    },
+                                },
+                            },
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: 'rgba(148, 163, 184, 0.7)', font: { size: 11 } },
+                            },
+                            y: {
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: {
+                                    color: 'rgba(148, 163, 184, 0.7)',
+                                    font: { size: 10 },
+                                    callback: function (val) {
+                                        return 'R$ ' + formatCurrency(val);
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            };
+
+            if (typeof window.ckEnsureChart === 'function') {
+                window.ckEnsureChart().then(paint).catch(paint);
+            } else {
+                paint();
+            }
+        })
+        .catch(err => console.warn('finance.cashFlow.error', err));
+};
+
 
 window.financeBuildPrintContent = function (tipo) {
     var fmt = function (v) { return (Number(v) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };

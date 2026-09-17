@@ -115,7 +115,22 @@ Artisan::command('maintenance:ops-alert {title} {--level=error}', function (stri
 })->purpose('Envia alerta ops (log + Sentry) — usado pelo backup do host');
 
 
+Artisan::command('finance:notify-due-bills {--days=3}', function () {
+    $days = (int) ($this->option('days') ?: 3);
+    $this->info("Verificando contas a vencer nos próximos {$days} dias...");
+    $res = app(\App\Services\Finance\FinanceNotificationService::class)->notifyUpcomingDueBills($days);
+    $this->info("Notificações concluídas: {$res['users_notified']} usuário(s), {$res['total_bills']} conta(s), total R$ ".number_format($res['total_amount'], 2, ',', '.'));
+
+    return 0;
+})->purpose('Envia lembrete Telegram das contas financeiras a vencer (hoje e próximos dias)');
+
+
 // Timezone: America/Sao_Paulo (mesmo horário civil do Node na VPS BR)
+Schedule::command('finance:notify-due-bills')
+    ->dailyAt('09:00')
+    ->timezone('America/Sao_Paulo')
+    ->withoutOverlapping();
+
 Schedule::command('maintenance:expire-subscriptions-morning')
     ->dailyAt('08:00')
     ->timezone('America/Sao_Paulo')
@@ -138,3 +153,4 @@ Schedule::command('maintenance:failed-jobs-alert')
 Schedule::command('maintenance:uptime-selfcheck')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+

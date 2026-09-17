@@ -1806,6 +1806,103 @@ class FinanceService
     }
 
     /**
+     * Relatório consolidado de Fluxo de Caixa mensal (Receitas x Despesas x Saldo Líquido).
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function cashFlow(string $userId, ?int $profileId = null, int $months = 6): array
+    {
+        $months = max(1, min(24, $months));
+        $startDate = now()->startOfMonth()->subMonths($months - 1)->format('Y-m-01');
+        $endDate = now()->endOfMonth()->format('Y-m-t');
+
+        $profileFilter = '';
+        $params = [$userId, $startDate, $endDate];
+
+        if ($profileId !== null) {
+            $profileFilter = ' AND t.profile_id = ?';
+            $params[] = $profileId;
+        } else {
+            $profileFilter = ' AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = ? AND is_primary = TRUE))';
+            $params[] = $userId;
+        }
+
+        $sql = "SELECT
+                    TO_CHAR(t.transaction_date, 'YYYY-MM') AS month_key,
+                    COALESCE(SUM(CASE WHEN t.type = 'INCOME' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) AS income_paid,
+                    COALESCE(SUM(CASE WHEN t.type = 'INCOME' AND t.status = 'PENDING' THEN t.amount ELSE 0 END), 0) AS income_pending,
+                    COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) AS expense_paid,
+                    COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' AND t.status = 'PENDING' THEN t.amount ELSE 0 END), 0) AS expense_pending,
+                    COUNT(*)::int AS count
+                FROM finance_transactions t
+                WHERE t.user_id = ?
+                  AND t.transaction_date >= ?::date
+                  AND t.transaction_date <= ?::date
+                  {$profileFilter}
+                GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM')
+                ORDER BY month_key ASC";
+
+        $rows = DB::select($sql, $params);
+        $keyed = [];
+        foreach ($rows as $r) {
+            $keyed[(string) $r->month_key] = $r;
+        }
+
+        // Garante todos os meses da janela preenchidos em sequência cronológica
+        $result = [];
+        $totalIncomePaid = 0.0;
+        $totalExpensePaid = 0.0;
+        $totalIncomePending = 0.0;
+        $totalExpensePending = 0.0;
+
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $carbon = now()->startOfMonth()->subMonths($i);
+            $key = $carbon->format('Y-m');
+            $label = $carbon->translatedFormat('M/Y');
+
+            $row = $keyed[$key] ?? null;
+            $incPaid = $row ? (float) $row->income_paid : 0.0;
+            $incPend = $row ? (float) $row->income_pending : 0.0;
+            $expPaid = $row ? (float) $row->expense_paid : 0.0;
+            $expPend = $row ? (float) $row->expense_pending : 0.0;
+            $netPaid = $incPaid - $expPaid;
+            $netTotal = ($incPaid + $incPend) - ($expPaid + $expPend);
+
+            $totalIncomePaid += $incPaid;
+            $totalExpensePaid += $expPaid;
+            $totalIncomePending += $incPend;
+            $totalExpensePending += $expPend;
+
+            $result[] = [
+                'month' => $key,
+                'label' => $label,
+                'income_paid' => $incPaid,
+                'income_pending' => $incPend,
+                'income_total' => $incPaid + $incPend,
+                'expense_paid' => $expPaid,
+                'expense_pending' => $expPend,
+                'expense_total' => $expPaid + $expPend,
+                'net_paid' => $netPaid,
+                'net_total' => $netTotal,
+            ];
+        }
+
+        return $this->ok([
+            'months' => $months,
+            'period' => ['start' => $startDate, 'end' => $endDate],
+            'summary' => [
+                'total_income_paid' => $totalIncomePaid,
+                'total_income_pending' => $totalIncomePending,
+                'total_expense_paid' => $totalExpensePaid,
+                'total_expense_pending' => $totalExpensePending,
+                'net_paid' => $totalIncomePaid - $totalExpensePaid,
+                'net_total' => ($totalIncomePaid + $totalIncomePending) - ($totalExpensePaid + $totalExpensePending),
+            ],
+            'series' => $result,
+        ]);
+    }
+
+    /**
      * @param  array<string,mixed>  $body
      * @return array{status:int, body:array<string,mixed>}
      */
@@ -2019,6 +2116,73 @@ class FinanceService
                 'data' => $data,
                 'error' => null,
                 'message' => $message,
+            ],
+        ];
+    }
+
+    /**
+     * Retorna fluxo de caixa mensal: receitas vs despesas dos últimos N meses.
+     *
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function cashFlow(string $userId, ?string $profileId = null, int $months = 6): array
+    {
+        $profileFilter = '';
+        $params = [$userId];
+
+        if ($profileId) {
+            $profileFilter = 'AND t.profile_id = ?';
+            $params[] = $profileId;
+        }
+
+        $params[] = $months;
+
+        $sql = "
+            SELECT
+                TO_CHAR(DATE_TRUNC('month', t.transaction_date::date), 'YYYY-MM') AS month,
+                SUM(CASE WHEN t.type = 'INCOME'  AND t.status = 'PAID' THEN t.amount ELSE 0 END) AS income,
+                SUM(CASE WHEN t.type = 'EXPENSE' AND t.status IN ('PAID', 'PENDING') THEN t.amount ELSE 0 END) AS expense
+            FROM finance_transactions t
+            WHERE t.user_id = ?
+              {$profileFilter}
+              AND t.transaction_date::date >= (CURRENT_DATE - INTERVAL '1 month' * ?)
+            GROUP BY DATE_TRUNC('month', t.transaction_date::date)
+            ORDER BY DATE_TRUNC('month', t.transaction_date::date) ASC
+        ";
+
+        $rows = DB::select($sql, $params);
+
+        $labels   = [];
+        $incomes  = [];
+        $expenses = [];
+        $balance  = 0.0;
+
+        foreach ($rows as $r) {
+            // Formata para "Jan/2026"
+            $labels[]   = \Carbon\Carbon::createFromFormat('Y-m', $r->month)->translatedFormat('M/Y');
+            $incomes[]  = round((float) $r->income, 2);
+            $expenses[] = round((float) $r->expense, 2);
+            $balance   += (float) $r->income - (float) $r->expense;
+        }
+
+        $totalIncome  = array_sum($incomes);
+        $totalExpense = array_sum($expenses);
+
+        return [
+            'status' => 200,
+            'body'   => [
+                'success' => true,
+                'data'    => [
+                    'labels'        => $labels,
+                    'incomes'       => $incomes,
+                    'expenses'      => $expenses,
+                    'total_income'  => round($totalIncome, 2),
+                    'total_expense' => round($totalExpense, 2),
+                    'balance'       => round($balance, 2),
+                    'months'        => $months,
+                ],
+                'error'   => null,
+                'message' => null,
             ],
         ];
     }
