@@ -1,6 +1,6 @@
 /** Landing — Vite entry */
 import '@mod/js/planRenderer.js';
-import '@css/pages/index-extra.css';
+// index-extra.css agora é entrada Vite separada — carregada no <head> via @vite(['resources/css/pub/pages/index-extra.css'])
 
 // Detectar URL da API - mesma lógica do dashboard
         let API_URL = window.location.origin;

@@ -34,8 +34,19 @@
     <!-- WhatsApp específico -->
     <meta property="og:image:type" content="image/jpeg">
     
-    <!-- Fonts -->
-    </head>
+    <!-- Fonts: carregadas no head para evitar FOUC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    {{-- CSS da landing carregado via Vite (evita FOUC) --}}
+    @vite(['resources/css/pub/pages/index-extra.css'])
+
+    {{-- CSS crítico inline: evita flash de fundo branco antes do Vite carregar --}}
+    <style>
+        html, body { background: #0B0B0B; color: #F5F5F5; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    </style>
+</head>
     <body>
     <!-- Header Vermelho/Preto -->
     <header class="header">
@@ -115,11 +126,28 @@
             <div class="ck-ix-3c8d3f">
                 <div class="ck-ix-3f6e8d">
                     <div class="ck-ix-e5e8bd"></div>
-                    <div class="ck-ix-6cfd8e">
-                        <iframe class="ck-ix-aa7a58" id="card-preview-iframe" src="https://tag.conectaking.com.br/adrianokingg" frameborder="0"></iframe>
+                    <div class="ck-ix-6cfd8e ck-card-preview-wrap">
+                        <!-- Preview visual do cartão (iframe removido: X-Frame-Options bloqueava o embed) -->
+                        <a href="https://tag.conectaking.com.br/adrianokingg" target="_blank" rel="noopener" class="ck-card-preview-link" aria-label="Abrir cartão digital de exemplo">
+                            <div class="ck-card-mockup">
+                                <div class="ck-card-mockup-inner">
+                                    <img src="/logo.png" alt="ConectaKing Logo" class="ck-mockup-logo">
+                                    <p class="ck-mockup-name">Adriano King</p>
+                                    <p class="ck-mockup-tagline">Cartão Digital NFC</p>
+                                    <div class="ck-mockup-links">
+                                        <span><i class="fab fa-instagram"></i></span>
+                                        <span><i class="fab fa-whatsapp"></i></span>
+                                        <span><i class="fas fa-globe"></i></span>
+                                    </div>
+                                    <div class="ck-mockup-cta">
+                                        <i class="fas fa-external-link-alt"></i> Toque para abrir
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                     <div class="ck-ix-d1b3fe">
-                        <a href="https://tag.conectaking.com.br/adrianokingg" target="_blank" class="btn btn-primary ck-w-full">
+                        <a href="https://tag.conectaking.com.br/adrianokingg" target="_blank" rel="noopener" class="btn btn-primary ck-w-full">
                             <i class="fas fa-external-link-alt"></i> Ver Cartão Completo
                         </a>
                     </div>
@@ -127,6 +155,7 @@
                 </div>
             </div>
         </section>
+
 
     <!-- CTA Intermedirio 1 -->
     <section class="section ck-ix-8a066a">

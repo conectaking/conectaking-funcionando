@@ -976,9 +976,98 @@
 .ck-ix-3c8d3f { max-width: 600px; margin: 40px auto; position: relative; }
 .ck-ix-3f6e8d { background: var(--black-absolute); border: 3px solid var(--yellow-primary); border-radius: 24px; padding: 20px; box-shadow: 0 30px 90px rgba(255, 199, 0, 0.3); position: relative; overflow: hidden; }
 .ck-ix-e5e8bd { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--yellow-primary), var(--red-primary)); }
-.ck-ix-6cfd8e { height: 500px; overflow: hidden; border-radius: 16px; }
+.ck-ix-6cfd8e { min-height: 380px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
 .ck-ix-aa7a58 { width: 100%; height: 100%; border: none; border-radius: 16px; }
 .ck-ix-d1b3fe { margin-top: 16px; text-align: center; }
+
+/* Card Mockup — substitui iframe bloqueado por X-Frame-Options */
+.ck-card-preview-link { display: block; text-decoration: none; width: 100%; }
+.ck-card-mockup {
+    background: linear-gradient(160deg, #111111 0%, #1a1a1a 100%);
+    border: 2px solid var(--yellow-primary);
+    border-radius: 20px;
+    padding: 40px 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 20px 60px rgba(255, 199, 0, 0.15);
+    min-height: 340px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ck-card-mockup::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--yellow-primary), var(--red-primary), var(--yellow-primary));
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+}
+.ck-card-mockup:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 30px 80px rgba(255, 199, 0, 0.35);
+    border-color: var(--yellow-light);
+}
+.ck-card-mockup-inner { position: relative; z-index: 1; }
+.ck-mockup-logo {
+    height: 64px;
+    width: auto;
+    margin: 0 auto 16px;
+    display: block;
+    filter: drop-shadow(0 0 12px rgba(255, 199, 0, 0.5));
+    animation: pulse 2s ease-in-out infinite;
+}
+.ck-mockup-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--white);
+    margin: 0 0 4px;
+}
+.ck-mockup-tagline {
+    color: var(--yellow-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0 0 24px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.ck-mockup-links {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.ck-mockup-links span {
+    width: 44px; height: 44px;
+    background: rgba(255, 199, 0, 0.12);
+    border: 1px solid rgba(255, 199, 0, 0.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--yellow-primary);
+    font-size: 1.1rem;
+    transition: all 0.3s;
+}
+.ck-card-mockup:hover .ck-mockup-links span {
+    background: rgba(255, 199, 0, 0.25);
+    border-color: var(--yellow-primary);
+}
+.ck-mockup-cta {
+    background: var(--yellow-primary);
+    color: var(--black-absolute);
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .ck-ix-8a066a { background: linear-gradient(135deg, var(--black-absolute) 0%, var(--red-dark) 100%); padding: 60px 0; text-align: center; position: relative; overflow: hidden; }
 .ck-ix-0ab009 { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 199, 0, 0.1) 0%, transparent 70%); pointer-events: none; animation: pulse 4s ease-in-out infinite; }
 .ck-ix-247950 { font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3vw, 2.5rem); color: var(--white); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
