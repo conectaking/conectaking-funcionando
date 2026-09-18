@@ -53,7 +53,7 @@ class SecurityHeaders
                 "frame-ancestors 'self'",
                 "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://tag.conectaking.com.br blob:",
                 "script-src 'self' 'nonce-{$nonce}'",
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com 'nonce-{$nonce}'",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                 "font-src 'self' data: https://fonts.gstatic.com",
                 "img-src 'self' data: blob: https:",
                 "media-src 'self' blob: https:",
