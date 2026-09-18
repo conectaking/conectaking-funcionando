@@ -19,8 +19,8 @@ import '@css/pages/index-extra.css';
         // Tornar API_URL disponível globalmente para planRenderer.js
         window.API_URL = API_URL;
 
-        // Contato padrão do site (usado nos botes "Assinar agora")
-        // Formato: apenas dgitos (ex.: 5511999999999)
+        // Contato padrão do site (usado nos botões "Assinar agora")
+        // Formato: apenas dígitos (ex.: 5511999999999)
         window.CONTACT_WHATSAPP_NUMBER = window.CONTACT_WHATSAPP_NUMBER || '5511988161364';
 
         // Opcional: chave PIX padrão (se a API não retornar `pix_key` no plano)
@@ -33,10 +33,10 @@ import '@css/pages/index-extra.css';
             'enterprise': 'business_owner'
         };
         
-        // Calcular préos
+        // Calcular preços
         function calculatePrices(basePrice) {
-            const pixPrice = basePrice; // Valor  vista no PIX
-            const cardPrice = basePrice * 1.20; // +20% no carto (para clculo total)
+            const pixPrice = basePrice; // Valor à vista no PIX
+            const cardPrice = basePrice * 1.20; // +20% no cartão (para cálculo total)
             const cardPricePerMonth = cardPrice / 12; // Dividido em 12x
             const monthlyPrice = (basePrice / 12) * 1.25; // Mensal: valor/12 + 25%
             
@@ -48,7 +48,7 @@ import '@css/pages/index-extra.css';
             };
         }
         
-        // Buscar módulos disponveis por plano
+        // Buscar módulos disponíveis por plano
         async function loadPlanModules(planCode) {
             try {
                 if (!planCode) return { available: [], unavailable: [] };
@@ -125,7 +125,7 @@ import '@css/pages/index-extra.css';
                     // Filtrar planos: excluir King Essential (king_base)
                     const filteredPlans = data.plans.filter(plan => plan.plan_code !== 'king_base');
                     
-                    // Usar função compartilhada se disponível (garante sincronizao com dashboard)
+                    // Usar função compartilhada se disponível (garante sincronização com dashboard)
                     if (typeof window.renderPlansShared === 'function') {
                         await window.renderPlansShared(filteredPlans, 'plans-container', false);
                     } else {
@@ -147,7 +147,7 @@ import '@css/pages/index-extra.css';
                 let instructions = '';
                 
                 if (error.name === 'TimeoutError' || error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    errorMessage = 'Não foi possvel conectar ao servidor.';
+                    errorMessage = 'Não foi possível conectar ao servidor.';
                     instructions = `
                         <div style="margin-top: 20px; padding: 20px; background: rgba(255, 199, 0, 0.1); border: 1px solid var(--yellow-primary); border-radius: 8px; text-align: left;">
                             <p style="color: var(--yellow-primary); font-weight: 600; margin-bottom: 12px;">
@@ -217,34 +217,33 @@ import '@css/pages/index-extra.css';
                 const isFeatured = isPrime;
                 
                 // Textos personalizados para cada plano
-                let ctaText = 'Coméar agora';
-                let whatsappMsg = `Ol! Gostaria de adquirir o plano ${plan.plan_name} do ConectaKing!`;
+                let ctaText = 'Começar agora';
+                let whatsappMsg = `Olá! Gostaria de adquirir o plano ${plan.plan_name} do ConectaKing!`;
                 
                 if (isStart) {
-                    ctaText = 'Coméar agora';
-                    whatsappMsg = 'Ol! Gostaria de adquirir o plano King Start do ConectaKing!';
+                    ctaText = 'Começar agora';
+                    whatsappMsg = 'Olá! Gostaria de adquirir o plano King Start do ConectaKing!';
                 } else if (isPrime) {
                     ctaText = 'Quero o Prime';
-                    whatsappMsg = 'Ol! Gostaria de adquirir o plano King Prime do ConectaKing!';
+                    whatsappMsg = 'Olá! Gostaria de adquirir o plano King Prime do ConectaKing!';
                 } else if (isBase) {
                     ctaText = 'Quero o Essential';
-                    whatsappMsg = 'Ol! Gostaria de adquirir o plano King Essential do ConectaKing!';
+                    whatsappMsg = 'Olá! Gostaria de adquirir o plano King Essential do ConectaKing!';
                 } else if (isFinance) {
                     ctaText = 'Quero o Finance';
-                    whatsappMsg = 'Ol! Gostaria de adquirir o plano King Finance do ConectaKing!';
+                    whatsappMsg = 'Olá! Gostaria de adquirir o plano King Finance do ConectaKing!';
                 } else if (isFinancePlus) {
                     ctaText = 'Quero o Finance Plus';
-                    whatsappMsg = 'Ol! Gostaria de adquirir o plano King Finance Plus do ConectaKing!';
+                    whatsappMsg = 'Olá! Gostaria de adquirir o plano King Finance Plus do ConectaKing!';
                 } else if (isPremiumPlus) {
                     ctaText = 'Quero o Premium Plus';
-                    whatsappMsg = 'Ol! Gostaria de adquirir o plano King Premium Plus do ConectaKing!';
+                    whatsappMsg = 'Olá! Gostaria de adquirir o plano King Premium Plus do ConectaKing!';
                 } else if (isCorporate) {
                     ctaText = 'Ativar modo empresa';
-                    whatsappMsg = 'Ol! Gostaria de adquirir o plano King Corporate do ConectaKing!';
+                    whatsappMsg = 'Olá! Gostaria de adquirir o plano King Corporate do ConectaKing!';
                 } else {
-                    // Plano genrico
                     ctaText = `Quero o ${plan.plan_name}`;
-                    whatsappMsg = `Ol! Gostaria de adquirir o plano ${plan.plan_name} do ConectaKing!`;
+                    whatsappMsg = `Olá! Gostaria de adquirir o plano ${plan.plan_name} do ConectaKing!`;
                 }
                 
                 // Usar mensagem personalizada do plano se existir, senão usar a padrão
@@ -261,11 +260,11 @@ import '@css/pages/index-extra.css';
                             </div>
                             <div class="payment-options">
                                 <div class="payment-option">
-                                    <span><strong>PIX:</strong>  vista</span>
+                                    <span><strong>PIX:</strong> à vista</span>
                                     <span class="value">R$ ${prices.pix.toFixed(2).replace('.', ',')}</span>
                                 </div>
                                 <div class="payment-option">
-                                    <span><strong>Carto:</strong> At 12x</span>
+                                    <span><strong>Cartão:</strong> Até 12x</span>
                                     <span class="value">R$ ${prices.cardPerMonth.toFixed(2).replace('.', ',')}/m</span>
                                 </div>
                                 <div class="payment-option">
@@ -290,7 +289,7 @@ import '@css/pages/index-extra.css';
                             ${!features.can_edit_logo ? '<li style="padding-left: 8px; opacity: 0.6;"><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4); margin-right: 8px;"></i> Logomarca editável</li>' : ''}
                             ${modules.unavailable.map(module => `<li style="padding-left: 8px; opacity: 0.6;"><i class="fas fa-times" style="color: rgba(245, 245, 245, 0.4); margin-right: 8px;"></i> ${module}</li>`).join('')}
                             <li style="padding-left: 8px; opacity: 0.8; margin-top: 8px; color: var(--yellow-primary);">
-                                <i class="fas fa-gift" style="color: var(--yellow-primary); margin-right: 8px;"></i> <strong>Bnus:</strong> Link Personalizado
+                                <i class="fas fa-gift" style="color: var(--yellow-primary); margin-right: 8px;"></i> <strong>Bônus:</strong> Link Personalizado
                             </li>
                             ` : ''}
                             
@@ -358,7 +357,7 @@ import '@css/pages/index-extra.css';
             });
         });
         
-        // PWA: instalao direta no clique quando o Chrome permitir
+        // PWA: instalação direta no clique quando o Chrome permitir
         let deferredPrompt = null;
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
@@ -479,7 +478,7 @@ import '@css/pages/index-extra.css';
             });
         }
 
-// Verificar se usuário est logado e ajustar botes do header e footer
+// Verificar se usuário está logado e ajustar botões do header e footer
         (function() {
             const user = JSON.parse(localStorage.getItem('conectaKingUser') || 'null');
             const token = localStorage.getItem('conectaKingToken');
@@ -489,7 +488,7 @@ import '@css/pages/index-extra.css';
             const footerLoginItem = document.getElementById('footer-login-item');
             const footerAccessPanelItem = document.getElementById('footer-access-panel-item');
             
-            // Verificar se user  válido (não null, não string 'null')
+            // Verificar se user é válido (não null, não string 'null')
             const isLoggedIn = user && user !== 'null' && user !== null && typeof user === 'object' && token && token !== 'null' && token !== '';
             
             function clearAuthStorage() {
@@ -535,7 +534,7 @@ import '@css/pages/index-extra.css';
             }
             
             if (isLoggedIn) {
-                // Usuário est logado - mostrar "Acessar Painel", "Sair" e esconder "Login"
+                // Usuário está logado - mostrar "Acessar Painel", "Sair" e esconder "Login"
                 if (loginBtn) {
                     loginBtn.style.display = 'none';
                     loginBtn.style.setProperty('display', 'none', 'important');
@@ -555,7 +554,7 @@ import '@css/pages/index-extra.css';
                     footerAccessPanelItem.style.display = 'block';
                 }
             } else {
-                // Usuário não est logado - mostrar "Login" e esconder "Acessar Painel" e "Sair"
+                // Usuário não está logado - mostrar "Login" e esconder "Acessar Painel" e "Sair"
                 if (loginBtn) {
                     loginBtn.style.display = 'inline-flex';
                     loginBtn.style.setProperty('display', 'inline-flex', 'important');
@@ -576,7 +575,7 @@ import '@css/pages/index-extra.css';
                 }
             }
             
-            // Garantir que "Criar Acesso" sempre esteja visvel
+            // Garantir que "Criar Acesso" sempre esteja visível
             const createAccountBtn = document.getElementById('create-account-btn');
             if (createAccountBtn) {
                 createAccountBtn.style.display = 'inline-flex';

@@ -8,13 +8,13 @@
     <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
     {{-- PWA desativada (fatia 30): sem manifest/SW — ver docs/STAGING.md / A11Y --}}
     <meta name="theme-color" content="#DC2626">
-    <meta name="description" content="O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium. Planos anuais e mensais disponveis. Atualizaes em tempo real.">
+    <meta name="description" content="O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium. Planos anuais e mensais disponíveis. Atualizações em tempo real.">
     
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://conectaking.com.br/">
     <meta property="og:title" content="ConectaKing - Sua Presença Digital. Um Toque. Poder Absoluto.">
-    <meta property="og:description" content="O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium. Planos anuais e mensais disponveis. Atualizaes em tempo real.">
+    <meta property="og:description" content="O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium. Planos anuais e mensais disponíveis. Atualizações em tempo real.">
     <meta property="og:image" content="https://conectaking.com.br/og-image.jpg">
     <meta property="og:image:secure_url" content="https://conectaking.com.br/og-image.jpg">
     <meta property="og:image:width" content="1200">
@@ -27,7 +27,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://conectaking.com.br/">
     <meta name="twitter:title" content="ConectaKing - Sua Presença Digital. Um Toque. Poder Absoluto.">
-    <meta name="twitter:description" content="O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium. Planos anuais e mensais disponveis.">
+    <meta name="twitter:description" content="O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium. Planos anuais e mensais disponíveis.">
     <meta name="twitter:image" content="https://conectaking.com.br/og-image.jpg">
     <meta name="twitter:image:alt" content="ConectaKing - Sua Presença Digital">
     
@@ -67,7 +67,7 @@
         <section class="hero">
         <div class="container ck-container-1200">
                 <div class="hero-content">
-                <h1>Sua presena digital.<br>Um toque.<br>Poder absoluto.</h1>
+                <h1>Sua presença digital.<br>Um toque.<br>Poder absoluto.</h1>
                 <p class="subheadline">
                     O ConectaKing transforma seu contato em autoridade, conexão e vendas usando tecnologia NFC premium.
                 </p>
@@ -88,7 +88,7 @@
                         </div>
                     <div class="value-item">
                         <i class="fas fa-check-circle"></i>
-                        <span>Atualizaes em tempo real</span>
+                        <span>Atualizações em tempo real</span>
                     </div>
                     <div class="value-item">
                         <i class="fas fa-check-circle"></i>
@@ -103,14 +103,14 @@
             </div>
         </section>
 
-    <!-- Preview do Carto Virtual -->
+    <!-- Preview do Cartão Virtual -->
     <section class="section ck-ix-8800b7">
         <div class="container ck-container-1200">
             <div class="section-header ck-ix-dd7272">
                 <h2 class="ck-ix-d12637">
-                    Veja Nosso Carto Virtual em Ao
+                    Veja Nosso Cartão Virtual em Ação
                 </h2>
-                <p>Visualize como funciona o ConectaKing na prtica</p>
+                <p>Visualize como funciona o ConectaKing na prática</p>
                 </div>
             <div class="ck-ix-3c8d3f">
                 <div class="ck-ix-3f6e8d">
@@ -120,7 +120,7 @@
                     </div>
                     <div class="ck-ix-d1b3fe">
                         <a href="https://tag.conectaking.com.br/adrianokingg" target="_blank" class="btn btn-primary ck-w-full">
-                            <i class="fas fa-external-link-alt"></i> Ver Carto Completo
+                            <i class="fas fa-external-link-alt"></i> Ver Cartão Completo
                         </a>
                     </div>
                     </div>
@@ -133,10 +133,10 @@
         <div class="ck-ix-0ab009"></div>
         <div class="container ck-container-1200-z">
             <h3 class="ck-ix-247950">
-                Profissionais de sucesso não trocam cartes.<br>Eles trocam conexões.
+                Profissionais de sucesso não trocam cartões.<br>Eles trocam conexões.
             </h3>
             <a href="#planos" class="btn btn-primary ck-ix-d95d00">
-                <i class="fas fa-rocket"></i> Quero Minha Conexo Agora
+                <i class="fas fa-rocket"></i> Quero Minha Conexão Agora
             </a>
         </div>
     </section>
@@ -148,7 +148,7 @@
                 <h2 class="ck-ix-78406c">
                     Como Funciona
                 </h2>
-                <p class="ck-ix-37bb63">Sem aplicativo. Sem papel. Sem fric</p>
+                <p class="ck-ix-37bb63">Sem aplicativo. Sem papel. Sem fricção.</p>
             </div>
             <div class="ck-ix-53c586">
                 <div class="card fade-in">
@@ -180,7 +180,7 @@
     <section class="section ck-ix-c054f7">
         <div class="container ck-container-1200">
             <h2 class="ck-ix-651430">
-                Sua marca não pede aten<br>Ela impe respeito.
+                Sua marca não pede atenção.<br>Ela impõe respeito.
             </h2>
             <p class="ck-ix-cde788">
                 Transforme cada contato em uma oportunidade real de negócio
@@ -205,35 +205,35 @@
                     <div class="ck-ix-9ac385">
                         <i class="fas fa-crown"></i>
             </div>
-                    <h3 class="ck-heading-cinzel">Autoridade Profissional Instantnea</h3>
-                    <p class="ck-text-muted">Projete confiana e profissionalismo desde o primeiro contato. Seu carto digital fala por você.</p>
+                    <h3 class="ck-heading-cinzel">Autoridade Profissional Instantânea</h3>
+                    <p class="ck-text-muted">Projete confiança e profissionalismo desde o primeiro contato. Seu cartão digital fala por você.</p>
                 </div>
                 <div class="card fade-in ck-ix-2cd543">
                     <div class="ck-ix-256dcd">
                         <i class="fas fa-rocket"></i>
             </div>
-                    <h3 class="ck-heading-cinzel">Mais Impacto em Reuníes e Eventos</h3>
+                    <h3 class="ck-heading-cinzel">Mais Impacto em Reuniões e Eventos</h3>
                     <p class="ck-text-muted">Destaque-se em networking, feiras e encontros profissionais com tecnologia de ponta.</p>
                 </div>
                 <div class="card fade-in ck-ix-8f0a3c">
                     <div class="ck-ix-eddda4">
                         <i class="fas fa-sync-alt"></i>
                     </div>
-                    <h3 class="ck-heading-cinzel">Atualizaes Ilimitadas</h3>
+                    <h3 class="ck-heading-cinzel">Atualizações Ilimitadas</h3>
                     <p class="ck-text-muted">Mude links, adicione informações e atualize seu perfil quantas vezes precisar, sem custos extras.</p>
                 </div>
                 <div class="card fade-in ck-ix-2f8030">
                     <div class="ck-ix-7ee99b">
                         <i class="fas fa-leaf"></i>
                     </div>
-                    <h3 class="ck-heading-cinzel">Sustentvel e Reutilizvel</h3>
-                    <p class="ck-text-muted">Elimine o desperdcio de cartes de papel. Um ConectaKing dura para sempre.</p>
+                    <h3 class="ck-heading-cinzel">Sustentável e Reutilizável</h3>
+                    <p class="ck-text-muted">Elimine o desperdício de cartões de papel. Um ConectaKing dura para sempre.</p>
                 </div>
                 <div class="card fade-in ck-ix-c6de4f">
                     <div class="ck-ix-07d152">
                         <i class="fas fa-network-wired"></i>
                     </div>
-                    <h3 class="ck-heading-cinzel">Centralizao Total da Presença Digital</h3>
+                    <h3 class="ck-heading-cinzel">Centralização Total da Presença Digital</h3>
                     <p class="ck-text-muted">Todos os seus links, redes sociais e informações em um único lugar profissional.</p>
                 </div>
                 <div class="card fade-in ck-ix-44adfc">
@@ -271,7 +271,7 @@
                 Escolha o plano que transforma seu networking em vendas reais.
             </h3>
             <p class="ck-ix-26fc4b">
-                Planos flexveis para profissionais que querem resultados, não promessas.
+                Planos flexíveis para profissionais que querem resultados, não promessas.
             </p>
                 </div>
     </section>
@@ -283,7 +283,7 @@
                 <h2 class="ck-ix-61e975">
                     Escolha Seu Plano
                 </h2>
-                <p>Planos anuais e mensais disponveis. Resultados imediatos e duradouros.</p>
+                <p>Planos anuais e mensais disponíveis. Resultados imediatos e duradouros.</p>
             </div>
             <div class="pricing-grid" id="plans-container">
                 <p class="ck-ix-c9b8e7">Carregando planos...</p>
@@ -296,7 +296,7 @@
         <div class="container ck-container-1200">
             <div class="section-header">
                 <h2>Perguntas Frequentes</h2>
-                <p>Tire suas dvidas sobre o ConectaKing</p>
+                <p>Tire suas dúvidas sobre o ConectaKing</p>
                 </div>
             <div class="ck-ix-f8c54a">
                 <div class="faq-item ck-faq-item">
@@ -306,7 +306,7 @@
                             </div>
                     <div class="faq-answer ck-faq-a">
                         <div class="ck-faq-body">
-                            O ConectaKing oferece planos anuais e mensais. Você escolhe o formato de pagamento que melhor se adapta ao seu negócio. Todas as atualizações esto incluídas no período contratado.
+                            O ConectaKing oferece planos anuais e mensais. Você escolhe o formato de pagamento que melhor se adapta ao seu negócio. Todas as atualizações estão incluídas no período contratado.
                         </div>
                     </div>
                             </div>
@@ -334,7 +334,7 @@
                     </div>
                 <div class="faq-item ck-faq-item">
                     <div class="faq-question ck-faq-q">
-                        <span>?0 seguro?</span>
+                        <span>É seguro?</span>
                         <i class="fas fa-chevron-down ck-faq-chevron"></i>
                     </div>
                     <div class="faq-answer ck-faq-a">
@@ -361,7 +361,7 @@
                 <i class="fas fa-crown"></i> Quero Meu ConectaKing Agora
             </a>
             <p class="ck-ix-2cc7c8">
-                <i class="fas fa-shield-alt"></i> Garantia de satisfao | <i class="fas fa-sync-alt"></i> Atualizaes ilimitadas | <i class="fas fa-headset"></i> Suporte prioritrio
+                <i class="fas fa-shield-alt"></i> Garantia de satisfação | <i class="fas fa-sync-alt"></i> Atualizações ilimitadas | <i class="fas fa-headset"></i> Suporte prioritário
             </p>
             </div>
         </section>
@@ -408,8 +408,8 @@
                 <div>
                     <h3 class="ck-heading-gold">Legal</h3>
                     <ul class="ck-list-none">
-                        <li class="ck-mb-12"><a class="ck-link-muted" href="/termos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Termos de Servío</a></li>
-                        <li class="ck-mb-12"><a class="ck-link-muted" href="/privacidade" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Poltica de Privacidade</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="/termos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Termos de Serviço</a></li>
+                        <li class="ck-mb-12"><a class="ck-link-muted" href="/privacidade" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Política de Privacidade</a></li>
                     </ul>
                 </div>
             </div>
