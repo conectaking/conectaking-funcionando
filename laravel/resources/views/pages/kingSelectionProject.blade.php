@@ -11,13 +11,56 @@
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
   <style>
-    html, body { background-color: #000000; color: #ffffff; }
+    html {
+      background-color: #0b0b0f !important;
+    }
+    body {
+      background-color: #0b0b0f !important;
+      color: #ffffff !important;
+      margin: 0;
+    }
+    /* Evitar FOUC / esqueleto antes de carregar o CSS/JS */
+    [data-pane]:not([data-pane="activity"]) {
+      display: none !important;
+    }
+    #ks-preloader {
+      position: fixed;
+      inset: 0;
+      background: #0b0b0f;
+      z-index: 99999999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      transition: opacity 0.25s ease-out, visibility 0.25s ease-out;
+    }
+    #ks-preloader.ks-loaded {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .ks-spinner {
+      width: 42px;
+      height: 42px;
+      border: 3px solid rgba(250, 204, 21, 0.2);
+      border-top-color: #facc15;
+      border-radius: 50%;
+      animation: ks-spin 0.8s linear infinite;
+    }
+    @keyframes ks-spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
   <script src="/config.js?v=2026-09-10-apex1"></script>
   @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
 </head>
 
 <body>
+  <div id="ks-preloader" aria-label="Carregando...">
+    <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Conecta King" style="width: 54px; height: 54px; object-fit: contain;">
+    <div class="ks-spinner"></div>
+  </div>
   <div class="ks-top">
     <div class="ks-wrap flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -148,8 +191,9 @@
                     </div>
                     <div class="ks-abo-client-sub mt-2 flex flex-wrap items-center gap-2 ck-hidden" id="ks-activity-pass-row">
                       <span class="text-xs text-slate-500">Senha de acesso (login do cliente):</span>
-                      <span class="ks-pass-mask font-mono text-sm text-slate-800" id="ks-activity-pass">••••••</span>
-                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-reveal-pass" data-ks-reveal-pass="0">Nova senha</button>
+                      <span class="ks-pass-mask font-mono text-sm text-yellow-400 font-bold" id="ks-activity-pass" data-cid="0">••••••</span>
+                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-reveal-pass" data-ks-reveal-pass="0" title="Ver ou ocultar senha"><i class="fas fa-eye"></i> Ver senha</button>
+                      <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-change-pass" data-ks-change-pass="0" title="Alterar senha do cliente"><i class="fas fa-key"></i> Alterar senha</button>
                     </div>
                     <div class="ks-abo-client-sub ck-mt-8">
                       <span class="ks-abo-badge" id="ks-activity-badge">-</span>
