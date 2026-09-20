@@ -836,6 +836,11 @@
             </div>
           </div>
 
+          <div class="mt-4 flex flex-wrap gap-2 items-center">
+            <button type="button" class="ks-btn ks-btn-primary" id="ks-link-cover-save-btn"><i class="fas fa-save"></i> Salvar capa do link</button>
+            <span class="text-xs ks-muted">Clique para salvar a capa selecionada ou o arquivo enviado.</span>
+          </div>
+
           <div class="mt-6 rounded-xl border border-amber-500/35 bg-amber-950/20 p-4">
             <div class="text-xs font-extrabold text-amber-100/90 tracking-widest uppercase mb-2">Mensagens WhatsApp · Fotos e vendas</div>
             <p class="text-sm text-amber-50/90 mt-1 max-w-3xl">Textos usados no botão <b>WhatsApp do cliente</b> (aba <b>Fotos e vendas</b>), conforme a situação. Ao abrir o WhatsApp, o sistema preenche com o modelo correspondente e os códigos abaixo.</p>

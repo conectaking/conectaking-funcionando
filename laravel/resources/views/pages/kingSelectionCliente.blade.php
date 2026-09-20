@@ -6,7 +6,36 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>King Selection - Galeria</title>
+  <title>{{ $og['ogTitle'] ?? 'King Selection - Galeria' }}</title>
+  @isset($og)
+    @if(!empty($og['ogTitle']))
+  <meta property="og:title" content="{{ $og['ogTitle'] }}" />
+    @endif
+    @if(!empty($og['ogDescription']))
+  <meta property="og:description" content="{{ $og['ogDescription'] }}" />
+    @endif
+    @if(!empty($og['ogImage']))
+  <meta property="og:image" content="{{ $og['ogImage'] }}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+    @endif
+    @if(!empty($og['canonicalUrl']))
+  <meta property="og:url" content="{{ $og['canonicalUrl'] }}" />
+  <link rel="canonical" href="{{ $og['canonicalUrl'] }}" />
+    @endif
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ConectaKing" />
+  <meta name="twitter:card" content="summary_large_image" />
+    @if(!empty($og['ogTitle']))
+  <meta name="twitter:title" content="{{ $og['ogTitle'] }}" />
+    @endif
+    @if(!empty($og['ogDescription']))
+  <meta name="twitter:description" content="{{ $og['ogDescription'] }}" />
+    @endif
+    @if(!empty($og['ogImage']))
+  <meta name="twitter:image" content="{{ $og['ogImage'] }}" />
+    @endif
+  @endisset
   @isset($ksBootScript)
     {!! $ksBootScript !!}
   @endisset
