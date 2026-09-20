@@ -1,23 +1,18 @@
-<!DOCTYPE html>
+@verbatim<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>KingSelection - Projeto</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  <style>
-    html, body { background-color: #000000; color: #ffffff; }
-  </style>
-  <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
-</head>
+  </head>
 
-<body class="bg-black text-white">
+<body>
   <div class="ks-top">
     <div class="ks-wrap flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center gap-3">
