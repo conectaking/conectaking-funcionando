@@ -1599,10 +1599,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cid = parseInt(c.id, 10);
       if (cid) {
         try {
-          const pw = await fetchClientPassword(cid);
-          const core = buildWhatsMessageForClient({ email: c.email, password: pw });
-          if (custom) return `${core}\n\n${custom}`;
-          return core;
+          // Só usa senha se já estiver em cache (evita prompt/geração automática ao abrir a aba)
+          const pw = _clientPwCache.has(cid) ? _clientPwCache.get(cid) : null;
+          if (pw) {
+            const core = buildWhatsMessageForClient({ email: c.email, password: pw });
+            if (custom) return `${core}\n\n${custom}`;
+            return core;
+          }
         } catch (_) {
           /* segue para texto sem senha */
         }
@@ -8429,10 +8432,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const id = parseInt(clientId || 0, 10);
     if (!id) throw new Error('clientId inválido');
     const forceNew = !!opts.forceNew;
-    if (!forceNew && _clientPwCache.has(id)) return _clientPwCache.get(id);
-    if (!confirm('Isto gera uma NOVA senha e invalida a anterior. Continuar?')) {
-      throw new Error('Cancelado');
+    // Se já temos a senha em cache, retorna sem pedir confirmação
+    if (_clientPwCache.has(id)) return _clientPwCache.get(id);
+    // Sem cache e sem forceNew: não podemos revelar a senha sem gerar uma nova
+    if (!forceNew) {
+      const err = new Error('Senha não disponível. Use "Nova senha" no cartão do cliente para gerar.');
+      err.code = 'NO_CACHED_PASSWORD';
+      throw err;
     }
+    // forceNew=true: gera nova senha sem pedir confirmação (a confirmação fica no nível da UI)
     const pw = randomPass6();
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${id}/reset-password`, {
       method: 'POST',
@@ -8740,9 +8748,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (action === 'eye') {
       e.preventDefault();
       try {
+        // forceNew: gera nova senha (sem confirm — o botão já indica que é para isso)
         const pw = await fetchClientPassword(clientId, { forceNew: true });
         const passEl = card.querySelector('[data-pass]');
         if (passEl) passEl.textContent = pw;
+        toast('Nova senha gerada para o cliente.', { kind: 'ok', title: 'Senha' });
       } catch (err) {
         showError(err.message || 'Erro');
       }
@@ -8766,8 +8776,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         openShareModal();
         const amPriv = amShare === 'private';
         if (amPriv) {
-          const pw = await fetchClientPassword(clientId);
-          if (sharePass) sharePass.textContent = pw;
+          // Mostra a senha do cache se disponível; caso contrário exibe dica para gerar
+          if (_clientPwCache.has(clientId)) {
+            if (sharePass) sharePass.textContent = _clientPwCache.get(clientId);
+          } else {
+            if (sharePass) sharePass.textContent = '⚠ Clique em "Nova senha" no cartão do cliente para ver a senha';
+          }
         } else if (sharePass) {
           sharePass.textContent = '(login automático pelo link)';
         }
@@ -8791,12 +8805,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           } catch (_) { /* link genérico */ }
           const msg = buildWhatsMessageForClient({ email: c.email, link });
           await copyToClipboard(msg);
+          toast('Acesso copiado. Cole no WhatsApp.', { kind: 'ok', title: 'Copiado' });
         } else {
-          const pw = await fetchClientPassword(clientId);
+          // Verifica cache primeiro; se não tiver, gera nova senha com confirmação do usuário
+          let pw = _clientPwCache.has(clientId) ? _clientPwCache.get(clientId) : null;
+          if (!pw) {
+            toast('Senha não disponível. Clique em "Nova senha" no cartão do cliente primeiro.', { kind: 'warn', title: 'Atenção' });
+            return;
+          }
           const msg = buildWhatsMessageForClient({ email: c.email, password: pw, link });
           await copyToClipboard(msg);
+          toast('Acesso copiado. Cole no WhatsApp.', { kind: 'ok', title: 'Copiado' });
         }
-        toast('Acesso copiado. Cole no WhatsApp.', { kind: 'ok', title: 'Copiado' });
       } catch (err) {
         showError(err.message || 'Erro');
       }
@@ -8883,7 +8903,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     try {
       if (!_activeClientId) throw new Error('Selecione um cliente.');
-      const pw = await fetchClientPassword(_activeClientId);
+      // Usa senha do cache; se não houver, alerta o usuário para gerar primeiro
+      const pw = _clientPwCache.has(_activeClientId) ? _clientPwCache.get(_activeClientId) : null;
+      if (!pw) {
+        toast('Senha não disponível. Clique em "Nova senha" no cartão do cliente primeiro.', { kind: 'warn', title: 'Atenção' });
+        return;
+      }
       const msg = buildWhatsMessageForClient({ email: _activeClientEmail, password: pw });
       await copyToClipboard(msg);
       toast('Copiado.', { kind: 'ok', title: 'Copiado' });
@@ -8895,7 +8920,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     try {
       if (!_activeClientId) throw new Error('Selecione um cliente.');
-      const pw = await fetchClientPassword(_activeClientId);
+      // Usa senha do cache; se não houver, alerta o usuário para gerar primeiro
+      const pw = _clientPwCache.has(_activeClientId) ? _clientPwCache.get(_activeClientId) : null;
+      if (!pw) {
+        toast('Senha não disponível. Clique em "Nova senha" no cartão do cliente primeiro.', { kind: 'warn', title: 'Atenção' });
+        return;
+      }
       const msg = buildWhatsMessageForClient({ email: _activeClientEmail, password: pw });
       const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
