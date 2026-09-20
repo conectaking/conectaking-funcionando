@@ -1051,13 +1051,13 @@ class KingSelectionAdminController extends Controller
         }
 
         if (! $this->r2->isEnabled()) {
-            return response()->json(['message' => 'R2 não está configurado.'], 503);
+            return response()->json(['message' => 'R2 não está configurado neste servidor.'], 503);
         }
 
         // 1. Listar todos os objetos em galleries/ no R2 (paginado)
         $allObjects = [];
         $token = null;
-        $maxRounds = 30; // segurança: máx ~30.000 objetos por chamada
+        $maxRounds = 30; // máx ~30.000 objetos por chamada
         do {
             $page = $this->r2->listObjects('galleries/', 1000, $token);
             if ($page === null) {
@@ -1068,32 +1068,38 @@ class KingSelectionAdminController extends Controller
             $maxRounds--;
         } while ($page['truncated'] && $token && $maxRounds > 0);
 
-        // 2. Buscar galerias do usuário no banco
-        $galleries = \Illuminate\Support\Facades\DB::table('king_galleries')
-            ->where('user_id', $userId)
-            ->whereNull('deleted_at')
-            ->get(['id', 'name', 'created_at'])
+        // 2. Buscar galerias do usuário no banco (via profile_items)
+        $galleries = \Illuminate\Support\Facades\DB::table('king_galleries as g')
+            ->join('profile_items as pi', 'pi.id', '=', 'g.profile_item_id')
+            ->where('pi.user_id', $userId)
+            ->whereNull('g.deleted_at')
+            ->select(['g.id', 'g.nome_projeto as nome', 'g.slug', 'g.created_at'])
+            ->orderBy('g.id', 'desc')
+            ->get()
             ->keyBy('id');
 
-        $allGalleryIds = \Illuminate\Support\Facades\DB::table('king_galleries')
-            ->where('user_id', $userId)
+        $userGalleryIds = $galleries->keys()->map(fn ($k) => (int) $k)->toArray();
+        $userGallerySet = array_flip($userGalleryIds);
+
+        // Todas as galerias existentes (ativas) no banco
+        $allExistingGalleryIds = \Illuminate\Support\Facades\DB::table('king_galleries')
+            ->whereNull('deleted_at')
             ->pluck('id')
+            ->map(fn ($k) => (int) $k)
             ->toArray();
+        $allExistingGallerySet = array_flip($allExistingGalleryIds);
 
         // 3. Buscar todas as chaves de fotos no banco
         // file_path é salvo como 'r2:galleries/ID/uuid.ext' — remover o prefixo 'r2:' ao indexar
         $dbKeys = [];
         if (\App\Support\SchemaMeta::hasColumn('king_photos', 'file_path')) {
             $paths = \Illuminate\Support\Facades\DB::table('king_photos')
-                ->whereIn('gallery_id', $allGalleryIds)
                 ->where('file_path', 'like', 'r2:galleries/%')
                 ->pluck('file_path')
                 ->toArray();
             foreach ($paths as $p) {
-                // strip 'r2:' prefix to get the bare R2 key
                 $key = preg_replace('/^r2:/', '', $p);
                 $dbKeys[$key] = true;
-                // também registrar o thumbnail (_t360)
                 $thumb = preg_replace('/(\.[^.]+)$/', '_t360$1', $key);
                 if ($thumb !== $key) {
                     $dbKeys[$thumb] = true;
@@ -1101,103 +1107,182 @@ class KingSelectionAdminController extends Controller
             }
         }
 
-        // 4. Agrupar objetos R2 por galleryId
-        $r2ByGallery = [];  // galleryId => [{key,size,lastModified}]
-        $r2Orphan = [];     // objetos de galerias sem dono (não são do usuário)
-        $totalSize = 0;
-        $totalCount = 0;
-        $orphanFiles = [];
-
-        foreach ($allObjects as $obj) {
-            $key = $obj['key'];
-            $totalSize += $obj['size'];
-            $totalCount++;
-
-            // Extrair galleryId do caminho galleries/{id}/...
-            if (preg_match('#^galleries/(\d+)/#', $key, $m)) {
-                $gid = (int) $m[1];
-                if (! isset($r2ByGallery[$gid])) {
-                    $r2ByGallery[$gid] = ['count' => 0, 'size' => 0, 'lastModified' => '', 'orphanCount' => 0];
-                }
-                $r2ByGallery[$gid]['count']++;
-                $r2ByGallery[$gid]['size'] += $obj['size'];
-                if ($obj['lastModified'] > $r2ByGallery[$gid]['lastModified']) {
-                    $r2ByGallery[$gid]['lastModified'] = $obj['lastModified'];
-                }
-                // Detectar arquivo órfão (não referenciado no BD)
-                if (! isset($dbKeys[$key])) {
-                    $r2ByGallery[$gid]['orphanCount']++;
-                    if (count($orphanFiles) < 250) {
-                        $orphanFiles[] = [
-                            'key'          => $key,
-                            'galleryId'    => $gid,
-                            'subfolder'    => dirname(str_replace("galleries/{$gid}/", '', $key)) ?: '',
-                            'size'         => $obj['size'],
-                            'lastModified' => $obj['lastModified'],
-                        ];
-                    }
-                }
-            }
-        }
-
-        // 5. Montar lista de projetos (só do usuário)
-        $projectRows = [];
-        $dbPhotoCount = [];
-        if ($allGalleryIds) {
-            $counts = \Illuminate\Support\Facades\DB::table('king_photos')
-                ->whereIn('gallery_id', $allGalleryIds)
+        // Contagem de fotos no BD para as galerias do usuário
+        $dbPhotoCounts = [];
+        if ($userGalleryIds !== []) {
+            $dbPhotoCounts = \Illuminate\Support\Facades\DB::table('king_photos')
+                ->whereIn('gallery_id', $userGalleryIds)
                 ->selectRaw('gallery_id, count(*) as cnt')
                 ->groupBy('gallery_id')
                 ->pluck('cnt', 'gallery_id')
+                ->mapWithKeys(fn ($cnt, $gid) => [(int) $gid => (int) $cnt])
                 ->toArray();
-            $dbPhotoCount = $counts;
-        }
-        foreach ($galleries as $gid => $g) {
-            $r2info = $r2ByGallery[$gid] ?? null;
-            $projectRows[] = [
-                'id'            => $gid,
-                'name'          => $g->name ?? "Galeria {$gid}",
-                'dbPhotos'      => $dbPhotoCount[$gid] ?? 0,
-                'r2Files'       => $r2info['count'] ?? 0,
-                'r2Orphans'     => $r2info['orphanCount'] ?? 0,
-                'r2Size'        => $r2info['size'] ?? 0,
-                'r2LastUpload'  => $r2info['lastModified'] ?? null,
-                'subfolders'    => [],
-                'status'        => ($r2info === null) ? 'sem_r2' : (($r2info['orphanCount'] > 0) ? 'orfaos' : 'ok'),
-            ];
         }
 
-        // 6. Pastas órfãs (galleryIds no R2 que não estão entre as galerias do usuário)
-        $userGallerySet = array_flip($allGalleryIds);
-        $orphanFolders = [];
-        foreach ($r2ByGallery as $gid => $info) {
-            if (! isset($userGallerySet[$gid])) {
-                $orphanFolders[] = [
-                    'galleryId'    => $gid,
-                    'folder'       => "galleries/{$gid}/",
-                    'files'        => $info['count'],
-                    'size'         => $info['size'],
-                    'lastModified' => $info['lastModified'],
-                    'subfolders'   => [],
-                ];
+        // 4. Agrupar objetos R2
+        $r2ByGallery = [];
+        $orphanFoldersMap = [];
+        $allUserOrphans = [];
+
+        foreach ($allObjects as $obj) {
+            $key = $obj['key'];
+            if (! preg_match('#^galleries/(\d+)/#', $key, $m)) {
+                continue;
+            }
+            $gid = (int) $m[1];
+            $rel = substr($key, strlen("galleries/{$gid}/"));
+            $subfolder = dirname($rel);
+            if ($subfolder === '.' || $subfolder === '/') {
+                $subfolder = '';
+            }
+
+            $isOrphan = ! isset($dbKeys[$key]);
+
+            // Se pertencer às galerias do usuário
+            if (isset($userGallerySet[$gid])) {
+                if (! isset($r2ByGallery[$gid])) {
+                    $r2ByGallery[$gid] = [
+                        'files'        => 0,
+                        'bytes'        => 0,
+                        'orphanFiles'  => 0,
+                        'lastModified' => '',
+                        'subfolders'   => [],
+                    ];
+                }
+                $r2ByGallery[$gid]['files']++;
+                $r2ByGallery[$gid]['bytes'] += $obj['size'];
+                if ($obj['lastModified'] > $r2ByGallery[$gid]['lastModified']) {
+                    $r2ByGallery[$gid]['lastModified'] = $obj['lastModified'];
+                }
+
+                if ($subfolder !== '') {
+                    if (! isset($r2ByGallery[$gid]['subfolders'][$subfolder])) {
+                        $r2ByGallery[$gid]['subfolders'][$subfolder] = [
+                            'name'        => $subfolder,
+                            'files'       => 0,
+                            'bytes'       => 0,
+                            'orphanFiles' => 0,
+                        ];
+                    }
+                    $r2ByGallery[$gid]['subfolders'][$subfolder]['files']++;
+                    $r2ByGallery[$gid]['subfolders'][$subfolder]['bytes'] += $obj['size'];
+                    if ($isOrphan) {
+                        $r2ByGallery[$gid]['subfolders'][$subfolder]['orphanFiles']++;
+                    }
+                }
+
+                if ($isOrphan) {
+                    $r2ByGallery[$gid]['orphanFiles']++;
+                    $allUserOrphans[] = [
+                        'fileName'  => basename($key),
+                        'key'       => $key,
+                        'galleryId' => $gid,
+                        'subfolder' => $subfolder,
+                        'size'      => $obj['size'],
+                        'uploaded'  => $obj['lastModified'],
+                    ];
+                }
+            } elseif (! isset($allExistingGallerySet[$gid])) {
+                // Pasta de projeto que já foi excluído do sistema
+                if (! isset($orphanFoldersMap[$gid])) {
+                    $orphanFoldersMap[$gid] = [
+                        'galleryId'    => $gid,
+                        'r2Files'      => 0,
+                        'r2Bytes'      => 0,
+                        'lastUploaded' => '',
+                        'subfolders'   => [],
+                    ];
+                }
+                $orphanFoldersMap[$gid]['r2Files']++;
+                $orphanFoldersMap[$gid]['r2Bytes'] += $obj['size'];
+                if ($obj['lastModified'] > $orphanFoldersMap[$gid]['lastUploaded']) {
+                    $orphanFoldersMap[$gid]['lastUploaded'] = $obj['lastModified'];
+                }
+
+                if ($subfolder !== '') {
+                    if (! isset($orphanFoldersMap[$gid]['subfolders'][$subfolder])) {
+                        $orphanFoldersMap[$gid]['subfolders'][$subfolder] = [
+                            'name'        => $subfolder,
+                            'files'       => 0,
+                            'bytes'       => 0,
+                            'orphanFiles' => 0,
+                        ];
+                    }
+                    $orphanFoldersMap[$gid]['subfolders'][$subfolder]['files']++;
+                    $orphanFoldersMap[$gid]['subfolders'][$subfolder]['bytes'] += $obj['size'];
+                    if ($isOrphan) {
+                        $orphanFoldersMap[$gid]['subfolders'][$subfolder]['orphanFiles']++;
+                    }
+                }
+
+                if ($isOrphan) {
+                    $allUserOrphans[] = [
+                        'fileName'  => basename($key),
+                        'key'       => $key,
+                        'galleryId' => $gid,
+                        'subfolder' => $subfolder,
+                        'size'      => $obj['size'],
+                        'uploaded'  => $obj['lastModified'],
+                    ];
+                }
             }
         }
 
-        // 7. Totais
-        $totalOrphans = array_sum(array_column($orphanFiles, 'size') ? array_map(fn ($r) => 1, $orphanFiles) : []);
-        $totalOrphanCount = count($orphanFiles);
-        $orphanSizeTotal = array_sum(array_column($orphanFiles, 'size'));
+        // 5. Montar lista de projetos (frontend expects 'projects')
+        $projectsList = [];
+        $userProjectsWithR2 = 0;
+        foreach ($galleries as $gid => $g) {
+            $r2 = $r2ByGallery[$gid] ?? null;
+            $r2Files = $r2['files'] ?? 0;
+            $r2Bytes = $r2['bytes'] ?? 0;
+            $orphanCount = $r2['orphanFiles'] ?? 0;
+            if ($r2Files > 0) {
+                $userProjectsWithR2++;
+            }
+            $status = ($r2Files === 0) ? 'sem_arquivos_r2' : (($orphanCount > 0) ? 'com_orfaos' : 'ok');
+            $subfoldersList = array_values($r2['subfolders'] ?? []);
+
+            $projectsList[] = [
+                'galleryId'    => (int) $gid,
+                'nome'         => $g->nome ?? "Galeria {$gid}",
+                'slug'         => $g->slug ?? '',
+                'dbPhotos'     => $dbPhotoCounts[$gid] ?? 0,
+                'r2Files'      => $r2Files,
+                'orphanFiles'  => $orphanCount,
+                'r2Bytes'      => $r2Bytes,
+                'lastUploaded' => $r2['lastModified'] ?? null,
+                'subfolders'   => $subfoldersList,
+                'status'       => $status,
+            ];
+        }
+
+        // 6. Resumo geral (frontend expects data.summary)
+        $orphanBytesTotal = array_sum(array_column($allUserOrphans, 'size'));
+        $summary = [
+            'r2TotalFiles'         => count($allObjects),
+            'r2TotalBytes'         => array_sum(array_column($allObjects, 'size')),
+            'referencedInDb'       => count($dbKeys),
+            'orphanFiles'          => count($allUserOrphans),
+            'orphanBytes'          => $orphanBytesTotal,
+            'userProjects'         => count($galleries),
+            'userProjectsWithR2'   => $userProjectsWithR2,
+            'orphanProjectFolders' => count($orphanFoldersMap),
+        ];
+
+        // Formatar subfolders em orphanFolders para lista indexada
+        $orphanFoldersList = [];
+        foreach ($orphanFoldersMap as $f) {
+            $f['subfolders'] = array_values($f['subfolders'] ?? []);
+            $orphanFoldersList[] = $f;
+        }
 
         return response()->json([
-            'generated'   => now()->toIso8601String(),
-            'total'       => $totalCount,
-            'totalSize'   => $totalSize,
-            'referenced'  => count($dbKeys),
-            'orphans'     => $totalOrphanCount,
-            'orphanSize'  => $orphanSizeTotal,
-            'projects'    => $projectRows,
-            'orphanFolders' => $orphanFolders,
-            'orphanFiles' => $orphanFiles,
+            'generatedAt'            => now()->toIso8601String(),
+            'summary'                => $summary,
+            'projects'               => $projectsList,
+            'orphanFolders'          => $orphanFoldersList,
+            'orphanSamples'          => array_slice($allUserOrphans, 0, 100),
+            'orphanSamplesTruncated' => count($allUserOrphans) > 100,
         ])->header('X-Conecta-Engine', 'laravel');
     }
 
@@ -1219,11 +1304,15 @@ class KingSelectionAdminController extends Controller
             return response()->json(['message' => 'Confirmação inválida. Envie confirm: "SIM".'], 422);
         }
 
-        // Reusar a lógica do inventário para obter órfãos
-        $allGalleryIds = \Illuminate\Support\Facades\DB::table('king_galleries')
-            ->where('user_id', $userId)
-            ->pluck('id')
+        // Galerias do usuário
+        $allGalleryIds = \Illuminate\Support\Facades\DB::table('king_galleries as g')
+            ->join('profile_items as pi', 'pi.id', '=', 'g.profile_item_id')
+            ->where('pi.user_id', $userId)
+            ->pluck('g.id')
+            ->map(fn ($k) => (int) $k)
             ->toArray();
+
+        $userGallerySet = array_flip($allGalleryIds);
 
         $dbKeys = [];
         if (\App\Support\SchemaMeta::hasColumn('king_photos', 'file_path')) {
@@ -1256,7 +1345,6 @@ class KingSelectionAdminController extends Controller
             $maxRounds--;
         } while ($page['truncated'] && $token && $maxRounds > 0);
 
-        $userGallerySet = array_flip($allGalleryIds);
         $orphanKeys = [];
         foreach ($allObjects as $obj) {
             $key = $obj['key'];
@@ -1275,9 +1363,9 @@ class KingSelectionAdminController extends Controller
 
         if ($dryRun) {
             return response()->json([
-                'dryRun'   => true,
-                'total'    => count($allObjects),
-                'orphans'  => count($orphanKeys),
+                'dryRun'     => true,
+                'total'      => count($allObjects),
+                'orphans'    => count($orphanKeys),
                 'referenced' => count($dbKeys),
             ]);
         }
