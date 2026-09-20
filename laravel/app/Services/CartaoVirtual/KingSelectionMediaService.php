@@ -448,6 +448,21 @@ class KingSelectionMediaService
                 }
             }
         }
+        try {
+            $coverPhoto = DB::selectOne(
+                'SELECT id, file_path, edited_file_path FROM king_photos WHERE gallery_id = ? AND is_cover = TRUE LIMIT 1',
+                [$galleryId]
+            );
+            if ($coverPhoto) {
+                $p = trim((string) ($coverPhoto->edited_file_path ?: $coverPhoto->file_path));
+                if ($p !== '') {
+                    $buf = $this->bufferFromPath($p);
+                    if ($buf !== null) {
+                        return $buf;
+                    }
+                }
+            }
+        } catch (\Throwable) {}
         $fallback = $this->firstPhotoPath($galleryId);
         if ($fallback) {
             return $this->bufferFromPath($fallback);

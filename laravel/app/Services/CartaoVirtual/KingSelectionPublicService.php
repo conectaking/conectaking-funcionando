@@ -270,7 +270,8 @@ class KingSelectionPublicService
         $host = preg_replace('#^https?://#i', '', $host) ?: 'www.conectaking.com.br';
         $base = 'https://'.rtrim($host, '/');
         $canonical = $base.'/kingSelection/'.rawurlencode($g['slug']);
-        $ogImage = $base.'/api/king-selection/public/og-image?slug='.rawurlencode($g['slug']);
+        $coverVer = (string) ($g['gallery_link_cover_photo_id'] ?? '') ?: ($g['cover_photo_id'] ?? '') ?: (isset($g['updated_at']) && $g['updated_at'] ? (string) strtotime((string) $g['updated_at']) : '1');
+        $ogImage = $base.'/api/king-selection/public/og-image?slug='.rawurlencode($g['slug']).'&v='.$coverVer;
         $photos = (int) ($g['total_photos'] ?? 0);
         $desc = $photos > 0
             ? "Galeria {$name} — {$photos} foto(s). King Selection · ConectaKing."

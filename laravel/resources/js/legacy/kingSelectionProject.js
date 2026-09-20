@@ -1599,8 +1599,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cid = parseInt(c.id, 10);
       if (cid) {
         try {
-          // Só usa senha se já estiver em cache (evita prompt/geração automática ao abrir a aba)
-          const pw = _clientPwCache.has(cid) ? _clientPwCache.get(cid) : null;
+          // Tenta obter senha do cache ou do servidor sem alterar a senha
+          const pw = _clientPwCache.has(cid) ? _clientPwCache.get(cid) : await fetchClientPassword(cid, { forceNew: false }).catch(() => null);
           if (pw) {
             const core = buildWhatsMessageForClient({ email: c.email, password: pw });
             if (custom) return `${core}\n\n${custom}`;
@@ -8399,13 +8399,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     clientModalTitle && (clientModalTitle.textContent = title || 'Cliente');
     clientModal.classList.remove('hidden');
     clientModal.classList.add('flex');
+    clientModal.style.display = 'flex';
     clientModal.setAttribute('aria-hidden', 'false');
-    setTimeout(() => cfName?.focus(), 50);
+    try { cfName?.focus({ preventScroll: true }); } catch (_) { try { cfName?.focus(); } catch (__) {} }
   }
   function closeClientModal() {
     if (!clientModal) return;
     clientModal.classList.add('hidden');
     clientModal.classList.remove('flex');
+    clientModal.style.display = 'none';
     clientModal.setAttribute('aria-hidden', 'true');
     _activeClientId = null;
     _activeClientEmail = null;
@@ -8415,12 +8417,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!shareModal) return;
     shareModal.classList.remove('hidden');
     shareModal.classList.add('flex');
+    shareModal.style.display = 'flex';
     shareModal.setAttribute('aria-hidden', 'false');
   }
   function closeShareModal() {
     if (!shareModal) return;
     shareModal.classList.add('hidden');
     shareModal.classList.remove('flex');
+    shareModal.style.display = 'none';
     shareModal.setAttribute('aria-hidden', 'true');
   }
 
@@ -8432,15 +8436,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const id = parseInt(clientId || 0, 10);
     if (!id) throw new Error('clientId inválido');
     const forceNew = !!opts.forceNew;
-    // Se já temos a senha em cache, retorna sem pedir confirmação
-    if (_clientPwCache.has(id)) return _clientPwCache.get(id);
-    // Sem cache e sem forceNew: não podemos revelar a senha sem gerar uma nova
+    // Se já temos a senha em cache e não foi pedido para forçar nova, retorna do cache
+    if (!forceNew && _clientPwCache.has(id)) return _clientPwCache.get(id);
+
+    // Se não for forceNew, tenta buscar a senha atual do cliente gravada no banco
     if (!forceNew) {
-      const err = new Error('Senha não disponível. Use "Nova senha" no cartão do cliente para gerar.');
+      try {
+        const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${id}/password`, {
+          headers: HEADERS
+        });
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const pw = String(data.client_password || '').trim();
+          if (pw) {
+            _clientPwCache.set(id, pw);
+            return pw;
+          }
+        }
+      } catch (_) {}
+      const err = new Error('Senha não disponível.');
       err.code = 'NO_CACHED_PASSWORD';
       throw err;
     }
-    // forceNew=true: gera nova senha sem pedir confirmação (a confirmação fica no nível da UI)
+
+    // forceNew=true: gera nova senha e salva no servidor
     const pw = randomPass6();
     const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${id}/reset-password`, {
       method: 'POST',
@@ -8748,11 +8767,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (action === 'eye') {
       e.preventDefault();
       try {
-        // forceNew: gera nova senha (sem confirm — o botão já indica que é para isso)
-        const pw = await fetchClientPassword(clientId, { forceNew: true });
+        let pw;
+        try {
+          pw = await fetchClientPassword(clientId, { forceNew: false });
+        } catch (_) {
+          if (confirm('A senha deste cliente ainda não está gravada. Deseja gerar uma senha agora?')) {
+            pw = await fetchClientPassword(clientId, { forceNew: true });
+            toast('Nova senha gerada para o cliente.', { kind: 'ok', title: 'Senha' });
+          } else {
+            return;
+          }
+        }
         const passEl = card.querySelector('[data-pass]');
         if (passEl) passEl.textContent = pw;
-        toast('Nova senha gerada para o cliente.', { kind: 'ok', title: 'Senha' });
+        toast(`Senha do cliente: ${pw}`, { kind: 'ok', title: 'Senha' });
       } catch (err) {
         showError(err.message || 'Erro');
       }
@@ -8776,11 +8804,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         openShareModal();
         const amPriv = amShare === 'private';
         if (amPriv) {
-          // Mostra a senha do cache se disponível; caso contrário exibe dica para gerar
-          if (_clientPwCache.has(clientId)) {
-            if (sharePass) sharePass.textContent = _clientPwCache.get(clientId);
-          } else {
-            if (sharePass) sharePass.textContent = '⚠ Clique em "Nova senha" no cartão do cliente para ver a senha';
+          const pw = _clientPwCache.has(clientId)
+            ? _clientPwCache.get(clientId)
+            : await fetchClientPassword(clientId, { forceNew: false }).catch(() => null);
+          if (sharePass) {
+            sharePass.textContent = pw || 'Sem senha definida';
           }
         } else if (sharePass) {
           sharePass.textContent = '(login automático pelo link)';
@@ -8807,11 +8835,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           await copyToClipboard(msg);
           toast('Acesso copiado. Cole no WhatsApp.', { kind: 'ok', title: 'Copiado' });
         } else {
-          // Verifica cache primeiro; se não tiver, gera nova senha com confirmação do usuário
-          let pw = _clientPwCache.has(clientId) ? _clientPwCache.get(clientId) : null;
+          let pw = _clientPwCache.has(clientId)
+            ? _clientPwCache.get(clientId)
+            : await fetchClientPassword(clientId, { forceNew: false }).catch(() => null);
           if (!pw) {
-            toast('Senha não disponível. Clique em "Nova senha" no cartão do cliente primeiro.', { kind: 'warn', title: 'Atenção' });
-            return;
+            if (confirm('Senha não disponível para este cliente. Deseja gerar uma senha agora?')) {
+              pw = await fetchClientPassword(clientId, { forceNew: true });
+            } else {
+              return;
+            }
           }
           const msg = buildWhatsMessageForClient({ email: c.email, password: pw, link });
           await copyToClipboard(msg);
@@ -8855,19 +8887,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       clientModalSave.disabled = true;
 
       if (_activeClientId) {
-        await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${_activeClientId}`, {
+        const pass = (cfPass?.value || '').trim();
+        const payload = {
+          nome,
+          email,
+          telefone: (cfPhone?.value || '').trim(),
+          note: (cfNote?.value || '').trim(),
+          enabled: true
+        };
+        if (pass) payload.senha = pass;
+        const resPut = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients/${_activeClientId}`, {
           method: 'PUT',
           headers: HEADERS,
-          body: JSON.stringify({
-            nome,
-            email,
-            telefone: (cfPhone?.value || '').trim(),
-            note: (cfNote?.value || '').trim(),
-            enabled: true
-          })
+          body: JSON.stringify(payload)
         });
-        const pass = (cfPass?.value || '').trim();
-        if (pass) await resetClientPassword(_activeClientId, pass);
+        if (!resPut.ok) {
+          const errData = await resPut.json().catch(() => ({}));
+          throw new Error(errData.message || 'Erro ao atualizar cliente');
+        }
+        if (pass) {
+          _clientPwCache.set(parseInt(_activeClientId, 10), pass);
+        }
       } else {
         const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/clients`, {
           method: 'POST',

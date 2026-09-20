@@ -1,16 +1,21 @@
-@verbatim<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>KingSelection - Projeto</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  </head>
+  <style>
+    html, body { background-color: #000000; color: #ffffff; }
+  </style>
+  <script src="/config.js?v=2026-09-10-apex1"></script>
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
+</head>
 
 <body>
   <div class="ks-top">
@@ -832,6 +837,7 @@
           </div>
 
           <div class="mt-6 rounded-xl border border-amber-500/35 bg-amber-950/20 p-4">
+            @verbatim
             <div class="text-xs font-extrabold text-amber-100/90 tracking-widest uppercase mb-2">Mensagens WhatsApp · Fotos e vendas</div>
             <p class="text-sm text-amber-50/90 mt-1 max-w-3xl">Textos usados no botão <b>WhatsApp do cliente</b> (aba <b>Fotos e vendas</b>), conforme a situação. Ao abrir o WhatsApp, o sistema preenche com o modelo correspondente e os códigos abaixo.</p>
             <p class="text-xs text-amber-100/75 mt-2 max-w-3xl"><code class="text-amber-200/95">{{nome}}</code> nome do cliente · <code class="text-amber-200/95">{{link}}</code> link público da galeria · <code class="text-amber-200/95">{{galeria}}</code> nome do evento ou projeto. No texto você pode usar <span class="whitespace-nowrap">*asteriscos*</span> para negrito no WhatsApp.</p>
@@ -855,6 +861,7 @@
             <div class="mt-2 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-ai-approved" title="Gera texto com a IA do servidor (OpenAI), mantendo {{nome}}, {{link}} e {{galeria}}"><i class="fas fa-wand-magic-sparkles"></i> Gerar com IA</button>
             </div>
+            @endverbatim
             <div class="mt-4 flex flex-wrap gap-2 items-center">
               <button type="button" class="ks-btn ks-btn-primary" id="ks-sales-wa-tpl-save"><i class="fas fa-save"></i> Salvar textos de vendas</button>
               <button type="button" class="ks-btn" id="ks-sales-wa-tpl-reset" title="Apaga os textos personalizados e volta aos modelos padrão do sistema (grava no servidor)."><i class="fas fa-rotate-left"></i> Usar padrões do sistema</button>
@@ -1497,7 +1504,7 @@
 
   <!-- Modal: Cliente (Adicionar/Editar) -->
   <div id="ks-client-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:120;" aria-hidden="true">
+    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:120;align-items:center;justify-content:center;" aria-hidden="true">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
         <div class="font-extrabold" id="ks-client-modal-title">Adicionar cliente</div>
@@ -1542,7 +1549,7 @@
 
   <!-- Modal: Compartilhar acesso do cliente -->
   <div id="ks-client-share-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:120;" aria-hidden="true">
+    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:120;align-items:center;justify-content:center;" aria-hidden="true">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
         <div class="font-extrabold">Compartilhar acesso</div>
@@ -1611,7 +1618,7 @@
 
   <!-- Export modal simples -->
   <div id="ks-export-modal" class="fixed inset-0 hidden items-center justify-center p-4"
-    style="background:rgba(0,0,0,.55);z-index:120;">
+    style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:120;align-items:center;justify-content:center;">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <div class="font-extrabold">Exportar fotos</div>
@@ -1712,9 +1719,6 @@
   <!-- Toast host -->
   <div class="ks-toast-host" id="ks-toast-host" aria-live="polite" aria-atomic="true"></div>
 
-@endverbatim
-  <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionProject.js'])
 </body>
 
 </html>

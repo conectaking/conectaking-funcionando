@@ -1541,6 +1541,16 @@ class KingSelectionAdminService
             $sets[] = 'note = ?';
             $params[] = $body['note'] === null ? null : trim((string) $body['note']);
         }
+        if (array_key_exists('senha', $body) && trim((string) $body['senha']) !== '') {
+            $senhaStr = trim((string) $body['senha']);
+            $sets[] = 'senha_hash = ?';
+            $params[] = password_hash($senhaStr, PASSWORD_BCRYPT);
+            if (SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc')) {
+                $sets[] = 'senha_enc = ?';
+                $params[] = $this->passwordCrypto->encrypt($senhaStr);
+            }
+        }
+
         if ($sets === []) {
             return ['status' => 200, 'body' => ['success' => true]];
         }
@@ -2235,14 +2245,28 @@ class KingSelectionAdminService
      */
     public function getClientPassword(string $userId, int $galleryId, int $clientId): array
     {
-        return [
-            'status' => 410,
-            'body' => [
-                'success' => false,
-                'message' => 'Revelar senha antiga foi desativado. Gere uma nova senha.',
-                'code' => 'PASSWORD_REVEAL_DISABLED',
-            ],
-        ];
+        if (! $this->ownedGallery($userId, $galleryId)) {
+            return ['status' => 403, 'body' => ['message' => 'Sem permissão']];
+        }
+        if ($galleryId < 1 || $clientId < 1) {
+            return ['status' => 400, 'body' => ['message' => 'IDs inválidos']];
+        }
+        if (! SchemaMeta::hasTable('king_gallery_clients')) {
+            return ['status' => 500, 'body' => ['message' => 'Tabela de clientes não disponível']];
+        }
+        $row = DB::selectOne(
+            'SELECT senha_enc FROM king_gallery_clients WHERE gallery_id = ? AND id = ? LIMIT 1',
+            [$galleryId, $clientId]
+        );
+        if (! $row) {
+            return ['status' => 404, 'body' => ['message' => 'Cliente não encontrado']];
+        }
+        $plain = $this->passwordCrypto->decrypt($row->senha_enc ?? null);
+        if ($plain !== null && $plain !== '') {
+            return ['status' => 200, 'body' => ['success' => true, 'client_password' => $plain]];
+        }
+
+        return ['status' => 404, 'body' => ['success' => false, 'message' => 'Senha não disponível. Defina uma nova senha.', 'code' => 'NO_PASSWORD_STORED']];
     }
 
     /**
@@ -2426,6 +2450,9 @@ class KingSelectionAdminService
                 DB::update('UPDATE king_photos SET is_cover = FALSE WHERE gallery_id = ?', [$galleryId]);
                 $sets[] = 'is_cover = ?';
                 $params[] = true;
+                try {
+                    DB::update('UPDATE king_galleries SET gallery_link_cover_photo_id = ?, gallery_link_cover_file_path = NULL WHERE id = ?', [$photoId, $galleryId]);
+                } catch (\Throwable) {}
             } else {
                 $sets[] = 'is_cover = ?';
                 $params[] = false;

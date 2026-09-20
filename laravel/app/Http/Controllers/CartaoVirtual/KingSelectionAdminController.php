@@ -812,12 +812,15 @@ class KingSelectionAdminController extends Controller
 
     public function getClientPassword(Request $request, string $id, string $clientId)
     {
-        return response()->json([
-            'success' => false,
-            'message' => 'Revelar senha antiga foi desativado. Use «Nova senha» para gerar e ver uma senha nova (a anterior deixa de valer).',
-            'code' => 'PASSWORD_REVEAL_DISABLED',
-        ], 410)->header('X-Conecta-Engine', 'laravel');
+        $r = $this->admin->getClientPassword(
+            (string) $request->attributes->get('auth_user_id'),
+            (int) $id,
+            (int) $clientId
+        );
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
 
     public function uploadLinkCover(Request $request, string $id)
     {
