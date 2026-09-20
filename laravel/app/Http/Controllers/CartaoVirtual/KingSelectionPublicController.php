@@ -63,6 +63,7 @@ class KingSelectionPublicController extends Controller
                 'ksBootScript' => $boot,
                 'ksSlug' => $slug,
                 'gallery' => $result['data']['gallery'] ?? null,
+                'og' => $result['data']['og'] ?? [],
             ])
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('X-Conecta-Engine', 'laravel');
