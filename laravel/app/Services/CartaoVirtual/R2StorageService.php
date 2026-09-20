@@ -466,12 +466,118 @@ class R2StorageService
         }
     }
 
+
+    /**
+     * Lista objetos no bucket via S3 ListObjectsV2 (SigV4 GET).
+     * Retorna até $maxKeys por chamada. Use $continuationToken para paginar.
+     *
+     * @return array{objects:array<array{key:string,size:int,lastModified:string}>,nextToken:?string,truncated:bool}|null
+     */
+    public function listObjects(string $prefix = '', int $maxKeys = 1000, ?string $continuationToken = null): ?array
+    {
+        $c = $this->config();
+        if (! $c['enabled'] || ! $c['endpoint'] || ! $c['bucket']) {
+            return null;
+        }
+        try {
+            $bucket = (string) $c['bucket'];
+            $endpoint = rtrim((string) $c['endpoint'], '/');
+            $host = parse_url($endpoint, PHP_URL_HOST) ?: '';
+            $amzDate = gmdate('Ymd\THis\Z');
+            $dateStamp = gmdate('Ymd');
+            $payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+
+            // query params — must be sorted for canonical request
+            $qp = [
+                'list-type' => '2',
+                'max-keys'  => (string) $maxKeys,
+            ];
+            if ($prefix !== '') {
+                $qp['prefix'] = $prefix;
+            }
+            if ($continuationToken !== null && $continuationToken !== '') {
+                $qp['continuation-token'] = $continuationToken;
+            }
+            ksort($qp);
+            $canonicalQuery = implode('&', array_map(
+                fn ($k, $v) => rawurlencode($k) . '=' . rawurlencode($v),
+                array_keys($qp),
+                array_values($qp)
+            ));
+
+            $canonicalUri = '/' . $bucket . '/';
+            $headers = [
+                'host'                 => $host,
+                'x-amz-content-sha256' => $payloadHash,
+                'x-amz-date'           => $amzDate,
+            ];
+            ksort($headers);
+            $signedHeaderNames = implode(';', array_keys($headers));
+            $canonicalHeaders = '';
+            foreach ($headers as $k => $v) {
+                $canonicalHeaders .= $k . ':' . trim($v) . "\n";
+            }
+
+            $canonicalRequest = "GET\n{$canonicalUri}\n{$canonicalQuery}\n{$canonicalHeaders}\n{$signedHeaderNames}\n{$payloadHash}";
+            $credentialScope = "{$dateStamp}/auto/s3/aws4_request";
+            $stringToSign = "AWS4-HMAC-SHA256\n{$amzDate}\n{$credentialScope}\n" . hash('sha256', $canonicalRequest);
+            $signingKey = $this->signingKey((string) $c['secretAccessKey'], $dateStamp, 'auto', 's3');
+            $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+            $authorization = "AWS4-HMAC-SHA256 Credential={$c['accessKeyId']}/{$credentialScope}, SignedHeaders={$signedHeaderNames}, Signature={$signature}";
+
+            $url = $endpoint . $canonicalUri . '?' . $canonicalQuery;
+            $response = Http::withHeaders([
+                'Authorization'        => $authorization,
+                'Host'                 => $host,
+                'x-amz-content-sha256' => $payloadHash,
+                'x-amz-date'           => $amzDate,
+            ])->timeout(120)->get($url);
+
+            if (! $response->successful()) {
+                Log::warning('r2.listObjects.failed', [
+                    'status' => $response->status(),
+                    'body'   => substr($response->body(), 0, 500),
+                ]);
+                return null;
+            }
+
+            // Parse XML response
+            $xml = simplexml_load_string($response->body());
+            if (! $xml) {
+                return null;
+            }
+
+            $objects = [];
+            foreach ($xml->Contents ?? [] as $item) {
+                $objects[] = [
+                    'key'          => (string) $item->Key,
+                    'size'         => (int) $item->Size,
+                    'lastModified' => (string) $item->LastModified,
+                ];
+            }
+
+            $nextToken = isset($xml->NextContinuationToken) && (string) $xml->NextContinuationToken !== ''
+                ? (string) $xml->NextContinuationToken
+                : null;
+
+            return [
+                'objects'   => $objects,
+                'nextToken' => $nextToken,
+                'truncated' => ((string) ($xml->IsTruncated ?? 'false')) === 'true',
+            ];
+        } catch (\Throwable $e) {
+            Log::error('r2.listObjects', ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
     private function signingKey(string $secret, string $date, string $region, string $service): string
     {
-        $kDate = hash_hmac('sha256', $date, 'AWS4'.$secret, true);
+        $kDate = hash_hmac('sha256', $date, 'AWS4' . $secret, true);
         $kRegion = hash_hmac('sha256', $region, $kDate, true);
         $kService = hash_hmac('sha256', $service, $kRegion, true);
 
         return hash_hmac('sha256', 'aws4_request', $kService, true);
     }
 }
+

@@ -1038,4 +1038,267 @@ class KingSelectionAdminController extends Controller
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
+    // -------------------------------------------------------------------------
+    // R2 Inventory & Cleanup
+    // -------------------------------------------------------------------------
+
+    public function r2Inventory(Request $request)
+    {
+        $userId = (string) $request->attributes->get('auth_user_id');
+        if (! $userId) {
+            return response()->json(['message' => 'Não autenticado.'], 401);
+        }
+
+        if (! $this->r2->isEnabled()) {
+            return response()->json(['message' => 'R2 não está configurado.'], 503);
+        }
+
+        // 1. Listar todos os objetos em galleries/ no R2 (paginado)
+        $allObjects = [];
+        $token = null;
+        $maxRounds = 30; // segurança: máx ~30.000 objetos por chamada
+        do {
+            $page = $this->r2->listObjects('galleries/', 1000, $token);
+            if ($page === null) {
+                return response()->json(['message' => 'Erro ao listar objetos no R2.'], 502);
+            }
+            $allObjects = array_merge($allObjects, $page['objects']);
+            $token = $page['nextToken'];
+            $maxRounds--;
+        } while ($page['truncated'] && $token && $maxRounds > 0);
+
+        // 2. Buscar galerias do usuário no banco
+        $galleries = \Illuminate\Support\Facades\DB::table('king_galleries')
+            ->where('user_id', $userId)
+            ->whereNull('deleted_at')
+            ->get(['id', 'name', 'created_at'])
+            ->keyBy('id');
+
+        $allGalleryIds = \Illuminate\Support\Facades\DB::table('king_galleries')
+            ->where('user_id', $userId)
+            ->pluck('id')
+            ->toArray();
+
+        // 3. Buscar todas as chaves de fotos no banco
+        // file_path é salvo como 'r2:galleries/ID/uuid.ext' — remover o prefixo 'r2:' ao indexar
+        $dbKeys = [];
+        if (\App\Support\SchemaMeta::hasColumn('king_photos', 'file_path')) {
+            $paths = \Illuminate\Support\Facades\DB::table('king_photos')
+                ->whereIn('gallery_id', $allGalleryIds)
+                ->where('file_path', 'like', 'r2:galleries/%')
+                ->pluck('file_path')
+                ->toArray();
+            foreach ($paths as $p) {
+                // strip 'r2:' prefix to get the bare R2 key
+                $key = preg_replace('/^r2:/', '', $p);
+                $dbKeys[$key] = true;
+                // também registrar o thumbnail (_t360)
+                $thumb = preg_replace('/(\.[^.]+)$/', '_t360$1', $key);
+                if ($thumb !== $key) {
+                    $dbKeys[$thumb] = true;
+                }
+            }
+        }
+
+        // 4. Agrupar objetos R2 por galleryId
+        $r2ByGallery = [];  // galleryId => [{key,size,lastModified}]
+        $r2Orphan = [];     // objetos de galerias sem dono (não são do usuário)
+        $totalSize = 0;
+        $totalCount = 0;
+        $orphanFiles = [];
+
+        foreach ($allObjects as $obj) {
+            $key = $obj['key'];
+            $totalSize += $obj['size'];
+            $totalCount++;
+
+            // Extrair galleryId do caminho galleries/{id}/...
+            if (preg_match('#^galleries/(\d+)/#', $key, $m)) {
+                $gid = (int) $m[1];
+                if (! isset($r2ByGallery[$gid])) {
+                    $r2ByGallery[$gid] = ['count' => 0, 'size' => 0, 'lastModified' => '', 'orphanCount' => 0];
+                }
+                $r2ByGallery[$gid]['count']++;
+                $r2ByGallery[$gid]['size'] += $obj['size'];
+                if ($obj['lastModified'] > $r2ByGallery[$gid]['lastModified']) {
+                    $r2ByGallery[$gid]['lastModified'] = $obj['lastModified'];
+                }
+                // Detectar arquivo órfão (não referenciado no BD)
+                if (! isset($dbKeys[$key])) {
+                    $r2ByGallery[$gid]['orphanCount']++;
+                    if (count($orphanFiles) < 250) {
+                        $orphanFiles[] = [
+                            'key'          => $key,
+                            'galleryId'    => $gid,
+                            'subfolder'    => dirname(str_replace("galleries/{$gid}/", '', $key)) ?: '',
+                            'size'         => $obj['size'],
+                            'lastModified' => $obj['lastModified'],
+                        ];
+                    }
+                }
+            }
+        }
+
+        // 5. Montar lista de projetos (só do usuário)
+        $projectRows = [];
+        $dbPhotoCount = [];
+        if ($allGalleryIds) {
+            $counts = \Illuminate\Support\Facades\DB::table('king_photos')
+                ->whereIn('gallery_id', $allGalleryIds)
+                ->selectRaw('gallery_id, count(*) as cnt')
+                ->groupBy('gallery_id')
+                ->pluck('cnt', 'gallery_id')
+                ->toArray();
+            $dbPhotoCount = $counts;
+        }
+        foreach ($galleries as $gid => $g) {
+            $r2info = $r2ByGallery[$gid] ?? null;
+            $projectRows[] = [
+                'id'            => $gid,
+                'name'          => $g->name ?? "Galeria {$gid}",
+                'dbPhotos'      => $dbPhotoCount[$gid] ?? 0,
+                'r2Files'       => $r2info['count'] ?? 0,
+                'r2Orphans'     => $r2info['orphanCount'] ?? 0,
+                'r2Size'        => $r2info['size'] ?? 0,
+                'r2LastUpload'  => $r2info['lastModified'] ?? null,
+                'subfolders'    => [],
+                'status'        => ($r2info === null) ? 'sem_r2' : (($r2info['orphanCount'] > 0) ? 'orfaos' : 'ok'),
+            ];
+        }
+
+        // 6. Pastas órfãs (galleryIds no R2 que não estão entre as galerias do usuário)
+        $userGallerySet = array_flip($allGalleryIds);
+        $orphanFolders = [];
+        foreach ($r2ByGallery as $gid => $info) {
+            if (! isset($userGallerySet[$gid])) {
+                $orphanFolders[] = [
+                    'galleryId'    => $gid,
+                    'folder'       => "galleries/{$gid}/",
+                    'files'        => $info['count'],
+                    'size'         => $info['size'],
+                    'lastModified' => $info['lastModified'],
+                    'subfolders'   => [],
+                ];
+            }
+        }
+
+        // 7. Totais
+        $totalOrphans = array_sum(array_column($orphanFiles, 'size') ? array_map(fn ($r) => 1, $orphanFiles) : []);
+        $totalOrphanCount = count($orphanFiles);
+        $orphanSizeTotal = array_sum(array_column($orphanFiles, 'size'));
+
+        return response()->json([
+            'generated'   => now()->toIso8601String(),
+            'total'       => $totalCount,
+            'totalSize'   => $totalSize,
+            'referenced'  => count($dbKeys),
+            'orphans'     => $totalOrphanCount,
+            'orphanSize'  => $orphanSizeTotal,
+            'projects'    => $projectRows,
+            'orphanFolders' => $orphanFolders,
+            'orphanFiles' => $orphanFiles,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function cleanupR2(Request $request)
+    {
+        $userId = (string) $request->attributes->get('auth_user_id');
+        if (! $userId) {
+            return response()->json(['message' => 'Não autenticado.'], 401);
+        }
+        if (! $this->r2->isEnabled()) {
+            return response()->json(['message' => 'R2 não está configurado.'], 503);
+        }
+
+        $body = $request->json()->all();
+        $dryRun = (bool) ($body['dryRun'] ?? true);
+        $confirm = (string) ($body['confirm'] ?? '');
+
+        if (! $dryRun && $confirm !== 'SIM') {
+            return response()->json(['message' => 'Confirmação inválida. Envie confirm: "SIM".'], 422);
+        }
+
+        // Reusar a lógica do inventário para obter órfãos
+        $allGalleryIds = \Illuminate\Support\Facades\DB::table('king_galleries')
+            ->where('user_id', $userId)
+            ->pluck('id')
+            ->toArray();
+
+        $dbKeys = [];
+        if (\App\Support\SchemaMeta::hasColumn('king_photos', 'file_path')) {
+            $paths = \Illuminate\Support\Facades\DB::table('king_photos')
+                ->whereIn('gallery_id', $allGalleryIds)
+                ->where('file_path', 'like', 'r2:galleries/%')
+                ->pluck('file_path')
+                ->toArray();
+            foreach ($paths as $p) {
+                $key = preg_replace('/^r2:/', '', $p);
+                $dbKeys[$key] = true;
+                $thumb = preg_replace('/(\.[^.]+)$/', '_t360$1', $key);
+                if ($thumb !== $key) {
+                    $dbKeys[$thumb] = true;
+                }
+            }
+        }
+
+        // Listar R2
+        $allObjects = [];
+        $token = null;
+        $maxRounds = 30;
+        do {
+            $page = $this->r2->listObjects('galleries/', 1000, $token);
+            if ($page === null) {
+                return response()->json(['message' => 'Erro ao listar R2.'], 502);
+            }
+            $allObjects = array_merge($allObjects, $page['objects']);
+            $token = $page['nextToken'];
+            $maxRounds--;
+        } while ($page['truncated'] && $token && $maxRounds > 0);
+
+        $userGallerySet = array_flip($allGalleryIds);
+        $orphanKeys = [];
+        foreach ($allObjects as $obj) {
+            $key = $obj['key'];
+            if (! preg_match('#^galleries/(\d+)/#', $key, $m)) {
+                continue;
+            }
+            $gid = (int) $m[1];
+            // Só limpar órfãos de galerias DO usuário
+            if (! isset($userGallerySet[$gid])) {
+                continue;
+            }
+            if (! isset($dbKeys[$key])) {
+                $orphanKeys[] = $key;
+            }
+        }
+
+        if ($dryRun) {
+            return response()->json([
+                'dryRun'   => true,
+                'total'    => count($allObjects),
+                'orphans'  => count($orphanKeys),
+                'referenced' => count($dbKeys),
+            ]);
+        }
+
+        // Apagar órfãos
+        $deleted = 0;
+        $errors = 0;
+        foreach ($orphanKeys as $key) {
+            if ($this->r2->deleteObject($key)) {
+                $deleted++;
+            } else {
+                $errors++;
+            }
+        }
+
+        return response()->json([
+            'deleted' => $deleted,
+            'errors'  => $errors,
+            'total'   => count($allObjects),
+            'orphans' => count($orphanKeys),
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
 }
+
