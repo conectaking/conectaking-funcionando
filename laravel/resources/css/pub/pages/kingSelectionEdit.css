@@ -284,12 +284,12 @@
     }
 
     /* Modais */
-    .ks-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.65);z-index:40}
+    .ks-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.75);z-index:90;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
     .ks-modal.active{display:flex}
-    .ks-modal-card{width:min(620px,92vw);background:#0B0B0B;border:1px solid #2C2C2F;border-radius:16px;overflow:hidden}
-    .ks-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid #2C2C2F;background:rgba(255,255,255,.03)}
-    .ks-modal-body{padding:14px}
-    .ks-modal-foot{padding:14px;border-top:1px solid #2C2C2F;display:flex;gap:10px;justify-content:flex-end}
+    .ks-modal-card{width:min(620px,94vw);max-height:min(90vh,90dvh);background:#0B0B0B;border:1px solid #2C2C2F;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,.7)}
+    .ks-modal-head{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid #2C2C2F;background:rgba(255,255,255,.03)}
+    .ks-modal-body{padding:16px 18px;overflow-y:auto;flex:1 1 auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+    .ks-modal-foot{flex-shrink:0;padding:14px 18px;border-top:1px solid #2C2C2F;background:#0B0B0B;display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;z-index:2}
     .ks-btn.danger{background:#ef4444;color:#0B0B0B;border-color:rgba(239,68,68,.55)}
     .ks-btn.danger:hover{filter:brightness(.95)}
     .ks-btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.12);color:#ECECEC}
