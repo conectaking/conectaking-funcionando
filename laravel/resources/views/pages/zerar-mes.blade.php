@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão do mês - Conecta King</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
-    </head>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/zerar-mes.js'])
+</head>
 <body>
     <div class="container">
         <header>
@@ -49,9 +51,5 @@
             <a href="/dashboard#finance" class="btn btn-outline ck-zm-9c9cee">Voltar ao painel</a>
         </div>
     </div>
-
-    
-    <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/css/fontawesome.css', 'resources/js/pages/zerar-mes.js'])
 </body>
 </html>

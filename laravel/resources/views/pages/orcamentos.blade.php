@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Orçamentos - ConectaKing</title>
-  </head>
+  <script src="/config.js?v=2026-09-09-vite1"></script>
+  @vite(['resources/css/fontawesome.css', 'resources/js/pages/orcamentos.js'])
+</head>
 <body>
   <div class="layout">
     <h1><i class="fas fa-file-invoice-dollar"></i> Orçamentos</h1>
@@ -81,8 +83,5 @@
       </div>
     </div>
   </div>
-
-      <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/css/fontawesome.css', 'resources/js/pages/orcamentos.js'])
 </body>
 </html>

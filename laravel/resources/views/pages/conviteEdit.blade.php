@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editar Convite — ConectaKing</title>
-  
+  <script src="/config.js?v=2026-09-09-vite1"></script>
+  @vite(['resources/css/fontawesome.css', 'resources/js/pages/conviteEdit.js'])
 </head>
 <body>
   <div class="layout">
@@ -140,8 +141,5 @@
     <iframe class="ck-hidden" id="preview-iframe" title="Preview do convite"></iframe>
   </div>
   </div>
-
-      <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/css/fontawesome.css', 'resources/js/pages/conviteEdit.js'])
 </body>
 </html>

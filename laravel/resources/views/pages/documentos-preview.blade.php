@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Preview — Orçamento / Recibo</title>
+    <script src="/config.js?v=2026-09-09-vite1"></script>
+    @vite(['resources/js/pages/documentos-preview.js'])
 </head>
 <body class="doc-preview-page">
     <div class="doc-preview" id="doc-preview">
@@ -99,8 +101,5 @@
             Imprimir / Guardar como PDF
         </button>
     </div>
-    
-    <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/js/pages/documentos-preview.js'])
 </body>
 </html>

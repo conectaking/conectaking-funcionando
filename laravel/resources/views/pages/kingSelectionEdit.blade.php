@@ -9,6 +9,7 @@
   <title>KingSelection - Painel</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
+  <script src="/config.js?v=2026-09-10-apex1"></script>
   @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionEdit.js'])
 </head>
 <body>
@@ -222,7 +223,6 @@
     </div>
   </div>
 
-  <script src="/config.js?v=2026-09-10-apex1"></script>
 </body>
 </html>
 

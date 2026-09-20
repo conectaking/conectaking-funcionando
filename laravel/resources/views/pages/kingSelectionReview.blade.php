@@ -6,7 +6,11 @@
   <title>KingSelection - Revisão</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png">
-  
+  <style>
+    html, body { background-color: #000000; color: #ffffff; }
+  </style>
+  <script src="/config.js?v=2026-09-10-apex1"></script>
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionReview.js'])
 </head>
 <body class="bg-black text-white">
   <!-- Barra superior (igual  tela de seleção) -->
@@ -110,8 +114,6 @@
     </div>
   </div>
 
-  <script src="/config.js?v=2026-09-10-apex1"></script>
-  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionReview.js'])
 </body>
 </html>
 

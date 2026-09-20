@@ -12,8 +12,13 @@
   @endisset
   <link rel="icon" type="image/png" href="https://i.ibb.co/60sW9k75/logo.png" />
   <link rel="apple-touch-icon" href="https://i.ibb.co/60sW9k75/logo.png" />
-  </head>
-<body>
+  <style>
+    html, body { background-color: #000000; color: #ffffff; }
+  </style>
+  <script src="/config.js?v=2026-09-10-apex1"></script>
+  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionCliente.js'])
+</head>
+<body class="bg-black text-white">
   <!-- Capa do evento (modo público, configurvel no painel) -->
   <div id="ks-entry-splash" class="ks-hidden ck-ksc-2a62e7" aria-hidden="true">
     <div class="ck-ksc-ebdcc5">
@@ -554,13 +559,11 @@
     <span id="ks-support-whats-text">Suporte</span>
   </button>
 
-  <script src="/config.js?v=2026-09-10-apex1"></script>
   <div id="ks-sales-confirm-bar" class="ks-hidden" aria-live="polite">
     <span id="ks-sales-confirm-count">0 foto(s) selecionada(s)</span>
     <button type="button" class="ks-btn ks-btn-yellow" id="ks-sales-confirm-go">
       <i class="fas fa-paper-plane"></i> Confirmar seleção
     </button>
   </div>
-  @vite(['resources/css/fontawesome.css', 'resources/css/app.css', 'resources/js/pages/kingSelectionCliente.js'])
 </body>
 </html>

@@ -4,6 +4,8 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Comprovante de Serviço - King</title>
+  <script src="/config.js?v=2026-09-09-vite1"></script>
+  @vite(['resources/css/app.css', 'resources/js/pages/documentos-ver.js'])
 </head>
 <body class="documentos-ver-page bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 antialiased transition-colors duration-300">
   <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col relative pb-32">
@@ -99,8 +101,5 @@
   <div class="ck-dv-5991c5" id="notfound">
     <p>Documento não encontrado ou link inválido.</p>
   </div>
-
-      <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/css/app.css', 'resources/js/pages/documentos-ver.js'])
 </body>
 </html>

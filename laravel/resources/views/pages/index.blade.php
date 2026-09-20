@@ -39,8 +39,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <script src="/config.js?v=2026-09-09-vite1"></script>
     {{-- CSS da landing carregado via Vite (evita FOUC) --}}
-    @vite(['resources/css/pub/pages/index-extra.css'])
+    @vite(['resources/css/fontawesome.css', 'resources/css/pub/pages/index-extra.css', 'resources/js/pages/index.js'])
 
     {{-- CSS crítico inline: evita flash de fundo branco antes do Vite carregar --}}
     <style>
@@ -457,9 +458,5 @@
             </a>
         </div>
     </div>
-
-    
-    <script src="/config.js?v=2026-09-09-vite1"></script>
-    @vite(['resources/css/fontawesome.css', 'resources/js/pages/index.js'])
 </body>
 </html>

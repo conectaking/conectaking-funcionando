@@ -7,7 +7,7 @@
     <title>Recuperar senha - Conecta King</title>
     <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
     <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
-    
+    @vite(['resources/css/fontawesome.css', 'resources/js/pages/recuperar-senha.js'])
 </head>
 <body>
     <div class="container">
@@ -24,6 +24,5 @@
         </form>
         <div class="back"><a href="/"><i class="fas fa-arrow-left"></i> Voltar ao início</a></div>
     </div>
-    @vite(['resources/css/fontawesome.css', 'resources/js/pages/recuperar-senha.js'])
 </body>
 </html>
