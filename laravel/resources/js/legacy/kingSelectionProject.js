@@ -4199,9 +4199,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       const showPass = amPriv && cidPass > 0;
       actPassRow.style.display = showPass ? '' : 'none';
       actRevealPassBtn.setAttribute('data-ks-reveal-pass', String(cidPass || 0));
-      actPassSpan.textContent = '——————';
-      actPassSpan.removeAttribute('data-revealed');
-      actRevealPassBtn.textContent = 'Nova senha';
+      const actChangePassBtn = document.getElementById('ks-activity-change-pass');
+      if (actChangePassBtn) actChangePassBtn.setAttribute('data-ks-change-pass', String(cidPass || 0));
+      const isRev = _clientPwCache.has(cidPass);
+      actPassSpan.textContent = isRev ? _clientPwCache.get(cidPass) : '••••••';
+      if (isRev) {
+        actPassSpan.setAttribute('data-revealed', '1');
+        actRevealPassBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
+      } else {
+        actPassSpan.removeAttribute('data-revealed');
+        actRevealPassBtn.innerHTML = '<i class="fas fa-eye"></i> Ver senha';
+      }
       actRevealPassBtn.disabled = false;
     }
     if (actBadge) {
@@ -8394,13 +8402,107 @@ document.addEventListener('DOMContentLoaded', async () => {
   const _clientPwCache = new Map(); // clientId -> plain password
   let _openClientMenuFor = null; // clientId
 
+  let _passModalClientId = null;
+  const clientPassModal = document.getElementById('ks-client-pass-modal');
+  const clientPassClose = document.getElementById('ks-client-pass-close');
+  const clientPassCancel = document.getElementById('ks-client-pass-cancel');
+  const clientPassSave = document.getElementById('ks-client-pass-save');
+  const clientPassInput = document.getElementById('ks-client-pass-input');
+  const clientPassRandom = document.getElementById('ks-client-pass-random');
+  const clientPassDesc = document.getElementById('ks-client-pass-desc');
+
+  function openChangePasswordModal(clientId, clientData) {
+    _passModalClientId = parseInt(clientId || 0, 10);
+    if (!_passModalClientId) return;
+    const c = clientData || (Array.isArray(gallery?.clients) ? gallery.clients.find(x => parseInt(x.id, 10) === _passModalClientId) : null);
+    const nm = String(c?.nome || c?.email || 'Cliente').trim();
+    if (clientPassDesc) clientPassDesc.textContent = `Defina a nova senha para ${nm}:`;
+    if (clientPassInput) {
+      clientPassInput.value = _clientPwCache.has(_passModalClientId) ? _clientPwCache.get(_passModalClientId) : '';
+    }
+    if (clientPassModal) {
+      clientPassModal.classList.remove('hidden');
+      clientPassModal.classList.add('flex');
+      clientPassModal.style.display = 'flex';
+      clientPassModal.style.zIndex = '999999';
+      clientPassModal.setAttribute('aria-hidden', 'false');
+    }
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { try { clientPassInput?.focus(); } catch (_) {} }, 60);
+  }
+
+  function closeChangePasswordModal() {
+    if (clientPassModal) {
+      clientPassModal.classList.add('hidden');
+      clientPassModal.classList.remove('flex');
+      clientPassModal.style.display = 'none';
+      clientPassModal.setAttribute('aria-hidden', 'true');
+    }
+    document.body.style.overflow = '';
+    _passModalClientId = null;
+  }
+
+  clientPassClose?.addEventListener('click', closeChangePasswordModal);
+  clientPassCancel?.addEventListener('click', closeChangePasswordModal);
+  clientPassModal?.addEventListener('click', (e) => { if (e.target === clientPassModal) closeChangePasswordModal(); });
+  clientPassRandom?.addEventListener('click', () => {
+    if (clientPassInput) clientPassInput.value = randomPass6();
+  });
+  clientPassSave?.addEventListener('click', async () => {
+    if (!_passModalClientId) return;
+    const pass = (clientPassInput?.value || '').trim();
+    if (!pass) {
+      toast('Digite uma senha ou clique em Gerar.', { kind: 'warn', title: 'Senha' });
+      return;
+    }
+    try {
+      clientPassSave.disabled = true;
+      await resetClientPassword(_passModalClientId, pass);
+      _clientPwCache.set(_passModalClientId, pass);
+
+      // Atualiza o cartão do cliente se estiver na tela
+      const card = document.querySelector(`[data-client-id="${_passModalClientId}"]`);
+      if (card) {
+        const pEl = card.querySelector('[data-pass]');
+        if (pEl) {
+          pEl.textContent = pass;
+          pEl.setAttribute('data-revealed', '1');
+        }
+        card.querySelectorAll('[data-action="eye"]').forEach(b => {
+          const ic = b.querySelector('i');
+          if (ic) ic.className = 'fas fa-eye-slash';
+          if (b.textContent.trim().includes('Ver senha')) b.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
+        });
+      }
+
+      // Atualiza aba de atividades se for o mesmo cliente
+      const actPassSpan = document.getElementById('ks-activity-pass');
+      const actRevBtn = document.getElementById('ks-activity-reveal-pass');
+      if (actPassSpan && parseInt(actRevBtn?.getAttribute('data-ks-reveal-pass') || '0', 10) === _passModalClientId) {
+        actPassSpan.textContent = pass;
+        actPassSpan.setAttribute('data-revealed', '1');
+        if (actRevBtn) actRevBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
+      }
+
+      closeChangePasswordModal();
+      toast('Senha atualizada com sucesso!', { kind: 'ok', title: 'Senha' });
+      renderClients();
+    } catch (err) {
+      showError(err.message || 'Erro ao alterar senha');
+    } finally {
+      clientPassSave.disabled = false;
+    }
+  });
+
   function openClientModal({ title } = {}) {
     if (!clientModal) return;
     clientModalTitle && (clientModalTitle.textContent = title || 'Cliente');
     clientModal.classList.remove('hidden');
     clientModal.classList.add('flex');
     clientModal.style.display = 'flex';
+    clientModal.style.zIndex = '999999';
     clientModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
     try { cfName?.focus({ preventScroll: true }); } catch (_) { try { cfName?.focus(); } catch (__) {} }
   }
   function closeClientModal() {
@@ -8409,6 +8511,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     clientModal.classList.remove('flex');
     clientModal.style.display = 'none';
     clientModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
     _activeClientId = null;
     _activeClientEmail = null;
   }
@@ -8512,28 +8615,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.addEventListener('click', async (e) => {
+    const changeBtn = e.target.closest('[data-ks-change-pass]');
+    if (changeBtn) {
+      e.preventDefault();
+      const cid = parseInt(changeBtn.getAttribute('data-ks-change-pass'), 10);
+      if (cid) openChangePasswordModal(cid);
+      return;
+    }
+
     const btn = e.target.closest('[data-ks-reveal-pass]');
     if (!btn) return;
     const cid = parseInt(btn.getAttribute('data-ks-reveal-pass'), 10);
     if (!cid) return;
-    const span = btn.previousElementSibling;
-    if (!span || !span.classList.contains('ks-pass-mask')) return;
+    const span = btn.previousElementSibling || document.getElementById('ks-activity-pass');
+    if (!span) return;
+
     if (span.getAttribute('data-revealed') === '1') {
-      span.textContent = '——————';
+      span.textContent = '••••••';
       span.removeAttribute('data-revealed');
-      btn.textContent = 'Nova senha';
+      btn.innerHTML = '<i class="fas fa-eye"></i> Ver senha';
       return;
     }
+
     try {
       btn.disabled = true;
-      const pw = await fetchClientPassword(cid, { forceNew: true });
+      let pw = _clientPwCache.get(cid);
+      if (!pw) {
+        try {
+          pw = await fetchClientPassword(cid, { forceNew: false });
+        } catch (_) {
+          openChangePasswordModal(cid);
+          return;
+        }
+      }
       span.textContent = pw;
       span.setAttribute('data-revealed', '1');
-      btn.textContent = 'Ocultar';
-      toast('Nova senha gerada. A anterior não funciona mais.', { kind: 'ok', title: 'Senha' });
+      btn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
+      toast(`Senha do cliente: ${pw}`, { kind: 'ok', title: 'Senha' });
     } catch (err) {
-      if (String(err?.message || '') === 'Cancelado') return;
-      toast(String(err?.message || 'Erro ao gerar senha'), { kind: 'err', title: 'Senha' });
+      toast(String(err?.message || 'Erro ao carregar senha'), { kind: 'err', title: 'Senha' });
     } finally {
       btn.disabled = false;
     }
@@ -8589,23 +8709,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nm = escapeHtml(c.nome || 'Cliente');
       const em = escapeHtml(c.email || '-');
       const ph = escapeHtml(c.telefone || '');
-      const passShown = _clientPwCache.has(cid) ? escapeHtml(_clientPwCache.get(cid)) : '——————';
+      const isRevealed = _clientPwCache.has(cid);
+      const passShown = isRevealed ? escapeHtml(_clientPwCache.get(cid)) : '••••••';
       const menuOpen = (_openClientMenuFor === cid) ? 'open' : '';
       return `
         <div class="rounded-2xl border border-white/10 bg-black/30 p-4 relative" data-client-id="${cid}">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <div class="font-extrabold text-white">${nm}</div>
+              <div class="font-extrabold text-white text-base">${nm}</div>
               <div class="text-sm ks-muted truncate">${em}</div>
               ${ph ? `<div class="text-sm ks-muted mt-1">${ph}</div>` : ''}
             </div>
             <div class="flex items-center gap-2">
-              <button class="ks-btn" data-action="eye" title="Ver senha"><i class="fas fa-eye"></i></button>
+              <button class="ks-btn" data-action="eye" title="Ver ou ocultar senha"><i class="fas ${isRevealed ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+              <button class="ks-btn" data-action="change-pass" title="Alterar senha"><i class="fas fa-key"></i></button>
               <button class="ks-btn" data-action="share" title="Compartilhar"><i class="fas fa-share"></i></button>
               <div class="relative">
                 <button class="ks-btn" data-action="more" title="Mais ações"><i class="fas fa-ellipsis-vertical"></i></button>
                 <div class="ks-menu ${menuOpen}" data-menu style="top:48px;right:0;z-index:90">
-                  <button data-action="edit"><i class="fas fa-pen"></i> Editar</button>
+                  <button data-action="edit"><i class="fas fa-pen"></i> Editar dados</button>
+                  <button data-action="change-pass"><i class="fas fa-key"></i> Alterar senha</button>
                   <button data-action="share"><i class="fas fa-share"></i> Compartilhar</button>
                   <button data-action="remove" class="danger"><i class="fas fa-trash"></i> Remover</button>
                 </div>
@@ -8614,9 +8737,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
 
           <div class="mt-4 rounded-xl border border-white/10 bg-black/35 p-3">
-            <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">Senha</div>
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="text-xs ks-muted font-extrabold" style="letter-spacing:.18em;text-transform:uppercase">Senha de acesso</div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" class="ks-btn ks-btn-sm" data-action="eye" title="Ver ou ocultar senha"><i class="fas ${isRevealed ? 'fa-eye-slash' : 'fa-eye'}"></i> ${isRevealed ? 'Ocultar' : 'Ver senha'}</button>
+                <button type="button" class="ks-btn ks-btn-sm" data-action="change-pass" title="Alterar senha do cliente"><i class="fas fa-key"></i> Alterar senha</button>
+              </div>
+            </div>
             <div class="mt-2 flex items-center justify-between gap-3">
-              <div class="font-mono text-sm text-white" data-pass>${passShown}</div>
+              <div class="font-mono text-base font-bold text-yellow-400" data-pass ${isRevealed ? 'data-revealed="1"' : ''}>${passShown}</div>
               <button class="ks-btn ks-btn-primary" data-action="copy"><i class="fas fa-copy"></i> Copiar acesso</button>
             </div>
           </div>
@@ -8764,25 +8893,55 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    if (action === 'change-pass') {
+      e.preventDefault();
+      _openClientMenuFor = null;
+      openChangePasswordModal(clientId, c);
+      renderClients();
+      return;
+    }
+
     if (action === 'eye') {
       e.preventDefault();
       try {
-        let pw;
-        try {
-          pw = await fetchClientPassword(clientId, { forceNew: false });
-        } catch (_) {
-          if (confirm('A senha deste cliente ainda não está gravada. Deseja gerar uma senha agora?')) {
-            pw = await fetchClientPassword(clientId, { forceNew: true });
-            toast('Nova senha gerada para o cliente.', { kind: 'ok', title: 'Senha' });
-          } else {
+        const passEl = card.querySelector('[data-pass]');
+        const eyeBtns = card.querySelectorAll('[data-action="eye"]');
+        const isRevealed = passEl && passEl.getAttribute('data-revealed') === '1';
+
+        if (isRevealed) {
+          passEl.textContent = '••••••';
+          passEl.removeAttribute('data-revealed');
+          eyeBtns.forEach(b => {
+            const ic = b.querySelector('i');
+            if (ic) ic.className = 'fas fa-eye';
+            if (b.textContent.trim().includes('Ocultar')) b.innerHTML = '<i class="fas fa-eye"></i> Ver senha';
+          });
+          return;
+        }
+
+        let pw = _clientPwCache.get(clientId);
+        if (!pw) {
+          try {
+            pw = await fetchClientPassword(clientId, { forceNew: false });
+          } catch (err) {
+            // Senha não salva em texto legível: abre o modal amigável para alterar/definir senha
+            openChangePasswordModal(clientId, c);
             return;
           }
         }
-        const passEl = card.querySelector('[data-pass]');
-        if (passEl) passEl.textContent = pw;
+
+        if (passEl) {
+          passEl.textContent = pw;
+          passEl.setAttribute('data-revealed', '1');
+        }
+        eyeBtns.forEach(b => {
+          const ic = b.querySelector('i');
+          if (ic) ic.className = 'fas fa-eye-slash';
+          if (b.textContent.trim().includes('Ver senha')) b.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
+        });
         toast(`Senha do cliente: ${pw}`, { kind: 'ok', title: 'Senha' });
       } catch (err) {
-        showError(err.message || 'Erro');
+        showError(err.message || 'Erro ao carregar senha');
       }
       return;
     }
@@ -11144,7 +11303,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       setActiveTab(startTab);
     } catch (e) {
       showError(e.message || 'Erro ao carregar');
+    } finally {
+      document.getElementById('ks-preloader')?.classList.add('ks-loaded');
     }
   })();
+  setTimeout(() => document.getElementById('ks-preloader')?.classList.add('ks-loaded'), 2500);
 });
 
