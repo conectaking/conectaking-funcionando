@@ -358,12 +358,23 @@ class KingSelectionAdminService
                     $cols[] = $c;
                 }
             }
+            $hasEnc = SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc');
+            if ($hasEnc) {
+                $cols[] = 'senha_enc';
+            }
             $cRows = DB::select(
                 'SELECT '.implode(', ', $cols).' FROM king_gallery_clients WHERE gallery_id = ? ORDER BY created_at ASC, id ASC',
                 [$galleryId]
             );
             foreach ($cRows as $row) {
                 if (! KsAccess::isTechnicalFaceEmail($row->email ?? null)) {
+                    if ($hasEnc && ! empty($row->senha_enc)) {
+                        $plain = $this->passwordCrypto->decrypt($row->senha_enc);
+                        if ($plain !== null && $plain !== '') {
+                            $row->client_password = $plain;
+                        }
+                        unset($row->senha_enc);
+                    }
                     $clients[] = $row;
                 }
             }
@@ -1442,14 +1453,27 @@ class KingSelectionAdminService
                 $cols[] = $c;
             }
         }
+        $hasEnc = SchemaMeta::hasColumn('king_gallery_clients', 'senha_enc');
+        if ($hasEnc) {
+            $cols[] = 'senha_enc';
+        }
         $rows = DB::select(
             'SELECT '.implode(', ', $cols).' FROM king_gallery_clients WHERE gallery_id = ? ORDER BY created_at ASC, id ASC',
             [$galleryId]
         );
-        $clients = array_values(array_filter(
-            $rows,
-            static fn ($r) => ! KsAccess::isTechnicalFaceEmail($r->email ?? null)
-        ));
+        $clients = [];
+        foreach ($rows as $r) {
+            if (! KsAccess::isTechnicalFaceEmail($r->email ?? null)) {
+                if ($hasEnc && ! empty($r->senha_enc)) {
+                    $plain = $this->passwordCrypto->decrypt($r->senha_enc);
+                    if ($plain !== null && $plain !== '') {
+                        $r->client_password = $plain;
+                    }
+                    unset($r->senha_enc);
+                }
+                $clients[] = $r;
+            }
+        }
 
         return ['status' => 200, 'body' => ['success' => true, 'clients' => $clients]];
     }
@@ -1561,7 +1585,7 @@ class KingSelectionAdminService
             $params
         );
 
-        return ['status' => 200, 'body' => ['success' => true]];
+        return ['status' => 200, 'body' => ['success' => true, 'client_password' => $senhaStr ?? null]];
     }
 
     /**

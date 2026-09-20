@@ -19,10 +19,6 @@
       color: #ffffff !important;
       margin: 0;
     }
-    /* Evitar FOUC / esqueleto antes de carregar o CSS/JS */
-    [data-pane]:not([data-pane="activity"]) {
-      display: none !important;
-    }
     #ks-preloader {
       position: fixed;
       inset: 0;

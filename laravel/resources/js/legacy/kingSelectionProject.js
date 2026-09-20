@@ -1339,8 +1339,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       commitLinkCoverDraftIfNeeded({ silent: true }).catch(() => { });
     }
     _ksActiveTab = nextTab;
+    // Marca o body como pronto (desativa o CSS de FOUC que oculta os panes)
+    document.body.classList.add('ks-js-ready');
     sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('data-tab') === nextTab));
-    panes.forEach(p => p.classList.toggle('hidden', p.getAttribute('data-pane') !== nextTab));
+    // Usa style.display explicitamente para garantir que panes apareçam/somam
+    // independente de qualquer CSS que possa ter display:none remanescente
+    panes.forEach(p => {
+      const isActive = p.getAttribute('data-pane') === nextTab;
+      p.classList.toggle('hidden', !isActive);
+      p.style.display = isActive ? '' : 'none';
+    });
     try { localStorage.setItem(TAB_PREF_KEY, nextTab); } catch (_) { }
     if (nextTab === 'photos') {
       renderPhotos();
@@ -1356,7 +1364,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (nextTab === 'sales') refreshSalesUi().catch((e) => showError(e?.message || 'Erro ao abrir vendas'));
     if (nextTab === 'r2') loadR2InventoryPane(false);
     if (nextTab === 'privacy') syncPublicEditRequestPrivacyUi();
+    if (nextTab === 'clients') renderClients();
+    if (nextTab === 'details') syncDetailsClientSummary();
+    if (nextTab === 'watermark') scheduleWatermarkPreview(true);
   }
+
 
   function fmtDate(d) {
     if (!d) return '-';
@@ -4552,6 +4564,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     normalizeGalleryWatermarkPaths(gallery);
     if (Array.isArray(gallery.clients)) {
       gallery.clients = gallery.clients.filter((row) => !isTechnicalFaceClientRow(row));
+      gallery.clients.forEach((c) => {
+        if (c && c.id && c.client_password) {
+          _clientPwCache.set(parseInt(c.id, 10), String(c.client_password).trim());
+        }
+      });
     }
     if (!gallery.selectionBatchByPhotoId) gallery.selectionBatchByPhotoId = {};
     if (!gallery.selectionRoundsSummary) gallery.selectionRoundsSummary = {};
@@ -8416,9 +8433,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!_passModalClientId) return;
     const c = clientData || (Array.isArray(gallery?.clients) ? gallery.clients.find(x => parseInt(x.id, 10) === _passModalClientId) : null);
     const nm = String(c?.nome || c?.email || 'Cliente').trim();
-    if (clientPassDesc) clientPassDesc.textContent = `Defina a nova senha para ${nm}:`;
+    if (clientPassDesc) clientPassDesc.textContent = `Defina a nova senha para ${nm} (digite ou use a sugerida):`;
     if (clientPassInput) {
-      clientPassInput.value = _clientPwCache.has(_passModalClientId) ? _clientPwCache.get(_passModalClientId) : '';
+      clientPassInput.value = _clientPwCache.has(_passModalClientId) ? _clientPwCache.get(_passModalClientId) : randomPass6();
     }
     if (clientPassModal) {
       clientPassModal.classList.remove('hidden');
@@ -8428,7 +8445,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       clientPassModal.setAttribute('aria-hidden', 'false');
     }
     document.body.style.overflow = 'hidden';
-    setTimeout(() => { try { clientPassInput?.focus(); } catch (_) {} }, 60);
+    setTimeout(() => {
+      try {
+        clientPassInput?.focus();
+        clientPassInput?.select();
+      } catch (_) {}
+    }, 60);
   }
 
   function closeChangePasswordModal() {
