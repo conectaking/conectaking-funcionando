@@ -2666,12 +2666,15 @@ class KingSelectionAdminService
         $wm = null;
         if (! $skipWm && SchemaMeta::hasColumn('king_galleries', 'watermark_mode')) {
             $g = DB::selectOne('SELECT watermark_mode, watermark_opacity FROM king_galleries WHERE id = ? LIMIT 1', [(int) $own->gallery_id]);
-            $mode = strtolower((string) ($g->watermark_mode ?? 'none'));
+            $mode = strtolower((string) ($query['wm_mode'] ?? $g->watermark_mode ?? 'none'));
             if ($mode !== '' && $mode !== 'none') {
+                $opacity = isset($query['wm_opacity']) && is_numeric($query['wm_opacity'])
+                    ? (float) $query['wm_opacity']
+                    : (float) ($g->watermark_opacity ?? 0.22);
                 $wm = [
                     'enabled' => true,
-                    'mode' => $mode,
-                    'opacity' => (float) ($g->watermark_opacity ?? 0.22),
+                    'mode'    => $mode,
+                    'opacity' => min(1.0, max(0.01, $opacity)),
                 ];
             }
         }

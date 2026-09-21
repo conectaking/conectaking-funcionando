@@ -1107,6 +1107,22 @@ class KingSelectionAdminController extends Controller
             }
         }
 
+        // Proteger marcas d'água e capas ativas das galerias (para não marcar como órfãos)
+        $wmCols = array_filter(['watermark_path', 'watermark_path_portrait', 'watermark_path_landscape', 'gallery_link_cover_file_path'], fn ($c) => \App\Support\SchemaMeta::hasColumn('king_galleries', $c));
+        if ($wmCols !== []) {
+            $activeGalleries = \Illuminate\Support\Facades\DB::table('king_galleries')
+                ->whereNull('deleted_at')
+                ->get($wmCols);
+            foreach ($activeGalleries as $ag) {
+                foreach ($wmCols as $col) {
+                    $val = trim((string) ($ag->$col ?? ''));
+                    if (str_starts_with($val, 'r2:')) {
+                        $dbKeys[preg_replace('/^r2:/', '', $val)] = true;
+                    }
+                }
+            }
+        }
+
         // Contagem de fotos no BD para as galerias do usuário
         $dbPhotoCounts = [];
         if ($userGalleryIds !== []) {
@@ -1327,6 +1343,23 @@ class KingSelectionAdminController extends Controller
                 $thumb = preg_replace('/(\.[^.]+)$/', '_t360$1', $key);
                 if ($thumb !== $key) {
                     $dbKeys[$thumb] = true;
+                }
+            }
+        }
+
+        // Proteger marcas d'água e capas ativas das galerias do usuário
+        $wmCols = array_filter(['watermark_path', 'watermark_path_portrait', 'watermark_path_landscape', 'gallery_link_cover_file_path'], fn ($c) => \App\Support\SchemaMeta::hasColumn('king_galleries', $c));
+        if ($wmCols !== []) {
+            $activeGalleries = \Illuminate\Support\Facades\DB::table('king_galleries')
+                ->whereIn('id', $allGalleryIds)
+                ->whereNull('deleted_at')
+                ->get($wmCols);
+            foreach ($activeGalleries as $ag) {
+                foreach ($wmCols as $col) {
+                    $val = trim((string) ($ag->$col ?? ''));
+                    if (str_starts_with($val, 'r2:')) {
+                        $dbKeys[preg_replace('/^r2:/', '', $val)] = true;
+                    }
                 }
             }
         }

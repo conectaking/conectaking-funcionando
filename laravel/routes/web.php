@@ -619,9 +619,9 @@ Route::middleware('jwt')->group(function () {
         ->middleware('throttle:60,1');
         // R2 inventory & cleanup
         Route::get('/api/king-selection/r2-inventory', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'r2Inventory'])
-        ->middleware('throttle:6,1');
+        ->middleware('throttle:60,1');
         Route::post('/api/king-selection/cleanup-r2', [\App\Http\Controllers\CartaoVirtual\KingSelectionAdminController::class, 'cleanupR2'])
-        ->middleware('throttle:3,1');
+        ->middleware('throttle:30,1');
     });
 
 Route::middleware(['jwt', 'module:finance'])->group(function () {
