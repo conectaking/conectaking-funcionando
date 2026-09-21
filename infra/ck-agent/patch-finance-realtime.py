@@ -2,13 +2,14 @@
 """
 patch-finance-realtime.py
 ==========================
-Correção EMERGENCIAL dos 3 bugs identificados nas fotos:
-1. Summary busca dados reais da API (não memória/sessão antiga)
-2. fetchRecentTransactions com tratamento correto do body paginado
-3. delete_by_criteria funciona mesmo quando a API retorna body.data.data
-4. adjust_cash usa saldo REAL da API antes de calcular diferença
+Correções do Bot IA (Admin Telegram @conectaking_bot):
+1. Distinção correta: Trabalhos (aba Trabalhos via /api/finance/king-data) vs Fluxo (receitas/despesas avulsas).
+2. Tratamento de entrada/sinal: Trabalhos com valor total e entrada (AV) armazenam entrada em pagamentos e restante em falta receber.
+3. Resumo financeiro em tempo real: calcula os valores exatos da Gestão Financeira (Fluxo + Trabalhos + Terceiros).
+4. Fallback de rede interna: usa http://conectaking-laravel:8080 dentro da rede Docker (conectaking_cknet) para evitar bloqueio 403 do Cloudflare WAF.
+5. Remoção/cancelamento e ajuste de saldo funcionam em tempo real.
 
-Aplica SOMENTE no nó "Executar Admin" do workflow.
+Aplica SOMENTE no nó "Executar Admin" do workflow n8n.
 """
 import json, os, sqlite3, time, uuid
 
@@ -16,7 +17,10 @@ DB   = '/var/lib/docker/volumes/ck-agent_n8n_data/_data/database.sqlite'
 MAIN = 'mkK244lveO0N1qPR'
 
 EXEC_ADMIN_JS = r'''const prev = $input.first().json;
-const base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
+let base = String($env.CK_INTERNAL_URL || $env.CK_BASE_URL || 'http://conectaking-laravel:8080').replace(/\/$/, '');
+if (base.includes('conectaking.com.br')) {
+  base = 'http://conectaking-laravel:8080';
+}
 const token = String($env.CK_AGENT_JWT || '').trim();
 const openaiKey = String($env.OPENAI_API_KEY || '').trim();
 const model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();
@@ -59,8 +63,8 @@ async function resolveProfileId() {
     const primary = arr.find(p => p && (p.is_primary === true || p.isPrimary === true));
     const active  = arr.find(p => p && (p.is_active !== false && p.isActive !== false));
     const pick = primary || active || arr[0];
-    return pick ? Number(pick.id) : null;
-  } catch (_) { return null; }
+    return pick ? Number(pick.id) : 1;
+  } catch (_) { return 1; }
 }
 
 // ─── Busca transações recentes — trata response paginado E array simples ────
@@ -68,17 +72,82 @@ async function fetchRecentTransactions(limitN) {
   const r = await ck.call(this, 'GET', `/api/finance/transactions?limit=${limitN}&orderDir=DESC&orderBy=created_at&per_page=${limitN}`);
   const raw = r.body;
   if (!raw) return [];
-  // Possíveis formatos: { data: { data: [...] } } | { data: [...] } | [...]
   const inner = raw.data != null ? raw.data : raw;
   if (Array.isArray(inner)) return inner;
   if (inner && Array.isArray(inner.data)) return inner.data;
   return [];
 }
 
-// ─── Busca dashboard em tempo real ─────────────────────────────────────────
-async function fetchDashboard() {
-  const r = await ck.call(this, 'GET', '/api/finance/dashboard');
-  return (r.body && r.body.data) ? r.body.data : (r.body || {});
+// ─── Busca resumo financeiro unificado (Fluxo + Trabalhos + Terceiros) ──────
+async function fetchRealSummary(profileId) {
+  const pid = profileId || 1;
+  const [dashR, kingR] = await Promise.all([
+    ck.call(this, 'GET', `/api/finance/dashboard?profile_id=${pid}`),
+    ck.call(this, 'GET', `/api/finance/king-data?profile_id=${pid}`)
+  ]);
+
+  const dash = (dashR.body && dashR.body.data) ? dashR.body.data : (dashR.body || {});
+  const kingDb = (kingR.body && kingR.body.data) ? kingR.body.data : (kingR.body || {});
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const mesRef = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+
+  const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+  let totalRecebidoTrabalhosNoMes = 0;
+  let totalFaltaReceberTrabalhos = 0;
+
+  for (const t of trabalhos) {
+    const val = Number(t.valor) || 0;
+    const pagamentos = Array.isArray(t.pagamentos) ? t.pagamentos : [];
+    let recebidoT = 0;
+    for (const p of pagamentos) {
+      const v = Number(p.valor) || 0;
+      recebidoT += v;
+      const dt = String(p.data || t.data || '').trim().slice(0, 7);
+      if (dt === mesRef) {
+        totalRecebidoTrabalhosNoMes += v;
+      }
+    }
+    const falta = Math.max(0, val - recebidoT);
+    totalFaltaReceberTrabalhos += falta;
+  }
+
+  const terceiros = Array.isArray(kingDb.terceiros) ? kingDb.terceiros : [];
+  let totalFaltaPagarTerceirosNoMes = 0;
+  for (const p of terceiros) {
+    for (const c of (p.contas || [])) {
+      const dtVenc = String(c.dataVencimento || '').trim().slice(0, 7);
+      if (dtVenc === mesRef) {
+        const valC = Number(c.valor) || 0;
+        const pagoC = (c.pagamentos || []).reduce((s, x) => s + (Number(x.valor) || 0), 0);
+        totalFaltaPagarTerceirosNoMes += Math.max(0, valC - pagoC);
+      }
+    }
+  }
+
+  const fluxoRecebido = Number(dash.totalRecebido) || 0;
+  const fluxoDespesasPagas = Number(dash.totalPago) || 0;
+  const fluxoPendenteReceber = Number(dash.pendenciasReceber) || 0;
+  const fluxoPendentePagar = Number(dash.pendenciasPagar) || 0;
+
+  const totalRecebidoGeral = fluxoRecebido + totalRecebidoTrabalhosNoMes;
+  const saldoDisponivel = totalRecebidoGeral - fluxoDespesasPagas;
+  const faltaReceberGeral = fluxoPendenteReceber + totalFaltaReceberTrabalhos;
+  const faltaPagarGeral = fluxoPendentePagar + totalFaltaPagarTerceirosNoMes;
+
+  return {
+    saldoDisponivel,
+    totalRecebido: totalRecebidoGeral,
+    totalPago: fluxoDespesasPagas,
+    pendenciasReceber: faltaReceberGeral,
+    pendenciasPagar: faltaPagarGeral,
+    trabalhosCount: trabalhos.length,
+    totalRecebidoTrabalhosNoMes,
+    totalFaltaReceberTrabalhos,
+    kingDb
+  };
 }
 
 const KB = `CONHECIMENTO EXECUTIVO CONECTA KING & ESTÚDIO ADRIANO KING:
@@ -92,43 +161,42 @@ Atende exclusivamente o King no Telegram. Tom: direto, ágil, executivo, resolut
 
 ${KB}
 
-═══ GESTÃO FINANCEIRA — DOMÍNIO TOTAL ═══
-Você tem CONTROLE TOTAL sobre as finanças. Nunca recuse uma ação financeira que o King pedir.
-O que você pode (e deve) fazer:
+═══ REGRAS FUNDAMENTAIS DE GESTÃO FINANCEIRA ═══
 
-1. REGISTRAR (create): receitas, despesas, pendências. Múltiplos lançamentos na mesma mensagem.
-   - "recebi", "ganhei", "entrou", "vendi" + valor = INCOME PAID
-   - "vou receber", "a receber", "trabalho de X" sem receber ainda = INCOME PENDING
-   - "gastei", "comprei", "paguei", "saída" = EXPENSE PAID
-   - "contas a pagar", "a pagar" = EXPENSE PENDING
-   - Trabalho parcial ("fiz trabalho de 2000, recebi 200, falta 1800") → crie DUAS transações
+1. TRABALHO (cliente, ensaio, foto, fotografia, evento, corporativo, posicionamento de imagem, job):
+   - DEVE SER REGISTRADO NA ABA TRABALHOS usando a action "create_trabalho".
+   - NUNCA crie transações duplicadas no Fluxo quando for um trabalho!
+   - Se o King disser: "Peguei um trabalho de 1000 e o cliente deu 200 de entrada":
+     -> action: "create_trabalho", valor_total: 1000, entrada: 200.
+     -> O sistema armazena o Trabalho com valor R$ 1.000, credita R$ 200 como recebido/entrada (vai para o caixa), e os R$ 800 restantes ficam como Falta Receber.
+   - Se o trabalho não teve entrada ainda: entrada: 0 (fica 100% pendente a receber).
 
-2. REMOVER (delete_by_criteria): apagar lançamento por valor, descrição ou o último.
-   - "tira o/os R$ X", "apaga os R$ X", "coloquei errado os R$ X", "remove a entrada de X" → delete_by_criteria com o valor
-   - "apaga o último", "cancela o último", "errei" → cancel_last
-   - NUNCA diga "não encontrei" sem antes listar as transações reais
+2. FLUXO (receita avulsa ou despesa avulsa):
+   - Se o King falar: "vendi uma tag por 50", "recebi 100", "lança receita de 300", "gastei 45 no almoço", "comprei equipamento por 800":
+     -> Use a action "create" (INCOME ou EXPENSE, status PAID ou PENDING).
 
-3. LISTAR (list_recent): mostrar os últimos lançamentos ao King.
+3. RESUMO COMPLETO EM TEMPO REAL:
+   - Sempre que o King pedir "resumo", "como estão minhas finanças", "quanto tenho", "balanço":
+     -> USE a action "summary". O sistema busca em TEMPO REAL os dados da API (Fluxo + Trabalhos + Terceiros).
+     -> NUNCA invente números da memória nem repita valores antigos!
 
-4. AJUSTAR SALDO (adjust_cash): se o King disser "o caixa correto é R$ X" → busca saldo REAL da API e ajusta.
+4. REMOVER / CANCELAR LANÇAMENTO:
+   - "tira o de R$ X", "apaga os R$ X", "coloquei errado", "remove":
+     -> Use action "delete_by_criteria" ou "cancel_last".
 
-5. RESUMO (summary): trazer o resumo financeiro REAL em tempo real da API. NUNCA use dados da memória.
-
-6. CONSULTORIA (advice): quando pedir opinião/estratégia de faturamento.
-
-7. DIAGNÓSTICO DO SISTEMA (check_errors): verificar status e erros de páginas.
-
-8. GERAR CÓDIGO (generate_invite_code): criar código KING-XXXX.
-
-REGRAS CRÍTICAS:
-- RESUMO FINANCEIRO: SEMPRE chame a API. NUNCA responda com dados da memória ou sessão anterior.
-- Se o King disser "tira o dinheiro de X", use delete_by_criteria.
-- Se o King disser que o valor está errado, use adjust_cash — NUNCA diga que não pode corrigir.
-- Descrições devem ser concisas: "Trabalho de fotografia", "Receita avulsa". NUNCA frases de comando.`;
+5. AJUSTAR SALDO:
+   - "o caixa correto é R$ X" -> use action "adjust_cash".`;
 
 const TOOLS = [
-  { type: 'function', function: { name: 'manage_finance', description: 'Gerencia transações financeiras: registrar, remover por valor/descrição, ajustar saldo, listar recentes, resumo, consultoria.', parameters: { type: 'object', properties: {
-    action: { type: 'string', enum: ['create', 'cancel_last', 'delete_by_criteria', 'list_recent', 'adjust_cash', 'summary', 'advice'] },
+  { type: 'function', function: { name: 'manage_finance', description: 'Gerencia finanças do King: trabalhos, lançamentos de fluxo, resumo real, remoção, ajuste de saldo e consultoria.', parameters: { type: 'object', properties: {
+    action: { type: 'string', enum: ['create', 'create_trabalho', 'cancel_last', 'delete_by_criteria', 'list_recent', 'adjust_cash', 'summary', 'advice'] },
+    // Para Trabalhos:
+    cliente: { type: 'string', description: 'Nome do cliente do trabalho' },
+    servico: { type: 'string', description: 'Tipo de serviço (ex: Posicionamento de Imagem, Ensaio, Cobertura)' },
+    valor_total: { type: 'number', description: 'Valor total cobrado pelo trabalho' },
+    entrada: { type: 'number', description: 'Valor de entrada recebido agora (AV/sinal). 0 se não recebeu nada agora.' },
+    data_prevista: { type: 'string', description: 'Data prevista para quitação (YYYY-MM-DD)' },
+    // Para Fluxo:
     transactions: { type: 'array', items: { type: 'object', properties: {
       type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
       amount: { type: 'number' }, status: { type: 'string', enum: ['PAID', 'PENDING'] },
@@ -170,9 +238,64 @@ try {
       if (fnName === 'manage_finance') {
         const profileId = await resolveProfileId.call(this);
         const today = new Date().toISOString().slice(0, 10);
+        const fmt = v => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
 
-        // ── CREATE ──────────────────────────────────────────────────
-        if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
+        // ── CREATE TRABALHO (Aba Trabalhos do King-Data) ────────────
+        if (args.action === 'create_trabalho') {
+          const valorTotal = Number(args.valor_total || args.amount || 0);
+          const entrada = Number(args.entrada || 0);
+          const cliente = String(args.cliente || 'Cliente').trim();
+          const servico = String(args.servico || 'Trabalho fotográfico').trim();
+          const dataPrevista = args.data_prevista || '';
+
+          if (valorTotal <= 0) {
+            outMessage = '⚠️ Informe o valor total do trabalho.';
+          } else {
+            // 1. Obter king-data atual
+            const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+            let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+            if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+            if (!Array.isArray(kingDb.trabalhos)) kingDb.trabalhos = [];
+
+            const now = new Date();
+            const hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const pagamentos = entrada > 0 ? [{ valor: entrada, data: today, hora }] : [];
+
+            const novoTrab = {
+              id: 'trab_' + Date.now(),
+              cliente,
+              servico,
+              valor: valorTotal,
+              pagamentos,
+              data: today,
+              dataPrevista,
+              status: entrada >= valorTotal ? 'concluido' : (entrada > 0 ? 'parcial' : 'pendente')
+            };
+
+            kingDb.trabalhos.unshift(novoTrab);
+
+            // 2. Salvar king-data atualizado
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+
+            // 3. Buscar resumo atualizado em tempo real
+            const summary = await fetchRealSummary.call(this, profileId);
+            const falta = Math.max(0, valorTotal - entrada);
+
+            outMessage = `👑 *Novo Trabalho Registrado!*\n\n` +
+              `📸 *Cliente:* ${cliente}\n` +
+              `💼 *Serviço:* ${servico}\n` +
+              `💰 *Valor Total:* ${fmt(valorTotal)}\n` +
+              `💵 *Entrada Recebida (AV):* ${fmt(entrada)} ${entrada > 0 ? '_(em caixa)_' : '_(sem entrada imediata)_'}\n` +
+              `⏳ *Falta Receber deste Trabalho:* ${fmt(falta)}\n\n` +
+              `📊 *Dinheiro Total em Caixa:* ${fmt(summary.saldoDisponivel)}\n` +
+              `📈 *Total Geral a Receber:* ${fmt(summary.pendenciasReceber)}`;
+          }
+
+        // ── CREATE FLUXO (Receitas/Despesas Avulsas) ─────────────────
+        } else if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
           const createdItems = [];
           for (const item of args.transactions) {
             if (!item.amount || item.amount <= 0) continue;
@@ -185,18 +308,15 @@ try {
           }
           if (createdItems.length > 0) {
             session.lastCreatedTransactions = createdItems;
-            // ⚠️ Sempre buscar dashboard REAL após criar
-            const dash = await fetchDashboard.call(this);
-            const saldo = dash.saldoDisponivel ?? 0;
-            const aReceber = dash.pendenciasReceber ?? 0;
+            const summary = await fetchRealSummary.call(this, profileId);
             const lines = ['👑 *Lançamento Financeiro Concluído!*\n'];
             for (const it of createdItems) {
               const icon = it.type === 'INCOME' ? '💵' : '💸';
               const lbl = it.status === 'PAID' ? (it.type === 'INCOME' ? 'Recebido em caixa' : 'Pago') : 'Pendente (A receber)';
-              lines.push(`${icon} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* R$ ${it.amount.toFixed(2).replace('.', ',')} (${lbl})\n   📝 _${it.description}_`);
+              lines.push(`${icon} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${lbl})\n   📝 _${it.description}_`);
             }
-            lines.push(`\n📊 *Dinheiro em Caixa:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}`);
-            if (aReceber > 0) lines.push(`⏳ *Total a Receber:* R$ ${Number(aReceber).toFixed(2).replace('.', ',')}`);
+            lines.push(`\n📊 *Dinheiro em Caixa:* ${fmt(summary.saldoDisponivel)}`);
+            if (summary.pendenciasReceber > 0) lines.push(`⏳ *Total a Receber:* ${fmt(summary.pendenciasReceber)}`);
             outMessage = lines.join('\n');
           } else {
             outMessage = '⚠️ Não consegui registrar os valores. Tente novamente.';
@@ -204,17 +324,15 @@ try {
 
         // ── CANCEL LAST ─────────────────────────────────────────────
         } else if (args.action === 'cancel_last') {
-          // Tenta memória de sessão primeiro, depois busca na API
           let targetIds = (session.lastCreatedTransactions || []).map(t => t.id).filter(Boolean);
           if (targetIds.length === 0) {
             const recent = await fetchRecentTransactions.call(this, 3);
             if (recent.length > 0) targetIds = [recent[0].id];
           }
           if (targetIds.length === 0) {
-            // Mostra lista para o King escolher
             const recent2 = await fetchRecentTransactions.call(this, 5);
             if (recent2.length > 0) {
-              const lines = recent2.map((t, i) => `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} R$ ${Number(t.amount).toFixed(2).replace('.', ',')} — _${t.description}_ (${t.status})`);
+              const lines = recent2.map((t, i) => `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} ${fmt(t.amount)} — _${t.description}_ (${t.status})`);
               outMessage = '⚠️ Não encontrei o último lançamento em memória. Seus 5 mais recentes:\n\n' + lines.join('\n') + '\n\nMe fala qual quer cancelar (valor ou número).';
             } else {
               outMessage = '⚠️ Nenhuma transação encontrada na API. Tente novamente.';
@@ -222,15 +340,13 @@ try {
           } else {
             for (const id of targetIds) await ck.call(this, 'DELETE', `/api/finance/transactions/${id}`);
             session.lastCreatedTransactions = [];
-            const dash = await fetchDashboard.call(this);
-            const saldo = dash.saldoDisponivel ?? 0;
-            outMessage = `🗑️ *Lançamento Cancelado!*\nRemovi o lançamento com sucesso.\n\n📊 *Saldo Atualizado:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}`;
+            const summary = await fetchRealSummary.call(this, profileId);
+            outMessage = `🗑️ *Lançamento Cancelado!*\nRemovi o lançamento com sucesso.\n\n📊 *Saldo Atualizado:* ${fmt(summary.saldoDisponivel)}`;
           }
 
         // ── DELETE BY CRITERIA (valor ou descrição) ──────────────────
         } else if (args.action === 'delete_by_criteria') {
           const crit = args.criteria || {};
-          // Busca mais para ter certeza de encontrar
           const recent = await fetchRecentTransactions.call(this, 30);
           let targets = recent.filter(t => {
             const amountMatch = crit.amount ? Math.abs(Number(t.amount) - crit.amount) < 0.02 : true;
@@ -242,93 +358,83 @@ try {
           });
 
           if (targets.length === 0) {
-            // Mostra a lista real para o King ver o que está lá de fato
             const listLines = recent.slice(0, 8).map((t, i) =>
-              `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} R$ ${Number(t.amount).toFixed(2).replace('.', ',')} — _${t.description}_ (${t.status}) [ID ${t.id}]`
+              `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} ${fmt(t.amount)} — _${t.description}_ (${t.status}) [ID ${t.id}]`
             );
-            outMessage = `⚠️ Não encontrei R$ ${crit.amount || '?'} nos últimos 30 lançamentos.\n\n📋 *O que está no sistema:*\n${listLines.join('\n')}\n\n_Fala qual número quer remover._`;
+            outMessage = `⚠️ Não encontrei ${fmt(crit.amount)} nos lançamentos recentes do Fluxo.\n\n📋 *Lançamentos recentes:*\n${listLines.join('\n')}`;
           } else {
-            // Deleta os encontrados (máximo 3 para evitar acidente)
             const deleted = [];
             for (const t of targets.slice(0, 3)) {
               const dr = await ck.call(this, 'DELETE', `/api/finance/transactions/${t.id}`);
               if (dr.statusCode >= 200 && dr.statusCode < 300) deleted.push(t);
             }
             session.lastCreatedTransactions = [];
-            const dash = await fetchDashboard.call(this);
-            const saldo = dash.saldoDisponivel ?? 0;
-            const lines = deleted.map(t => `• R$ ${Number(t.amount).toFixed(2).replace('.', ',')} — ${t.description}`);
-            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}\n\n📊 *Saldo em Caixa:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}`;
+            const summary = await fetchRealSummary.call(this, profileId);
+            const lines = deleted.map(t => `• ${fmt(t.amount)} — ${t.description}`);
+            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}\n\n📊 *Saldo em Caixa:* ${fmt(summary.saldoDisponivel)}`;
           }
 
         // ── LIST RECENT ──────────────────────────────────────────────
         } else if (args.action === 'list_recent') {
           const recent = await fetchRecentTransactions.call(this, 10);
           if (recent.length === 0) {
-            outMessage = '📋 Nenhum lançamento encontrado ainda.';
+            outMessage = '📋 Nenhum lançamento encontrado ainda no fluxo.';
           } else {
             const lines = recent.map((t, i) => {
               const icon = t.type === 'INCOME' ? '💵' : '💸';
-              const val = `R$ ${Number(t.amount).toFixed(2).replace('.', ',')}`;
+              const val = fmt(t.amount);
               const lbl = t.status === 'PAID' ? 'Pago/Recebido' : 'Pendente';
               return `${i + 1}. ${icon} ${val} — _${t.description}_ (${lbl})`;
             });
-            outMessage = `📋 *Últimos Lançamentos Reais:*\n\n${lines.join('\n')}\n\n_Fala qual quer alterar ou remover pelo número._`;
+            outMessage = `📋 *Últimos Lançamentos Reais:*\n\n${lines.join('\n')}`;
           }
 
         // ── ADJUST CASH ──────────────────────────────────────────────
         } else if (args.action === 'adjust_cash') {
           const targetCash = Number(args.target_cash || 0);
-          // SEMPRE buscar saldo REAL da API antes de calcular
-          const dash = await fetchDashboard.call(this);
-          const currentCash = Number(dash.saldoDisponivel ?? 0);
+          const summary = await fetchRealSummary.call(this, profileId);
+          const currentCash = Number(summary.saldoDisponivel ?? 0);
           const diff = targetCash - currentCash;
           if (Math.abs(diff) < 0.01) {
-            outMessage = `✅ Saldo em caixa já está em R$ ${targetCash.toFixed(2).replace('.', ',')}. Nenhum ajuste necessário.`;
+            outMessage = `✅ Saldo em caixa já está em ${fmt(targetCash)}. Nenhum ajuste necessário.`;
           } else {
             const adjType = diff > 0 ? 'INCOME' : 'EXPENSE';
             const adjDesc = 'Ajuste de saldo (correção)';
             const cr = await ck.call(this, 'POST', '/api/finance/transactions', { profile_id: profileId, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc, transaction_date: today });
             const row = (cr.body && cr.body.data) || {};
             if (row.id) session.lastCreatedTransactions = [{ id: row.id, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc }];
-            // Busca saldo real após ajuste
-            const dash2 = await fetchDashboard.call(this);
-            const newSaldo = dash2.saldoDisponivel ?? 0;
-            outMessage = `🔄 *Saldo Ajustado com Sucesso!*\n\nAntes: R$ ${currentCash.toFixed(2).replace('.', ',')}\nAgora: R$ ${Number(newSaldo).toFixed(2).replace('.', ',')}\n\n📝 _Ajuste de ${diff > 0 ? '+' : ''}${diff.toFixed(2).replace('.', ',')} aplicado._`;
+            const summary2 = await fetchRealSummary.call(this, profileId);
+            outMessage = `🔄 *Saldo Ajustado com Sucesso!*\n\nAntes: ${fmt(currentCash)}\nAgora: ${fmt(summary2.saldoDisponivel)}\n\n📝 _Ajuste de ${diff > 0 ? '+' : ''}${fmt(diff)} aplicado._`;
           }
 
-        // ── SUMMARY (SEMPRE TEMPO REAL) ──────────────────────────────
+        // ── SUMMARY (EM TEMPO REAL) ──────────────────────────────────
         } else if (args.action === 'summary') {
-          // ⚠️ NUNCA usar memória — sempre busca da API
-          const dash = await fetchDashboard.call(this);
-          const fmt = v => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
-          outMessage = `📊 *Gestão Financeira — Conecta King*\n_(dados em tempo real)_\n\n` +
-            `💰 *Dinheiro em Caixa:* ${fmt(dash.saldoDisponivel)}\n` +
-            `📈 *Receitas Recebidas (Mês):* ${fmt(dash.totalRecebido)}\n` +
-            `📉 *Despesas Pagas (Mês):* ${fmt(dash.totalPago)}\n` +
-            `⏳ *Valores a Receber (Pendentes):* ${fmt(dash.pendenciasReceber)}\n` +
-            `📑 *Contas a Pagar (Pendentes):* ${fmt(dash.pendenciasPagar)}`;
+          const summary = await fetchRealSummary.call(this, profileId);
+          outMessage = `📊 *Gestão Financeira Conecta King*\n_(dados em tempo real)_\n\n` +
+            `💰 *Dinheiro em Caixa (Saldo):* ${fmt(summary.saldoDisponivel)}\n` +
+            `📈 *Receitas Recebidas (Mês):* ${fmt(summary.totalRecebido)}\n` +
+            `📉 *Despesas Pagas (Mês):* ${fmt(summary.totalPago)}\n` +
+            `⏳ *Valores a Receber (Falta Receber):* ${fmt(summary.pendenciasReceber)}\n` +
+            `📑 *Contas a Pagar (Falta Pagar):* ${fmt(summary.pendenciasPagar)}\n` +
+            `💼 *Trabalhos Cadastrados:* ${summary.trabalhosCount}`;
 
         // ── ADVICE (Consultoria) ──────────────────────────────────────
         } else if (args.action === 'advice') {
-          // Busca dados reais para contextualizar o conselho
-          const dash = await fetchDashboard.call(this);
-          const saldo = Number(dash.saldoDisponivel ?? 0);
-          const pendRec = Number(dash.pendenciasReceber ?? 0);
-          const totalRec = Number(dash.totalRecebido ?? 0);
-          const totalPago = Number(dash.totalPago ?? 0);
+          const summary = await fetchRealSummary.call(this, profileId);
           const finCtx = `Dados financeiros reais do King:
-- Caixa disponível: R$ ${saldo.toFixed(2)}
-- Receitas recebidas no mês: R$ ${totalRec.toFixed(2)}
-- Despesas pagas no mês: R$ ${totalPago.toFixed(2)}
-- Pendências a receber: R$ ${pendRec.toFixed(2)}
+- Caixa disponível: R$ ${summary.saldoDisponivel.toFixed(2)}
+- Receitas recebidas no mês: R$ ${summary.totalRecebido.toFixed(2)}
+- Despesas pagas no mês: R$ ${summary.totalPago.toFixed(2)}
+- Falta receber: R$ ${summary.pendenciasReceber.toFixed(2)}
+- Contas a pagar: R$ ${summary.pendenciasPagar.toFixed(2)}
+- Trabalhos ativos: ${summary.trabalhosCount}
 - Ticket médio Posicionamento de Imagem: R$ 1.200 (entre 1.000 e 1.400)
 - Ticket médio Ensaio Fotográfico: R$ 550
 
-Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que está bem, o que precisa de atenção e 2-3 ações concretas para aumentar o faturamento. Fale em PT-BR, sem enrolação.`;
+Dê um conselho CFO de elite, tático e prático. Seja direto. Fale em PT-BR, sem enrolação.`;
           const advRes = await openaiCall.call(this, {
             model, temperature: 0.5, max_tokens: 600,
-            messages: [{ role: 'system', content: 'Você é um CFO de elite e consultor de faturamento para empreendedores criativos e CEOs de pequenas empresas de alto impacto. Seja direto, analítico e dê conselhos reais.' }, { role: 'user', content: finCtx }]
+            messages: [{ role: 'system', content: 'Você é um CFO de elite e consultor de faturamento para empreendedores criativos e CEOs. Seja direto, analítico e dê conselhos práticos.' }, { role: 'user', content: finCtx }]
           });
           const advice = String(advRes.body?.choices?.[0]?.message?.content || '').trim();
           outMessage = `👑 *Consultoria de Faturamento — King Assistente*\n\n${advice}`;
@@ -433,10 +539,9 @@ def main():
             p['jsCode'] = EXEC_ADMIN_JS
             patched = True
             print(f'[OK] Executar Admin → {len(EXEC_ADMIN_JS)} chars')
-            print('     fetchRecentTransactions: OK')
-            print('     summary tempo real: OK')
-            print('     delete_by_criteria (30 itens): OK')
-            print('     adjust_cash saldo real: OK')
+            print('     create_trabalho: OK')
+            print('     fetchRealSummary: OK')
+            print('     base url fallback interno: OK')
             break
 
     if not patched:
@@ -452,7 +557,7 @@ def main():
     except Exception:
         pass
 
-    print('\n✅ Patch de correção financeira aplicado!')
+    print('\n✅ Patch de correção financeira com suporte a Trabalhos aplicado!')
     print('   Execute: docker compose up -d n8n')
 
 

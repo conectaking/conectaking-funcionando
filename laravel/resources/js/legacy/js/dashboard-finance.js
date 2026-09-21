@@ -698,14 +698,20 @@ window.initFinancePane = async function () {
             <!-- Additional Summary Cards Grid -->
             <div class="finance-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
                 <!-- Falta receber -->
-                <div onclick="filterByPendingIncome()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
+                <div onclick="filterByPendingIncome()" class="finance-card-premium" style="border-radius: 16px; padding: 20px; cursor: pointer; border-color: rgba(34, 197, 94, 0.3); transition: all 0.2s; overflow: hidden;" onmouseover="this.style.borderColor='rgba(34, 197, 94, 0.5)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(34, 197, 94, 0.3)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.1); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-clock" style="color: var(--finance-neon-green); font-size: 1rem;"></i>
                         </div>
                         <p style="color: var(--finance-text-secondary); font-size: 0.875rem; margin: 0; font-weight: 500;">Falta receber</p>
                     </div>
-                    <h3 id="finance-pending-income" style="color: var(--finance-neon-green); font-size: 1.5rem; font-weight: 700; margin: 0;">R$ ${formatCurrency(faltaReceberGeral)}</h3>
+                    <p style="color: var(--finance-text-secondary); font-size: 0.7rem; margin: 0 0 4px 0;">Fluxo + Trabalhos · Receber / Abater</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; flex-wrap: wrap; min-width: 0;">
+                        <h3 id="finance-pending-income" style="color: var(--finance-neon-green); font-size: 1.5rem; font-weight: 700; margin: 0; min-width: 0; flex: 1 1 auto;">R$ ${formatCurrency(faltaReceberGeral)}</h3>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button type="button" onclick="event.stopPropagation(); filterByPendingIncome();" style="padding: 8px 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 10px; color: #86efac; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"><i class="fas fa-hand-holding-usd" style="margin-right: 4px;"></i>Abater / Receber</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Falta pagar (este mês) = fluxo pendente + Quem eu devo este mês -->
@@ -912,7 +918,7 @@ window.initFinancePane = async function () {
             const fmt = (v) => Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
             const styleKfCard = 'background:#111;padding:1.5rem;border-radius:1.5rem;border:1px solid rgba(255,255,255,0.05);';
             if (tabId === 'fluxo') {
-                const list = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10) }));
+                const list = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10), status: (t.status || '').toUpperCase() }));
                 const canEdit = function(f) { return (typeof f.id === 'number' || (f.id != null && String(f.id).match(/^[0-9]+$/))); };
                 container.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:12px;">
@@ -958,19 +964,28 @@ window.initFinancePane = async function () {
 
                     <h4 style="font-size:0.95rem;font-weight:800;color:var(--finance-text-primary);margin:0 0 12px 0;"><i class="fas fa-list" style="margin-right:8px;color:#94a3b8;"></i>Lançamentos deste Mês</h4>
                     <div style="display:flex;flex-direction:column;gap:0.75rem;">
-                        ${list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento ou a aba Resumo.</p>' : list.map(f => `
-                            <div class="kf-card" style="${styleKfCard}display:flex;justify-content:space-between;align-items:center;padding:1rem;gap:12px;">
+                        ${list.length === 0 ? '<p style="color:#64748b;text-align:center;padding:2rem;">Nenhum lançamento neste mês. Use + Novo Lançamento ou a aba Resumo.</p>' : list.map(f => {
+                            const isPending = f.status === 'PENDING';
+                            const badge = isPending ? '<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(234,179,8,0.2);color:#facc15;font-weight:700;margin-left:6px;">A receber</span>' : '';
+                            const btnAbater = (f.tipo === 'receita' && isPending && canEdit(f))
+                                ? `<button type="button" onclick="window.financeShowAbaterReceitaModal && window.financeShowAbaterReceitaModal(${f.id}, ${f.valor}, '${escapeHtmlFinance(f.descricao).replace(/'/g, "\\'")}')" style="padding:6px 12px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:0.75rem;font-weight:800;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Abater ou receber valor"><i class="fas fa-hand-holding-usd"></i>Abater</button>`
+                                : '';
+                            return `
+                            <div class="kf-card" style="${styleKfCard}display:flex;justify-content:space-between;align-items:center;padding:1rem;gap:12px;flex-wrap:wrap;">
                                 <div style="display:flex;align-items:center;gap:1rem;flex:1;min-width:0;">
                                     <span style="color:${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};font-weight:800;font-size:1.1rem;">${f.tipo === 'receita' ? '+' : '-'}</span>
                                     <div style="min-width:0;">
-                                        <p style="font-size:13px;font-weight:700;margin:0;color:#f1f5f9;">${escapeHtmlFinance((f.descricao || '').slice(0, 40))}</p>
+                                        <p style="font-size:13px;font-weight:700;margin:0;color:#f1f5f9;display:flex;align-items:center;flex-wrap:wrap;">${escapeHtmlFinance((f.descricao || '').slice(0, 40))}${badge}</p>
                                         <p style="font-size:10px;color:#64748b;margin:4px 0 0 0;">${escapeHtmlFinance(f.data)}</p>
                                     </div>
                                 </div>
-                                <span style="font-weight:800;color:${f.tipo === 'receita' ? '#22c55e' : '#f43f5e'};font-size:1rem;">R$ ${fmt(f.valor)}</span>
-                                ${canEdit(f) ? `<button type="button" onclick="window.editFinanceTransaction && window.editFinanceTransaction(${f.id})" style="padding:6px 12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Editar"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i>Editar</button>` : ''}
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <span style="font-weight:800;color:${f.tipo === 'receita' ? (isPending ? '#facc15' : '#22c55e') : '#f43f5e'};font-size:1rem;white-space:nowrap;">R$ ${fmt(f.valor)}</span>
+                                    ${btnAbater}
+                                    ${canEdit(f) ? `<button type="button" onclick="window.editFinanceTransaction && window.editFinanceTransaction(${f.id})" style="padding:6px 12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Editar"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i>Editar</button>` : ''}
+                                </div>
                             </div>
-                        `).join('')}
+                        `;}).join('')}
                     </div>
                 `;
 
@@ -3094,7 +3109,7 @@ function buildUnifiedFinanceFeed(apiTransactions, kingDb, currentMonth, currentY
         });
         if (falta > 0) {
             const dt = toValidDateStr(t.dataPrevista || t.data || t.created_at);
-            items.push({ id: 'trab-falta-' + t.id, type: 'INCOME', amount: falta, description: descBase + ' (falta receber)', transaction_date: dt, source: 'trabalho', status: 'PENDING' });
+            items.push({ id: 'trab-falta-' + t.id, type: 'INCOME', amount: falta, description: descBase + ' (falta receber)', transaction_date: dt, source: 'trabalho', status: 'PENDING', _trabalhoId: t.id });
         }
     });
     (kingDb.bens || []).forEach(b => {
@@ -3453,6 +3468,27 @@ window.financeMarkAsPaid = async function (id, source, pessoaId, contaId) {
         if (window.renderUnifiedKingTab && window._financeActiveTab === 'terceiros') window.renderUnifiedKingTab('terceiros');
         return;
     }
+    if (source === 'trabalho' && id) {
+        var trabId = String(id).replace(/^trab-(falta|pag)-/, '');
+        var db = window._kingFinanceDb || { trabalhos: [] };
+        var t = (db.trabalhos || []).find(function (x) { return String(x.id) === String(trabId); });
+        if (!t) { alert('Trabalho não encontrado.'); return; }
+        var val = Number(t.valor) || 0;
+        var recebido = (t.pagamentos || []).reduce(function (a, p) { return a + (Number(p.valor) || 0); }, 0);
+        var falta = Math.max(0, val - recebido);
+        if (falta <= 0) { alert('Este trabalho já está quitado.'); return; }
+        var hoje = new Date().toISOString().slice(0, 10);
+        var now = new Date();
+        var hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        t.pagamentos = t.pagamentos || [];
+        t.pagamentos.push({ valor: falta, data: hoje, hora: hora });
+        window._kingFinanceDb = db;
+        if (window._kingFinancePersist) window._kingFinancePersist(db);
+        if (window.loadFinanceTransactions) await window.loadFinanceTransactions();
+        if (window.refreshFinanceSummaryCards) window.refreshFinanceSummaryCards();
+        if (window.renderUnifiedKingTab && window._financeActiveTab === 'trabalhos') window.renderUnifiedKingTab('trabalhos');
+        return;
+    }
     if (source === 'fluxo' && id && (typeof id === 'number' || String(id).match(/^[0-9]+$/))) {
         try {
             var res = await fetch(env.API_URL + '/api/finance/transactions/' + id, { method: 'GET', headers: env.HEADERS_AUTH });
@@ -3468,6 +3504,143 @@ window.financeMarkAsPaid = async function (id, source, pessoaId, contaId) {
             if (window.loadFinanceTransactions) await window.loadFinanceTransactions();
             if (window.refreshFinanceSummaryCards) window.refreshFinanceSummaryCards();
         } catch (e) { alert(e.message || 'Erro ao marcar como pago.'); }
+    }
+};
+
+window.financeShowAbaterReceitaModal = function (itemOrId, amount, description, source, trabalhoId) {
+    var item = typeof itemOrId === 'object' && itemOrId !== null ? itemOrId : null;
+    var id = item ? item.id : itemOrId;
+    var total = item ? (parseFloat(item.amount) || 0) : (parseFloat(amount) || 0);
+    var desc = item ? (item.description || '') : (description || '');
+    var src = item ? (item.source || 'fluxo') : (source || 'fluxo');
+    var trabId = item ? (item._trabalhoId || (String(item.id).startsWith('trab-') ? String(item.id).replace(/^trab-(falta|pag)-/, '') : '')) : (trabalhoId || '');
+
+    if (total <= 0) { alert('Valor pendente inválido ou já quitado.'); return; }
+
+    var fmt = function (v) { return (Number(v) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
+    var existing = document.getElementById('finance-abater-receita-modal');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'finance-abater-receita-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:10010;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+    overlay.innerHTML = '<div style="background:var(--finance-card-dark,#16161a);border:1px solid rgba(34,197,94,0.3);border-radius:18px;padding:26px;max-width:420px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.6);">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">' +
+        '<div style="width:36px;height:36px;border-radius:10px;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;">' +
+        '<i class="fas fa-hand-holding-usd" style="color:#22c55e;font-size:1.1rem;"></i></div>' +
+        '<h3 style="margin:0;color:#f1f5f9;font-size:1.2rem;font-weight:700;">Abater / Receber Conta</h3>' +
+        '</div>' +
+        '<p style="color:#94a3b8;font-size:0.9rem;margin:0 0 6px 0;font-weight:600;">' + (desc || '').replace(/</g, ' ').slice(0, 60) + '</p>' +
+        '<p style="color:#22c55e;font-size:0.95rem;margin:0 0 16px 0;font-weight:700;">Falta a receber: R$ ' + fmt(total) + '</p>' +
+        '<label style="display:block;margin-bottom:6px;font-size:0.85rem;color:#e2e8f0;font-weight:600;">Quanto o cliente está pagando agora? (R$)</label>' +
+        '<input type="text" id="finance-abater-receita-value-input" placeholder="Ex: 500,00" value="" style="width:100%;padding:14px;border-radius:12px;border:1px solid rgba(34,197,94,0.4);background:rgba(255,255,255,0.06);color:#f1f5f9;font-size:1.15rem;font-weight:700;box-sizing:border-box;outline:none;">' +
+        '<div style="display:flex;gap:8px;margin-top:10px;margin-bottom:20px;">' +
+        '<button type="button" id="finance-abater-receita-full-btn" style="flex:1;padding:8px 10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:8px;color:#86efac;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-check-double" style="margin-right:4px;"></i>Preencher valor total (R$ ' + fmt(total) + ')</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:12px;">' +
+        '<button type="button" id="finance-abater-receita-cancel" style="flex:1;padding:12px;border:1px solid rgba(255,255,255,0.2);border-radius:12px;background:transparent;color:#94a3b8;font-weight:600;cursor:pointer;">Cancelar</button>' +
+        '<button type="button" id="finance-abater-receita-confirm" style="flex:1;padding:12px;border:none;border-radius:12px;background:#22c55e;color:#fff;font-weight:700;cursor:pointer;font-size:0.95rem;"><i class="fas fa-check" style="margin-right:6px;"></i>Confirmar Abatimento</button>' +
+        '</div></div>';
+
+    overlay.onclick = function (e) { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+
+    var inputEl = document.getElementById('finance-abater-receita-value-input');
+    if (inputEl) {
+        inputEl.focus();
+        inputEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('finance-abater-receita-confirm').click(); });
+    }
+    var fullBtn = document.getElementById('finance-abater-receita-full-btn');
+    if (fullBtn) {
+        fullBtn.onclick = function () {
+            if (inputEl) inputEl.value = fmt(total);
+        };
+    }
+    document.getElementById('finance-abater-receita-cancel').onclick = function () { overlay.remove(); };
+    document.getElementById('finance-abater-receita-confirm').onclick = async function () {
+        var raw = (inputEl && inputEl.value || '').trim().replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+        var valor = parseFloat(raw) || 0;
+        if (valor <= 0) { alert('Informe um valor válido maior que zero.'); return; }
+        overlay.remove();
+        await window.financeProcessAbatimentoReceita(id, valor, total, desc, src, trabId);
+    };
+};
+
+window.financeProcessAbatimentoReceita = async function (id, valorAbater, totalPendente, desc, src, trabId) {
+    var valor = Math.min(valorAbater, totalPendente);
+    var hoje = new Date().toISOString().slice(0, 10);
+
+    // Se for um trabalho
+    if (src === 'trabalho' || trabId || String(id).startsWith('trab-')) {
+        var actualTrabId = trabId || String(id).replace(/^trab-(falta|pag)-/, '');
+        var db = window._kingFinanceDb || { trabalhos: [] };
+        var t = (db.trabalhos || []).find(function (x) { return String(x.id) === String(actualTrabId); });
+        if (!t) { alert('Trabalho não encontrado.'); return; }
+        t.pagamentos = t.pagamentos || [];
+        var now = new Date();
+        var hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        t.pagamentos.push({ valor: valor, data: hoje, hora: hora });
+        window._kingFinanceDb = db;
+        if (window._kingFinancePersist) window._kingFinancePersist(db);
+        if (window.loadFinanceTransactions) await window.loadFinanceTransactions();
+        if (window.refreshFinanceSummaryCards) window.refreshFinanceSummaryCards();
+        if (window.renderUnifiedKingTab && window._financeActiveTab === 'trabalhos') window.renderUnifiedKingTab('trabalhos');
+        return;
+    }
+
+    // Se for transação do Fluxo (finance_transactions)
+    if (src === 'fluxo' || (id && (typeof id === 'number' || String(id).match(/^[0-9]+$/)))) {
+        try {
+            if (valor >= totalPendente) {
+                await window.financeMarkAsPaid(id, 'fluxo', '', '');
+                return;
+            }
+
+            var res = await fetch(env.API_URL + '/api/finance/transactions/' + id, { method: 'GET', headers: env.HEADERS_AUTH });
+            if (!res.ok) throw new Error('Erro ao buscar transação.');
+            var payload = await res.json();
+            var orig = payload.data || payload;
+
+            var bodyPaid = {
+                type: 'INCOME',
+                amount: valor,
+                description: (orig.description || desc || 'Receita') + ' (abatimento recebido)',
+                transaction_date: hoje,
+                status: 'PAID'
+            };
+            if (orig.category_id != null) bodyPaid.category_id = orig.category_id;
+            if (orig.account_id != null) bodyPaid.account_id = orig.account_id;
+
+            var resNew = await fetch(env.API_URL + '/api/finance/transactions', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, env.HEADERS_AUTH),
+                body: JSON.stringify(bodyPaid)
+            });
+            if (!resNew.ok) throw new Error('Erro ao creditar abatimento recebido.');
+
+            var novoRestante = Math.max(0, totalPendente - valor);
+            var bodyUpdate = {
+                type: orig.type || 'INCOME',
+                amount: novoRestante,
+                description: orig.description || desc,
+                transaction_date: (orig.transaction_date || orig.date || '').slice(0, 10) || hoje,
+                status: novoRestante <= 0 ? 'PAID' : 'PENDING'
+            };
+            if (orig.category_id != null) bodyUpdate.category_id = orig.category_id;
+            if (orig.account_id != null) bodyUpdate.account_id = orig.account_id;
+
+            var resUpdate = await fetch(env.API_URL + '/api/finance/transactions/' + id, {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, env.HEADERS_AUTH),
+                body: JSON.stringify(bodyUpdate)
+            });
+            if (!resUpdate.ok) throw new Error('Erro ao atualizar saldo pendente.');
+
+            if (window.loadFinanceTransactions) await window.loadFinanceTransactions();
+            if (window.refreshFinanceSummaryCards) window.refreshFinanceSummaryCards();
+        } catch (e) {
+            alert(e.message || 'Erro ao processar abatimento.');
+        }
     }
 };
 
@@ -3816,7 +3989,8 @@ function renderFinanceTransactions(transactions, filterTab = 'all') {
                                 </p>
                                 ${(window.currentFinanceFilter === 'pending-expense' && isPending && transaction.source === 'fluxo') ? '<span style="display:inline-flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeMarkAsPaid(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'fluxo\', \'\', \'\')" style="padding:6px 10px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-check" style="margin-right:4px;"></i>Pagar total</button><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeShowPartialPaymentModalFluxo(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'' + (parseFloat(transaction.amount) || 0).toString().replace(/'/g, "\\'") + '\', \'' + (transaction.description || '').toString().replace(/'/g, "\\'").replace(/"/g, '&quot;').slice(0, 50) + '\')" style="padding:6px 10px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-coins" style="margin-right:4px;"></i>Pagar valor desejado</button></span>' : ''}
                                 ${(window.currentFinanceFilter === 'pending-expense' && isPending && transaction.source === 'terceiros') ? '<span style="display:inline-flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeMarkAsPaid(\'\', \'terceiros\', \'' + (transaction._pessoaId || '').toString().replace(/'/g, "\\'") + '\', \'' + (transaction._contaId || '').toString().replace(/'/g, "\\'") + '\')" style="padding:6px 10px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-check" style="margin-right:4px;"></i>Pagar total</button><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeShowPartialPaymentModal(\'' + (transaction._pessoaId || '').toString().replace(/'/g, "\\'") + '\', \'' + (transaction._contaId || '').toString().replace(/'/g, "\\'") + '\', \'' + (transaction.description || '').toString().replace(/'/g, "\\'").slice(0, 40) + '\')" style="padding:6px 10px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-coins" style="margin-right:4px;"></i>Pagar valor desejado</button></span>' : ''}
-                                ${(window.currentFinanceFilter === 'pending-income' && isIncome && isPending && transaction.source === 'fluxo') ? '<button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeMarkAsPaid(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'fluxo\', \'\', \'\')" style="padding:6px 12px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-check" style="margin-right:4px;"></i>Recebi</button>' : ''}
+                                ${(window.currentFinanceFilter === 'pending-income' && isIncome && isPending && transaction.source === 'fluxo') ? '<span style="display:inline-flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeMarkAsPaid(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'fluxo\', \'\', \'\')" style="padding:6px 10px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-check" style="margin-right:4px;"></i>Receber tudo</button><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeShowAbaterReceitaModal(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'' + (parseFloat(transaction.amount) || 0).toString().replace(/'/g, "\\'") + '\', \'' + (transaction.description || '').toString().replace(/'/g, "\\'").replace(/"/g, '&quot;').slice(0, 50) + '\', \'fluxo\', \'\')" style="padding:6px 10px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-hand-holding-usd" style="margin-right:4px;"></i>Abater valor</button></span>' : ''}
+                                 ${(window.currentFinanceFilter === 'pending-income' && isIncome && isPending && transaction.source === 'trabalho') ? '<span style="display:inline-flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeMarkAsPaid(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'trabalho\', \'\', \'\')" style="padding:6px 10px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-check" style="margin-right:4px;"></i>Receber tudo</button><button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeShowAbaterReceitaModal(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'' + (parseFloat(transaction.amount) || 0).toString().replace(/'/g, "\\'") + '\', \'' + (transaction.description || '').toString().replace(/'/g, "\\'").replace(/"/g, '&quot;').slice(0, 50) + '\', \'trabalho\', \'' + (transaction._trabalhoId || '').toString().replace(/'/g, "\\'") + '\')" style="padding:6px 10px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-hand-holding-usd" style="margin-right:4px;"></i>Abater valor</button></span>' : ''}
                                 ${(window.currentFinanceFilter === 'paid-expense' && !isPending && (transaction.source === 'fluxo' || transaction.source === 'terceiros')) ? '<button type="button" onclick="event.stopPropagation(); event.preventDefault(); window.financeRestoreToPending(\'' + (transaction.id || '').toString().replace(/'/g, "\\'") + '\', \'' + (transaction.source || '') + '\', \'' + (transaction._pessoaId || '') + '\', \'' + (transaction._contaId || '') + '\')" style="padding:6px 12px;background:rgba(245,158,11,0.25);border:1px solid rgba(245,158,11,0.5);border-radius:8px;color:#fcd34d;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="fas fa-undo" style="margin-right:4px;"></i>Restaurar</button>' : ''}
                             </div>
                         </div>
