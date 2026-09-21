@@ -48,6 +48,7 @@ Thumbs.db
 # Local uploads / cache / tmp
 uploads/
 public/uploads/
+scratch/
 .cache/
 tmp/
 temp/
