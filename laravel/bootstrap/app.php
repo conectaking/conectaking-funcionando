@@ -81,6 +81,48 @@ return Application::configure(basePath: dirname(__DIR__))
             \Sentry\Laravel\Integration::handles($exceptions);
         }
 
+        // ─── Interceptador de erros de páginas → Telegram do King ────────────
+        $exceptions->report(function (\Throwable $e) {
+            // Ignorar erros HTTP esperados (404, 401, 403, 422) — só 500+ ou inesperados
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                if ($e->getStatusCode() < 500) {
+                    return false;
+                }
+            }
+
+            try {
+                $request = request();
+                $errorData = [
+                    'timestamp'   => now()->toIso8601String(),
+                    'url'         => $request ? $request->fullUrl() : 'N/A',
+                    'path'        => $request ? $request->path() : 'N/A',
+                    'method'      => $request ? $request->method() : 'N/A',
+                    'exception'   => $e::class,
+                    'message'     => mb_substr($e->getMessage(), 0, 400),
+                    'file'        => mb_substr($e->getFile(), -80),
+                    'line'        => $e->getLine(),
+                    'user_agent'  => $request ? mb_substr((string) $request->userAgent(), 0, 120) : '',
+                    'ip'          => $request ? $request->ip() : '',
+                ];
+
+                // Grava no cache de diagnóstico
+                \App\Http\Controllers\Admin\SystemDiagnosticsController::recordError($errorData);
+
+                // Envia alerta via OpsAlertService (→ Sentry + webhook Telegram admin)
+                app(\App\Services\OpsAlertService::class)->error('page.error_500', [
+                    'url'       => $errorData['url'],
+                    'exception' => $errorData['exception'],
+                    'message'   => $errorData['message'],
+                    'file'      => $errorData['file'] . ':' . $errorData['line'],
+                ]);
+            } catch (\Throwable $inner) {
+                // Nunca deixar o reporter quebrar a aplicação
+            }
+
+            return false; // Deixa o handler padrão continuar (Sentry, logs, etc.)
+        });
+        // ─────────────────────────────────────────────────────────────────────
+
         $exceptions->shouldRenderJsonWhen(fn ($request, \Throwable $e) =>
             $request->is('api/*') || $request->expectsJson()
         );

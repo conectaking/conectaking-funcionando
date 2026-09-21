@@ -747,7 +747,10 @@ Route::middleware(['admin', 'audit'])->group(function () {
     $adminOverview = \App\Http\Controllers\Admin\AdminOverviewController::class;
     $adminUsers = \App\Http\Controllers\Admin\AdminUsersController::class;
     $adminCodes = \App\Http\Controllers\Admin\AdminCodesController::class;
+    $adminDiagnostics = \App\Http\Controllers\Admin\SystemDiagnosticsController::class;
     foreach ([''] as $p) {
+        Route::get($p.'/api/admin/system/recent-errors', [$adminDiagnostics, 'recentErrors'])->middleware('throttle:60,1');
+        Route::post($p.'/api/admin/system/clear-errors', [$adminDiagnostics, 'clearErrors'])->middleware('throttle:20,1');
         Route::get($p.'/api/admin/default-branding', [$adminOverview, 'getDefaultBranding'])->middleware('throttle:60,1');
         Route::put($p.'/api/admin/default-branding', [$adminOverview, 'putDefaultBranding'])->middleware('throttle:20,1');
         Route::get($p.'/api/admin/stats', [$adminOverview, 'stats'])->middleware('throttle:60,1');
