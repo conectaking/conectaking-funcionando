@@ -113,39 +113,73 @@ class FinanceService
     }
 
     /**
+     * Resolve os dados consolidados do King Finance (itens/sync), com fallback robusto para o perfil primário ou registros do usuário.
+     *
+     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list}
+     */
+    public function resolveKingData(string $userId, ?int $profileId): array
+    {
+        $profileKey = $profileId !== null ? (string) $profileId : '';
+        $resolvedKey = $profileKey;
+        if ($resolvedKey === '') {
+            $prim = DB::selectOne(
+                'SELECT id FROM finance_profiles WHERE user_id = ? AND is_primary = TRUE AND is_active = TRUE LIMIT 1',
+                [$userId]
+            );
+            if ($prim) {
+                $resolvedKey = (string) $prim->id;
+            }
+        }
+
+        // 1. Tenta carregar de finance_king_items
+        $data = null;
+        if ($resolvedKey !== '') {
+            $data = $this->loadKingDataFromItems($userId, $resolvedKey);
+        }
+        if ($data === null && $resolvedKey !== $profileKey) {
+            $data = $this->loadKingDataFromItems($userId, $profileKey);
+        }
+        if ($data === null && Schema::hasTable('finance_king_items')) {
+            $firstItem = DB::selectOne('SELECT profile_id FROM finance_king_items WHERE user_id = ? LIMIT 1', [$userId]);
+            if ($firstItem && isset($firstItem->profile_id)) {
+                $data = $this->loadKingDataFromItems($userId, (string) $firstItem->profile_id);
+            }
+        }
+
+        // 2. Fallback para finance_king_sync
+        if ($data === null && Schema::hasTable('finance_king_sync')) {
+            $row = null;
+            if ($resolvedKey !== '') {
+                $row = DB::selectOne('SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1', [$userId, $resolvedKey]);
+            }
+            if (! $row && $resolvedKey !== $profileKey) {
+                $row = DB::selectOne('SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1', [$userId, $profileKey]);
+            }
+            if (! $row) {
+                $row = DB::selectOne('SELECT data FROM finance_king_sync WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1', [$userId]);
+            }
+            if ($row && ! empty($row->data)) {
+                $decoded = is_string($row->data) ? json_decode($row->data, true) : (array) $row->data;
+                $data = $this->normalizeKingData(is_array($decoded) ? $decoded : []);
+            }
+        }
+
+        $res = $data !== null ? $data : $this->emptyKingData();
+
+        // Se encontrou dados e há itens, sincroniza se necessário
+        if ($this->kingDataHasAnyItems($res) && $resolvedKey !== '') {
+            $this->syncKingItems($userId, $resolvedKey, $res);
+        }
+
+        return $res;
+    }
+
+    /**
      * @return array{status:int, body:array<string,mixed>}
      */
     public function kingData(string $userId, ?int $profileId): array
     {
-        $pid = $profileId !== null ? (string) $profileId : '';
-        $fromItems = $this->loadKingDataFromItems($userId, $pid);
-        if ($fromItems !== null) {
-            return ['status' => 200, 'body' => ['success' => true, 'data' => $fromItems, 'error' => null, 'message' => null]];
-        }
-
-        if (! Schema::hasTable('finance_king_sync')) {
-            return ['status' => 200, 'body' => [
-                'success' => true,
-                'data' => $this->emptyKingData(),
-                'error' => null,
-                'message' => null,
-            ]];
-        }
-        $row = DB::selectOne(
-            'SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1',
-            [$userId, $pid]
-        );
-        $data = $this->emptyKingData();
-        if ($row && ! empty($row->data)) {
-            $decoded = is_string($row->data) ? json_decode($row->data, true) : (array) $row->data;
-            if (is_array($decoded)) {
-                $data = $this->normalizeKingData($decoded);
-            }
-        }
-        // Migração gradual: materializa blob → linhas na primeira leitura.
-        if ($this->kingDataHasAnyItems($data)) {
-            $this->syncKingItems($userId, $pid, $data);
-        }
+        $data = $this->resolveKingData($userId, $profileId);
 
         return ['status' => 200, 'body' => ['success' => true, 'data' => $data, 'error' => null, 'message' => null]];
     }
@@ -419,38 +453,76 @@ class FinanceService
         );
         $accIncome = (float) ($acc->total_income ?? 0);
         $accExpense = (float) ($acc->total_expense ?? 0);
-        // Incluir trabalhos pagos no saldo (king_sync)
-        $saldoTrabalhos = 0.0;
-        $kingForDash = null;
-        $dashProfileKey = $profileId !== null ? (string) $profileId : '';
-        $dashResolvedKey = $dashProfileKey;
-        if ($dashResolvedKey === '') {
-            $primP = DB::selectOne('SELECT id FROM finance_profiles WHERE user_id = ? AND is_primary = TRUE AND is_active = TRUE LIMIT 1', [$userId]);
-            if ($primP) { $dashResolvedKey = (string) $primP->id; }
-        }
-        $kingForDash = $this->loadKingDataFromItems($userId, $dashResolvedKey);
-        if ($kingForDash === null && $dashResolvedKey !== $dashProfileKey) {
-            $kingForDash = $this->loadKingDataFromItems($userId, $dashProfileKey);
-        }
-        if ($kingForDash === null && Schema::hasTable('finance_king_sync')) {
-            $ksRow = DB::selectOne('SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1', [$userId, $dashResolvedKey]);
-            if (!$ksRow && $dashResolvedKey !== $dashProfileKey) {
-                $ksRow = DB::selectOne('SELECT data FROM finance_king_sync WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1', [$userId]);
+        // Consolidar dados do King Finance (trabalhos e terceiros)
+        $kingForDash = $this->resolveKingData($userId, $profileId);
+
+        $trabalhosRecebidosMes = 0.0;
+        $trabalhosFaltaReceberMes = 0.0;
+        $saldoTotalTrabalhos = 0.0;
+
+        foreach ($kingForDash['trabalhos'] ?? [] as $tw) {
+            if (! is_array($tw)) {
+                continue;
             }
-            if ($ksRow && !empty($ksRow->data)) {
-                $ksDecoded = is_string($ksRow->data) ? json_decode($ksRow->data, true) : (array) $ksRow->data;
-                $kingForDash = $this->normalizeKingData(is_array($ksDecoded) ? $ksDecoded : []);
+            $twValor = (float) ($tw['valor'] ?? 0);
+            $twPago = 0.0;
+            foreach ($tw['pagamentos'] ?? [] as $pg) {
+                if (! is_array($pg)) {
+                    continue;
+                }
+                $vPg = (float) ($pg['valor'] ?? 0);
+                $saldoTotalTrabalhos += $vPg;
+                $twPago += $vPg;
+                $dtPg = substr((string) ($pg['data'] ?? $pg['dataPagamento'] ?? $tw['data'] ?? ''), 0, 10);
+                if ($dtPg >= $dateFrom && $dtPg <= $dateTo) {
+                    $trabalhosRecebidosMes += $vPg;
+                }
             }
-        }
-        if ($kingForDash !== null) {
-            foreach ($kingForDash['trabalhos'] ?? [] as $tw) {
-                if (!is_array($tw)) continue;
-                foreach ($tw['pagamentos'] ?? [] as $pg) {
-                    $saldoTrabalhos += (float) ($pg['valor'] ?? 0);
+            $restante = max(0, $twValor - $twPago);
+            if ($restante > 0) {
+                $dtPrev = substr((string) ($tw['dataPrevista'] ?? $tw['data'] ?? ''), 0, 10);
+                if (($dtPrev >= $dateFrom && $dtPrev <= $dateTo) || (substr($dtPrev, 0, 7) === substr($dateFrom, 0, 7))) {
+                    $trabalhosFaltaReceberMes += $restante;
                 }
             }
         }
-        $saldo = $accIncome - $accExpense + $saldoTrabalhos;
+
+        $terceirosPagoMes = 0.0;
+        $terceirosFaltaPagarMes = 0.0;
+        $saldoTotalTerceirosPagos = 0.0;
+        $mesRef = substr($dateFrom, 0, 7);
+
+        foreach ($kingForDash['terceiros'] ?? [] as $p) {
+            if (! is_array($p)) {
+                continue;
+            }
+            foreach ($p['contas'] ?? [] as $c) {
+                if (! is_array($c)) {
+                    continue;
+                }
+                $cValor = (float) ($c['valor'] ?? 0);
+                $cPago = 0.0;
+                foreach ($c['pagamentos'] ?? [] as $pg) {
+                    if (! is_array($pg)) {
+                        continue;
+                    }
+                    $vPg = (float) ($pg['valor'] ?? 0);
+                    $saldoTotalTerceirosPagos += $vPg;
+                    $cPago += $vPg;
+                    $dtPg = substr((string) ($pg['data'] ?? $c['dataVencimento'] ?? ''), 0, 10);
+                    if ($dtPg >= $dateFrom && $dtPg <= $dateTo) {
+                        $terceirosPagoMes += $vPg;
+                    }
+                }
+                $cRestante = max(0, $cValor - $cPago);
+                $dtVenc = substr((string) ($c['dataVencimento'] ?? ''), 0, 7);
+                if ($cRestante > 0 && $dtVenc === $mesRef) {
+                    $terceirosFaltaPagarMes += $cRestante;
+                }
+            }
+        }
+
+        $saldo = ($accIncome - $accExpense) + $saldoTotalTrabalhos - $saldoTotalTerceirosPagos;
 
         $topParams = $profileId !== null
             ? [$userId, $dateFrom, $dateTo, $profileId]
@@ -465,8 +537,13 @@ class FinanceService
             $topParams
         );
 
-        $totalIncome = $incomePaid + $incomePending;
-        $totalExpense = $expensePaid + $expensePending;
+        $totalIncomePaid = $incomePaid + $trabalhosRecebidosMes;
+        $totalIncomePending = $incomePending + $trabalhosFaltaReceberMes;
+        $totalIncome = $totalIncomePaid + $totalIncomePending;
+
+        $totalExpensePaid = $expensePaid + $terceirosPagoMes;
+        $totalExpensePending = $expensePending + $terceirosFaltaPagarMes;
+        $totalExpense = $totalExpensePaid + $totalExpensePending;
 
         $prevParams = $profileId !== null
             ? [$userId, $dateFrom, $profileId]
@@ -483,19 +560,19 @@ class FinanceService
         $stats = [
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
-            'totalIncomePaid' => $incomePaid,
-            'totalExpensePaid' => $expensePaid,
-            'totalRecebido' => $incomePaid,
-            'totalPago' => $expensePaid,
-            'pendingExpense' => $expensePending,
+            'totalIncomePaid' => $totalIncomePaid,
+            'totalExpensePaid' => $totalExpensePaid,
+            'totalRecebido' => $totalIncomePaid,
+            'totalPago' => $totalExpensePaid,
+            'pendingExpense' => $totalExpensePending,
             'pendingExpensePreviousMonths' => $pendingExpensePreviousMonths,
-            'pendingIncome' => $incomePending,
-            'pendenciasReceber' => $incomePending,
-            'pendenciasPagar' => $expensePending,
+            'pendingIncome' => $totalIncomePending,
+            'pendenciasReceber' => $totalIncomePending,
+            'pendenciasPagar' => $totalExpensePending,
             'accountBalance' => $saldo,
             'saldoDisponivel' => $saldo,
             'monthlyBalance' => $totalIncome - $totalExpense,
-            'netProfit' => $incomePaid - $expensePaid,
+            'netProfit' => $totalIncomePaid - $totalExpensePaid,
             'balanceVariation' => 0,
             'topCategories' => $top,
             'totalTransactions' => 0,
@@ -1141,47 +1218,7 @@ class FinanceService
 
         $trabajos = [];
         $recibos = [];
-        $profileKey = $profileId !== null ? (string) $profileId : '';
-        // Se profileKey vazio, resolver pelo perfil primário para achar king_sync/items
-        $resolvedProfileKey = $profileKey;
-        if ($resolvedProfileKey === '') {
-            $primaryProfile = DB::selectOne(
-                'SELECT id FROM finance_profiles WHERE user_id = ? AND is_primary = TRUE AND is_active = TRUE LIMIT 1',
-                [$userId]
-            );
-            if ($primaryProfile) {
-                $resolvedProfileKey = (string) $primaryProfile->id;
-            }
-        }
-        $kingPayload = $this->loadKingDataFromItems($userId, $resolvedProfileKey);
-        if ($kingPayload === null && $resolvedProfileKey !== $profileKey) {
-            $kingPayload = $this->loadKingDataFromItems($userId, $profileKey);
-        }
-        if ($kingPayload === null && Schema::hasTable('finance_king_sync')) {
-            $sync = DB::selectOne(
-                'SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1',
-                [$userId, $resolvedProfileKey]
-            );
-            if (! $sync && $resolvedProfileKey !== $profileKey) {
-                $sync = DB::selectOne(
-                    'SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1',
-                    [$userId, $profileKey]
-                );
-            }
-            if (! $sync) {
-                // Último fallback: qualquer registro do usuário
-                $sync = DB::selectOne(
-                    'SELECT data FROM finance_king_sync WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1',
-                    [$userId]
-                );
-            }
-            $data = [];
-            if ($sync && ! empty($sync->data)) {
-                $decoded = is_string($sync->data) ? json_decode($sync->data, true) : (array) $sync->data;
-                $data = is_array($decoded) ? $decoded : [];
-            }
-            $kingPayload = $this->normalizeKingData($data);
-        }
+        $kingPayload = $this->resolveKingData($userId, $profileId);
         $arr = is_array($kingPayload['trabalhos'] ?? null) ? $kingPayload['trabalhos'] : [];
         $isMonthly = $scope === 'monthly';
         foreach ($arr as $t) {
@@ -1900,6 +1937,70 @@ class FinanceService
             $keyed[(string) $r->month_key] = $r;
         }
 
+        // Incorporar dados de trabalhos e terceiros do King Finance no fluxo de caixa
+        $kingData = $this->resolveKingData($userId, $profileId);
+        $kingMonthIncPaid = [];
+        $kingMonthIncPend = [];
+        $kingMonthExpPaid = [];
+        $kingMonthExpPend = [];
+
+        foreach ($kingData['trabalhos'] ?? [] as $tw) {
+            if (! is_array($tw)) {
+                continue;
+            }
+            $twValor = (float) ($tw['valor'] ?? 0);
+            $twPago = 0.0;
+            foreach ($tw['pagamentos'] ?? [] as $pg) {
+                if (! is_array($pg)) {
+                    continue;
+                }
+                $vPg = (float) ($pg['valor'] ?? 0);
+                $twPago += $vPg;
+                $mKey = substr((string) ($pg['data'] ?? $pg['dataPagamento'] ?? $tw['data'] ?? ''), 0, 7);
+                if (preg_match('/^\d{4}-\d{2}$/', $mKey)) {
+                    $kingMonthIncPaid[$mKey] = ($kingMonthIncPaid[$mKey] ?? 0.0) + $vPg;
+                }
+            }
+            $restante = max(0, $twValor - $twPago);
+            if ($restante > 0) {
+                $mKeyPrev = substr((string) ($tw['dataPrevista'] ?? $tw['data'] ?? ''), 0, 7);
+                if (preg_match('/^\d{4}-\d{2}$/', $mKeyPrev)) {
+                    $kingMonthIncPend[$mKeyPrev] = ($kingMonthIncPend[$mKeyPrev] ?? 0.0) + $restante;
+                }
+            }
+        }
+
+        foreach ($kingData['terceiros'] ?? [] as $p) {
+            if (! is_array($p)) {
+                continue;
+            }
+            foreach ($p['contas'] ?? [] as $c) {
+                if (! is_array($c)) {
+                    continue;
+                }
+                $cValor = (float) ($c['valor'] ?? 0);
+                $cPago = 0.0;
+                foreach ($c['pagamentos'] ?? [] as $pg) {
+                    if (! is_array($pg)) {
+                        continue;
+                    }
+                    $vPg = (float) ($pg['valor'] ?? 0);
+                    $cPago += $vPg;
+                    $mKey = substr((string) ($pg['data'] ?? $c['dataVencimento'] ?? ''), 0, 7);
+                    if (preg_match('/^\d{4}-\d{2}$/', $mKey)) {
+                        $kingMonthExpPaid[$mKey] = ($kingMonthExpPaid[$mKey] ?? 0.0) + $vPg;
+                    }
+                }
+                $cRestante = max(0, $cValor - $cPago);
+                if ($cRestante > 0) {
+                    $mKeyVenc = substr((string) ($c['dataVencimento'] ?? ''), 0, 7);
+                    if (preg_match('/^\d{4}-\d{2}$/', $mKeyVenc)) {
+                        $kingMonthExpPend[$mKeyVenc] = ($kingMonthExpPend[$mKeyVenc] ?? 0.0) + $cRestante;
+                    }
+                }
+            }
+        }
+
         // Garante todos os meses da janela preenchidos em sequência cronológica
         $result = [];
         $totalIncomePaid = 0.0;
@@ -1913,10 +2014,10 @@ class FinanceService
             $label = $carbon->translatedFormat('M/Y');
 
             $row = $keyed[$key] ?? null;
-            $incPaid = $row ? (float) $row->income_paid : 0.0;
-            $incPend = $row ? (float) $row->income_pending : 0.0;
-            $expPaid = $row ? (float) $row->expense_paid : 0.0;
-            $expPend = $row ? (float) $row->expense_pending : 0.0;
+            $incPaid = ($row ? (float) $row->income_paid : 0.0) + ($kingMonthIncPaid[$key] ?? 0.0);
+            $incPend = ($row ? (float) $row->income_pending : 0.0) + ($kingMonthIncPend[$key] ?? 0.0);
+            $expPaid = ($row ? (float) $row->expense_paid : 0.0) + ($kingMonthExpPaid[$key] ?? 0.0);
+            $expPend = ($row ? (float) $row->expense_pending : 0.0) + ($kingMonthExpPend[$key] ?? 0.0);
             $netPaid = $incPaid - $expPaid;
             $netTotal = ($incPaid + $incPend) - ($expPaid + $expPend);
 
