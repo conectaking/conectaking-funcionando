@@ -3239,7 +3239,8 @@ function _financeTrabalhosTotals(kingDb) {
             var totalRecebido = totalApi > 0 ? Math.max(totalApi, totalLocal) : totalLocal;
             var balance = totalRecebido - despesas;
             var faltaReceberGeral = (Number(data.pendingIncome) || 0) + trab.totalFalta;
-            var patrimonioExibir = Number(data.accountBalance) || Number(data.totalBalance) || 0;
+            var _trabRecebidoGeral = (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos)) ? window._kingFinanceDb.trabalhos.reduce(function(a,t){ return a + (Array.isArray(t.pagamentos) ? t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0) : 0); },0) : ((window._kingFinanceStats && Number(window._kingFinanceStats.totalRecebidoTrabalhos)) || 0);
+            var patrimonioExibir = (Number(data.accountBalance) || Number(data.totalBalance) || 0) + _trabRecebidoGeral;
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
             if (accountBalanceMainEl) accountBalanceMainEl.textContent = 'R$ ' + formatCurrency(patrimonioExibir);
             const incomeCardEl = document.getElementById('finance-income-card');
@@ -3425,6 +3426,17 @@ window.openFinanceDetailModal = async function (type) {
                 var origem = (t.source || 'fluxo') === 'trabalho' ? 'trabalho' : (t.source || 'fluxo') === 'bem' ? 'bem' : 'transacao';
                 return { origem: origem, descricao: t.description || '', cliente: t.client_name || null, valor: parseFloat(t.amount) || 0, data: dt };
             });
+            // Incluir trabalhos do kingDb (pagamentos recebidos) no detalhe do saldo
+            var _kingDbBal = window._kingFinanceDb || {};
+            (_kingDbBal.trabalhos || []).forEach(function(t) {
+                if (!Array.isArray(t.pagamentos) || t.pagamentos.length === 0) return;
+                var totalPag = t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0);
+                if (totalPag <= 0) return;
+                var ultimaDt = null;
+                t.pagamentos.forEach(function(p){ var d=(p.data||t.data||'').toString().slice(0,10); if(d&&(!ultimaDt||d>ultimaDt)) ultimaDt=d; });
+                itensSaldo.push({ origem: 'trabalho', descricao: t.descricao||t.servico||'Trabalho', cliente: t.cliente||null, valor: totalPag, data: ultimaDt||null });
+            });
+            itensSaldo.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
             totalSaldo = itensSaldo.reduce(function (s, x) { return s + (x.valor || 0); }, 0);
         }
         var tituloGoals = type === 'goals' ? 'Valor já ganho (Metas)' : 'Saldo disponível';
@@ -4203,7 +4215,8 @@ window.selectFinanceMonth = function (monthIndex) {
             var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
             var balance = totalRecebidoMes - despesas;
             var faltaReceberGeralMes = (Number(data.pendingIncome) || 0) + trabMes.totalFalta;
-            var patrimonioMes = Number(data.accountBalance) || Number(data.totalBalance) || 0;
+            var _trabRecebidoGeralMes = (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos)) ? window._kingFinanceDb.trabalhos.reduce(function(a,t){ return a + (Array.isArray(t.pagamentos) ? t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0) : 0); },0) : ((window._kingFinanceStats && Number(window._kingFinanceStats.totalRecebidoTrabalhos)) || 0);
+            var patrimonioMes = (Number(data.accountBalance) || Number(data.totalBalance) || 0) + _trabRecebidoGeralMes;
 
             const netWorthEl = document.querySelector('.finance-card-premium h3');
             if (netWorthEl) netWorthEl.textContent = `R$ ${formatCurrency(patrimonioMes)}`;
@@ -4310,7 +4323,8 @@ window.changeFinanceMonth = function (direction) {
             var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
             var balance = totalRecebidoBtn - despesas;
             var faltaReceberGeralBtn = (Number(data.pendingIncome) || 0) + trabBtn.totalFalta;
-            var patrimonioBtn = Number(data.accountBalance) || Number(data.totalBalance) || 0;
+            var _trabRecebidoGeralBtn = (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos)) ? window._kingFinanceDb.trabalhos.reduce(function(a,t){ return a + (Array.isArray(t.pagamentos) ? t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0) : 0); },0) : ((window._kingFinanceStats && Number(window._kingFinanceStats.totalRecebidoTrabalhos)) || 0);
+            var patrimonioBtn = (Number(data.accountBalance) || Number(data.totalBalance) || 0) + _trabRecebidoGeralBtn;
 
             // Atualizar Saldo Disponível em Conta (inclui entradas de trabalhos)
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
