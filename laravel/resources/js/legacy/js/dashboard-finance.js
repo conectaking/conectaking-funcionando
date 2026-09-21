@@ -2765,7 +2765,13 @@ window.showKingFinancePane = async function () {
             fields = `
                 <input name="cliente" placeholder="Nome do cliente" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
                 <input name="servico" placeholder="Qual serviço?" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
-                <input name="valor" type="number" step="0.01" placeholder="Valor R$" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
+                <input name="valor" type="number" step="0.01" placeholder="Valor total R$" required style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
+                <label style="font-size:0.8rem;color:#facc15;margin:8px 0 4px 0;display:block;"><i class="fas fa-coins" style="margin-right:5px;"></i>Entrada recebida agora (AV/Sinal) — deixe 0 se não recebeu nada</label>
+                <input name="entrada" type="number" step="0.01" min="0" placeholder="R$ 0,00" style="width:100%;padding:12px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.35);border-radius:1rem;color:#fef08a;font-size:12px;">
+                <label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data do trabalho</label>
+                <input name="data" type="date" placeholder="Data do trabalho" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
+                <label style="font-size:0.8rem;color:var(--finance-text-secondary);margin:8px 0 4px 0;display:block;">Data prevista para recebimento</label>
+                <input name="dataPrevista" type="date" placeholder="Data prevista" style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;">
             `;
         } else if (modalType === 'bem') {
             const baseStyle = 'width:100%;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;color:#f1f5f9;font-size:12px;';
@@ -2892,7 +2898,19 @@ window.showKingFinancePane = async function () {
                 const coll = { trabalho: 'trabalhos', bem: 'bens', divida: 'dividas' }[modalType];
                 if (!coll) return;
                 let entry = { id, ...data };
-                if (modalType === 'trabalho') entry.valor = parseFloat(data.valor) || 0;
+                if (modalType === 'trabalho') {
+                    entry.valor = parseFloat(data.valor) || 0;
+                    const vEntrada = parseFloat(String(data.entrada || '0').replace(',', '.'));
+                    entry.pagamentos = [];
+                    if (!isNaN(vEntrada) && vEntrada > 0) {
+                        entry.pagamentos.push({
+                            id: Date.now().toString(),
+                            valor: vEntrada,
+                            data: data.data || new Date().toISOString().slice(0, 10),
+                            obs: 'Entrada / Sinal (AV)'
+                        });
+                    }
+                }
                 if (modalType === 'bem') entry.valorAluguel = parseFloat(data.valorAluguel) || 0;
                 if (modalType === 'divida') {
                     entry.valorTotal = parseFloat(data.valorTotal) || 0;
