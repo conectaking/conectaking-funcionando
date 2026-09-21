@@ -449,23 +449,95 @@ class FinanceService
         );
         $pendingExpensePreviousMonths = (float) ($prevRow->total ?? 0);
 
+        $pidStr = $profileId !== null ? (string) $profileId : '';
+        $kingData = $this->loadKingDataFromItems($userId, $pidStr);
+        if ($kingData === null && $pidStr !== '') {
+            $kingData = $this->loadKingDataFromItems($userId, '');
+        }
+        if ($kingData === null && Schema::hasTable('finance_king_sync')) {
+            $rowSync = DB::selectOne('SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1', [$userId, $pidStr]);
+            if (! $rowSync && $pidStr !== '') {
+                $rowSync = DB::selectOne('SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1', [$userId, '']);
+            }
+            if ($rowSync && ! empty($rowSync->data)) {
+                $decoded = is_string($rowSync->data) ? json_decode($rowSync->data, true) : (array) $rowSync->data;
+                if (is_array($decoded)) {
+                    $kingData = $this->normalizeKingData($decoded);
+                }
+            }
+        }
+
+        $trabRecebidoGeral = 0.0;
+        $trabRecebidoPeriodo = 0.0;
+        $trabFaltaGeral = 0.0;
+        if ($kingData && ! empty($kingData['trabalhos']) && is_array($kingData['trabalhos'])) {
+            foreach ($kingData['trabalhos'] as $t) {
+                if (! is_array($t)) continue;
+                $valor = (float) ($t['valor'] ?? 0);
+                $pagoTrab = 0.0;
+                if (! empty($t['pagamentos']) && is_array($t['pagamentos'])) {
+                    foreach ($t['pagamentos'] as $p) {
+                        if (! is_array($p)) continue;
+                        $pVal = (float) ($p['valor'] ?? 0);
+                        $pagoTrab += $pVal;
+                        $trabRecebidoGeral += $pVal;
+                        $pDate = substr((string) ($p['data'] ?? ($t['data'] ?? '')), 0, 10);
+                        if ($pDate && $pDate >= $dateFrom && $pDate <= $dateTo) {
+                            $trabRecebidoPeriodo += $pVal;
+                        }
+                    }
+                }
+                $falta = max(0.0, $valor - $pagoTrab);
+                $trabFaltaGeral += $falta;
+            }
+        }
+
+        $terceirosEsteMes = 0.0;
+        $terceirosPagoMes = 0.0;
+        $mesRef = substr($dateFrom, 0, 7);
+        if ($kingData && ! empty($kingData['terceiros']) && is_array($kingData['terceiros'])) {
+            foreach ($kingData['terceiros'] as $pessoa) {
+                if (! is_array($pessoa) || empty($pessoa['contas']) || ! is_array($pessoa['contas'])) continue;
+                foreach ($pessoa['contas'] as $c) {
+                    if (! is_array($c)) continue;
+                    $venc = substr((string) ($c['dataVencimento'] ?? ''), 0, 7);
+                    $vencRestante = (float) ($c['valor'] ?? 0);
+                    if (! empty($c['pagamentos']) && is_array($c['pagamentos'])) {
+                        foreach ($c['pagamentos'] as $x) {
+                            if (! is_array($x)) continue;
+                            $vencRestante -= (float) ($x['valor'] ?? 0);
+                            $pDt = substr((string) ($x['data'] ?? ($c['dataVencimento'] ?? '')), 0, 7);
+                            if ($pDt === $mesRef) {
+                                $terceirosPagoMes += (float) ($x['valor'] ?? 0);
+                            }
+                        }
+                    }
+                    if ($venc === $mesRef && $vencRestante > 0) {
+                        $terceirosEsteMes += $vencRestante;
+                    }
+                }
+            }
+        }
+
         $stats = [
-            'totalIncome' => $totalIncome,
-            'totalExpense' => $totalExpense,
-            'totalIncomePaid' => $incomePaid,
-            'totalExpensePaid' => $expensePaid,
-            'totalRecebido' => $incomePaid,
-            'totalPago' => $expensePaid,
-            'pendingExpense' => $expensePending,
+            'totalIncome' => $totalIncome + $trabRecebidoPeriodo + $trabFaltaGeral,
+            'totalExpense' => $totalExpense + $terceirosEsteMes,
+            'totalIncomePaid' => $incomePaid + $trabRecebidoPeriodo,
+            'totalExpensePaid' => $expensePaid + $terceirosPagoMes,
+            'totalRecebido' => $incomePaid + $trabRecebidoPeriodo,
+            'totalPago' => $expensePaid + $terceirosPagoMes,
+            'pendingExpense' => $expensePending + $terceirosEsteMes,
             'pendingExpensePreviousMonths' => $pendingExpensePreviousMonths,
-            'pendingIncome' => $incomePending,
-            'pendenciasReceber' => $incomePending,
-            'pendenciasPagar' => $expensePending,
-            'accountBalance' => $saldo,
-            'saldoDisponivel' => $saldo,
-            'monthlyBalance' => $totalIncome - $totalExpense,
-            'netProfit' => $incomePaid - $expensePaid,
+            'pendingIncome' => $incomePending + $trabFaltaGeral,
+            'pendenciasReceber' => $incomePending + $trabFaltaGeral,
+            'pendenciasPagar' => $expensePending + $terceirosEsteMes,
+            'accountBalance' => $saldo + $trabRecebidoGeral,
+            'totalBalance' => $saldo + $trabRecebidoGeral,
+            'saldoDisponivel' => $saldo + $trabRecebidoGeral,
+            'monthlyBalance' => ($totalIncome + $trabRecebidoPeriodo) - ($totalExpense + $terceirosEsteMes),
+            'netProfit' => ($incomePaid + $trabRecebidoPeriodo) - ($expensePaid + $terceirosPagoMes),
             'balanceVariation' => 0,
+            'includesTrabalhos' => true,
             'topCategories' => $top,
             'totalTransactions' => 0,
             'receitasCount' => 0,
@@ -1112,6 +1184,9 @@ class FinanceService
         $recibos = [];
         $profileKey = $profileId !== null ? (string) $profileId : '';
         $kingPayload = $this->loadKingDataFromItems($userId, $profileKey);
+        if ($kingPayload === null && $profileKey !== '') {
+            $kingPayload = $this->loadKingDataFromItems($userId, '');
+        }
         if ($kingPayload === null && Schema::hasTable('finance_king_sync')) {
             $sync = DB::selectOne(
                 'SELECT data FROM finance_king_sync WHERE user_id = ? AND profile_id = ? LIMIT 1',
@@ -1152,27 +1227,38 @@ class FinanceService
                 if ($totalT > 0 && $ultima && $ultima >= $dateFrom && $ultima <= $dateTo) {
                     $trabajos[] = [
                         'origem' => 'trabalho',
-                        'descricao' => $t['descricao'] ?? $t['servico'] ?? 'Trabalho',
+                        'descricao' => 'Trabalho: ' . ($t['cliente'] ?? 'Cliente') . (! empty($t['servico']) ? ' - ' . $t['servico'] : ''),
                         'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
                         'valor' => $totalT,
                         'data' => $ultima,
                     ];
                 }
             } elseif (! $isMonthly) {
-                $v = (float) ($t['valor_recebido'] ?? 0);
-                if ($v <= 0 && ! empty($t['pagamentos']) && is_array($t['pagamentos'])) {
+                if (! empty($t['pagamentos']) && is_array($t['pagamentos'])) {
                     foreach ($t['pagamentos'] as $p) {
-                        $v += (float) (($p['valor'] ?? 0));
+                        if (! is_array($p)) continue;
+                        $pVal = (float) ($p['valor'] ?? 0);
+                        if ($pVal <= 0) continue;
+                        $dt = substr((string) ($p['data'] ?? $p['dataPagamento'] ?? $t['data'] ?? ''), 0, 10);
+                        $trabajos[] = [
+                            'origem' => 'trabalho',
+                            'descricao' => 'Trabalho: ' . ($t['cliente'] ?? 'Cliente') . (! empty($t['servico']) ? ' - ' . $t['servico'] : ''),
+                            'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
+                            'valor' => $pVal,
+                            'data' => $dt ?: ($t['data'] ?? null),
+                        ];
                     }
-                }
-                if ($v > 0) {
-                    $trabajos[] = [
-                        'origem' => 'trabalho',
-                        'descricao' => $t['descricao'] ?? $t['servico'] ?? 'Trabalho',
-                        'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
-                        'valor' => $v,
-                        'data' => $t['data'] ?? $t['data_trabalho'] ?? null,
-                    ];
+                } else {
+                    $v = (float) ($t['valor_recebido'] ?? 0);
+                    if ($v > 0) {
+                        $trabajos[] = [
+                            'origem' => 'trabalho',
+                            'descricao' => 'Trabalho: ' . ($t['cliente'] ?? 'Cliente') . (! empty($t['servico']) ? ' - ' . $t['servico'] : ''),
+                            'cliente' => $t['cliente'] ?? $t['nome'] ?? null,
+                            'valor' => $v,
+                            'data' => $t['data'] ?? $t['data_trabalho'] ?? null,
+                        ];
+                    }
                 }
             }
         }
@@ -1848,6 +1934,28 @@ class FinanceService
             $keyed[(string) $r->month_key] = $r;
         }
 
+        $pidCash = $profileId !== null ? (string) $profileId : '';
+        $kingDataCash = $this->loadKingDataFromItems($userId, $pidCash);
+        if ($kingDataCash === null && $pidCash !== '') {
+            $kingDataCash = $this->loadKingDataFromItems($userId, '');
+        }
+        $trabByMonth = [];
+        if ($kingDataCash && ! empty($kingDataCash['trabalhos']) && is_array($kingDataCash['trabalhos'])) {
+            foreach ($kingDataCash['trabalhos'] as $t) {
+                if (! is_array($t) || empty($t['pagamentos']) || ! is_array($t['pagamentos'])) continue;
+                foreach ($t['pagamentos'] as $p) {
+                    if (! is_array($p)) continue;
+                    $pVal = (float) ($p['valor'] ?? 0);
+                    if ($pVal <= 0) continue;
+                    $pDate = (string) ($p['data'] ?? $p['dataPagamento'] ?? $t['data'] ?? '');
+                    if (strlen($pDate) >= 7) {
+                        $mKey = substr($pDate, 0, 7);
+                        $trabByMonth[$mKey] = ($trabByMonth[$mKey] ?? 0.0) + $pVal;
+                    }
+                }
+            }
+        }
+
         // Garante todos os meses da janela preenchidos em sequência cronológica
         $result = [];
         $totalIncomePaid = 0.0;
@@ -1861,7 +1969,8 @@ class FinanceService
             $label = $carbon->translatedFormat('M/Y');
 
             $row = $keyed[$key] ?? null;
-            $incPaid = $row ? (float) $row->income_paid : 0.0;
+            $trabPaidMonth = (float) ($trabByMonth[$key] ?? 0.0);
+            $incPaid = ($row ? (float) $row->income_paid : 0.0) + $trabPaidMonth;
             $incPend = $row ? (float) $row->income_pending : 0.0;
             $expPaid = $row ? (float) $row->expense_paid : 0.0;
             $expPend = $row ? (float) $row->expense_pending : 0.0;

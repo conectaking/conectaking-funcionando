@@ -122,38 +122,40 @@ const KB = \`CONHECIMENTO EXECUTIVO CONECTA KING & ESTÚDIO ADRIANO KING:
 
 const SYSTEM_PROMPT = \`Você é o Assistente Executivo e Operacional pessoal do Adriano King (Dono/CEO).
 Você atende exclusivamente o King no Telegram. Tom de voz: direto, funcional, ágil, altamente executivo e resolutivo.
-Você tem acesso às ferramentas de Gestão Financeira, Diagnóstico de Sistema e Geração de Códigos.
-
-\${KB}
-
-DIRETRIZES FUNDAMENTAIS PARA GESTÃO FINANCEIRA:
-1. ENTRADA / RECEBIMENTO:
-   - Se o King falar "recebi", "ganhei", "entrou", "receita", "vendi":
-     * Se o dinheiro já entrou / já foi recebido: status é PAID (Receita recebida no caixa).
-   - Se o King falar de um trabalho ou valor onde parte foi recebida e parte falta receber:
-     * Exemplo: "trabalho de 2000, recebi 200 e falta 1800":
-       Crie DUAS transações:
-       1) INCOME | 200.00 | PAID | "Trabalho de fotografia (recebido)"
-       2) INCOME | 1800.00 | PENDING | "Trabalho de fotografia (a receber)"
-   - Se ele falar que fez trabalho de 1000 e recebi 0 (ou que ainda falta receber 1000):
-     * Crie: INCOME | 1000.00 | PENDING | "Trabalho de fotografia (a receber)"
-2. SAÍDA / DESPESA:
+Você tem acesso às ferramentas de Gestão Financeira, Diagnóstico de Sistema e Gera�DIRETRIZES FUNDAMENTAIS PARA GESTÃO FINANCEIRA:
+1. TRABALHO / SERVIÇO PRESTADO (REGRA DE OURO):
+   - Toda vez que o King disser "trabalho", "serviço", "ensaio", "trampo", "peguei um trabalho":
+     * Use SEMPRE action 'trabalho'!
+     * Exemplo: "peguei um trabalho de fotografia de 2200, cliente deu entrada de 150":
+       action: 'trabalho',
+       trabalho: {
+         cliente: 'Cliente',
+         servico: 'Fotografia',
+         valor_total: 2200.00,
+         valor_entrada: 150.00
+       }
+     * O sistema registra diretamente no módulo TRABALHOS com R$ 150,00 recebido em caixa e R$ 2.050,00 a receber, e sincroniza automaticamente com o Fluxo de Caixa e Patrimônio!
+     * NUNCA crie duas receitas separadas quando for trabalho! Use SEMPRE action 'trabalho'!
+2. RECEITAS AVULSAS (NÃO TRABALHO):
+   - Se o King falar "recebi", "ganhei", "entrou", "receita avulsa", "vendi":
+     * Se já entrou: use action 'create' com type 'INCOME' e status 'PAID'.
+3. SAÍDA / DESPESA:
    - Se o King falar "gastei", "comprei", "saída", "paguei" (ex: "gastei 20 no ovo", "saída 5 reais"):
      * É EXPENSE | PAID (despesa realizada no caixa).
    - Se ele falar "contas para pagar", "a pagar":
      * É EXPENSE | PENDING (despesa futura).
-3. MÚLTIPLOS LANÇAMENTOS NA MESMA MENSAGEM:
+4. MÚLTIPLOS LANÇAMENTOS NA MESMA MENSAGEM:
    - Exemplo: "coloque 200 reais de receita e de saída coloca 5 reais":
      * Crie ambas as transações na mesma chamada da ferramenta (INCOME 200 PAID e EXPENSE 5 PAID).
-4. DESCRIÇÕES LIMPAS:
-   - A descrição no sistema deve ser concisa e elegante (ex: "Duas cartelas de ovo", "Trabalho de fotografia", "Receita avulsa", "Saída avulsa"). NUNCA use frases de comando como descrição.
-5. CORREÇÃO / CANCELAMENTO:
+5. DESCRIÇÕES LIMPAS:
+   - A descrição no sistema deve ser concisa e elegante (ex: "Duas cartelas de ovo", "Fotografia", "Receita avulsa", "Saída avulsa"). NUNCA use frases de comando como descrição.
+6. CORREÇÃO / CANCELAMENTO:
    - Se o King disser "errei", "não é esse dinheiro é outro", "tira o dinheiro que foi colocado e muda para X", "apaga a última", "cancela":
      * Use a action 'correct_or_delete' para remover ou atualizar o lançamento recente.
-6. CONSULTA:
-   - Se o King perguntar "quanto tenho em caixa?", "qual meu saldo?", "o que falta receber?", "resumo":
+7. CONSULTA / SALDO / DATAS:
+   - Se o King perguntar "quanto tenho em caixa?", "qual meu saldo?", "o que falta receber?", "quanto recebi hoje?", "resumo":
      * Use action 'summary'.
-7. ERROS E STATUS:
+8. ERROS E STATUS:
    - Se o King perguntar sobre erros, integridade, status do servidor:
      * Use 'check_system_errors'.\`;
 
@@ -162,18 +164,29 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'manage_finance',
-      description: 'Gerencia transações financeiras: registrar receitas/despesas (pagas ou pendentes), corrigir/cancelar lançamentos, ou consultar saldo/resumo financeiro.',
+      description: 'Gerencia transações financeiras: registrar trabalhos/serviços com entrada, receitas/despesas, corrigir/cancelar lançamentos, ou consultar saldo/resumo financeiro por data.',
       parameters: {
         type: 'object',
         properties: {
           action: {
             type: 'string',
-            enum: ['create', 'correct_or_delete', 'summary'],
+            enum: ['create', 'trabalho', 'correct_or_delete', 'summary'],
             description: 'Ação principal'
+          },
+          trabalho: {
+            type: 'object',
+            description: 'Dados do trabalho/serviço (usado quando action=trabalho).',
+            properties: {
+              cliente: { type: 'string', description: 'Nome do cliente' },
+              servico: { type: 'string', description: 'Descrição do serviço (ex: Fotografia)' },
+              valor_total: { type: 'number', description: 'Valor total do trabalho em reais' },
+              valor_entrada: { type: 'number', description: 'Valor de entrada já pago/recebido em reais' }
+            },
+            required: ['valor_total', 'valor_entrada']
           },
           transactions: {
             type: 'array',
-            description: 'Lançamentos a criar (usado quando action=create).',
+            description: 'Lançamentos avulsos a criar (usado quando action=create).',
             items: {
               type: 'object',
               properties: {
@@ -267,7 +280,54 @@ try {
         const profileId = await resolveProfileId.call(this);
         const today = new Date().toISOString().slice(0, 10);
 
-        if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
+        if (args.action === 'trabalho' && args.trabalho) {
+          const trab = args.trabalho;
+          const valorTotal = Number(trab.valor_total || trab.valor || 0);
+          const entrada = Number(trab.valor_entrada || trab.entrada || 0);
+          const clienteNome = String(trab.cliente || 'Cliente').trim();
+          const servicoNome = String(trab.servico || 'Fotografia').trim();
+          const falta = Math.max(0, valorTotal - entrada);
+
+          const kdRes = await ck.call(this, 'GET', '/api/finance/king-data' + (profileId ? '?profile_id=' + profileId : ''));
+          const kd = (kdRes.body && (kdRes.body.data || kdRes.body)) || {};
+          const trabalhosList = Array.isArray(kd.trabalhos) ? kd.trabalhos : [];
+
+          const newTrabalho = {
+            id: 't-' + Date.now(),
+            cliente: clienteNome,
+            servico: servicoNome,
+            valor: valorTotal,
+            pagamentos: entrada > 0 ? [{ valor: entrada, data: today, forma: 'Entrada' }] : [],
+            data: today,
+            dataPrevista: today
+          };
+          trabalhosList.push(newTrabalho);
+
+          const payloadSync = {
+            dividas: Array.isArray(kd.dividas) ? kd.dividas : [],
+            terceiros: Array.isArray(kd.terceiros) ? kd.terceiros : [],
+            trabalhos: trabalhosList,
+            bens: Array.isArray(kd.bens) ? kd.bens : []
+          };
+
+          await ck.call(this, 'PUT', '/api/finance/king-data', {
+            profile_id: profileId || null,
+            data: payloadSync
+          });
+
+          session.lastCreatedTransactions = [{ id: newTrabalho.id, isTrabalho: true, amount: entrada, valorTotal: valorTotal }];
+
+          const dash = await ck.call(this, 'GET', '/api/finance/dashboard');
+          const saldo = dash.body?.data?.saldoDisponivel ?? entrada;
+
+          outMessage = \`💼 *Trabalho Registrado com Sucesso!*\n\n\` +
+            \`👤 *Cliente:* ${clienteNome}\n\` +
+            \`📸 *Serviço:* ${servicoNome}\n\` +
+            \`💵 *Valor Total:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\` +
+            \`✅ *Entrada Recebida (Caixa):* R$ ${entrada.toFixed(2).replace('.', ',')}\n\` +
+            \`⏳ *Falta Receber:* R$ ${falta.toFixed(2).replace('.', ',')}\n\n\` +
+            \`📊 *Dinheiro em Caixa:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}\`;
+        } else if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
           const createdItems = [];
           for (const item of args.transactions) {
             if (!item.amount || item.amount <= 0) continue;
