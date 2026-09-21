@@ -400,8 +400,6 @@ window.initFinancePane = async function () {
             console.warn('Erro ao verificar se é admin:', e);
         }
 
-        const patrimonioHero = (data && data.includesTrabalhos) ? (Number(data.accountBalance) || Number(data.totalBalance) || 0) : ((Number(data.accountBalance) || Number(data.totalBalance) || 0) + totalRecebidoTrabalhos);
-
         // Renderizar dashboard financeiro estilo Neon Desktop (baseado no modelo)
         financeContent.innerHTML = `
             <!-- Design System Neon Desktop Dashboard -->
@@ -587,8 +585,8 @@ window.initFinancePane = async function () {
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px; position: relative; z-index: 10;">
                     <div>
                         <p style="color: var(--finance-text-secondary); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Patrimônio (dinheiro em caixa)</p>
-                        <p style="color: var(--finance-text-secondary); font-size: 0.7rem; margin-bottom: 8px;">Dinheiro disponível, todos os meses (não gasto)</p>
-                        <h3 id="finance-patrimonio-hero-value" style="font-size: 2.5rem; font-weight: 700; color: var(--finance-text-primary); margin-bottom: 8px;">R$ ${formatCurrency(patrimonioHero)}</h3>
+                        <p style="color: var(--finance-text-secondary); font-size: 0.7rem; margin-bottom: 8px;">Dinheiro disponível, todos os meses (n\u00e3o gasto)</p>
+                        <h3 style="font-size: 2.5rem; font-weight: 700; color: var(--finance-text-primary); margin-bottom: 8px;">R$ ${formatCurrency(Number(data.accountBalance) || Number(data.totalBalance) || 0)}</h3>
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
                             ${data.balanceVariation !== undefined ? `
                             <span style="display: flex; align-items: center; color: ${data.balanceVariation >= 0 ? 'var(--finance-emerald)' : 'var(--finance-neon-red)'}; font-size: 0.875rem; font-weight: 700;">
@@ -639,7 +637,7 @@ window.initFinancePane = async function () {
                         <span style="color: var(--finance-text-secondary); font-weight: 500; font-size: 0.875rem;">Saldo Total</span>
                     </div>
                     <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0;">
-                        <h4 id="finance-account-balance-main" style="font-size: 1.75rem; font-weight: 700; color: var(--finance-text-primary); margin: 0;">R$ ${formatCurrency(patrimonioHero)}</h4>
+                        <h4 id="finance-account-balance-main" style="font-size: 1.75rem; font-weight: 700; color: var(--finance-text-primary); margin: 0;">R$ ${formatCurrency(Number(data.accountBalance) || Number(data.totalBalance) || 0)}</h4>
                         <span style="font-size: 0.75rem; color: var(--finance-text-secondary); white-space: nowrap; overflow: visible;">Conta + Poupança</span>
                     </div>
                 </div>
@@ -920,52 +918,32 @@ window.initFinancePane = async function () {
             const fmt = (v) => Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
             const styleKfCard = 'background:#111;padding:1.5rem;border-radius:1.5rem;border:1px solid rgba(255,255,255,0.05);';
             if (tabId === 'fluxo') {
-                const list = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10), status: (t.status || '').toUpperCase() }));
-                // Inclui movimentações e pendências de trabalhos na aba Fluxo
-                (db.trabalhos || []).forEach(function(tr) {
-                    var cliente = tr.cliente || 'Cliente';
-                    var servico = tr.servico || 'Serviço';
-                    var totalTr = Number(tr.valor) || 0;
-                    var totalPagoTr = 0;
-                    (tr.pagamentos || []).forEach(function(p, pIdx) {
-                        var pVal = Number(p.valor) || 0;
-                        totalPagoTr += pVal;
-                        var pDt = (p.data || tr.data || '').toString().slice(0, 10);
-                        list.push({
-                            id: 'trab-' + tr.id + '-p' + pIdx,
-                            tipo: 'receita',
-                            valor: pVal,
-                            descricao: 'Trabalho: ' + cliente + (servico ? ' - ' + servico : '') + (p.forma ? ' (' + p.forma + ')' : ''),
-                            data: pDt,
-                            status: 'PAID',
-                            isTrabalho: true,
-                            trabalhoId: tr.id
+                var listBase = fluxoList.map(t => ({ id: t.id, tipo: (t.type || '').toUpperCase() === 'INCOME' ? 'receita' : 'despesa', valor: Number(t.amount) || 0, descricao: t.description || '', data: (t.transaction_date || t.date || '').toString().slice(0, 10), status: (t.status || '').toUpperCase() }));
+                // Incluir pagamentos de trabalhos do king_sync no fluxo
+                var currentYear = window.currentFinanceYear !== undefined ? window.currentFinanceYear : new Date().getFullYear();
+                var currentMonth = window.currentFinanceMonth !== undefined ? window.currentFinanceMonth : new Date().getMonth();
+                var mesRefFluxo = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+                (db.trabalhos || []).forEach(function(t) {
+                    (t.pagamentos || []).forEach(function(p) {
+                        var dt = (p.data || '').toString().trim().slice(0, 10);
+                        if (!dt || dt.slice(0, 7) !== mesRefFluxo) return;
+                        listBase.push({ id: 'trab_' + (t.id || '') + '_' + dt, tipo: 'receita', valor: Number(p.valor) || 0, descricao: (t.descricao || t.servico || 'Trabalho') + (t.cliente || t.nome ? ' · ' + (t.cliente || t.nome) : ''), data: dt, status: 'PAID', _origem: 'trabalho' });
+                    });
+                });
+                // Incluir pagamentos de terceiros (saídas) do king_sync no fluxo
+                (db.terceiros || []).forEach(function(p) {
+                    (p.contas || []).forEach(function(c) {
+                        (c.pagamentos || []).forEach(function(x) {
+                            var dt = (x.data || '').toString().trim().slice(0, 10);
+                            if (!dt || dt.slice(0, 7) !== mesRefFluxo) return;
+                            listBase.push({ id: 'terc_' + (p.id || '') + '_' + dt, tipo: 'despesa', valor: Number(x.valor) || 0, descricao: 'Pgto · ' + (p.nome || 'Pessoa'), data: dt, status: 'PAID', _origem: 'terceiro' });
                         });
                     });
-                    var faltaTr = Math.max(0, totalTr - totalPagoTr);
-                    if (faltaTr > 0) {
-                        var pPrev = (tr.dataPrevista || tr.data || '').toString().slice(0, 10);
-                        list.push({
-                            id: 'trab-' + tr.id + '-pend',
-                            tipo: 'receita',
-                            valor: faltaTr,
-                            descricao: 'A receber: ' + cliente + (servico ? ' - ' + servico : ''),
-                            data: pPrev,
-                            status: 'PENDING',
-                            isTrabalho: true,
-                            trabalhoId: tr.id
-                        });
-                    }
                 });
-
-                // Ordenar por data decrescente (mais recente no topo)
-                list.sort(function(a, b) {
-                    var da = a.data || '';
-                    var db = b.data || '';
-                    return db.localeCompare(da);
-                });
-
-                const canEdit = function(f) { return (typeof f.id === 'number' || (f.id != null && String(f.id).match(/^[0-9]+$/))); };
+                // Ordenar por data desc
+                listBase.sort(function(a, b) { return (b.data || '').localeCompare(a.data || ''); });
+                const list = listBase;
+                const canEdit = function(f) { return !f._origem && (typeof f.id === 'number' || (f.id != null && String(f.id).match(/^[0-9]+$/))); };
                 container.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:12px;">
                         <div>
@@ -1016,9 +994,6 @@ window.initFinancePane = async function () {
                             const btnAbater = (f.tipo === 'receita' && isPending && canEdit(f))
                                 ? `<button type="button" onclick="window.financeShowAbaterReceitaModal && window.financeShowAbaterReceitaModal(${f.id}, ${f.valor}, '${escapeHtmlFinance(f.descricao).replace(/'/g, "\\'")}')" style="padding:6px 12px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:8px;color:#86efac;font-size:0.75rem;font-weight:800;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Abater ou receber valor"><i class="fas fa-hand-holding-usd"></i>Abater</button>`
                                 : '';
-                            const btnTrabalho = f.isTrabalho
-                                ? `<button type="button" onclick="window.switchUnifiedFinanceTab('trabalhos')" style="padding:6px 12px;background:rgba(59,130,246,0.2);border:1px solid rgba(59,130,246,0.4);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;"><i class="fas fa-briefcase"></i>Ver Trabalho</button>`
-                                : '';
                             return `
                             <div class="kf-card" style="${styleKfCard}display:flex;justify-content:space-between;align-items:center;padding:1rem;gap:12px;flex-wrap:wrap;">
                                 <div style="display:flex;align-items:center;gap:1rem;flex:1;min-width:0;">
@@ -1031,7 +1006,6 @@ window.initFinancePane = async function () {
                                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                     <span style="font-weight:800;color:${f.tipo === 'receita' ? (isPending ? '#facc15' : '#22c55e') : '#f43f5e'};font-size:1rem;white-space:nowrap;">R$ ${fmt(f.valor)}</span>
                                     ${btnAbater}
-                                    ${btnTrabalho}
                                     ${canEdit(f) ? `<button type="button" onclick="window.editFinanceTransaction && window.editFinanceTransaction(${f.id})" style="padding:6px 12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);border-radius:8px;color:#93c5fd;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" title="Editar"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i>Editar</button>` : ''}
                                 </div>
                             </div>
@@ -3289,12 +3263,9 @@ function _financeTrabalhosTotals(kingDb) {
             var totalRecebido = totalApi > 0 ? Math.max(totalApi, totalLocal) : totalLocal;
             var balance = totalRecebido - despesas;
             var faltaReceberGeral = (Number(data.pendingIncome) || 0) + trab.totalFalta;
-            var _trabRecebidoGeral = (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos)) ? window._kingFinanceDb.trabalhos.reduce(function(a,t){ return a + (Array.isArray(t.pagamentos) ? t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0) : 0); },0) : ((window._kingFinanceStats && Number(window._kingFinanceStats.totalRecebidoTrabalhos)) || 0);
-            var patrimonioExibir = (data && data.includesTrabalhos) ? (Number(data.accountBalance) || Number(data.totalBalance) || 0) : ((Number(data.accountBalance) || Number(data.totalBalance) || 0) + _trabRecebidoGeral);
+            var patrimonioExibir = Number(data.accountBalance) || Number(data.totalBalance) || 0;
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
             if (accountBalanceMainEl) accountBalanceMainEl.textContent = 'R$ ' + formatCurrency(patrimonioExibir);
-            const patrimonioHeroEl = document.getElementById('finance-patrimonio-hero-value');
-            if (patrimonioHeroEl) patrimonioHeroEl.textContent = 'R$ ' + formatCurrency(patrimonioExibir);
             const incomeCardEl = document.getElementById('finance-income-card');
             if (incomeCardEl) incomeCardEl.textContent = '+R$ ' + formatCurrency(totalRecebido);
             const expenseCardEl = document.getElementById('finance-expense-card');
@@ -3449,6 +3420,15 @@ window.openFinanceDetailModal = async function (type) {
                 var origem = (t.source || 'fluxo') === 'trabalho' ? 'trabalho' : (t.source || 'fluxo') === 'bem' ? 'bem' : 'transacao';
                 return { origem: origem, descricao: t.description || '', cliente: t.client_name || null, valor: parseFloat(t.amount) || 0, data: dt };
             });
+            // Incluir pagamentos de trabalhos do king_sync nas receitas do mês
+            var kingDbModal = window._kingFinanceDb || {};
+            (kingDbModal.trabalhos || []).forEach(function(t) {
+                (t.pagamentos || []).forEach(function(p) {
+                    var dt = (p.data || '').toString().trim().slice(0, 10);
+                    if (!dt || dt.slice(0,7) !== mesRefInc) return;
+                    itensReceitas.push({ origem: 'trabalho', descricao: t.descricao || t.servico || 'Trabalho', cliente: t.cliente || t.nome || null, valor: parseFloat(p.valor) || 0, data: dt });
+                });
+            });
         }
         totalReceitas = itensReceitas.reduce(function (s, x) { return s + (parseFloat(x.valor) || 0); }, 0);
         itensReceitas.sort(function (a, b) { return (b.data || '').localeCompare(a.data || ''); });
@@ -3478,17 +3458,6 @@ window.openFinanceDetailModal = async function (type) {
                 var origem = (t.source || 'fluxo') === 'trabalho' ? 'trabalho' : (t.source || 'fluxo') === 'bem' ? 'bem' : 'transacao';
                 return { origem: origem, descricao: t.description || '', cliente: t.client_name || null, valor: parseFloat(t.amount) || 0, data: dt };
             });
-            // Incluir trabalhos do kingDb (pagamentos recebidos) no detalhe do saldo
-            var _kingDbBal = window._kingFinanceDb || {};
-            (_kingDbBal.trabalhos || []).forEach(function(t) {
-                if (!Array.isArray(t.pagamentos) || t.pagamentos.length === 0) return;
-                var totalPag = t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0);
-                if (totalPag <= 0) return;
-                var ultimaDt = null;
-                t.pagamentos.forEach(function(p){ var d=(p.data||t.data||'').toString().slice(0,10); if(d&&(!ultimaDt||d>ultimaDt)) ultimaDt=d; });
-                itensSaldo.push({ origem: 'trabalho', descricao: t.descricao||t.servico||'Trabalho', cliente: t.cliente||null, valor: totalPag, data: ultimaDt||null });
-            });
-            itensSaldo.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
             totalSaldo = itensSaldo.reduce(function (s, x) { return s + (x.valor || 0); }, 0);
         }
         var tituloGoals = type === 'goals' ? 'Valor já ganho (Metas)' : 'Saldo disponível';
@@ -4267,10 +4236,9 @@ window.selectFinanceMonth = function (monthIndex) {
             var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
             var balance = totalRecebidoMes - despesas;
             var faltaReceberGeralMes = (Number(data.pendingIncome) || 0) + trabMes.totalFalta;
-            var _trabRecebidoGeralMes = (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos)) ? window._kingFinanceDb.trabalhos.reduce(function(a,t){ return a + (Array.isArray(t.pagamentos) ? t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0) : 0); },0) : ((window._kingFinanceStats && Number(window._kingFinanceStats.totalRecebidoTrabalhos)) || 0);
-            var patrimonioMes = (data && data.includesTrabalhos) ? (Number(data.accountBalance) || Number(data.totalBalance) || 0) : ((Number(data.accountBalance) || Number(data.totalBalance) || 0) + _trabRecebidoGeralMes);
+            var patrimonioMes = Number(data.accountBalance) || Number(data.totalBalance) || 0;
 
-            const netWorthEl = document.getElementById('finance-patrimonio-hero-value') || document.querySelector('.finance-card-premium h3');
+            const netWorthEl = document.querySelector('.finance-card-premium h3');
             if (netWorthEl) netWorthEl.textContent = `R$ ${formatCurrency(patrimonioMes)}`;
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
             if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioMes)}`;
@@ -4375,17 +4343,12 @@ window.changeFinanceMonth = function (direction) {
             var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
             var balance = totalRecebidoBtn - despesas;
             var faltaReceberGeralBtn = (Number(data.pendingIncome) || 0) + trabBtn.totalFalta;
-            var _trabRecebidoGeralBtn = (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos)) ? window._kingFinanceDb.trabalhos.reduce(function(a,t){ return a + (Array.isArray(t.pagamentos) ? t.pagamentos.reduce(function(s,p){ return s+(Number(p.valor)||0); },0) : 0); },0) : ((window._kingFinanceStats && Number(window._kingFinanceStats.totalRecebidoTrabalhos)) || 0);
-            var patrimonioBtn = (data && data.includesTrabalhos) ? (Number(data.accountBalance) || Number(data.totalBalance) || 0) : ((Number(data.accountBalance) || Number(data.totalBalance) || 0) + _trabRecebidoGeralBtn);
+            var patrimonioBtn = Number(data.accountBalance) || Number(data.totalBalance) || 0;
 
             // Atualizar Saldo Disponível em Conta (inclui entradas de trabalhos)
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
             if (accountBalanceMainEl) {
                 accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioBtn)}`;
-            }
-            const heroElBtn = document.getElementById('finance-patrimonio-hero-value');
-            if (heroElBtn) {
-                heroElBtn.textContent = `R$ ${formatCurrency(patrimonioBtn)}`;
             }
 
             // Atualizar Receitas do Mês (só o que já entrou)
@@ -4890,29 +4853,9 @@ window.showGeneralBalanceModal = async function () {
         if (profileIdDetail) qAll.profile_id = profileIdDetail;
         const allTransactions = await env.fetchAllTransactions(qAll);
 
-        var trabRecebidoTotal = 0;
-        var trabFaltaTotal = 0;
-        var trabRecebidoMes = 0;
-        if (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos)) {
-            window._kingFinanceDb.trabalhos.forEach(function(t) {
-                var v = Number(t.valor) || 0;
-                var pTotal = 0;
-                (t.pagamentos || []).forEach(function(p) {
-                    var pVal = Number(p.valor) || 0;
-                    pTotal += pVal;
-                    trabRecebidoTotal += pVal;
-                    var pDt = (p.data || t.data || '').toString().trim().slice(0, 7);
-                    if (pDt === mesRef) {
-                        trabRecebidoMes += pVal;
-                    }
-                });
-                trabFaltaTotal += Math.max(0, v - pTotal);
-            });
-        }
-
         const totalIncome = allTransactions
             .filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID')
-            .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0) + trabRecebidoTotal;
+            .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 
         const totalExpense = allTransactions
             .filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID')
@@ -4920,14 +4863,14 @@ window.showGeneralBalanceModal = async function () {
 
         const pendingIncome = allTransactions
             .filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PENDING')
-            .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0) + trabFaltaTotal;
+            .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 
         const pendingExpense = allTransactions
             .filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PENDING')
             .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 
-        const totalTransactions = allTransactions.length + (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos) ? window._kingFinanceDb.trabalhos.length : 0);
-        const incomeTransactions = allTransactions.filter(t => (t.type || '').toUpperCase() === 'INCOME').length + (window._kingFinanceDb && Array.isArray(window._kingFinanceDb.trabalhos) ? window._kingFinanceDb.trabalhos.length : 0);
+        const totalTransactions = allTransactions.length;
+        const incomeTransactions = allTransactions.filter(t => (t.type || '').toUpperCase() === 'INCOME').length;
         const expenseTransactions = allTransactions.filter(t => (t.type || '').toUpperCase() === 'EXPENSE').length;
 
         const currentMonth = window.currentFinanceMonth !== undefined ? window.currentFinanceMonth : new Date().getMonth();
@@ -4937,16 +4880,16 @@ window.showGeneralBalanceModal = async function () {
         const mesRef = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
         const feed = window.allFinanceTransactions || [];
         const doMes = feed.filter(t => (t.transaction_date || t.date || '').toString().trim().slice(0, 7) === mesRef);
-        const receitasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0) + trabRecebidoMes + trabFaltaTotal;
+        const receitasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
         const despesasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const receitasPagasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0) + trabRecebidoMes;
+        const receitasPagasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PAID').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
         const despesasPagasMes = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PAID').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-        const faltaReceberMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PENDING').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0) + trabFaltaTotal;
+        const faltaReceberMes = doMes.filter(t => (t.type || '').toUpperCase() === 'INCOME' && (t.status || '').toUpperCase() === 'PENDING').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
         const faltaPagarMes = doMes.filter(t => (t.type || '').toUpperCase() === 'EXPENSE' && (t.status || '').toUpperCase() === 'PENDING').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
         const terceirosMes = (typeof window._kingFinanceTerceirosEsteMes === 'function' && window._kingFinanceDb && Array.isArray(window._kingFinanceDb.terceiros)) ? window._kingFinanceTerceirosEsteMes(window._kingFinanceDb.terceiros, currentYear, currentMonth + 1) : 0;
         const despesasMesComTerceiros = despesasMes;
         const faltaPagarMesComTerceiros = faltaPagarMes + terceirosMes;
-        const saldoMes = receitasPagasMes - despesasPagasMes;
+        const saldoMes = receitasMes - despesasMes;
 
         const fmt = (v) => (Number(v) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
