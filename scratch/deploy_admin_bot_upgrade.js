@@ -321,12 +321,12 @@ try {
           const saldo = dash.body?.data?.saldoDisponivel ?? entrada;
 
           outMessage = \`💼 *Trabalho Registrado com Sucesso!*\n\n\` +
-            \`👤 *Cliente:* ${clienteNome}\n\` +
-            \`📸 *Serviço:* ${servicoNome}\n\` +
-            \`💵 *Valor Total:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\` +
-            \`✅ *Entrada Recebida (Caixa):* R$ ${entrada.toFixed(2).replace('.', ',')}\n\` +
-            \`⏳ *Falta Receber:* R$ ${falta.toFixed(2).replace('.', ',')}\n\n\` +
-            \`📊 *Dinheiro em Caixa:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}\`;
+            \`👤 *Cliente:* \${clienteNome}\n\` +
+            \`📸 *Serviço:* \${servicoNome}\n\` +
+            \`💵 *Valor Total:* R$ \${valorTotal.toFixed(2).replace('.', ',')}\n\` +
+            \`✅ *Entrada Recebida (Caixa):* R$ \${entrada.toFixed(2).replace('.', ',')}\n\` +
+            \`⏳ *Falta Receber:* R$ \${falta.toFixed(2).replace('.', ',')}\n\n\` +
+            \`📊 *Dinheiro em Caixa:* R$ \${Number(saldo).toFixed(2).replace('.', ',')}\`;
         } else if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
           const createdItems = [];
           for (const item of args.transactions) {
