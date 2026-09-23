@@ -360,7 +360,9 @@ try {
             google_calendar_url: gCalUrl,
             created_at: dataHojeISO + ' ' + horaAtualSp,
             status: 'ativo',
-            notificado: false
+            notificado: false,
+            notificado_30m: false,
+            notificado_15m: false
           };
 
           kingDb.lembretes.unshift(novoItem);
@@ -387,7 +389,9 @@ try {
             (descricao ? `📝 *Observações:* ${descricao}\n` : '') +
             `\n📲 [Toque aqui para Adicionar ao seu Google Agenda](${gCalUrl})\n` +
             `_(Ao tocar, abre no app Google Agenda do seu celular com alarme e notificação prontos!)_\n\n` +
-            `🔔 *Notificação:* Eu também vou te avisar aqui no Telegram no horário marcado!`;
+            `🔔 *Notificações Configuradas:*\n` +
+            `• 📱 *Google Agenda:* Alarme/notificação no seu celular 30 min e 15 min antes!\n` +
+            `• 💬 *Telegram:* O Agente King vai te mandar aviso 30 min antes, 15 min antes e na hora exata!`;
 
         // ── LISTAR AGENDA & LEMBRETES ────────────────────────────────
         } else if (args.action === 'list_agenda') {
@@ -727,18 +731,68 @@ const lembretes = Array.isArray(kingDb.lembretes) ? kingDb.lembretes : [];
 const now = new Date();
 const spNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
 const today = spNow.toISOString().slice(0, 10);
-const curHour = String(spNow.getHours()).padStart(2, '0') + ':' + String(spNow.getMinutes()).padStart(2, '0');
+const curMinutes = spNow.getHours() * 60 + spNow.getMinutes();
 
 const dueList = [];
 let hasChanges = false;
 
 for (const lem of lembretes) {
-  if (lem && lem.status !== 'cancelado' && !lem.notificado) {
-    if (lem.data < today || (lem.data === today && (lem.hora_inicio || '00:00') <= curHour)) {
-      dueList.push(lem);
+  if (!lem || lem.status === 'cancelado') continue;
+
+  // Apenas compromissos de hoje ou datas anteriores
+  if (lem.data > today) continue;
+
+  const [h, m] = String(lem.hora_inicio || '00:00').split(':').map(Number);
+  const eventMinutes = (h || 0) * 60 + (m || 0);
+
+  // Se o dia já passou e não foi notificado na hora
+  if (lem.data < today) {
+    if (!lem.notificado) {
+      dueList.push({
+        lem,
+        tipo: 'atrasado',
+        msg: `⏰ *LEMBRETE DO AGENTE KING*\n\n👑 *Adriano, passando para te lembrar do compromisso registrado:*\n\n📌 *${lem.titulo}*\n📅 *Data:* ${lem.data}\n🕒 *Horário:* ${lem.hora_inicio || 'Horário marcado'}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}${lem.google_calendar_url ? '📲 [Abrir no Google Agenda](' + lem.google_calendar_url + ')\n' : ''}`
+      });
       lem.notificado = true;
       hasChanges = true;
     }
+    continue;
+  }
+
+  // Se é hoje: calcular diferença em minutos
+  const diff = eventMinutes - curMinutes; // minutos até o evento começar
+
+  // 1. Alerta de 30 minutos antes (entre 16 e 35 min antes)
+  if (diff <= 35 && diff > 15 && !lem.notificado_30m && !lem.notificado) {
+    dueList.push({
+      lem,
+      tipo: '30m',
+      msg: `⏰ *AVISO PRÉVIO — 30 MINUTOS!*\n\n👑 *Adriano, faltam aproximadamente 30 minutos para o seu compromisso!*\n\n📌 *${lem.titulo}*\n🕒 *Horário:* ${lem.hora_inicio}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}\n🔔 _Fique atento! Vou te avisar novamente 15 minutos antes e na hora exata._`
+    });
+    lem.notificado_30m = true;
+    hasChanges = true;
+  }
+
+  // 2. Alerta de 15 minutos antes (entre 1 e 15 min antes)
+  if (diff <= 15 && diff > 0 && !lem.notificado_15m && !lem.notificado) {
+    dueList.push({
+      lem,
+      tipo: '15m',
+      msg: `⏰ *AVISO PRÉVIO — 15 MINUTOS!*\n\n👑 *Atenção Adriano, faltam apenas 15 minutos!*\n\n📌 *${lem.titulo}*\n🕒 *Horário:* ${lem.hora_inicio}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}\n⚡ _Está quase na hora!_`
+    });
+    lem.notificado_15m = true;
+    hasChanges = true;
+  }
+
+  // 3. Alerta na hora exata ou minutos depois (diff <= 0)
+  if (diff <= 0 && !lem.notificado) {
+    dueList.push({
+      lem,
+      tipo: 'hora',
+      msg: `⏰ *É AGORA! — LEMBRETE DO AGENTE KING*\n\n👑 *Adriano, seu compromisso começou:*\n\n📌 *${lem.titulo}*\n🕒 *Horário:* ${lem.hora_inicio}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}${lem.google_calendar_url ? '📲 [Abrir no Google Agenda](' + lem.google_calendar_url + ')\n' : ''}\n✅ _Compromisso ativo._`
+    });
+    lem.notificado = true;
+    hasChanges = true;
   }
 }
 
@@ -763,10 +817,10 @@ if (dueList.length === 0) {
   return [];
 }
 
-return dueList.map(lem => ({
+return dueList.map(item => ({
   json: {
     chatId: adminChatId,
-    outMessage: `⏰ *LEMBRETE DO AGENTE KING!*\n\n👑 *Adriano, passando para te avisar do seu compromisso agora:*\n\n📌 *${lem.titulo}*\n🕒 *Horário:* ${lem.hora_inicio || 'Agora'}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}\n${lem.google_calendar_url ? '📲 [Ver no Google Agenda](' + lem.google_calendar_url + ')\n' : ''}\n✅ _Compromisso ativo._`
+    outMessage: item.msg
   }
 }));'''
 
@@ -783,7 +837,7 @@ if (gcal && (gcal.id || gcal.htmlLink)) {
   if (link) {
     msg = msg.replace(/https:\/\/calendar\.google\.com\/calendar\/render\?[^\)]+/g, link);
   }
-  msg = msg.replace('(Ao tocar, abre no app Google Agenda do seu celular com alarme e notificação prontos!)', '_(Já está gravado e vai tocar o alarme no seu celular!)_');
+  msg = msg.replace('(Ao tocar, abre no app Google Agenda do seu celular com alarme e notificação prontos!)', '_(Já está gravado no seu Google Agenda com alertas de 30 min e 15 min antes no seu celular!)_');
 }
 
 return [{
@@ -935,23 +989,32 @@ def main():
         print(f'[OK] Criado nó: {if_node_name}')
 
     # Nó Google Calendar
+    gcal_params = {
+        'calendar': {
+            '__rl': True,
+            'value': 'playadrian@gmail.com',
+            'mode': 'list',
+            'cachedResultName': 'playadrian@gmail.com'
+        },
+        'start': '={{ $json.calendarStart }}',
+        'end': '={{ $json.calendarEnd }}',
+        'useDefaultReminders': False,
+        'remindersUi': {
+            'remindersValues': [
+                {'method': 'popup', 'minutes': 30},
+                {'method': 'popup', 'minutes': 15}
+            ]
+        },
+        'additionalFields': {
+            'summary': '={{ $json.calendarSummary }}',
+            'description': '={{ $json.calendarDescription }}',
+            'location': '={{ $json.calendarLocation }}'
+        }
+    }
+
     if not any(n.get('name') == gcal_node_name for n in nodes):
         gcal_node = {
-            'parameters': {
-                'calendar': {
-                    '__rl': True,
-                    'value': 'playadrian@gmail.com',
-                    'mode': 'list',
-                    'cachedResultName': 'playadrian@gmail.com'
-                },
-                'start': '={{ $json.calendarStart }}',
-                'end': '={{ $json.calendarEnd }}',
-                'additionalFields': {
-                    'summary': '={{ $json.calendarSummary }}',
-                    'description': '={{ $json.calendarDescription }}',
-                    'location': '={{ $json.calendarLocation }}'
-                }
-            },
+            'parameters': gcal_params,
             'id': 'gcalCreateEvent01',
             'name': gcal_node_name,
             'type': 'n8n-nodes-base.googleCalendar',
@@ -971,21 +1034,7 @@ def main():
     else:
         for n in nodes:
             if n.get('name') == gcal_node_name:
-                n['parameters'] = {
-                    'calendar': {
-                        '__rl': True,
-                        'value': 'playadrian@gmail.com',
-                        'mode': 'list',
-                        'cachedResultName': 'playadrian@gmail.com'
-                    },
-                    'start': '={{ $json.calendarStart }}',
-                    'end': '={{ $json.calendarEnd }}',
-                    'additionalFields': {
-                        'summary': '={{ $json.calendarSummary }}',
-                        'description': '={{ $json.calendarDescription }}',
-                        'location': '={{ $json.calendarLocation }}'
-                    }
-                }
+                n['parameters'] = gcal_params
                 print(f'[OK] Atualizado nó: {gcal_node_name}')
 
     # Nó Confirmação Google Calendar
