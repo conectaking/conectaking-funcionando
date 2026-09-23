@@ -2,14 +2,12 @@
 """
 patch-finance-realtime.py
 ==========================
-Correções do Bot IA (Admin Telegram @conectaking_bot):
-1. Distinção correta: Trabalhos (aba Trabalhos via /api/finance/king-data) vs Fluxo (receitas/despesas avulsas).
-2. Tratamento de entrada/sinal: Trabalhos com valor total e entrada (AV) armazenam entrada em pagamentos e restante em falta receber.
-3. Resumo financeiro em tempo real: calcula os valores exatos da Gestão Financeira (Fluxo + Trabalhos + Terceiros).
-4. Fallback de rede interna: usa http://conectaking-laravel:8080 dentro da rede Docker (conectaking_cknet) para evitar bloqueio 403 do Cloudflare WAF.
-5. Remoção/cancelamento e ajuste de saldo funcionam em tempo real.
-
-Aplica SOMENTE no nó "Executar Admin" do workflow n8n.
+Atualização do Bot IA (Admin Telegram @conectaking_bot - King Assistente):
+1. Agenda & Google Agenda: agendamento de reuniões, ensaios fotográficos e compromissos com link direto de 1 toque no Google Calendar.
+2. Lembretes com Aviso: registro de lembretes que notificam no Telegram no horário exato e sincronizam no Google Agenda.
+3. Finanças em Tempo Real: Trabalhos (king-data), Fluxo, Resumo completo, Ajuste de saldo e Cancelamento.
+4. Resposta proativa e afirmativa para dúvidas sobre agendamentos no Google Agenda.
+5. Rotina periódica: checagem de lembretes a cada 5 min com disparo de notificação no Telegram do King.
 """
 import json, os, sqlite3, time, uuid
 
@@ -127,7 +125,6 @@ async function fetchRealSummary(profileId) {
     }
   }
 
-  // dash da API Conecta King já consolida transações + trabalhos + terceiros
   const saldoDisponivel = Number(dash.saldoDisponivel !== undefined ? dash.saldoDisponivel : dash.accountBalance) || 0;
   const totalRecebidoGeral = Number(dash.totalRecebido !== undefined ? dash.totalRecebido : dash.totalIncomePaid) || 0;
   const totalDespesasPagas = Number(dash.totalPago !== undefined ? dash.totalPago : dash.totalExpensePaid) || 0;
@@ -160,53 +157,108 @@ function buildSummaryMessage(summary, fmt) {
     `💼 *Total de Trabalhos Ativos:* ${summary.trabalhosCount}`;
 }
 
+// ─── Gerador de Link Direto para o Google Agenda ───────────────────────────
+function makeGoogleCalendarUrl(titulo, data, horaInicio, horaFim, descricao, local) {
+  const dClean = String(data || '').replace(/-/g, '');
+  const hInicioClean = String(horaInicio || '09:00').replace(/:/g, '').padEnd(4, '0') + '00';
+  let hFimClean = String(horaFim || '').replace(/:/g, '');
+  if (!hFimClean) {
+    const parts = String(horaInicio || '09:00').split(':');
+    const endH = String(Math.min(23, Number(parts[0]) + 1)).padStart(2, '0');
+    hFimClean = endH + (parts[1] || '00') + '00';
+  } else {
+    hFimClean = hFimClean.padEnd(4, '0') + '00';
+  }
+  const dates = `${dClean}T${hInicioClean}/${dClean}T${hFimClean}`;
+  const p = [];
+  p.push('action=TEMPLATE');
+  p.push('text=' + encodeURIComponent(titulo || 'Compromisso - Adriano King'));
+  p.push('dates=' + dates);
+  p.push('details=' + encodeURIComponent((descricao ? descricao + '\n\n' : '') + 'Agendado pelo King Assistente'));
+  if (local) p.push('location=' + encodeURIComponent(local));
+  p.push('ctz=America/Sao_Paulo');
+  return 'https://calendar.google.com/calendar/render?' + p.join('&');
+}
+
 const KB = `CONHECIMENTO EXECUTIVO CONECTA KING & ESTÚDIO ADRIANO KING:
 - Dono e CEO: Adriano King (@adrianokingg, WhatsApp 11988789417).
 - Estúdio Adriano King (Barueri-SP): Posicionamento de Imagem 20 fotos R$1.000 / 30 fotos R$1.400. Ensaio 10 fotos R$300 / 20 fotos R$550 / 30 fotos R$800.
 - Plataforma Conecta King: cartões virtuais dinâmicos, tags/pulseiras NFC, King Forms, King Selection, Gestão Financeira integrada.
 - Planos Conecta King: Start R$70, Prime R$100, Essential R$150, Finance R$170, Finance Plus R$200, Premium Plus R$220, Corporate R$230.`;
 
-const SYSTEM_PROMPT = `Você é o Assistente Executivo e CFO de Elite pessoal do Adriano King.
-Atende exclusivamente o King no Telegram. Tom: direto, ágil, executivo, resolutivo. Sem enrolação.
+// Data e hora de Brasília
+const nowSp = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+const diaSemanaNomes = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+const diaSemanaAtual = diaSemanaNomes[nowSp.getDay()];
+const dataHojeISO = nowSp.toISOString().slice(0, 10);
+const horaAtualSp = String(nowSp.getHours()).padStart(2, '0') + ':' + String(nowSp.getMinutes()).padStart(2, '0');
+const dataHojeBr = String(nowSp.getDate()).padStart(2, '0') + '/' + String(nowSp.getMonth() + 1).padStart(2, '0') + '/' + nowSp.getFullYear();
+
+const SYSTEM_PROMPT = `Você é o King Assistente, Assistente Executivo Pessoal e CFO de Elite do Adriano King.
+Você atende exclusivamente o Adriano King no Telegram.
+Tom de voz: executivo de alto nível, direto, dinâmico, solícito, confiante e resolutivo. Sem respostas robóticas ou burocráticas.
+
+Data e hora atual de Brasília: ${diaSemanaAtual}, ${dataHojeBr} (${dataHojeISO}) às ${horaAtualSp}. Fuso: America/Sao_Paulo.
+Ano de referência obrigatório: 2026. SEMPRE use o ano 2026 para agendamentos e compromissos. NUNCA use anos passados como 2023, 2024 ou 2025.
 
 ${KB}
 
-═══ REGRAS FUNDAMENTAIS DE GESTÃO FINANCEIRA ═══
+═══ SUAS HABILIDADES & REGRAS PRINCIPAIS ═══
 
-1. TRABALHO (cliente, ensaio, foto, fotografia, evento, corporativo, posicionamento de imagem, job):
-   - DEVE SER REGISTRADO NA ABA TRABALHOS usando a action "create_trabalho".
-   - NUNCA crie transações duplicadas no Fluxo quando for um trabalho!
-   - Se o King disser: "Peguei um trabalho de 1000 e o cliente deu 200 de entrada":
-     -> action: "create_trabalho", valor_total: 1000, entrada: 200.
-     -> O sistema armazena o Trabalho com valor R$ 1.000, credita R$ 200 como recebido/entrada (vai para o caixa), e os R$ 800 restantes ficam como Falta Receber.
-   - Se o trabalho não teve entrada ainda: entrada: 0 (fica 100% pendente a receber).
+1. AGENDA, LEMBRETES & GOOGLE AGENDA (Nova Habilidade):
+   - Você é o assistente pessoal que cuida da agenda e dos lembretes do Adriano King.
+   - O Adriano pode te pedir por áudio ou texto para AGENDAR compromissos, reuniões, ensaios fotográficos ou CRIAR LEMBRETES (ex: pagar contas, ligar para alguém, enviar propostas, etc.).
+   - Se o Adriano perguntar se você consegue agendar no Google Agenda ou mandar lembretes, responda afirmativamente e com entusiasmo:
+     "Com certeza, Adriano! Eu sou seu Assistente Executivo e gerencio sua agenda e lembretes completos.
+     Você não precisa escrever formulário nenhum, basta falar por áudio ou mandar por texto, por exemplo:
+     • 'Agenda um ensaio com a Larissa amanhã às 14h'
+     • 'Me lembra de pagar o fornecedor na sexta às 10h'
+     • 'Agenda uma reunião na segunda às 15h'
+     • 'O que eu tenho agendado para hoje?'
+     
+     Eu registro o compromisso, gero o link direto de 1 toque para o seu Google Agenda (com alarme e notificação ativados), e também te notifico aqui no Telegram no horário combinado!"
+   - Ao agendar compromissos ou lembretes, SEMPRE use a tool "manage_agenda":
+     * Reuniões, ensaios, eventos, compromissos -> action: "create_event"
+     * Lembretes com aviso no horário -> action: "create_reminder"
+     * Consultar agenda ou lembretes -> action: "list_agenda"
+     * Cancelar compromisso -> action: "delete_agenda"
+   - Calcule datas relativas com precisão baseando-se na data atual (${diaSemanaAtual}, ${dataHojeBr}):
+     * "hoje" = ${dataHojeISO}
+     * "amanhã" = data do dia seguinte
+     * "sexta-feira", "segunda-feira" = próximo dia correspondente.
+     * Duração padrão de ensaio fotográfico: 2 horas. Reuniões/outros: 1 hora.
 
-2. FLUXO (receita avulsa ou despesa avulsa):
-   - Se o King falar: "vendi uma tag por 50", "recebi 100", "lança receita de 300", "gastei 45 no almoço", "comprei equipamento por 800":
-     -> Use a action "create" (INCOME ou EXPENSE, status PAID ou PENDING).
-
-3. RESUMO COMPLETO EM TEMPO REAL:
-   - Sempre que o King pedir "resumo", "como estão minhas finanças", "quanto tenho", "balanço":
-     -> USE a action "summary". O sistema busca em TEMPO REAL os dados da API (Fluxo + Trabalhos + Terceiros).
-     -> NUNCA invente números da memória nem repita valores antigos!
-
-4. REMOVER / CANCELAR LANÇAMENTO:
-   - "tira o de R$ X", "apaga os R$ X", "coloquei errado", "remove":
+2. GESTÃO FINANCEIRA & TRABALHOS:
+   - TRABALHOS (cliente, ensaio, foto, fotografia, evento, posicionamento de imagem, job):
+     -> Use action "create_trabalho" no manage_finance.
+   - FLUXO (receita avulsa ou despesa avulsa):
+     -> Use action "create" no manage_finance.
+   - RESUMO COMPLETO EM TEMPO REAL:
+     -> Use action "summary" no manage_finance.
+   - REMOVER / CANCELAR LANÇAMENTO:
      -> Use action "delete_by_criteria" ou "cancel_last".
-
-5. AJUSTAR SALDO:
-   - "o caixa correto é R$ X" -> use action "adjust_cash".`;
+   - AJUSTAR SALDO:
+     -> Use action "adjust_cash".`;
 
 const TOOLS = [
+  { type: 'function', function: { name: 'manage_agenda', description: 'Gerencia a agenda, compromissos e lembretes executivos do Adriano King. Permite agendar no Google Agenda, registrar lembretes para notificação no Telegram, listar compromissos e remover.', parameters: { type: 'object', properties: {
+    action: { type: 'string', enum: ['create_event', 'create_reminder', 'list_agenda', 'delete_agenda'], description: 'Ação a executar' },
+    titulo: { type: 'string', description: 'Título do compromisso ou o que lembrar (ex: "Ensaio Fotográfico com Lucas", "Reunião com Parceiro", "Pagar fornecedor")' },
+    data: { type: 'string', description: 'Data no formato YYYY-MM-DD (ex: "2026-09-24")' },
+    hora_inicio: { type: 'string', description: 'Horário de início ou do aviso (HH:MM 24h, ex: "14:00", "09:30")' },
+    hora_fim: { type: 'string', description: 'Horário de término (HH:MM 24h, ex: "15:00", "16:00")' },
+    descricao: { type: 'string', description: 'Observações, notas, contato ou detalhes do evento' },
+    local: { type: 'string', description: 'Local do compromisso (ex: "Estúdio Adriano King - Barueri", "Online", ou endereço)' },
+    tipo: { type: 'string', enum: ['compromisso', 'lembrete', 'ensaio', 'reuniao'], description: 'Tipo do item' },
+    id: { type: 'string', description: 'ID do lembrete ou evento para remover em delete_agenda' }
+  }, required: ['action'] } } },
   { type: 'function', function: { name: 'manage_finance', description: 'Gerencia finanças do King: trabalhos, lançamentos de fluxo, resumo real, remoção, ajuste de saldo e consultoria.', parameters: { type: 'object', properties: {
     action: { type: 'string', enum: ['create', 'create_trabalho', 'cancel_last', 'delete_by_criteria', 'list_recent', 'adjust_cash', 'summary', 'advice'] },
-    // Para Trabalhos:
     cliente: { type: 'string', description: 'Nome do cliente do trabalho' },
     servico: { type: 'string', description: 'Tipo de serviço (ex: Posicionamento de Imagem, Ensaio, Cobertura)' },
     valor_total: { type: 'number', description: 'Valor total cobrado pelo trabalho' },
     entrada: { type: 'number', description: 'Valor de entrada recebido agora (AV/sinal). 0 se não recebeu nada agora.' },
     data_prevista: { type: 'string', description: 'Data prevista para quitação (YYYY-MM-DD)' },
-    // Para Fluxo:
     transactions: { type: 'array', items: { type: 'object', properties: {
       type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
       amount: { type: 'number' }, status: { type: 'string', enum: ['PAID', 'PENDING'] },
@@ -246,7 +298,125 @@ try {
       let args = {};
       try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}
 
-      if (fnName === 'manage_finance') {
+      // ═══════════════════════════════════════════════════════════════════
+      // ── GERENCIAR AGENDA & LEMBRETES (GOOGLE AGENDA + TELEGRAM) ────────
+      // ═══════════════════════════════════════════════════════════════════
+      if (fnName === 'manage_agenda') {
+        const profileId = await resolveProfileId.call(this);
+        const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+        let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+        if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+        if (!Array.isArray(kingDb.lembretes)) kingDb.lembretes = [];
+
+        // ── CRIAR COMPROMISSO OU LEMBRETE ───────────────────────────
+        if (args.action === 'create_event' || args.action === 'create_reminder') {
+          const isLembrete = args.action === 'create_reminder' || args.tipo === 'lembrete';
+          const titulo = String(args.titulo || (isLembrete ? 'Lembrete' : 'Compromisso')).trim();
+          let data = String(args.data || '').trim();
+          if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+            data = dataHojeISO;
+          }
+          let horaInicio = String(args.hora_inicio || '09:00').trim();
+          if (horaInicio.length === 4 && horaInicio.indexOf(':') === 1) horaInicio = '0' + horaInicio;
+          if (!/^\d{2}:\d{2}$/.test(horaInicio)) horaInicio = '09:00';
+
+          let horaFim = String(args.hora_fim || '').trim();
+          if (!horaFim) {
+            const hParts = horaInicio.split(':');
+            const duracaoHoras = (args.tipo === 'ensaio' || titulo.toLowerCase().includes('ensaio')) ? 2 : 1;
+            const endH = String(Math.min(23, Number(hParts[0]) + duracaoHoras)).padStart(2, '0');
+            horaFim = endH + ':' + hParts[1];
+          }
+
+          const local = String(args.local || (args.tipo === 'ensaio' ? 'Estúdio Adriano King - Barueri-SP' : '')).trim();
+          const descricao = String(args.descricao || '').trim();
+
+          const gCalUrl = makeGoogleCalendarUrl(titulo, data, horaInicio, horaFim, descricao, local);
+
+          const novoItem = {
+            id: 'lem_' + Date.now(),
+            titulo,
+            tipo: args.tipo || (isLembrete ? 'lembrete' : 'compromisso'),
+            data,
+            hora_inicio: horaInicio,
+            hora_fim: horaFim,
+            descricao,
+            local,
+            google_calendar_url: gCalUrl,
+            created_at: dataHojeISO + ' ' + horaAtualSp,
+            status: 'ativo',
+            notificado: false
+          };
+
+          kingDb.lembretes.unshift(novoItem);
+
+          await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+            profile_id: profileId,
+            data: kingDb
+          });
+
+          // Formatar data em português
+          const pData = data.split('-');
+          const dObj = new Date(Number(pData[0]), Number(pData[1]) - 1, Number(pData[2]));
+          const diaSemanaFormat = diaSemanaNomes[dObj.getDay()] || 'Data';
+          const dataFormatada = `${pData[2]}/${pData[1]}/${pData[0]} (${diaSemanaFormat})`;
+
+          const icone = isLembrete ? '⏰' : (args.tipo === 'ensaio' ? '📸' : '📅');
+          const header = isLembrete ? 'Novo Lembrete Registrado!' : 'Compromisso Agendado com Sucesso!';
+
+          outMessage = `${icone} *${header}*\n\n` +
+            `📌 *${isLembrete ? 'Lembrete' : 'Compromisso'}:* ${titulo}\n` +
+            `🗓️ *Data:* ${dataFormatada}\n` +
+            `⏰ *Horário:* ${horaInicio}${horaFim ? ' às ' + horaFim : ''}\n` +
+            (local ? `📍 *Local:* ${local}\n` : '') +
+            (descricao ? `📝 *Observações:* ${descricao}\n` : '') +
+            `\n📲 [Toque aqui para Adicionar ao seu Google Agenda](${gCalUrl})\n` +
+            `_(Ao tocar, abre no app Google Agenda do seu celular com alarme e notificação prontos!)_\n\n` +
+            `🔔 *Notificação:* Eu também vou te avisar aqui no Telegram no horário marcado!`;
+
+        // ── LISTAR AGENDA & LEMBRETES ────────────────────────────────
+        } else if (args.action === 'list_agenda') {
+          const ativos = (kingDb.lembretes || []).filter(l => l && l.status !== 'cancelado');
+          if (ativos.length === 0) {
+            outMessage = `📅 *Agenda & Lembretes — King Assistente*\n\nNenhum compromisso ou lembrete pendente no momento.\n\nSe quiser agendar algo, é só me pedir por áudio ou texto!`;
+          } else {
+            ativos.sort((a, b) => ((a.data || '') + (a.hora_inicio || '')).localeCompare((b.data || '') + (b.hora_inicio || '')));
+            const lines = ativos.slice(0, 10).map((l, i) => {
+              const ico = l.tipo === 'lembrete' ? '⏰' : (l.tipo === 'ensaio' ? '📸' : '📅');
+              const pData = (l.data || '').split('-');
+              const dFmt = pData.length === 3 ? `${pData[2]}/${pData[1]}/${pData[0]}` : l.data;
+              return `${i + 1}. ${ico} *${l.titulo}*\n   🗓️ ${dFmt} às ${l.hora_inicio || '00:00'}${l.hora_fim ? ' - ' + l.hora_fim : ''}${l.local ? ' | 📍 ' + l.local : ''}\n   📲 [Google Agenda](${l.google_calendar_url})`;
+            });
+            outMessage = `📅 *Sua Agenda & Lembretes Próximos:*\n\n${lines.join('\n\n')}`;
+          }
+
+        // ── REMOVER / CANCELAR ──────────────────────────────────────
+        } else if (args.action === 'delete_agenda') {
+          const targetId = args.id;
+          const search = String(args.titulo || '').toLowerCase();
+          let removed = null;
+          for (const l of (kingDb.lembretes || [])) {
+            if ((targetId && l.id === targetId) || (search && String(l.titulo || '').toLowerCase().includes(search))) {
+              l.status = 'cancelado';
+              removed = l;
+              break;
+            }
+          }
+          if (removed) {
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+            outMessage = `🗑️ *Item Removido da Agenda!*\nRemovi o compromisso: *${removed.titulo}*.`;
+          } else {
+            outMessage = `⚠️ Não encontrei o compromisso/lembrete informado para cancelar.`;
+          }
+        }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // ── GERENCIAR FINANÇAS ─────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════════
+      } else if (fnName === 'manage_finance') {
         const profileId = await resolveProfileId.call(this);
         const today = new Date().toISOString().slice(0, 10);
         const fmt = v => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
@@ -262,7 +432,6 @@ try {
           if (valorTotal <= 0) {
             outMessage = '⚠️ Informe o valor total do trabalho.';
           } else {
-            // 1. Obter king-data atual
             const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
             let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
             if (!kingDb || typeof kingDb !== 'object') kingDb = {};
@@ -285,13 +454,11 @@ try {
 
             kingDb.trabalhos.unshift(novoTrab);
 
-            // 2. Salvar king-data atualizado
             await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
               profile_id: profileId,
               data: kingDb
             });
 
-            // 3. Buscar resumo atualizado em tempo real
             const summary = await fetchRealSummary.call(this, profileId);
             const falta = Math.max(0, valorTotal - entrada);
 
@@ -354,7 +521,7 @@ try {
             summaryMessageToSend = buildSummaryMessage(summary, fmt);
           }
 
-        // ── DELETE BY CRITERIA (valor ou descrição) ──────────────────
+        // ── DELETE BY CRITERIA ──────────────────────────────────────
         } else if (args.action === 'delete_by_criteria') {
           const crit = args.criteria || {};
           const recent = await fetchRecentTransactions.call(this, 30);
@@ -506,6 +673,76 @@ if (summaryMessageToSend) {
 return [{ json: { ...prev, outMessage } }];'''
 
 # ──────────────────────────────────────────────────────────────────────────────
+# CÓDIGO DO NÓ DE VERIFICAÇÃO PERIÓDICA DE LEMBRETES (a cada 5 min)
+# ──────────────────────────────────────────────────────────────────────────────
+CHECK_REMIDERS_JS = r'''const base = String($env.CK_INTERNAL_URL || $env.CK_BASE_URL || 'http://conectaking-laravel:8080').replace(/\/$/, '');
+const token = String($env.CK_AGENT_JWT || '').trim();
+const adminChatId = String($env.ADMIN_TELEGRAM_ID || '78792434');
+
+let r;
+try {
+  r = await this.helpers.httpRequest({
+    method: 'GET',
+    url: base + '/api/finance/king-data?profile_id=1',
+    headers: {
+      'Accept': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    },
+    json: true,
+    ignoreHttpStatusErrors: true
+  });
+} catch (_) {
+  return [];
+}
+
+const kingDb = (r && r.data) ? r.data : (r || {});
+const lembretes = Array.isArray(kingDb.lembretes) ? kingDb.lembretes : [];
+
+const now = new Date();
+const spNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+const today = spNow.toISOString().slice(0, 10);
+const curHour = String(spNow.getHours()).padStart(2, '0') + ':' + String(spNow.getMinutes()).padStart(2, '0');
+
+const dueList = [];
+let hasChanges = false;
+
+for (const lem of lembretes) {
+  if (lem && lem.status !== 'cancelado' && !lem.notificado) {
+    if (lem.data < today || (lem.data === today && (lem.hora_inicio || '00:00') <= curHour)) {
+      dueList.push(lem);
+      lem.notificado = true;
+      hasChanges = true;
+    }
+  }
+}
+
+if (hasChanges) {
+  try {
+    await this.helpers.httpRequest({
+      method: 'PUT',
+      url: base + '/api/finance/king-data?profile_id=1',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: { profile_id: 1, data: kingDb },
+      json: true,
+      ignoreHttpStatusErrors: true
+    });
+  } catch (_) {}
+}
+
+if (dueList.length === 0) {
+  return [];
+}
+
+return dueList.map(lem => ({
+  json: {
+    chatId: adminChatId,
+    outMessage: `⏰ *LEMBRETE DO KING ASSISTENTE!*\n\n👑 *Adriano, passando para te avisar do seu compromisso agora:*\n\n📌 *${lem.titulo}*\n🕒 *Horário:* ${lem.hora_inicio || 'Agora'}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}\n${lem.google_calendar_url ? '📲 [Ver no Google Agenda](' + lem.google_calendar_url + ')\n' : ''}\n✅ _Compromisso/Lembrete ativo._`
+  }
+}));'''
 
 def upsert_active(cur, wf_id, nodes, connections, settings, name):
     now        = time.strftime('%Y-%m-%d %H:%M:%S.000')
@@ -545,6 +782,7 @@ def main():
     settings    = json.loads(row[2] or '{}')
     wf_name     = row[3]
 
+    # 1. Patch no Executar Admin
     patched = False
     for n in nodes:
         if n.get('name') == 'Executar Admin':
@@ -552,14 +790,72 @@ def main():
             p['jsCode'] = EXEC_ADMIN_JS
             patched = True
             print(f'[OK] Executar Admin → {len(EXEC_ADMIN_JS)} chars')
-            print('     create_trabalho: OK')
+            print('     manage_agenda: OK (create_event, create_reminder, list_agenda, delete_agenda)')
+            print('     Google Calendar 1-toque: OK')
             print('     fetchRealSummary: OK')
-            print('     base url fallback interno: OK')
             break
 
     if not patched:
         print('[AVISO] Nó "Executar Admin" não encontrado.')
+        conn.close()
         return
+
+    # 2. Adicionar nós de checagem periódica de lembretes caso não existam
+    check_node_name = 'Checar Lembretes Admin'
+    notify_node_name = 'Notificar Lembrete TG'
+
+    has_check_node = any(n.get('name') == check_node_name for n in nodes)
+    has_notify_node = any(n.get('name') == notify_node_name for n in nodes)
+
+    if not has_check_node:
+        check_node = {
+            'parameters': {'jsCode': CHECK_REMIDERS_JS},
+            'id': 'checkReminders01',
+            'name': check_node_name,
+            'type': 'n8n-nodes-base.code',
+            'typeVersion': 2,
+            'position': [-1056, 320]
+        }
+        nodes.append(check_node)
+        print(f'[OK] Criado nó: {check_node_name}')
+    else:
+        for n in nodes:
+            if n.get('name') == check_node_name:
+                n.setdefault('parameters', {})['jsCode'] = CHECK_REMIDERS_JS
+                print(f'[OK] Atualizado nó: {check_node_name}')
+
+    if not has_notify_node:
+        notify_node = {
+            'parameters': {
+                'chatId': "={{ $json.chatId || $env.ADMIN_TELEGRAM_ID || '78792434' }}",
+                'text': "={{ $json.outMessage }}",
+                'additionalFields': {'appendAttribution': False}
+            },
+            'id': 'notifyReminderTG01',
+            'name': notify_node_name,
+            'type': 'n8n-nodes-base.telegram',
+            'typeVersion': 1.2,
+            'position': [-800, 320],
+            'credentials': {
+                'telegramApi': {
+                    'id': 'MFt7IUN9HkKveUW8',
+                    'name': 'Telegram account'
+                }
+            }
+        }
+        nodes.append(notify_node)
+        print(f'[OK] Criado nó: {notify_node_name}')
+
+    # Conectar: "A cada 5 min" -> "Checar Lembretes Admin" -> "Notificar Lembrete TG"
+    sched_conn = connections.setdefault('A cada 5 min', {}).setdefault('main', [[]])
+    if not any(target.get('node') == check_node_name for target in sched_conn[0]):
+        sched_conn[0].append({'node': check_node_name, 'type': 'main', 'index': 0})
+        print(f'[OK] Conectado: "A cada 5 min" -> "{check_node_name}"')
+
+    check_conn = connections.setdefault(check_node_name, {}).setdefault('main', [[]])
+    if not any(target.get('node') == notify_node_name for target in check_conn[0]):
+        check_conn[0].append({'node': notify_node_name, 'type': 'main', 'index': 0})
+        print(f'[OK] Conectado: "{check_node_name}" -> "{notify_node_name}"')
 
     upsert_active(cur, MAIN, nodes, connections, settings, wf_name)
     conn.commit()
@@ -570,8 +866,7 @@ def main():
     except Exception:
         pass
 
-    print('\n✅ Patch de correção financeira com suporte a Trabalhos aplicado!')
-    print('   Execute: docker compose up -d n8n')
+    print('\n✅ Patch de Agenda, Lembretes e Google Agenda aplicado com sucesso!')
 
 
 if __name__ == '__main__':

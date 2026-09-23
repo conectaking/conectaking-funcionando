@@ -359,18 +359,18 @@ class FinanceService
     }
 
     /**
-     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list}
+     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list, lembretes:list}
      */
     private function emptyKingData(): array
     {
-        return ['dividas' => [], 'terceiros' => [], 'trabalhos' => [], 'bens' => []];
+        return ['dividas' => [], 'terceiros' => [], 'trabalhos' => [], 'bens' => [], 'lembretes' => []];
     }
 
     /**
-     * Whitelist das 4 coleções syncadas — remove lixo/localStorage (fluxo/cartoes) do blob.
+     * Whitelist das coleções syncadas — remove lixo/localStorage (fluxo/cartoes) do blob.
      *
      * @param  array<string,mixed>  $raw
-     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list}
+     * @return array{dividas:list, terceiros:list, trabalhos:list, bens:list, lembretes:list}
      */
     private function normalizeKingData(array $raw): array
     {
@@ -380,6 +380,7 @@ class FinanceService
             'terceiros' => 500,
             'trabalhos' => 1000,
             'bens' => 500,
+            'lembretes' => 500,
         ];
         foreach ($limits as $key => $max) {
             if (! isset($raw[$key]) || ! is_array($raw[$key])) {
