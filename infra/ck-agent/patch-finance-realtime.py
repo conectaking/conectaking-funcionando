@@ -2,11 +2,11 @@
 """
 patch-finance-realtime.py
 ==========================
-Atualização do Bot IA (Admin Telegram @conectaking_bot - King Assistente):
-1. Agenda & Google Agenda: agendamento de reuniões, ensaios fotográficos e compromissos com link direto de 1 toque no Google Calendar.
-2. Lembretes com Aviso: registro de lembretes que notificam no Telegram no horário exato e sincronizam no Google Agenda.
-3. Finanças em Tempo Real: Trabalhos (king-data), Fluxo, Resumo completo, Ajuste de saldo e Cancelamento.
-4. Resposta proativa e afirmativa para dúvidas sobre agendamentos no Google Agenda.
+Atualização do Bot IA (Admin Telegram @conectaking_bot - Agente King):
+1. Nome do Bot: Agente King (em todas as mensagens, saudações e personas).
+2. Agenda & Google Agenda DIRETO: inserção direta via Google Calendar API (n8n-nodes-base.googleCalendar).
+3. Lembretes com Aviso: registro de lembretes que notificam no Telegram no horário exato e gravam no Google Agenda.
+4. Finanças em Tempo Real: Trabalhos (king-data), Fluxo, Resumo completo, Ajuste de saldo e Cancelamento.
 5. Rotina periódica: checagem de lembretes a cada 5 min com disparo de notificação no Telegram do King.
 """
 import json, os, sqlite3, time, uuid
@@ -147,7 +147,7 @@ async function fetchRealSummary(profileId) {
 }
 
 function buildSummaryMessage(summary, fmt) {
-  return `📊 *Resumo Geral das Suas Finanças*\n_(atualizado em tempo real)_\n\n` +
+  return `📊 *Resumo Geral das Suas Finanças — Agente King*\n_(atualizado em tempo real)_\n\n` +
     `💰 *Dinheiro em Caixa (Disponível):* ${fmt(summary.saldoDisponivel)}\n` +
     `📈 *Receitas Recebidas (Mês):* ${fmt(summary.totalRecebido)}\n` +
     `📉 *Despesas Pagas (Mês):* ${fmt(summary.totalPago)}\n` +
@@ -157,7 +157,7 @@ function buildSummaryMessage(summary, fmt) {
     `💼 *Total de Trabalhos Ativos:* ${summary.trabalhosCount}`;
 }
 
-// ─── Gerador de Link Direto para o Google Agenda ───────────────────────────
+// ─── Gerador de Link Direto para o Google Agenda (Fallback 1-toque) ─────────
 function makeGoogleCalendarUrl(titulo, data, horaInicio, horaFim, descricao, local) {
   const dClean = String(data || '').replace(/-/g, '');
   const hInicioClean = String(horaInicio || '09:00').replace(/:/g, '').padEnd(4, '0') + '00';
@@ -174,7 +174,7 @@ function makeGoogleCalendarUrl(titulo, data, horaInicio, horaFim, descricao, loc
   p.push('action=TEMPLATE');
   p.push('text=' + encodeURIComponent(titulo || 'Compromisso - Adriano King'));
   p.push('dates=' + dates);
-  p.push('details=' + encodeURIComponent((descricao ? descricao + '\n\n' : '') + 'Agendado pelo King Assistente'));
+  p.push('details=' + encodeURIComponent((descricao ? descricao + '\n\n' : '') + 'Agendado pelo Agente King'));
   if (local) p.push('location=' + encodeURIComponent(local));
   p.push('ctz=America/Sao_Paulo');
   return 'https://calendar.google.com/calendar/render?' + p.join('&');
@@ -194,9 +194,10 @@ const dataHojeISO = nowSp.toISOString().slice(0, 10);
 const horaAtualSp = String(nowSp.getHours()).padStart(2, '0') + ':' + String(nowSp.getMinutes()).padStart(2, '0');
 const dataHojeBr = String(nowSp.getDate()).padStart(2, '0') + '/' + String(nowSp.getMonth() + 1).padStart(2, '0') + '/' + nowSp.getFullYear();
 
-const SYSTEM_PROMPT = `Você é o King Assistente, Assistente Executivo Pessoal e CFO de Elite do Adriano King.
+const SYSTEM_PROMPT = `Você é o Agente King, o Assistente Executivo Pessoal e CFO de Elite do Adriano King.
 Você atende exclusivamente o Adriano King no Telegram.
-Tom de voz: executivo de alto nível, direto, dinâmico, solícito, confiante e resolutivo. Sem respostas robóticas ou burocráticas.
+SEU NOME É RIGOROSAMENTE AGENTE KING. Sempre se identifique e se refira como "Agente King".
+Tom de voz: executivo de altíssimo nível, direto, dinâmico, solícito, confiante e resolutivo. Sem enrolação.
 
 Data e hora atual de Brasília: ${diaSemanaAtual}, ${dataHojeBr} (${dataHojeISO}) às ${horaAtualSp}. Fuso: America/Sao_Paulo.
 Ano de referência obrigatório: 2026. SEMPRE use o ano 2026 para agendamentos e compromissos. NUNCA use anos passados como 2023, 2024 ou 2025.
@@ -205,18 +206,18 @@ ${KB}
 
 ═══ SUAS HABILIDADES & REGRAS PRINCIPAIS ═══
 
-1. AGENDA, LEMBRETES & GOOGLE AGENDA (Nova Habilidade):
-   - Você é o assistente pessoal que cuida da agenda e dos lembretes do Adriano King.
-   - O Adriano pode te pedir por áudio ou texto para AGENDAR compromissos, reuniões, ensaios fotográficos ou CRIAR LEMBRETES (ex: pagar contas, ligar para alguém, enviar propostas, etc.).
+1. AGENDA, LEMBRETES & GOOGLE AGENDA:
+   - Você gerencia e agenda diretamente na Google Agenda do Adriano.
+   - O Adriano pode te pedir por áudio ou texto para AGENDAR compromissos, reuniões, ensaios fotográficos ou CRIAR LEMBRETES (ex: ir para a academia, pagar contas, ligar para alguém, enviar propostas, etc.).
    - Se o Adriano perguntar se você consegue agendar no Google Agenda ou mandar lembretes, responda afirmativamente e com entusiasmo:
-     "Com certeza, Adriano! Eu sou seu Assistente Executivo e gerencio sua agenda e lembretes completos.
-     Você não precisa escrever formulário nenhum, basta falar por áudio ou mandar por texto, por exemplo:
+     "Com certeza, Adriano! Eu sou o seu Agente King e cuido da sua agenda e dos seus lembretes.
+     Você não precisa preencher nada, basta falar por áudio ou mandar por texto, por exemplo:
      • 'Agenda um ensaio com a Larissa amanhã às 14h'
-     • 'Me lembra de pagar o fornecedor na sexta às 10h'
+     • 'Me lembra de ir para a academia hoje às 17h'
      • 'Agenda uma reunião na segunda às 15h'
-     • 'O que eu tenho agendado para hoje?'
+     • 'Qual é a minha agenda de hoje?'
      
-     Eu registro o compromisso, gero o link direto de 1 toque para o seu Google Agenda (com alarme e notificação ativados), e também te notifico aqui no Telegram no horário combinado!"
+     Eu gravo diretamente na sua Google Agenda e também te aviso aqui no Telegram no horário marcado!"
    - Ao agendar compromissos ou lembretes, SEMPRE use a tool "manage_agenda":
      * Reuniões, ensaios, eventos, compromissos -> action: "create_event"
      * Lembretes com aviso no horário -> action: "create_reminder"
@@ -226,7 +227,7 @@ ${KB}
      * "hoje" = ${dataHojeISO}
      * "amanhã" = data do dia seguinte
      * "sexta-feira", "segunda-feira" = próximo dia correspondente.
-     * Duração padrão de ensaio fotográfico: 2 horas. Reuniões/outros: 1 hora.
+     * Duração padrão de ensaio fotográfico: 2 horas. Academia / Reuniões / outros: 1 hora.
 
 2. GESTÃO FINANCEIRA & TRABALHOS:
    - TRABALHOS (cliente, ensaio, foto, fotografia, evento, posicionamento de imagem, job):
@@ -243,12 +244,12 @@ ${KB}
 const TOOLS = [
   { type: 'function', function: { name: 'manage_agenda', description: 'Gerencia a agenda, compromissos e lembretes executivos do Adriano King. Permite agendar no Google Agenda, registrar lembretes para notificação no Telegram, listar compromissos e remover.', parameters: { type: 'object', properties: {
     action: { type: 'string', enum: ['create_event', 'create_reminder', 'list_agenda', 'delete_agenda'], description: 'Ação a executar' },
-    titulo: { type: 'string', description: 'Título do compromisso ou o que lembrar (ex: "Ensaio Fotográfico com Lucas", "Reunião com Parceiro", "Pagar fornecedor")' },
-    data: { type: 'string', description: 'Data no formato YYYY-MM-DD (ex: "2026-09-24")' },
-    hora_inicio: { type: 'string', description: 'Horário de início ou do aviso (HH:MM 24h, ex: "14:00", "09:30")' },
-    hora_fim: { type: 'string', description: 'Horário de término (HH:MM 24h, ex: "15:00", "16:00")' },
+    titulo: { type: 'string', description: 'Título do compromisso ou o que lembrar (ex: "Ir para a academia", "Ensaio Fotográfico com Lucas", "Reunião com Parceiro", "Pagar fornecedor")' },
+    data: { type: 'string', description: 'Data no formato YYYY-MM-DD (ex: "2026-09-23")' },
+    hora_inicio: { type: 'string', description: 'Horário de início ou do aviso (HH:MM 24h, ex: "17:00", "09:30")' },
+    hora_fim: { type: 'string', description: 'Horário de término (HH:MM 24h, ex: "18:00", "16:00")' },
     descricao: { type: 'string', description: 'Observações, notas, contato ou detalhes do evento' },
-    local: { type: 'string', description: 'Local do compromisso (ex: "Estúdio Adriano King - Barueri", "Online", ou endereço)' },
+    local: { type: 'string', description: 'Local do compromisso (ex: "Academia", "Estúdio Barueri", "Online", ou endereço)' },
     tipo: { type: 'string', enum: ['compromisso', 'lembrete', 'ensaio', 'reuniao'], description: 'Tipo do item' },
     id: { type: 'string', description: 'ID do lembrete ou evento para remover em delete_agenda' }
   }, required: ['action'] } } },
@@ -277,6 +278,12 @@ const TOOLS = [
 
 let outMessage = '';
 let summaryMessageToSend = null;
+let needGoogleCalendar = false;
+let calendarStart = '';
+let calendarEnd = '';
+let calendarSummary = '';
+let calendarDescription = '';
+let calendarLocation = '';
 
 try {
   if (!openaiKey) {
@@ -333,6 +340,14 @@ try {
 
           const gCalUrl = makeGoogleCalendarUrl(titulo, data, horaInicio, horaFim, descricao, local);
 
+          // Configuração para inserção direta no Google Calendar via API
+          needGoogleCalendar = true;
+          calendarStart = `${data}T${horaInicio}:00-03:00`;
+          calendarEnd = `${data}T${horaFim}:00-03:00`;
+          calendarSummary = titulo;
+          calendarDescription = (descricao ? descricao + '\n\n' : '') + 'Agendado pelo Agente King';
+          calendarLocation = local || 'Barueri-SP';
+
           const novoItem = {
             id: 'lem_' + Date.now(),
             titulo,
@@ -364,7 +379,7 @@ try {
           const icone = isLembrete ? '⏰' : (args.tipo === 'ensaio' ? '📸' : '📅');
           const header = isLembrete ? 'Novo Lembrete Registrado!' : 'Compromisso Agendado com Sucesso!';
 
-          outMessage = `${icone} *${header}*\n\n` +
+          outMessage = `${icone} *${header} — Agente King*\n\n` +
             `📌 *${isLembrete ? 'Lembrete' : 'Compromisso'}:* ${titulo}\n` +
             `🗓️ *Data:* ${dataFormatada}\n` +
             `⏰ *Horário:* ${horaInicio}${horaFim ? ' às ' + horaFim : ''}\n` +
@@ -378,7 +393,7 @@ try {
         } else if (args.action === 'list_agenda') {
           const ativos = (kingDb.lembretes || []).filter(l => l && l.status !== 'cancelado');
           if (ativos.length === 0) {
-            outMessage = `📅 *Agenda & Lembretes — King Assistente*\n\nNenhum compromisso ou lembrete pendente no momento.\n\nSe quiser agendar algo, é só me pedir por áudio ou texto!`;
+            outMessage = `📅 *Agenda & Lembretes — Agente King*\n\nNenhum compromisso ou lembrete pendente no momento.\n\nSe quiser agendar algo, é só me pedir por áudio ou texto!`;
           } else {
             ativos.sort((a, b) => ((a.data || '') + (a.hora_inicio || '')).localeCompare((b.data || '') + (b.hora_inicio || '')));
             const lines = ativos.slice(0, 10).map((l, i) => {
@@ -387,7 +402,7 @@ try {
               const dFmt = pData.length === 3 ? `${pData[2]}/${pData[1]}/${pData[0]}` : l.data;
               return `${i + 1}. ${ico} *${l.titulo}*\n   🗓️ ${dFmt} às ${l.hora_inicio || '00:00'}${l.hora_fim ? ' - ' + l.hora_fim : ''}${l.local ? ' | 📍 ' + l.local : ''}\n   📲 [Google Agenda](${l.google_calendar_url})`;
             });
-            outMessage = `📅 *Sua Agenda & Lembretes Próximos:*\n\n${lines.join('\n\n')}`;
+            outMessage = `📅 *Sua Agenda & Lembretes — Agente King:*\n\n${lines.join('\n\n')}`;
           }
 
         // ── REMOVER / CANCELAR ──────────────────────────────────────
@@ -462,7 +477,7 @@ try {
             const summary = await fetchRealSummary.call(this, profileId);
             const falta = Math.max(0, valorTotal - entrada);
 
-            outMessage = `👑 *Novo Trabalho Registrado com Sucesso!*\n\n` +
+            outMessage = `👑 *Novo Trabalho Registrado — Agente King*\n\n` +
               `👤 *Cliente:* ${cliente}\n` +
               `📸 *Serviço:* ${servico}\n` +
               `💰 *Valor Total:* ${fmt(valorTotal)}\n` +
@@ -486,7 +501,7 @@ try {
           if (createdItems.length > 0) {
             session.lastCreatedTransactions = createdItems;
             const summary = await fetchRealSummary.call(this, profileId);
-            const lines = ['👑 *Lançamento Financeiro Concluído!*\n'];
+            const lines = ['👑 *Lançamento Financeiro Concluído — Agente King*\n'];
             for (const it of createdItems) {
               const icon = it.type === 'INCOME' ? '💵' : '💸';
               const lbl = it.status === 'PAID' ? (it.type === 'INCOME' ? 'Recebido em caixa' : 'Pago') : 'Pendente (A receber)';
@@ -564,7 +579,7 @@ try {
               const lbl = t.status === 'PAID' ? 'Pago/Recebido' : 'Pendente';
               return `${i + 1}. ${icon} ${val} — _${t.description}_ (${lbl})`;
             });
-            outMessage = `📋 *Últimos Lançamentos Reais:*\n\n${lines.join('\n')}`;
+            outMessage = `📋 *Últimos Lançamentos Reais — Agente King:*\n\n${lines.join('\n')}`;
           }
 
         // ── ADJUST CASH ──────────────────────────────────────────────
@@ -610,7 +625,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Fale em PT-BR, se
             messages: [{ role: 'system', content: 'Você é um CFO de elite e consultor de faturamento para empreendedores criativos e CEOs. Seja direto, analítico e dê conselhos práticos.' }, { role: 'user', content: finCtx }]
           });
           const advice = String(advRes.body?.choices?.[0]?.message?.content || '').trim();
-          outMessage = `👑 *Consultoria de Faturamento — King Assistente*\n\n${advice}`;
+          outMessage = `👑 *Consultoria de Faturamento — Agente King*\n\n${advice}`;
         }
 
       // ── DIAGNÓSTICO DO SISTEMA ────────────────────────────────────────────
@@ -652,7 +667,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Fale em PT-BR, se
       }
 
     } else {
-      outMessage = choice?.content || 'Olá King! Como posso ajudar?';
+      outMessage = choice?.content || 'Olá King! Sou o seu Agente King. Como posso te ajudar hoje?';
     }
 
     session.history.push({ role: 'user', content: inputForAi });
@@ -663,14 +678,25 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Fale em PT-BR, se
   outMessage = '⚠️ Erro: ' + String(e.message || e).slice(0, 300);
 }
 
+const resItem = {
+  ...prev,
+  outMessage,
+  needGoogleCalendar,
+  calendarStart,
+  calendarEnd,
+  calendarSummary,
+  calendarDescription,
+  calendarLocation
+};
+
 if (summaryMessageToSend) {
   return [
-    { json: { ...prev, outMessage } },
-    { json: { ...prev, outMessage: summaryMessageToSend } }
+    { json: resItem },
+    { json: { ...prev, outMessage: summaryMessageToSend, needGoogleCalendar: false } }
   ];
 }
 
-return [{ json: { ...prev, outMessage } }];'''
+return [{ json: resItem }];'''
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CÓDIGO DO NÓ DE VERIFICAÇÃO PERIÓDICA DE LEMBRETES (a cada 5 min)
@@ -740,9 +766,32 @@ if (dueList.length === 0) {
 return dueList.map(lem => ({
   json: {
     chatId: adminChatId,
-    outMessage: `⏰ *LEMBRETE DO KING ASSISTENTE!*\n\n👑 *Adriano, passando para te avisar do seu compromisso agora:*\n\n📌 *${lem.titulo}*\n🕒 *Horário:* ${lem.hora_inicio || 'Agora'}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}\n${lem.google_calendar_url ? '📲 [Ver no Google Agenda](' + lem.google_calendar_url + ')\n' : ''}\n✅ _Compromisso/Lembrete ativo._`
+    outMessage: `⏰ *LEMBRETE DO AGENTE KING!*\n\n👑 *Adriano, passando para te avisar do seu compromisso agora:*\n\n📌 *${lem.titulo}*\n🕒 *Horário:* ${lem.hora_inicio || 'Agora'}\n${lem.local ? '📍 *Local:* ' + lem.local + '\n' : ''}${lem.descricao ? '📝 *Notas:* ' + lem.descricao + '\n' : ''}\n${lem.google_calendar_url ? '📲 [Ver no Google Agenda](' + lem.google_calendar_url + ')\n' : ''}\n✅ _Compromisso ativo._`
   }
 }));'''
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CÓDIGO DO NÓ DE CONFIRMAÇÃO DO GOOGLE CALENDAR
+# ──────────────────────────────────────────────────────────────────────────────
+CONFIRM_GCAL_JS = r'''const prev = $('Executar Admin').first().json;
+const gcal = $input.first().json;
+let msg = prev.outMessage || '';
+
+if (gcal && (gcal.id || gcal.htmlLink)) {
+  const link = gcal.htmlLink || '';
+  msg = msg.replace('📲 [Toque aqui para Adicionar ao seu Google Agenda]', '📅 *Agendado diretamente no seu Google Agenda!* ✅\n📲 [Abrir no Google Agenda]');
+  if (link) {
+    msg = msg.replace(/https:\/\/calendar\.google\.com\/calendar\/render\?[^\)]+/g, link);
+  }
+  msg = msg.replace('(Ao tocar, abre no app Google Agenda do seu celular com alarme e notificação prontos!)', '_(Já está gravado e vai tocar o alarme no seu celular!)_');
+}
+
+return [{
+  json: {
+    ...prev,
+    outMessage: msg
+  }
+}];'''
 
 def upsert_active(cur, wf_id, nodes, connections, settings, name):
     now        = time.strftime('%Y-%m-%d %H:%M:%S.000')
@@ -790,8 +839,9 @@ def main():
             p['jsCode'] = EXEC_ADMIN_JS
             patched = True
             print(f'[OK] Executar Admin → {len(EXEC_ADMIN_JS)} chars')
+            print('     Agente King: OK')
             print('     manage_agenda: OK (create_event, create_reminder, list_agenda, delete_agenda)')
-            print('     Google Calendar 1-toque: OK')
+            print('     Google Calendar API routing: OK')
             print('     fetchRealSummary: OK')
             break
 
@@ -800,14 +850,11 @@ def main():
         conn.close()
         return
 
-    # 2. Adicionar nós de checagem periódica de lembretes caso não existam
+    # 2. Adicionar nó de verificação periódica de lembretes caso não exista
     check_node_name = 'Checar Lembretes Admin'
     notify_node_name = 'Notificar Lembrete TG'
 
-    has_check_node = any(n.get('name') == check_node_name for n in nodes)
-    has_notify_node = any(n.get('name') == notify_node_name for n in nodes)
-
-    if not has_check_node:
+    if not any(n.get('name') == check_node_name for n in nodes):
         check_node = {
             'parameters': {'jsCode': CHECK_REMIDERS_JS},
             'id': 'checkReminders01',
@@ -824,7 +871,7 @@ def main():
                 n.setdefault('parameters', {})['jsCode'] = CHECK_REMIDERS_JS
                 print(f'[OK] Atualizado nó: {check_node_name}')
 
-    if not has_notify_node:
+    if not any(n.get('name') == notify_node_name for n in nodes):
         notify_node = {
             'parameters': {
                 'chatId': "={{ $json.chatId || $env.ADMIN_TELEGRAM_ID || '78792434' }}",
@@ -857,6 +904,130 @@ def main():
         check_conn[0].append({'node': notify_node_name, 'type': 'main', 'index': 0})
         print(f'[OK] Conectado: "{check_node_name}" -> "{notify_node_name}"')
 
+    # 3. Adicionar nós para gravação direta no Google Calendar:
+    if_node_name = 'Precisa Google Calendar?'
+    gcal_node_name = 'Criar no Google Calendar'
+    confirm_node_name = 'Confirmar Evento Google Calendar'
+
+    # Nó IF: Precisa Google Calendar?
+    if not any(n.get('name') == if_node_name for n in nodes):
+        if_node = {
+            'parameters': {
+                'conditions': {
+                    'options': {'caseSensitive': True, 'leftValue': '', 'typeValidation': 'strict', 'version': 2},
+                    'conditions': [{
+                        'id': 'cond_gcal',
+                        'leftValue': '={{ $json.needGoogleCalendar }}',
+                        'rightValue': True,
+                        'operator': {'type': 'boolean', 'operation': 'true', 'singleValue': True}
+                    }],
+                    'combinator': 'and'
+                },
+                'options': {}
+            },
+            'id': 'ifGcal01',
+            'name': if_node_name,
+            'type': 'n8n-nodes-base.if',
+            'typeVersion': 2.2,
+            'position': [160, 256]
+        }
+        nodes.append(if_node)
+        print(f'[OK] Criado nó: {if_node_name}')
+
+    # Nó Google Calendar
+    if not any(n.get('name') == gcal_node_name for n in nodes):
+        gcal_node = {
+            'parameters': {
+                'calendar': {
+                    '__rl': True,
+                    'value': 'playadrian@gmail.com',
+                    'mode': 'list',
+                    'cachedResultName': 'playadrian@gmail.com'
+                },
+                'start': '={{ $json.calendarStart }}',
+                'end': '={{ $json.calendarEnd }}',
+                'additionalFields': {
+                    'summary': '={{ $json.calendarSummary }}',
+                    'description': '={{ $json.calendarDescription }}',
+                    'location': '={{ $json.calendarLocation }}'
+                }
+            },
+            'id': 'gcalCreateEvent01',
+            'name': gcal_node_name,
+            'type': 'n8n-nodes-base.googleCalendar',
+            'typeVersion': 1.3,
+            'position': [320, 160],
+            'credentials': {
+                'googleCalendarOAuth2Api': {
+                    'id': 'XgBBhtHN5iljoMqt',
+                    'name': 'Google Calendar account'
+                }
+            },
+            'continueOnFail': True,
+            'onError': 'continueRegularOutput'
+        }
+        nodes.append(gcal_node)
+        print(f'[OK] Criado nó: {gcal_node_name}')
+    else:
+        for n in nodes:
+            if n.get('name') == gcal_node_name:
+                n['parameters'] = {
+                    'calendar': {
+                        '__rl': True,
+                        'value': 'playadrian@gmail.com',
+                        'mode': 'list',
+                        'cachedResultName': 'playadrian@gmail.com'
+                    },
+                    'start': '={{ $json.calendarStart }}',
+                    'end': '={{ $json.calendarEnd }}',
+                    'additionalFields': {
+                        'summary': '={{ $json.calendarSummary }}',
+                        'description': '={{ $json.calendarDescription }}',
+                        'location': '={{ $json.calendarLocation }}'
+                    }
+                }
+                print(f'[OK] Atualizado nó: {gcal_node_name}')
+
+    # Nó Confirmação Google Calendar
+    if not any(n.get('name') == confirm_node_name for n in nodes):
+        confirm_node = {
+            'parameters': {'jsCode': CONFIRM_GCAL_JS},
+            'id': 'confirmGcal01',
+            'name': confirm_node_name,
+            'type': 'n8n-nodes-base.code',
+            'typeVersion': 2,
+            'position': [480, 160]
+        }
+        nodes.append(confirm_node)
+        print(f'[OK] Criado nó: {confirm_node_name}')
+    else:
+        for n in nodes:
+            if n.get('name') == confirm_node_name:
+                n.setdefault('parameters', {})['jsCode'] = CONFIRM_GCAL_JS
+                print(f'[OK] Atualizado nó: {confirm_node_name}')
+
+    # Reposicionar e reconectar nós:
+    # Executar Admin -> Precisa Google Calendar?
+    connections['Executar Admin'] = {'main': [[{'node': if_node_name, 'type': 'main', 'index': 0}]]}
+    print(f'[OK] Conectado: "Executar Admin" -> "{if_node_name}"')
+
+    # Precisa Google Calendar?
+    # Output 0 (True) -> Criar no Google Calendar
+    # Output 1 (False) -> Enviar Telegram
+    connections[if_node_name] = {
+        'main': [
+            [{'node': gcal_node_name, 'type': 'main', 'index': 0}],
+            [{'node': 'Enviar Telegram', 'type': 'main', 'index': 0}]
+        ]
+    }
+    print(f'[OK] Conectado: "{if_node_name}" [True] -> "{gcal_node_name}"')
+    print(f'[OK] Conectado: "{if_node_name}" [False] -> "Enviar Telegram"')
+
+    # Criar no Google Calendar -> Confirmar Evento Google Calendar -> Enviar Telegram
+    connections[gcal_node_name] = {'main': [[{'node': confirm_node_name, 'type': 'main', 'index': 0}]]}
+    connections[confirm_node_name] = {'main': [[{'node': 'Enviar Telegram', 'type': 'main', 'index': 0}]]}
+    print(f'[OK] Conectado: "{gcal_node_name}" -> "{confirm_node_name}" -> "Enviar Telegram"')
+
     upsert_active(cur, MAIN, nodes, connections, settings, wf_name)
     conn.commit()
     conn.close()
@@ -866,7 +1037,7 @@ def main():
     except Exception:
         pass
 
-    print('\n✅ Patch de Agenda, Lembretes e Google Agenda aplicado com sucesso!')
+    print('\n✅ Patch de Agente King e Google Calendar API aplicado com sucesso!')
 
 
 if __name__ == '__main__':
