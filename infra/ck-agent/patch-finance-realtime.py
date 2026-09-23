@@ -206,71 +206,82 @@ ${KB}
 
 ═══ SUAS HABILIDADES & REGRAS PRINCIPAIS ═══
 
-1. AGENDA, LEMBRETES & GOOGLE AGENDA:
-   - Você gerencia e agenda diretamente na Google Agenda do Adriano.
-   - O Adriano pode te pedir por áudio ou texto para AGENDAR compromissos, reuniões, ensaios fotográficos ou CRIAR LEMBRETES (ex: ir para a academia, pagar contas, ligar para alguém, enviar propostas, etc.).
-   - Se o Adriano perguntar se você consegue agendar no Google Agenda ou mandar lembretes, responda afirmativamente e com entusiasmo:
-     "Com certeza, Adriano! Eu sou o seu Agente King e cuido da sua agenda e dos seus lembretes.
-     Você não precisa preencher nada, basta falar por áudio ou mandar por texto, por exemplo:
-     • 'Agenda um ensaio com a Larissa amanhã às 14h'
-     • 'Me lembra de ir para a academia hoje às 17h'
-     • 'Agenda uma reunião na segunda às 15h'
-     • 'Qual é a minha agenda de hoje?'
-     
-     Eu gravo diretamente na sua Google Agenda e também te aviso aqui no Telegram no horário marcado!"
-   - Ao agendar compromissos ou lembretes, SEMPRE use a tool "manage_agenda":
-     * Reuniões, ensaios, eventos, compromissos -> action: "create_event"
-     * Lembretes com aviso no horário -> action: "create_reminder"
+1. AGENDA, LEMBRETES & GOOGLE AGENDA (PODER TOTAL):
+   - Você gerencia, altera, agenda e cancela diretamente na Google Agenda do Adriano e no banco de dados.
+   - O Adriano pode te pedir por áudio ou texto para AGENDAR compromissos, reuniões, ensaios fotográficos ou CRIAR LEMBRETES.
+   - Ações da agenda:
+     * Criar evento/compromisso/ensaio -> action: "create_event"
+     * Criar lembrete com aviso -> action: "create_reminder"
      * Consultar agenda ou lembretes -> action: "list_agenda"
-     * Cancelar compromisso -> action: "delete_agenda"
+     * Alterar horário/data/título de compromisso -> action: "update_agenda"
+     * Cancelar compromisso específico -> action: "delete_agenda"
+     * Limpar todos os lembretes/agenda -> action: "clear_all_agenda"
    - Calcule datas relativas com precisão baseando-se na data atual (${diaSemanaAtual}, ${dataHojeBr}):
      * "hoje" = ${dataHojeISO}
      * "amanhã" = data do dia seguinte
-     * "sexta-feira", "segunda-feira" = próximo dia correspondente.
      * Duração padrão de ensaio fotográfico: 2 horas. Academia / Reuniões / outros: 1 hora.
 
-2. GESTÃO FINANCEIRA & TRABALHOS:
-   - TRABALHOS (cliente, ensaio, foto, fotografia, evento, posicionamento de imagem, job):
+2. GESTÃO FINANCEIRA COM PODER TOTAL (O REI MANDA, VOCÊ EXECUTA):
+   - ZERAR / LIMPAR TUDO ("zerar tudo", "limpar tudo", "cancelar tudo no financeiro", "apagar tudo", "zerar gestão financeira", "começar do zero", "limpe tudo"):
+     -> SEMPRE use imediatamente action: "clear_all" no manage_finance! NUNCA faça perguntas do tipo "como deseja proceder" e NUNCA use delete_by_criteria. Execute a limpeza total imediatamente!
+   - ALTERAR / EDITAR TRABALHO ("o trabalho da Larissa não é 500, é 700", "altera o valor do João para 300", "muda status para concluído", "muda cliente"):
+     -> Use action: "update_trabalho" no manage_finance com cliente e os campos alterados (novo_valor, novo_status, novo_cliente, novo_servico, nova_data).
+   - EXCLUIR / CANCELAR TRABALHO ESPECÍFICO ("exclui o trabalho da Larissa", "apaga o trabalho do João"):
+     -> Use action: "delete_trabalho" no manage_finance com cliente.
+   - DAR BAIXA / REGISTRAR PAGAMENTO DE TRABALHO ("o Lucas pagou 300 reais", "recebi o restante da Larissa"):
+     -> Use action: "record_payment" no manage_finance com cliente e valor_pago.
+   - AJUSTAR SALDO EM CAIXA ("meu saldo em caixa é 1500", "ajusta caixa para 2000", "zerar caixa"):
+     -> Use action: "adjust_cash" com target_cash.
+   - EXCLUIR LANÇAMENTO AVULSO DO FLUXO ("apaga a despesa do almoço de 50", "cancela a última despesa"):
+     -> Use action: "delete_by_criteria" ou "cancel_last".
+   - CRIAR TRABALHO (novo cliente, ensaio, foto, job):
      -> Use action "create_trabalho" no manage_finance.
-   - FLUXO (receita avulsa ou despesa avulsa):
+   - CRIAR FLUXO (receita ou despesa avulsa):
      -> Use action "create" no manage_finance.
-   - RESUMO COMPLETO EM TEMPO REAL:
-     -> Use action "summary" no manage_finance.
-   - REMOVER / CANCELAR LANÇAMENTO:
-     -> Use action "delete_by_criteria" ou "cancel_last".
-   - AJUSTAR SALDO:
-     -> Use action "adjust_cash".`;
+   - RESUMO:
+     -> Use action "summary" no manage_finance.`;
 
 const TOOLS = [
-  { type: 'function', function: { name: 'manage_agenda', description: 'Gerencia a agenda, compromissos e lembretes executivos do Adriano King. Permite agendar no Google Agenda, registrar lembretes para notificação no Telegram, listar compromissos e remover.', parameters: { type: 'object', properties: {
-    action: { type: 'string', enum: ['create_event', 'create_reminder', 'list_agenda', 'delete_agenda'], description: 'Ação a executar' },
-    titulo: { type: 'string', description: 'Título do compromisso ou o que lembrar (ex: "Ir para a academia", "Ensaio Fotográfico com Lucas", "Reunião com Parceiro", "Pagar fornecedor")' },
-    data: { type: 'string', description: 'Data no formato YYYY-MM-DD (ex: "2026-09-23")' },
-    hora_inicio: { type: 'string', description: 'Horário de início ou do aviso (HH:MM 24h, ex: "17:00", "09:30")' },
-    hora_fim: { type: 'string', description: 'Horário de término (HH:MM 24h, ex: "18:00", "16:00")' },
-    descricao: { type: 'string', description: 'Observações, notas, contato ou detalhes do evento' },
-    local: { type: 'string', description: 'Local do compromisso (ex: "Academia", "Estúdio Barueri", "Online", ou endereço)' },
+  { type: 'function', function: { name: 'manage_agenda', description: 'Gerencia a agenda, compromissos e lembretes executivos do Adriano King com poder total: agendar, alterar horário, excluir, limpar tudo e listar.', parameters: { type: 'object', properties: {
+    action: { type: 'string', enum: ['create_event', 'create_reminder', 'list_agenda', 'update_agenda', 'delete_agenda', 'clear_all_agenda'], description: 'Ação a executar' },
+    titulo: { type: 'string', description: 'Título do compromisso ou o que lembrar' },
+    novo_titulo: { type: 'string', description: 'Novo título para update_agenda' },
+    data: { type: 'string', description: 'Data no formato YYYY-MM-DD' },
+    nova_data: { type: 'string', description: 'Nova data no formato YYYY-MM-DD para update_agenda' },
+    hora_inicio: { type: 'string', description: 'Horário de início (HH:MM 24h)' },
+    nova_hora_inicio: { type: 'string', description: 'Novo horário de início para update_agenda' },
+    hora_fim: { type: 'string', description: 'Horário de término (HH:MM 24h)' },
+    nova_hora_fim: { type: 'string', description: 'Novo horário de término para update_agenda' },
+    descricao: { type: 'string', description: 'Observações ou detalhes do evento' },
+    local: { type: 'string', description: 'Local do compromisso' },
+    novo_local: { type: 'string', description: 'Novo local para update_agenda' },
     tipo: { type: 'string', enum: ['compromisso', 'lembrete', 'ensaio', 'reuniao'], description: 'Tipo do item' },
-    id: { type: 'string', description: 'ID do lembrete ou evento para remover em delete_agenda' }
+    id: { type: 'string', description: 'ID do item para remover' }
   }, required: ['action'] } } },
-  { type: 'function', function: { name: 'manage_finance', description: 'Gerencia finanças do King: trabalhos, lançamentos de fluxo, resumo real, remoção, ajuste de saldo e consultoria.', parameters: { type: 'object', properties: {
-    action: { type: 'string', enum: ['create', 'create_trabalho', 'cancel_last', 'delete_by_criteria', 'list_recent', 'adjust_cash', 'summary', 'advice'] },
-    cliente: { type: 'string', description: 'Nome do cliente do trabalho' },
-    servico: { type: 'string', description: 'Tipo de serviço (ex: Posicionamento de Imagem, Ensaio, Cobertura)' },
+  { type: 'function', function: { name: 'manage_finance', description: 'Gerencia finanças completas do King com poder total: criar trabalhos, fluxo, alterar/editar trabalhos, excluir trabalhos, zerar/limpar tudo, cancelar último, excluir por critério, dar baixa em pagamentos, ajustar saldo e consultar resumo.', parameters: { type: 'object', properties: {
+    action: { type: 'string', enum: ['create_trabalho', 'create', 'update_trabalho', 'delete_trabalho', 'record_payment', 'clear_all', 'cancel_last', 'delete_by_criteria', 'adjust_cash', 'list_recent', 'summary', 'advice'], description: 'Ação a executar' },
+    cliente: { type: 'string', description: 'Nome do cliente do trabalho (para criar, alterar ou excluir)' },
+    novo_cliente: { type: 'string', description: 'Novo nome do cliente para update_trabalho' },
+    servico: { type: 'string', description: 'Tipo de serviço' },
+    novo_servico: { type: 'string', description: 'Novo serviço para update_trabalho' },
     valor_total: { type: 'number', description: 'Valor total cobrado pelo trabalho' },
-    entrada: { type: 'number', description: 'Valor de entrada recebido agora (AV/sinal). 0 se não recebeu nada agora.' },
+    novo_valor: { type: 'number', description: 'Novo valor total para update_trabalho' },
+    novo_status: { type: 'string', enum: ['pendente', 'parcial', 'concluido'], description: 'Novo status para update_trabalho' },
+    nova_data: { type: 'string', description: 'Nova data para update_trabalho (YYYY-MM-DD)' },
+    entrada: { type: 'number', description: 'Valor de entrada recebido agora (AV/sinal)' },
+    valor_pago: { type: 'number', description: 'Valor recebido para record_payment' },
     data_prevista: { type: 'string', description: 'Data prevista para quitação (YYYY-MM-DD)' },
-    transactions: { type: 'array', items: { type: 'object', properties: {
-      type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
-      amount: { type: 'number' }, status: { type: 'string', enum: ['PAID', 'PENDING'] },
-      description: { type: 'string' }
-    }, required: ['type', 'amount', 'status', 'description'] } },
+    target_cash: { type: 'number', description: 'Saldo desejado em caixa para adjust_cash' },
     criteria: { type: 'object', properties: {
       amount: { type: 'number', description: 'Valor exato a procurar e deletar' },
       description_contains: { type: 'string', description: 'Texto parcial da descrição' },
       type: { type: 'string', enum: ['INCOME', 'EXPENSE', 'any'] }
     } },
-    target_cash: { type: 'number', description: 'Saldo desejado em caixa para adjust_cash' },
+    transactions: { type: 'array', items: { type: 'object', properties: {
+      type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
+      amount: { type: 'number' }, status: { type: 'string', enum: ['PAID', 'PENDING'] },
+      description: { type: 'string' }
+    }, required: ['type', 'amount', 'status', 'description'] } }
   }, required: ['action'] } } },
   { type: 'function', function: { name: 'check_system_errors', description: 'Verifica erros de páginas e health do sistema.', parameters: { type: 'object', properties: { detail: { type: 'boolean' } } } } },
   { type: 'function', function: { name: 'generate_invite_code', description: 'Gera código de registro KING-XXXXX.', parameters: { type: 'object', properties: { custom_code: { type: 'string' } }, required: ['custom_code'] } } }
@@ -430,6 +441,56 @@ try {
           } else {
             outMessage = `⚠️ Não encontrei o compromisso/lembrete informado para cancelar.`;
           }
+
+        // ── ALTERAR COMPROMISSO / LEMBRETE ──────────────────────────
+        } else if (args.action === 'update_agenda') {
+          const search = String(args.titulo || '').toLowerCase();
+          let item = (kingDb.lembretes || []).find(l => l && l.status !== 'cancelado' && (search ? String(l.titulo || '').toLowerCase().includes(search) : true));
+          if (!item) {
+            outMessage = `⚠️ Não encontrei o compromisso "${args.titulo}" para alterar.`;
+          } else {
+            const alteracoes = [];
+            if (args.novo_titulo) {
+              alteracoes.push(`Título: "${item.titulo}" ➔ "${args.novo_titulo}"`);
+              item.titulo = args.novo_titulo;
+            }
+            if (args.nova_data) {
+              alteracoes.push(`Data: ${item.data} ➔ ${args.nova_data}`);
+              item.data = args.nova_data;
+            }
+            if (args.nova_hora_inicio) {
+              alteracoes.push(`Horário: ${item.hora_inicio} ➔ ${args.nova_hora_inicio}`);
+              item.hora_inicio = args.nova_hora_inicio;
+            }
+            if (args.nova_hora_fim) {
+              item.hora_fim = args.nova_hora_fim;
+            }
+            if (args.novo_local) {
+              item.local = args.novo_local;
+            }
+            item.notificado = false;
+            item.notificado_30m = false;
+            item.notificado_15m = false;
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+            outMessage = `✏️ *Compromisso Alterado com Sucesso! — Agente King*\n\n` +
+              `📌 *${item.titulo}*\n` +
+              `🗓️ *Data:* ${item.data}\n` +
+              `🕒 *Horário:* ${item.hora_inicio}${item.hora_fim ? ' às ' + item.hora_fim : ''}\n` +
+              (item.local ? `📍 *Local:* ${item.local}\n` : '') +
+              `\n🔔 _Os alertas de 30 min e 15 min foram reprogramados para o novo horário!_`;
+          }
+
+        // ── LIMPAR TODA A AGENDA ────────────────────────────────────
+        } else if (args.action === 'clear_all_agenda') {
+          kingDb.lembretes = [];
+          await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+            profile_id: profileId,
+            data: kingDb
+          });
+          outMessage = `🧹 *Agenda Limpa com Sucesso! — Agente King*\n\nTodos os compromissos e lembretes foram removidos.`;
         }
 
       // ═══════════════════════════════════════════════════════════════════
@@ -517,6 +578,172 @@ try {
             outMessage = '⚠️ Não consegui registrar os valores. Tente novamente.';
           }
 
+        // ── CLEAR ALL (ZERAR TUDO COM PODER TOTAL) ───────────────────
+        } else if (args.action === 'clear_all' || args.action === 'zerar_tudo') {
+          try {
+            await ck.call(this, 'POST', '/api/finance/zerar-mes', {
+              profile_id: profileId,
+              bypass_password: true,
+              all: true
+            });
+          } catch (_) {}
+
+          const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+          let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+          if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+          kingDb.trabalhos = [];
+          kingDb.terceiros = [];
+          await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+            profile_id: profileId,
+            data: kingDb
+          });
+
+          session.lastCreatedTransactions = [];
+          const summary = await fetchRealSummary.call(this, profileId);
+
+          outMessage = `🧹 *Gestão Financeira Zerada com Sucesso! — Agente King*\n\n` +
+            `👑 *Adriano, executei a limpeza completa da sua gestão financeira:*\n` +
+            `• ✅ *Fluxo de Caixa:* Todos os lançamentos foram apagados\n` +
+            `• ✅ *Trabalhos:* Lista de trabalhos zerada\n` +
+            `• ✅ *Contas a Pagar/Terceiros:* Zeradas\n` +
+            `• ✅ *Saldo em Caixa:* Redefinido para ${fmt(0)}\n\n` +
+            `_Tudo limpo e pronto para novos lançamentos!_`;
+          summaryMessageToSend = buildSummaryMessage(summary, fmt);
+
+        // ── UPDATE TRABALHO (Alterar/Editar Qualquer Trabalho) ───────
+        } else if (args.action === 'update_trabalho') {
+          const clienteBusca = String(args.cliente || '').toLowerCase().trim();
+          const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+          let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+          if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+          const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+
+          const trab = trabalhos.find(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
+          if (!trab) {
+            outMessage = `⚠️ Não encontrei nenhum trabalho para o cliente "${args.cliente}".`;
+          } else {
+            const alteracoes = [];
+            if (args.novo_valor !== undefined && args.novo_valor > 0) {
+              alteracoes.push(`Valor: ${fmt(trab.valor)} ➔ ${fmt(args.novo_valor)}`);
+              trab.valor = Number(args.novo_valor);
+            }
+            if (args.novo_cliente) {
+              alteracoes.push(`Cliente: "${trab.cliente}" ➔ "${args.novo_cliente}"`);
+              trab.cliente = String(args.novo_cliente).trim();
+            }
+            if (args.novo_servico) {
+              alteracoes.push(`Serviço: "${trab.servico}" ➔ "${args.novo_servico}"`);
+              trab.servico = String(args.novo_servico).trim();
+            }
+            if (args.novo_status) {
+              alteracoes.push(`Status: ${trab.status} ➔ ${args.novo_status}`);
+              trab.status = String(args.novo_status).trim();
+            }
+            if (args.nova_data) {
+              alteracoes.push(`Data: ${trab.data} ➔ ${args.nova_data}`);
+              trab.data = String(args.nova_data).trim();
+            }
+
+            const totalPago = (trab.pagamentos || []).reduce((s, p) => s + (Number(p.valor) || 0), 0);
+            if (totalPago >= trab.valor && trab.valor > 0) {
+              trab.status = 'concluido';
+            } else if (totalPago > 0) {
+              trab.status = 'parcial';
+            }
+
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+
+            const summary = await fetchRealSummary.call(this, profileId);
+            outMessage = `✏️ *Trabalho Atualizado com Sucesso — Agente King*\n\n` +
+              `👤 *Cliente:* ${trab.cliente}\n` +
+              `📸 *Serviço:* ${trab.servico}\n` +
+              `💰 *Valor Atual:* ${fmt(trab.valor)}\n` +
+              `📊 *Alterações feitas:*\n• ` + alteracoes.join('\n• ');
+            summaryMessageToSend = buildSummaryMessage(summary, fmt);
+          }
+
+        // ── DELETE TRABALHO (Excluir Trabalho Específico) ────────────
+        } else if (args.action === 'delete_trabalho') {
+          const clienteBusca = String(args.cliente || '').toLowerCase().trim();
+          const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+          let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+          if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+          const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+
+          const idx = trabalhos.findIndex(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
+          if (idx === -1) {
+            outMessage = `⚠️ Não encontrei o trabalho de "${args.cliente}" para excluir.`;
+          } else {
+            const [removido] = trabalhos.splice(idx, 1);
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+            const summary = await fetchRealSummary.call(this, profileId);
+            outMessage = `🗑️ *Trabalho Excluído com Sucesso — Agente King*\n\n` +
+              `Removi o trabalho de *${removido.cliente}* (${fmt(removido.valor)} - ${removido.servico}).`;
+            summaryMessageToSend = buildSummaryMessage(summary, fmt);
+          }
+
+        // ── RECORD PAYMENT (Dar Baixa em Pagamento de Trabalho) ───────
+        } else if (args.action === 'record_payment') {
+          const clienteBusca = String(args.cliente || '').toLowerCase().trim();
+          const valorPago = Number(args.valor_pago || args.amount || 0);
+          if (valorPago <= 0) {
+            outMessage = '⚠️ Informe o valor recebido para dar baixa.';
+          } else {
+            const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+            let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+            if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+            const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+
+            const trab = trabalhos.find(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
+            if (!trab) {
+              outMessage = `⚠️ Não encontrei trabalho para o cliente "${args.cliente}".`;
+            } else {
+              if (!Array.isArray(trab.pagamentos)) trab.pagamentos = [];
+              const now = new Date();
+              const hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+              trab.pagamentos.push({ valor: valorPago, data: today, hora });
+
+              const totalPago = trab.pagamentos.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+              if (totalPago >= trab.valor) {
+                trab.status = 'concluido';
+              } else {
+                trab.status = 'parcial';
+              }
+
+              // Registrar entrada no fluxo de caixa
+              await ck.call(this, 'POST', '/api/finance/transactions', {
+                profile_id: profileId,
+                type: 'INCOME',
+                amount: valorPago,
+                status: 'PAID',
+                description: `Pagamento recebido: ${trab.cliente} (${trab.servico})`,
+                transaction_date: today
+              });
+
+              await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+                profile_id: profileId,
+                data: kingDb
+              });
+
+              const summary = await fetchRealSummary.call(this, profileId);
+              const falta = Math.max(0, trab.valor - totalPago);
+
+              outMessage = `💰 *Pagamento Registrado com Sucesso — Agente King*\n\n` +
+                `👤 *Cliente:* ${trab.cliente}\n` +
+                `💵 *Valor Recebido:* ${fmt(valorPago)}\n` +
+                `📈 *Total Pago Até Agora:* ${fmt(totalPago)} de ${fmt(trab.valor)}\n` +
+                `⏳ *Falta Receber:* ${fmt(falta)}\n` +
+                `📌 *Status do Trabalho:* ${trab.status === 'concluido' ? 'Concluído (Quitado) ✅' : 'Parcialmente Pago ⏳'}`;
+              summaryMessageToSend = buildSummaryMessage(summary, fmt);
+            }
+          }
+
         // ── CANCEL LAST ─────────────────────────────────────────────
         } else if (args.action === 'cancel_last') {
           let targetIds = (session.lastCreatedTransactions || []).map(t => t.id).filter(Boolean);
@@ -543,32 +770,64 @@ try {
         // ── DELETE BY CRITERIA ──────────────────────────────────────
         } else if (args.action === 'delete_by_criteria') {
           const crit = args.criteria || {};
-          const recent = await fetchRecentTransactions.call(this, 30);
-          let targets = recent.filter(t => {
-            const amountMatch = crit.amount ? Math.abs(Number(t.amount) - crit.amount) < 0.02 : true;
-            const descMatch = crit.description_contains
-              ? String(t.description || '').toLowerCase().includes(String(crit.description_contains).toLowerCase())
-              : true;
-            const typeMatch = (crit.type && crit.type !== 'any') ? t.type === crit.type : true;
-            return amountMatch && descMatch && typeMatch;
-          });
+          const isCancelAll = (!crit.amount || Number(crit.amount) === 0) && !crit.description_contains;
 
-          if (targets.length === 0) {
-            const listLines = recent.slice(0, 8).map((t, i) =>
-              `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} ${fmt(t.amount)} — _${t.description}_ (${t.status}) [ID ${t.id}]`
-            );
-            outMessage = `⚠️ Não encontrei ${fmt(crit.amount)} nos lançamentos recentes do Fluxo.\n\n📋 *Lançamentos recentes:*\n${listLines.join('\n')}`;
-          } else {
-            const deleted = [];
-            for (const t of targets.slice(0, 3)) {
-              const dr = await ck.call(this, 'DELETE', `/api/finance/transactions/${t.id}`);
-              if (dr.statusCode >= 200 && dr.statusCode < 300) deleted.push(t);
-            }
+          if (isCancelAll) {
+            // Se o usuário pediu para cancelar/limpar tudo sem especificar valor nem descrição:
+            try {
+              await ck.call(this, 'POST', '/api/finance/zerar-mes', {
+                profile_id: profileId,
+                bypass_password: true,
+                all: true
+              });
+            } catch (_) {}
+            const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+            let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+            if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+            kingDb.trabalhos = [];
+            kingDb.terceiros = [];
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
             session.lastCreatedTransactions = [];
             const summary = await fetchRealSummary.call(this, profileId);
-            const lines = deleted.map(t => `• ${fmt(t.amount)} — ${t.description}`);
-            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}`;
+            outMessage = `🧹 *Gestão Financeira Zerada com Sucesso! — Agente King*\n\n` +
+              `👑 *Adriano, executei a limpeza completa da sua gestão financeira:*\n` +
+              `• ✅ *Fluxo de Caixa:* Todos os lançamentos foram apagados\n` +
+              `• ✅ *Trabalhos:* Zerados\n` +
+              `• ✅ *Contas de Terceiros:* Zeradas\n` +
+              `• ✅ *Saldo em Caixa:* Zerado (${fmt(0)})\n\n` +
+              `_Tudo limpo e pronto para novos lançamentos!_`;
             summaryMessageToSend = buildSummaryMessage(summary, fmt);
+          } else {
+            const recent = await fetchRecentTransactions.call(this, 30);
+            let targets = recent.filter(t => {
+              const amountMatch = crit.amount ? Math.abs(Number(t.amount) - crit.amount) < 0.02 : true;
+              const descMatch = crit.description_contains
+                ? String(t.description || '').toLowerCase().includes(String(crit.description_contains).toLowerCase())
+                : true;
+              const typeMatch = (crit.type && crit.type !== 'any') ? t.type === crit.type : true;
+              return amountMatch && descMatch && typeMatch;
+            });
+
+            if (targets.length === 0) {
+              const listLines = recent.slice(0, 8).map((t, i) =>
+                `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} ${fmt(t.amount)} — _${t.description}_ (${t.status}) [ID ${t.id}]`
+              );
+              outMessage = `⚠️ Não encontrei ${fmt(crit.amount)} nos lançamentos recentes do Fluxo.\n\n📋 *Lançamentos recentes:*\n${listLines.join('\n')}`;
+            } else {
+              const deleted = [];
+              for (const t of targets.slice(0, 3)) {
+                const dr = await ck.call(this, 'DELETE', `/api/finance/transactions/${t.id}`);
+                if (dr.statusCode >= 200 && dr.statusCode < 300) deleted.push(t);
+              }
+              session.lastCreatedTransactions = [];
+              const summary = await fetchRealSummary.call(this, profileId);
+              const lines = deleted.map(t => `• ${fmt(t.amount)} — ${t.description}`);
+              outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}`;
+              summaryMessageToSend = buildSummaryMessage(summary, fmt);
+            }
           }
 
         // ── LIST RECENT ──────────────────────────────────────────────

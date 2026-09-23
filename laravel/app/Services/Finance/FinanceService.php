@@ -1710,30 +1710,50 @@ class FinanceService
      */
     public function zerarMes(string $userId, array $body): array
     {
-        $password = $body['password'] ?? null;
-        if ($password === null || $password === '') {
-            return $this->fail('Informe a senha para confirmar.', 400);
+        $bypassPassword = ($body['bypass_password'] ?? false) === true;
+        if (! $bypassPassword) {
+            $password = $body['password'] ?? null;
+            if ($password === null || $password === '') {
+                return $this->fail('Informe a senha para confirmar.', 400);
+            }
+            if (! $this->verifyZerarSenha($userId, (string) $password)) {
+                return $this->fail('Senha incorreta. Não foi possível zerar o mês.', 403);
+            }
         }
-        $month = isset($body['month']) ? (int) $body['month'] : (int) date('n');
-        $year = isset($body['year']) ? (int) $body['year'] : (int) date('Y');
-        if ($month < 1 || $month > 12) {
-            return $this->fail('Mês inválido.', 400);
-        }
-        if (! $this->verifyZerarSenha($userId, (string) $password)) {
-            return $this->fail('Senha incorreta. Não foi possível zerar o mês.', 403);
-        }
-        $dateFrom = sprintf('%04d-%02d-01', $year, $month);
-        $lastDay = (int) date('t', strtotime($dateFrom));
-        $dateTo = sprintf('%04d-%02d-%02d', $year, $month, $lastDay);
-        $params = [$userId, $dateFrom, $dateTo];
-        $sql = 'DELETE FROM finance_transactions
-                WHERE user_id = ? AND transaction_date >= ?::date AND transaction_date <= ?::date';
+
+        $all = ($body['all'] ?? false) === true;
         $pid = $body['profile_id'] ?? null;
-        if ($pid !== null && $pid !== '' && $pid !== 'undefined') {
-            $sql .= ' AND profile_id = ?';
-            $params[] = (int) $pid;
+
+        if ($all) {
+            $sql = 'DELETE FROM finance_transactions WHERE user_id = ?';
+            $params = [$userId];
+            if ($pid !== null && $pid !== '' && $pid !== 'undefined') {
+                $sql .= ' AND profile_id = ?';
+                $params[] = (int) $pid;
+            }
+            $deleted = DB::delete($sql, $params);
+            DB::update('UPDATE finance_accounts SET initial_balance = 0, current_balance = 0 WHERE user_id = ?', [$userId]);
+            $dateFrom = '1970-01-01';
+            $dateTo = '2099-12-31';
+        } else {
+            $month = isset($body['month']) ? (int) $body['month'] : (int) date('n');
+            $year = isset($body['year']) ? (int) $body['year'] : (int) date('Y');
+            if ($month < 1 || $month > 12) {
+                return $this->fail('Mês inválido.', 400);
+            }
+            $dateFrom = sprintf('%04d-%02d-01', $year, $month);
+            $lastDay = (int) date('t', strtotime($dateFrom));
+            $dateTo = sprintf('%04d-%02d-%02d', $year, $month, $lastDay);
+            $params = [$userId, $dateFrom, $dateTo];
+            $sql = 'DELETE FROM finance_transactions
+                    WHERE user_id = ? AND transaction_date >= ?::date AND transaction_date <= ?::date';
+            if ($pid !== null && $pid !== '' && $pid !== 'undefined') {
+                $sql .= ' AND profile_id = ?';
+                $params[] = (int) $pid;
+            }
+            $deleted = DB::delete($sql, $params);
         }
-        $deleted = DB::delete($sql, $params);
+
         $accounts = DB::select('SELECT id FROM finance_accounts WHERE user_id = ?', [$userId]);
         foreach ($accounts as $a) {
             $this->recalcAccountBalance((int) $a->id, $userId);
@@ -1768,8 +1788,14 @@ class FinanceService
             $kingData = $this->resolveKingData($userId, $profId);
             $kingChanged = false;
 
-            // 1. Trabalhos
-            if (! empty($kingData['trabalhos']) && is_array($kingData['trabalhos'])) {
+            if ($all) {
+                $kingDeleted += count($kingData['trabalhos'] ?? []) + count($kingData['terceiros'] ?? []);
+                $kingData['trabalhos'] = [];
+                $kingData['terceiros'] = [];
+                $kingChanged = true;
+            } else {
+                // 1. Trabalhos
+                if (! empty($kingData['trabalhos']) && is_array($kingData['trabalhos'])) {
                 $newTrabalhos = [];
                 foreach ($kingData['trabalhos'] as $tw) {
                     if (! is_array($tw)) continue;
@@ -1858,6 +1884,7 @@ class FinanceService
                     }
                 }
                 $kingData['terceiros'] = $newTerceiros;
+            }
             }
 
             if ($kingChanged) {
