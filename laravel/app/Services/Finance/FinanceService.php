@@ -564,6 +564,10 @@ class FinanceService
             'totalExpensePaid' => $totalExpensePaid,
             'totalRecebido' => $totalIncomePaid,
             'totalPago' => $totalExpensePaid,
+            'incomeFromTransactions' => $incomePaid,
+            'expenseFromTransactions' => $expensePaid,
+            'trabalhosPaid' => $trabalhosRecebidosMes,
+            'terceirosPaid' => $terceirosPagoMes,
             'pendingExpense' => $totalExpensePending,
             'pendingExpensePreviousMonths' => $pendingExpensePreviousMonths,
             'pendingIncome' => $totalIncomePending,
@@ -571,7 +575,7 @@ class FinanceService
             'pendenciasPagar' => $totalExpensePending,
             'accountBalance' => $saldo,
             'saldoDisponivel' => $saldo,
-            'monthlyBalance' => $totalIncome - $totalExpense,
+            'monthlyBalance' => $totalIncomePaid - $totalExpensePaid,
             'netProfit' => $totalIncomePaid - $totalExpensePaid,
             'balanceVariation' => 0,
             'topCategories' => $top,
@@ -1734,9 +1738,140 @@ class FinanceService
             $this->recalcAccountBalance((int) $a->id, $userId);
         }
 
+        // Também limpa dados do King Finance (trabalhos, pagamentos, terceiros do mês)
+        $profilesToClean = [];
+        if ($pid !== null && $pid !== '' && $pid !== 'undefined') {
+            $profilesToClean[] = (int) $pid;
+        } else {
+            $profilesToClean[] = null;
+            $userProfiles = DB::select('SELECT id FROM finance_profiles WHERE user_id = ?', [$userId]);
+            foreach ($userProfiles as $up) {
+                $profId = (int) $up->id;
+                if (! in_array($profId, $profilesToClean, true)) {
+                    $profilesToClean[] = $profId;
+                }
+            }
+            if (Schema::hasTable('finance_king_sync')) {
+                $syncProfiles = DB::select('SELECT DISTINCT profile_id FROM finance_king_sync WHERE user_id = ?', [$userId]);
+                foreach ($syncProfiles as $sp) {
+                    $spId = ($sp->profile_id !== null && $sp->profile_id !== '') ? (int) $sp->profile_id : null;
+                    if (! in_array($spId, $profilesToClean, true)) {
+                        $profilesToClean[] = $spId;
+                    }
+                }
+            }
+        }
+
+        $kingDeleted = 0;
+        foreach ($profilesToClean as $profId) {
+            $kingData = $this->resolveKingData($userId, $profId);
+            $kingChanged = false;
+
+            // 1. Trabalhos
+            if (! empty($kingData['trabalhos']) && is_array($kingData['trabalhos'])) {
+                $newTrabalhos = [];
+                foreach ($kingData['trabalhos'] as $tw) {
+                    if (! is_array($tw)) continue;
+                    $twData = substr((string) ($tw['data'] ?? ''), 0, 10);
+                    $twValor = (float) ($tw['valor'] ?? 0);
+                    $isSameMonth = ($twData >= $dateFrom && $twData <= $dateTo);
+
+                    $pagamentosRestantes = [];
+                    $pagamentosRemovidos = 0;
+                    foreach ($tw['pagamentos'] ?? [] as $pg) {
+                        if (! is_array($pg)) continue;
+                        $dtPg = substr((string) ($pg['data'] ?? $pg['dataPagamento'] ?? $twData), 0, 10);
+                        if ($dtPg >= $dateFrom && $dtPg <= $dateTo) {
+                            $pagamentosRemovidos++;
+                        } else {
+                            $pagamentosRestantes[] = $pg;
+                        }
+                    }
+
+                    if ($pagamentosRemovidos > 0) {
+                        $kingChanged = true;
+                        $kingDeleted += $pagamentosRemovidos;
+                    }
+
+                    if ($isSameMonth && empty($pagamentosRestantes)) {
+                        $kingChanged = true;
+                        $kingDeleted++;
+                        continue;
+                    }
+
+                    $tw['pagamentos'] = $pagamentosRestantes;
+                    $totalPagoRestante = array_sum(array_map(fn($p) => (float) ($p['valor'] ?? 0), $pagamentosRestantes));
+                    if ($totalPagoRestante >= $twValor && $twValor > 0) {
+                        $tw['status'] = 'concluido';
+                    } elseif ($totalPagoRestante > 0) {
+                        $tw['status'] = 'parcial';
+                    } else {
+                        $tw['status'] = 'pendente';
+                    }
+                    $newTrabalhos[] = $tw;
+                }
+                $kingData['trabalhos'] = $newTrabalhos;
+            }
+
+            // 2. Terceiros
+            if (! empty($kingData['terceiros']) && is_array($kingData['terceiros'])) {
+                $newTerceiros = [];
+                foreach ($kingData['terceiros'] as $p) {
+                    if (! is_array($p)) continue;
+                    $newContas = [];
+                    foreach ($p['contas'] ?? [] as $c) {
+                        if (! is_array($c)) continue;
+                        $cValor = (float) ($c['valor'] ?? 0);
+                        $venc = substr((string) ($c['dataVencimento'] ?? ''), 0, 10);
+                        $isVencSameMonth = ($venc >= $dateFrom && $venc <= $dateTo);
+
+                        $pagamentosRestantes = [];
+                        $pagamentosRemovidos = 0;
+                        foreach ($c['pagamentos'] ?? [] as $pg) {
+                            if (! is_array($pg)) continue;
+                            $dtPg = substr((string) ($pg['data'] ?? $venc), 0, 10);
+                            if ($dtPg >= $dateFrom && $dtPg <= $dateTo) {
+                                $pagamentosRemovidos++;
+                            } else {
+                                $pagamentosRestantes[] = $pg;
+                            }
+                        }
+
+                        if ($pagamentosRemovidos > 0) {
+                            $kingChanged = true;
+                            $kingDeleted += $pagamentosRemovidos;
+                        }
+
+                        if ($isVencSameMonth && empty($pagamentosRestantes)) {
+                            $kingChanged = true;
+                            $kingDeleted++;
+                            continue;
+                        }
+
+                        $c['pagamentos'] = $pagamentosRestantes;
+                        $newContas[] = $c;
+                    }
+                    $p['contas'] = $newContas;
+                    if (! empty($p['contas'])) {
+                        $newTerceiros[] = $p;
+                    }
+                }
+                $kingData['terceiros'] = $newTerceiros;
+            }
+
+            if ($kingChanged) {
+                $this->saveKingData($userId, [
+                    'profile_id' => $profId !== null ? (string) $profId : null,
+                    'data' => $kingData,
+                ]);
+            }
+        }
+
+        $totalRemovidos = $deleted + $kingDeleted;
+
         return $this->ok(
-            ['deleted' => $deleted],
-            "Mês zerado. {$deleted} transação(ões) removida(s)."
+            ['deleted' => $totalRemovidos, 'transactionsDeleted' => $deleted, 'kingDeleted' => $kingDeleted],
+            "Mês zerado com sucesso. {$totalRemovidos} lançamento(s) removido(s)."
         );
     }
 

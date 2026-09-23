@@ -362,14 +362,15 @@ window.initFinancePane = async function () {
                 if (restante > 0) totalTerceirosMesesAnteriores += restante;
             });
         });
-        const receitasFluxo = Number(data.totalIncome) || 0;
-        const receitas = receitasFluxo + totalRecebidoTrabalhosEsteMes + totalFaltaReceberTrabalhos;
+        const receitasFluxo = Number(data.incomeFromTransactions !== undefined ? data.incomeFromTransactions : 0);
+        const totalRecebido = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid) || (receitasFluxo + totalRecebidoTrabalhosEsteMes);
+        const receitas = totalRecebido + totalFaltaReceberTrabalhos + (Number(data.pendingIncome) || 0);
+        const despesasPagas = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago) || ((Number(data.expenseFromTransactions) || 0) + totalTerceirosEsteMes);
         const despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
-        const saldo = receitas - despesas;
+        const saldo = totalRecebido - despesasPagas;
         var faltaPagarEsteMes = (Number(data.pendingExpense) || 0) + totalTerceirosEsteMes;
         const faltaReceberGeral = (Number(data.pendingIncome) || 0) + totalFaltaReceberTrabalhos;
-        const totalRecebido = (receitasFluxo - (Number(data.pendingIncome) || 0)) + totalRecebidoTrabalhosEsteMes;
-        const patrimonioInicial = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, totalRecebido - despesas);
+        const patrimonioInicial = Number(data.accountBalance !== undefined ? data.accountBalance : saldo);
         window._kingFinanceDb = kingDb;
         window._kingFinanceCards = cards;
         window._kingFinanceStats = { receitas, despesas, totalDividas, totalTrabalhos, saldo, scoreSerasaPct, scoreSerasaLabel, totalTerceirosGeral, totalPagoTerceiros, scoreTerceirosPct, scoreTerceirosLabel, totalFaltaPagarTerceiros, totalRecebidoTrabalhos, totalRecebidoTrabalhosEsteMes, totalFaltaReceberTrabalhos, faltaReceberGeral, totalRecebido, patrimonio: patrimonioInicial };
@@ -3280,17 +3281,19 @@ function _financeTrabalhosTotals(kingDb) {
             }
             var trab = typeof window._financeTrabalhosTotals === 'function' ? window._financeTrabalhosTotals(window._kingFinanceDb || {}) : { totalRecebido: 0, totalFalta: 0 };
             var recebidoTrabalhosEsteMes = typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, currentYear, currentMonth + 1) : 0;
-            var receitasFluxo = Number(data.totalIncome) || 0;
-            var receitaFluxoPaga = Number(data.totalRecebido || data.totalIncomePaid) || (receitasFluxo - (Number(data.pendingIncome) || 0));
-            var receitas = receitasFluxo + trab.totalRecebido + trab.totalFalta;
-            var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
-            var receitasDet = data.receitasDetalhadas || {};
-            var totalApi = (receitasDet.itens && receitasDet.itens.length > 0) ? (Number(receitasDet.total) || receitasDet.itens.reduce(function (s, x) { return s + (parseFloat(x.valor) || 0); }, 0)) : 0;
-            var totalLocal = receitaFluxoPaga + recebidoTrabalhosEsteMes;
-            var totalRecebido = totalApi > 0 ? Math.max(totalApi, totalLocal) : totalLocal;
+            var receitasFluxo = Number(data.incomeFromTransactions !== undefined ? data.incomeFromTransactions : (Number(data.totalIncome) || 0));
+            var totalRecebido = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid);
+            if (isNaN(totalRecebido) || totalRecebido === null) {
+                totalRecebido = receitasFluxo + recebidoTrabalhosEsteMes;
+            }
+            var receitas = totalRecebido + trab.totalFalta + (Number(data.pendingIncome) || 0);
+            var despesas = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago);
+            if (isNaN(despesas) || despesas === null) {
+                despesas = (Number(data.expenseFromTransactions || 0)) + totalTerceirosEsteMes;
+            }
             var balance = totalRecebido - despesas;
             var faltaReceberGeral = (Number(data.pendingIncome) || 0) + trab.totalFalta;
-            var patrimonioExibir = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
+            var patrimonioExibir = Number(data.accountBalance !== undefined ? data.accountBalance : balance);
             const patrimonioEl = document.getElementById('finance-patrimonio-total');
             if (patrimonioEl) patrimonioEl.textContent = 'R$ ' + formatCurrency(patrimonioExibir);
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
@@ -4158,10 +4161,13 @@ window.changeFinancePeriod = function (period) {
             const data = responseData.data || responseData;
 
             var trabP = typeof window._financeTrabalhosTotals === 'function' ? window._financeTrabalhosTotals(window._kingFinanceDb || {}) : { totalRecebido: 0, totalFalta: 0 };
-            var totalRecebidoP = (Number(data.totalIncomePaid || data.totalRecebido) || ((Number(data.totalIncome) || 0) - (Number(data.pendingIncome) || 0))) + trabP.totalRecebido;
-            var despesasP = Number(data.totalExpense) || 0;
+            var totalRecebidoP = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid);
+            if (isNaN(totalRecebidoP) || totalRecebidoP === null) {
+                totalRecebidoP = (Number(data.incomeFromTransactions || 0)) + (typeof trabP.totalRecebido === 'number' ? trabP.totalRecebido : 0);
+            }
+            var despesasP = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago) || (Number(data.totalExpense) || 0);
             var balanceP = totalRecebidoP - despesasP;
-            var patrimonioP = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balanceP);
+            var patrimonioP = Number(data.accountBalance !== undefined ? data.accountBalance : balanceP);
 
             // Atualizar card de Patrimônio Líquido Total e Saldos
             const netWorthEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
@@ -4274,12 +4280,18 @@ window.selectFinanceMonth = function (monthIndex) {
             }
             var trabMes = typeof window._financeTrabalhosTotals === 'function' ? window._financeTrabalhosTotals(window._kingFinanceDb || {}) : { totalRecebido: 0, totalFalta: 0 };
             var recebidoTrabalhosEsteMesSel = typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, window.currentFinanceYear, monthIndex + 1) : 0;
-            var receitasFluxoMes = Number(data.totalIncome) || 0;
-            var totalRecebidoMes = (receitasFluxoMes - (Number(data.pendingIncome) || 0)) + recebidoTrabalhosEsteMesSel;
-            var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
+            var receitasFluxoMes = Number(data.incomeFromTransactions !== undefined ? data.incomeFromTransactions : (Number(data.totalIncome) || 0));
+            var totalRecebidoMes = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid);
+            if (isNaN(totalRecebidoMes) || totalRecebidoMes === null) {
+                totalRecebidoMes = receitasFluxoMes + recebidoTrabalhosEsteMesSel;
+            }
+            var despesas = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago);
+            if (isNaN(despesas) || despesas === null) {
+                despesas = (Number(data.expenseFromTransactions || 0)) + totalTerceirosEsteMes;
+            }
             var balance = totalRecebidoMes - despesas;
             var faltaReceberGeralMes = (Number(data.pendingIncome) || 0) + trabMes.totalFalta;
-            var patrimonioMes = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
+            var patrimonioMes = Number(data.accountBalance !== undefined ? data.accountBalance : balance);
 
             const netWorthEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
             if (netWorthEl) netWorthEl.textContent = `R$ ${formatCurrency(patrimonioMes)}`;
@@ -4381,12 +4393,18 @@ window.changeFinanceMonth = function (direction) {
             }
             var trabBtn = typeof window._financeTrabalhosTotals === 'function' ? window._financeTrabalhosTotals(window._kingFinanceDb || {}) : { totalRecebido: 0, totalFalta: 0 };
             var recebidoTrabalhosEsteMes = typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, window.currentFinanceYear, window.currentFinanceMonth + 1) : 0;
-            var receitasFluxoBtn = Number(data.totalIncome) || 0;
-            var totalRecebidoBtn = (receitasFluxoBtn - (Number(data.pendingIncome) || 0)) + recebidoTrabalhosEsteMes;
-            var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
+            var receitasFluxoBtn = Number(data.incomeFromTransactions !== undefined ? data.incomeFromTransactions : (Number(data.totalIncome) || 0));
+            var totalRecebidoBtn = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid);
+            if (isNaN(totalRecebidoBtn) || totalRecebidoBtn === null) {
+                totalRecebidoBtn = receitasFluxoBtn + recebidoTrabalhosEsteMes;
+            }
+            var despesas = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago);
+            if (isNaN(despesas) || despesas === null) {
+                despesas = (Number(data.expenseFromTransactions || 0)) + totalTerceirosEsteMes;
+            }
             var balance = totalRecebidoBtn - despesas;
             var faltaReceberGeralBtn = (Number(data.pendingIncome) || 0) + trabBtn.totalFalta;
-            var patrimonioBtn = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
+            var patrimonioBtn = Number(data.accountBalance !== undefined ? data.accountBalance : balance);
 
             // Atualizar Patrimônio e Saldo Disponível em Conta
             const patrimonioEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
@@ -6727,11 +6745,10 @@ async function saveFinanceTransaction(event, type) {
                     if (dashboardResponse.ok) {
                         const dashboardData = await dashboardResponse.json();
                         const data = dashboardData.data || dashboardData;
-                        const recebidoTrabMes = typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, y, m + 1) : 0;
-                        const totalRecebidoApos = (Number(data.totalIncome) || 0) - (Number(data.pendingIncome) || 0) + recebidoTrabMes;
-                        const despesasApos = Number(data.totalExpense) || 0;
+                        const totalRecebidoApos = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid) || ((Number(data.incomeFromTransactions || 0)) + (typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, y, m + 1) : 0));
+                        const despesasApos = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago) || (Number(data.totalExpense) || 0);
                         const balance = totalRecebidoApos - despesasApos;
-                        const patrimonioApos = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
+                        const patrimonioApos = Number(data.accountBalance !== undefined ? data.accountBalance : balance);
                         const patrimonioEl = document.getElementById('finance-patrimonio-total');
                         if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(patrimonioApos)}`;
                         const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
@@ -7020,11 +7037,10 @@ async function updateFinanceTransaction(event, id, type) {
                     if (dashboardResponse.ok) {
                         const dashboardData = await dashboardResponse.json();
                         const data = dashboardData.data || dashboardData;
-                        const recebidoTrabMesUpd = typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, y, m + 1) : 0;
-                        const totalRecebidoAposUpd = (Number(data.totalIncome) || 0) - (Number(data.pendingIncome) || 0) + recebidoTrabMesUpd;
-                        const despesasAposUpd = Number(data.totalExpense) || 0;
+                        const totalRecebidoAposUpd = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid) || ((Number(data.incomeFromTransactions || 0)) + (typeof window._kingFinanceRecebidoTrabalhosNoMes === 'function' ? window._kingFinanceRecebidoTrabalhosNoMes(window._kingFinanceDb || {}, y, m + 1) : 0));
+                        const despesasAposUpd = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago) || (Number(data.totalExpense) || 0);
                         const balanceUpd = totalRecebidoAposUpd - despesasAposUpd;
-                        const patrimonioUpd = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balanceUpd);
+                        const patrimonioUpd = Number(data.accountBalance !== undefined ? data.accountBalance : balanceUpd);
                         const patrimonioEl = document.getElementById('finance-patrimonio-total');
                         if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(patrimonioUpd)}`;
                         const accountBalanceMainEl = document.getElementById('finance-account-balance-main');

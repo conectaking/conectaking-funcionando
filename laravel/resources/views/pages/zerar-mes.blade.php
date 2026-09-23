@@ -12,7 +12,12 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-eraser"></i> Gestão do mês</h1>
-            <a href="/dashboard#finance" class="back"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-danger" id="btn-zerar-mes-todo" title="Zerar todos os lançamentos e trabalhos deste mês">
+                    <i class="fas fa-trash-alt"></i> Zerar todo o mês
+                </button>
+                <a href="/dashboard#finance" class="back"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+            </div>
         </header>
 
         <div class="month-bar">
@@ -48,7 +53,32 @@
         <div id="empty" class="empty card ck-hidden">
             <i class="fas fa-inbox"></i>
             <p>Nenhum lançamento neste mês.</p>
-            <a href="/dashboard#finance" class="btn btn-outline ck-zm-9c9cee">Voltar ao painel</a>
+            <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-danger" id="btn-zerar-mes-empty" title="Garantir que o mês está completamente zerado">
+                    <i class="fas fa-trash-alt"></i> Forçar zerar este mês
+                </button>
+                <a href="/dashboard#finance" class="btn btn-outline">Voltar ao painel</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmação de Zerar Mês -->
+    <div id="modal-zerar" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--card); border: 1px solid rgba(239,68,68,0.4); border-radius: 20px; max-width: 440px; width: 100%; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+            <h3 style="margin: 0 0 10px 0; color: #f1f5f9; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Confirmar Zerar Mês
+            </h3>
+            <p style="color: var(--text2); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">
+                Esta ação apagará <strong>todos os lançamentos, trabalhos e receitas</strong> do mês selecionado. Esta operação não pode ser desfeita.
+            </p>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text2); font-size: 0.85rem; margin-bottom: 6px; font-weight: 600;">Digite sua senha (padrão: 1212):</label>
+                <input type="password" id="input-senha-zerar" placeholder="1212" style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text); font-size: 1rem;">
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button type="button" class="btn btn-outline" id="btn-cancelar-zerar" style="flex: 1; justify-content: center;">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btn-confirmar-zerar" style="flex: 1; justify-content: center;">Confirmar e Zerar</button>
+            </div>
         </div>
     </div>
 </body>
