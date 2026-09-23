@@ -71,14 +71,21 @@ class FinanceController extends Controller
     public function dashboard(Request $request)
     {
         $pid = $request->query('profile_id');
-        $r = $this->finance->dashboard(
-            (string) $request->attributes->get('auth_user_id'),
-            $request->query('dateFrom') ? (string) $request->query('dateFrom') : null,
-            $request->query('dateTo') ? (string) $request->query('dateTo') : null,
-            ($pid !== null && $pid !== '' && $pid !== 'undefined') ? (int) $pid : null
-        );
+        $userId = (string) $request->attributes->get('auth_user_id');
+        $dateFrom = $request->query('dateFrom') ? (string) $request->query('dateFrom') : null;
+        $dateTo = $request->query('dateTo') ? (string) $request->query('dateTo') : null;
+        $profileId = ($pid !== null && $pid !== '' && $pid !== 'undefined') ? (int) $pid : null;
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        $r = $this->finance->dashboard($userId, $dateFrom, $dateTo, $profileId);
+
+        @file_put_contents(storage_path('logs/debug_finance.log'), sprintf("[%s] [DASHBOARD-DEBUG] userId=%s dateFrom=%s dateTo=%s profileId=%s -> accountBalance=%s status=%s\n",
+            date('Y-m-d H:i:s'), $userId, $dateFrom, $dateTo, var_export($profileId, true),
+            $r['body']['data']['accountBalance'] ?? 'none', $r['status']
+        ), FILE_APPEND);
+
+        return response()->json($r['body'], $r['status'])
+            ->header('X-Conecta-Engine', 'laravel')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
     public function cards(Request $request)
@@ -204,12 +211,18 @@ class FinanceController extends Controller
     public function kingData(Request $request)
     {
         $pid = $request->query('profile_id');
-        $r = $this->finance->kingData(
-            (string) $request->attributes->get('auth_user_id'),
-            ($pid !== null && $pid !== '' && $pid !== 'undefined') ? (int) $pid : null
-        );
+        $userId = (string) $request->attributes->get('auth_user_id');
+        $profileId = ($pid !== null && $pid !== '' && $pid !== 'undefined') ? (int) $pid : null;
+        $r = $this->finance->kingData($userId, $profileId);
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        @file_put_contents(storage_path('logs/debug_finance.log'), sprintf("[%s] [KINGDATA-DEBUG] userId=%s profileId=%s -> trabalhos=%d\n",
+            date('Y-m-d H:i:s'), $userId, var_export($profileId, true),
+            count($r['body']['data']['trabalhos'] ?? [])
+        ), FILE_APPEND);
+
+        return response()->json($r['body'], $r['status'])
+            ->header('X-Conecta-Engine', 'laravel')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
     public function saveKingData(Request $request)

@@ -4156,10 +4156,18 @@ window.changeFinancePeriod = function (period) {
         .then(responseData => {
             const data = responseData.data || responseData;
 
-            // Atualizar card de Patrimônio Líquido Total
-            const netWorthEl = document.querySelector('.finance-card-premium h3');
+            // Atualizar card de Patrimônio Líquido Total e Saldos
+            const netWorthEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
             if (netWorthEl) {
                 netWorthEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+            }
+            const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
+            if (accountBalanceMainEl) {
+                accountBalanceMainEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+            }
+            const accountBalanceEl = document.getElementById('finance-account-balance');
+            if (accountBalanceEl) {
+                accountBalanceEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
             }
         })
         .catch(err => console.error('Erro ao atualizar período:', err));
@@ -4266,7 +4274,7 @@ window.selectFinanceMonth = function (monthIndex) {
             var faltaReceberGeralMes = (Number(data.pendingIncome) || 0) + trabMes.totalFalta;
             var patrimonioMes = Number(data.accountBalance) || Number(data.totalBalance) || 0;
 
-            const netWorthEl = document.querySelector('.finance-card-premium h3');
+            const netWorthEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
             if (netWorthEl) netWorthEl.textContent = `R$ ${formatCurrency(patrimonioMes)}`;
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
             if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioMes)}`;
@@ -4373,7 +4381,11 @@ window.changeFinanceMonth = function (direction) {
             var faltaReceberGeralBtn = (Number(data.pendingIncome) || 0) + trabBtn.totalFalta;
             var patrimonioBtn = Number(data.accountBalance) || Number(data.totalBalance) || 0;
 
-            // Atualizar Saldo Disponível em Conta (inclui entradas de trabalhos)
+            // Atualizar Patrimônio e Saldo Disponível em Conta
+            const patrimonioEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
+            if (patrimonioEl) {
+                patrimonioEl.textContent = `R$ ${formatCurrency(patrimonioBtn)}`;
+            }
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
             if (accountBalanceMainEl) {
                 accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioBtn)}`;
