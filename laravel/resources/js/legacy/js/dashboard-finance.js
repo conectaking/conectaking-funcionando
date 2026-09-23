@@ -369,9 +369,10 @@ window.initFinancePane = async function () {
         var faltaPagarEsteMes = (Number(data.pendingExpense) || 0) + totalTerceirosEsteMes;
         const faltaReceberGeral = (Number(data.pendingIncome) || 0) + totalFaltaReceberTrabalhos;
         const totalRecebido = (receitasFluxo - (Number(data.pendingIncome) || 0)) + totalRecebidoTrabalhosEsteMes;
+        const patrimonioInicial = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, totalRecebido - despesas);
         window._kingFinanceDb = kingDb;
         window._kingFinanceCards = cards;
-        window._kingFinanceStats = { receitas, despesas, totalDividas, totalTrabalhos, saldo, scoreSerasaPct, scoreSerasaLabel, totalTerceirosGeral, totalPagoTerceiros, scoreTerceirosPct, scoreTerceirosLabel, totalFaltaPagarTerceiros, totalRecebidoTrabalhos, totalRecebidoTrabalhosEsteMes, totalFaltaReceberTrabalhos, faltaReceberGeral, totalRecebido };
+        window._kingFinanceStats = { receitas, despesas, totalDividas, totalTrabalhos, saldo, scoreSerasaPct, scoreSerasaLabel, totalTerceirosGeral, totalPagoTerceiros, scoreTerceirosPct, scoreTerceirosLabel, totalFaltaPagarTerceiros, totalRecebidoTrabalhos, totalRecebidoTrabalhosEsteMes, totalFaltaReceberTrabalhos, faltaReceberGeral, totalRecebido, patrimonio: patrimonioInicial };
         // Persistir em memória + servidor (sem espelhar dívidas/valores no localStorage)
         window._kingFinancePersist = function (db) {
             var d = db || window._kingFinanceDb;
@@ -586,7 +587,7 @@ window.initFinancePane = async function () {
                     <div>
                         <p style="color: var(--finance-text-secondary); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Patrimônio (dinheiro em caixa)</p>
                         <p style="color: var(--finance-text-secondary); font-size: 0.7rem; margin-bottom: 8px;">Dinheiro disponível, todos os meses (n\u00e3o gasto)</p>
-                        <h3 id="finance-patrimonio-total" style="font-size: 2.5rem; font-weight: 700; color: var(--finance-text-primary); margin-bottom: 8px;">R$ ${formatCurrency(Number(data.accountBalance) || Number(data.totalBalance) || 0)}</h3>
+                        <h3 id="finance-patrimonio-total" style="font-size: 2.5rem; font-weight: 700; color: var(--finance-text-primary); margin-bottom: 8px;">R$ ${formatCurrency(patrimonioInicial)}</h3>
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
                             ${data.balanceVariation !== undefined ? `
                             <span style="display: flex; align-items: center; color: ${data.balanceVariation >= 0 ? 'var(--finance-emerald)' : 'var(--finance-neon-red)'}; font-size: 0.875rem; font-weight: 700;">
@@ -637,7 +638,7 @@ window.initFinancePane = async function () {
                         <span style="color: var(--finance-text-secondary); font-weight: 500; font-size: 0.875rem;">Saldo Total</span>
                     </div>
                     <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0;">
-                        <h4 id="finance-account-balance-main" style="font-size: 1.75rem; font-weight: 700; color: var(--finance-text-primary); margin: 0;">R$ ${formatCurrency(Number(data.accountBalance) || Number(data.totalBalance) || 0)}</h4>
+                        <h4 id="finance-account-balance-main" style="font-size: 1.75rem; font-weight: 700; color: var(--finance-text-primary); margin: 0;">R$ ${formatCurrency(patrimonioInicial)}</h4>
                         <span style="font-size: 0.75rem; color: var(--finance-text-secondary); white-space: nowrap; overflow: visible;">Conta + Poupança</span>
                     </div>
                 </div>
@@ -751,7 +752,7 @@ window.initFinancePane = async function () {
                         </div>
                         <p style="color: var(--finance-text-secondary); font-size: 0.875rem; margin: 0; font-weight: 500;">Saldo disponível</p>
                     </div>
-                    <h3 id="finance-account-balance" style="color: var(--finance-neon-blue); font-size: 1.5rem; font-weight: 700; margin: 0;">R$ ${formatCurrency(Number(data.accountBalance || data.totalBalance || data.saldoDisponivel) || 0)}</h3>
+                    <h3 id="finance-account-balance" style="color: var(--finance-neon-blue); font-size: 1.5rem; font-weight: 700; margin: 0;">R$ ${formatCurrency(patrimonioInicial)}</h3>
                 </div>
                 
                 <!-- Total recebido -->
@@ -3289,7 +3290,7 @@ function _financeTrabalhosTotals(kingDb) {
             var totalRecebido = totalApi > 0 ? Math.max(totalApi, totalLocal) : totalLocal;
             var balance = totalRecebido - despesas;
             var faltaReceberGeral = (Number(data.pendingIncome) || 0) + trab.totalFalta;
-            var patrimonioExibir = Number(data.accountBalance) || Number(data.totalBalance) || 0;
+            var patrimonioExibir = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
             const patrimonioEl = document.getElementById('finance-patrimonio-total');
             if (patrimonioEl) patrimonioEl.textContent = 'R$ ' + formatCurrency(patrimonioExibir);
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
@@ -4156,18 +4157,24 @@ window.changeFinancePeriod = function (period) {
         .then(responseData => {
             const data = responseData.data || responseData;
 
+            var trabP = typeof window._financeTrabalhosTotals === 'function' ? window._financeTrabalhosTotals(window._kingFinanceDb || {}) : { totalRecebido: 0, totalFalta: 0 };
+            var totalRecebidoP = (Number(data.totalIncomePaid || data.totalRecebido) || ((Number(data.totalIncome) || 0) - (Number(data.pendingIncome) || 0))) + trabP.totalRecebido;
+            var despesasP = Number(data.totalExpense) || 0;
+            var balanceP = totalRecebidoP - despesasP;
+            var patrimonioP = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balanceP);
+
             // Atualizar card de Patrimônio Líquido Total e Saldos
             const netWorthEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
             if (netWorthEl) {
-                netWorthEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+                netWorthEl.textContent = `R$ ${formatCurrency(patrimonioP)}`;
             }
             const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
             if (accountBalanceMainEl) {
-                accountBalanceMainEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+                accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioP)}`;
             }
             const accountBalanceEl = document.getElementById('finance-account-balance');
             if (accountBalanceEl) {
-                accountBalanceEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+                accountBalanceEl.textContent = `R$ ${formatCurrency(patrimonioP)}`;
             }
         })
         .catch(err => console.error('Erro ao atualizar período:', err));
@@ -4272,7 +4279,7 @@ window.selectFinanceMonth = function (monthIndex) {
             var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
             var balance = totalRecebidoMes - despesas;
             var faltaReceberGeralMes = (Number(data.pendingIncome) || 0) + trabMes.totalFalta;
-            var patrimonioMes = Number(data.accountBalance) || Number(data.totalBalance) || 0;
+            var patrimonioMes = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
 
             const netWorthEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
             if (netWorthEl) netWorthEl.textContent = `R$ ${formatCurrency(patrimonioMes)}`;
@@ -4379,7 +4386,7 @@ window.changeFinanceMonth = function (direction) {
             var despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
             var balance = totalRecebidoBtn - despesas;
             var faltaReceberGeralBtn = (Number(data.pendingIncome) || 0) + trabBtn.totalFalta;
-            var patrimonioBtn = Number(data.accountBalance) || Number(data.totalBalance) || 0;
+            var patrimonioBtn = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
 
             // Atualizar Patrimônio e Saldo Disponível em Conta
             const patrimonioEl = document.getElementById('finance-patrimonio-total') || document.querySelector('.finance-card-premium h3');
@@ -4505,6 +4512,22 @@ window.initFinanceChart = function (period = '1M') {
                             dailyData[dateKey].expense += parseFloat(t.amount || 0);
                         }
                     }
+                });
+
+                // Incluir pagamentos de trabalhos do King
+                const kingDbChart = window._kingFinanceDb || {};
+                (kingDbChart.trabalhos || []).forEach(t => {
+                    (t.pagamentos || []).forEach(p => {
+                        const dt = (p.data || t.data || t.dataPrevista || '').toString().slice(0, 10);
+                        if (dt && dt >= dateFromStr && dt <= dateToStr) {
+                            const parts = dt.split('-');
+                            const dateKey = parts.length === 3 ? `${parts[2]}/${parts[1]}` : dt;
+                            if (!dailyData[dateKey]) {
+                                dailyData[dateKey] = { income: 0, expense: 0 };
+                            }
+                            dailyData[dateKey].income += parseFloat(p.valor || 0);
+                        }
+                    });
                 });
 
                 const labels = Object.keys(dailyData).sort();
@@ -6708,10 +6731,11 @@ async function saveFinanceTransaction(event, type) {
                         const totalRecebidoApos = (Number(data.totalIncome) || 0) - (Number(data.pendingIncome) || 0) + recebidoTrabMes;
                         const despesasApos = Number(data.totalExpense) || 0;
                         const balance = totalRecebidoApos - despesasApos;
+                        const patrimonioApos = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balance);
                         const patrimonioEl = document.getElementById('finance-patrimonio-total');
-                        if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+                        if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(patrimonioApos)}`;
                         const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
-                        if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+                        if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioApos)}`;
                         const incomeCardEl = document.getElementById('finance-income-card');
                         if (incomeCardEl) incomeCardEl.textContent = `+R$ ${formatCurrency(totalRecebidoApos)}`;
                         const expenseCardEl = document.getElementById('finance-expense-card');
@@ -7000,10 +7024,11 @@ async function updateFinanceTransaction(event, id, type) {
                         const totalRecebidoAposUpd = (Number(data.totalIncome) || 0) - (Number(data.pendingIncome) || 0) + recebidoTrabMesUpd;
                         const despesasAposUpd = Number(data.totalExpense) || 0;
                         const balanceUpd = totalRecebidoAposUpd - despesasAposUpd;
+                        const patrimonioUpd = Math.max(Number(data.accountBalance) || 0, Number(data.totalBalance) || 0, balanceUpd);
                         const patrimonioEl = document.getElementById('finance-patrimonio-total');
-                        if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+                        if (patrimonioEl) patrimonioEl.textContent = `R$ ${formatCurrency(patrimonioUpd)}`;
                         const accountBalanceMainEl = document.getElementById('finance-account-balance-main');
-                        if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(data.accountBalance || 0)}`;
+                        if (accountBalanceMainEl) accountBalanceMainEl.textContent = `R$ ${formatCurrency(patrimonioUpd)}`;
                         const incomeCardEl = document.getElementById('finance-income-card');
                         if (incomeCardEl) incomeCardEl.textContent = `+R$ ${formatCurrency(totalRecebidoAposUpd)}`;
                         const expenseCardEl = document.getElementById('finance-expense-card');
