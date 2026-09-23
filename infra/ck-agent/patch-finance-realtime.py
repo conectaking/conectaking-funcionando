@@ -127,20 +127,19 @@ async function fetchRealSummary(profileId) {
     }
   }
 
-  const fluxoRecebido = Number(dash.totalRecebido) || 0;
-  const fluxoDespesasPagas = Number(dash.totalPago) || 0;
-  const fluxoPendenteReceber = Number(dash.pendenciasReceber) || 0;
-  const fluxoPendentePagar = Number(dash.pendenciasPagar) || 0;
-
-  const totalRecebidoGeral = fluxoRecebido + totalRecebidoTrabalhosNoMes;
-  const saldoDisponivel = totalRecebidoGeral - fluxoDespesasPagas;
-  const faltaReceberGeral = fluxoPendenteReceber + totalFaltaReceberTrabalhos;
-  const faltaPagarGeral = fluxoPendentePagar + totalFaltaPagarTerceirosNoMes;
+  // dash da API Conecta King já consolida transações + trabalhos + terceiros
+  const saldoDisponivel = Number(dash.saldoDisponivel !== undefined ? dash.saldoDisponivel : dash.accountBalance) || 0;
+  const totalRecebidoGeral = Number(dash.totalRecebido !== undefined ? dash.totalRecebido : dash.totalIncomePaid) || 0;
+  const totalDespesasPagas = Number(dash.totalPago !== undefined ? dash.totalPago : dash.totalExpensePaid) || 0;
+  const faltaReceberGeral = Number(dash.pendenciasReceber !== undefined ? dash.pendenciasReceber : dash.pendingIncome) || 0;
+  const faltaPagarGeral = Number(dash.pendenciasPagar !== undefined ? dash.pendenciasPagar : dash.pendingExpense) || 0;
+  const balancoMensal = totalRecebidoGeral - totalDespesasPagas;
 
   return {
     saldoDisponivel,
     totalRecebido: totalRecebidoGeral,
-    totalPago: fluxoDespesasPagas,
+    totalPago: totalDespesasPagas,
+    balancoMensal,
     pendenciasReceber: faltaReceberGeral,
     pendenciasPagar: faltaPagarGeral,
     trabalhosCount: trabalhos.length,
@@ -148,6 +147,17 @@ async function fetchRealSummary(profileId) {
     totalFaltaReceberTrabalhos,
     kingDb
   };
+}
+
+function buildSummaryMessage(summary, fmt) {
+  return `📊 *Resumo Geral das Suas Finanças*\n_(atualizado em tempo real)_\n\n` +
+    `💰 *Dinheiro em Caixa (Disponível):* ${fmt(summary.saldoDisponivel)}\n` +
+    `📈 *Receitas Recebidas (Mês):* ${fmt(summary.totalRecebido)}\n` +
+    `📉 *Despesas Pagas (Mês):* ${fmt(summary.totalPago)}\n` +
+    `⚖️ *Balanço Líquido do Mês:* ${fmt(summary.balancoMensal)}\n` +
+    `⏳ *Valores a Receber (Falta Receber):* ${fmt(summary.pendenciasReceber)}\n` +
+    `📑 *Contas a Pagar (Falta Pagar):* ${fmt(summary.pendenciasPagar)}\n` +
+    `💼 *Total de Trabalhos Ativos:* ${summary.trabalhosCount}`;
 }
 
 const KB = `CONHECIMENTO EXECUTIVO CONECTA KING & ESTÚDIO ADRIANO KING:
@@ -214,6 +224,7 @@ const TOOLS = [
 ];
 
 let outMessage = '';
+let summaryMessageToSend = null;
 
 try {
   if (!openaiKey) {
@@ -284,14 +295,13 @@ try {
             const summary = await fetchRealSummary.call(this, profileId);
             const falta = Math.max(0, valorTotal - entrada);
 
-            outMessage = `👑 *Novo Trabalho Registrado!*\n\n` +
-              `📸 *Cliente:* ${cliente}\n` +
-              `💼 *Serviço:* ${servico}\n` +
+            outMessage = `👑 *Novo Trabalho Registrado com Sucesso!*\n\n` +
+              `👤 *Cliente:* ${cliente}\n` +
+              `📸 *Serviço:* ${servico}\n` +
               `💰 *Valor Total:* ${fmt(valorTotal)}\n` +
-              `💵 *Entrada Recebida (AV):* ${fmt(entrada)} ${entrada > 0 ? '_(em caixa)_' : '_(sem entrada imediata)_'}\n` +
-              `⏳ *Falta Receber deste Trabalho:* ${fmt(falta)}\n\n` +
-              `📊 *Dinheiro Total em Caixa:* ${fmt(summary.saldoDisponivel)}\n` +
-              `📈 *Total Geral a Receber:* ${fmt(summary.pendenciasReceber)}`;
+              `✅ *Entrada Recebida (AV):* ${fmt(entrada)} ${entrada > 0 ? '_(em caixa)_' : '_(sem entrada imediata)_'}\n` +
+              `⏳ *Falta Receber deste Trabalho:* ${fmt(falta)}`;
+            summaryMessageToSend = buildSummaryMessage(summary, fmt);
           }
 
         // ── CREATE FLUXO (Receitas/Despesas Avulsas) ─────────────────
@@ -315,9 +325,8 @@ try {
               const lbl = it.status === 'PAID' ? (it.type === 'INCOME' ? 'Recebido em caixa' : 'Pago') : 'Pendente (A receber)';
               lines.push(`${icon} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${lbl})\n   📝 _${it.description}_`);
             }
-            lines.push(`\n📊 *Dinheiro em Caixa:* ${fmt(summary.saldoDisponivel)}`);
-            if (summary.pendenciasReceber > 0) lines.push(`⏳ *Total a Receber:* ${fmt(summary.pendenciasReceber)}`);
             outMessage = lines.join('\n');
+            summaryMessageToSend = buildSummaryMessage(summary, fmt);
           } else {
             outMessage = '⚠️ Não consegui registrar os valores. Tente novamente.';
           }
@@ -341,7 +350,8 @@ try {
             for (const id of targetIds) await ck.call(this, 'DELETE', `/api/finance/transactions/${id}`);
             session.lastCreatedTransactions = [];
             const summary = await fetchRealSummary.call(this, profileId);
-            outMessage = `🗑️ *Lançamento Cancelado!*\nRemovi o lançamento com sucesso.\n\n📊 *Saldo Atualizado:* ${fmt(summary.saldoDisponivel)}`;
+            outMessage = `🗑️ *Lançamento Cancelado com Sucesso!*\nRemovi o lançamento anterior.`;
+            summaryMessageToSend = buildSummaryMessage(summary, fmt);
           }
 
         // ── DELETE BY CRITERIA (valor ou descrição) ──────────────────
@@ -371,7 +381,8 @@ try {
             session.lastCreatedTransactions = [];
             const summary = await fetchRealSummary.call(this, profileId);
             const lines = deleted.map(t => `• ${fmt(t.amount)} — ${t.description}`);
-            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}\n\n📊 *Saldo em Caixa:* ${fmt(summary.saldoDisponivel)}`;
+            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}`;
+            summaryMessageToSend = buildSummaryMessage(summary, fmt);
           }
 
         // ── LIST RECENT ──────────────────────────────────────────────
@@ -405,18 +416,13 @@ try {
             if (row.id) session.lastCreatedTransactions = [{ id: row.id, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc }];
             const summary2 = await fetchRealSummary.call(this, profileId);
             outMessage = `🔄 *Saldo Ajustado com Sucesso!*\n\nAntes: ${fmt(currentCash)}\nAgora: ${fmt(summary2.saldoDisponivel)}\n\n📝 _Ajuste de ${diff > 0 ? '+' : ''}${fmt(diff)} aplicado._`;
+            summaryMessageToSend = buildSummaryMessage(summary2, fmt);
           }
 
         // ── SUMMARY (EM TEMPO REAL) ──────────────────────────────────
         } else if (args.action === 'summary') {
           const summary = await fetchRealSummary.call(this, profileId);
-          outMessage = `📊 *Gestão Financeira Conecta King*\n_(dados em tempo real)_\n\n` +
-            `💰 *Dinheiro em Caixa (Saldo):* ${fmt(summary.saldoDisponivel)}\n` +
-            `📈 *Receitas Recebidas (Mês):* ${fmt(summary.totalRecebido)}\n` +
-            `📉 *Despesas Pagas (Mês):* ${fmt(summary.totalPago)}\n` +
-            `⏳ *Valores a Receber (Falta Receber):* ${fmt(summary.pendenciasReceber)}\n` +
-            `📑 *Contas a Pagar (Falta Pagar):* ${fmt(summary.pendenciasPagar)}\n` +
-            `💼 *Trabalhos Cadastrados:* ${summary.trabalhosCount}`;
+          outMessage = buildSummaryMessage(summary, fmt);
 
         // ── ADVICE (Consultoria) ──────────────────────────────────────
         } else if (args.action === 'advice') {
@@ -483,11 +489,18 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Fale em PT-BR, se
     }
 
     session.history.push({ role: 'user', content: inputForAi });
-    session.history.push({ role: 'assistant', content: outMessage });
+    session.history.push({ role: 'assistant', content: outMessage + (summaryMessageToSend ? '\n\n' + summaryMessageToSend : '') });
     if (session.history.length > 12) session.history.splice(0, 2);
   }
 } catch (e) {
   outMessage = '⚠️ Erro: ' + String(e.message || e).slice(0, 300);
+}
+
+if (summaryMessageToSend) {
+  return [
+    { json: { ...prev, outMessage } },
+    { json: { ...prev, outMessage: summaryMessageToSend } }
+  ];
 }
 
 return [{ json: { ...prev, outMessage } }];'''
