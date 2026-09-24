@@ -200,8 +200,8 @@ class AuthService
                 );
                 if (SchemaMeta::hasTable('user_profiles')) {
                     DB::insert(
-                        'INSERT INTO user_profiles (user_id, display_name) VALUES (?, ?)',
-                        [$registrationCode, $email]
+                        'INSERT INTO user_profiles (user_id, display_name, logo_spacing) VALUES (?, ?, ?)',
+                        [$registrationCode, $email, 'center']
                     );
                 }
                 $this->ensureDefaultBibleItem($registrationCode);

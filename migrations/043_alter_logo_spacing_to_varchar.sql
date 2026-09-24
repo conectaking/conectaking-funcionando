@@ -26,6 +26,10 @@ BEGIN
             END
         );
         
+        -- Alterar valor padrão para 'center'
+        ALTER TABLE user_profiles 
+        ALTER COLUMN logo_spacing SET DEFAULT 'center';
+        
         -- Adicionar nova constraint para aceitar apenas 'left', 'center', 'right'
         ALTER TABLE user_profiles 
         ADD CONSTRAINT user_profiles_logo_spacing_check 
