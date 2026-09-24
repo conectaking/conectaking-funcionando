@@ -40,7 +40,11 @@
             if (typeof c.getHeadersAuth === 'function') return c.getHeadersAuth() || {};
             return {};
         },
-        safeFetch: null, // set below
+        safeFetch: function (url, options) {
+            var c = core();
+            if (typeof c.safeFetch === 'function') return c.safeFetch(url, options);
+            return fetch(url, Object.assign({ credentials: 'include' }, options || {}));
+        },
         getAuthHeaders: function () {
             var c = core();
             if (typeof c.getAuthHeaders === 'function') return c.getAuthHeaders();
@@ -74,6 +78,7 @@
         loadProductsForCatalog: function () { return pick(core().loadProductsForCatalog, global.loadProductsForCatalog).apply(null, arguments); },
         openProductEditModal: function () { return pick(core().openProductEditModal, global.openProductEditModal).apply(null, arguments); },
         getDefaultIcon: function () { return pick(core().getDefaultIcon, global.getDefaultIcon).apply(null, arguments); },
+        getItemTypeName: function () { return pick(core().getItemTypeName, global.getItemTypeName, window.getItemTypeName).apply(null, arguments); },
         moduleListDisplayTitle: function () { return pick(core().moduleListDisplayTitle, global.moduleListDisplayTitle).apply(null, arguments); },
         bannerUrlModelsHtml: function () {
             var c = core();
@@ -313,9 +318,9 @@ function _setupEventListenersBody() {
                             });
                             postBody.logo_size = 48;
                         }
-                        const response = await fetch(`${env.API_URL}/api/profile/items`, {
+                        const response = await env.safeFetch(`${env.API_URL}/api/profile/items`, {
                             method: 'POST',
-                            headers: env.HEADERS,
+                            headers: { ...env.HEADERS, ...env.HEADERS_AUTH },
                             body: JSON.stringify(postBody)
                         });
                         if (!response.ok) {
@@ -393,7 +398,7 @@ function _setupEventListenersBody() {
                 const newItem = {
                     id: tempId,
                     item_type: itemType,
-                    title: getItemTypeName(itemType),
+                    title: (typeof env.getItemTypeName === 'function' ? env.getItemTypeName(itemType) : (typeof window.getItemTypeName === 'function' ? window.getItemTypeName(itemType) : itemType)),
                     destination_url: itemType === 'wifi'
                         ? JSON.stringify({ ssid: '', password: '', security: 'WPA', hidden: false, display_format: 'button', banner_image_url: '', logo_url: '', logo_size: 48 })
                         : itemType === 'texto_com_botao'

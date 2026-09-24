@@ -2150,6 +2150,13 @@ html.sortable-dragging-active {
   font-size: 0.8rem;
 }
 
+.avatar-with-gradient,
+.preview-avatar.avatar-square-full,
+.avatar-square-full {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0, 0, 0, 0.45) 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0, 0, 0, 0.45) 80%, transparent 100%);
+}
+
 @media (max-width: 768px) {
   .avatar-format-options {
     flex-direction: column;

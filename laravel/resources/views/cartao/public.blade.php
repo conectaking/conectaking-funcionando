@@ -147,6 +147,7 @@
                     @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
                         <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
                              alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient ck-cp-9380eb" loading="lazy" decoding="async"
+                             style="-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 50%, rgba(0, 0, 0, 0.9) 68%, rgba(0, 0, 0, 0.6) 82%, rgba(0, 0, 0, 0.2) 92%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 50%, rgba(0, 0, 0, 0.9) 68%, rgba(0, 0, 0, 0.6) 82%, rgba(0, 0, 0, 0.2) 92%, transparent 100%);"
                             >
                     @else
                         <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"

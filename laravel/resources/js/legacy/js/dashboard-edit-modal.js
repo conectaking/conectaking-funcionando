@@ -2032,7 +2032,8 @@ function openEditModalForNewItem(tempItem) {
 
     // Atualizar conteúdo do modal
     const modalTitle = SELECTORS.editItemModal.querySelector('.modal-header h4');
-    modalTitle.textContent = `Configurar ${getItemTypeName(itemType)}`;
+    const typeLabel = typeof window.getItemTypeName === 'function' ? window.getItemTypeName(itemType) : itemType;
+    modalTitle.textContent = `Configurar ${typeLabel}`;
 
     SELECTORS.editModalBody.innerHTML = formHTML;
 

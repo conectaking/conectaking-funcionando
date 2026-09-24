@@ -305,7 +305,7 @@ async function saveAllChanges(event) {
 
                     const tempItemData = {
                         item_type: itemType,
-                        title: itemEl.querySelector('.item-title-input')?.value || getItemTypeName(itemType),
+                        title: itemEl.querySelector('.item-title-input')?.value || (typeof window.getItemTypeName === 'function' ? window.getItemTypeName(itemType) : itemType),
                         destination_url: destinationUrl,
                         pix_key: itemEl.querySelector('.item-pix-key-input')?.value || '',
                         recipient_name: itemEl.querySelector('.item-recipient-name-input')?.value || '',
@@ -367,7 +367,8 @@ async function saveAllChanges(event) {
                     }
                 } catch (createError) {
                     console.error(`Erro ao criar item temporário ${tempId}:`, createError);
-                    throw new Error(`Erro ao criar módulo "${getItemTypeName(itemType)}": ${createError.message}`);
+                    const typeLabel = typeof window.getItemTypeName === 'function' ? window.getItemTypeName(itemType) : itemType;
+                    throw new Error(`Erro ao criar módulo "${typeLabel}": ${createError.message}`);
                 }
             }
             __ckDashLog(`Todos os ${tempItems.length} item(ns) temporário(s) foram criados no servidor`);

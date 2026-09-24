@@ -1324,7 +1324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!avatarElement) return;
 
         // Remover classes de formato anteriores
-        avatarElement.classList.remove('avatar-circular', 'avatar-square-full', 'avatar-square-small');
+        avatarElement.classList.remove('avatar-circular', 'avatar-square-full', 'avatar-square-small', 'avatar-with-gradient');
 
         // Aplicar classe do formato atual
         const formatClass = `avatar-${format}`;
@@ -1337,19 +1337,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             avatarElement.style.height = '120px';
             avatarElement.style.maxWidth = 'none';
             avatarElement.style.aspectRatio = 'auto';
+            avatarElement.style.webkitMaskImage = 'none';
+            avatarElement.style.maskImage = 'none';
         } else if (format === 'square-full') {
+            avatarElement.classList.add('avatar-with-gradient');
             avatarElement.style.borderRadius = '0';
             avatarElement.style.width = '100%';
             avatarElement.style.maxWidth = '680px';
             avatarElement.style.height = 'auto';
             avatarElement.style.aspectRatio = '1 / 1';
             avatarElement.style.objectFit = 'cover';
+            avatarElement.style.webkitMaskImage = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.6) 82%, rgba(0,0,0,0.2) 92%, transparent 100%)';
+            avatarElement.style.maskImage = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.6) 82%, rgba(0,0,0,0.2) 92%, transparent 100%)';
         } else if (format === 'square-small') {
+            avatarElement.classList.add('avatar-with-gradient');
             avatarElement.style.borderRadius = '0';
             avatarElement.style.width = '120px';
             avatarElement.style.height = '120px';
             avatarElement.style.maxWidth = 'none';
             avatarElement.style.aspectRatio = 'auto';
+            avatarElement.style.webkitMaskImage = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.6) 82%, rgba(0,0,0,0.2) 92%, transparent 100%)';
+            avatarElement.style.maskImage = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.6) 82%, rgba(0,0,0,0.2) 92%, transparent 100%)';
         }
     }
 
@@ -3161,7 +3169,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return t || getItemTypeName(item && item.item_type) || 'Novo Módulo';
     }
 
-    if (window.DashboardCore) window.DashboardCore.moduleListDisplayTitle = moduleListDisplayTitle;
+    window.getItemTypeName = getItemTypeName;
+    if (window.DashboardCore) {
+        window.DashboardCore.getItemTypeName = getItemTypeName;
+        window.DashboardCore.moduleListDisplayTitle = moduleListDisplayTitle;
+    }
 
     // Função para abrir modal de edição para novo item
 

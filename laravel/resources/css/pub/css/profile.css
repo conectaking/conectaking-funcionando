@@ -110,6 +110,8 @@ body {
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0, 0, 0, 0.45) 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0, 0, 0, 0.45) 80%, transparent 100%);
 }
 
 .profile-avatar.avatar-square-small {
@@ -123,8 +125,8 @@ body {
 
 /* Degradê aplicado diretamente na imagem usando mask */
 .avatar-with-gradient {
-    -webkit-mask-composite: source-in;
-    mask-composite: intersect;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0, 0, 0, 0.45) 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0, 0, 0, 0.45) 80%, transparent 100%);
 }
 .profile-name { font-size: 2rem; font-weight: 800; margin: 0 0 8px 0; }
 .profile-bio { font-size: 1.1rem; line-height: 1.6; margin: 0; padding: 0 16px; }
