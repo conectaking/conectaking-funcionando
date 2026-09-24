@@ -183,6 +183,37 @@ function renderEditor(profileData) {
         if (SELECTORS.radiusBR) SELECTORS.radiusBR.value = parseInt(dbr, 10);
         if (SELECTORS.radiusBL) SELECTORS.radiusBL.value = parseInt(dbl, 10);
         if (SELECTORS.buttonBorderRadiusValue) SELECTORS.buttonBorderRadiusValue.textContent = `${parseInt(dtl, 10)}px ${parseInt(dtr, 10)}px ${parseInt(dbr, 10)}px ${parseInt(dbl, 10)}px`;
+        if (typeof window.updatePresetSelection === 'function') {
+            window.updatePresetSelection();
+        } else {
+            const presetRadios = document.querySelectorAll('input[name="radius-preset"]');
+            const ptl = parseInt(dtl, 10);
+            const ptr = parseInt(dtr, 10);
+            const pbr = parseInt(dbr, 10);
+            const pbl = parseInt(dbl, 10);
+            let activePreset = null;
+            if (ptl === ptr && ptr === pbr && pbr === pbl) {
+                if (ptl === 0) activePreset = 'square';
+                else if (ptl === 8) activePreset = 'soft';
+                else if (ptl >= 999) activePreset = 'pill';
+                else activePreset = 'all';
+            } else if (ptl === pbl && ptr === pbr && ptl === 20 && ptr === 8) {
+                activePreset = 'alt';
+            } else if (ptl === ptr && pbr === pbl && (ptl === 20 || (ptl > 0 && pbr === 0))) {
+                activePreset = 'top';
+            } else if (ptl === ptr && pbr === pbl && (pbr === 20 || (ptl === 0 && pbr > 0))) {
+                activePreset = 'bottom';
+            } else if (ptl === pbr && ptr === pbl && (ptl === 20 || (ptl > 0 && ptr === 0))) {
+                activePreset = 'diagonal';
+            } else if (ptl === pbr && ptr === pbl && (ptr === 20 || (ptl === 0 && ptr > 0))) {
+                activePreset = 'invert';
+            }
+            if (activePreset) {
+                presetRadios.forEach(radio => {
+                    radio.checked = radio.value === activePreset;
+                });
+            }
+        }
 
         const bgType = details.background_type || 'color';
         const bgTypeInput = document.querySelector(`input[name="bg-type"][value="${bgType}"]`);

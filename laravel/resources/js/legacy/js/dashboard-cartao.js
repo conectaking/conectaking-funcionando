@@ -634,12 +634,13 @@ function updateLivePreviewFromForm() {
 
     const allPreviewButtons = document.querySelectorAll('.preview-link-button');
 
+    const currentButtonAlign = (document.querySelector('input[name="button-align"]:checked') || {}).value || 'center';
     const buttonStyles = {
         backgroundColor: hexToRgba(SELECTORS.buttonColorPicker.value, SELECTORS.buttonOpacityPicker.value),
         color: SELECTORS.buttonTextColorPicker.value,
         borderRadius: `${SELECTORS.radiusTL?.value || 12}px ${SELECTORS.radiusTR?.value || 12}px ${SELECTORS.radiusBR?.value || 12}px ${SELECTORS.radiusBL?.value || 12}px`,
         fontSize: `${SELECTORS.buttonFontSizePicker.value}px`,
-        justifyContent: { left: 'flex-start', center: 'center', right: 'flex-end' }[document.querySelector('input[name="button-align"]:checked').value]
+        justifyContent: { left: 'flex-start', center: 'center', right: 'flex-end' }[currentButtonAlign] || 'center'
     };
 
     allPreviewButtons.forEach(btn => {
@@ -704,10 +705,73 @@ function updateLivePreviewFromForm() {
     const bl = parseInt(SELECTORS.radiusBL?.value || 12, 10);
     SELECTORS.buttonBorderRadiusValue.textContent = `${tl}px ${tr}px ${br}px ${bl}px`;
     const borderRadius = `${tl}px ${tr}px ${br}px ${bl}px`;
-    const selectedAlign = document.querySelector('input[name="button-align"]:checked').value;
+    const selectedAlign = (document.querySelector('input[name="button-align"]:checked') || {}).value || 'center';
+    const logoAlign = (document.querySelector('input[name="logo-align"]:checked') || {}).value || 'center';
     const fontSize = `${SELECTORS.buttonFontSizePicker.value}px`;
     const justifyContentMap = { left: 'flex-start', center: 'center', right: 'flex-end' };
-    const buttonJustifyContent = justifyContentMap[selectedAlign];
+    const buttonJustifyContent = justifyContentMap[selectedAlign] || 'center';
+
+    function applyButtonLogoAndTextStyles(btn, lAlign, bAlign) {
+        if (!btn) return;
+        btn.style.position = 'relative';
+
+        const icon = btn.querySelector('i, img.preview-item-logo, img.wifi-logo-img, .item-icon');
+        const span = btn.querySelector('span, .wifi-button-labels');
+
+        if (lAlign === 'left' && bAlign === 'center') {
+            btn.style.flexDirection = 'row';
+            if (icon) {
+                icon.style.position = 'absolute';
+                icon.style.left = '16px';
+                icon.style.right = '';
+                icon.style.margin = '0';
+            }
+            if (span) {
+                span.style.width = '100%';
+                span.style.textAlign = 'center';
+                span.style.margin = '0';
+            }
+        } else if (lAlign === 'right' && bAlign === 'center') {
+            btn.style.flexDirection = 'row-reverse';
+            if (icon) {
+                icon.style.position = 'absolute';
+                icon.style.right = '16px';
+                icon.style.left = '';
+                icon.style.margin = '0';
+            }
+            if (span) {
+                span.style.width = '100%';
+                span.style.textAlign = 'center';
+                span.style.margin = '0';
+            }
+        } else if (lAlign === 'right') {
+            btn.style.flexDirection = 'row-reverse';
+            if (icon) {
+                icon.style.position = 'static';
+                icon.style.left = '';
+                icon.style.right = '';
+                icon.style.margin = '0';
+            }
+            if (span) {
+                span.style.width = '';
+                span.style.textAlign = bAlign;
+                span.style.margin = '0';
+            }
+        } else {
+            btn.style.flexDirection = 'row';
+            if (icon) {
+                icon.style.position = 'static';
+                icon.style.left = '';
+                icon.style.right = '';
+                icon.style.margin = '0';
+            }
+            if (span) {
+                span.style.width = '';
+                span.style.textAlign = bAlign;
+                span.style.margin = '0';
+            }
+        }
+    }
 
     const itemsContainer = SELECTORS.previewItemsContainer;
     SELECTORS.previewItemsContainer.innerHTML = '';
@@ -1010,6 +1074,12 @@ function updateLivePreviewFromForm() {
         }
 
         if (previewEl) itemsContainer.appendChild(previewEl);
+    });
+
+    document.querySelectorAll('.preview-link-button').forEach(btn => {
+        btn.style.borderRadius = borderRadius;
+        btn.style.justifyContent = buttonJustifyContent;
+        applyButtonLogoAndTextStyles(btn, logoAlign, selectedAlign);
     });
 
     if (SELECTORS.buttonOpacityValue) {

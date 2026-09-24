@@ -2749,7 +2749,15 @@ function _setupEventListenersBody() {
     if (SELECTORS.buttonFontSizePicker) {
         SELECTORS.buttonFontSizePicker.addEventListener('input', function () { env.updateLivePreviewFromForm(); });
     }
-    // Event listeners para alinhamento da logo já foram adicionados acima
+    // Event listeners para alinhamento / aproximação da logo
+    const logoAlignInputs = document.querySelectorAll('input[name="logo-align"]');
+    if (logoAlignInputs && logoAlignInputs.length) {
+        logoAlignInputs.forEach(radio => {
+            radio.addEventListener('change', function () {
+                env.updateLivePreviewFromForm();
+            });
+        });
+    }
     if (SELECTORS.sidebarNavLinks) {
         SELECTORS.sidebarNavLinks.forEach(link => {
             const targetId = link.dataset.target;
@@ -2826,6 +2834,9 @@ function _setupEventListenersBody() {
                 if (SELECTORS.radiusTR) SELECTORS.radiusTR.value = tr;
                 if (SELECTORS.radiusBR) SELECTORS.radiusBR.value = br;
                 if (SELECTORS.radiusBL) SELECTORS.radiusBL.value = bl;
+                if (SELECTORS.buttonBorderRadiusValue) {
+                    SELECTORS.buttonBorderRadiusValue.textContent = `${tl}px ${tr}px ${br}px ${bl}px`;
+                }
                 env.updateLivePreviewFromForm();
             });
         });
@@ -2846,10 +2857,10 @@ function _setupEventListenersBody() {
             return 'all';
         }
         if (tl === bl && tr === br && tl === 20 && tr === 8) return 'alt';
-        if (tl === tr && br === bl && tl === 20 && br === 0) return 'top';
-        if (tl === tr && br === bl && tl === 0 && br === 20) return 'bottom';
-        if (tl === br && tr === bl && tl === 20 && tr === 0) return 'diagonal';
-        if (tl === br && tr === bl && tl === 0 && tr === 20) return 'invert';
+        if (tl === tr && br === bl && (tl === 20 || (tl > 0 && br === 0))) return 'top';
+        if (tl === tr && br === bl && (br === 20 || (tl === 0 && br > 0))) return 'bottom';
+        if (tl === br && tr === bl && (tl === 20 || (tl > 0 && tr === 0))) return 'diagonal';
+        if (tl === br && tr === bl && (tr === 20 || (tl === 0 && tr > 0))) return 'invert';
 
         return null; // Valores customizados
     }
@@ -2863,6 +2874,8 @@ function _setupEventListenersBody() {
             radio.checked = radio.value === activePreset;
         });
     }
+    window.updatePresetSelection = updatePresetSelection;
+    env.updatePresetSelection = updatePresetSelection;
 
     // Inputs individuais de raio com sincronização
     if (SELECTORS.radiusTL) {

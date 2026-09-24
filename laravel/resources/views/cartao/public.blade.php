@@ -68,6 +68,73 @@
         .profile-link-logo--rounded { object-fit: contain; border-radius: 8px; }
         .carousel-wrapper-public { display: flex; width: calc(var(--ck-carousel-n, 1) * 100%); }
         .carousel-slide-public { width: calc(100% / var(--ck-carousel-n, 1)); flex-shrink: 0; }
+        .profile-link, .profile-button-pix, .profile-button-pix-qrcode {
+            position: relative !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: var(--btn-align, center) !important;
+            border-radius: var(--btn-border-radius, 12px) !important;
+            background-color: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity)) !important;
+            color: var(--btn-text) !important;
+            font-size: var(--btn-font-size) !important;
+            gap: 10px !important;
+        }
+        @if(($logoAlign ?? 'center') === 'left' && ($buttonAlign ?? 'center') === 'center')
+        .profile-link > i, .profile-link > .profile-link-logo,
+        .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+            position: absolute !important;
+            left: 16px !important;
+            right: auto !important;
+            margin: 0 !important;
+        }
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
+            width: 100% !important;
+            text-align: center !important;
+            margin: 0 !important;
+        }
+        @elseif(($logoAlign ?? 'center') === 'right')
+        .profile-link, .profile-button-pix, .profile-button-pix-qrcode {
+            flex-direction: row-reverse !important;
+        }
+        @if(($buttonAlign ?? 'center') === 'center')
+        .profile-link > i, .profile-link > .profile-link-logo,
+        .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+            position: absolute !important;
+            right: 16px !important;
+            left: auto !important;
+            margin: 0 !important;
+        }
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
+            width: 100% !important;
+            text-align: center !important;
+            margin: 0 !important;
+        }
+        @else
+        .profile-link > i, .profile-link > .profile-link-logo,
+        .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+            position: static !important;
+            margin: 0 !important;
+        }
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
+            text-align: var(--btn-text-align, {{ $buttonAlign ?? 'left' }}) !important;
+            margin: 0 !important;
+        }
+        @endif
+        @else
+        .profile-link > i, .profile-link > .profile-link-logo,
+        .profile-button-pix > i, .profile-button-pix > .profile-link-logo,
+        .profile-button-pix-qrcode > i, .profile-button-pix-qrcode > .profile-link-logo {
+            position: static !important;
+            margin: 0 !important;
+        }
+        .profile-link > span, .profile-button-pix > span, .profile-button-pix-qrcode > span {
+            text-align: var(--btn-text-align, center) !important;
+            margin: 0 !important;
+        }
+        @endif
     </style>
 </head>
 <body>

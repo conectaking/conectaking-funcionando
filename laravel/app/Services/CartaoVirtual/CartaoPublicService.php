@@ -149,17 +149,16 @@ class CartaoPublicService
             ? mb_substr(trim((string) $details['bio']), 0, 200)
             : 'Confira meu cartão de visita digital Conecta King!';
 
-        $logoAlign = $details['logo_spacing'];
-        $buttonAlign = $details['button_content_align'];
-        if ($logoAlign === 'center') {
-            $alignValue = 'center';
-        } elseif ($buttonAlign === 'left') {
-            $alignValue = 'flex-start';
-        } elseif ($buttonAlign === 'right') {
-            $alignValue = 'flex-end';
-        } else {
-            $alignValue = 'center';
+        $buttonAlign = $details['button_content_align'] ?? 'center';
+        $logoAlign = $details['logo_spacing'] ?? 'center';
+        if (!in_array($logoAlign, ['left', 'center', 'right'], true)) {
+            $logoAlign = 'center';
         }
+        $alignValue = match ($buttonAlign) {
+            'left' => 'flex-start',
+            'right' => 'flex-end',
+            default => 'center',
+        };
 
         return [
             'type' => 'render',
