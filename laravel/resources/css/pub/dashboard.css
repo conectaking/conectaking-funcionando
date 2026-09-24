@@ -3752,7 +3752,7 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
 
 .cropper-body { padding: 0; }
 /* Área do crop: altura flexível (sem barra de rolagem interna) */
-.cropper-container { width: 100%; height: min(52vh, 520px); min-height: 260px; background-color: #000; overflow: hidden; }
+.cropper-container { width: 100%; height: min(65vh, 600px); min-height: 350px; background-color: #0b0b0d; overflow: hidden; }
 #image-to-crop { display: block; max-width: 100%; }
 
 /* Modal de crop: layout em coluna, foto ocupa o espaço útil, sem scroll interno */
@@ -3762,13 +3762,54 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
 }
 #cropper-modal .modal-content {
   max-height: min(96vh, 960px);
-  width: min(920px, 100%);
+  width: min(1040px, 96vw);
   overflow: hidden;
 }
 #cropper-modal .cropper-meta-bar {
   flex-shrink: 0;
   margin: 0 16px 8px;
   max-height: none;
+}
+.cropper-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #141417;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
+}
+.cropper-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ECECEC;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.cropper-tool-btn:hover {
+  background: rgba(255, 199, 0, 0.15);
+  border-color: #FFC700;
+  color: #FFC700;
+}
+.cropper-tool-btn.highlight {
+  background: #FFC700;
+  color: #000;
+  font-weight: 700;
+  border-color: #FFC700;
+}
+.cropper-tool-btn.highlight:hover {
+  background: #ffdb4d;
+  color: #000;
 }
 #cropper-modal .modal-body.cropper-body {
   flex: 1 1 auto;
@@ -3782,9 +3823,10 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
   flex: 1 1 auto;
   width: 100%;
   height: auto !important;
-  min-height: 280px;
+  min-height: 350px;
   max-height: none;
   overflow: hidden;
+  background: #0b0b0d;
 }
 #cropper-modal .modal-footer {
   flex-shrink: 0;

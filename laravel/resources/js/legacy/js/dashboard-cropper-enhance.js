@@ -62,18 +62,20 @@
         if (!container) return;
         var header = modal.querySelector('.modal-header');
         var meta = modal.querySelector('.cropper-meta-bar');
+        var toolbar = modal.querySelector('.cropper-toolbar');
         var footer = modal.querySelector('.modal-footer');
         var vh = window.innerHeight || document.documentElement.clientHeight || 600;
         var used =
             (header ? header.offsetHeight : 0) +
             (meta ? meta.offsetHeight : 0) +
+            (toolbar ? toolbar.offsetHeight : 0) +
             (footer ? footer.offsetHeight : 0) +
-            24;
-        var h = Math.max(240, vh - used);
-        // No desktop, não ocupar ecrã inteiro desnecessariamente
+            32;
+        var h = Math.max(320, vh - used);
+        // No desktop, permitir espaço amplo para visualização da foto inteira
         if (window.matchMedia && window.matchMedia('(min-width: 769px)').matches) {
-            h = Math.min(h, Math.round(vh * 0.58), 560);
-            h = Math.max(h, 300);
+            h = Math.min(h, Math.round(vh * 0.72), 650);
+            h = Math.max(h, 380);
         }
         container.style.height = h + 'px';
         container.style.maxHeight = h + 'px';
@@ -111,6 +113,9 @@
         var userReady = o.ready;
         o.responsive = o.responsive !== false;
         o.restore = false;
+        o.viewMode = 0; // Permitir zoom livre e visão 100% da imagem
+        o.dragMode = o.dragMode || 'move';
+        o.background = true;
         o.crop = function (e) {
             if (typeof userCrop === 'function') userCrop.apply(this, arguments);
             if (e && e.detail) updateReadout(e.detail);

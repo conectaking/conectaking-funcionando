@@ -38,7 +38,7 @@
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <a href="/" class="logo-link">
-            <img src="logo.png" alt="Conecta King" class="logo-image">
+            <img src="/logo.png" alt="Conecta King" class="logo-image" onerror="this.onerror=null;this.src='https://i.ibb.co/60sW9k75/logo.png';">
             <span class="logo-text">CONECTA KING</span>
         </a>
     </div>
@@ -1190,6 +1190,23 @@
             <div><strong>Medidas do corte (pixels na imagem final):</strong> <span id="crop-size-readout">—</span> · <strong>Proporção:</strong> <span id="crop-aspect-readout">—</span></div>
             <p class="cropper-tip">Sugestão para fundo do cartão: <strong>1920×1080</strong> (16:9) ou <strong>1600×900</strong>. Prepare a foto nesse tamanho ou aproxime ao cortar. No telemóvel o fundo cobre o ecrã todo (centrado); detalhes nas bordas laterais podem sair fora.</p>
             <label class="cropper-mobile-toggle"><input type="checkbox" id="cropper-mobile-preview-toggle" checked> Mostrar faixa central tipo telemóvel (referência visual)</label>
+        </div>
+        <div class="cropper-toolbar">
+            <button type="button" id="crop-btn-fit" class="cropper-tool-btn highlight" title="Ajustar e ver a foto inteira sem cortes">
+                <i class="fas fa-expand"></i> Ver foto inteira
+            </button>
+            <button type="button" id="crop-btn-zoom-in" class="cropper-tool-btn" title="Aproximar foto">
+                <i class="fas fa-search-plus"></i> Zoom +
+            </button>
+            <button type="button" id="crop-btn-zoom-out" class="cropper-tool-btn" title="Afastar foto">
+                <i class="fas fa-search-minus"></i> Zoom -
+            </button>
+            <button type="button" id="crop-btn-rotate" class="cropper-tool-btn" title="Girar 90 graus">
+                <i class="fas fa-redo"></i> Girar
+            </button>
+            <button type="button" id="crop-btn-reset" class="cropper-tool-btn" title="Redefinir enquadramento">
+                <i class="fas fa-undo"></i> Redefinir
+            </button>
         </div>
         <div class="modal-body cropper-body">
             <div class="cropper-container">
