@@ -620,8 +620,102 @@ async function handleImageUpload(imageFile, itemElement) {
 }
 
 
+function fitImageFullyInside(c, expandCropBox) {
+    if (!c) return;
+    try {
+        var cont = c.getContainerData();
+        var img = c.getImageData();
+        if (!cont || !img || !cont.width || !cont.height || !img.naturalWidth || !img.naturalHeight) return;
+
+        var padX = 20;
+        var padY = 20;
+        var maxW = Math.max(60, cont.width - padX * 2);
+        var maxH = Math.max(60, cont.height - padY * 2);
+
+        var scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+        var w = Math.round(img.naturalWidth * scale);
+        var h = Math.round(img.naturalHeight * scale);
+        var left = Math.round((cont.width - w) / 2);
+        var top = Math.round((cont.height - h) / 2);
+
+        c.setCanvasData({
+            left: left,
+            top: top,
+            width: w,
+            height: h
+        });
+
+        if (expandCropBox) {
+            c.setCropBoxData({
+                left: left,
+                top: top,
+                width: w,
+                height: h
+            });
+        }
+    } catch (e) {
+        console.warn('fitImageFullyInside error:', e);
+    }
+}
+
+function ensureCropperUI() {
+    var modal = document.getElementById('cropper-modal');
+    if (!modal) return;
+
+    var toolbar = modal.querySelector('.cropper-toolbar');
+    if (!toolbar) {
+        toolbar = document.createElement('div');
+        toolbar.className = 'cropper-toolbar';
+        toolbar.innerHTML = [
+            '<button type="button" id="crop-btn-fit" class="cropper-tool-btn highlight" title="Ajustar e ver a foto inteira sem cortes">',
+            '    <i class="fas fa-expand"></i> Ver foto inteira',
+            '</button>',
+            '<button type="button" id="crop-btn-free" class="cropper-tool-btn" title="Liberar proporção para corte livre">',
+            '    <i class="fas fa-vector-square"></i> Corte Livre',
+            '</button>',
+            '<button type="button" id="crop-btn-zoom-in" class="cropper-tool-btn" title="Aproximar foto">',
+            '    <i class="fas fa-search-plus"></i> Zoom +',
+            '</button>',
+            '<button type="button" id="crop-btn-zoom-out" class="cropper-tool-btn" title="Afastar foto">',
+            '    <i class="fas fa-search-minus"></i> Zoom -',
+            '</button>',
+            '<button type="button" id="crop-btn-rotate" class="cropper-tool-btn" title="Girar 90 graus">',
+            '    <i class="fas fa-redo"></i> Girar',
+            '</button>',
+            '<button type="button" id="crop-btn-reset" class="cropper-tool-btn" title="Redefinir enquadramento">',
+            '    <i class="fas fa-undo"></i> Redefinir',
+            '</button>'
+        ].join('');
+        var body = modal.querySelector('.modal-body.cropper-body');
+        var content = modal.querySelector('.modal-content');
+        if (body && content) {
+            content.insertBefore(toolbar, body);
+        }
+    }
+
+    var footer = modal.querySelector('.modal-footer');
+    if (footer) {
+        var fullBtn = document.getElementById('crop-btn-use-full');
+        if (!fullBtn) {
+            fullBtn = document.createElement('button');
+            fullBtn.type = 'button';
+            fullBtn.id = 'crop-btn-use-full';
+            fullBtn.className = 'btn btn-use-full';
+            fullBtn.title = 'Enviar esta foto 100% inteira sem fazer nenhum corte';
+            fullBtn.innerHTML = '<i class="fas fa-check-circle"></i> Usar Imagem Completa (Sem Cortar)';
+            var okBtn = document.getElementById('crop-and-upload-btn');
+            if (okBtn) {
+                footer.insertBefore(fullBtn, okBtn);
+            } else {
+                footer.appendChild(fullBtn);
+            }
+        }
+    }
+}
+
 // Função para duplicar item (exposta globalmente para evitar problemas de escopo)
 function openCropper(file, triggerType, itemElement = null, customRatio = null) {
+    ensureCropperUI();
     const cropperModal = document.getElementById('cropper-modal');
     const image = document.getElementById('image-to-crop');
     const reader = new FileReader();
@@ -691,15 +785,19 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
             checkOrientation: true,
             dragMode: 'move',
             ready() {
+                var self = this;
                 try {
                     const modal = document.getElementById('cropper-modal');
                     const box = modal && modal.querySelector('.cropper-container');
-                    if (box && this.cropper) {
-                        this.cropper.resize();
+                    if (box && self.cropper) {
+                        self.cropper.resize();
                     }
-                    if (this.cropper) {
-                        this.cropper.reset();
-                    }
+                    setTimeout(function () {
+                        if (self.cropper) {
+                            self.cropper.resize();
+                            fitImageFullyInside(self.cropper, (triggerType !== 'profile' && triggerType !== 'background'));
+                        }
+                    }, 50);
                 } catch (_) { /* ignore */ }
             }
         });
@@ -718,9 +816,9 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
             if (triggerType === 'vitrine-hero') {
                 tipEl.innerHTML = 'Arte do <strong>Modelo Vitrine</strong>: corte em <strong>16:9</strong> (ex.: 1920×1080). Use <strong>Ver foto inteira</strong> ou aproxime/afaste conforme desejar.';
             } else if (triggerType === 'background') {
-                tipEl.innerHTML = 'Sugestão para fundo do cartão: <strong>1920×1080</strong> (16:9) ou <strong>1600×900</strong>. Prepare a foto nesse tamanho ou aproxime ao cortar.';
+                tipEl.innerHTML = 'Sugestão para fundo do cartão: <strong>1920×1080</strong> (16:9) ou <strong>1600×900</strong>. Prepare a foto nesse tamanho ou use <strong>Usar Imagem Completa (Sem Cortar)</strong>.';
             } else if (triggerType === 'banner' || triggerType === 'wifi-banner' || triggerType === 'carousel') {
-                tipEl.innerHTML = 'Ajuste a imagem do seu <strong>Banner</strong>. Clique em <strong>Ver foto inteira</strong> para enquadrar a imagem completa sem cortes, ou use <strong>Zoom + / Zoom -</strong>.';
+                tipEl.innerHTML = 'Ajuste a imagem do seu <strong>Banner</strong>. Use <strong>Usar Imagem Completa (Sem Cortar)</strong> para enviar a arte inteira, ou selecione <strong>Corte Livre</strong> para ajustar.';
             } else if (triggerType === 'profile') {
                 tipEl.innerHTML = 'Ajuste sua <strong>Foto de Perfil</strong>. Use os botões para centralizar o rosto ou visualizar a imagem inteira.';
             } else {
@@ -735,25 +833,37 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
 
 function wireCropperToolbar() {
     var fitBtn = document.getElementById('crop-btn-fit');
+    var freeBtn = document.getElementById('crop-btn-free');
     var zoomInBtn = document.getElementById('crop-btn-zoom-in');
     var zoomOutBtn = document.getElementById('crop-btn-zoom-out');
     var rotateBtn = document.getElementById('crop-btn-rotate');
     var resetBtn = document.getElementById('crop-btn-reset');
+    var useFullBtn = document.getElementById('crop-btn-use-full');
+
+    if (useFullBtn && !useFullBtn.dataset.ckBound) {
+        useFullBtn.dataset.ckBound = '1';
+        useFullBtn.addEventListener('click', function () {
+            if (imageToUpload && imageToUpload.originalFile) {
+                dispatchCropped(imageToUpload.originalFile);
+                closeCropper();
+            }
+        });
+    }
+
+    if (freeBtn && !freeBtn.dataset.ckBound) {
+        freeBtn.dataset.ckBound = '1';
+        freeBtn.addEventListener('click', function () {
+            if (!cropper) return;
+            cropper.setAspectRatio(NaN);
+            fitImageFullyInside(cropper, true);
+        });
+    }
 
     if (fitBtn && !fitBtn.dataset.ckBound) {
         fitBtn.dataset.ckBound = '1';
         fitBtn.addEventListener('click', function () {
             if (!cropper) return;
-            cropper.reset();
-            var imgData = cropper.getImageData();
-            if (imgData) {
-                cropper.setCropBoxData({
-                    left: imgData.left,
-                    top: imgData.top,
-                    width: imgData.width,
-                    height: imgData.height
-                });
-            }
+            fitImageFullyInside(cropper, false);
         });
     }
 
@@ -781,7 +891,10 @@ function wireCropperToolbar() {
     if (resetBtn && !resetBtn.dataset.ckBound) {
         resetBtn.dataset.ckBound = '1';
         resetBtn.addEventListener('click', function () {
-            if (cropper) cropper.reset();
+            if (cropper) {
+                cropper.reset();
+                fitImageFullyInside(cropper, false);
+            }
         });
     }
 }
@@ -828,6 +941,7 @@ function closeCropper() {
     }
 
     function initCropButtons() {
+        ensureCropperUI();
         var cancel = document.getElementById('cancel-crop-btn');
         var ok = document.getElementById('crop-and-upload-btn');
         if (cancel && !cancel.dataset.ckUploadBound) {

@@ -71,11 +71,11 @@
             (toolbar ? toolbar.offsetHeight : 0) +
             (footer ? footer.offsetHeight : 0) +
             32;
-        var h = Math.max(320, vh - used);
+        var h = Math.max(380, vh - used);
         // No desktop, permitir espaço amplo para visualização da foto inteira
         if (window.matchMedia && window.matchMedia('(min-width: 769px)').matches) {
-            h = Math.min(h, Math.round(vh * 0.72), 650);
-            h = Math.max(h, 380);
+            h = Math.min(h, Math.round(vh * 0.75), 680);
+            h = Math.max(h, 420);
         }
         container.style.height = h + 'px';
         container.style.maxHeight = h + 'px';

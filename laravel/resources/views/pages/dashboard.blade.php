@@ -1195,6 +1195,9 @@
             <button type="button" id="crop-btn-fit" class="cropper-tool-btn highlight" title="Ajustar e ver a foto inteira sem cortes">
                 <i class="fas fa-expand"></i> Ver foto inteira
             </button>
+            <button type="button" id="crop-btn-free" class="cropper-tool-btn" title="Liberar proporção para corte livre">
+                <i class="fas fa-vector-square"></i> Corte Livre
+            </button>
             <button type="button" id="crop-btn-zoom-in" class="cropper-tool-btn" title="Aproximar foto">
                 <i class="fas fa-search-plus"></i> Zoom +
             </button>
@@ -1215,6 +1218,9 @@
         </div>
         <div class="modal-footer">
             <button id="cancel-crop-btn" class="btn btn-secondary">Cancelar</button>
+            <button type="button" id="crop-btn-use-full" class="btn btn-use-full" title="Enviar esta imagem 100% inteira sem cortes">
+                <i class="fas fa-check-circle"></i> Usar Imagem Completa (Sem Cortar)
+            </button>
             <button id="crop-and-upload-btn" class="btn btn-primary">Cortar e Enviar</button>
         </div>
     </div>

@@ -51,20 +51,69 @@
     .cropper-mobile-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; color: #e5e5e5; font-size: 0.8rem; user-select: none; }
     .cropper-mobile-toggle input { width: 16px; height: 16px; accent-color: #facc15; }
     #crop-size-readout, #crop-aspect-readout { color: #fff; font-weight: 600; }
-    .cropper-body .cropper-container { position: relative; overflow: hidden; }
-    #cropper-modal .modal-body.cropper-body { overflow: hidden !important; }
+    #cropper-modal .modal-content {
+      max-width: 960px !important;
+      width: 94vw !important;
+      max-height: 94vh !important;
+    }
+    #cropper-modal .modal-body.cropper-body {
+      overflow: hidden !important;
+      padding: 0 !important;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 380px;
+    }
     #cropper-modal .cropper-container {
-      height: auto !important;
-      min-height: 280px;
+      position: relative;
+      width: 100% !important;
+      min-height: 400px;
+      height: min(65vh, 600px);
+      max-height: min(72vh, 650px);
       overflow: hidden;
+      background: #0b0b0d;
+    }
+    #cropper-modal .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-use-full {
+      background: rgba(34, 197, 94, 0.15) !important;
+      border: 1px solid #22c55e !important;
+      color: #4ade80 !important;
+      font-weight: 600 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      padding: 8px 16px !important;
+      border-radius: 8px !important;
+      transition: all 0.2s ease !important;
+      cursor: pointer;
+    }
+    .btn-use-full:hover {
+      background: #22c55e !important;
+      color: #000 !important;
+      transform: translateY(-1px);
     }
     @media (max-width: 768px) {
       #cropper-modal .cropper-container {
-        height: calc(100dvh - 210px) !important;
-        min-height: 42dvh;
+        height: calc(100dvh - 240px);
+        min-height: 350px;
       }
       #cropper-modal .modal-body.cropper-body {
         overflow: hidden !important;
+      }
+      #cropper-modal .modal-footer {
+        flex-direction: column;
+        width: 100%;
+      }
+      #cropper-modal .modal-footer .btn {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
       }
     }
     .ck-crop-mobile-strip {
