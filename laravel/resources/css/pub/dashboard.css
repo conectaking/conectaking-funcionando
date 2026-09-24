@@ -323,16 +323,31 @@ body {
 }
 .profile-info-sidebar {
     text-align: center;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0 4px;
 }
 .profile-name-sidebar {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    display: block;
 }
 .profile-handle-sidebar {
     font-size: 0.85rem;
     color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    display: block;
 }
 .btn-alterar-perfil {
     width: 100%;

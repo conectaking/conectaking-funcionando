@@ -392,6 +392,7 @@ Route::middleware('jwt')->group(function () {
         Route::post('/api/link-limits/copy-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'copyPlan']);
         Route::get('/api/link-limits/stats', [\App\Http\Controllers\Account\LinkLimitsController::class, 'stats']);
         Route::get('/api/modules/available', [\App\Http\Controllers\Account\ModulesController::class, 'available']);
+        Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
         Route::get('/api/analytics/kpis', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'kpis']);
         Route::get('/api/analytics/performance', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'performance']);
         Route::get('/api/analytics/top-items', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'topItems']);
@@ -737,7 +738,6 @@ Route::middleware(['jwt', 'module:king_docs'])->group(function () use ($kd) {
 
 Route::get('/api/modules/plan-availability-public', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailabilityPublic']);
 Route::middleware(['admin', 'audit'])->group(function () {
-    Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
     Route::put('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'updatePlanAvailability'])
         ->middleware('throttle:60,1');
         $linkPreview = \App\Http\Controllers\Admin\PersonalizarLinkController::class;

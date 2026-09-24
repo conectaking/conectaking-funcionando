@@ -18,8 +18,6 @@
          * Inicializar módulo
          */
         async init() {
-            console.log('[LinkLimitsModule] Inicializando módulo isolado...');
-            await this.loadData();
             this.setupEventListeners();
         },
 
@@ -36,6 +34,9 @@
          */
         async loadData() {
             try {
+                const gridContainer = document.getElementById('link-limits-grid');
+                if (!gridContainer) return;
+
                 // Garantir que arrays não sejam null
                 this.plans = this.plans || [];
                 this.limitsData = this.limitsData || [];
