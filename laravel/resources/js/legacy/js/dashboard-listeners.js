@@ -65,6 +65,7 @@
         handleImageUpload: function () { return pick(upload().handleImageUpload, global.handleImageUpload).apply(null, arguments); },
         handleDashboardPhotoUpload: function () { return pick(upload().handleDashboardPhotoUpload, global.handleDashboardPhotoUpload).apply(null, arguments); },
         handleDashboardAvatarUpload: function () { return pick(upload().handleDashboardAvatarUpload, global.handleDashboardAvatarUpload).apply(null, arguments); },
+        saveAvatarFormat: function () { return pick(core().saveAvatarFormat, global.saveAvatarFormat).apply(null, arguments); },
         handleBackgroundUpload: function () { return pick(core().handleBackgroundUpload, global.handleBackgroundUpload).apply(null, arguments); },
         handleShareImageUpload: function () { return pick(core().handleShareImageUpload, global.handleShareImageUpload).apply(null, arguments); },
         handleVitrineHeroUpload: function () { return pick(core().handleVitrineHeroUpload, global.handleVitrineHeroUpload).apply(null, arguments); },
@@ -1195,7 +1196,7 @@ function _setupEventListenersBody() {
             const format = btn.dataset.format;
             if (format) {
                 env.updateAvatarFormatSelector(format);
-                await saveAvatarFormat(format);
+                await env.saveAvatarFormat(format);
             }
         });
     });

@@ -1353,8 +1353,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    window.saveAvatarFormat = saveAvatarFormat;
     if (window.DashboardCore) {
         window.DashboardCore.applyAvatarFormatToPreview = applyAvatarFormatToPreview;
+        window.DashboardCore.saveAvatarFormat = saveAvatarFormat;
     }
 
     // Função para salvar o formato do avatar
