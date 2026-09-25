@@ -69,18 +69,22 @@
         var toolbar = modal.querySelector('.cropper-toolbar');
         var footer = modal.querySelector('.modal-footer');
         var vh = window.innerHeight || document.documentElement.clientHeight || 600;
+        
+        // O modal não deve ultrapassar 92% da altura da janela
+        var maxModalH = Math.round(vh * 0.92);
         var used =
             (header ? header.offsetHeight : 0) +
             (meta ? meta.offsetHeight : 0) +
             (toolbar ? toolbar.offsetHeight : 0) +
             (footer ? footer.offsetHeight : 0) +
-            32;
-        var h = Math.max(380, vh - used);
-        // No desktop, permitir espaço amplo para visualização da foto inteira
+            24;
+            
+        // Altura útil real disponível para a imagem caber 100% na tela
+        var h = Math.max(220, maxModalH - used);
         if (window.matchMedia && window.matchMedia('(min-width: 769px)').matches) {
-            h = Math.min(h, Math.round(vh * 0.75), 680);
-            h = Math.max(h, 420);
+            h = Math.min(h, 650);
         }
+        
         container.style.height = h + 'px';
         container.style.maxHeight = h + 'px';
         container.style.overflow = 'hidden';
@@ -90,6 +94,7 @@
         }
         return container;
     }
+    window.fitCropperContainer = fitCropperContainer;
 
     function resizeActiveCropper() {
         fitCropperContainer();

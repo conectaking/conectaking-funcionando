@@ -687,6 +687,9 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
     reader.onload = function (e) {
         image.src = e.target.result;
         cropperModal.classList.add('active');
+        if (typeof window.fitCropperContainer === 'function') {
+            window.fitCropperContainer();
+        }
 
         if (cropper) {
             cropper.destroy();
@@ -761,6 +764,9 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
             ready() {
                 var self = this;
                 try {
+                    if (typeof window.fitCropperContainer === 'function') {
+                        window.fitCropperContainer();
+                    }
                     if (self.cropper) {
                         self.cropper.resize();
                     }

@@ -3767,8 +3767,15 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
 }
 #cropper-modal .cropper-meta-bar {
   flex-shrink: 0;
-  margin: 0 16px 8px;
+  margin: 0 16px 6px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
   max-height: none;
+}
+#cropper-modal .cropper-tip {
+  margin: 4px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.35;
 }
 .cropper-toolbar {
   display: flex;
@@ -3823,9 +3830,8 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
 #cropper-modal .cropper-container {
   flex: 1 1 auto;
   width: 100%;
-  min-height: 400px;
-  height: min(65vh, 600px);
-  max-height: min(72vh, 650px);
+  min-height: 200px;
+  max-height: 70vh;
   overflow: hidden;
   background: #0b0b0d;
 }
