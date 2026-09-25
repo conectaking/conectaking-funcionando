@@ -620,72 +620,7 @@ async function handleImageUpload(imageFile, itemElement) {
 }
 
 
-function fitImageVisualFull(c, targetRatio) {
-    if (!c) return;
-    try {
-        var cont = c.getContainerData();
-        var img = c.getImageData();
-        if (!cont || !img || !cont.width || !cont.height || !img.naturalWidth || !img.naturalHeight) return;
 
-        // 1. Enquadrar o canvas de visualização para que 100% da foto apareça no espaço de trabalho com folga confortável
-        var padX = 24;
-        var padY = 24;
-        var maxW = Math.max(60, cont.width - padX * 2);
-        var maxH = Math.max(60, cont.height - padY * 2);
-
-        var scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
-        var w = Math.round(img.naturalWidth * scale);
-        var h = Math.round(img.naturalHeight * scale);
-        var left = Math.round((cont.width - w) / 2);
-        var top = Math.round((cont.height - h) / 2);
-
-        c.setCanvasData({
-            left: left,
-            top: top,
-            width: w,
-            height: h
-        });
-
-        // 2. Centralizar a caixa de corte sobre a foto mantendo estritamente a proporção configurada
-        var cropW, cropH;
-        if (targetRatio && !isNaN(targetRatio) && targetRatio > 0) {
-            var imgRatio = img.naturalWidth / img.naturalHeight;
-            if (imgRatio >= targetRatio) {
-                // Foto é mais larga que o corte: altura máxima de 96% da foto, calcula largura
-                cropH = Math.round(h * 0.96);
-                cropW = Math.round(cropH * targetRatio);
-                if (cropW > w) {
-                    cropW = w;
-                    cropH = Math.round(cropW / targetRatio);
-                }
-            } else {
-                // Foto é mais alta que o corte: largura máxima de 96% da foto, calcula altura
-                cropW = Math.round(w * 0.96);
-                cropH = Math.round(cropW / targetRatio);
-                if (cropH > h) {
-                    cropH = h;
-                    cropW = Math.round(cropH * targetRatio);
-                }
-            }
-        } else {
-            // Se proporção for livre / automática: ocupa 90% da imagem
-            cropW = Math.round(w * 0.90);
-            cropH = Math.round(h * 0.90);
-        }
-
-        var cropLeft = Math.round(left + (w - cropW) / 2);
-        var cropTop = Math.round(top + (h - cropH) / 2);
-
-        c.setCropBoxData({
-            left: cropLeft,
-            top: cropTop,
-            width: cropW,
-            height: cropH
-        });
-    } catch (e) {
-        console.warn('fitImageVisualFull error:', e);
-    }
-}
 
 function ensureCropperUI() {
     var modal = document.getElementById('cropper-modal');
@@ -812,31 +747,23 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
 
         cropper = new Cropper(image, {
             aspectRatio: aspectRatio,
-            viewMode: 0,
+            viewMode: 1,
             background: true,
-            autoCropArea: 0.95,
+            autoCropArea: 1,
             responsive: true,
             restore: false,
             checkOrientation: true,
-            dragMode: 'move',
+            movable: false,
+            zoomOnTouch: false,
+            zoomOnWheel: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
             ready() {
                 var self = this;
                 try {
-                    const modal = document.getElementById('cropper-modal');
-                    const box = modal && modal.querySelector('.cropper-container');
-                    if (box && self.cropper) {
+                    if (self.cropper) {
                         self.cropper.resize();
                     }
-                    setTimeout(function () {
-                        if (self.cropper) {
-                            fitImageVisualFull(self.cropper, aspectRatio);
-                        }
-                    }, 40);
-                    setTimeout(function () {
-                        if (self.cropper) {
-                            fitImageVisualFull(self.cropper, aspectRatio);
-                        }
-                    }, 120);
                 } catch (_) { /* ignore */ }
             }
         });
@@ -844,7 +771,6 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
         imageToUpload.trigger = triggerType;
         imageToUpload.element = itemElement;
         imageToUpload.originalFile = file;  // Armazenar arquivo original para preservar tipo
-        imageToUpload.aspectRatio = aspectRatio;
 
         // Dica no modal e controle de faixa central
         const tipEl = document.querySelector('#cropper-modal .cropper-tip');
@@ -895,7 +821,6 @@ function wireCropperToolbar() {
         freeBtn.addEventListener('click', function () {
             if (!cropper) return;
             cropper.setAspectRatio(NaN);
-            if (imageToUpload) imageToUpload.aspectRatio = NaN;
         });
     }
 
@@ -903,8 +828,16 @@ function wireCropperToolbar() {
         fitBtn.dataset.ckBound = '1';
         fitBtn.addEventListener('click', function () {
             if (!cropper) return;
-            var r = (imageToUpload && imageToUpload.aspectRatio !== undefined) ? imageToUpload.aspectRatio : NaN;
-            fitImageVisualFull(cropper, r);
+            cropper.setAspectRatio(NaN);
+            var canvasData = cropper.getCanvasData();
+            if (canvasData) {
+                cropper.setCropBoxData({
+                    left: canvasData.left,
+                    top: canvasData.top,
+                    width: canvasData.width,
+                    height: canvasData.height
+                });
+            }
         });
     }
 
@@ -934,8 +867,6 @@ function wireCropperToolbar() {
         resetBtn.addEventListener('click', function () {
             if (cropper) {
                 cropper.reset();
-                var r = (imageToUpload && imageToUpload.aspectRatio !== undefined) ? imageToUpload.aspectRatio : NaN;
-                fitImageVisualFull(cropper, r);
             }
         });
     }

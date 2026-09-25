@@ -3819,6 +3819,7 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
   display: flex;
   flex-direction: column;
 }
+#cropper-modal .cropper-wrapper,
 #cropper-modal .cropper-container {
   flex: 1 1 auto;
   width: 100%;
@@ -3827,6 +3828,11 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
   max-height: min(72vh, 650px);
   overflow: hidden;
   background: #0b0b0d;
+}
+#cropper-modal .cropper-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-use-full {
   background: rgba(34, 197, 94, 0.15) !important;
@@ -3895,6 +3901,7 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
     overflow: hidden !important;
     -webkit-overflow-scrolling: auto;
   }
+  #cropper-modal .cropper-wrapper,
   #cropper-modal .cropper-container {
     min-height: 42dvh;
     /* ocupa o resto da viewport: cabeçalho + meta + footer */

@@ -1212,7 +1212,7 @@
             </button>
         </div>
         <div class="modal-body cropper-body">
-            <div class="cropper-container">
+            <div class="cropper-wrapper">
                 <img id="image-to-crop" src="">
             </div>
         </div>

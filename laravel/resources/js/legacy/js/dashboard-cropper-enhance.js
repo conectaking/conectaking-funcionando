@@ -62,7 +62,7 @@
     function fitCropperContainer() {
         var modal = document.getElementById('cropper-modal');
         if (!modal || !modal.classList.contains('active')) return;
-        var container = modal.querySelector('.cropper-container');
+        var container = modal.querySelector('.cropper-wrapper') || modal.querySelector('.cropper-container');
         if (!container) return;
         var header = modal.querySelector('.modal-header');
         var meta = modal.querySelector('.cropper-meta-bar');
@@ -117,8 +117,10 @@
         var userReady = o.ready;
         o.responsive = o.responsive !== false;
         o.restore = false;
-        o.viewMode = 0; // Permitir enquadramento e visualização 100% livre da imagem no espaço de trabalho
-        o.dragMode = o.dragMode || 'move';
+        o.viewMode = 1; // Trava o corte dentro da foto (não deixa vazar pro preto ao redor)
+        o.movable = false; // A foto fica fixa no centro da visualização, não diminui nem se desloca
+        o.zoomOnTouch = false;
+        o.zoomOnWheel = false; // Roda do mouse não afasta/diminui a foto
         o.background = true;
         o.crop = function (e) {
             if (typeof userCrop === 'function') userCrop.apply(this, arguments);
