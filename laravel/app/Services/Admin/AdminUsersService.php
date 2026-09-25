@@ -641,12 +641,27 @@ class AdminUsersService
             $appliedChanges[] = "E-mail alterado de '{$user->email}' para '{$newEmail}'";
         }
 
-        // 0.2 Redefinição de Senha (opcional)
-        $newPass = trim((string) ($data['newPassword'] ?? $data['new_password'] ?? $data['password'] ?? ''));
-        if ($newPass !== '' && $action === 'change_password') {
+        // 0.2 Redefinição de Senha
+        $newPass = trim((string) ($data['newPassword'] ?? $data['new_password'] ?? ($action === 'change_password' ? ($data['password'] ?? '') : '')));
+        if ($newPass !== '' && ($action === 'change_password' || ! empty($data['newPassword']) || ! empty($data['new_password']))) {
             $updates[] = 'password = ?';
             $params[] = \Illuminate\Support\Facades\Hash::make($newPass);
-            $appliedChanges[] = 'Senha de acesso atualizada';
+            $appliedChanges[] = "Senha de acesso alterada para '{$newPass}'";
+        }
+
+        // 0.3 Definir Administrador (colocar no ADM / tirar do ADM)
+        if (isset($data['isAdmin']) || $action === 'set_admin' || $action === 'remove_admin' || ! empty($data['setAdmin'])) {
+            $makeAdmin = (isset($data['isAdmin']) ? (bool) $data['isAdmin'] : ($action === 'set_admin' || ! empty($data['setAdmin'])));
+            $updates[] = 'is_admin = ?';
+            $params[] = $makeAdmin;
+            if ($makeAdmin && ! in_array($user->account_type, ['adm_principal', 'abm'], true)) {
+                $updates[] = 'account_type = ?';
+                $params[] = 'abm';
+            } elseif (! $makeAdmin && $user->account_type === 'abm') {
+                $updates[] = 'account_type = ?';
+                $params[] = 'individual';
+            }
+            $appliedChanges[] = $makeAdmin ? 'Privilégios de Administrador CONCEDIDOS (Cargo ADM ativado)' : 'Privilégios de Administrador REVOGADOS';
         }
 
         // 1. Alteração de Plano

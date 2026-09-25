@@ -197,6 +197,14 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, mudar e-m
    - MUDAR E-MAIL DO CLIENTE:
      * Se o Adriano disser "muda o e-mail do cliente X para novo@email.com", "altera o e-mail do fulano":
        -> Chame IMEDIATAMENTE 'manage_client' com action: "change_email", identifier (e-mail atual ou código) e new_email!
+   - MUDAR SENHA DO CLIENTE:
+     * Se o Adriano disser "muda a senha do cliente X para 123456", "altera a senha do fulano para Senha@123":
+       -> Chame IMEDIATAMENTE 'manage_client' com action: "change_password", identifier e new_password!
+   - COLOCAR NO ADM / TIRAR DO ADM (STATUS ADMINISTRADOR):
+     * Se o Adriano disser "coloca o cliente X no adm", "dá cargo de admin para fulano", "torna o cliente Y administrador", "coloca tudo no adm":
+       -> Chame IMEDIATAMENTE 'manage_client' com action: "set_admin", identifier e is_admin: true!
+     * Se disser "tira o fulano do adm", "remove o admin do cliente X":
+       -> Chame IMEDIATAMENTE 'manage_client' com action: "remove_admin", identifier e is_admin: false!
    - RENOVAÇÃO DE TAG / ASSINATURA:
      * Se o Adriano disser "renova o cliente X por 1 mês", "renova a tag do cliente tal até 31/12", "adiciona 30 dias na tag do fulano":
        -> Use 'manage_client' com action: "renew_tag" e os meses/dias/data.
@@ -261,13 +269,15 @@ const TOOLS = [
   } },
   { type: 'function', function: {
     name: 'manage_client',
-    description: 'Gerencia clientes no Conecta King com poder total: excluir/deletar cliente permanentemente, alterar e-mail, renovar tag/assinatura por meses/dias/data, mudar plano, alterar código da tag ou consultar dados cadastrais.',
+    description: 'Gerencia clientes no Conecta King com poder total: excluir/deletar permanentemente, alterar e-mail, alterar senha, conceder/remover cargo de administrador (colocar no adm), renovar tag/assinatura por meses/dias/data, mudar plano, alterar código da tag ou consultar dados cadastrais.',
     parameters: {
       type: 'object',
       properties: {
         identifier: { type: 'string', description: 'E-mail, código da tag (ex: KING-XXXX), slug ou ID do cliente.' },
-        action: { type: 'string', enum: ['delete', 'change_email', 'renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar: delete (excluir cliente permanentemente), change_email (alterar e-mail), renew_tag (renovar tag/validade), change_plan (mudar plano), update_tag_code (mudar código tag), get_info (consultar dados).' },
-        new_email: { type: 'string', description: 'Novo e-mail do cliente (obrigatório se action for change_email).' },
+        action: { type: 'string', enum: ['delete', 'change_email', 'change_password', 'set_admin', 'remove_admin', 'renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar: delete (excluir cliente), change_email (alterar e-mail), change_password (alterar senha), set_admin (dar cargo de admin/colocar no adm), remove_admin (remover do adm), renew_tag (renovar tag/validade), change_plan (mudar plano), update_tag_code (mudar código tag), get_info (consultar dados).' },
+        new_email: { type: 'string', description: 'Novo e-mail do cliente (para change_email).' },
+        new_password: { type: 'string', description: 'Nova senha do cliente (para change_password).' },
+        is_admin: { type: 'boolean', description: 'True para colocar no adm, false para remover do adm.' },
         renew_months: { type: 'number', description: 'Quantidade de meses para renovar a validade da tag/assinatura (ex: 1 para 1 mês, 12 para 1 ano).' },
         renew_days: { type: 'number', description: 'Quantidade de dias para renovar (ex: 30, 60).' },
         expires_at: { type: 'string', description: 'Data específica de vencimento no formato AAAA-MM-DD (ex: 2026-12-31).' },
@@ -391,13 +401,15 @@ try {
           outMessage = `⚠️ *Não foi possível cadastrar o cliente:*\n${errMsg}`;
         }
 
-      // ── GERENCIAR CLIENTE (EXCLUIR / MUDAR EMAIL / RENOVAR / MUDAR PLANO) ─
+      // ── GERENCIAR CLIENTE (EXCLUIR / MUDAR EMAIL / SENHA / ADM / RENOVAR / PLANO) ─
       } else if (fnName === 'manage_client') {
         const targetId = args.identifier || session.lastTargetClient;
         const payload = {
           identifier: targetId,
           action: args.action,
           newEmail: args.new_email || null,
+          newPassword: args.new_password || null,
+          isAdmin: (args.action === 'set_admin' ? true : (args.action === 'remove_admin' ? false : (args.is_admin !== undefined ? args.is_admin : null))),
           newPlan: args.new_plan || null,
           renewMonths: args.renew_months || null,
           renewDays: args.renew_days || null,
@@ -420,6 +432,20 @@ try {
               `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
               `💎 *Plano:* *${u.plan_name || u.account_type}*\n\n` +
               `_O cliente agora deve fazer login com o novo e-mail._`;
+          } else if (args.action === 'change_password') {
+            session.lastTargetClient = u.email;
+            outMessage = `🔑 *Senha do Cliente Alterada com Sucesso! — Agente King*\n\n` +
+              `👤 *Cliente:* ${u.display_name || targetId} (\`${u.email || targetId}\`)\n` +
+              `🔐 *Nova Senha:* \`${args.new_password}\`\n\n` +
+              `_A nova senha já está ativa para acesso imediato!_`;
+          } else if (args.action === 'set_admin' || args.action === 'remove_admin' || args.is_admin !== undefined) {
+            session.lastTargetClient = u.email;
+            const isAdm = args.action === 'set_admin' || args.is_admin === true;
+            outMessage = `🛡️ *Cargo de Administrador Atualizado! — Agente King*\n\n` +
+              `👤 *Cliente:* ${u.display_name || targetId} (\`${u.email || targetId}\`)\n` +
+              `⚡ *Status Admin:* ${isAdm ? 'SIM (Administrador Ativo 👑)' : 'NÃO (Usuário Padrão)'}\n` +
+              `💎 *Tipo de Conta:* *${u.plan_name || u.account_type}*\n\n` +
+              `_${isAdm ? 'O usuário agora tem acesso com privilégios ao painel /admin!' : 'Os privilégios de administração foram revogados.'}_`;
           } else {
             session.lastTargetClient = u.email;
             const changes = r.body.data?.changes || [];
