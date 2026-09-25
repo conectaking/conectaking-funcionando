@@ -117,7 +117,7 @@
         var userReady = o.ready;
         o.responsive = o.responsive !== false;
         o.restore = false;
-        o.viewMode = 1; // Restringir o corte aos limites da imagem, preservando a proporção exata sem criar bordas pretas vazias
+        o.viewMode = 0; // Permitir enquadramento e visualização 100% livre da imagem no espaço de trabalho
         o.dragMode = o.dragMode || 'move';
         o.background = true;
         o.crop = function (e) {
@@ -141,7 +141,6 @@
                     if (im && im.cropper && typeof im.cropper.getData === 'function') inst = im.cropper;
                 }
                 if (inst) {
-                    try { inst.resize(); } catch (e2) {}
                     updateReadout(inst.getData());
                 }
             }
