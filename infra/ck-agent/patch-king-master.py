@@ -155,6 +155,86 @@ async function fetchRecentTransactions(limitN) {
   return arr;
 }
 
+const fmt = v => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
+
+async function fetchRealSummary(profileId) {
+  const pid = profileId || 1;
+  const [dashR, kingR] = await Promise.all([
+    ck.call(this, 'GET', `/api/finance/dashboard?profile_id=${pid}`),
+    ck.call(this, 'GET', `/api/finance/king-data?profile_id=${pid}`)
+  ]);
+
+  const dash = (dashR.body && dashR.body.data) ? dashR.body.data : (dashR.body || {});
+  const kingDb = (kingR.body && kingR.body.data) ? kingR.body.data : (kingR.body || {});
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const mesRef = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+
+  const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+  let totalRecebidoTrabalhosNoMes = 0;
+  let totalFaltaReceberTrabalhos = 0;
+
+  for (const t of trabalhos) {
+    const val = Number(t.valor) || 0;
+    const pagamentos = Array.isArray(t.pagamentos) ? t.pagamentos : [];
+    let recebidoT = 0;
+    for (const p of pagamentos) {
+      const v = Number(p.valor) || 0;
+      recebidoT += v;
+      const dt = String(p.data || t.data || '').trim().slice(0, 7);
+      if (dt === mesRef) {
+        totalRecebidoTrabalhosNoMes += v;
+      }
+    }
+    const falta = Math.max(0, val - recebidoT);
+    totalFaltaReceberTrabalhos += falta;
+  }
+
+  const terceiros = Array.isArray(kingDb.terceiros) ? kingDb.terceiros : [];
+  let totalFaltaPagarTerceirosNoMes = 0;
+  for (const p of terceiros) {
+    for (const c of (p.contas || [])) {
+      const dtVenc = String(c.dataVencimento || '').trim().slice(0, 7);
+      if (dtVenc === mesRef) {
+        const valC = Number(c.valor) || 0;
+        const pagoC = (c.pagamentos || []).reduce((s, x) => s + (Number(x.valor) || 0), 0);
+        totalFaltaPagarTerceirosNoMes += Math.max(0, valC - pagoC);
+      }
+    }
+  }
+
+  const saldoDisponivel = Number(dash.saldoDisponivel !== undefined ? dash.saldoDisponivel : dash.accountBalance) || 0;
+  const totalRecebidoGeral = Number(dash.totalRecebido !== undefined ? dash.totalRecebido : dash.totalIncomePaid) || 0;
+  const totalDespesasPagas = Number(dash.totalPago !== undefined ? dash.totalPago : dash.totalExpensePaid) || 0;
+  const faltaReceberGeral = (Number(dash.pendenciasReceber !== undefined ? dash.pendenciasReceber : dash.pendingIncome) || 0) + totalFaltaReceberTrabalhos;
+  const faltaPagarGeral = (Number(dash.pendenciasPagar !== undefined ? dash.pendenciasPagar : dash.pendingExpense) || 0) + totalFaltaPagarTerceirosNoMes;
+  const balancoMensal = totalRecebidoGeral - totalDespesasPagas;
+
+  return {
+    saldoDisponivel,
+    totalRecebido: totalRecebidoGeral,
+    totalPago: totalDespesasPagas,
+    balancoMensal,
+    pendenciasReceber: faltaReceberGeral,
+    pendenciasPagar: faltaPagarGeral,
+    trabalhosCount: trabalhos.length,
+    totalRecebidoTrabalhosNoMes,
+    totalFaltaReceberTrabalhos,
+    kingDb
+  };
+}
+
+function buildSummaryMessage(summary, f) {
+  const form = f || fmt;
+  return `📊 *Resumo Financeiro Atualizado:*\n` +
+    `💰 *Dinheiro em Caixa (Disponível):* ${form(summary.saldoDisponivel)}\n` +
+    `📈 *Receitas Recebidas no Mês:* ${form(summary.totalRecebido)}\n` +
+    `⏳ *Falta Receber (Trabalhos + Pendências):* ${form(summary.pendenciasReceber)}\n` +
+    `💼 *Trabalhos Cadastrados:* ${summary.trabalhosCount}`;
+}
+
 const KB = `CONHECIMENTO EXECUTIVO CONECTA KING & ESTÚDIO ADRIANO KING:
 - Dono e CEO: Adriano King (@adrianokingg, WhatsApp 11988789417).
 - Estúdio Adriano King (Barueri-SP): Posicionamento de Imagem 20 fotos R$1.000 / 30 fotos R$1.400. Ensaio 10 fotos R$300 / 20 fotos R$550 / 30 fotos R$800.
@@ -217,10 +297,10 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quant
      * Se o Adriano disser apenas "quero renovar o cliente X" sem falar o prazo:
        -> Responda de forma proativa e direta: "Com certeza, King! Por quanto tempo deseja renovar? Posso renovar por 1 mês, 1 ano ou você prefere definir uma data de vencimento específica?"
    - MUDAR PLANO DO CLIENTE:
-     * "muda a conta do cliente X para King Prime", "altera o plano do fulano para Finance", "coloca o plano Essential no cliente Y":
+     * "muda a conta do cliente X para King Prime", "altera o plano do fulano para Finance":
        -> Use 'manage_client' com action: "change_plan" e o new_plan desejado.
    - CONSULTAR CLIENTE:
-     * "qual o plano do cliente X?", "quando vence a tag do fulano?", "dados do cliente Y", "qual o código do cliente Z":
+     * "qual o plano do cliente X?", "quando vence a tag do fulano?", "dados do cliente Y":
        -> Use 'manage_client' com action: "get_info".
    - MUDAR CÓDIGO DA TAG:
      * "muda o código da tag do cliente X para NOVO-CODIGO":
@@ -244,14 +324,45 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quant
    - "muda o preço do plano X para R$ Y":
      -> Use 'manage_platform_plans' com action: "update_price".
 
-5. GESTÃO FINANCEIRA — DOMÍNIO TOTAL:
-   - REGISTRAR (create): receitas, despesas, pendências. Múltiplos lançamentos na mesma mensagem.
-   - REMOVER (delete_by_criteria): "tira o/os R$ X", "apaga os R$ X", "remove a entrada/despesa de X".
-   - CANCELAR ÚLTIMO (cancel_last): "apaga o último", "cancela o último", "errei".
-   - LISTAR (list_recent): mostrar os últimos lançamentos ao King.
-   - AJUSTAR SALDO (adjust_cash): "o caixa correto é R$ X" -> consulte saldo e ajuste a diferença.
-   - RESUMO (summary): resumo financeiro limpo e completo.
-   - CONSULTORIA CFO (advice): conselhos táticos de faturamento.
+5. GESTÃO FINANCEIRA COM PODER TOTAL (O REI MANDA, VOCÊ EXECUTA):
+   ⚠️ REGRA DE OURO PARA TRABALHOS, SERVIÇOS E ADIANTAMENTOS:
+   - Se o Adriano falar sobre "trabalho", "ensaio", "job", "serviço prestado", "fotos", "cliente fechei", OU disser "adiantamento de X de um total de Y", "recebi X de entrada de um trabalho de Y", "trabalho de R$ Y, recebi R$ X", "trabalho de 2000, 200 de adiantamento", "recebi 200 de adiantamento de um trabalho de 2000":
+     -> VOCÊ DEVE OBRIGATORIAMENTE CHAMAR 'manage_finance' com action: "create_trabalho"!
+     -> Parâmetros OBRIGATÓRIOS:
+        * valor_total: o valor total cobrado pelo serviço (ex: 2000)
+        * entrada: o adiantamento/sinal recebido em mãos ou pix agora (ex: 200)
+        * cliente: o nome do cliente (se não souber, use "Cliente")
+        * servico: descrição do serviço (ex: "Ensaio Fotográfico" ou "Trabalho Fotográfico")
+     -> NUNCA use action: "create" para trabalhos com valor total e adiantamento! A action "create" é EXCLUSIVA para despesas do dia a dia (ex: almoço, combustível) ou receitas simples avulsas sem saldo a receber.
+
+   - DAR BAIXA / REGISTRAR PAGAMENTO DE TRABALHO:
+     * "o cliente pagou os 1800 restantes", "recebi mais 500 do ensaio", "o João pagou 300 reais do trabalho", "dar baixa no pagamento do trabalho":
+     -> Use action: "record_payment" com cliente e valor_pago!
+
+   - EDITAR TRABALHO:
+     * "o trabalho da Larissa não é 500, é 700", "muda o cliente para João", "altera valor do trabalho":
+     -> Use action: "update_trabalho" com cliente e novos campos!
+
+   - EXCLUIR TRABALHO:
+     * "exclui o trabalho do João", "apaga o trabalho da Larissa":
+     -> Use action: "delete_trabalho" com cliente!
+
+   - ZERAR / LIMPAR GESTÃO FINANCEIRA:
+     * "zerar tudo", "limpar tudo", "cancelar tudo no financeiro", "apagar tudo na gestão financeira", "limpe tudo", "começar do zero":
+     -> Use SEMPRE imediatamente action: "clear_all"!
+
+   - FLUXO DE CAIXA AVULSO (create):
+     * Receitas e despesas avulsas simples do dia a dia (ex: "almoço 50", "gasolina 100").
+   - REMOVER DO FLUXO (delete_by_criteria):
+     * "apaga os R$ 50", "remove a despesa de almoço".
+   - CANCELAR ÚLTIMO (cancel_last):
+     * "apaga o último", "errei o lançamento".
+   - AJUSTAR SALDO (adjust_cash):
+     * "o caixa correto é R$ 1500".
+   - RESUMO GERAL (summary):
+     * "como estão minhas finanças?", "resumo financeiro".
+   - CONSULTORIA CFO (advice):
+     * Conselhos táticos de faturamento e lucro.
 
 6. DIAGNÓSTICO DO SISTEMA (check_system_errors): verificar status e erros de páginas.
 7. GERAR CÓDIGO (generate_invite_code): criar código KING-XXXXX.`;
@@ -335,22 +446,48 @@ const TOOLS = [
   } },
   { type: 'function', function: {
     name: 'manage_finance',
-    description: 'Gerencia transações financeiras: registrar, remover por valor/descrição, ajustar saldo, listar recentes, resumo, consultoria.',
+    description: 'Gerencia finanças completas do Conecta King com poder total: criar trabalhos/serviços com valor total e adiantamento (registrando na aba Trabalhos e o valor a receber), registrar receitas e despesas avulsas do fluxo, alterar trabalhos, excluir trabalhos, dar baixa em pagamentos parciais ou quitações, zerar/limpar tudo, ajustar saldo e consultar resumo em tempo real.',
     parameters: {
       type: 'object',
       properties: {
-        action: { type: 'string', enum: ['create', 'cancel_last', 'delete_by_criteria', 'list_recent', 'adjust_cash', 'summary', 'advice'] },
-        transactions: { type: 'array', items: { type: 'object', properties: {
-          type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
-          amount: { type: 'number' }, status: { type: 'string', enum: ['PAID', 'PENDING'] },
-          description: { type: 'string' }
-        }, required: ['type', 'amount', 'status', 'description'] } },
-        criteria: { type: 'object', properties: {
-          amount: { type: 'number', description: 'Valor a procurar e deletar' },
-          description_contains: { type: 'string', description: 'Texto parcial da descrição' },
-          type: { type: 'string', enum: ['INCOME', 'EXPENSE', 'any'] }
-        } },
-        target_cash: { type: 'number', description: 'Saldo desejado em caixa para adjust_cash' }
+        action: {
+          type: 'string',
+          enum: ['create_trabalho', 'create', 'update_trabalho', 'delete_trabalho', 'record_payment', 'clear_all', 'cancel_last', 'delete_by_criteria', 'adjust_cash', 'list_recent', 'summary', 'advice'],
+          description: 'Ação a executar'
+        },
+        cliente: { type: 'string', description: 'Nome do cliente do trabalho (para create_trabalho, update_trabalho, delete_trabalho ou record_payment)' },
+        novo_cliente: { type: 'string', description: 'Novo nome do cliente para update_trabalho' },
+        servico: { type: 'string', description: 'Tipo ou descrição do serviço (ex: Ensaio Fotográfico, Posicionamento, Cobertura)' },
+        novo_servico: { type: 'string', description: 'Novo serviço para update_trabalho' },
+        valor_total: { type: 'number', description: 'Valor total cobrado pelo trabalho (ex: 2000)' },
+        novo_valor: { type: 'number', description: 'Novo valor total para update_trabalho' },
+        entrada: { type: 'number', description: 'Valor de adiantamento / sinal recebido agora em mãos/caixa (ex: 200)' },
+        valor_pago: { type: 'number', description: 'Valor pago pelo cliente para dar baixa no record_payment (ex: 1800)' },
+        novo_status: { type: 'string', enum: ['pendente', 'parcial', 'concluido'], description: 'Novo status para update_trabalho' },
+        nova_data: { type: 'string', description: 'Nova data para update_trabalho (YYYY-MM-DD)' },
+        data_prevista: { type: 'string', description: 'Data prevista para quitação ou entrega do trabalho (YYYY-MM-DD)' },
+        target_cash: { type: 'number', description: 'Saldo desejado em caixa para adjust_cash' },
+        criteria: {
+          type: 'object',
+          properties: {
+            amount: { type: 'number', description: 'Valor exato a procurar e deletar' },
+            description_contains: { type: 'string', description: 'Texto parcial da descrição' },
+            type: { type: 'string', enum: ['INCOME', 'EXPENSE', 'any'] }
+          }
+        },
+        transactions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
+              amount: { type: 'number' },
+              status: { type: 'string', enum: ['PAID', 'PENDING'] },
+              description: { type: 'string' }
+            },
+            required: ['type', 'amount', 'status', 'description']
+          }
+        }
       },
       required: ['action']
     }
@@ -659,8 +796,245 @@ try {
         const profileId = await resolveProfileId.call(this);
         const today = new Date().toISOString().slice(0, 10);
 
-        // ── CREATE ──────────────────────────────────────────────────
-        if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
+        // ── CREATE TRABALHO (Aba Trabalhos do King-Data) ────────────
+        if (args.action === 'create_trabalho') {
+          const valorTotal = Number(args.valor_total || args.amount || 0);
+          const entrada = Number(args.entrada || 0);
+          const cliente = String(args.cliente || 'Cliente').trim();
+          const servico = String(args.servico || 'Trabalho Fotográfico / Posicionamento').trim();
+          const dataPrevista = args.data_prevista || '';
+
+          if (valorTotal <= 0) {
+            outMessage = '⚠️ Informe o valor total do trabalho.';
+          } else {
+            const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+            let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+            if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+            if (!Array.isArray(kingDb.trabalhos)) kingDb.trabalhos = [];
+
+            const now = new Date();
+            const hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const pagamentos = entrada > 0 ? [{ valor: entrada, data: today, hora }] : [];
+
+            const novoTrab = {
+              id: 'trab_' + Date.now(),
+              cliente,
+              servico,
+              valor: valorTotal,
+              pagamentos,
+              data: today,
+              dataPrevista,
+              status: entrada >= valorTotal ? 'concluido' : (entrada > 0 ? 'parcial' : 'pendente')
+            };
+
+            kingDb.trabalhos.unshift(novoTrab);
+
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+
+            // Se houve entrada/adiantamento, registra no fluxo de caixa automaticamente
+            if (entrada > 0) {
+              const cr = await ck.call(this, 'POST', '/api/finance/transactions', {
+                profile_id: profileId,
+                type: 'INCOME',
+                amount: entrada,
+                status: 'PAID',
+                description: `Adiantamento trabalho: ${cliente} (${servico})`,
+                transaction_date: today
+              });
+              if (cr.body?.data?.id) {
+                session.lastCreatedTransactions = [{ id: cr.body.data.id, type: 'INCOME', amount: entrada, status: 'PAID', description: `Adiantamento trabalho: ${cliente}` }];
+              }
+            }
+
+            const summary = await fetchRealSummary.call(this, profileId);
+            const falta = Math.max(0, valorTotal - entrada);
+
+            outMessage = `👑 *Novo Trabalho Registrado com Sucesso! — Agente King*\n\n` +
+              `👤 *Cliente:* ${cliente}\n` +
+              `📸 *Serviço:* ${servico}\n` +
+              `💰 *Valor Total do Trabalho:* ${fmt(valorTotal)}\n` +
+              `💵 *Adiantamento Recebido (em caixa):* ${fmt(entrada)} ${entrada > 0 ? '🟢' : '_(sem entrada imediata)_'}\n` +
+              `⏳ *Falta Receber deste Trabalho:* ${fmt(falta)} ${falta > 0 ? '🔴' : '✅'}\n` +
+              `📌 *Status na Aba Trabalhos:* ${novoTrab.status === 'concluido' ? 'Quitado ✅' : 'Parcialmente Pago ⏳'}\n\n` +
+              buildSummaryMessage(summary, fmt);
+          }
+
+        // ── UPDATE TRABALHO (Alterar/Editar Trabalho) ────────────────
+        } else if (args.action === 'update_trabalho') {
+          const clienteBusca = String(args.cliente || '').toLowerCase().trim();
+          const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+          let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+          if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+          const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+
+          let trab = trabalhos.find(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
+          if (!trab && trabalhos.length === 1) trab = trabalhos[0];
+
+          if (!trab) {
+            outMessage = `⚠️ Não encontrei nenhum trabalho para o cliente "${args.cliente}".`;
+          } else {
+            const alteracoes = [];
+            if (args.novo_valor !== undefined && args.novo_valor > 0) {
+              alteracoes.push(`Valor: ${fmt(trab.valor)} ➔ ${fmt(args.novo_valor)}`);
+              trab.valor = Number(args.novo_valor);
+            }
+            if (args.novo_cliente) {
+              alteracoes.push(`Cliente: "${trab.cliente}" ➔ "${args.novo_cliente}"`);
+              trab.cliente = String(args.novo_cliente).trim();
+            }
+            if (args.novo_servico) {
+              alteracoes.push(`Serviço: "${trab.servico}" ➔ "${args.novo_servico}"`);
+              trab.servico = String(args.novo_servico).trim();
+            }
+            if (args.novo_status) {
+              alteracoes.push(`Status: ${trab.status} ➔ ${args.novo_status}`);
+              trab.status = String(args.novo_status).trim();
+            }
+            if (args.nova_data) {
+              alteracoes.push(`Data: ${trab.data} ➔ ${args.nova_data}`);
+              trab.data = String(args.nova_data).trim();
+            }
+
+            const totalPago = (trab.pagamentos || []).reduce((s, p) => s + (Number(p.valor) || 0), 0);
+            if (totalPago >= trab.valor && trab.valor > 0) {
+              trab.status = 'concluido';
+            } else if (totalPago > 0) {
+              trab.status = 'parcial';
+            }
+
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+
+            const summary = await fetchRealSummary.call(this, profileId);
+            outMessage = `✏️ *Trabalho Atualizado com Sucesso — Agente King*\n\n` +
+              `👤 *Cliente:* ${trab.cliente}\n` +
+              `📸 *Serviço:* ${trab.servico}\n` +
+              `💰 *Valor Atual:* ${fmt(trab.valor)}\n` +
+              `📊 *Alterações feitas:*\n• ` + alteracoes.join('\n• ') + '\n\n' +
+              buildSummaryMessage(summary, fmt);
+          }
+
+        // ── DELETE TRABALHO (Excluir Trabalho Específico) ────────────
+        } else if (args.action === 'delete_trabalho') {
+          const clienteBusca = String(args.cliente || '').toLowerCase().trim();
+          const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+          let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+          if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+          const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+
+          let idx = trabalhos.findIndex(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
+          if (idx === -1 && trabalhos.length === 1) idx = 0;
+
+          if (idx === -1) {
+            outMessage = `⚠️ Não encontrei o trabalho de "${args.cliente}" para excluir.`;
+          } else {
+            const [removido] = trabalhos.splice(idx, 1);
+            await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+              profile_id: profileId,
+              data: kingDb
+            });
+            const summary = await fetchRealSummary.call(this, profileId);
+            outMessage = `🗑️ *Trabalho Excluído com Sucesso — Agente King*\n\n` +
+              `Removi o trabalho de *${removido.cliente}* (${fmt(removido.valor)} - ${removido.servico}).\n\n` +
+              buildSummaryMessage(summary, fmt);
+          }
+
+        // ── RECORD PAYMENT (Dar Baixa em Pagamento de Trabalho) ───────
+        } else if (args.action === 'record_payment') {
+          const clienteBusca = String(args.cliente || '').toLowerCase().trim();
+          const valorPago = Number(args.valor_pago || args.amount || 0);
+          if (valorPago <= 0) {
+            outMessage = '⚠️ Informe o valor recebido para dar baixa.';
+          } else {
+            const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+            let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+            if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+            const trabalhos = Array.isArray(kingDb.trabalhos) ? kingDb.trabalhos : [];
+
+            let trab = trabalhos.find(t => t && String(t.cliente || '').toLowerCase().includes(clienteBusca));
+            if (!trab && trabalhos.length === 1) trab = trabalhos[0];
+
+            if (!trab) {
+              outMessage = `⚠️ Não encontrei trabalho para o cliente "${args.cliente}".`;
+            } else {
+              if (!Array.isArray(trab.pagamentos)) trab.pagamentos = [];
+              const now = new Date();
+              const hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+              trab.pagamentos.push({ valor: valorPago, data: today, hora });
+
+              const totalPago = trab.pagamentos.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+              if (totalPago >= trab.valor) {
+                trab.status = 'concluido';
+              } else {
+                trab.status = 'parcial';
+              }
+
+              // Registrar entrada no fluxo de caixa
+              await ck.call(this, 'POST', '/api/finance/transactions', {
+                profile_id: profileId,
+                type: 'INCOME',
+                amount: valorPago,
+                status: 'PAID',
+                description: `Pagamento recebido: ${trab.cliente} (${trab.servico})`,
+                transaction_date: today
+              });
+
+              await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+                profile_id: profileId,
+                data: kingDb
+              });
+
+              const summary = await fetchRealSummary.call(this, profileId);
+              const falta = Math.max(0, trab.valor - totalPago);
+
+              outMessage = `💰 *Pagamento Registrado com Sucesso — Agente King*\n\n` +
+                `👤 *Cliente:* ${trab.cliente}\n` +
+                `💵 *Valor Recebido Agora:* ${fmt(valorPago)}\n` +
+                `📈 *Total Pago Até Agora:* ${fmt(totalPago)} de ${fmt(trab.valor)}\n` +
+                `⏳ *Falta Receber:* ${fmt(falta)} ${falta > 0 ? '🔴' : '✅ Quitado!'}\n` +
+                `📌 *Status do Trabalho:* ${trab.status === 'concluido' ? 'Concluído (Quitado) ✅' : 'Parcialmente Pago ⏳'}\n\n` +
+                buildSummaryMessage(summary, fmt);
+            }
+          }
+
+        // ── CLEAR ALL (ZERAR TUDO COM PODER TOTAL) ───────────────────
+        } else if (args.action === 'clear_all' || args.action === 'zerar_tudo') {
+          try {
+            await ck.call(this, 'POST', '/api/finance/zerar-mes', {
+              profile_id: profileId,
+              bypass_password: true,
+              all: true
+            });
+          } catch (_) {}
+
+          const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
+          let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
+          if (!kingDb || typeof kingDb !== 'object') kingDb = {};
+          kingDb.trabalhos = [];
+          kingDb.terceiros = [];
+          await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
+            profile_id: profileId,
+            data: kingDb
+          });
+
+          session.lastCreatedTransactions = [];
+          const summary = await fetchRealSummary.call(this, profileId);
+          outMessage = `🧹 *Gestão Financeira Zerada com Sucesso! — Agente King*\n\n` +
+            `👑 *Adriano, executei a limpeza completa da sua gestão financeira:*\n` +
+            `• ✅ *Fluxo de Caixa:* Todos os lançamentos foram apagados\n` +
+            `• ✅ *Trabalhos:* Lista de trabalhos zerada\n` +
+            `• ✅ *Contas a Pagar/Terceiros:* Zeradas\n` +
+            `• ✅ *Saldo em Caixa:* Redefinido para ${fmt(0)}\n\n` +
+            `_Tudo limpo e pronto para novos lançamentos!_\n\n` +
+            buildSummaryMessage(summary, fmt);
+
+        // ── CREATE FLUXO (Receitas/Despesas Avulsas) ─────────────────
+        } else if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
           const createdItems = [];
           for (const item of args.transactions) {
             if (!item.amount || item.amount <= 0) continue;
@@ -673,17 +1047,14 @@ try {
           }
           if (createdItems.length > 0) {
             session.lastCreatedTransactions = createdItems;
-            const dash = await ck.call(this, 'GET', '/api/finance/dashboard');
-            const saldo = dash.body?.data?.saldoDisponivel ?? 0;
-            const aReceber = dash.body?.data?.pendenciasReceber ?? 0;
+            const summary = await fetchRealSummary.call(this, profileId);
             const lines = ['👑 *Lançamento Financeiro Concluído!*\n'];
             for (const it of createdItems) {
               const icon = it.type === 'INCOME' ? '💵' : '💸';
               const lbl = it.status === 'PAID' ? (it.type === 'INCOME' ? 'Recebido em caixa' : 'Pago') : 'Pendente (A receber)';
-              lines.push(`${icon} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* R$ ${it.amount.toFixed(2).replace('.', ',')} (${lbl})\n   📝 _${it.description}_`);
+              lines.push(`${icon} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${lbl})\n   📝 _${it.description}_`);
             }
-            lines.push(`\n📊 *Dinheiro em Caixa:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}`);
-            if (aReceber > 0) lines.push(`⏳ *Total a Receber:* R$ ${Number(aReceber).toFixed(2).replace('.', ',')}`);
+            lines.push('\n' + buildSummaryMessage(summary, fmt));
             outMessage = lines.join('\n');
           } else {
             outMessage = '⚠️ Não consegui registrar os valores. Tente novamente.';
@@ -701,9 +1072,8 @@ try {
           } else {
             for (const id of targetIds) await ck.call(this, 'DELETE', `/api/finance/transactions/${id}`);
             session.lastCreatedTransactions = [];
-            const dash = await ck.call(this, 'GET', '/api/finance/dashboard');
-            const saldo = dash.body?.data?.saldoDisponivel ?? 0;
-            outMessage = `🗑️ *Lançamento Cancelado!*\nRemovi o lançamento anterior com sucesso.\n\n📊 *Saldo Atualizado:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}`;
+            const summary = await fetchRealSummary.call(this, profileId);
+            outMessage = `🗑️ *Lançamento Cancelado!*\nRemovi o lançamento anterior com sucesso.\n\n` + buildSummaryMessage(summary, fmt);
           }
 
         // ── DELETE BY CRITERIA (valor ou descrição) ──────────────────
@@ -719,7 +1089,7 @@ try {
             return amountMatch && descMatch && typeMatch;
           });
           if (targets.length === 0) {
-            const listLines = recent.slice(0, 8).map((t, i) => `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} R$ ${Number(t.amount).toFixed(2).replace('.', ',')} — _${t.description}_ (${t.status}) [ID: ${t.id}]`);
+            const listLines = recent.slice(0, 8).map((t, i) => `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} ${fmt(t.amount)} — _${t.description}_ (${t.status}) [ID: ${t.id}]`);
             outMessage = '⚠️ Não encontrei transação com esse critério. Seus últimos lançamentos:\n\n' + listLines.join('\n') + '\n\nMe fala qual quer tirar.';
           } else {
             const deleted = [];
@@ -728,10 +1098,9 @@ try {
               if (dr.statusCode >= 200 && dr.statusCode < 300) deleted.push(t);
             }
             session.lastCreatedTransactions = [];
-            const dash = await ck.call(this, 'GET', '/api/finance/dashboard');
-            const saldo = dash.body?.data?.saldoDisponivel ?? 0;
-            const lines = deleted.map(t => `• R$ ${Number(t.amount).toFixed(2).replace('.', ',')} — ${t.description}`);
-            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}\n\n📊 *Saldo em Caixa:* R$ ${Number(saldo).toFixed(2).replace('.', ',')}`;
+            const summary = await fetchRealSummary.call(this, profileId);
+            const lines = deleted.map(t => `• ${fmt(t.amount)} — ${t.description}`);
+            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}\n\n` + buildSummaryMessage(summary, fmt);
           }
 
         // ── LIST RECENT ──────────────────────────────────────────────
@@ -742,7 +1111,7 @@ try {
           } else {
             const lines = recent.map((t, i) => {
               const icon = t.type === 'INCOME' ? '💵' : '💸';
-              const val = `R$ ${Number(t.amount).toFixed(2).replace('.', ',')}`;
+              const val = fmt(t.amount);
               const lbl = t.status === 'PAID' ? 'Pago/Recebido' : 'Pendente';
               return `${i + 1}. ${icon} ${val} — _${t.description}_ (${lbl})`;
             });
@@ -756,43 +1125,31 @@ try {
           const currentCash = Number(dash.body?.data?.saldoDisponivel ?? 0);
           const diff = targetCash - currentCash;
           if (Math.abs(diff) < 0.01) {
-            outMessage = `✅ Saldo em caixa já está em R$ ${targetCash.toFixed(2).replace('.', ',')}. Nenhum ajuste necessário.`;
+            outMessage = `✅ Saldo em caixa já está em ${fmt(targetCash)}. Nenhum ajuste necessário.`;
           } else {
             const adjType = diff > 0 ? 'INCOME' : 'EXPENSE';
             const adjDesc = 'Ajuste de saldo (correção)';
             const cr = await ck.call(this, 'POST', '/api/finance/transactions', { profile_id: profileId, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc, transaction_date: today });
             const row = (cr.body && cr.body.data) || {};
             if (row.id) session.lastCreatedTransactions = [{ id: row.id, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc }];
-            const dash2 = await ck.call(this, 'GET', '/api/finance/dashboard');
-            const newSaldo = dash2.body?.data?.saldoDisponivel ?? 0;
-            outMessage = `🔄 *Saldo Ajustado com Sucesso!*\n\nAntes: R$ ${currentCash.toFixed(2).replace('.', ',')}\nAgora: R$ ${Number(newSaldo).toFixed(2).replace('.', ',')}\n\n📝 _Ajuste de ${diff > 0 ? '+' : ''}${diff.toFixed(2).replace('.', ',')} aplicado._`;
+            const summary = await fetchRealSummary.call(this, profileId);
+            outMessage = `🔄 *Saldo Ajustado com Sucesso!*\n\nAntes: ${fmt(currentCash)}\nAgora: ${fmt(summary.saldoDisponivel)}\n\n📝 _Ajuste de ${diff > 0 ? '+' : ''}${fmt(diff)} aplicado._\n\n` + buildSummaryMessage(summary, fmt);
           }
 
         // ── SUMMARY ──────────────────────────────────────────────────
         } else if (args.action === 'summary') {
-          const dash = await ck.call(this, 'GET', '/api/finance/dashboard');
-          const d = (dash.body && dash.body.data) || {};
-          const fmt = v => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
-          outMessage = `📊 *Gestão Financeira — Conecta King*\n\n` +
-            `💰 *Dinheiro em Caixa:* ${fmt(d.saldoDisponivel)}\n` +
-            `📈 *Receitas Recebidas (Mês):* ${fmt(d.totalRecebido)}\n` +
-            `📉 *Despesas Pagas (Mês):* ${fmt(d.totalPago)}\n` +
-            `⏳ *Valores a Receber (Pendentes):* ${fmt(d.pendenciasReceber)}\n` +
-            `📑 *Contas a Pagar (Pendentes):* ${fmt(d.pendenciasPagar)}`;
+          const summary = await fetchRealSummary.call(this, profileId);
+          outMessage = buildSummaryMessage(summary, fmt);
 
         // ── ADVICE (Consultoria de Faturamento) ──────────────────────
         } else if (args.action === 'advice') {
-          const dash = await ck.call(this, 'GET', '/api/finance/dashboard');
-          const d = (dash.body && dash.body.data) || {};
-          const saldo = Number(d.saldoDisponivel ?? 0);
-          const pendRec = Number(d.pendenciasReceber ?? 0);
-          const totalRec = Number(d.totalRecebido ?? 0);
-          const totalPago = Number(d.totalPago ?? 0);
+          const summary = await fetchRealSummary.call(this, profileId);
           const finCtx = `Dados financeiros reais do King:
-- Caixa disponível: R$ ${saldo.toFixed(2)}
-- Receitas recebidas no mês: R$ ${totalRec.toFixed(2)}
-- Despesas pagas no mês: R$ ${totalPago.toFixed(2)}
-- Pendências a receber: R$ ${pendRec.toFixed(2)}
+- Caixa disponível: R$ ${summary.saldoDisponivel.toFixed(2)}
+- Receitas recebidas no mês: R$ ${summary.totalRecebido.toFixed(2)}
+- Despesas pagas no mês: R$ ${summary.totalPago.toFixed(2)}
+- Pendências a receber: R$ ${summary.pendenciasReceber.toFixed(2)}
+- Trabalhos ativos: ${summary.trabalhosCount}
 - Ticket médio Posicionamento de Imagem: R$ 1.200 (entre 1.000 e 1.400)
 - Ticket médio Ensaio Fotográfico: R$ 550
 - Produto Conecta King: entrada R$ 35/mês
