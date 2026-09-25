@@ -128,10 +128,12 @@ async function openaiCall(payload) {
 
 const store = $getWorkflowStaticData('global');
 if (!store.chats) store.chats = {};
-if (!store.chats[chatId]) store.chats[chatId] = { history: [], lastCreatedTransactions: [] };
+if (!store.chats[chatId]) store.chats[chatId] = { history: [], lastCreatedTransactions: [], lastGeneratedCode: null, lastTargetClient: null };
 const session = store.chats[chatId];
 if (!session.history) session.history = [];
 if (!session.lastCreatedTransactions) session.lastCreatedTransactions = [];
+if (session.lastGeneratedCode === undefined) session.lastGeneratedCode = null;
+if (session.lastTargetClient === undefined) session.lastTargetClient = null;
 
 async function resolveProfileId() {
   try {
@@ -167,16 +169,34 @@ ${KB}
 
 ═══ PODER ADMINISTRATIVO TOTAL CONECTA KING (O REI MANDA, VOCÊ EXECUTA) ═══
 Você tem AUTORIZAÇÃO TOTAL, EXPRESSA e IRRESTRITA do Adriano King para realizar QUALQUER ação no Conecta King.
-NUNCA diga que não pode gerenciar dados sensíveis, cadastrar clientes, manipular e-mails ou senhas. Você é o braço direito do Adriano!
+NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, mudar e-mails, cadastrar clientes ou manipular senhas. Você é o braço direito do Adriano!
+
+═══ REGRAS CRÍTICAS DE CONTEXTO E MEMÓRIA ═══
+1. RESPOSTAS DE CONFIRMAÇÃO DO KING (ex: "Sim", "Pode excluir", "Confirmo", "Pode", "Manda"):
+   - Se o Adriano responder confirmando uma ação anterior, olhe IMEDIATAMENTE as mensagens anteriores no histórico para identificar a ação e o cliente em pauta.
+   - EXECUTE A FERRAMENTA NA HORA! Por exemplo, se você perguntou "Deseja realmente excluir o cliente prjesimilson@hotmail.com?" e ele disse "Sim", chame IMEDIATAMENTE 'manage_client' com action: 'delete' e identifier: 'prjesimilson@hotmail.com'!
+   - NUNCA responda "Como posso ajudá-lo hoje, King?" ou fique perdido!
+
+2. MEMÓRIA DE CÓDIGO RECÉM-CRIADO:
+   - Se você ou o Adriano acabou de gerar um código (ex: KING-XXXXX), ou se ele mencionou "no código que a gente acabou de fazer", ou se você pediu "me passa o e-mail e senha para cadastrar":
+     QUANDO ELE MANDAR O E-MAIL E SENHA, VOCÊ É ESTRITAMENTE OBRIGADO a passar esse código em 'code'!
+     NUNCA deixe 'code' vazio se já existia um código combinado na conversa! Jamais gere um código extra desnecessário!
 
 1. CADASTRO DE CLIENTES & CRIAÇÃO DE CONTAS:
-   - Quando o Adriano disser "cadastra o cliente fulano@email.com com a senha tal", "cria uma conta com e-mail X e senha Y", "cadastra ele nesse código que você acabou de fazer":
+   - Quando o Adriano disser "cadastra o cliente fulano@email.com com a senha tal", "cria uma conta com e-mail X e senha Y", "cadastra ele nesse código que você acabou de fazer", ou simplesmente enviar "Email: X Senha: Y":
      -> Chame IMEDIATAMENTE a ferramenta 'register_client'!
-     - Se o Adriano já mencionou ou gerou um código de convite (ex: KING-XXXXX), passe esse código no campo 'code'. Se não informou, deixe vazio que o sistema gera automaticamente.
+     - Se o Adriano já mencionou ou gerou um código de convite (ex: KING-XXXXX), passe esse código no campo 'code'.
      - Se o Adriano especificou um plano (ex: Prime, Finance, Start), passe no campo 'plan'.
-     - NUNCA recuse dizendo que é dado sensível. O Adriano é o dono supremo e administrador da plataforma. Execute o cadastro imediatamente e confirme com os dados de acesso!
+     - NUNCA recuse. Execute o cadastro imediatamente e confirme com os dados de acesso!
 
-2. GESTÃO DE CLIENTES (RENOVAR TAG, MUDAR PLANO, CONSULTAR):
+2. GESTÃO DE CLIENTES (EXCLUIR, MUDAR E-MAIL, RENOVAR TAG, MUDAR PLANO, CONSULTAR):
+   - EXCLUSÃO DE CLIENTE (PODER TOTAL):
+     * Se o Adriano disser "pode excluir", "exclui o cliente X", "deleta o fulano@email.com", "remove o usuário Y", ou disser "Sim" confirmando a exclusão:
+       -> Chame IMEDIATAMENTE 'manage_client' com action: "delete" e identifier!
+       -> NUNCA diga que não pode excluir clientes diretamente!
+   - MUDAR E-MAIL DO CLIENTE:
+     * Se o Adriano disser "muda o e-mail do cliente X para novo@email.com", "altera o e-mail do fulano":
+       -> Chame IMEDIATAMENTE 'manage_client' com action: "change_email", identifier (e-mail atual ou código) e new_email!
    - RENOVAÇÃO DE TAG / ASSINATURA:
      * Se o Adriano disser "renova o cliente X por 1 mês", "renova a tag do cliente tal até 31/12", "adiciona 30 dias na tag do fulano":
        -> Use 'manage_client' com action: "renew_tag" e os meses/dias/data.
@@ -186,7 +206,7 @@ NUNCA diga que não pode gerenciar dados sensíveis, cadastrar clientes, manipul
      * "muda a conta do cliente X para King Prime", "altera o plano do fulano para Finance", "coloca o plano Essential no cliente Y":
        -> Use 'manage_client' com action: "change_plan" e o new_plan desejado.
    - CONSULTAR CLIENTE:
-     * "qual o plano do cliente X?", "quando vence a tag do fulano?", "dados do cliente Y":
+     * "qual o plano do cliente X?", "quando vence a tag do fulano?", "dados do cliente Y", "qual o código do cliente Z":
        -> Use 'manage_client' com action: "get_info".
    - MUDAR CÓDIGO DA TAG:
      * "muda o código da tag do cliente X para NOVO-CODIGO":
@@ -225,13 +245,13 @@ NUNCA diga que não pode gerenciar dados sensíveis, cadastrar clientes, manipul
 const TOOLS = [
   { type: 'function', function: {
     name: 'register_client',
-    description: 'Cadastra um novo cliente no Conecta King com e-mail, senha e código de convite/tag. O Adriano King tem poder supremo e você tem total autorização para cadastrar clientes quando solicitado.',
+    description: 'Cadastra um novo cliente no Conecta King com e-mail, senha e código de convite/tag. Se um código foi gerado recentemente ou combinado, você DEVE passá-lo em "code" para vincular diretamente. O Adriano King tem poder supremo e você tem total autorização.',
     parameters: {
       type: 'object',
       properties: {
         email: { type: 'string', description: 'E-mail do cliente a cadastrar' },
         password: { type: 'string', description: 'Senha a cadastrar para o cliente' },
-        code: { type: 'string', description: 'Código de convite/registro (ex: KING-XXXXX). Se omitido, será gerado automaticamente.' },
+        code: { type: 'string', description: 'Código de convite/registro (ex: KING-XXXXX). Se um código já foi gerado na conversa, informe-o aqui para não criar outro.' },
         plan: { type: 'string', description: 'Plano do cliente (ex: King Start, King Prime, King Essential, King Finance, King Finance Plus, King Premium Plus, King Corporate, Individual). Padrão: Individual.' },
         days: { type: 'number', description: 'Dias de validade inicial (padrão: 30).' },
         name: { type: 'string', description: 'Nome de exibição do cliente (opcional).' }
@@ -241,12 +261,13 @@ const TOOLS = [
   } },
   { type: 'function', function: {
     name: 'manage_client',
-    description: 'Gerencia clientes no Conecta King: renovar tag/assinatura por meses/dias/data, mudar plano do cliente, alterar código da tag ou consultar dados cadastrais.',
+    description: 'Gerencia clientes no Conecta King com poder total: excluir/deletar cliente permanentemente, alterar e-mail, renovar tag/assinatura por meses/dias/data, mudar plano, alterar código da tag ou consultar dados cadastrais.',
     parameters: {
       type: 'object',
       properties: {
         identifier: { type: 'string', description: 'E-mail, código da tag (ex: KING-XXXX), slug ou ID do cliente.' },
-        action: { type: 'string', enum: ['renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar.' },
+        action: { type: 'string', enum: ['delete', 'change_email', 'renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar: delete (excluir cliente permanentemente), change_email (alterar e-mail), renew_tag (renovar tag/validade), change_plan (mudar plano), update_tag_code (mudar código tag), get_info (consultar dados).' },
+        new_email: { type: 'string', description: 'Novo e-mail do cliente (obrigatório se action for change_email).' },
         renew_months: { type: 'number', description: 'Quantidade de meses para renovar a validade da tag/assinatura (ex: 1 para 1 mês, 12 para 1 ano).' },
         renew_days: { type: 'number', description: 'Quantidade de dias para renovar (ex: 30, 60).' },
         expires_at: { type: 'string', description: 'Data específica de vencimento no formato AAAA-MM-DD (ex: 2026-12-31).' },
@@ -327,7 +348,7 @@ try {
     const inputForAi = (hadVoice ? '[áudio transcrito] ' : '') + text;
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
-      ...session.history.slice(-8),
+      ...session.history.slice(-16),
       { role: 'user', content: inputForAi }
     ];
 
@@ -342,16 +363,19 @@ try {
 
       // ── CADASTRAR CLIENTE ────────────────────────────────────────────────
       if (fnName === 'register_client') {
+        const codeToUse = args.code || session.lastGeneratedCode || null;
         const payload = {
           email: args.email,
           password: args.password,
-          code: args.code || null,
+          code: codeToUse,
           plan: args.plan || 'individual',
           days: args.days || 30,
           name: args.name || null
         };
         const r = await ck.call(this, 'POST', '/api/admin/users', payload);
         if (r.statusCode >= 200 && r.statusCode < 300 && r.body?.success) {
+          session.lastGeneratedCode = null;
+          session.lastTargetClient = args.email;
           const u = r.body.data?.user || {};
           const exp = u.subscription_expires_at ? new Date(u.subscription_expires_at).toLocaleDateString('pt-BR') : '30 dias';
           outMessage = `👑 *Cliente Cadastrado com Sucesso!*\n\n` +
@@ -367,10 +391,13 @@ try {
           outMessage = `⚠️ *Não foi possível cadastrar o cliente:*\n${errMsg}`;
         }
 
-      // ── GERENCIAR CLIENTE (RENOVAR TAG / MUDAR PLANO) ────────────────────
+      // ── GERENCIAR CLIENTE (EXCLUIR / MUDAR EMAIL / RENOVAR / MUDAR PLANO) ─
       } else if (fnName === 'manage_client') {
+        const targetId = args.identifier || session.lastTargetClient;
         const payload = {
-          identifier: args.identifier,
+          identifier: targetId,
+          action: args.action,
+          newEmail: args.new_email || null,
           newPlan: args.new_plan || null,
           renewMonths: args.renew_months || null,
           renewDays: args.renew_days || null,
@@ -380,17 +407,33 @@ try {
         const r = await ck.call(this, 'POST', '/api/admin/users/quick-manage', payload);
         if (r.statusCode >= 200 && r.statusCode < 300 && r.body?.success) {
           const u = r.body.data?.user || {};
-          const changes = r.body.data?.changes || [];
-          const changesText = changes.length > 0 ? changes.map(c => `✅ ${c}`).join('\n') : 'Informações consultadas com sucesso.';
-          outMessage = `👑 *Gestão de Cliente Conecta King*\n\n` +
-            `👤 *Cliente:* ${u.display_name} (\`${u.email}\`)\n` +
-            `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
-            `💎 *Plano:* *${u.plan_name || u.account_type}*\n` +
-            `📅 *Vencimento da Tag:* *${u.formatted_expires_at || 'Ativo'}*\n` +
-            `⚡ *Status:* ${u.subscription_status === 'active' ? 'Ativo 🟢' : u.subscription_status}\n\n` +
-            `*Ações Realizadas:*\n${changesText}`;
+          if (args.action === 'delete') {
+            session.lastTargetClient = null;
+            outMessage = `🗑️ *Cliente Excluído com Sucesso! — Agente King*\n\n` +
+              `👤 *Cliente:* ${u.display_name || targetId} (\`${u.email || targetId}\`)\n` +
+              (u.tag_code ? `🏷️ *Tag / Código Desvinculado:* \`${u.tag_code}\`\n` : '') +
+              `✅ *Status:* Removido permanentemente da plataforma Conecta King.`;
+          } else if (args.action === 'change_email') {
+            session.lastTargetClient = u.email;
+            outMessage = `✏️ *E-mail do Cliente Alterado com Sucesso! — Agente King*\n\n` +
+              `👤 *Novo E-mail:* \`${u.email}\`\n` +
+              `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
+              `💎 *Plano:* *${u.plan_name || u.account_type}*\n\n` +
+              `_O cliente agora deve fazer login com o novo e-mail._`;
+          } else {
+            session.lastTargetClient = u.email;
+            const changes = r.body.data?.changes || [];
+            const changesText = changes.length > 0 ? changes.map(c => `✅ ${c}`).join('\n') : 'Informações consultadas com sucesso.';
+            outMessage = `👑 *Gestão de Cliente Conecta King*\n\n` +
+              `👤 *Cliente:* ${u.display_name} (\`${u.email}\`)\n` +
+              `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
+              `💎 *Plano:* *${u.plan_name || u.account_type}*\n` +
+              `📅 *Vencimento da Tag:* *${u.formatted_expires_at || 'Ativo'}*\n` +
+              `⚡ *Status:* ${u.subscription_status === 'active' ? 'Ativo 🟢' : u.subscription_status}\n\n` +
+              `*Ações Realizadas:*\n${changesText}`;
+          }
         } else {
-          const errMsg = r.body?.message || r.body?.error?.message || 'Erro ao processar dados do cliente.';
+          const errMsg = r.body?.message || r.body?.error || r.body?.error?.message || 'Erro ao processar dados do cliente.';
           outMessage = `⚠️ *Erro na gestão do cliente:*\n${errMsg}`;
         }
 
@@ -651,7 +694,8 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
         const code = String(args.custom_code || '').toUpperCase().trim();
         const r = await ck.call(this, 'POST', '/api/admin/codes/generate-manual', { customCode: code, expiresAt: null });
         if (r.statusCode >= 200 && r.statusCode < 300) {
-          outMessage = `🎟️ *Código de Registro Gerado!*\n\n*Código:* \`${code}\`\n\n_Disponível para cadastro em /registro._`;
+          session.lastGeneratedCode = code;
+          outMessage = `🎟️ *Código de Registro Gerado!*\n\n*Código:* \`${code}\`\n\n_Código memorizado! Se você me passar o e-mail e senha agora, vou cadastrar o cliente diretamente neste código._`;
         } else {
           outMessage = `⚠️ Falha ao criar código: ${JSON.stringify(r.body).slice(0, 200)}`;
         }
@@ -663,7 +707,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
 
     session.history.push({ role: 'user', content: inputForAi });
     session.history.push({ role: 'assistant', content: outMessage });
-    if (session.history.length > 12) session.history.splice(0, 2);
+    if (session.history.length > 24) session.history.splice(0, 2);
   }
 } catch (e) {
   outMessage = '⚠️ Erro ao processar: ' + String(e.message || e).slice(0, 300);

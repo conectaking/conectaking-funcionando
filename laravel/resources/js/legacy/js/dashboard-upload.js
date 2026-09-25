@@ -631,30 +631,25 @@ function ensureCropperUI() {
         toolbar = document.createElement('div');
         toolbar.className = 'cropper-toolbar';
         toolbar.innerHTML = [
-            '<div id="cropper-ratios-container" class="cropper-ratio-bar">',
-            '    <span class="cropper-ratio-label"><i class="fas fa-shapes"></i> Proporção:</span>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="auto">Automática</button>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="tarja">Tarja</button>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="2:1">2:1</button>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="4:3">4:3</button>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="1:1">1:1</button>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="3:4">3:4</button>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="10:16">10:16</button>',
-            '    <button type="button" class="cropper-ratio-btn" data-ratio="16:9">16:9</button>',
-            '</div>',
             '<div class="cropper-actions-bar">',
             '    <button type="button" id="crop-btn-use-full-top" class="btn btn-use-full" title="Usar imagem completa sem cortes">',
             '        <i class="fas fa-check-circle"></i> Usar Imagem Completa (Sem Cortar)',
             '    </button>',
-            '    <button type="button" id="crop-btn-fit" class="cropper-tool-btn highlight" title="Ajustar e ver a foto inteira sem cortes">',
-            '        <i class="fas fa-expand"></i> Ver foto inteira',
+            '    <button type="button" id="crop-btn-reset" class="cropper-tool-btn" title="Redefinir enquadramento da imagem inteira">',
+            '        <i class="fas fa-undo"></i> Redefinir',
             '    </button>',
             '    <button type="button" id="crop-btn-rotate" class="cropper-tool-btn" title="Girar 90 graus">',
             '        <i class="fas fa-redo"></i> Girar',
             '    </button>',
-            '    <button type="button" id="crop-btn-reset" class="cropper-tool-btn" title="Redefinir enquadramento">',
-            '        <i class="fas fa-undo"></i> Redefinir',
-            '    </button>',
+            '</div>',
+            '<div id="cropper-ratios-container" class="cropper-ratio-bar">',
+            '    <span class="cropper-ratio-label"><i class="fas fa-shapes"></i> Proporção:</span>',
+            '    <button type="button" class="cropper-ratio-btn active" data-ratio="tarja">Tarja</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="2:1">2:1</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="4:3">4:3</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="3:4">3:4</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="10:16">10:16</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="16:9">16:9</button>',
             '</div>'
         ].join('');
         var body = modal.querySelector('.modal-body.cropper-body');
@@ -958,17 +953,23 @@ function wireCropperToolbar() {
             cropper.reset();
             var rKey = imageToUpload?.selectedRatio || 'tarja';
             var ratioMap = {
-                'auto': NaN,
                 'tarja': 4 / 1,
                 '2:1': 2 / 1,
                 '4:3': 4 / 3,
-                '1:1': 1 / 1,
                 '3:4': 3 / 4,
                 '10:16': 10 / 16,
                 '16:9': 16 / 9
             };
-            if (ratioMap[rKey] !== undefined) {
-                cropper.setAspectRatio(ratioMap[rKey]);
+            var targetRatio = ratioMap[rKey] !== undefined ? ratioMap[rKey] : (4 / 1);
+            cropper.setAspectRatio(targetRatio);
+            var canvasData = cropper.getCanvasData();
+            if (canvasData) {
+                cropper.setCropBoxData({
+                    left: canvasData.left,
+                    top: canvasData.top,
+                    width: canvasData.width,
+                    height: canvasData.height
+                });
             }
         });
     }

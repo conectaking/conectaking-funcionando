@@ -1751,27 +1751,10 @@ function openEditModalForNewItem(tempItem) {
         }
         case 'banner':
             formHTML = `
+                <!-- Proporção do Banner: ajustada diretamente na tela de corte ao escolher a imagem -->
+                <input type="hidden" name="aspect-ratio-selector" id="edit-banner-aspect-ratio" value="${tempItem.aspect_ratio || 'tarja'}">
                 <div class="input-group">
-                    <label>Proporção do Banner</label>
-                    <div class="aspect-ratio-selector">
-                        <input type="radio" id="aspect-auto" name="aspect-ratio-selector" value="auto" checked>
-                        <label for="aspect-auto">Automática</label>
-                        <input type="radio" id="aspect-tarja" name="aspect-ratio-selector" value="tarja">
-                        <label for="aspect-tarja">Tarja</label>
-                        <input type="radio" id="aspect-2-1" name="aspect-ratio-selector" value="2:1">
-                        <label for="aspect-2-1">2:1</label>
-                        <input type="radio" id="aspect-4-3" name="aspect-ratio-selector" value="4:3">
-                        <label for="aspect-4-3">4:3</label>
-                        <input type="radio" id="aspect-1-1" name="aspect-ratio-selector" value="1:1">
-                        <label for="aspect-1-1">1:1</label>
-                        <input type="radio" id="aspect-3-4" name="aspect-ratio-selector" value="3:4">
-                        <label for="aspect-3-4">3:4</label>
-                        <input type="radio" id="aspect-10-16" name="aspect-ratio-selector" value="10:16">
-                        <label for="aspect-10-16">10:16</label>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>Imagem do Banner (Clique para enquadrar)</label>
+                    <label>Imagem do Banner (Clique para escolher e enquadrar)</label>
                     <div class="image-upload-area banner-item" data-item-type="banner" data-item-id="${tempItem.id}">
                         <div class="image-preview">
                             <div class="preview-placeholder" style="display: block;">

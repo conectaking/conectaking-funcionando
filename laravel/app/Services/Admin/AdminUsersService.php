@@ -324,6 +324,7 @@ class AdminUsersService
             DB::delete('DELETE FROM profile_items WHERE user_id = ?', [$id]);
             DB::delete('DELETE FROM user_profiles WHERE user_id = ?', [$id]);
             DB::update('UPDATE registration_codes SET generated_by_user_id = NULL WHERE generated_by_user_id = ?', [$id]);
+            DB::update('UPDATE registration_codes SET is_claimed = FALSE, claimed_by_user_id = NULL, claimed_at = NULL WHERE claimed_by_user_id = ?', [$id]);
             $deleted = DB::delete('DELETE FROM users WHERE id = ?', [$id]);
             if ($deleted < 1) {
                 return ['error' => 'Usuário não encontrado.', 'status' => 404];
@@ -596,9 +597,57 @@ class AdminUsersService
         }
 
         $userId = (string) $user->id;
+
+        // 0. Exclusão de Cliente
+        $action = strtolower(trim((string) ($data['action'] ?? '')));
+        if ($action === 'delete' || ! empty($data['deleteUser'])) {
+            if ($user->account_type === 'adm_principal') {
+                return ['error' => 'Não é permitido excluir o usuário Administrador Principal.', 'status' => 403];
+            }
+            $delRes = $this->delete($userId);
+            if (isset($delRes['error'])) {
+                return $delRes;
+            }
+
+            return [
+                'success' => true,
+                'message' => "Cliente '{$user->email}' e todos os seus dados foram excluídos com sucesso do sistema.",
+                'deleted' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'display_name' => $user->display_name ?: $user->email,
+                    'tag_code' => $user->tag_code ?? $user->profile_slug ?? '',
+                ],
+            ];
+        }
+
         $updates = [];
         $params = [];
         $appliedChanges = [];
+
+        // 0.1 Alteração de E-mail
+        $newEmail = trim((string) ($data['newEmail'] ?? $data['new_email'] ?? ($action === 'change_email' ? ($data['email'] ?? '') : '')));
+        if ($newEmail !== '' && strtolower($newEmail) !== strtolower($user->email)) {
+            if (! filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+                return ['error' => "O e-mail '{$newEmail}' é inválido.", 'status' => 400];
+            }
+            $existing = DB::selectOne('SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ? LIMIT 1', [$newEmail, $userId]);
+            if ($existing) {
+                return ['error' => "O e-mail '{$newEmail}' já está cadastrado para outro usuário.", 'status' => 400];
+            }
+            $updates[] = 'email = ?';
+            $params[] = strtolower($newEmail);
+            $appliedChanges[] = "E-mail alterado de '{$user->email}' para '{$newEmail}'";
+        }
+
+        // 0.2 Redefinição de Senha (opcional)
+        $newPass = trim((string) ($data['newPassword'] ?? $data['new_password'] ?? $data['password'] ?? ''));
+        if ($newPass !== '' && $action === 'change_password') {
+            $updates[] = 'password = ?';
+            $params[] = \Illuminate\Support\Facades\Hash::make($newPass);
+            $appliedChanges[] = 'Senha de acesso atualizada';
+        }
 
         // 1. Alteração de Plano
         $planInput = trim((string) ($data['newPlan'] ?? $data['plan'] ?? $data['accountType'] ?? ''));
