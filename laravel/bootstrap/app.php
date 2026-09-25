@@ -55,6 +55,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/password/forgot',
             'api/password/reset',
             'api/inquiry/submit',
+            'api/admin/*',
+            'api/finance/*',
+            'api/subscription/*',
             // Stubs 410
             'api/payment/create-preference',
             'api/payment/webhook-notification',

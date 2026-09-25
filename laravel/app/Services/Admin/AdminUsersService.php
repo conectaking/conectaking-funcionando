@@ -406,6 +406,290 @@ class AdminUsersService
         ];
     }
 
+    public const PLAN_MAP = [
+        'start' => 'basic',
+        'king start' => 'basic',
+        'basic' => 'basic',
+        'prime' => 'premium',
+        'king prime' => 'premium',
+        'premium' => 'premium',
+        'essential' => 'king_base',
+        'king essential' => 'king_base',
+        'king_base' => 'king_base',
+        'finance' => 'king_finance',
+        'king finance' => 'king_finance',
+        'king_finance' => 'king_finance',
+        'finance plus' => 'king_finance_plus',
+        'king finance plus' => 'king_finance_plus',
+        'king_finance_plus' => 'king_finance_plus',
+        'premium plus' => 'king_premium_plus',
+        'king premium plus' => 'king_premium_plus',
+        'king_premium_plus' => 'king_premium_plus',
+        'corporate' => 'king_corporate',
+        'king corporate' => 'king_corporate',
+        'king_corporate' => 'king_corporate',
+        'empresa' => 'king_corporate',
+        'individual' => 'individual',
+        'free' => 'free',
+        'business_owner' => 'business_owner',
+        'adm_principal' => 'adm_principal',
+    ];
+
+    public const PLAN_NAMES = [
+        'basic' => 'King Start',
+        'premium' => 'King Prime',
+        'king_base' => 'King Essential',
+        'king_finance' => 'King Finance',
+        'king_finance_plus' => 'King Finance Plus',
+        'king_premium_plus' => 'King Premium Plus',
+        'king_corporate' => 'King Corporate',
+        'individual' => 'Individual',
+        'free' => 'Free',
+        'business_owner' => 'Business Owner',
+        'adm_principal' => 'ADM Principal',
+    ];
+
+    /**
+     * Cadastro direto de cliente pelo Administrador / Bot King.
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,mixed>
+     */
+    public function createUser(array $data): array
+    {
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
+        $password = (string) ($data['password'] ?? '');
+
+        if ($email === '' || $password === '') {
+            return ['error' => 'E-mail e senha são obrigatórios.', 'status' => 400];
+        }
+        if (! $this->isValidEmail($email)) {
+            return ['error' => 'Formato de e-mail inválido.', 'status' => 400];
+        }
+
+        $exists = DB::selectOne('SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1', [$email]);
+        if ($exists) {
+            return ['error' => "O e-mail {$email} já está cadastrado no Conecta King.", 'status' => 409];
+        }
+
+        $rawCode = strtoupper(trim((string) ($data['code'] ?? $data['registrationCode'] ?? '')));
+        if ($rawCode === '') {
+            $rawCode = 'KING-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
+        }
+
+        $codeRow = DB::selectOne('SELECT * FROM registration_codes WHERE UPPER(code) = ? LIMIT 1', [$rawCode]);
+        if ($codeRow && (bool) $codeRow->is_claimed) {
+            return ['error' => "O código de convite {$rawCode} já foi utilizado.", 'status' => 409];
+        }
+
+        $planKey = strtolower(trim((string) ($data['accountType'] ?? $data['plan'] ?? 'individual')));
+        $accountType = self::PLAN_MAP[$planKey] ?? (in_array($planKey, self::VALID_ACCOUNT_TYPES, true) ? $planKey : 'individual');
+
+        $days = isset($data['days']) && is_numeric($data['days']) ? (int) $data['days'] : 30;
+        $expiresAt = isset($data['expiresAt']) && ! empty($data['expiresAt'])
+            ? (string) $data['expiresAt']
+            : now()->addDays($days)->format('Y-m-d H:i:s');
+
+        $status = (string) ($data['subscriptionStatus'] ?? 'active');
+        $isAdmin = filter_var($data['isAdmin'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $displayName = (string) ($data['name'] ?? $data['displayName'] ?? $email);
+
+        return DB::transaction(function () use ($rawCode, $email, $password, $accountType, $expiresAt, $status, $isAdmin, $displayName, $codeRow): array {
+            $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
+            DB::insert(
+                'INSERT INTO users (id, email, password_hash, profile_slug, account_type, is_admin, subscription_status, subscription_expires_at, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+                [$rawCode, $email, $hash, $rawCode, $accountType, $isAdmin, $status, $expiresAt]
+            );
+
+            if (! $codeRow) {
+                DB::insert(
+                    'INSERT INTO registration_codes (code, is_claimed, claimed_by_user_id, claimed_at, created_at) VALUES (?, TRUE, ?, NOW(), NOW())',
+                    [$rawCode, $rawCode]
+                );
+            } else {
+                DB::update(
+                    'UPDATE registration_codes SET is_claimed = TRUE, claimed_by_user_id = ?, claimed_at = NOW() WHERE UPPER(code) = ?',
+                    [$rawCode, $rawCode]
+                );
+            }
+
+            if (\App\Support\SchemaMeta::hasTable('user_profiles')) {
+                DB::insert(
+                    'INSERT INTO user_profiles (user_id, display_name, logo_spacing, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
+                    [$rawCode, $displayName, 'center']
+                );
+            }
+
+            try {
+                $id = DB::selectOne(
+                    "INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
+                     VALUES (?, 'bible', 'Bíblia', true, 0) RETURNING id",
+                    [$rawCode]
+                );
+                if ($id && \App\Support\SchemaMeta::hasTable('bible_items')) {
+                    DB::insert(
+                        "INSERT INTO bible_items (profile_item_id, translation_code, is_visible) VALUES (?, 'nvi', true)",
+                        [$id->id]
+                    );
+                }
+            } catch (\Throwable $e) {}
+
+            return [
+                'success' => true,
+                'message' => 'Cliente cadastrado com sucesso!',
+                'user' => [
+                    'id' => $rawCode,
+                    'email' => $email,
+                    'display_name' => $displayName,
+                    'profile_slug' => $rawCode,
+                    'tag_code' => $rawCode,
+                    'account_type' => $accountType,
+                    'plan_name' => self::PLAN_NAMES[$accountType] ?? $accountType,
+                    'subscription_status' => $status,
+                    'subscription_expires_at' => $expiresAt,
+                ],
+                'login_url' => 'https://www.conectaking.com.br/login'
+            ];
+        });
+    }
+
+    /**
+     * Gestão rápida de usuário (alterar plano, renovar tag/assinatura, alterar código) por identificador flexível.
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,mixed>
+     */
+    public function quickManage(array $data): array
+    {
+        $idOrEmail = trim((string) ($data['identifier'] ?? $data['user'] ?? $data['id'] ?? $data['email'] ?? ''));
+        if ($idOrEmail === '') {
+            return ['error' => 'Identificador do cliente (e-mail, código da tag ou ID) é obrigatório.', 'status' => 400];
+        }
+
+        $user = DB::selectOne(
+            'SELECT u.*, p.display_name,
+                    (SELECT c.code FROM registration_codes c WHERE c.claimed_by_user_id = u.id AND c.is_claimed = TRUE ORDER BY c.claimed_at DESC NULLS LAST LIMIT 1) AS tag_code
+             FROM users u
+             LEFT JOIN user_profiles p ON u.id = p.user_id
+             WHERE LOWER(u.email) = LOWER(?)
+                OR LOWER(u.id) = LOWER(?)
+                OR LOWER(u.profile_slug) = LOWER(?)
+             LIMIT 1',
+            [$idOrEmail, $idOrEmail, $idOrEmail]
+        );
+
+        if (! $user) {
+            $user = DB::selectOne(
+                'SELECT u.*, p.display_name, c.code AS tag_code
+                 FROM registration_codes c
+                 INNER JOIN users u ON c.claimed_by_user_id = u.id
+                 LEFT JOIN user_profiles p ON u.id = p.user_id
+                 WHERE LOWER(c.code) = LOWER(?)
+                 LIMIT 1',
+                [$idOrEmail]
+            );
+        }
+
+        if (! $user) {
+            return ['error' => "Cliente '{$idOrEmail}' não foi encontrado no sistema.", 'status' => 404];
+        }
+
+        $userId = (string) $user->id;
+        $updates = [];
+        $params = [];
+        $appliedChanges = [];
+
+        // 1. Alteração de Plano
+        $planInput = trim((string) ($data['newPlan'] ?? $data['plan'] ?? $data['accountType'] ?? ''));
+        if ($planInput !== '') {
+            $planKey = strtolower($planInput);
+            $newAccountType = self::PLAN_MAP[$planKey] ?? (in_array($planKey, self::VALID_ACCOUNT_TYPES, true) ? $planKey : null);
+            if (! $newAccountType) {
+                return ['error' => "Plano '{$planInput}' não reconhecido. Planos válidos: King Start, King Prime, King Essential, King Finance, King Finance Plus, King Premium Plus, King Corporate.", 'status' => 400];
+            }
+            $updates[] = 'account_type = ?';
+            $params[] = $newAccountType;
+            $appliedChanges[] = "Plano alterado para " . (self::PLAN_NAMES[$newAccountType] ?? $newAccountType);
+        }
+
+        // 2. Renovação de Validade / Tag
+        $newExpiresAt = null;
+        if (isset($data['renewMonths']) && is_numeric($data['renewMonths'])) {
+            $months = (int) $data['renewMonths'];
+            $base = ($user->subscription_expires_at && strtotime($user->subscription_expires_at) > time())
+                ? \Illuminate\Support\Carbon::parse($user->subscription_expires_at)
+                : now();
+            $newExpiresAt = $base->addMonths($months)->format('Y-m-d H:i:s');
+            $appliedChanges[] = "Validade renovada por {$months} mês(es) (até " . \Illuminate\Support\Carbon::parse($newExpiresAt)->format('d/m/Y') . ")";
+        } elseif (isset($data['renewDays']) && is_numeric($data['renewDays'])) {
+            $days = (int) $data['renewDays'];
+            $base = ($user->subscription_expires_at && strtotime($user->subscription_expires_at) > time())
+                ? \Illuminate\Support\Carbon::parse($user->subscription_expires_at)
+                : now();
+            $newExpiresAt = $base->addDays($days)->format('Y-m-d H:i:s');
+            $appliedChanges[] = "Validade estendida por {$days} dia(s) (até " . \Illuminate\Support\Carbon::parse($newExpiresAt)->format('d/m/Y') . ")";
+        } elseif (isset($data['expiresAt']) && ! empty($data['expiresAt'])) {
+            $newExpiresAt = date('Y-m-d H:i:s', strtotime((string) $data['expiresAt']));
+            $appliedChanges[] = "Validade definida até " . \Illuminate\Support\Carbon::parse($newExpiresAt)->format('d/m/Y');
+        }
+
+        if ($newExpiresAt !== null) {
+            $updates[] = 'subscription_expires_at = ?';
+            $params[] = $newExpiresAt;
+            $updates[] = "subscription_status = 'active'";
+        }
+
+        // 3. Status de Assinatura
+        if (isset($data['subscriptionStatus']) && ! empty($data['subscriptionStatus'])) {
+            $updates[] = 'subscription_status = ?';
+            $params[] = (string) $data['subscriptionStatus'];
+        }
+
+        if ($updates !== []) {
+            $params[] = $userId;
+            DB::update('UPDATE users SET ' . implode(', ', $updates) . ', updated_at = NOW() WHERE id = ?', $params);
+        }
+
+        // 4. Alteração de Tag Code
+        $newTag = trim((string) ($data['newTagCode'] ?? $data['tagCode'] ?? $data['activationCode'] ?? ''));
+        if ($newTag !== '') {
+            $tagRes = $this->updateActivationCode($userId, $newTag);
+            if (isset($tagRes['error'])) {
+                return ['error' => (string) $tagRes['error'], 'status' => (int) ($tagRes['status'] ?? 400)];
+            }
+            $appliedChanges[] = "Código da Tag alterado para '{$newTag}'";
+        }
+
+        $fresh = DB::selectOne(
+            'SELECT u.id, u.email, u.profile_slug, u.account_type, u.subscription_status, u.subscription_expires_at,
+                    p.display_name,
+                    (SELECT c.code FROM registration_codes c WHERE c.claimed_by_user_id = u.id AND c.is_claimed = TRUE ORDER BY c.claimed_at DESC NULLS LAST LIMIT 1) AS tag_code
+             FROM users u
+             LEFT JOIN user_profiles p ON u.id = p.user_id
+             WHERE u.id = ?',
+            [$userId]
+        );
+
+        return [
+            'success' => true,
+            'message' => count($appliedChanges) > 0 ? implode(' | ', $appliedChanges) : 'Dados consultados com sucesso.',
+            'changes' => $appliedChanges,
+            'user' => [
+                'id' => $fresh->id,
+                'email' => $fresh->email,
+                'display_name' => $fresh->display_name ?: $fresh->email,
+                'profile_slug' => $fresh->profile_slug,
+                'tag_code' => $fresh->tag_code ?? $fresh->profile_slug,
+                'account_type' => $fresh->account_type,
+                'plan_name' => self::PLAN_NAMES[$fresh->account_type] ?? $fresh->account_type,
+                'subscription_status' => $fresh->subscription_status,
+                'subscription_expires_at' => $fresh->subscription_expires_at,
+                'formatted_expires_at' => $fresh->subscription_expires_at ? \Illuminate\Support\Carbon::parse($fresh->subscription_expires_at)->format('d/m/Y') : 'Vitalício/Sem data',
+            ]
+        ];
+    }
+
     /**
      * @return int|null|false false = valor inválido; null = ilimitado não se aplica aqui
      */

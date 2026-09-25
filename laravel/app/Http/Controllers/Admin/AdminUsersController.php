@@ -19,6 +19,40 @@ class AdminUsersController extends Controller
     {
     }
 
+    public function store(Request $request)
+    {
+        $body = is_array($request->all()) ? $request->all() : [];
+        try {
+            $result = $this->users->createUser($body);
+            if (isset($result['error'])) {
+                return $this->error((string) $result['error'], (int) ($result['status'] ?? 400));
+            }
+
+            return $this->success($result, $result['message'] ?? 'Cliente cadastrado com sucesso!');
+        } catch (\Throwable $e) {
+            Log::error('Erro POST /api/admin/users: '.$e->getMessage());
+
+            return $this->error('Erro ao cadastrar usuário: '.$e->getMessage(), 500);
+        }
+    }
+
+    public function quickManage(Request $request)
+    {
+        $body = is_array($request->all()) ? $request->all() : [];
+        try {
+            $result = $this->users->quickManage($body);
+            if (isset($result['error'])) {
+                return $this->error((string) $result['error'], (int) ($result['status'] ?? 400));
+            }
+
+            return $this->success($result, $result['message'] ?? 'Usuário atualizado com sucesso!');
+        } catch (\Throwable $e) {
+            Log::error('Erro POST /api/admin/users/quick-manage: '.$e->getMessage());
+
+            return $this->error('Erro ao atualizar usuário: '.$e->getMessage(), 500);
+        }
+    }
+
     public function dashboard(Request $request, string $id)
     {
         try {

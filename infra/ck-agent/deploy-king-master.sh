@@ -63,15 +63,16 @@ for n in nodes:
         print(f'     list_recent: {"list_recent" in js}')
         print(f'     adjust_cash: {"adjust_cash" in js}')
         print(f'     advice (CFO): {"advice" in js}')
-        print(f'     fetchRecentTransactions: {"fetchRecentTransactions" in js}')
-        print(f'     body.data.data fix: {"inner.data" in js}')
+        print(f'     register_client: {"register_client" in js}')
+        print(f'     manage_client: {"manage_client" in js}')
+        print(f'     manage_devotionals: {"manage_devotionals" in js}')
+        print(f'     manage_platform_plans: {"manage_platform_plans" in js}')
 PY
 
 echo ""
 docker ps --filter name=ck-agent-n8n --format '{{.Names}} → {{.Status}}'
 echo ""
 echo "✅ Deploy MASTER concluído!"
-echo "   Teste o agente cliente com 'Oi' → deve responder curto e com pergunta."
-echo "   Teste 'tira os R\$ 300 que coloquei errado' → deve encontrar e remover."
-echo "   Teste 'me dá um conselho de como melhorar meu faturamento' → CFO elite."
-echo "   Teste 'tem algum erro no meu sistema?' → diagnóstico real de páginas."
+echo "   Teste cadastro: 'Cadastra o cliente teste@email.com senha MinhaSenha123'"
+echo "   Teste renovação: 'Renova a tag do cliente tal por 1 mês'"
+echo "   Teste devocional: 'Coloca o tema Fé Inabalável para o mês 10'"

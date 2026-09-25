@@ -762,6 +762,8 @@ Route::middleware(['admin', 'audit'])->group(function () {
 
         // Users: rotas fixas antes de /users/{id} para não serem capturadas pelo curinga.
         Route::get($p.'/api/admin/users', [$adminOverview, 'users'])->middleware('throttle:60,1');
+        Route::post($p.'/api/admin/users', [$adminUsers, 'store'])->middleware('throttle:30,1');
+        Route::post($p.'/api/admin/users/quick-manage', [$adminUsers, 'quickManage'])->middleware('throttle:30,1');
         Route::get($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'autoDeleteConfig'])->middleware('throttle:30,1');
         Route::post($p.'/api/admin/users/auto-delete-config', [$adminUsers, 'saveAutoDeleteConfig'])->middleware('throttle:10,1');
         Route::post($p.'/api/admin/users/execute-auto-delete', [$adminUsers, 'executeAutoDelete'])->middleware('throttle:5,1');

@@ -145,10 +145,8 @@ async function resolveProfileId() {
   } catch (_) { return null; }
 }
 
-// ─── Busca transações recentes com leitura correta da resposta paginada ───────
 async function fetchRecentTransactions(limitN) {
   const r = await ck.call(this, 'GET', `/api/finance/transactions?limit=${limitN}&orderDir=DESC&orderBy=created_at`);
-  // Laravel retorna: body.data.data (paginado) OU body.data (array simples)
   const raw = r.body;
   const inner = (raw && raw.data) ? raw.data : raw;
   let arr = Array.isArray(inner) ? inner : (inner && Array.isArray(inner.data) ? inner.data : []);
@@ -158,70 +156,166 @@ async function fetchRecentTransactions(limitN) {
 const KB = `CONHECIMENTO EXECUTIVO CONECTA KING & ESTÚDIO ADRIANO KING:
 - Dono e CEO: Adriano King (@adrianokingg, WhatsApp 11988789417).
 - Estúdio Adriano King (Barueri-SP): Posicionamento de Imagem 20 fotos R$1.000 / 30 fotos R$1.400. Ensaio 10 fotos R$300 / 20 fotos R$550 / 30 fotos R$800.
-- Plataforma Conecta King: cartões virtuais dinâmicos, tags/pulseiras NFC, King Forms, King Selection, Gestão Financeira integrada.
-- Planos Conecta King: Start R$70, Prime R$100, Essential R$150, Finance R$170, Finance Plus R$200, Premium Plus R$220, Corporate R$230.`;
+- Plataforma Conecta King: cartões virtuais dinâmicos, tags/pulseiras NFC, King Forms, King Selection, Gestão Financeira integrada, Bíblia e Devocionais 365.
+- Planos Conecta King: King Start (R$70), King Prime (R$100), King Essential (R$150), King Finance (R$170), King Finance Plus (R$200), King Premium Plus (R$220), King Corporate (R$230).`;
 
-const SYSTEM_PROMPT = `Você é o Assistente Executivo e CFO de Elite pessoal do Adriano King.
-Atende exclusivamente o King no Telegram. Tom: direto, ágil, executivo, resolutivo. Sem enrolação.
+const SYSTEM_PROMPT = `Você é o Agente King, Assistente Executivo Pessoal e Operador Supremo do Adriano King.
+Você atende exclusivamente o CEO Adriano King no Telegram com PODER ADMINISTRATIVO TOTAL sobre toda a plataforma Conecta King.
+Tom de voz: executivo de altíssimo nível, ágil, prestativo, confiante, resolutivo e direto. Sem enrolação.
 
 ${KB}
 
-═══ GESTÃO FINANCEIRA — DOMÍNIO TOTAL ═══
-Você tem CONTROLE TOTAL sobre as finanças. Nunca recuse uma ação financeira que o King pedir.
-O que você pode (e deve) fazer:
+═══ PODER ADMINISTRATIVO TOTAL CONECTA KING (O REI MANDA, VOCÊ EXECUTA) ═══
+Você tem AUTORIZAÇÃO TOTAL, EXPRESSA e IRRESTRITA do Adriano King para realizar QUALQUER ação no Conecta King.
+NUNCA diga que não pode gerenciar dados sensíveis, cadastrar clientes, manipular e-mails ou senhas. Você é o braço direito do Adriano!
 
-1. REGISTRAR (create): receitas, despesas, pendências. Múltiplos lançamentos na mesma mensagem.
-   - "recebi", "ganhei", "entrou", "vendi" + valor = INCOME PAID
-   - "vou receber", "a receber", "trabalho de X" sem receber ainda = INCOME PENDING
-   - "gastei", "comprei", "paguei", "saída" = EXPENSE PAID
-   - "contas a pagar", "a pagar" = EXPENSE PENDING
-   - Trabalho parcial ("fiz trabalho de 2000, recebi 200, falta 1800") → crie DUAS transações
+1. CADASTRO DE CLIENTES & CRIAÇÃO DE CONTAS:
+   - Quando o Adriano disser "cadastra o cliente fulano@email.com com a senha tal", "cria uma conta com e-mail X e senha Y", "cadastra ele nesse código que você acabou de fazer":
+     -> Chame IMEDIATAMENTE a ferramenta 'register_client'!
+     - Se o Adriano já mencionou ou gerou um código de convite (ex: KING-XXXXX), passe esse código no campo 'code'. Se não informou, deixe vazio que o sistema gera automaticamente.
+     - Se o Adriano especificou um plano (ex: Prime, Finance, Start), passe no campo 'plan'.
+     - NUNCA recuse dizendo que é dado sensível. O Adriano é o dono supremo e administrador da plataforma. Execute o cadastro imediatamente e confirme com os dados de acesso!
 
-2. REMOVER (delete_by_criteria): apagar lançamento por valor, descrição ou o último.
-   - "tira o/os R$ X", "apaga os R$ X", "coloquei errado os R$ X", "remove a entrada de X" → delete_by_criteria com o valor
-   - "apaga o último", "cancela o último", "errei" → cancel_last
-   - NUNCA diga "não encontrei" sem antes chamar list_recent para checar os IDs reais
+2. GESTÃO DE CLIENTES (RENOVAR TAG, MUDAR PLANO, CONSULTAR):
+   - RENOVAÇÃO DE TAG / ASSINATURA:
+     * Se o Adriano disser "renova o cliente X por 1 mês", "renova a tag do cliente tal até 31/12", "adiciona 30 dias na tag do fulano":
+       -> Use 'manage_client' com action: "renew_tag" e os meses/dias/data.
+     * Se o Adriano disser apenas "quero renovar o cliente X" sem falar o prazo:
+       -> Responda de forma proativa e direta: "Com certeza, King! Por quanto tempo deseja renovar? Posso renovar por 1 mês, 1 ano ou você prefere definir uma data de vencimento específica?"
+   - MUDAR PLANO DO CLIENTE:
+     * "muda a conta do cliente X para King Prime", "altera o plano do fulano para Finance", "coloca o plano Essential no cliente Y":
+       -> Use 'manage_client' com action: "change_plan" e o new_plan desejado.
+   - CONSULTAR CLIENTE:
+     * "qual o plano do cliente X?", "quando vence a tag do fulano?", "dados do cliente Y":
+       -> Use 'manage_client' com action: "get_info".
+   - MUDAR CÓDIGO DA TAG:
+     * "muda o código da tag do cliente X para NOVO-CODIGO":
+       -> Use 'manage_client' com action: "update_tag_code".
 
-3. LISTAR (list_recent): mostrar os últimos lançamentos ao King para ele decidir o que mudar.
-   - "me mostra o que tem lançado", "últimas transações", "o que está registrado"
+3. BÍBLIA & DEVOCIONAIS 365:
+   - "coloca o tema 'Fé Inabalável' no mês 10", "define o tema de outubro como Prosperidade":
+     -> Use 'manage_devotionals' com action: "set_month_theme", month e theme_text.
+   - "cria um tema devocional para este mês com IA", "gera um tema para o mês 11":
+     -> Use 'manage_devotionals' com action: "generate_month_theme".
+   - "gera os devocionais do mês 10 com IA", "cria os devocionais deste mês":
+     -> Use 'manage_devotionals' com action: "generate_month".
+   - "gera o devocional do dia 150 com IA":
+     -> Use 'manage_devotionals' com action: "generate_day".
+   - "quais os temas dos devocionais deste ano?":
+     -> Use 'manage_devotionals' com action: "get_themes".
 
-4. AJUSTAR SALDO (adjust_cash): se o King disser "o caixa correto é R$ X", calcule a diferença e crie um lançamento corretivo limpo.
-   - "o caixa tá errado, correto é R$ X" → consulte o saldo atual e ajuste a diferença
+4. PLANOS DA PLATAFORMA:
+   - "quais os planos do site?", "listar planos":
+     -> Use 'manage_platform_plans' com action: "list".
+   - "muda o preço do plano X para R$ Y":
+     -> Use 'manage_platform_plans' com action: "update_price".
 
-5. RESUMO (summary): trazer o resumo financeiro completo e limpo.
+5. GESTÃO FINANCEIRA — DOMÍNIO TOTAL:
+   - REGISTRAR (create): receitas, despesas, pendências. Múltiplos lançamentos na mesma mensagem.
+   - REMOVER (delete_by_criteria): "tira o/os R$ X", "apaga os R$ X", "remove a entrada/despesa de X".
+   - CANCELAR ÚLTIMO (cancel_last): "apaga o último", "cancela o último", "errei".
+   - LISTAR (list_recent): mostrar os últimos lançamentos ao King.
+   - AJUSTAR SALDO (adjust_cash): "o caixa correto é R$ X" -> consulte saldo e ajuste a diferença.
+   - RESUMO (summary): resumo financeiro limpo e completo.
+   - CONSULTORIA CFO (advice): conselhos táticos de faturamento.
 
-6. CONSULTORIA (advice): quando o King pedir opinião, conselhos ou estratégias de faturamento.
-   - Analise os dados reais (caixa, pendentes, ticket médio).
-   - Dê conselhos táticos e práticos: focar em Posicionamento (ticket R$1.400), reduzir pendências de recebimento, estratégias de upsell, previsibilidade de caixa.
-   - Seja um CFO de elite: fale com dados, seja direto, dê ações concretas.
-
-7. DIAGNÓSTICO DO SISTEMA (check_errors): verificar status e erros de páginas.
-
-8. GERAR CÓDIGO (generate_invite_code): criar código KING-XXXX.
-
-REGRAS CRÍTICAS:
-- NUNCA responda "não encontrei transação" sem chamar list_recent primeiro.
-- Se o King disser "tira o dinheiro de X" ou "coloquei errado", use delete_by_criteria com valor/descrição.
-- Descrições devem ser concisas: "Trabalho de fotografia", "Receita avulsa", "Duas cartelas de ovo". NUNCA frases de comando.
-- Sempre confirme com o saldo atualizado após qualquer operação.`;
+6. DIAGNÓSTICO DO SISTEMA (check_system_errors): verificar status e erros de páginas.
+7. GERAR CÓDIGO (generate_invite_code): criar código KING-XXXXX.`;
 
 const TOOLS = [
-  { type: 'function', function: { name: 'manage_finance', description: 'Gerencia transações financeiras: registrar, remover por valor/descrição, ajustar saldo, listar recentes, resumo, consultoria.', parameters: { type: 'object', properties: {
-    action: { type: 'string', enum: ['create', 'cancel_last', 'delete_by_criteria', 'list_recent', 'adjust_cash', 'summary', 'advice'] },
-    transactions: { type: 'array', items: { type: 'object', properties: {
-      type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
-      amount: { type: 'number' }, status: { type: 'string', enum: ['PAID', 'PENDING'] },
-      description: { type: 'string' }
-    }, required: ['type', 'amount', 'status', 'description'] } },
-    criteria: { type: 'object', properties: {
-      amount: { type: 'number', description: 'Valor a procurar e deletar' },
-      description_contains: { type: 'string', description: 'Texto parcial da descrição' },
-      type: { type: 'string', enum: ['INCOME', 'EXPENSE', 'any'] }
-    } },
-    target_cash: { type: 'number', description: 'Saldo desejado em caixa para adjust_cash' },
-  }, required: ['action'] } } },
-  { type: 'function', function: { name: 'check_system_errors', description: 'Verifica erros de páginas e health do sistema.', parameters: { type: 'object', properties: { detail: { type: 'boolean' } } } } },
-  { type: 'function', function: { name: 'generate_invite_code', description: 'Gera código de registro KING-XXXXX.', parameters: { type: 'object', properties: { custom_code: { type: 'string' } }, required: ['custom_code'] } } }
+  { type: 'function', function: {
+    name: 'register_client',
+    description: 'Cadastra um novo cliente no Conecta King com e-mail, senha e código de convite/tag. O Adriano King tem poder supremo e você tem total autorização para cadastrar clientes quando solicitado.',
+    parameters: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'E-mail do cliente a cadastrar' },
+        password: { type: 'string', description: 'Senha a cadastrar para o cliente' },
+        code: { type: 'string', description: 'Código de convite/registro (ex: KING-XXXXX). Se omitido, será gerado automaticamente.' },
+        plan: { type: 'string', description: 'Plano do cliente (ex: King Start, King Prime, King Essential, King Finance, King Finance Plus, King Premium Plus, King Corporate, Individual). Padrão: Individual.' },
+        days: { type: 'number', description: 'Dias de validade inicial (padrão: 30).' },
+        name: { type: 'string', description: 'Nome de exibição do cliente (opcional).' }
+      },
+      required: ['email', 'password']
+    }
+  } },
+  { type: 'function', function: {
+    name: 'manage_client',
+    description: 'Gerencia clientes no Conecta King: renovar tag/assinatura por meses/dias/data, mudar plano do cliente, alterar código da tag ou consultar dados cadastrais.',
+    parameters: {
+      type: 'object',
+      properties: {
+        identifier: { type: 'string', description: 'E-mail, código da tag (ex: KING-XXXX), slug ou ID do cliente.' },
+        action: { type: 'string', enum: ['renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar.' },
+        renew_months: { type: 'number', description: 'Quantidade de meses para renovar a validade da tag/assinatura (ex: 1 para 1 mês, 12 para 1 ano).' },
+        renew_days: { type: 'number', description: 'Quantidade de dias para renovar (ex: 30, 60).' },
+        expires_at: { type: 'string', description: 'Data específica de vencimento no formato AAAA-MM-DD (ex: 2026-12-31).' },
+        new_plan: { type: 'string', description: 'Novo plano para o cliente (ex: King Start, King Prime, King Essential, King Finance, King Finance Plus, King Premium Plus, King Corporate).' },
+        new_tag_code: { type: 'string', description: 'Novo código da tag/pulseira (opcional).' }
+      },
+      required: ['identifier', 'action']
+    }
+  } },
+  { type: 'function', function: {
+    name: 'manage_devotionals',
+    description: 'Gerencia o módulo Bíblia e Devocionais 365: definir tema do mês, gerar tema com IA, gerar devocionais do mês com IA, gerar devocional de dia específico ou consultar temas do ano.',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['set_month_theme', 'generate_month_theme', 'generate_month', 'generate_day', 'get_themes'], description: 'Ação nos devocionais.' },
+        year: { type: 'number', description: 'Ano dos devocionais (padrão: ano atual).' },
+        month: { type: 'number', description: 'Mês (1 a 12).' },
+        day: { type: 'number', description: 'Dia do devocional (1 a 365).' },
+        theme_text: { type: 'string', description: 'Texto do tema para o mês.' }
+      },
+      required: ['action']
+    }
+  } },
+  { type: 'function', function: {
+    name: 'manage_platform_plans',
+    description: 'Consulta e atualiza os planos da plataforma Conecta King.',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['list', 'update_price'], description: 'Ação' },
+        plan_id: { type: 'number', description: 'ID do plano' },
+        price: { type: 'number', description: 'Novo valor do plano' }
+      },
+      required: ['action']
+    }
+  } },
+  { type: 'function', function: {
+    name: 'manage_finance',
+    description: 'Gerencia transações financeiras: registrar, remover por valor/descrição, ajustar saldo, listar recentes, resumo, consultoria.',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['create', 'cancel_last', 'delete_by_criteria', 'list_recent', 'adjust_cash', 'summary', 'advice'] },
+        transactions: { type: 'array', items: { type: 'object', properties: {
+          type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
+          amount: { type: 'number' }, status: { type: 'string', enum: ['PAID', 'PENDING'] },
+          description: { type: 'string' }
+        }, required: ['type', 'amount', 'status', 'description'] } },
+        criteria: { type: 'object', properties: {
+          amount: { type: 'number', description: 'Valor a procurar e deletar' },
+          description_contains: { type: 'string', description: 'Texto parcial da descrição' },
+          type: { type: 'string', enum: ['INCOME', 'EXPENSE', 'any'] }
+        } },
+        target_cash: { type: 'number', description: 'Saldo desejado em caixa para adjust_cash' }
+      },
+      required: ['action']
+    }
+  } },
+  { type: 'function', function: {
+    name: 'check_system_errors',
+    description: 'Verifica erros de páginas e health do sistema.',
+    parameters: { type: 'object', properties: { detail: { type: 'boolean' } } }
+  } },
+  { type: 'function', function: {
+    name: 'generate_invite_code',
+    description: 'Gera código de registro KING-XXXXX.',
+    parameters: { type: 'object', properties: { custom_code: { type: 'string' } }, required: ['custom_code'] }
+  } }
 ];
 
 let outMessage = '';
@@ -246,7 +340,129 @@ try {
       let args = {};
       try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}
 
-      if (fnName === 'manage_finance') {
+      // ── CADASTRAR CLIENTE ────────────────────────────────────────────────
+      if (fnName === 'register_client') {
+        const payload = {
+          email: args.email,
+          password: args.password,
+          code: args.code || null,
+          plan: args.plan || 'individual',
+          days: args.days || 30,
+          name: args.name || null
+        };
+        const r = await ck.call(this, 'POST', '/api/admin/users', payload);
+        if (r.statusCode >= 200 && r.statusCode < 300 && r.body?.success) {
+          const u = r.body.data?.user || {};
+          const exp = u.subscription_expires_at ? new Date(u.subscription_expires_at).toLocaleDateString('pt-BR') : '30 dias';
+          outMessage = `👑 *Cliente Cadastrado com Sucesso!*\n\n` +
+            `👤 *E-mail:* \`${u.email}\`\n` +
+            `🔑 *Senha:* \`${args.password}\`\n` +
+            `🏷️ *Código / Tag:* \`${u.tag_code || u.id}\`\n` +
+            `💎 *Plano:* *${u.plan_name || u.account_type}*\n` +
+            `📅 *Validade:* ${exp}\n` +
+            `🌐 *Link de Acesso:* https://www.conectaking.com.br/login\n\n` +
+            `_A conta já está ativa e pronta para uso!_`;
+        } else {
+          const errMsg = r.body?.message || r.body?.error?.message || 'Falha ao cadastrar cliente.';
+          outMessage = `⚠️ *Não foi possível cadastrar o cliente:*\n${errMsg}`;
+        }
+
+      // ── GERENCIAR CLIENTE (RENOVAR TAG / MUDAR PLANO) ────────────────────
+      } else if (fnName === 'manage_client') {
+        const payload = {
+          identifier: args.identifier,
+          newPlan: args.new_plan || null,
+          renewMonths: args.renew_months || null,
+          renewDays: args.renew_days || null,
+          expiresAt: args.expires_at || null,
+          newTagCode: args.new_tag_code || null
+        };
+        const r = await ck.call(this, 'POST', '/api/admin/users/quick-manage', payload);
+        if (r.statusCode >= 200 && r.statusCode < 300 && r.body?.success) {
+          const u = r.body.data?.user || {};
+          const changes = r.body.data?.changes || [];
+          const changesText = changes.length > 0 ? changes.map(c => `✅ ${c}`).join('\n') : 'Informações consultadas com sucesso.';
+          outMessage = `👑 *Gestão de Cliente Conecta King*\n\n` +
+            `👤 *Cliente:* ${u.display_name} (\`${u.email}\`)\n` +
+            `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
+            `💎 *Plano:* *${u.plan_name || u.account_type}*\n` +
+            `📅 *Vencimento da Tag:* *${u.formatted_expires_at || 'Ativo'}*\n` +
+            `⚡ *Status:* ${u.subscription_status === 'active' ? 'Ativo 🟢' : u.subscription_status}\n\n` +
+            `*Ações Realizadas:*\n${changesText}`;
+        } else {
+          const errMsg = r.body?.message || r.body?.error?.message || 'Erro ao processar dados do cliente.';
+          outMessage = `⚠️ *Erro na gestão do cliente:*\n${errMsg}`;
+        }
+
+      // ── BÍBLIA & DEVOCIONAIS 365 ──────────────────────────────────────────
+      } else if (fnName === 'manage_devotionals') {
+        const curYear = new Date().getFullYear();
+        const y = args.year || curYear;
+        const m = args.month || (new Date().getMonth() + 1);
+
+        if (args.action === 'set_month_theme') {
+          const themeText = String(args.theme_text || '').trim();
+          const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/month-themes/${y}`, { [String(m)]: themeText });
+          if (r.statusCode >= 200 && r.statusCode < 300) {
+            outMessage = `📖 *Tema Devocional Definido!*\n\n📅 *Mês:* ${m}/${y}\n✨ *Tema:* "${themeText}"\n\n_Tema salvo com sucesso para o calendário devocional!_`;
+          } else {
+            outMessage = `⚠️ Erro ao salvar tema do mês: ${r.body?.message || 'Falha na requisição'}`;
+          }
+        } else if (args.action === 'generate_month_theme') {
+          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/month-themes/${y}/generate/${m}`, { hint: args.theme_text || '' });
+          if (r.statusCode >= 200 && r.statusCode < 300) {
+            const textTheme = r.body?.data?.text || '';
+            outMessage = `✨ *Novo Tema Gerado com IA!*\n\n📅 *Mês:* ${m}/${y}\n📖 *Tema Criado:* "${textTheme}"\n\n_Tema salvo automaticamente nos Devocionais 365!_`;
+          } else {
+            outMessage = `⚠️ Erro ao gerar tema com IA: ${r.body?.message || 'Falha na requisição'}`;
+          }
+        } else if (args.action === 'generate_month') {
+          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/generate-month-ai/${y}/${m}`);
+          if (r.statusCode >= 200 && r.statusCode < 300) {
+            const total = r.body?.data?.totalGenerated ?? r.body?.data?.count ?? 'todos os';
+            outMessage = `✨ *Geração de Devocionais Concluída!*\n\n📅 *Mês:* ${m}/${y}\n📖 Foram gerados e salvos ${total} devocionais diários com IA para este mês!`;
+          } else {
+            outMessage = `⚠️ Falha ao gerar devocionais do mês: ${r.body?.message || JSON.stringify(r.body)}`;
+          }
+        } else if (args.action === 'generate_day') {
+          const d = args.day || 1;
+          const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${d}/generate-ai`);
+          if (r.statusCode >= 200 && r.statusCode < 300) {
+            const dev = r.body?.data || {};
+            outMessage = `📖 *Devocional do Dia ${d} Gerado!*\n\n*Título:* ${dev.title || 'Devocional Diário'}\n*Versículo:* ${dev.verse_reference || ''}\n\n_Salvo com sucesso na plataforma!_`;
+          } else {
+            outMessage = `⚠️ Falha ao gerar devocional do dia ${d}: ${r.body?.message || 'Erro'}`;
+          }
+        } else if (args.action === 'get_themes') {
+          const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${y}`);
+          const themes = r.body?.data?.themes || {};
+          const monthNames = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+          const lines = [];
+          for (let i = 1; i <= 12; i++) {
+            const t = themes[String(i)] || themes[i] || '_Sem tema definido_';
+            lines.push(`• *${monthNames[i]}:* ${t}`);
+          }
+          outMessage = `📖 *Temas Devocionais 365 (${y}):*\n\n${lines.join('\n')}`;
+        }
+
+      // ── PLANOS DA PLATAFORMA ──────────────────────────────────────────────
+      } else if (fnName === 'manage_platform_plans') {
+        if (args.action === 'list') {
+          const r = await ck.call(this, 'GET', '/api/admin/plans');
+          const plans = r.body?.data || [];
+          const lines = plans.map(p => `• *${p.plan_name}* (\`${p.plan_code}\`): R$ ${Number(p.price).toFixed(2).replace('.', ',')} [ID: ${p.id}]`);
+          outMessage = `💎 *Planos Conecta King:*\n\n${lines.join('\n')}`;
+        } else if (args.action === 'update_price') {
+          const r = await ck.call(this, 'PUT', `/api/subscription/plans/${args.plan_id}`, { price: args.price, monthly_price: args.price });
+          if (r.statusCode >= 200 && r.statusCode < 300) {
+            outMessage = `✅ *Preço do Plano Atualizado!*\n\nNovo valor: R$ ${Number(args.price).toFixed(2).replace('.', ',')}`;
+          } else {
+            outMessage = `⚠️ Erro ao atualizar plano: ${r.body?.message || 'Falha'}`;
+          }
+        }
+
+      // ── GESTÃO FINANCEIRA ────────────────────────────────────────────────
+      } else if (fnName === 'manage_finance') {
         const profileId = await resolveProfileId.call(this);
         const today = new Date().toISOString().slice(0, 10);
 
@@ -282,7 +498,6 @@ try {
 
         // ── CANCEL LAST ─────────────────────────────────────────────
         } else if (args.action === 'cancel_last') {
-          // Tenta memória de sessão primeiro, depois busca na API
           let targetIds = (session.lastCreatedTransactions || []).map(t => t.id).filter(Boolean);
           if (targetIds.length === 0) {
             const recent = await fetchRecentTransactions.call(this, 1);
@@ -311,7 +526,6 @@ try {
             return amountMatch && descMatch && typeMatch;
           });
           if (targets.length === 0) {
-            // Mostra lista para o King decidir
             const listLines = recent.slice(0, 8).map((t, i) => `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} R$ ${Number(t.amount).toFixed(2).replace('.', ',')} — _${t.description}_ (${t.status}) [ID: ${t.id}]`);
             outMessage = '⚠️ Não encontrei transação com esse critério. Seus últimos lançamentos:\n\n' + listLines.join('\n') + '\n\nMe fala qual quer tirar.';
           } else {
@@ -352,7 +566,7 @@ try {
             outMessage = `✅ Saldo em caixa já está em R$ ${targetCash.toFixed(2).replace('.', ',')}. Nenhum ajuste necessário.`;
           } else {
             const adjType = diff > 0 ? 'INCOME' : 'EXPENSE';
-            const adjDesc = diff > 0 ? 'Ajuste de saldo (correção)' : 'Ajuste de saldo (correção)';
+            const adjDesc = 'Ajuste de saldo (correção)';
             const cr = await ck.call(this, 'POST', '/api/finance/transactions', { profile_id: profileId, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc, transaction_date: today });
             const row = (cr.body && cr.body.data) || {};
             if (row.id) session.lastCreatedTransactions = [{ id: row.id, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc }];
@@ -381,7 +595,6 @@ try {
           const pendRec = Number(d.pendenciasReceber ?? 0);
           const totalRec = Number(d.totalRecebido ?? 0);
           const totalPago = Number(d.totalPago ?? 0);
-          // Monta contexto financeiro para a IA gerar conselho personalizado
           const finCtx = `Dados financeiros reais do King:
 - Caixa disponível: R$ ${saldo.toFixed(2)}
 - Receitas recebidas no mês: R$ ${totalRec.toFixed(2)}
@@ -405,7 +618,6 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
       } else if (fnName === 'check_system_errors') {
         const h = await ck.call(this, 'GET', '/health');
         const ok = h.statusCode === 200 && h.body?.status === 'ok';
-        // Tenta buscar erros recentes de páginas
         let errorsMsg = '';
         try {
           const errR = await ck.call(this, 'GET', '/api/admin/system/recent-errors?limit=10');
@@ -425,7 +637,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
             errorsMsg = '\n\n✅ *Nenhum erro de página registrado nas últimas 24h.*';
           }
         } catch (_) {
-          errorsMsg = '\n\n_Diagnóstico de páginas indisponível (endpoint não configurado)._';
+          errorsMsg = '\n\n_Diagnóstico de páginas indisponível._';
         }
         outMessage = `🟢 *Diagnóstico do Sistema Conecta King:*\n\n` +
           `• *Status Geral:* ${ok ? '100% Operacional ✅' : 'Atenção ⚠️'}\n` +
@@ -446,7 +658,6 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
       }
 
     } else {
-      // Resposta conversacional normal (sem tool call)
       outMessage = choice?.content || 'Olá King! Como posso ajudar na gestão da Conecta King hoje?';
     }
 
