@@ -14,7 +14,11 @@
         var r = w / h;
         if (Math.abs(r - 16 / 9) < 0.04) return '16 : 9';
         if (Math.abs(r - 9 / 16) < 0.04) return '9 : 16';
+        if (Math.abs(r - 10 / 16) < 0.04) return '10 : 16';
         if (Math.abs(r - 4 / 3) < 0.04) return '4 : 3';
+        if (Math.abs(r - 3 / 4) < 0.04) return '3 : 4';
+        if (Math.abs(r - 2 / 1) < 0.04) return '2 : 1';
+        if (Math.abs(r - 4 / 1) < 0.04) return '4 : 1 (Tarja)';
         if (Math.abs(r - 1) < 0.02) return '1 : 1';
         return String(Math.round((r * 100)) / 100) + ' : 1';
     }
@@ -113,7 +117,7 @@
         var userReady = o.ready;
         o.responsive = o.responsive !== false;
         o.restore = false;
-        o.viewMode = 0; // Permitir zoom livre e visão 100% da imagem
+        o.viewMode = 1; // Restringir o corte aos limites da imagem, preservando a proporção exata sem criar bordas pretas vazias
         o.dragMode = o.dragMode || 'move';
         o.background = true;
         o.crop = function (e) {

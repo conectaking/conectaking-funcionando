@@ -620,38 +620,11 @@ async function handleImageUpload(imageFile, itemElement) {
 }
 
 
-function fitImageFullyInside(c, expandCropBox) {
+function fitImageFullyInside(c) {
     if (!c) return;
     try {
-        var cont = c.getContainerData();
-        var img = c.getImageData();
-        if (!cont || !img || !cont.width || !cont.height || !img.naturalWidth || !img.naturalHeight) return;
-
-        var padX = 20;
-        var padY = 20;
-        var maxW = Math.max(60, cont.width - padX * 2);
-        var maxH = Math.max(60, cont.height - padY * 2);
-
-        var scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
-        var w = Math.round(img.naturalWidth * scale);
-        var h = Math.round(img.naturalHeight * scale);
-        var left = Math.round((cont.width - w) / 2);
-        var top = Math.round((cont.height - h) / 2);
-
-        c.setCanvasData({
-            left: left,
-            top: top,
-            width: w,
-            height: h
-        });
-
-        if (expandCropBox) {
-            c.setCropBoxData({
-                left: left,
-                top: top,
-                width: w,
-                height: h
-            });
+        if (typeof c.reset === 'function') {
+            c.reset();
         }
     } catch (e) {
         console.warn('fitImageFullyInside error:', e);
@@ -758,28 +731,34 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
                 }
             }
         } else if (triggerType === 'banner' || triggerType === 'carousel' || triggerType === 'wifi-banner') {
-            const selectedRatioEl = document.querySelector('input[name="aspect-ratio-selector"]:checked');
-            if (selectedRatioEl) {
-                const selectedRatio = selectedRatioEl.value;
-                const ratioMap = {
-                    'auto': NaN,
-                    'tarja': 4 / 1,
-                    '2:1': 2 / 1,
-                    '4:3': 4 / 3,
-                    '1:1': 1 / 1,
-                    '3:4': 3 / 4,
-                    '10:16': 10 / 16,
-                    '16:9': 16 / 9
-                };
-                aspectRatio = ratioMap[selectedRatio] || NaN;
+            const ratioMap = {
+                'auto': NaN,
+                'tarja': 4 / 1,
+                '2:1': 2 / 1,
+                '4:3': 4 / 3,
+                '1:1': 1 / 1,
+                '3:4': 3 / 4,
+                '10:16': 10 / 16,
+                '16:9': 16 / 9
+            };
+            if (customRatio && ratioMap[customRatio] !== undefined) {
+                aspectRatio = ratioMap[customRatio];
+            } else {
+                const itemRatio = itemElement?.dataset?.aspectRatio || itemElement?.querySelector?.('.item-aspect-ratio-input')?.value;
+                const selectedRatioEl = document.querySelector('input[name="aspect-ratio-selector"]:checked');
+                const ratioKey = itemRatio || selectedRatioEl?.value || '16:9';
+                aspectRatio = ratioMap[ratioKey] !== undefined ? ratioMap[ratioKey] : (16 / 9);
+            }
+            if (aspectRatio === undefined) {
+                aspectRatio = 16 / 9;
             }
         }
 
         cropper = new Cropper(image, {
             aspectRatio: aspectRatio,
-            viewMode: 0,
+            viewMode: 1,
             background: true,
-            autoCropArea: 0.95,
+            autoCropArea: 1,
             responsive: true,
             restore: false,
             checkOrientation: true,
@@ -792,12 +771,6 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
                     if (box && self.cropper) {
                         self.cropper.resize();
                     }
-                    setTimeout(function () {
-                        if (self.cropper) {
-                            self.cropper.resize();
-                            fitImageFullyInside(self.cropper, (triggerType !== 'profile' && triggerType !== 'background'));
-                        }
-                    }, 50);
                 } catch (_) { /* ignore */ }
             }
         });
@@ -855,7 +828,6 @@ function wireCropperToolbar() {
         freeBtn.addEventListener('click', function () {
             if (!cropper) return;
             cropper.setAspectRatio(NaN);
-            fitImageFullyInside(cropper, true);
         });
     }
 
@@ -863,7 +835,7 @@ function wireCropperToolbar() {
         fitBtn.dataset.ckBound = '1';
         fitBtn.addEventListener('click', function () {
             if (!cropper) return;
-            fitImageFullyInside(cropper, false);
+            cropper.reset();
         });
     }
 
@@ -893,7 +865,6 @@ function wireCropperToolbar() {
         resetBtn.addEventListener('click', function () {
             if (cropper) {
                 cropper.reset();
-                fitImageFullyInside(cropper, false);
             }
         });
     }
