@@ -208,8 +208,8 @@ async function fetchRealSummary(profileId) {
   const saldoDisponivel = Number(dash.saldoDisponivel !== undefined ? dash.saldoDisponivel : dash.accountBalance) || 0;
   const totalRecebidoGeral = Number(dash.totalRecebido !== undefined ? dash.totalRecebido : dash.totalIncomePaid) || 0;
   const totalDespesasPagas = Number(dash.totalPago !== undefined ? dash.totalPago : dash.totalExpensePaid) || 0;
-  const faltaReceberGeral = (Number(dash.pendenciasReceber !== undefined ? dash.pendenciasReceber : dash.pendingIncome) || 0) + totalFaltaReceberTrabalhos;
-  const faltaPagarGeral = (Number(dash.pendenciasPagar !== undefined ? dash.pendenciasPagar : dash.pendingExpense) || 0) + totalFaltaPagarTerceirosNoMes;
+  const faltaReceberGeral = Number(dash.pendenciasReceber !== undefined ? dash.pendenciasReceber : ((Number(dash.pendingIncome) || 0) + totalFaltaReceberTrabalhos));
+  const faltaPagarGeral = Number(dash.pendenciasPagar !== undefined ? dash.pendenciasPagar : ((Number(dash.pendingExpense) || 0) + totalFaltaPagarTerceirosNoMes));
   const balancoMensal = totalRecebidoGeral - totalDespesasPagas;
 
   return {
@@ -834,20 +834,6 @@ try {
               data: kingDb
             });
 
-            // Se houve entrada/adiantamento, registra no fluxo de caixa automaticamente
-            if (entrada > 0) {
-              const cr = await ck.call(this, 'POST', '/api/finance/transactions', {
-                profile_id: profileId,
-                type: 'INCOME',
-                amount: entrada,
-                status: 'PAID',
-                description: `Adiantamento trabalho: ${cliente} (${servico})`,
-                transaction_date: today
-              });
-              if (cr.body?.data?.id) {
-                session.lastCreatedTransactions = [{ id: cr.body.data.id, type: 'INCOME', amount: entrada, status: 'PAID', description: `Adiantamento trabalho: ${cliente}` }];
-              }
-            }
 
             const summary = await fetchRealSummary.call(this, profileId);
             const falta = Math.max(0, valorTotal - entrada);
@@ -974,15 +960,6 @@ try {
                 trab.status = 'parcial';
               }
 
-              // Registrar entrada no fluxo de caixa
-              await ck.call(this, 'POST', '/api/finance/transactions', {
-                profile_id: profileId,
-                type: 'INCOME',
-                amount: valorPago,
-                status: 'PAID',
-                description: `Pagamento recebido: ${trab.cliente} (${trab.servico})`,
-                transaction_date: today
-              });
 
               await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
                 profile_id: profileId,

@@ -364,12 +364,21 @@ window.initFinancePane = async function () {
         });
         const receitasFluxo = Number(data.incomeFromTransactions !== undefined ? data.incomeFromTransactions : 0);
         const totalRecebido = Number(data.totalRecebido !== undefined ? data.totalRecebido : data.totalIncomePaid) || (receitasFluxo + totalRecebidoTrabalhosEsteMes);
-        const receitas = totalRecebido + totalFaltaReceberTrabalhos + (Number(data.pendingIncome) || 0);
+        const pendingIncomeRaw = Number(data.incomePending !== undefined ? data.incomePending : (data.pendingIncome || 0));
+        const pendingIncomeFluxo = (data.pendenciasReceber !== undefined && Math.abs(Number(data.pendingIncome) - Number(data.pendenciasReceber)) < 0.01 && totalFaltaReceberTrabalhos > 0)
+            ? Math.max(0, Number(data.pendingIncome) - totalFaltaReceberTrabalhos)
+            : pendingIncomeRaw;
+        const pendingExpenseRaw = Number(data.expensePending !== undefined ? data.expensePending : (data.pendingExpense || 0));
+        const pendingExpenseFluxo = (data.pendenciasPagar !== undefined && Math.abs(Number(data.pendingExpense) - Number(data.pendenciasPagar)) < 0.01 && totalTerceirosEsteMes > 0)
+            ? Math.max(0, Number(data.pendingExpense) - totalTerceirosEsteMes)
+            : pendingExpenseRaw;
+
+        const receitas = totalRecebido + totalFaltaReceberTrabalhos + pendingIncomeFluxo;
         const despesasPagas = Number(data.totalExpensePaid !== undefined ? data.totalExpensePaid : data.totalPago) || ((Number(data.expenseFromTransactions) || 0) + totalTerceirosEsteMes);
         const despesas = (Number(data.totalExpense) || 0) + totalTerceirosEsteMes;
         const saldo = totalRecebido - despesasPagas;
-        var faltaPagarEsteMes = (Number(data.pendingExpense) || 0) + totalTerceirosEsteMes;
-        const faltaReceberGeral = (Number(data.pendingIncome) || 0) + totalFaltaReceberTrabalhos;
+        var faltaPagarEsteMes = pendingExpenseFluxo + totalTerceirosEsteMes;
+        const faltaReceberGeral = pendingIncomeFluxo + totalFaltaReceberTrabalhos;
         const patrimonioInicial = Number(data.accountBalance !== undefined ? data.accountBalance : saldo);
         window._kingFinanceDb = kingDb;
         window._kingFinanceCards = cards;
