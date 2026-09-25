@@ -631,24 +631,31 @@ function ensureCropperUI() {
         toolbar = document.createElement('div');
         toolbar.className = 'cropper-toolbar';
         toolbar.innerHTML = [
-            '<button type="button" id="crop-btn-fit" class="cropper-tool-btn highlight" title="Ajustar e ver a foto inteira sem cortes">',
-            '    <i class="fas fa-expand"></i> Ver foto inteira',
-            '</button>',
-            '<button type="button" id="crop-btn-free" class="cropper-tool-btn" title="Liberar proporção para corte livre">',
-            '    <i class="fas fa-vector-square"></i> Corte Livre',
-            '</button>',
-            '<button type="button" id="crop-btn-zoom-in" class="cropper-tool-btn" title="Aproximar foto">',
-            '    <i class="fas fa-search-plus"></i> Zoom +',
-            '</button>',
-            '<button type="button" id="crop-btn-zoom-out" class="cropper-tool-btn" title="Afastar foto">',
-            '    <i class="fas fa-search-minus"></i> Zoom -',
-            '</button>',
-            '<button type="button" id="crop-btn-rotate" class="cropper-tool-btn" title="Girar 90 graus">',
-            '    <i class="fas fa-redo"></i> Girar',
-            '</button>',
-            '<button type="button" id="crop-btn-reset" class="cropper-tool-btn" title="Redefinir enquadramento">',
-            '    <i class="fas fa-undo"></i> Redefinir',
-            '</button>'
+            '<div id="cropper-ratios-container" class="cropper-ratio-bar">',
+            '    <span class="cropper-ratio-label"><i class="fas fa-shapes"></i> Proporção:</span>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="auto">Automática</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="tarja">Tarja</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="2:1">2:1</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="4:3">4:3</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="1:1">1:1</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="3:4">3:4</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="10:16">10:16</button>',
+            '    <button type="button" class="cropper-ratio-btn" data-ratio="16:9">16:9</button>',
+            '</div>',
+            '<div class="cropper-actions-bar">',
+            '    <button type="button" id="crop-btn-use-full-top" class="btn btn-use-full" title="Usar imagem completa sem cortes">',
+            '        <i class="fas fa-check-circle"></i> Usar Imagem Completa (Sem Cortar)',
+            '    </button>',
+            '    <button type="button" id="crop-btn-fit" class="cropper-tool-btn highlight" title="Ajustar e ver a foto inteira sem cortes">',
+            '        <i class="fas fa-expand"></i> Ver foto inteira',
+            '    </button>',
+            '    <button type="button" id="crop-btn-rotate" class="cropper-tool-btn" title="Girar 90 graus">',
+            '        <i class="fas fa-redo"></i> Girar',
+            '    </button>',
+            '    <button type="button" id="crop-btn-reset" class="cropper-tool-btn" title="Redefinir enquadramento">',
+            '        <i class="fas fa-undo"></i> Redefinir',
+            '    </button>',
+            '</div>'
         ].join('');
         var body = modal.querySelector('.modal-body.cropper-body');
         var content = modal.querySelector('.modal-content');
@@ -695,6 +702,12 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
             cropper.destroy();
         }
 
+        const isBannerType = (triggerType === 'banner' || triggerType === 'carousel' || triggerType === 'wifi-banner');
+        const ratioBar = document.getElementById('cropper-ratios-container');
+        if (ratioBar) {
+            ratioBar.style.display = isBannerType ? 'flex' : 'none';
+        }
+
         let aspectRatio = NaN;
         if (triggerType === 'profile') {
             aspectRatio = 1 / 1;
@@ -724,7 +737,7 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
                     aspectRatio = ratioMap[selectedRatio] || NaN;
                 }
             }
-        } else if (triggerType === 'banner' || triggerType === 'carousel' || triggerType === 'wifi-banner') {
+        } else if (isBannerType) {
             const ratioMap = {
                 'auto': NaN,
                 'tarja': 4 / 1,
@@ -735,17 +748,28 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
                 '10:16': 10 / 16,
                 '16:9': 16 / 9
             };
-            if (customRatio && ratioMap[customRatio] !== undefined) {
-                aspectRatio = ratioMap[customRatio];
-            } else {
-                const itemRatio = itemElement?.dataset?.aspectRatio || itemElement?.querySelector?.('.item-aspect-ratio-input')?.value;
+            let ratioKey = customRatio;
+            if (!ratioKey) {
+                ratioKey = itemElement?.dataset?.aspectRatio || itemElement?.querySelector?.('.item-aspect-ratio-input')?.value;
+            }
+            if (!ratioKey) {
+                const hiddenRatioEl = document.getElementById('edit-banner-aspect-ratio');
+                if (hiddenRatioEl?.value) ratioKey = hiddenRatioEl.value;
+            }
+            if (!ratioKey) {
                 const selectedRatioEl = document.querySelector('input[name="aspect-ratio-selector"]:checked');
-                const ratioKey = itemRatio || selectedRatioEl?.value || '16:9';
-                aspectRatio = ratioMap[ratioKey] !== undefined ? ratioMap[ratioKey] : (16 / 9);
+                if (selectedRatioEl?.value) ratioKey = selectedRatioEl.value;
             }
-            if (aspectRatio === undefined) {
-                aspectRatio = 16 / 9;
+            if (!ratioKey || ratioMap[ratioKey] === undefined) {
+                ratioKey = 'tarja';
             }
+            aspectRatio = ratioMap[ratioKey] !== undefined ? ratioMap[ratioKey] : (4 / 1);
+            imageToUpload.selectedRatio = ratioKey;
+
+            // Destacar o botão de proporção correspondente
+            document.querySelectorAll('.cropper-ratio-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.ratio === ratioKey);
+            });
         }
 
         cropper = new Cropper(image, {
@@ -790,11 +814,11 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
             } else if (triggerType === 'background') {
                 tipEl.innerHTML = 'Sugestão para fundo do cartão: <strong>1920×1080</strong> (16:9) ou <strong>1600×900</strong>. Prepare a foto nesse tamanho ou use <strong>Usar Imagem Completa (Sem Cortar)</strong>.';
             } else if (triggerType === 'banner' || triggerType === 'wifi-banner' || triggerType === 'carousel') {
-                tipEl.innerHTML = 'Ajuste a imagem do seu <strong>Banner</strong>. Use <strong>Usar Imagem Completa (Sem Cortar)</strong> para enviar a arte inteira, ou selecione <strong>Corte Livre</strong> para ajustar.';
+                tipEl.innerHTML = 'Ajuste a imagem do seu <strong>Banner</strong>. Escolha a proporção desejada nos botões acima ou selecione <strong>Usar Imagem Completa (Sem Cortar)</strong>.';
             } else if (triggerType === 'profile') {
                 tipEl.innerHTML = 'Ajuste sua <strong>Foto de Perfil</strong>. Use os botões para centralizar o rosto ou visualizar a imagem inteira.';
             } else {
-                tipEl.innerHTML = 'Ajuste sua imagem livremente. Use os botões acima para ver a foto inteira ou ajustar o zoom.';
+                tipEl.innerHTML = 'Ajuste sua imagem livremente. Use os botões acima para escolher proporções ou ver a foto inteira.';
             }
         }
         wireCropperToolbar();
@@ -806,27 +830,88 @@ function openCropper(file, triggerType, itemElement = null, customRatio = null) 
 function wireCropperToolbar() {
     var fitBtn = document.getElementById('crop-btn-fit');
     var freeBtn = document.getElementById('crop-btn-free');
-    var zoomInBtn = document.getElementById('crop-btn-zoom-in');
-    var zoomOutBtn = document.getElementById('crop-btn-zoom-out');
     var rotateBtn = document.getElementById('crop-btn-rotate');
     var resetBtn = document.getElementById('crop-btn-reset');
     var useFullBtn = document.getElementById('crop-btn-use-full');
+    var useFullTopBtn = document.getElementById('crop-btn-use-full-top');
+
+    function handleUseFull() {
+        if (imageToUpload && imageToUpload.originalFile) {
+            var selectedRatio = imageToUpload.selectedRatio || 'auto';
+            if (imageToUpload.element) {
+                imageToUpload.element.dataset.aspectRatio = selectedRatio;
+                var hiddenRatio = document.getElementById('edit-banner-aspect-ratio');
+                if (hiddenRatio) {
+                    hiddenRatio.value = selectedRatio;
+                    hiddenRatio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+            dispatchCropped(imageToUpload.originalFile);
+            closeCropper();
+        }
+    }
 
     if (useFullBtn && !useFullBtn.dataset.ckBound) {
         useFullBtn.dataset.ckBound = '1';
-        useFullBtn.addEventListener('click', function () {
-            if (imageToUpload && imageToUpload.originalFile) {
-                dispatchCropped(imageToUpload.originalFile);
-                closeCropper();
-            }
+        useFullBtn.addEventListener('click', handleUseFull);
+    }
+    if (useFullTopBtn && !useFullTopBtn.dataset.ckBound) {
+        useFullTopBtn.dataset.ckBound = '1';
+        useFullTopBtn.addEventListener('click', handleUseFull);
+    }
+
+    // Botões de proporção na barra superior do corte
+    var ratioButtons = document.querySelectorAll('.cropper-ratio-btn');
+    ratioButtons.forEach(function (btn) {
+        if (!btn.dataset.ckBound) {
+            btn.dataset.ckBound = '1';
+            btn.addEventListener('click', function () {
+                var rKey = this.dataset.ratio;
+                applyCropperRatio(rKey);
+            });
+        }
+    });
+
+    function applyCropperRatio(rKey) {
+        if (!cropper) return;
+        var ratioMap = {
+            'auto': NaN,
+            'tarja': 4 / 1,
+            '2:1': 2 / 1,
+            '4:3': 4 / 3,
+            '1:1': 1 / 1,
+            '3:4': 3 / 4,
+            '10:16': 10 / 16,
+            '16:9': 16 / 9
+        };
+        var numRatio = ratioMap[rKey] !== undefined ? ratioMap[rKey] : NaN;
+        cropper.setAspectRatio(numRatio);
+        imageToUpload.selectedRatio = rKey;
+
+        document.querySelectorAll('.cropper-ratio-btn').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.ratio === rKey);
         });
+
+        var hiddenRatio = document.getElementById('edit-banner-aspect-ratio');
+        if (hiddenRatio) {
+            hiddenRatio.value = rKey;
+            hiddenRatio.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (imageToUpload && imageToUpload.element) {
+            imageToUpload.element.dataset.aspectRatio = rKey;
+        }
+
+        var ar = document.getElementById('crop-aspect-readout');
+        if (ar && typeof window.__ckFmtRatio === 'function') {
+            var d = cropper.getData();
+            if (d) ar.textContent = window.__ckFmtRatio(d.width, d.height);
+        }
     }
 
     if (freeBtn && !freeBtn.dataset.ckBound) {
         freeBtn.dataset.ckBound = '1';
         freeBtn.addEventListener('click', function () {
-            if (!cropper) return;
-            cropper.setAspectRatio(NaN);
+            applyCropperRatio('auto');
         });
     }
 
@@ -844,20 +929,18 @@ function wireCropperToolbar() {
                     height: canvasData.height
                 });
             }
-        });
-    }
-
-    if (zoomInBtn && !zoomInBtn.dataset.ckBound) {
-        zoomInBtn.dataset.ckBound = '1';
-        zoomInBtn.addEventListener('click', function () {
-            if (cropper) cropper.zoom(0.1);
-        });
-    }
-
-    if (zoomOutBtn && !zoomOutBtn.dataset.ckBound) {
-        zoomOutBtn.dataset.ckBound = '1';
-        zoomOutBtn.addEventListener('click', function () {
-            if (cropper) cropper.zoom(-0.1);
+            imageToUpload.selectedRatio = 'auto';
+            document.querySelectorAll('.cropper-ratio-btn').forEach(function (b) {
+                b.classList.toggle('active', b.dataset.ratio === 'auto');
+            });
+            var hiddenRatio = document.getElementById('edit-banner-aspect-ratio');
+            if (hiddenRatio) {
+                hiddenRatio.value = 'auto';
+                hiddenRatio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (imageToUpload && imageToUpload.element) {
+                imageToUpload.element.dataset.aspectRatio = 'auto';
+            }
         });
     }
 
@@ -871,8 +954,21 @@ function wireCropperToolbar() {
     if (resetBtn && !resetBtn.dataset.ckBound) {
         resetBtn.dataset.ckBound = '1';
         resetBtn.addEventListener('click', function () {
-            if (cropper) {
-                cropper.reset();
+            if (!cropper) return;
+            cropper.reset();
+            var rKey = imageToUpload?.selectedRatio || 'tarja';
+            var ratioMap = {
+                'auto': NaN,
+                'tarja': 4 / 1,
+                '2:1': 2 / 1,
+                '4:3': 4 / 3,
+                '1:1': 1 / 1,
+                '3:4': 3 / 4,
+                '10:16': 10 / 16,
+                '16:9': 16 / 9
+            };
+            if (ratioMap[rKey] !== undefined) {
+                cropper.setAspectRatio(ratioMap[rKey]);
             }
         });
     }
@@ -890,6 +986,14 @@ function closeCropper() {
 
     function confirmCropAndUpload() {
         if (!cropper) return;
+        if (imageToUpload.element && imageToUpload.selectedRatio) {
+            imageToUpload.element.dataset.aspectRatio = imageToUpload.selectedRatio;
+            var hiddenRatio = document.getElementById('edit-banner-aspect-ratio');
+            if (hiddenRatio) {
+                hiddenRatio.value = imageToUpload.selectedRatio;
+                hiddenRatio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
         var originalFile = imageToUpload.originalFile;
         var isPNG = originalFile && (originalFile.type === 'image/png' || (originalFile.name && originalFile.name.toLowerCase().endsWith('.png')));
         var mimeType = isPNG ? 'image/png' : 'image/jpeg';

@@ -410,27 +410,8 @@ async function openEditModal(itemEl) {
                 <label>Nome do Banner</label>
                 <input type="text" id="edit-banner-name" value="${currentBannerName}" placeholder="Ex: Banner WhatsApp, Banner Instagram">
             </div>
-            <div class="input-group">
-                <label>Proporção do Banner</label>
-                <div class="aspect-ratio-control">
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-auto" value="auto" ${currentAspectRatio === 'auto' ? 'checked' : ''}>
-                    <label for="ratio-auto">Automática</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-tarja" value="tarja" ${currentAspectRatio === 'tarja' ? 'checked' : ''}>
-                    <label for="ratio-tarja">Tarja</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-2-1" value="2:1" ${currentAspectRatio === '2:1' ? 'checked' : ''}>
-                    <label for="ratio-2-1">2:1</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-4-3" value="4:3" ${currentAspectRatio === '4:3' ? 'checked' : ''}>
-                    <label for="ratio-4-3">4:3</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-1-1" value="1:1" ${currentAspectRatio === '1:1' ? 'checked' : ''}>
-                    <label for="ratio-1-1">1:1</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-3-4" value="3:4" ${currentAspectRatio === '3:4' ? 'checked' : ''}>
-                    <label for="ratio-3-4">3:4</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-10-16" value="10:16" ${currentAspectRatio === '10:16' ? 'checked' : ''}>
-                    <label for="ratio-10-16">10:16</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-16-9" value="16:9" ${currentAspectRatio === '16:9' ? 'checked' : ''}>
-                    <label for="ratio-16-9">16:9</label>
-                </div>
-            </div>
+            <!-- Proporção do Banner: ajustada diretamente na tela de corte ao trocar a imagem -->
+            <input type="hidden" name="aspect-ratio-selector" id="edit-banner-aspect-ratio" value="${currentAspectRatio || 'tarja'}">
             <div class="input-group">
                 <label>Imagem do Banner</label>
                 <div class="image-upload-area" data-item-type="banner" data-item-id="${itemId}">
@@ -787,27 +768,8 @@ async function openEditModal(itemEl) {
                 <input type="text" id="edit-banner-name" value="${currentBannerName || ''}" placeholder="Ex: Banner WhatsApp, Banner Instagram">
                 <small style="color: #999; display: block; margin-top: 5px;">Este nome aparece na lista.</small>
             </div>
-            <div class="input-group">
-                <label>Proporção do Banner</label>
-                <div class="aspect-ratio-control">
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-auto" value="auto" ${currentAspectRatio === 'auto' ? 'checked' : ''}>
-                    <label for="ratio-auto">Automática</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-tarja" value="tarja" ${currentAspectRatio === 'tarja' ? 'checked' : ''}>
-                    <label for="ratio-tarja">Tarja</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-2-1" value="2:1" ${currentAspectRatio === '2:1' ? 'checked' : ''}>
-                    <label for="ratio-2-1">2:1</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-4-3" value="4:3" ${currentAspectRatio === '4:3' ? 'checked' : ''}>
-                    <label for="ratio-4-3">4:3</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-1-1" value="1:1" ${currentAspectRatio === '1:1' ? 'checked' : ''}>
-                    <label for="ratio-1-1">1:1</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-3-4" value="3:4" ${currentAspectRatio === '3:4' ? 'checked' : ''}>
-                    <label for="ratio-3-4">3:4</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-10-16" value="10:16" ${currentAspectRatio === '10:16' ? 'checked' : ''}>
-                    <label for="ratio-10-16">10:16</label>
-                    <input type="radio" name="aspect-ratio-selector" id="ratio-16-9" value="16:9" ${currentAspectRatio === '16:9' ? 'checked' : ''}>
-                    <label for="ratio-16-9">16:9</label>
-                </div>
-            </div>
+            <!-- Proporção do Banner: ajustada diretamente na tela de corte ao trocar a imagem -->
+            <input type="hidden" name="aspect-ratio-selector" id="edit-banner-aspect-ratio" value="${currentAspectRatio || 'tarja'}">
             <div class="input-group">
                 <label>Imagem do Banner</label>
                 <div class="image-upload-area" data-item-type="banner" data-item-id="${itemId}">

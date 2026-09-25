@@ -1793,8 +1793,8 @@ function _setupEventListenersBody() {
                 itemEl.classList.remove('banner-carousel');
             }
 
-            const selectedRatioInput = document.querySelector('input[name="aspect-ratio-selector"]:checked');
-            if (selectedRatioInput) {
+            const selectedRatioInput = document.querySelector('input[name="aspect-ratio-selector"]:checked, #edit-banner-aspect-ratio');
+            if (selectedRatioInput && selectedRatioInput.value) {
                 const newAspectRatio = selectedRatioInput.value;
                 itemEl.dataset.aspectRatio = newAspectRatio;
             }

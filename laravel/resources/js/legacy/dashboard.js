@@ -2250,7 +2250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // Atualizar aspect_ratio se houver
-            const aspectRatioModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] input[name="aspect-ratio-selector"]:checked`)?.value;
+            const aspectRatioModal = document.querySelector(`#edit-item-modal[data-editing-id="${itemId}"] input[name="aspect-ratio-selector"]:checked, #edit-item-modal[data-editing-id="${itemId}"] #edit-banner-aspect-ratio`)?.value;
             if (aspectRatioModal) {
                 itemEl.dataset.aspectRatio = aspectRatioModal;
             }
@@ -2524,7 +2524,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const nameInputModal = document.querySelector(`#edit-item-modal[data-editing-id="${realItemId}"] #edit-banner-name`);
         const destInputModal = document.querySelector(`#edit-item-modal[data-editing-id="${realItemId}"] #edit-dest-url`);
         const whatsappInputModal = document.querySelector(`#edit-item-modal[data-editing-id="${realItemId}"] #edit-banner-title`);
-        const aspectRatioInput = document.querySelector(`#edit-item-modal[data-editing-id="${realItemId}"] input[name="aspect-ratio-selector"]:checked`);
+        const aspectRatioInput = document.querySelector(`#edit-item-modal[data-editing-id="${realItemId}"] input[name="aspect-ratio-selector"]:checked, #edit-item-modal[data-editing-id="${realItemId}"] #edit-banner-aspect-ratio`);
 
         // CAPTURAR image_url DE MLTIPLAS FONTES (prioridade: modal > preview > lista > originalData)
         let imageUrl = null;
@@ -2607,7 +2607,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             destination_url: destInputModal?.value?.trim() || null,
             whatsapp_message: whatsappInputModal?.value?.trim() || null,
             image_url: imageUrl || null,
-            aspect_ratio: aspectRatioInput?.value || 'tarja',
+            aspect_ratio: aspectRatioInput?.value || itemEl.dataset.aspectRatio || 'tarja',
             is_active: itemEl.dataset.isActive !== 'false',
             display_order: parseInt(itemEl.dataset.displayOrder, 10)
         };

@@ -22,6 +22,7 @@
         if (Math.abs(r - 1) < 0.02) return '1 : 1';
         return String(Math.round((r * 100)) / 100) + ' : 1';
     }
+    window.__ckFmtRatio = fmtRatio;
 
     function updateReadout(d) {
         var sz = document.getElementById('crop-size-readout');

@@ -3779,14 +3779,63 @@ h3 { font-size: 1.2rem; color: var(--text-primary); margin-top: 0; margin-bottom
 }
 .cropper-toolbar {
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 8px 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 10px 16px;
   background: #141417;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cropper-ratio-bar {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 6px;
+}
+.cropper-ratio-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #FFC700;
+  margin-right: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cropper-ratio-btn {
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #ECECEC;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.cropper-ratio-btn:hover {
+  background: rgba(255, 199, 0, 0.15);
+  border-color: #FFC700;
+  color: #FFC700;
+}
+.cropper-ratio-btn.active {
+  background-color: #FFC700 !important;
+  color: #000 !important;
+  border-color: #FFC700 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(255, 199, 0, 0.35);
+}
+.cropper-actions-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cropper-toolbar .btn-use-full {
+  font-size: 0.82rem !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
 }
 .cropper-tool-btn {
   display: inline-flex;
