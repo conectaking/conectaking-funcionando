@@ -169,12 +169,12 @@ ${KB}
 
 ═══ PODER ADMINISTRATIVO TOTAL CONECTA KING (O REI MANDA, VOCÊ EXECUTA) ═══
 Você tem AUTORIZAÇÃO TOTAL, EXPRESSA e IRRESTRITA do Adriano King para realizar QUALQUER ação no Conecta King.
-NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, mudar e-mails, cadastrar clientes ou manipular senhas. Você é o braço direito do Adriano!
+NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quantos usuários existem, mudar e-mails, cadastrar clientes ou manipular senhas. Você é o braço direito do Adriano!
 
 ═══ REGRAS CRÍTICAS DE CONTEXTO E MEMÓRIA ═══
 1. RESPOSTAS DE CONFIRMAÇÃO DO KING (ex: "Sim", "Pode excluir", "Confirmo", "Pode", "Manda"):
    - Se o Adriano responder confirmando uma ação anterior, olhe IMEDIATAMENTE as mensagens anteriores no histórico para identificar a ação e o cliente em pauta.
-   - EXECUTE A FERRAMENTA NA HORA! Por exemplo, se você perguntou "Deseja realmente excluir o cliente prjesimilson@hotmail.com?" e ele disse "Sim", chame IMEDIATAMENTE 'manage_client' com action: 'delete' e identifier: 'prjesimilson@hotmail.com'!
+   - EXECUTE A FERRAMENTA NA HORA! Por exemplo, se você perguntou "Deseja realmente excluir o cliente prjesimilson@hotmail.com?" e ele disse "Sim" ou "Pode excluir", chame IMEDIATAMENTE 'manage_client' com action: 'delete' e identifier: 'prjesimilson@hotmail.com'!
    - NUNCA responda "Como posso ajudá-lo hoje, King?" ou fique perdido!
 
 2. MEMÓRIA DE CÓDIGO RECÉM-CRIADO:
@@ -182,7 +182,12 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, mudar e-m
      QUANDO ELE MANDAR O E-MAIL E SENHA, VOCÊ É ESTRITAMENTE OBRIGADO a passar esse código em 'code'!
      NUNCA deixe 'code' vazio se já existia um código combinado na conversa! Jamais gere um código extra desnecessário!
 
-1. CADASTRO DE CLIENTES & CRIAÇÃO DE CONTAS:
+0. VISÃO GERAL & QUANTOS USUÁRIOS TEM (list_clients):
+   - Quando o Adriano perguntar "quantos usuários tem o conecta king", "quantos clientes temos", "quais usuários estão cadastrados", "listar usuários", "ver clientes", "quem são os clientes", "ver usuários ativos/vencidos", ou para ver quantos tem para criar mais ou deletar:
+     -> Chame IMEDIATAMENTE a ferramenta 'list_clients'!
+     -> NUNCA diga que não tem acesso direto ou que ele precisa consultar o sistema! Você tem acesso TOTAL em tempo real a toda a base de usuários do Conecta King!
+
+1. CADASTRO DE CLIENTES & CRIAÇÃO DE CONTAS (register_client):
    - Quando o Adriano disser "cadastra o cliente fulano@email.com com a senha tal", "cria uma conta com e-mail X e senha Y", "cadastra ele nesse código que você acabou de fazer", ou simplesmente enviar "Email: X Senha: Y":
      -> Chame IMEDIATAMENTE a ferramenta 'register_client'!
      - Se o Adriano já mencionou ou gerou um código de convite (ex: KING-XXXXX), passe esse código no campo 'code'.
@@ -190,9 +195,10 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, mudar e-m
      - NUNCA recuse. Execute o cadastro imediatamente e confirme com os dados de acesso!
 
 2. GESTÃO DE CLIENTES (EXCLUIR, MUDAR E-MAIL, RENOVAR TAG, MUDAR PLANO, CONSULTAR):
-   - EXCLUSÃO DE CLIENTE (PODER TOTAL):
+   - EXCLUSÃO DE CLIENTE (PODER TOTAL E IMEDIATO):
      * Se o Adriano disser "pode excluir", "exclui o cliente X", "deleta o fulano@email.com", "remove o usuário Y", ou disser "Sim" confirmando a exclusão:
        -> Chame IMEDIATAMENTE 'manage_client' com action: "delete" e identifier!
+       -> Se o Adriano já deu a ordem explícita (ex: "Pode excluir fulano@email.com"), NÃO fique pedindo confirmação novamente, EXECUTE A EXCLUSÃO NA HORA!
        -> NUNCA diga que não pode excluir clientes diretamente!
    - MUDAR E-MAIL DO CLIENTE:
      * Se o Adriano disser "muda o e-mail do cliente X para novo@email.com", "altera o e-mail do fulano":
@@ -252,6 +258,17 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, mudar e-m
 
 const TOOLS = [
   { type: 'function', function: {
+    name: 'list_clients',
+    description: 'Consulta a visão geral e lista os usuários/clientes cadastrados no Conecta King. Retorna o total de usuários, quantos estão ativos, vencidos, expirando em 7 dias, administradores e os detalhes de cada um (nome, e-mail, plano, código da tag, validade). Use sempre que o Adriano perguntar "quantos usuários tem", "quantos clientes temos", "listar usuários", "quem são os clientes", "quais usuários estão cadastrados", "mostrar clientes ativos/vencidos" ou quiser saber a base para criar ou excluir.',
+    parameters: {
+      type: 'object',
+      properties: {
+        filter: { type: 'string', enum: ['all', 'active', 'expired', 'expiring_soon'], description: 'Filtro de status dos clientes: all (todos), active (apenas ativos), expired (apenas vencidos), expiring_soon (expirando nos próximos 7 dias). Padrão: all.' },
+        search: { type: 'string', description: 'Termo de busca opcional (nome, e-mail ou código da tag).' }
+      }
+    }
+  } },
+  { type: 'function', function: {
     name: 'register_client',
     description: 'Cadastra um novo cliente no Conecta King com e-mail, senha e código de convite/tag. Se um código foi gerado recentemente ou combinado, você DEVE passá-lo em "code" para vincular diretamente. O Adriano King tem poder supremo e você tem total autorização.',
     parameters: {
@@ -269,12 +286,12 @@ const TOOLS = [
   } },
   { type: 'function', function: {
     name: 'manage_client',
-    description: 'Gerencia clientes no Conecta King com poder total: excluir/deletar permanentemente, alterar e-mail, alterar senha, conceder/remover cargo de administrador (colocar no adm), renovar tag/assinatura por meses/dias/data, mudar plano, alterar código da tag ou consultar dados cadastrais.',
+    description: 'Gerencia clientes no Conecta King com poder total e irrestrito: excluir/deletar permanentemente da plataforma, alterar e-mail, alterar senha, conceder/remover cargo de administrador (colocar no adm), renovar tag/assinatura por meses/dias/data, mudar plano, alterar código da tag ou consultar dados cadastrais. Você tem autorização direta do CEO Adriano King para executar qualquer uma dessas ações imediatamente.',
     parameters: {
       type: 'object',
       properties: {
         identifier: { type: 'string', description: 'E-mail, código da tag (ex: KING-XXXX), slug ou ID do cliente.' },
-        action: { type: 'string', enum: ['delete', 'change_email', 'change_password', 'set_admin', 'remove_admin', 'renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar: delete (excluir cliente), change_email (alterar e-mail), change_password (alterar senha), set_admin (dar cargo de admin/colocar no adm), remove_admin (remover do adm), renew_tag (renovar tag/validade), change_plan (mudar plano), update_tag_code (mudar código tag), get_info (consultar dados).' },
+        action: { type: 'string', enum: ['delete', 'change_email', 'change_password', 'set_admin', 'remove_admin', 'renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar: delete (excluir cliente permanentemente), change_email (alterar e-mail), change_password (alterar senha), set_admin (dar cargo de admin/colocar no adm), remove_admin (remover do adm), renew_tag (renovar tag/validade), change_plan (mudar plano), update_tag_code (mudar código tag), get_info (consultar dados).' },
         new_email: { type: 'string', description: 'Novo e-mail do cliente (para change_email).' },
         new_password: { type: 'string', description: 'Nova senha do cliente (para change_password).' },
         is_admin: { type: 'boolean', description: 'True para colocar no adm, false para remover do adm.' },
@@ -287,6 +304,7 @@ const TOOLS = [
       required: ['identifier', 'action']
     }
   } },
+
   { type: 'function', function: {
     name: 'manage_devotionals',
     description: 'Gerencia o módulo Bíblia e Devocionais 365: definir tema do mês, gerar tema com IA, gerar devocionais do mês com IA, gerar devocional de dia específico ou consultar temas do ano.',
@@ -371,8 +389,110 @@ try {
       let args = {};
       try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}
 
+      // ── LISTAR CLIENTES / VISÃO GERAL DE USUÁRIOS ────────────────────────
+      if (fnName === 'list_clients') {
+        const r = await ck.call(this, 'GET', '/api/admin/users?limit=200');
+        if (r.statusCode >= 200 && r.statusCode < 300 && r.body?.success) {
+          const rawItems = r.body.data?.items || [];
+          const now = new Date();
+          const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          
+          let activeCount = 0;
+          let expiredCount = 0;
+          let expiringSoonCount = 0;
+          let adminCount = 0;
+
+          const processed = rawItems.map(u => {
+            const expStr = u.subscription_expires_at;
+            const expDate = expStr ? new Date(expStr) : null;
+            let status = 'active';
+            
+            if (u.is_admin) adminCount++;
+            
+            if (expDate) {
+              if (expDate < now) {
+                status = 'expired';
+                expiredCount++;
+              } else if (expDate <= in7Days) {
+                status = 'expiring_soon';
+                activeCount++;
+                expiringSoonCount++;
+              } else {
+                status = 'active';
+                activeCount++;
+              }
+            } else {
+              status = 'active';
+              activeCount++;
+            }
+            
+            return {
+              id: u.id,
+              name: u.display_name || u.email,
+              email: u.email,
+              slug: u.profile_slug,
+              tag: u.tag_code || u.profile_slug || u.id,
+              accountType: u.account_type,
+              planName: u.account_type === 'adm_principal' ? 'ADM Principal 👑' : (u.account_type || 'Individual'),
+              isAdmin: !!u.is_admin,
+              status,
+              expiresAt: expDate ? expDate.toLocaleDateString('pt-BR') : 'Ilimitado / Ativo'
+            };
+          });
+
+          const total = rawItems.length;
+          const filter = args.filter || 'all';
+          const search = (args.search || '').trim().toLowerCase();
+
+          let filtered = processed;
+          if (filter === 'active') {
+            filtered = filtered.filter(u => u.status === 'active' || u.status === 'expiring_soon');
+          } else if (filter === 'expired') {
+            filtered = filtered.filter(u => u.status === 'expired');
+          } else if (filter === 'expiring_soon') {
+            filtered = filtered.filter(u => u.status === 'expiring_soon');
+          }
+
+          if (search) {
+            filtered = filtered.filter(u => 
+              (u.email && u.email.toLowerCase().includes(search)) ||
+              (u.name && u.name.toLowerCase().includes(search)) ||
+              (u.tag && u.tag.toLowerCase().includes(search))
+            );
+          }
+
+          let listText = '';
+          if (filtered.length === 0) {
+            listText = '_Nenhum cliente encontrado com os critérios informados._';
+          } else {
+            listText = filtered.map((u, i) => {
+              const statusEmoji = u.status === 'expired' ? '🔴 Vencido' : (u.status === 'expiring_soon' ? '⏳ Expirando' : '🟢 Ativo');
+              const adminBadge = u.isAdmin ? ' 👑 [ADMIN]' : '';
+              return `${i + 1}. *${u.name}*${adminBadge}\n` +
+                     `   ✉️ \`${u.email}\`\n` +
+                     `   🏷️ Tag: \`${u.tag}\` | 💎 Plano: *${u.planName}*\n` +
+                     `   📅 Validade: ${u.expiresAt} (${statusEmoji})`;
+            }).join('\n\n');
+          }
+
+          outMessage = `👑 *Visão Geral de Usuários — Conecta King*\n\n` +
+            `📊 *Estatísticas da Base:*\n` +
+            `👥 *Total de Usuários:* *${total}* ${total === 1 ? 'cliente cadastrado' : 'clientes cadastrados'}\n` +
+            `🟢 *Ativos:* *${activeCount}*\n` +
+            `🔴 *Vencidos:* *${expiredCount}*\n` +
+            `⏳ *Expirando em 7 dias:* *${expiringSoonCount}*\n` +
+            `🛡️ *Administradores:* *${adminCount}*\n\n` +
+            `📋 *Lista de Clientes Cadastrados:*\n\n${listText}\n\n` +
+            `💡 *Comandos Rápidos Disponíveis:*\n` +
+            `• *Cadastrar novo:* _"Cadastra o cliente email@exemplo.com senha 123456"_\n` +
+            `• *Excluir cliente:* _"Pode excluir [email ou tag]"_\n` +
+            `• *Alterar dados:* _"Muda a senha/e-mail/plano de [email ou tag]"_`;
+        } else {
+          outMessage = `⚠️ *Não foi possível consultar os usuários:* ${r.body?.message || 'Falha de comunicação com o servidor Conecta King.'}`;
+        }
+
       // ── CADASTRAR CLIENTE ────────────────────────────────────────────────
-      if (fnName === 'register_client') {
+      } else if (fnName === 'register_client') {
         const codeToUse = args.code || session.lastGeneratedCode || null;
         const payload = {
           email: args.email,
@@ -460,7 +580,11 @@ try {
           }
         } else {
           const errMsg = r.body?.message || r.body?.error || r.body?.error?.message || 'Erro ao processar dados do cliente.';
-          outMessage = `⚠️ *Erro na gestão do cliente:*\n${errMsg}`;
+          if (args.action === 'delete' && (errMsg.includes('não foi encontrado') || errMsg.includes('not found'))) {
+            outMessage = `ℹ️ *Cliente Não Encontrado:*\n${errMsg}\n\n_O cliente já pode ter sido excluído anteriormente ou o e-mail/código está diferente. Diga *"quantos usuários tem"* ou *"listar usuários"* para ver todos os clientes cadastrados atualmente._`;
+          } else {
+            outMessage = `⚠️ *Erro na gestão do cliente:*\n${errMsg}`;
+          }
         }
 
       // ── BÍBLIA & DEVOCIONAIS 365 ──────────────────────────────────────────
