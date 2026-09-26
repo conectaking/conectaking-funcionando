@@ -275,4 +275,280 @@ class ModulesService
             'saved' => $saved,
         ]];
     }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function individualPlans(): array
+    {
+        try {
+            $plans = DB::select(
+                'SELECT i.user_id, i.module_type, u.email as user_email, COALESCE(p.display_name, u.email) as user_name
+                 FROM individual_user_plans i
+                 JOIN users u ON i.user_id = u.id
+                 LEFT JOIN user_profiles p ON u.id = p.user_id
+                 ORDER BY u.email ASC, i.module_type ASC'
+            );
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'plans' => array_map(static fn ($r) => (array) $r, $plans),
+            ]];
+        } catch (\Throwable $e) {
+            Log::error('modules.individualPlans', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => [
+                'success' => false,
+                'message' => 'Erro ao carregar planos individuais.',
+                'plans' => [],
+            ]];
+        }
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function usersList(): array
+    {
+        try {
+            $users = DB::select(
+                'SELECT u.id, u.email, COALESCE(p.display_name, u.email) as name, u.account_type
+                 FROM users u
+                 LEFT JOIN user_profiles p ON u.id = p.user_id
+                 ORDER BY u.email ASC'
+            );
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'users' => array_map(static fn ($r) => (array) $r, $users),
+            ]];
+        } catch (\Throwable $e) {
+            Log::error('modules.usersList', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => [
+                'success' => false,
+                'message' => 'Erro ao carregar lista de usuários.',
+                'users' => [],
+            ]];
+        }
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function getIndividualPlan(string $userId): array
+    {
+        try {
+            $user = DB::selectOne(
+                'SELECT u.id, u.email, COALESCE(p.display_name, u.email) as name, u.account_type
+                 FROM users u
+                 LEFT JOIN user_profiles p ON u.id = p.user_id
+                 WHERE u.id = ? LIMIT 1',
+                [$userId]
+            );
+            if (! $user) {
+                return ['status' => 404, 'body' => ['success' => false, 'message' => 'Usuário não encontrado.']];
+            }
+
+            $planCode = PlanCodeResolver::fromAccountType((string) ($user->account_type ?? ''));
+
+            $baseModules = array_map(
+                static fn ($r) => (string) $r->module_type,
+                DB::select(
+                    'SELECT DISTINCT module_type FROM module_plan_availability WHERE plan_code = ? AND is_available = true',
+                    [$planCode]
+                )
+            );
+            $baseSet = array_fill_keys($baseModules, true);
+
+            $exclusions = array_map(
+                static fn ($r) => (string) $r->module_type,
+                DB::select('SELECT module_type FROM individual_user_plan_exclusions WHERE user_id = ?', [$userId])
+            );
+            $exSet = array_fill_keys($exclusions, true);
+
+            $adds = array_map(
+                static fn ($r) => (string) $r->module_type,
+                DB::select('SELECT module_type FROM individual_user_plans WHERE user_id = ?', [$userId])
+            );
+            $addSet = array_fill_keys($adds, true);
+
+            $allTypes = array_map(
+                static fn ($r) => (string) $r->module_type,
+                DB::select('SELECT DISTINCT module_type FROM module_plan_availability ORDER BY module_type ASC')
+            );
+            if (empty($allTypes)) {
+                $allTypes = [
+                    'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
+                    'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
+                    'spotify', 'linkedin', 'pinterest',
+                    'link', 'portfolio', 'banner', 'carousel', 'texto_com_botao',
+                    'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
+                    'finance', 'modo_empresa', 'branding', 'bible', 'location',
+                    'recibos_orcamentos',
+                ];
+            }
+
+            $modulesList = [];
+            foreach ($allTypes as $type) {
+                $inBase = isset($baseSet[$type]);
+                $isActive = $inBase ? ! isset($exSet[$type]) : isset($addSet[$type]);
+                $modulesList[] = [
+                    'module_type' => $type,
+                    'in_base_plan' => $inBase,
+                    'is_active' => $isActive,
+                ];
+            }
+
+            $maxFinance = 1;
+            try {
+                $fp = DB::selectOne(
+                    'SELECT max_finance_profiles FROM individual_user_finance_profiles WHERE user_id = ? LIMIT 1',
+                    [$userId]
+                );
+                if ($fp && ! empty($fp->max_finance_profiles)) {
+                    $maxFinance = (int) $fp->max_finance_profiles;
+                }
+            } catch (\Throwable) {
+            }
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'user' => [
+                    'id' => (string) $user->id,
+                    'email' => (string) $user->email,
+                    'name' => (string) $user->name,
+                    'account_type' => (string) $user->account_type,
+                ],
+                'modules' => $modulesList,
+                'max_finance_profiles' => $maxFinance,
+            ]];
+        } catch (\Throwable $e) {
+            Log::error('modules.getIndividualPlan', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => [
+                'success' => false,
+                'message' => 'Erro ao carregar plano individual do usuário.',
+            ]];
+        }
+    }
+
+    /**
+     * @param  array<string,mixed>  $data
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function updateIndividualPlan(string $userId, array $data): array
+    {
+        try {
+            $user = DB::selectOne('SELECT id, account_type FROM users WHERE id = ? LIMIT 1', [$userId]);
+            if (! $user) {
+                return ['status' => 404, 'body' => ['success' => false, 'message' => 'Usuário não encontrado.']];
+            }
+
+            $selectedModules = $data['modules'] ?? [];
+            if (! is_array($selectedModules)) {
+                $selectedModules = [];
+            }
+            $selectedModules = array_map('strval', $selectedModules);
+            $selectedSet = array_fill_keys($selectedModules, true);
+
+            $planCode = PlanCodeResolver::fromAccountType((string) ($user->account_type ?? ''));
+
+            $baseModules = array_map(
+                static fn ($r) => (string) $r->module_type,
+                DB::select(
+                    'SELECT DISTINCT module_type FROM module_plan_availability WHERE plan_code = ? AND is_available = true',
+                    [$planCode]
+                )
+            );
+            $baseSet = array_fill_keys($baseModules, true);
+
+            $allModules = array_map(
+                static fn ($r) => (string) $r->module_type,
+                DB::select('SELECT DISTINCT module_type FROM module_plan_availability')
+            );
+            if (empty($allModules)) {
+                $allModules = array_keys(array_merge($baseSet, $selectedSet));
+            }
+
+            DB::transaction(function () use ($userId, $planCode, $selectedSet, $baseSet, $allModules, $data): void {
+                DB::delete('DELETE FROM individual_user_plans WHERE user_id = ?', [$userId]);
+                DB::delete('DELETE FROM individual_user_plan_exclusions WHERE user_id = ?', [$userId]);
+
+                foreach ($allModules as $mod) {
+                    $inBase = isset($baseSet[$mod]);
+                    $selected = isset($selectedSet[$mod]);
+
+                    if ($inBase && ! $selected) {
+                        DB::insert(
+                            'INSERT INTO individual_user_plan_exclusions (user_id, module_type) VALUES (?, ?)',
+                            [$userId, $mod]
+                        );
+                    } elseif (! $inBase && $selected) {
+                        DB::insert(
+                            'INSERT INTO individual_user_plans (user_id, module_type, plan_code) VALUES (?, ?, ?)',
+                            [$userId, $mod, $planCode]
+                        );
+                    }
+                }
+
+                if (isset($data['max_finance_profiles'])) {
+                    $maxP = max(1, min(20, (int) $data['max_finance_profiles']));
+                    $hasFp = DB::selectOne(
+                        'SELECT 1 FROM individual_user_finance_profiles WHERE user_id = ? LIMIT 1',
+                        [$userId]
+                    );
+                    if ($hasFp) {
+                        DB::update(
+                            'UPDATE individual_user_finance_profiles SET max_finance_profiles = ?, updated_at = NOW() WHERE user_id = ?',
+                            [$maxP, $userId]
+                        );
+                    } else {
+                        DB::insert(
+                            'INSERT INTO individual_user_finance_profiles (user_id, max_finance_profiles, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
+                            [$userId, $maxP]
+                        );
+                    }
+                }
+            });
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'message' => 'Módulos do usuário atualizados com sucesso.',
+            ]];
+        } catch (\Throwable $e) {
+            Log::error('modules.updateIndividualPlan', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => [
+                'success' => false,
+                'message' => 'Erro ao salvar módulos do usuário: ' . $e->getMessage(),
+            ]];
+        }
+    }
+
+    /**
+     * @return array{status:int, body:array<string,mixed>}
+     */
+    public function deleteIndividualPlan(string $userId): array
+    {
+        try {
+            DB::transaction(function () use ($userId): void {
+                DB::delete('DELETE FROM individual_user_plans WHERE user_id = ?', [$userId]);
+                DB::delete('DELETE FROM individual_user_plan_exclusions WHERE user_id = ?', [$userId]);
+                DB::delete('DELETE FROM individual_user_finance_profiles WHERE user_id = ?', [$userId]);
+            });
+
+            return ['status' => 200, 'body' => [
+                'success' => true,
+                'message' => 'Planos individuais removidos com sucesso.',
+            ]];
+        } catch (\Throwable $e) {
+            Log::error('modules.deleteIndividualPlan', ['error' => $e->getMessage()]);
+
+            return ['status' => 500, 'body' => [
+                'success' => false,
+                'message' => 'Erro ao remover planos individuais.',
+            ]];
+        }
+    }
 }
