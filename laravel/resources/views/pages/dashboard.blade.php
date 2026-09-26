@@ -147,7 +147,7 @@
     </div>
 
     <!-- Modelos de Formato do Avatar (aplicável ao Modelo Clássico) -->
-    <div id="modelos-avatar-section" class="avatar-format-selector ck-db-9eb125" style="margin-top: 20px;">
+    <div id="avatar-format-selector" class="avatar-format-selector ck-db-9eb125" style="margin-top: 20px;">
         <label class="avatar-format-label"><i class="fas fa-shapes"></i> Modelos de Avatar do Cartão</label>
         <p class="avatar-format-description">Defina o modelo de recorte e destaque da sua foto ou logomarca no cartão. Cada modelo possui uma dimensão recomendada.</p>
         <div class="avatar-format-options">
@@ -299,45 +299,6 @@
                     </label>
                     <input type="text" id="whatsappNumber" placeholder="5511999999999" maxlength="20">
                     <p class="input-hint">Digite apenas números com código do país (ex: 5511999999999 para Brasil, 12125551234 para EUA). Este número será usado no botão "Salvar Contato".</p>
-                </div>
-                
-                <!-- Formato do Avatar (embaixo do nome) -->
-                <div id="avatar-format-selector" class="avatar-format-selector">
-                    <label class="avatar-format-label"><i class="fas fa-shapes"></i> Formato do Avatar</label>
-                    <p class="avatar-format-description">Escolha como o avatar aparecerá no seu cartão virtual. Cada formato possui uma proporção e tamanho ideal recomendados.</p>
-                    <div class="avatar-format-options">
-                        <button type="button" class="avatar-format-btn" data-format="circular" title="Circular (Clássico)">
-                            <i class="fas fa-circle"></i>
-                            <span class="avatar-format-name">Circular</span>
-                            <span class="avatar-format-size-tag">500x500 (1:1)</span>
-                        </button>
-                        <button type="button" class="avatar-format-btn" data-format="square-small" title="Quadrado Pequeno">
-                            <i class="fas fa-stop"></i>
-                            <span class="avatar-format-name">Quadrado Ícone</span>
-                            <span class="avatar-format-size-tag">500x500 (1:1)</span>
-                        </button>
-                        <button type="button" class="avatar-format-btn" data-format="square-full" title="Quadrado Grande">
-                            <i class="fas fa-square"></i>
-                            <span class="avatar-format-name">Quadrado Grande</span>
-                            <span class="avatar-format-size-tag">1080x1080 (1:1)</span>
-                        </button>
-                        <button type="button" class="avatar-format-btn" data-format="portrait" title="Retrato Vertical">
-                            <i class="fas fa-portrait"></i>
-                            <span class="avatar-format-name">Retrato 4:5</span>
-                            <span class="avatar-format-size-tag">800x1000 (4:5)</span>
-                        </button>
-                        <button type="button" class="avatar-format-btn" data-format="banner" title="Banner Panorâmico">
-                            <i class="fas fa-image"></i>
-                            <span class="avatar-format-name">Banner Topo</span>
-                            <span class="avatar-format-size-tag">1200x675 (16:9)</span>
-                        </button>
-                    </div>
-                    <div class="avatar-spec-box">
-                        <div class="avatar-spec-header">
-                            <i class="fas fa-ruler-combined"></i> <strong class="avatar-spec-title">Medida Recomendada: 500 x 500 px (1:1)</strong>
-                        </div>
-                        <p class="avatar-spec-text">Corte redondo tradicional. Mantenha rosto ou logotipo centralizados para não cortar bordas importantes.</p>
-                    </div>
                 </div>
                 
                 <!-- @ do Instagram -->

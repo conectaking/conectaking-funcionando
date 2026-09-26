@@ -95,9 +95,9 @@ class ProfileEditorController extends Controller
             return response()->json(['message' => 'Formato de avatar não fornecido.'], 400)
                 ->header('X-Conecta-Engine', 'laravel');
         }
-        if (!in_array($avatarFormat, ['circular', 'square-full', 'square-small', 'portrait', 'banner'], true)) {
+        if (!in_array($avatarFormat, ['circular', 'square-full', 'square-small', 'portrait', 'banner', 'hexagon', 'diamond', 'rounded-soft'], true)) {
             return response()->json([
-                'message' => "Formato de avatar inválido: {$avatarFormat}. Valores permitidos: circular, square-full, square-small, portrait, banner",
+                'message' => "Formato de avatar inválido: {$avatarFormat}. Valores permitidos: circular, square-full, square-small, portrait, banner, hexagon, diamond, rounded-soft",
             ], 400)->header('X-Conecta-Engine', 'laravel');
         }
 

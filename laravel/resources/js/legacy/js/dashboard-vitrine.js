@@ -115,15 +115,8 @@
         if (vitrineHero) vitrineHero.style.display = state.cardLayout === 'vitrine' ? 'block' : 'none';
         const vitrineFooter = $('vitrine-footer-setting');
         if (vitrineFooter) vitrineFooter.style.display = state.cardLayout === 'vitrine' ? 'block' : 'none';
-        const modelosAvatar = $('modelos-avatar-section');
+        const modelosAvatar = $('avatar-format-selector') || $('modelos-avatar-section');
         if (modelosAvatar) modelosAvatar.style.display = state.cardLayout === 'vitrine' ? 'none' : 'block';
-        const avatarSel = $('avatar-format-selector');
-        if (avatarSel) {
-            avatarSel.style.opacity = state.cardLayout === 'vitrine' ? '0.45' : '1';
-            avatarSel.title = state.cardLayout === 'vitrine'
-                ? 'No Modelo Vitrine o topo é a arte. Formato do avatar vale no Clássico.'
-                : '';
-        }
         syncBgTypeUI();
         updateMiniPreview();
         updatePhoneMockupPreview();

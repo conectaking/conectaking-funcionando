@@ -13,7 +13,7 @@ BEGIN
     ) THEN
         ALTER TABLE user_profiles 
         ADD COLUMN avatar_format VARCHAR(50) DEFAULT 'circular' 
-        CHECK (avatar_format IN ('circular', 'square-full', 'square-small'));
+        CHECK (avatar_format IN ('circular', 'square-full', 'square-small', 'portrait', 'banner', 'hexagon', 'diamond', 'rounded-soft'));
         
         -- Atualizar registros existentes para usar 'circular' como padrão
         UPDATE user_profiles 
