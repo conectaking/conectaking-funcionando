@@ -1618,192 +1618,220 @@ th input[type="checkbox"], td input[type="checkbox"] {
         flex-direction: column;
     }
 
+    /* Header fixo no topo com layout moderno */
     .sidebar {
         width: 100%;
         height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        padding: 12px 24px;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
         position: fixed;
         top: 0;
         left: 0;
-        background-color: var(--bg-light);
-        z-index: 100;
-    }
-    
-    .sidebar-header {
-        margin-bottom: 0;
-    }
-
-    .sidebar-nav {
-        flex-grow: 0;
-        display: flex;
-        flex-direction: row;
-        gap: 8px;
-    }
-    
-    /* Esconde o texto dos links, mostrando apenas os ícones */
-    .nav-link span, .nav-link2 span {
-        display: none;
-    }
-
-    .nav-link, .nav-link2 {
-        padding: 10px 12px;
-        margin-bottom: 0;
-    }
-    
-    .sidebar-footer {
-        padding-top: 0;
-        border-top: none;
-        display: flex;
-        gap: 8px;
-    }
-
-    .sidebar-header h3 span {
-        display: none;
-    }
-
-    .main-content {
-        /* Adiciona um espaçamento no topo para não ficar atrás do header fixo */
-        padding: 100px 24px 40px 24px;
-    }
-    
-    h2 {
-        font-size: 1.5rem;
-    }
-
-    /* Ações e Formulários */
-    .codes-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .code-generation-section {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .batch-generation {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .manual-generation {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .filter-actions {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .manual-code-form {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    #custom-code-input, #filter-input, .manual-code-form button {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .batch-generation input, .batch-generation button {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .filter-actions button {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    /* Transformação da Tabela para "Cards" - REMOVIDO - usando regras específicas para #codes-table e #users-table acima */
-
-    /* ======================================================= */
-/* === CSS RESPONSIVO DEFINITIVO PARA O PAINEL DE ADMIN === */
-/* ======================================================= */
-
-@media (max-width: 768px) {
-    /* Transforma o layout principal para uma única coluna */
-    .admin-layout {
-        flex-direction: column;
-    }
-
-    /* Converte a sidebar em um header fixo e compacto */
-    .sidebar {
-        width: 100%;
-        height: 65px; /* Altura fixa do header */
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 16px;
-        position: fixed;
-        top: 0;
-        left: 0;
+        background: rgba(14, 15, 20, 0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        z-index: 100;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
 
     .sidebar-header {
         margin-bottom: 0;
-    }
-    .sidebar-header .logo { font-size: 1.2rem; }
-    .sidebar-header .logo .logo-text { display: none; }
-    .sidebar-header .logo i { font-size: 14px; }
-
-    /* Agrupa os links de navegação e do rodapé lado a lado */
-    .sidebar-nav {
+        padding: 8px 16px;
         display: flex;
-        flex-direction: row;
         align-items: center;
-        gap: 0;
-        flex-grow: 0;
-    }
-    .sidebar-footer {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 0;
-        padding-top: 0;
-        border-top: none;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        height: 42px;
+        box-sizing: border-box;
     }
 
-    .nav-link span, .nav-link2 span {
-        display: none;
-    }
-
-    /* Ajusta o padding dos ícones para ficarem bem acomodados */
-    .nav-link, .nav-link2 {
-        padding: 12px;
-        margin-bottom: 0;
-        min-width: 44px;
-        min-height: 44px;
+    .sidebar-header .logo {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--primary, #FFC700);
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        transform: none !important;
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
+        gap: 8px;
+        text-decoration: none;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: rgba(255, 199, 0, 0.1);
+        transition: all 0.2s ease;
+    }
+    .sidebar-header .logo:hover {
+        background: rgba(255, 199, 0, 0.2);
+    }
+    .sidebar-header .logo i {
+        font-size: 13px;
+        color: var(--primary, #FFC700);
+    }
+    .sidebar-header .logo .logo-text {
+        display: inline-block !important;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #fff;
     }
 
-    .nav-link:hover,
-    .nav-link:active {
-        transform: none !important;
+    .admin-top-badge {
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: rgba(255, 199, 0, 0.15);
+        color: #FFC700;
+        border: 1px solid rgba(255, 199, 0, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        letter-spacing: 0.5px;
     }
 
-    /* Adiciona espaço no topo do conteúdo principal para não ficar atrás do header */
+    /* Linha de navegação com tabs tipo pílula e scroll horizontal suave */
+    .sidebar-nav {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px 10px 12px;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex-grow: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .sidebar-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-link, .nav-link2 {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 7px !important;
+        padding: 7px 14px !important;
+        margin-bottom: 0 !important;
+        border-radius: 999px !important;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+        flex-shrink: 0 !important;
+        min-height: 34px !important;
+        min-width: auto !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #cbd5e1 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: none !important;
+        transform: none !important;
+        -webkit-tap-highlight-color: transparent !important;
+        touch-action: manipulation !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .nav-link i, .nav-link2 i {
+        font-size: 13px !important;
+        width: auto !important;
+        text-align: center;
+        color: inherit !important;
+    }
+
+    .nav-link span, .nav-link2 span {
+        display: inline !important;
+        font-size: 0.82rem !important;
+        white-space: nowrap !important;
+    }
+
+    .nav-link.active, .nav-link2.active {
+        background: linear-gradient(135deg, #FFC700, #E5A900) !important;
+        color: #000 !important;
+        border-color: #FFC700 !important;
+        box-shadow: 0 2px 10px rgba(255, 199, 0, 0.35) !important;
+        font-weight: 700 !important;
+    }
+    .nav-link.active i, .nav-link2.active i {
+        color: #000 !important;
+    }
+
+    .sidebar-footer {
+        display: none !important;
+    }
+
+    /* Espaçamento no topo do conteúdo para não cobrir sob o header */
     .main-content {
-        padding-top: 100px;
+        padding: 104px 16px 40px 16px !important;
     }
+
+    /* Cabeçalho da Visão Geral */
+    .overview-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .overview-header-flex h2 {
+        font-size: 1.35rem;
+        margin: 0;
+    }
+    .overview-header-flex #refresh-data-btn {
+        min-height: 40px;
+        padding: 8px 16px;
+        border-radius: 10px;
+    }
+
+    /* Grid de estatísticas no mobile: 2 colunas para melhor usabilidade */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+    .stat-card {
+        padding: 16px !important;
+        border-radius: 12px !important;
+    }
+    .stat-card h4 {
+        font-size: 0.82rem !important;
+        gap: 6px !important;
+    }
+    .stat-card p {
+        font-size: 1.45rem !important;
+    }
+
+    /* Grid de analytics avançado */
+    .advanced-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+    .advanced-stat-card {
+        padding: 16px !important;
+    }
+
+    /* Grid de cards de estatísticas rápidas no gerenciador de usuários */
+    .stats-cards-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .overview-header-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .overview-header-flex #refresh-data-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+}
+
+@media (max-width: 768px) {
 
     /* Ajustes específicos para controles de geração de códigos no mobile */
     .codes-actions {
@@ -2110,12 +2138,6 @@ th input[type="checkbox"], td input[type="checkbox"] {
 
 .advanced-stat-card:hover::before {
     transform: scaleX(1);
-}
-    background-color: var(--bg-light);
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .advanced-stat-card:hover {
