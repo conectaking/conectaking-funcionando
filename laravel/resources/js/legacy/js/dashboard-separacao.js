@@ -423,16 +423,31 @@ function renderIndividualPlans(plans) {
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button onclick="editIndividualPlan('${userPlan.user_id}')" style="padding: 6px 12px; background: var(--dourado-principal, #FFD700); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                    <button class="btn-edit-indiv" data-user-id="${userPlan.user_id}" onclick="editIndividualPlan('${userPlan.user_id}')" style="padding: 6px 12px; background: var(--dourado-principal, #FFD700); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
                         <i class="fas fa-edit"></i> Editar
                     </button>
-                    <button onclick="deleteAllIndividualPlans('${userPlan.user_id}')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                    <button class="btn-delete-indiv" data-user-id="${userPlan.user_id}" onclick="deleteAllIndividualPlans('${userPlan.user_id}')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
                         <i class="fas fa-trash"></i> Remover
                     </button>
                 </div>
             </div>
         </div>
     `).join('');
+
+    container.querySelectorAll('.btn-edit-indiv').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const uid = btn.getAttribute('data-user-id');
+            if (uid) window.editIndividualPlan(uid);
+        });
+    });
+    container.querySelectorAll('.btn-delete-indiv').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const uid = btn.getAttribute('data-user-id');
+            if (uid) window.deleteAllIndividualPlans(uid);
+        });
+    });
 }
 
 // Mostrar modal para adicionar plano individual
@@ -527,6 +542,16 @@ window.showAddIndividualPlanModal = async function () {
         `;
 
         document.body.appendChild(modal);
+
+        modal.querySelectorAll('.user-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const uid = item.getAttribute('data-user-id');
+                const uname = item.getAttribute('data-user-name');
+                const uemail = item.getAttribute('data-user-email');
+                if (uid) window.selectUserForIndividualPlan(uid, uname || '', uemail || '');
+            });
+        });
 
         // Fechar ao clicar fora
         modal.addEventListener('click', (e) => {
@@ -656,11 +681,11 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
             </div>
             
             <div style="display: flex; gap: 12px; margin-top: 32px;">
-                <button type="button" onclick="document.getElementById('user-modules-modal').remove()" 
+                <button type="button" id="cancel-user-modules-btn" onclick="document.getElementById('user-modules-modal').remove()" 
                         style="flex: 1; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: transparent; color: var(--text-secondary, #888888); cursor: pointer; font-weight: 600;">
                     Cancelar
                 </button>
-                <button type="button" onclick="saveUserIndividualModules('${user.id}')" 
+                <button type="button" id="save-user-modules-btn" onclick="saveUserIndividualModules('${user.id}')" 
                         style="flex: 2; padding: 14px; border-radius: 8px; border: none; background: var(--dourado-principal, #FFD700); color: #000; cursor: pointer; font-weight: 700;">
                     <i class="fas fa-save"></i> Salvar Módulos
                 </button>
@@ -669,6 +694,21 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
     `;
 
     document.body.appendChild(modal);
+
+    const saveBtn = modal.querySelector('#save-user-modules-btn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.saveUserIndividualModules(user.id);
+        });
+    }
+    const cancelBtn = modal.querySelector('#cancel-user-modules-btn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            modal.remove();
+        });
+    }
 
     // Fechar ao clicar fora
     modal.addEventListener('click', (e) => {
