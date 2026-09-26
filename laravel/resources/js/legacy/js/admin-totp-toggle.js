@@ -34,8 +34,36 @@ export async function bindAdminTotpToggle(opts) {
     toggle.disabled = !configured;
     toggle.checked = enabled;
     if (stateEl) {
-      if (!configured) stateEl.textContent = 'não configurado';
-      else stateEl.textContent = enabled ? 'ligado' : 'desligado';
+      stateEl.classList.remove('is-active', 'is-inactive', 'is-unconfigured', 'is-loading');
+      if (!configured) {
+        stateEl.textContent = 'Não configurado';
+        stateEl.classList.add('is-unconfigured');
+      } else if (enabled) {
+        stateEl.textContent = 'Ligado';
+        stateEl.classList.add('is-active');
+      } else {
+        stateEl.textContent = 'Desligado';
+        stateEl.classList.add('is-inactive');
+      }
+    }
+
+    const badgeEl = document.getElementById('admin-2fa-badge');
+    if (badgeEl) {
+      badgeEl.classList.remove('badge-active', 'badge-inactive', 'badge-unconfigured');
+      if (!configured) {
+        badgeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Não configurado';
+        badgeEl.classList.add('badge-unconfigured');
+      } else if (enabled) {
+        badgeEl.innerHTML = '<i class="fas fa-check-circle"></i> Ativo';
+        badgeEl.classList.add('badge-active');
+      } else {
+        badgeEl.innerHTML = '<i class="fas fa-times-circle"></i> Desativado';
+        badgeEl.classList.add('badge-inactive');
+      }
+    }
+
+    if (row) {
+      row.classList.toggle('has-2fa-active', enabled);
     }
   }
 
@@ -51,7 +79,10 @@ export async function bindAdminTotpToggle(opts) {
       paint(data);
       return data;
     } catch (e) {
-      if (stateEl) stateEl.textContent = 'erro';
+      if (stateEl) {
+        stateEl.textContent = 'Indisponível';
+        stateEl.className = 'ck-admin-2fa-state is-unconfigured';
+      }
       toggle.disabled = true;
       return null;
     }
@@ -60,7 +91,10 @@ export async function bindAdminTotpToggle(opts) {
   toggle.addEventListener('change', async () => {
     const wantOn = toggle.checked;
     toggle.disabled = true;
-    if (stateEl) stateEl.textContent = 'salvando…';
+    if (stateEl) {
+      stateEl.textContent = 'Salvando…';
+      stateEl.classList.add('is-loading');
+    }
     try {
       const r = await fetch(apiBase + (wantOn ? '/api/admin/totp/enable' : '/api/admin/totp/disable'), {
         method: 'POST',

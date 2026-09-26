@@ -15,8 +15,9 @@
             <div class="sidebar-header">
                 <a href="/dashboard" class="logo" title="Voltar ao painel">
                     <i class="fas fa-arrow-left"></i>
-                    <span class="logo-text">Admin</span>
+                    <span class="logo-text">Painel</span>
                 </a>
+                <span class="admin-top-badge"><i class="fas fa-shield-alt"></i> ADM</span>
             </div>
             <nav class="sidebar-nav">
                 <a href="#" class="nav-link active" data-target="overview-pane"><i class="fas fa-tachometer-alt"></i> <span>Visão Geral</span></a>
@@ -32,7 +33,7 @@
 
         <main class="main-content">
             <section id="overview-pane" class="content-pane active">
-                <div class="ck-ad-e018b7">
+                <div class="overview-header-flex">
                     <h2>Visão Geral da Plataforma</h2>
                     <button id="refresh-data-btn" class="btn btn-secondary ck-btn-md">
                         <i class="fas fa-sync-alt"></i> Atualizar
@@ -40,11 +41,14 @@
                 </div>
                 <div class="ck-admin-2fa-card" id="admin-2fa-card">
                     <div class="ck-admin-2fa-card-text">
-                        <h3><i class="fas fa-shield-alt"></i> 2FA da conta admin</h3>
-                        <p>Só a sua conta de administrador. Clientes não usam isso. Desative em manutenção e reative quando quiser — o autenticador continua o mesmo.</p>
+                        <div class="ck-admin-2fa-title-row">
+                            <h3><i class="fas fa-shield-alt"></i> 2FA da Conta Admin</h3>
+                            <span class="ck-admin-2fa-badge" id="admin-2fa-badge">…</span>
+                        </div>
+                        <p>Protege sua conta administrativa com autenticador. Desative temporariamente para manutenção e reative quando desejar — o autenticador continua o mesmo.</p>
                     </div>
                     <div class="ck-admin-2fa-card-actions">
-                        <label class="ck-admin-2fa-switch">
+                        <label class="ck-admin-2fa-switch" for="admin-2fa-toggle" title="Ativar ou desativar 2FA">
                             <input type="checkbox" id="admin-2fa-toggle" disabled>
                             <span class="ck-admin-2fa-slider"></span>
                         </label>
