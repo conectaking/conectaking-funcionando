@@ -133,23 +133,63 @@
  <div id="modelos-editor" class="editor-pane active">
     <div class="info-section-header">
         <h4><i class="fas fa-layer-group"></i> Modelos de Cartão</h4>
-        <p class="ck-db-e050d4">Escolha o layout do seu cartão. O Modelo Clássico é o atual; o Modelo Vitrine usa arte no topo e faixa rolante.</p>
+        <p class="ck-db-e050d4">Escolha o layout geral do seu cartão e os modelos de exibição do avatar ou faixa rolante.</p>
     </div>
     <div class="card-layout-selector ck-db-16363f" id="card-layout-selector">
         <button type="button" class="card-layout-card active ck-db-3158e7" data-layout="classic" id="card-layout-classic">
             <div class="ck-db-0e2afc"><i class="fas fa-id-card"></i> Modelo Clássico</div>
-            <div class="ck-db-f6ac6d">Avatar, nome, bio e módulos em coluna — o cartão que você já usa.</div>
+            <div class="ck-db-f6ac6d">Avatar, nome, bio, faixa rolante e módulos em coluna — moderno e direto.</div>
         </button>
         <button type="button" class="card-layout-card ck-db-777626" data-layout="vitrine" id="card-layout-vitrine">
             <div class="ck-db-0e2afc"><i class="fas fa-panorama"></i> Modelo Vitrine</div>
-            <div class="ck-db-f6ac6d">Arte larga no topo, faixa de texto rolante, banners e bloco texto com botão.</div>
+            <div class="ck-db-f6ac6d">Arte larga no topo (16:9), faixa de texto rolante, banners e botões de destaque.</div>
         </button>
     </div>
 
-    <div class="ck-db-1fe563" id="vitrine-settings-panel">
-        <h5 class="ck-db-b019c1"><i class="fas fa-image"></i> Arte do topo (proporção 16:9)</h5>
+    <!-- Modelos de Formato do Avatar (aplicável ao Modelo Clássico) -->
+    <div id="modelos-avatar-section" class="avatar-format-selector ck-db-9eb125" style="margin-top: 20px;">
+        <label class="avatar-format-label"><i class="fas fa-shapes"></i> Modelos de Avatar do Cartão</label>
+        <p class="avatar-format-description">Defina o modelo de recorte e destaque da sua foto ou logomarca no cartão. Cada modelo possui uma dimensão recomendada.</p>
+        <div class="avatar-format-options">
+            <button type="button" class="avatar-format-btn" data-format="circular" title="Circular (Clássico)">
+                <i class="fas fa-circle"></i>
+                <span class="avatar-format-name">Circular</span>
+                <span class="avatar-format-size-tag">500x500 (1:1)</span>
+            </button>
+            <button type="button" class="avatar-format-btn" data-format="square-small" title="Quadrado Pequeno">
+                <i class="fas fa-stop"></i>
+                <span class="avatar-format-name">Quadrado Ícone</span>
+                <span class="avatar-format-size-tag">500x500 (1:1)</span>
+            </button>
+            <button type="button" class="avatar-format-btn" data-format="square-full" title="Quadrado Grande">
+                <i class="fas fa-square"></i>
+                <span class="avatar-format-name">Quadrado Grande</span>
+                <span class="avatar-format-size-tag">1080x1080 (1:1)</span>
+            </button>
+            <button type="button" class="avatar-format-btn" data-format="portrait" title="Retrato Vertical">
+                <i class="fas fa-portrait"></i>
+                <span class="avatar-format-name">Retrato 4:5</span>
+                <span class="avatar-format-size-tag">800x1000 (4:5)</span>
+            </button>
+            <button type="button" class="avatar-format-btn" data-format="banner" title="Banner Panorâmico">
+                <i class="fas fa-image"></i>
+                <span class="avatar-format-name">Banner Topo</span>
+                <span class="avatar-format-size-tag">1200x675 (16:9)</span>
+            </button>
+        </div>
+        <div class="avatar-spec-box">
+            <div class="avatar-spec-header">
+                <i class="fas fa-ruler-combined"></i> <strong class="avatar-spec-title">Medida Recomendada: 500 x 500 px (1:1)</strong>
+            </div>
+            <p class="avatar-spec-text">Corte redondo tradicional. Mantenha rosto ou logotipo centralizados para não cortar bordas importantes.</p>
+        </div>
+    </div>
+
+    <!-- Arte do Topo 16:9 (Visível no Modelo Vitrine) -->
+    <div id="vitrine-hero-section" style="display: none; margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <h5 class="ck-db-b019c1"><i class="fas fa-image"></i> Arte do Topo da Vitrine (proporção 16:9)</h5>
         <a href="img/guia-arte-vitrine-1920x1080.png" download="guia-arte-vitrine-1920x1080.png" class="btn btn-secondary ck-db-2d95ad">
-            <i class="fas fa-download"></i> Baixar guia de medidas
+            <i class="fas fa-download"></i> Baixar guia de medidas (1920x1080 px)
         </a>
         <div id="vitrine-hero-upload-area" class="photo-upload-area ck-db-f1ec84">
             <img class="ck-db-3a8281" id="vitrine-hero-preview" src="" alt="Arte Vitrine">
@@ -161,11 +201,17 @@
             <input class="ck-db-75c55c" type="file" id="vitrine-hero-file-input" accept="image/*">
         </div>
         <button type="button" id="vitrine-hero-remove-btn" class="btn btn-secondary ck-db-7b4333"><i class="fas fa-trash"></i> Remover arte</button>
+    </div>
+
+    <!-- Faixa Rolante (Texto Animado) - Disponível no Modelo Clássico e Modelo Vitrine -->
+    <div id="vitrine-marquee-section" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <h5 class="ck-db-b019c1"><i class="fas fa-bullhorn"></i> Faixa Rolante (Texto Animado)</h5>
+        <p class="input-hint" style="margin-bottom: 12px; color: #ffc700;">Disponível tanto no Modelo Clássico quanto no Modelo Vitrine!</p>
 
         <div class="input-group ck-db-9eb125">
             <label for="vitrine-marquee-text">Texto da faixa rolante</label>
             <input type="text" id="vitrine-marquee-text" placeholder="Ex: PRÓXIMA TURMA: 18 a 20 de Setembro | Santos/SP" maxlength="200">
-            <p class="input-hint">Aparece logo abaixo da arte, passando de lado. A logomarca (se houver) fica na frente do texto.</p>
+            <p class="input-hint">Aparece animada passando de lado no cartão. Se deixar em branco, a faixa fica oculta.</p>
         </div>
         <div class="input-group">
             <label>Cor da faixa (fundo)</label>
@@ -210,7 +256,7 @@
             <input type="file" id="vitrine-marquee-logo-input" accept="image/*" class="ck-hidden">
             <button type="button" id="vitrine-marquee-logo-add" class="btn btn-secondary ck-db-22d055"><i class="fas fa-plus"></i> Adicionar logomarca</button>
         </div>
-        <div class="input-group ck-db-9374e8">
+        <div class="input-group ck-db-9374e8" id="vitrine-footer-setting" style="display: none;">
             <label class="ck-db-4868a8">
                 <input type="checkbox" id="vitrine-show-footer">
                 Mostrar rodapé com nome e direitos reservados
@@ -257,21 +303,40 @@
                 
                 <!-- Formato do Avatar (embaixo do nome) -->
                 <div id="avatar-format-selector" class="avatar-format-selector">
-                    <label class="avatar-format-label">Formato do Avatar</label>
-                    <p class="avatar-format-description">Escolha como o avatar aparecerá no seu cartão virtual: circular, quadrado grande ou quadrado pequeno.</p>
+                    <label class="avatar-format-label"><i class="fas fa-shapes"></i> Formato do Avatar</label>
+                    <p class="avatar-format-description">Escolha como o avatar aparecerá no seu cartão virtual. Cada formato possui uma proporção e tamanho ideal recomendados.</p>
                     <div class="avatar-format-options">
-                        <button type="button" class="avatar-format-btn" data-format="circular" title="Circular">
+                        <button type="button" class="avatar-format-btn" data-format="circular" title="Circular (Clássico)">
                             <i class="fas fa-circle"></i>
-                            <span>Circular</span>
-                        </button>
-                        <button type="button" class="avatar-format-btn" data-format="square-full" title="Quadrado Grande">
-                            <i class="fas fa-square"></i>
-                            <span>Quadrado Grande</span>
+                            <span class="avatar-format-name">Circular</span>
+                            <span class="avatar-format-size-tag">500x500 (1:1)</span>
                         </button>
                         <button type="button" class="avatar-format-btn" data-format="square-small" title="Quadrado Pequeno">
                             <i class="fas fa-stop"></i>
-                            <span>Quadrado Pequeno</span>
+                            <span class="avatar-format-name">Quadrado Ícone</span>
+                            <span class="avatar-format-size-tag">500x500 (1:1)</span>
                         </button>
+                        <button type="button" class="avatar-format-btn" data-format="square-full" title="Quadrado Grande">
+                            <i class="fas fa-square"></i>
+                            <span class="avatar-format-name">Quadrado Grande</span>
+                            <span class="avatar-format-size-tag">1080x1080 (1:1)</span>
+                        </button>
+                        <button type="button" class="avatar-format-btn" data-format="portrait" title="Retrato Vertical">
+                            <i class="fas fa-portrait"></i>
+                            <span class="avatar-format-name">Retrato 4:5</span>
+                            <span class="avatar-format-size-tag">800x1000 (4:5)</span>
+                        </button>
+                        <button type="button" class="avatar-format-btn" data-format="banner" title="Banner Panorâmico">
+                            <i class="fas fa-image"></i>
+                            <span class="avatar-format-name">Banner Topo</span>
+                            <span class="avatar-format-size-tag">1200x675 (16:9)</span>
+                        </button>
+                    </div>
+                    <div class="avatar-spec-box">
+                        <div class="avatar-spec-header">
+                            <i class="fas fa-ruler-combined"></i> <strong class="avatar-spec-title">Medida Recomendada: 500 x 500 px (1:1)</strong>
+                        </div>
+                        <p class="avatar-spec-text">Corte redondo tradicional. Mantenha rosto ou logotipo centralizados para não cortar bordas importantes.</p>
                     </div>
                 </div>
                 

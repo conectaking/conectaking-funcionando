@@ -111,8 +111,12 @@
             btn.classList.toggle('active', active);
             btn.style.borderColor = active ? 'var(--dourado-principal,#FFC700)' : 'rgba(255,255,255,0.12)';
         });
-        const panel = $('vitrine-settings-panel');
-        if (panel) panel.style.display = state.cardLayout === 'vitrine' ? 'block' : 'none';
+        const vitrineHero = $('vitrine-hero-section');
+        if (vitrineHero) vitrineHero.style.display = state.cardLayout === 'vitrine' ? 'block' : 'none';
+        const vitrineFooter = $('vitrine-footer-setting');
+        if (vitrineFooter) vitrineFooter.style.display = state.cardLayout === 'vitrine' ? 'block' : 'none';
+        const modelosAvatar = $('modelos-avatar-section');
+        if (modelosAvatar) modelosAvatar.style.display = state.cardLayout === 'vitrine' ? 'none' : 'block';
         const avatarSel = $('avatar-format-selector');
         if (avatarSel) {
             avatarSel.style.opacity = state.cardLayout === 'vitrine' ? '0.45' : '1';
@@ -122,6 +126,7 @@
         }
         syncBgTypeUI();
         updateMiniPreview();
+        updatePhoneMockupPreview();
     }
 
     function renderLogoChips() {
@@ -154,9 +159,11 @@
         const card = screen.querySelector('.preview-card') || screen;
         const classicHeader = card.querySelector('.preview-header');
         let vitrineBlock = document.getElementById('preview-vitrine-block');
+        let classicMarqueeBlock = document.getElementById('preview-classic-marquee-block');
 
         if (state.cardLayout === 'vitrine') {
             if (classicHeader) classicHeader.style.display = 'none';
+            if (classicMarqueeBlock) classicMarqueeBlock.style.display = 'none';
             if (!vitrineBlock) {
                 vitrineBlock = document.createElement('div');
                 vitrineBlock.id = 'preview-vitrine-block';
@@ -192,6 +199,33 @@
         } else {
             if (classicHeader) classicHeader.style.display = '';
             if (vitrineBlock) vitrineBlock.style.display = 'none';
+
+            const hasMarquee = !!(state.marqueeText && state.marqueeText.trim() !== '') || (state.marqueeLogos && state.marqueeLogos.length > 0);
+            if (hasMarquee) {
+                if (!classicMarqueeBlock) {
+                    classicMarqueeBlock = document.createElement('div');
+                    classicMarqueeBlock.id = 'preview-classic-marquee-block';
+                    classicMarqueeBlock.style.cssText = 'width:100%;margin:6px 0 14px;overflow:hidden;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,0.3);';
+                    if (classicHeader && classicHeader.parentNode) {
+                        classicHeader.parentNode.insertBefore(classicMarqueeBlock, classicHeader.nextSibling);
+                    } else {
+                        card.appendChild(classicMarqueeBlock);
+                    }
+                }
+                classicMarqueeBlock.style.display = 'block';
+
+                let logosHtml = '';
+                state.marqueeLogos.slice(0, 3).forEach(function (url) {
+                    logosHtml += '<img src="' + url.replace(/"/g, '&quot;') + '" alt="" style="height:15px;width:auto;object-fit:contain;flex-shrink:0;">';
+                });
+                const marqueeText = state.marqueeText || 'Faixa rolante';
+                classicMarqueeBlock.innerHTML = '<div style="background:' + marqueeBackgroundCss() + ';color:' + state.marqueeTextColor +
+                    ';padding:7px 10px;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;">' +
+                    logosHtml +
+                    '<span style="color:' + state.marqueeTextColor + ';">' + marqueeText.replace(/</g, '&lt;') + '</span></div>';
+            } else if (classicMarqueeBlock) {
+                classicMarqueeBlock.style.display = 'none';
+            }
         }
     }
 
@@ -571,6 +605,7 @@
     window.applyVitrineHeroFromCrop = applyVitrineHeroFromCrop;
     window.DashboardVitrine = {
         updateMiniPreview: updateMiniPreview,
+        updatePhoneMockupPreview: updatePhoneMockupPreview,
         setLayoutUI: setLayoutUI,
         applyVitrineDetails: applyVitrineDetails,
         getVitrineDetailsForSave: getVitrineDetailsForSave,

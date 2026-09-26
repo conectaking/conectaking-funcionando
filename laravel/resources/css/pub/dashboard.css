@@ -2108,14 +2108,14 @@ html.sortable-dragging-active {
 
 .avatar-format-options {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .avatar-format-btn {
-  flex: 1;
-  min-width: 120px;
-  padding: 12px 16px;
+  flex: 1 1 calc(20% - 10px);
+  min-width: 105px;
+  padding: 12px 10px;
   background: var(--bg-card);
   border: 2px solid var(--border-glass);
   border-radius: var(--radius-md);
@@ -2125,9 +2125,10 @@ html.sortable-dragging-active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 0.85rem;
   font-weight: 500;
+  text-align: center;
 }
 
 .avatar-format-btn:hover {
@@ -2138,18 +2139,62 @@ html.sortable-dragging-active {
 
 .avatar-format-btn.active {
   border-color: var(--accent-primary);
-  background: rgba(255, 199, 0, 0.1);
+  background: rgba(255, 199, 0, 0.12);
   color: var(--accent-primary);
+  box-shadow: 0 0 12px rgba(255, 199, 0, 0.2);
 }
 
 .avatar-format-btn i {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 }
 
-.avatar-format-btn span {
+.avatar-format-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.avatar-format-size-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffc700;
+  background: rgba(255, 199, 0, 0.15);
+  border: 1px solid rgba(255, 199, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.avatar-spec-box {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 199, 0, 0.07);
+  border: 1px solid rgba(255, 199, 0, 0.25);
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.avatar-spec-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffc700;
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.avatar-spec-text {
   font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 0;
+  line-height: 1.4;
 }
 
+.preview-avatar.avatar-portrait,
+.avatar-portrait,
+.preview-avatar.avatar-banner,
+.avatar-banner,
 .avatar-with-gradient,
 .preview-avatar.avatar-square-full,
 .avatar-square-full {

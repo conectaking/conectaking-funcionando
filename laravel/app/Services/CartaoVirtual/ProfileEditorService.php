@@ -299,12 +299,12 @@ class ProfileEditorService
             }
             $id = DB::selectOne(
                 "INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
-                 VALUES (?, 'bible', 'Bíblia', true, 0) RETURNING id",
+                 VALUES (?, 'bible', 'Bíblia', false, 0) RETURNING id",
                 [$userId]
             );
             if ($id && !empty($id->id)) {
                 DB::insert(
-                    'INSERT INTO bible_items (profile_item_id, translation_code, is_visible) VALUES (?, \'nvi\', true)',
+                    "INSERT INTO bible_items (profile_item_id, translation_code, is_visible, verse_position, verse_size) VALUES (?, 'nvi', true, 'bottom', 'xsmall')",
                     [$id->id]
                 );
             }

@@ -589,6 +589,9 @@ function updateLivePreviewFromForm() {
         if (classicHeader) classicHeader.style.display = '';
         const vitrineBlock = document.getElementById('preview-vitrine-block');
         if (vitrineBlock) vitrineBlock.style.display = 'none';
+        if (window.DashboardVitrine && typeof window.DashboardVitrine.updatePhoneMockupPreview === 'function') {
+            window.DashboardVitrine.updatePhoneMockupPreview();
+        }
     }
 
     const vcardToggleChecked = document.querySelector('input[name="vcard-toggle"]:checked');

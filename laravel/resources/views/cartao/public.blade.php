@@ -151,34 +151,36 @@
             <i class="fas fa-share-alt"></i>
         </button>
 
+        @php
+            $heroUrl = trim((string) ($d['vitrine_hero_url'] ?? ''));
+            $marqueeText = trim((string) ($d['vitrine_marquee_text'] ?? ''));
+            $marqueeSpeed = strtolower((string) ($d['vitrine_marquee_speed'] ?? 'normal'));
+            if (! in_array($marqueeSpeed, ['slow', 'normal', 'fast'], true)) {
+                $marqueeSpeed = 'normal';
+            }
+            $marqueeBgType = strtolower((string) ($d['vitrine_marquee_bg_type'] ?? 'solid')) === 'gradient' ? 'gradient' : 'solid';
+            $marqueeC1 = $d['vitrine_marquee_color1'] ?? '#2A2A2E';
+            $marqueeC2 = $d['vitrine_marquee_color2'] ?? '#FFC700';
+            $marqueeTextColor = $d['vitrine_marquee_text_color'] ?? '#FFC700';
+            $marqueeLogos = $d['vitrine_marquee_logos'] ?? [];
+            if (is_string($marqueeLogos)) {
+                $decoded = json_decode($marqueeLogos, true);
+                $marqueeLogos = is_array($decoded) ? $decoded : [];
+            }
+            if (! is_array($marqueeLogos)) {
+                $marqueeLogos = [];
+            }
+            $marqueeLogos = array_values(array_filter(array_map(static function ($u) {
+                $u = trim((string) $u);
+                return $u !== '' ? $u : null;
+            }, $marqueeLogos)));
+            $marqueeStyle = $marqueeBgType === 'gradient'
+                ? 'background:linear-gradient(90deg,'.$marqueeC1.','.$marqueeC2.');--vitrine-marquee-text:'.$marqueeTextColor
+                : 'background:'.$marqueeC1.';--vitrine-marquee-text:'.$marqueeTextColor;
+            $hasMarquee = ($marqueeText !== '' || count($marqueeLogos) > 0);
+        @endphp
+
         @if($cardLayout === 'vitrine')
-            @php
-                $heroUrl = trim((string) ($d['vitrine_hero_url'] ?? ''));
-                $marqueeText = trim((string) ($d['vitrine_marquee_text'] ?? ($d['display_name'] ?? '')));
-                $marqueeSpeed = strtolower((string) ($d['vitrine_marquee_speed'] ?? 'normal'));
-                if (! in_array($marqueeSpeed, ['slow', 'normal', 'fast'], true)) {
-                    $marqueeSpeed = 'normal';
-                }
-                $marqueeBgType = strtolower((string) ($d['vitrine_marquee_bg_type'] ?? 'solid')) === 'gradient' ? 'gradient' : 'solid';
-                $marqueeC1 = $d['vitrine_marquee_color1'] ?? '#2A2A2E';
-                $marqueeC2 = $d['vitrine_marquee_color2'] ?? '#FFC700';
-                $marqueeTextColor = $d['vitrine_marquee_text_color'] ?? '#FFC700';
-                $marqueeLogos = $d['vitrine_marquee_logos'] ?? [];
-                if (is_string($marqueeLogos)) {
-                    $decoded = json_decode($marqueeLogos, true);
-                    $marqueeLogos = is_array($decoded) ? $decoded : [];
-                }
-                if (! is_array($marqueeLogos)) {
-                    $marqueeLogos = [];
-                }
-                $marqueeLogos = array_values(array_filter(array_map(static function ($u) {
-                    $u = trim((string) $u);
-                    return $u !== '' ? $u : null;
-                }, $marqueeLogos)));
-                $marqueeStyle = $marqueeBgType === 'gradient'
-                    ? 'background:linear-gradient(90deg,'.$marqueeC1.','.$marqueeC2.');--vitrine-marquee-text:'.$marqueeTextColor
-                    : 'background:'.$marqueeC1.';--vitrine-marquee-text:'.$marqueeTextColor;
-            @endphp
             <header class="vitrine-hero-header">
                 <div class="vitrine-hero-media">
                     @if($heroUrl !== '')
@@ -191,7 +193,7 @@
                     @endif
                 </div>
             </header>
-            @if($marqueeText !== '' || count($marqueeLogos) > 0)
+            @if($hasMarquee)
                 <div class="vitrine-marquee vitrine-marquee--{{ $marqueeSpeed }}" style="{{ $marqueeStyle }}">
                     <div class="vitrine-marquee-track">
                         @for($loopN = 0; $loopN < 2; $loopN++)
@@ -211,7 +213,7 @@
         @else
             <header class="profile-header{{ trim((string) ($d['bio'] ?? '')) === '' ? ' profile-header--no-bio' : '' }}">
                 <div class="ck-cp-5c6489">
-                    @if(in_array($avatarFormat, ['square-full', 'square-small'], true))
+                    @if(in_array($avatarFormat, ['square-full', 'square-small', 'portrait', 'banner'], true))
                         <img src="{{ $d['profile_image_url'] ?? 'https://avatar.iran.liara.run/public/boy' }}"
                              alt="Foto de Perfil" class="{{ $avatarClass }} avatar-with-gradient ck-cp-9380eb" loading="lazy" decoding="async"
                              style="-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 50%, rgba(0, 0, 0, 0.9) 68%, rgba(0, 0, 0, 0.6) 82%, rgba(0, 0, 0, 0.2) 92%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 50%, rgba(0, 0, 0, 0.9) 68%, rgba(0, 0, 0, 0.6) 82%, rgba(0, 0, 0, 0.2) 92%, transparent 100%);"
@@ -231,6 +233,23 @@
                     @endif
                 @endif
             </header>
+            @if($hasMarquee)
+                <div class="vitrine-marquee vitrine-marquee--classic vitrine-marquee--{{ $marqueeSpeed }}" style="{{ $marqueeStyle }}; margin-bottom: 16px; border-radius: 8px;">
+                    <div class="vitrine-marquee-track">
+                        @for($loopN = 0; $loopN < 2; $loopN++)
+                            <div class="vitrine-marquee-group">
+                                @foreach($marqueeLogos as $logoUrl)
+                                    <img class="vitrine-marquee-logo" src="{{ $logoUrl }}" alt="" decoding="async">
+                                @endforeach
+                                @if($marqueeText !== '')
+                                    <span class="vitrine-marquee-text">{{ $marqueeText }}</span>
+                                @endif
+                                <span class="vitrine-marquee-sep" aria-hidden="true">•</span>
+                            </div>
+                        @endfor
+                    </div>
+                </div>
+            @endif
         @endif
 
         @php

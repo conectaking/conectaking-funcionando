@@ -200,8 +200,22 @@ class AuthService
                 );
                 if (SchemaMeta::hasTable('user_profiles')) {
                     DB::insert(
-                        'INSERT INTO user_profiles (user_id, display_name, logo_spacing) VALUES (?, ?, ?)',
-                        [$registrationCode, $email, 'center']
+                        'INSERT INTO user_profiles (
+                            user_id, display_name, background_type, background_image_url,
+                            background_image_opacity, text_color, card_background_color, card_opacity,
+                            button_color, button_text_color, button_opacity, button_font_size,
+                            button_border_radius, button_content_align, logo_spacing,
+                            avatar_format, card_layout, font_family, show_vcard_button,
+                            created_at, updated_at
+                        ) VALUES (
+                            ?, ?, \'image\', \'https://r2.conectaking.com.br/images/2026/09/77777017-02b7-4efa-8052-d34568a4b8de.jpg\',
+                            \'1.00\', \'#ffffff\', \'#000000\', \'0.40\',
+                            \'#ffffff\', \'#ffffff\', \'0.10\', \'16\',
+                            \'20px 0px 20px 0px\', \'center\', \'center\',
+                            \'square-small\', \'classic\', \'Inter\', true,
+                            NOW(), NOW()
+                        )',
+                        [$registrationCode, $email]
                     );
                 }
                 $this->ensureDefaultBibleItem($registrationCode);
@@ -237,12 +251,12 @@ class AuthService
         try {
             $id = DB::selectOne(
                 "INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
-                 VALUES (?, 'bible', 'Bíblia', true, 0) RETURNING id",
+                 VALUES (?, 'bible', 'Bíblia', false, 0) RETURNING id",
                 [$userId]
             );
             if ($id && SchemaMeta::hasTable('bible_items')) {
                 DB::insert(
-                    "INSERT INTO bible_items (profile_item_id, translation_code, is_visible) VALUES (?, 'nvi', true)",
+                    "INSERT INTO bible_items (profile_item_id, translation_code, is_visible, verse_position, verse_size) VALUES (?, 'nvi', true, 'bottom', 'xsmall')",
                     [$id->id]
                 );
             }

@@ -1305,6 +1305,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.DashboardCore) window.DashboardCore.renderEditor = renderEditor;
 
 
+    const AVATAR_SPECS = {
+        'circular': {
+            title: 'Medida Recomendada: 500 x 500 px (1:1)',
+            text: 'Corte redondo tradicional. Mantenha rosto ou logotipo centralizados para não cortar bordas importantes.'
+        },
+        'square-small': {
+            title: 'Medida Recomendada: 500 x 500 px (1:1)',
+            text: 'Formato quadrado compacto com cantos arredondados (estilo ícone de app) e transição suave no rodapé.'
+        },
+        'square-full': {
+            title: 'Medida Recomendada: 1080 x 1080 px (1:1)',
+            text: 'Preenche a largura do cartão em alta definição com fusão em degradê para o fundo.'
+        },
+        'portrait': {
+            title: 'Medida Recomendada: 800 x 1000 px (4:5)',
+            text: 'Proporção vertical elegante (formato feed Instagram) para fotos em plano médio ou corpo inteiro com fade inferior.'
+        },
+        'banner': {
+            title: 'Medida Recomendada: 1200 x 675 px (16:9)',
+            text: 'Formato panorâmico widescreen de topo, ideal para imagens de divulgação, eventos, fachadas ou cabeçalhos.'
+        }
+    };
+
     function updateAvatarFormatSelector(format) {
         const buttons = document.querySelectorAll('.avatar-format-btn');
         if (!buttons || buttons.length === 0) return;
@@ -1315,6 +1338,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.classList.remove('active');
             }
         });
+
+        const spec = AVATAR_SPECS[format] || AVATAR_SPECS['circular'];
+        document.querySelectorAll('.avatar-spec-title').forEach(el => {
+            el.textContent = spec.title;
+        });
+        document.querySelectorAll('.avatar-spec-text').forEach(el => {
+            el.textContent = spec.text;
+        });
     }
 
     if (window.DashboardCore) window.DashboardCore.updateAvatarFormatSelector = updateAvatarFormatSelector;
@@ -1324,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!avatarElement) return;
 
         // Remover classes de formato anteriores
-        avatarElement.classList.remove('avatar-circular', 'avatar-square-full', 'avatar-square-small', 'avatar-with-gradient');
+        avatarElement.classList.remove('avatar-circular', 'avatar-square-full', 'avatar-square-small', 'avatar-portrait', 'avatar-banner', 'avatar-with-gradient');
 
         // Aplicar classe do formato atual
         const formatClass = `avatar-${format}`;
@@ -1351,13 +1382,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             avatarElement.style.maskImage = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.6) 82%, rgba(0,0,0,0.2) 92%, transparent 100%)';
         } else if (format === 'square-small') {
             avatarElement.classList.add('avatar-with-gradient');
-            avatarElement.style.borderRadius = '0';
+            avatarElement.style.borderRadius = '14px';
             avatarElement.style.width = '120px';
             avatarElement.style.height = '120px';
             avatarElement.style.maxWidth = 'none';
             avatarElement.style.aspectRatio = 'auto';
             avatarElement.style.webkitMaskImage = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.6) 82%, rgba(0,0,0,0.2) 92%, transparent 100%)';
             avatarElement.style.maskImage = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.6) 82%, rgba(0,0,0,0.2) 92%, transparent 100%)';
+        } else if (format === 'portrait') {
+            avatarElement.classList.add('avatar-with-gradient');
+            avatarElement.style.borderRadius = '12px';
+            avatarElement.style.width = '100%';
+            avatarElement.style.maxWidth = '380px';
+            avatarElement.style.height = 'auto';
+            avatarElement.style.aspectRatio = '4 / 5';
+            avatarElement.style.objectFit = 'cover';
+            avatarElement.style.webkitMaskImage = 'linear-gradient(to bottom, #000 0%, #000 65%, rgba(0,0,0,0.5) 85%, transparent 100%)';
+            avatarElement.style.maskImage = 'linear-gradient(to bottom, #000 0%, #000 65%, rgba(0,0,0,0.5) 85%, transparent 100%)';
+        } else if (format === 'banner') {
+            avatarElement.classList.add('avatar-with-gradient');
+            avatarElement.style.borderRadius = '12px';
+            avatarElement.style.width = '100%';
+            avatarElement.style.maxWidth = '680px';
+            avatarElement.style.height = 'auto';
+            avatarElement.style.aspectRatio = '16 / 9';
+            avatarElement.style.objectFit = 'cover';
+            avatarElement.style.webkitMaskImage = 'linear-gradient(to bottom, #000 0%, #000 70%, rgba(0,0,0,0.4) 90%, transparent 100%)';
+            avatarElement.style.maskImage = 'linear-gradient(to bottom, #000 0%, #000 70%, rgba(0,0,0,0.4) 90%, transparent 100%)';
         }
     }
 
