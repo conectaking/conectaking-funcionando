@@ -142,7 +142,10 @@
 @endif
 
 @if($hasBgImage)
-    <img class="background-image-overlay-img" src="{{ $d['background_image_url'] }}" alt="" aria-hidden="true" decoding="async">
+    <div class="background-image-overlay-wrapper" aria-hidden="true">
+        <div class="background-image-blur-backdrop" style="background-image: url('{{ $d['background_image_url'] }}');"></div>
+        <img class="background-image-overlay-img" src="{{ $d['background_image_url'] }}" alt="" decoding="async">
+    </div>
 @endif
 
 <div class="profile-page-wrapper profile-layout-{{ $cardLayout }}" data-profile-slug="{{ $profile_slug ?? '' }}">
