@@ -76,13 +76,19 @@ async function main() {
     let text = String(message.text || message.message || "").trim();
     const st = load();
     const isMe = chat === myId;
-    const isLiberar = new RegExp("^/liberar\\b", "i").test(text);
+    const isLiberar = new RegExp("^/(liberar|ativar|ia)\\b", "i").test(text);
 
-    if (isLiberar && isMe) {
-      st.paused = {};
-      st.last = null;
-      save(st);
-      console.log("IA liberada (tudo)");
+    if (isLiberar) {
+      if (isMe) {
+        st.paused = {};
+        st.last = null;
+        save(st);
+        console.log("IA liberada (todos os chats)");
+      } else {
+        delete st.paused[chat];
+        save(st);
+        console.log("IA liberada neste chat:", chat);
+      }
       return;
     }
     if (isMe) return;
@@ -137,6 +143,11 @@ async function main() {
       }
     }
 
+    // Suporte a fotos / imagens enviadas sem legenda
+    if (!text && (message.photo || (message.media && message.media.className === "MessageMediaPhoto"))) {
+      text = "[foto enviada pelo cliente]";
+    }
+
     if (!text) return;
 
     console.log("cliente", chat, hadVoice ? `[áudio] ${text.slice(0, 40)}` : text.slice(0, 40));
@@ -150,8 +161,41 @@ async function main() {
       const reply = (data && (data.reply || data.outMessage || data.text)) || "";
       console.log("reply", reply ? String(reply).slice(0, 80) : "VAZIO");
       if (!reply) return;
-      const sent = await client.sendMessage(message.peerId || chat, { message: String(reply).slice(0, 4000) });
-      if (sent && sent.id) fromBot.add(sent.id);
+
+      const replyText = String(reply).slice(0, 4000);
+      let sent = null;
+
+      // 1. Tentar message.respond (GramJS usa o inputChat com accessHash do update recebido)
+      try {
+        if (typeof message.respond === "function") {
+          sent = await message.respond({ message: replyText });
+        }
+      } catch (errRespond) {
+        console.warn("message.respond falhou, tentando fallback com inputPeer:", errRespond.message);
+      }
+
+      // 2. Fallback: resolver inputPeer explicitamente com accessHash
+      if (!sent) {
+        try {
+          const inputPeer = (typeof message.getInputChat === "function")
+            ? (await message.getInputChat())
+            : (await client.getInputEntity(message.sender || message.peerId || chat));
+          sent = await client.sendMessage(inputPeer, { message: replyText });
+        } catch (errInput) {
+          console.warn("sendMessage com inputPeer falhou, tentando reply:", errInput.message);
+          // 3. Fallback: reply na mensagem original
+          if (typeof message.reply === "function") {
+            sent = await message.reply({ message: replyText });
+          }
+        }
+      }
+
+      if (sent && sent.id) {
+        fromBot.add(sent.id);
+        console.log("Mensagem enviada com sucesso para", chat, "msgId:", sent.id);
+      } else {
+        console.error("Não foi possível enviar a mensagem para", chat);
+      }
     } catch (e) {
       console.error("erro:", e.response && e.response.status, e.message);
     }
