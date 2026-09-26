@@ -138,6 +138,7 @@ class RequireCookieCsrf
         }
 
         $prefixes = [
+            'log/',
             'api/guest-lists/public/register/',
             'api/guest-lists/public/confirm/',
             'portaria/',
