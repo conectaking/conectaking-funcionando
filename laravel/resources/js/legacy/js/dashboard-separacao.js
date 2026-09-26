@@ -258,10 +258,21 @@ const saveModuleAvailabilityBtn = document.getElementById('save-module-availabil
 if (saveModuleAvailabilityBtn) {
     saveModuleAvailabilityBtn.addEventListener('click', async () => {
         try {
-            const updates = Object.values(moduleAvailabilityChanges);
+            let updates = Object.values(moduleAvailabilityChanges);
 
             if (updates.length === 0) {
-                alert('Nenhuma alteração para salvar.');
+                const allCheckboxes = document.querySelectorAll('.module-plan-checkbox');
+                if (allCheckboxes.length > 0) {
+                    updates = Array.from(allCheckboxes).map(cb => ({
+                        module_type: cb.dataset.module,
+                        plan_code: cb.dataset.plan,
+                        is_available: cb.checked
+                    }));
+                }
+            }
+
+            if (updates.length === 0) {
+                alert('Todas as configurações de módulos já estão salvas e ativas!');
                 return;
             }
 
@@ -323,11 +334,13 @@ window.switchSeparationTab = function (tab) {
     // Mostrar/ocultar conteúdo das abas
     document.querySelectorAll('.tab-content-separation').forEach(content => {
         content.style.display = 'none';
+        content.classList.add('ck-hidden');
     });
 
     const activeContent = document.getElementById(`tab-content-${tab}`);
     if (activeContent) {
         activeContent.style.display = 'block';
+        activeContent.classList.remove('ck-hidden');
     }
 
     // Carregar dados da aba ativa
@@ -337,10 +350,13 @@ window.switchSeparationTab = function (tab) {
         loadIndividualPlans();
     } else if (tab === 'link-limits') {
         if (window.moduleLinkLimits) {
-            // Carregar dados e renderizar grid
-            window.moduleLinkLimits.loadData().then(() => {
-                window.moduleLinkLimits.renderGrid();
-            });
+            if (typeof window.moduleLinkLimits.loadLinkLimits === 'function') {
+                window.moduleLinkLimits.loadLinkLimits();
+            } else {
+                window.moduleLinkLimits.loadData().then(() => {
+                    window.moduleLinkLimits.renderGrid();
+                });
+            }
         }
     }
 };
@@ -750,10 +766,55 @@ window.deleteAllIndividualPlans = async function (userId) {
 const separacaoLink = document.getElementById('separacao-pacotes-link');
 if (separacaoLink) {
     separacaoLink.addEventListener('click', () => {
+        bindSeparationControls();
         setTimeout(() => {
             loadModuleAvailability();
         }, 100);
     });
+}
+
+function bindSeparationControls() {
+    const tabModules = document.getElementById('tab-modules');
+    if (tabModules && !tabModules.dataset.boundSep) {
+        tabModules.dataset.boundSep = '1';
+        tabModules.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.switchSeparationTab('modules');
+        });
+    }
+
+    const tabIndiv = document.getElementById('tab-individual');
+    if (tabIndiv && !tabIndiv.dataset.boundSep) {
+        tabIndiv.dataset.boundSep = '1';
+        tabIndiv.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.switchSeparationTab('individual');
+        });
+    }
+
+    const tabLimits = document.getElementById('tab-link-limits');
+    if (tabLimits && !tabLimits.dataset.boundSep) {
+        tabLimits.dataset.boundSep = '1';
+        tabLimits.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.switchSeparationTab('link-limits');
+        });
+    }
+
+    const addIndivBtn = document.getElementById('add-individual-plan-btn');
+    if (addIndivBtn && !addIndivBtn.dataset.boundSep) {
+        addIndivBtn.dataset.boundSep = '1';
+        addIndivBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.showAddIndividualPlanModal();
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindSeparationControls);
+} else {
+    bindSeparationControls();
 }
 
 // Verificar admin ao carregar página (já aplicado em applyEmpresaTabAndControls via /api/account/status)

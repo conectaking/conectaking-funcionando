@@ -41,4 +41,39 @@ class ModulesController extends Controller
 
         return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function individualPlans()
+    {
+        $r = $this->modules->individualPlans();
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function usersList()
+    {
+        $r = $this->modules->usersList();
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function getIndividualPlan(string $userId)
+    {
+        $r = $this->modules->getIndividualPlan($userId);
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function updateIndividualPlan(Request $request, string $userId)
+    {
+        $r = $this->modules->updateIndividualPlan($userId, $request->all());
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function deleteIndividualPlan(string $userId)
+    {
+        $r = $this->modules->deleteIndividualPlan($userId);
+
+        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+    }
 }

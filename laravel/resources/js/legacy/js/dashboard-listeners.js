@@ -171,6 +171,23 @@ function _setupEventListenersBody() {
     const mobileSaveBtn = document.getElementById('mobile-save-all-btn');
     if (mobileSaveBtn && typeof mobileSaveBtn.addEventListener === 'function') {
         mobileSaveBtn.addEventListener('click', (e) => {
+            const separacaoPane = document.getElementById('separacao-pacotes-pane');
+            if (separacaoPane && !separacaoPane.classList.contains('ck-hidden') && separacaoPane.style.display !== 'none') {
+                e.preventDefault();
+                e.stopPropagation();
+                const limitsContent = document.getElementById('tab-content-link-limits');
+                if (limitsContent && !limitsContent.classList.contains('ck-hidden') && limitsContent.style.display !== 'none') {
+                    if (window.moduleLinkLimits && typeof window.moduleLinkLimits.saveLimits === 'function') {
+                        window.moduleLinkLimits.saveLimits();
+                        return;
+                    }
+                }
+                const saveModBtn = document.getElementById('save-module-availability-btn');
+                if (saveModBtn) {
+                    saveModBtn.click();
+                }
+                return;
+            }
             env.saveAllChanges(e);
         });
     }

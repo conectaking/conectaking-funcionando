@@ -49,6 +49,8 @@ class VerifyCsrfToken extends Middleware
         'api/admin/*',
         'api/finance/*',
         'api/subscription/*',
+        'api/modules/*',
+        'api/link-limits/*',
     ];
 
     protected function tokensMatch($request): bool

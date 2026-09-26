@@ -945,7 +945,7 @@
                 </div>
                 
                 <!-- Aba de Planos Individuais por Usuário -->
-                <div id="tab-content-individual" class="tab-content-separation ck-hidden">
+                <div id="tab-content-individual" class="tab-content-separation" style="display: none;">
                     <div class="individual-plans-container">
                         <div class="ck-db-8d7033">
                             <p class="ck-text-muted-mb20">
@@ -963,7 +963,7 @@
                 </div>
                 
                 <!-- Aba de Quantidade de Links -->
-                <div id="tab-content-link-limits" class="tab-content-separation ck-hidden">
+                <div id="tab-content-link-limits" class="tab-content-separation" style="display: none;">
                     <div class="link-limits-container">
                         <div class="link-limits-header">
                             <p class="ck-text-muted-mb20">
@@ -991,7 +991,7 @@
                             <button id="save-link-limits-btn" class="btn btn-primary ck-hidden">
                                 <i class="fas fa-save"></i> Salvar Alterações
                             </button>
-                            <button id="reset-link-limits-btn" class="btn btn-secondary ck-hidden" onclick="resetLinkLimits()">
+                            <button id="reset-link-limits-btn" class="btn btn-secondary" onclick="resetLinkLimits()">
                                 <i class="fas fa-undo"></i> Resetar para Ilimitado
                             </button>
                         </div>

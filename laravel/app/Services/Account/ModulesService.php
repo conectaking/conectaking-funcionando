@@ -312,7 +312,7 @@ class ModulesService
     {
         try {
             $users = DB::select(
-                'SELECT u.id, u.email, COALESCE(p.display_name, u.email) as name, u.account_type
+                'SELECT u.id, u.email, COALESCE(p.display_name, u.email) as name, u.account_type, u.created_at, u.subscription_expires_at, u.is_active
                  FROM users u
                  LEFT JOIN user_profiles p ON u.id = p.user_id
                  ORDER BY u.email ASC'

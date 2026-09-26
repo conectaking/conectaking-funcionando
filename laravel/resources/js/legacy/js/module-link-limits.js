@@ -212,7 +212,8 @@
             // Mostrar botão de salvar
             const saveBtn = document.getElementById('save-link-limits-btn');
             if (saveBtn) {
-                saveBtn.style.display = 'inline-block';
+                saveBtn.classList.remove('ck-hidden');
+                saveBtn.style.display = 'inline-flex';
             }
         },
 
@@ -221,7 +222,7 @@
          */
         async saveLimits() {
             if (this.changedLimits.size === 0) {
-                alert('Nenhuma alterao para salvar.');
+                alert('Nenhuma alteração para salvar.');
                 return;
             }
 
@@ -257,12 +258,13 @@
                     }
                 });
 
-                // Limpar mudanas
+                // Limpar mudanças
                 this.changedLimits.clear();
 
                 // Esconder botão de salvar
                 const saveBtn = document.getElementById('save-link-limits-btn');
                 if (saveBtn) {
+                    saveBtn.classList.add('ck-hidden');
                     saveBtn.style.display = 'none';
                 }
 
@@ -282,8 +284,20 @@
         setupEventListeners() {
             // Botão salvar
             const saveBtn = document.getElementById('save-link-limits-btn');
-            if (saveBtn) {
+            if (saveBtn && !saveBtn.dataset.bound) {
+                saveBtn.dataset.bound = '1';
                 saveBtn.addEventListener('click', () => this.saveLimits());
+            }
+
+            // Botão resetar
+            const resetBtn = document.getElementById('reset-link-limits-btn');
+            if (resetBtn && !resetBtn.dataset.bound) {
+                resetBtn.dataset.bound = '1';
+                resetBtn.classList.remove('ck-hidden');
+                resetBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.resetLinkLimits();
+                });
             }
 
             // Filtros
