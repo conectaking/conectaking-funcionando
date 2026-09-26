@@ -15,6 +15,11 @@ const openaiKey = String(process.env.OPENAI_API_KEY || "").trim();
 const session = new StoreSession("user_session");
 const STATE = path.join(__dirname, "pause.json");
 const fromBot = new Set();
+const recentSentTexts = new Map(); // snippet -> timestamp
+
+// IDs conhecidos de bots e serviços do sistema para NUNCA responder
+const AGENTE_KING_BOT_ID = "8871691156"; // @conectaking_bot (Agente King pessoal)
+const TELEGRAM_SERVICE_ID = "777000";   // Notificações oficiais do Telegram
 
 function load() {
   try { return JSON.parse(fs.readFileSync(STATE, "utf8")); }
@@ -73,6 +78,19 @@ async function main() {
     const chat = chatOf(message);
     if (!chat) return;
 
+    // 1. REGRA ABSOLUTA: O Agente Cliente (Userbot) NUNCA deve responder ao Agente King nem a serviços do sistema
+    if (chat === AGENTE_KING_BOT_ID || chat === TELEGRAM_SERVICE_ID) {
+      return;
+    }
+
+    // 2. NUNCA responder a bots (apenas clientes reais / contatos humanos)
+    try {
+      const sender = await message.getSender();
+      if (sender && (sender.bot || sender.isBot || (sender.username && sender.username.toLowerCase().endsWith("bot")))) {
+        return;
+      }
+    } catch (_) {}
+
     let text = String(message.text || message.message || "").trim();
     const st = load();
     const isMe = chat === myId;
@@ -93,26 +111,48 @@ async function main() {
     }
     if (isMe) return;
 
+    // Tratamento de mensagens que saem da conta do King
     if (message.out) {
       if (fromBot.has(message.id)) {
         fromBot.delete(message.id);
         return;
       }
+      // Verificar se o texto é de uma resposta recente enviada pela própria IA
+      const snippet = text.slice(0, 50);
+      if (recentSentTexts.has(snippet)) {
+        const sentAt = recentSentTexts.get(snippet);
+        if (Date.now() - sentAt < 30000) {
+          recentSentTexts.delete(snippet);
+          return; // Foi enviado pelo bot, NÃO pausar!
+        }
+      }
+
+      // Se o King manualmente digitou para o cliente (e não é comando /), pausar temporariamente
       if (text.indexOf("/") !== 0) {
-        st.paused[chat] = true;
+        st.paused[chat] = Date.now();
         st.last = chat;
         save(st);
-        console.log("King assumiu", chat);
+        console.log("King assumiu manualmente chat:", chat);
       }
       return;
     }
 
+    // Se o chat foi pausado manualmente pelo King:
     if (st.paused[chat]) {
-      console.log("pausado", chat);
-      return;
+      const pausedAt = typeof st.paused[chat] === "number" ? st.paused[chat] : 0;
+      const ONE_HOUR = 60 * 60 * 1000;
+      // Se passou mais de 1 hora sem mensagem do King, reativa automaticamente para novos chamados
+      if (pausedAt && (Date.now() - pausedAt > ONE_HOUR)) {
+        delete st.paused[chat];
+        save(st);
+        console.log("Pausa expirou após 1h, IA reativada para cliente:", chat);
+      } else {
+        console.log("Chat pausado manualmente:", chat);
+        return;
+      }
     }
 
-    // Suporte a mensagens de áudio / voz
+    // Suporte a mensagens de áudio / voz de clientes
     const isVoiceOrAudio = Boolean(
       message.voice ||
       message.audio ||
@@ -125,7 +165,7 @@ async function main() {
     let hadVoice = false;
     if (!text && isVoiceOrAudio) {
       try {
-        console.log("Baixando áudio do chat", chat, "...");
+        console.log("Baixando áudio do cliente", chat, "...");
         const buffer = await client.downloadMedia(message, {});
         if (buffer && buffer.length > 0) {
           console.log(`Áudio recebido (${buffer.length} bytes). Enviando para Whisper...`);
@@ -133,39 +173,41 @@ async function main() {
           if (transcription) {
             text = transcription;
             hadVoice = true;
-            console.log("Transcrição:", text);
+            console.log("Transcrição do áudio do cliente:", text);
           } else {
             console.log("Transcrição retornou vazio.");
           }
         }
       } catch (err) {
-        console.error("Falha ao processar mídia de áudio:", err.message);
+        console.error("Falha ao processar mídia de áudio do cliente:", err.message);
       }
     }
 
-    // Suporte a fotos / imagens enviadas sem legenda
+    // Suporte a fotos / imagens enviadas pelo cliente sem legenda
     if (!text && (message.photo || (message.media && message.media.className === "MessageMediaPhoto"))) {
       text = "[foto enviada pelo cliente]";
     }
 
     if (!text) return;
 
-    console.log("cliente", chat, hadVoice ? `[áudio] ${text.slice(0, 40)}` : text.slice(0, 40));
+    console.log("Cliente:", chat, hadVoice ? `[áudio] ${text.slice(0, 40)}` : text.slice(0, 40));
     try {
       const response = await axios.post(webhook, { senderId: chat, text }, { timeout: 90000 });
       let data = response.data;
       if (typeof data === "string") {
         try { data = JSON.parse(data); } catch (e) { data = {}; }
       }
-      console.log("raw", JSON.stringify(data).slice(0, 250));
       const reply = (data && (data.reply || data.outMessage || data.text)) || "";
-      console.log("reply", reply ? String(reply).slice(0, 80) : "VAZIO");
+      console.log("Resposta IA cliente:", reply ? String(reply).slice(0, 80) : "VAZIO");
       if (!reply) return;
 
       const replyText = String(reply).slice(0, 4000);
       let sent = null;
 
-      // 1. Tentar message.respond (GramJS usa o inputChat com accessHash do update recebido)
+      // Registrar o snippet nos textos recentes antes de enviar para evitar auto-pausa
+      recentSentTexts.set(replyText.slice(0, 50), Date.now());
+
+      // 1. Tentar message.respond
       try {
         if (typeof message.respond === "function") {
           sent = await message.respond({ message: replyText });
@@ -192,12 +234,12 @@ async function main() {
 
       if (sent && sent.id) {
         fromBot.add(sent.id);
-        console.log("Mensagem enviada com sucesso para", chat, "msgId:", sent.id);
+        console.log("Mensagem enviada com sucesso para cliente", chat, "msgId:", sent.id);
       } else {
-        console.error("Não foi possível enviar a mensagem para", chat);
+        console.error("Não foi possível enviar a mensagem para cliente", chat);
       }
     } catch (e) {
-      console.error("erro:", e.response && e.response.status, e.message);
+      console.error("erro ao chamar webhook do agente cliente:", e.response && e.response.status, e.message);
     }
   }, new NewMessage({}));
 }
