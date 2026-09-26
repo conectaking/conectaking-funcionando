@@ -353,6 +353,15 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quant
 
    - FLUXO DE CAIXA AVULSO (create):
      * Receitas e despesas avulsas simples do dia a dia (ex: "almoço 50", "gasolina 100").
+     * LANÇAMENTOS MÚLTIPLOS E DÍZIMO NO FLUXO:
+       Se o Adriano pedir para adicionar uma entrada e também uma saída/dízimo (ex: "adicione 120 recebido em caixa do amigo Hernandes e 12 de saída para o dízimo"):
+       -> Chame 'manage_finance' com action: "create" e passe o array 'transactions' com todos os itens:
+          [
+            { "type": "INCOME", "amount": 120, "status": "PAID", "description": "Recebimento Hernandes (Transferência YouTube)" },
+            { "type": "EXPENSE", "amount": 12, "status": "PAID", "description": "Saída para Dízimo" }
+          ]
+       -> Dízimo é SEMPRE despesa/saída (type: "EXPENSE", status: "PAID").
+       -> Nunca deixe de registrar a entrada ou a saída. Se foram solicitados ambos, registre ambos!
    - REMOVER DO FLUXO (delete_by_criteria):
      * "apaga os R$ 50", "remove a despesa de almoço".
    - CANCELAR ÚLTIMO (cancel_last):
@@ -455,6 +464,10 @@ const TOOLS = [
           enum: ['create_trabalho', 'create', 'update_trabalho', 'delete_trabalho', 'record_payment', 'clear_all', 'cancel_last', 'delete_by_criteria', 'adjust_cash', 'list_recent', 'summary', 'advice'],
           description: 'Ação a executar'
         },
+        type: { type: 'string', enum: ['INCOME', 'EXPENSE'], description: 'Tipo da transação: INCOME (receita/entrada) ou EXPENSE (despesa/saída/dízimo)' },
+        amount: { type: 'number', description: 'Valor da transação avulsa para action create' },
+        description: { type: 'string', description: 'Descrição da transação (ex: Recebimento Hernandes YouTube, Saída Dízimo)' },
+        status: { type: 'string', enum: ['PAID', 'PENDING'], description: 'Status: PAID (pago/em caixa) ou PENDING (pendente)' },
         cliente: { type: 'string', description: 'Nome do cliente do trabalho (para create_trabalho, update_trabalho, delete_trabalho ou record_payment)' },
         novo_cliente: { type: 'string', description: 'Novo nome do cliente para update_trabalho' },
         servico: { type: 'string', description: 'Tipo ou descrição do serviço (ex: Ensaio Fotográfico, Posicionamento, Cobertura)' },
@@ -521,10 +534,16 @@ try {
     const choice = completionRes.body?.choices?.[0]?.message;
 
     if (choice?.tool_calls && choice.tool_calls.length > 0) {
-      const toolCall = choice.tool_calls[0];
-      const fnName = toolCall.function.name;
-      let args = {};
-      try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}
+      const toolResponses = [];
+      const allCreatedTransactions = [];
+      const profileId = await resolveProfileId.call(this);
+      const today = new Date().toISOString().slice(0, 10);
+
+      for (const toolCall of choice.tool_calls) {
+        const fnName = toolCall.function?.name;
+        let args = {};
+        try { args = JSON.parse(toolCall.function?.arguments || '{}'); } catch (_) {}
+        let stepMsg = '';
 
       // ── LISTAR CLIENTES / VISÃO GERAL DE USUÁRIOS ────────────────────────
       if (fnName === 'list_clients') {
@@ -612,7 +631,7 @@ try {
             }).join('\n\n');
           }
 
-          outMessage = `👑 *Visão Geral de Usuários — Conecta King*\n\n` +
+          stepMsg = `👑 *Visão Geral de Usuários — Conecta King*\n\n` +
             `📊 *Estatísticas da Base:*\n` +
             `👥 *Total de Usuários:* *${total}* ${total === 1 ? 'cliente cadastrado' : 'clientes cadastrados'}\n` +
             `🟢 *Ativos:* *${activeCount}*\n` +
@@ -625,7 +644,7 @@ try {
             `• *Excluir cliente:* _"Pode excluir [email ou tag]"_\n` +
             `• *Alterar dados:* _"Muda a senha/e-mail/plano de [email ou tag]"_`;
         } else {
-          outMessage = `⚠️ *Não foi possível consultar os usuários:* ${r.body?.message || 'Falha de comunicação com o servidor Conecta King.'}`;
+          stepMsg = `⚠️ *Não foi possível consultar os usuários:* ${r.body?.message || 'Falha de comunicação com o servidor Conecta King.'}`;
         }
 
       // ── CADASTRAR CLIENTE ────────────────────────────────────────────────
@@ -645,7 +664,7 @@ try {
           session.lastTargetClient = args.email;
           const u = r.body.data?.user || {};
           const exp = u.subscription_expires_at ? new Date(u.subscription_expires_at).toLocaleDateString('pt-BR') : '30 dias';
-          outMessage = `👑 *Cliente Cadastrado com Sucesso!*\n\n` +
+          stepMsg = `👑 *Cliente Cadastrado com Sucesso!*\n\n` +
             `👤 *E-mail:* \`${u.email}\`\n` +
             `🔑 *Senha:* \`${args.password}\`\n` +
             `🏷️ *Código / Tag:* \`${u.tag_code || u.id}\`\n` +
@@ -655,7 +674,7 @@ try {
             `_A conta já está ativa e pronta para uso!_`;
         } else {
           const errMsg = r.body?.message || r.body?.error?.message || 'Falha ao cadastrar cliente.';
-          outMessage = `⚠️ *Não foi possível cadastrar o cliente:*\n${errMsg}`;
+          stepMsg = `⚠️ *Não foi possível cadastrar o cliente:*\n${errMsg}`;
         }
 
       // ── GERENCIAR CLIENTE (EXCLUIR / MUDAR EMAIL / SENHA / ADM / RENOVAR / PLANO) ─
@@ -678,27 +697,27 @@ try {
           const u = r.body.data?.user || {};
           if (args.action === 'delete') {
             session.lastTargetClient = null;
-            outMessage = `🗑️ *Cliente Excluído com Sucesso! — Agente King*\n\n` +
+            stepMsg = `🗑️ *Cliente Excluído com Sucesso! — Agente King*\n\n` +
               `👤 *Cliente:* ${u.display_name || targetId} (\`${u.email || targetId}\`)\n` +
               (u.tag_code ? `🏷️ *Tag / Código Desvinculado:* \`${u.tag_code}\`\n` : '') +
               `✅ *Status:* Removido permanentemente da plataforma Conecta King.`;
           } else if (args.action === 'change_email') {
             session.lastTargetClient = u.email;
-            outMessage = `✏️ *E-mail do Cliente Alterado com Sucesso! — Agente King*\n\n` +
+            stepMsg = `✏️ *E-mail do Cliente Alterado com Sucesso! — Agente King*\n\n` +
               `👤 *Novo E-mail:* \`${u.email}\`\n` +
               `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
               `💎 *Plano:* *${u.plan_name || u.account_type}*\n\n` +
               `_O cliente agora deve fazer login com o novo e-mail._`;
           } else if (args.action === 'change_password') {
             session.lastTargetClient = u.email;
-            outMessage = `🔑 *Senha do Cliente Alterada com Sucesso! — Agente King*\n\n` +
+            stepMsg = `🔑 *Senha do Cliente Alterada com Sucesso! — Agente King*\n\n` +
               `👤 *Cliente:* ${u.display_name || targetId} (\`${u.email || targetId}\`)\n` +
               `🔐 *Nova Senha:* \`${args.new_password}\`\n\n` +
               `_A nova senha já está ativa para acesso imediato!_`;
           } else if (args.action === 'set_admin' || args.action === 'remove_admin' || args.is_admin !== undefined) {
             session.lastTargetClient = u.email;
             const isAdm = args.action === 'set_admin' || args.is_admin === true;
-            outMessage = `🛡️ *Cargo de Administrador Atualizado! — Agente King*\n\n` +
+            stepMsg = `🛡️ *Cargo de Administrador Atualizado! — Agente King*\n\n` +
               `👤 *Cliente:* ${u.display_name || targetId} (\`${u.email || targetId}\`)\n` +
               `⚡ *Status Admin:* ${isAdm ? 'SIM (Administrador Ativo 👑)' : 'NÃO (Usuário Padrão)'}\n` +
               `💎 *Tipo de Conta:* *${u.plan_name || u.account_type}*\n\n` +
@@ -707,7 +726,7 @@ try {
             session.lastTargetClient = u.email;
             const changes = r.body.data?.changes || [];
             const changesText = changes.length > 0 ? changes.map(c => `✅ ${c}`).join('\n') : 'Informações consultadas com sucesso.';
-            outMessage = `👑 *Gestão de Cliente Conecta King*\n\n` +
+            stepMsg = `👑 *Gestão de Cliente Conecta King*\n\n` +
               `👤 *Cliente:* ${u.display_name} (\`${u.email}\`)\n` +
               `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
               `💎 *Plano:* *${u.plan_name || u.account_type}*\n` +
@@ -718,9 +737,9 @@ try {
         } else {
           const errMsg = r.body?.message || r.body?.error || r.body?.error?.message || 'Erro ao processar dados do cliente.';
           if (args.action === 'delete' && (errMsg.includes('não foi encontrado') || errMsg.includes('not found'))) {
-            outMessage = `ℹ️ *Cliente Não Encontrado:*\n${errMsg}\n\n_O cliente já pode ter sido excluído anteriormente ou o e-mail/código está diferente. Diga *"quantos usuários tem"* ou *"listar usuários"* para ver todos os clientes cadastrados atualmente._`;
+            stepMsg = `ℹ️ *Cliente Não Encontrado:*\n${errMsg}\n\n_O cliente já pode ter sido excluído anteriormente ou o e-mail/código está diferente. Diga *"quantos usuários tem"* ou *"listar usuários"* para ver todos os clientes cadastrados atualmente._`;
           } else {
-            outMessage = `⚠️ *Erro na gestão do cliente:*\n${errMsg}`;
+            stepMsg = `⚠️ *Erro na gestão do cliente:*\n${errMsg}`;
           }
         }
 
@@ -734,34 +753,34 @@ try {
           const themeText = String(args.theme_text || '').trim();
           const r = await ck.call(this, 'PUT', `/api/admin/bible/devotionals-365/month-themes/${y}`, { [String(m)]: themeText });
           if (r.statusCode >= 200 && r.statusCode < 300) {
-            outMessage = `📖 *Tema Devocional Definido!*\n\n📅 *Mês:* ${m}/${y}\n✨ *Tema:* "${themeText}"\n\n_Tema salvo com sucesso para o calendário devocional!_`;
+            stepMsg = `📖 *Tema Devocional Definido!*\n\n📅 *Mês:* ${m}/${y}\n✨ *Tema:* "${themeText}"\n\n_Tema salvo com sucesso para o calendário devocional!_`;
           } else {
-            outMessage = `⚠️ Erro ao salvar tema do mês: ${r.body?.message || 'Falha na requisição'}`;
+            stepMsg = `⚠️ Erro ao salvar tema do mês: ${r.body?.message || 'Falha na requisição'}`;
           }
         } else if (args.action === 'generate_month_theme') {
           const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/month-themes/${y}/generate/${m}`, { hint: args.theme_text || '' });
           if (r.statusCode >= 200 && r.statusCode < 300) {
             const textTheme = r.body?.data?.text || '';
-            outMessage = `✨ *Novo Tema Gerado com IA!*\n\n📅 *Mês:* ${m}/${y}\n📖 *Tema Criado:* "${textTheme}"\n\n_Tema salvo automaticamente nos Devocionais 365!_`;
+            stepMsg = `✨ *Novo Tema Gerado com IA!*\n\n📅 *Mês:* ${m}/${y}\n📖 *Tema Criado:* "${textTheme}"\n\n_Tema salvo automaticamente nos Devocionais 365!_`;
           } else {
-            outMessage = `⚠️ Erro ao gerar tema com IA: ${r.body?.message || 'Falha na requisição'}`;
+            stepMsg = `⚠️ Erro ao gerar tema com IA: ${r.body?.message || 'Falha na requisição'}`;
           }
         } else if (args.action === 'generate_month') {
           const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/generate-month-ai/${y}/${m}`);
           if (r.statusCode >= 200 && r.statusCode < 300) {
             const total = r.body?.data?.totalGenerated ?? r.body?.data?.count ?? 'todos os';
-            outMessage = `✨ *Geração de Devocionais Concluída!*\n\n📅 *Mês:* ${m}/${y}\n📖 Foram gerados e salvos ${total} devocionais diários com IA para este mês!`;
+            stepMsg = `✨ *Geração de Devocionais Concluída!*\n\n📅 *Mês:* ${m}/${y}\n📖 Foram gerados e salvos ${total} devocionais diários com IA para este mês!`;
           } else {
-            outMessage = `⚠️ Falha ao gerar devocionais do mês: ${r.body?.message || JSON.stringify(r.body)}`;
+            stepMsg = `⚠️ Falha ao gerar devocionais do mês: ${r.body?.message || JSON.stringify(r.body)}`;
           }
         } else if (args.action === 'generate_day') {
           const d = args.day || 1;
           const r = await ck.call(this, 'POST', `/api/admin/bible/devotionals-365/day/${d}/generate-ai`);
           if (r.statusCode >= 200 && r.statusCode < 300) {
             const dev = r.body?.data || {};
-            outMessage = `📖 *Devocional do Dia ${d} Gerado!*\n\n*Título:* ${dev.title || 'Devocional Diário'}\n*Versículo:* ${dev.verse_reference || ''}\n\n_Salvo com sucesso na plataforma!_`;
+            stepMsg = `📖 *Devocional do Dia ${d} Gerado!*\n\n*Título:* ${dev.title || 'Devocional Diário'}\n*Versículo:* ${dev.verse_reference || ''}\n\n_Salvo com sucesso na plataforma!_`;
           } else {
-            outMessage = `⚠️ Falha ao gerar devocional do dia ${d}: ${r.body?.message || 'Erro'}`;
+            stepMsg = `⚠️ Falha ao gerar devocional do dia ${d}: ${r.body?.message || 'Erro'}`;
           }
         } else if (args.action === 'get_themes') {
           const r = await ck.call(this, 'GET', `/api/admin/bible/devotionals-365/month-themes/${y}`);
@@ -772,7 +791,7 @@ try {
             const t = themes[String(i)] || themes[i] || '_Sem tema definido_';
             lines.push(`• *${monthNames[i]}:* ${t}`);
           }
-          outMessage = `📖 *Temas Devocionais 365 (${y}):*\n\n${lines.join('\n')}`;
+          stepMsg = `📖 *Temas Devocionais 365 (${y}):*\n\n${lines.join('\n')}`;
         }
 
       // ── PLANOS DA PLATAFORMA ──────────────────────────────────────────────
@@ -781,20 +800,18 @@ try {
           const r = await ck.call(this, 'GET', '/api/admin/plans');
           const plans = r.body?.data || [];
           const lines = plans.map(p => `• *${p.plan_name}* (\`${p.plan_code}\`): R$ ${Number(p.price).toFixed(2).replace('.', ',')} [ID: ${p.id}]`);
-          outMessage = `💎 *Planos Conecta King:*\n\n${lines.join('\n')}`;
+          stepMsg = `💎 *Planos Conecta King:*\n\n${lines.join('\n')}`;
         } else if (args.action === 'update_price') {
           const r = await ck.call(this, 'PUT', `/api/subscription/plans/${args.plan_id}`, { price: args.price, monthly_price: args.price });
           if (r.statusCode >= 200 && r.statusCode < 300) {
-            outMessage = `✅ *Preço do Plano Atualizado!*\n\nNovo valor: R$ ${Number(args.price).toFixed(2).replace('.', ',')}`;
+            stepMsg = `✅ *Preço do Plano Atualizado!*\n\nNovo valor: R$ ${Number(args.price).toFixed(2).replace('.', ',')}`;
           } else {
-            outMessage = `⚠️ Erro ao atualizar plano: ${r.body?.message || 'Falha'}`;
+            stepMsg = `⚠️ Erro ao atualizar plano: ${r.body?.message || 'Falha'}`;
           }
         }
 
       // ── GESTÃO FINANCEIRA ────────────────────────────────────────────────
       } else if (fnName === 'manage_finance') {
-        const profileId = await resolveProfileId.call(this);
-        const today = new Date().toISOString().slice(0, 10);
 
         // ── CREATE TRABALHO (Aba Trabalhos do King-Data) ────────────
         if (args.action === 'create_trabalho') {
@@ -805,7 +822,7 @@ try {
           const dataPrevista = args.data_prevista || '';
 
           if (valorTotal <= 0) {
-            outMessage = '⚠️ Informe o valor total do trabalho.';
+            stepMsg = '⚠️ Informe o valor total do trabalho.';
           } else {
             const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
             let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
@@ -838,7 +855,7 @@ try {
             const summary = await fetchRealSummary.call(this, profileId);
             const falta = Math.max(0, valorTotal - entrada);
 
-            outMessage = `👑 *Novo Trabalho Registrado com Sucesso! — Agente King*\n\n` +
+            stepMsg = `👑 *Novo Trabalho Registrado com Sucesso! — Agente King*\n\n` +
               `👤 *Cliente:* ${cliente}\n` +
               `📸 *Serviço:* ${servico}\n` +
               `💰 *Valor Total do Trabalho:* ${fmt(valorTotal)}\n` +
@@ -860,7 +877,7 @@ try {
           if (!trab && trabalhos.length === 1) trab = trabalhos[0];
 
           if (!trab) {
-            outMessage = `⚠️ Não encontrei nenhum trabalho para o cliente "${args.cliente}".`;
+            stepMsg = `⚠️ Não encontrei nenhum trabalho para o cliente "${args.cliente}".`;
           } else {
             const alteracoes = [];
             if (args.novo_valor !== undefined && args.novo_valor > 0) {
@@ -897,7 +914,7 @@ try {
             });
 
             const summary = await fetchRealSummary.call(this, profileId);
-            outMessage = `✏️ *Trabalho Atualizado com Sucesso — Agente King*\n\n` +
+            stepMsg = `✏️ *Trabalho Atualizado com Sucesso — Agente King*\n\n` +
               `👤 *Cliente:* ${trab.cliente}\n` +
               `📸 *Serviço:* ${trab.servico}\n` +
               `💰 *Valor Atual:* ${fmt(trab.valor)}\n` +
@@ -917,7 +934,7 @@ try {
           if (idx === -1 && trabalhos.length === 1) idx = 0;
 
           if (idx === -1) {
-            outMessage = `⚠️ Não encontrei o trabalho de "${args.cliente}" para excluir.`;
+            stepMsg = `⚠️ Não encontrei o trabalho de "${args.cliente}" para excluir.`;
           } else {
             const [removido] = trabalhos.splice(idx, 1);
             await ck.call(this, 'PUT', `/api/finance/king-data?profile_id=${profileId}`, {
@@ -925,7 +942,7 @@ try {
               data: kingDb
             });
             const summary = await fetchRealSummary.call(this, profileId);
-            outMessage = `🗑️ *Trabalho Excluído com Sucesso — Agente King*\n\n` +
+            stepMsg = `🗑️ *Trabalho Excluído com Sucesso — Agente King*\n\n` +
               `Removi o trabalho de *${removido.cliente}* (${fmt(removido.valor)} - ${removido.servico}).\n\n` +
               buildSummaryMessage(summary, fmt);
           }
@@ -935,7 +952,7 @@ try {
           const clienteBusca = String(args.cliente || '').toLowerCase().trim();
           const valorPago = Number(args.valor_pago || args.amount || 0);
           if (valorPago <= 0) {
-            outMessage = '⚠️ Informe o valor recebido para dar baixa.';
+            stepMsg = '⚠️ Informe o valor recebido para dar baixa.';
           } else {
             const kRes = await ck.call(this, 'GET', `/api/finance/king-data?profile_id=${profileId}`);
             let kingDb = (kRes.body && kRes.body.data) ? kRes.body.data : (kRes.body || {});
@@ -946,7 +963,7 @@ try {
             if (!trab && trabalhos.length === 1) trab = trabalhos[0];
 
             if (!trab) {
-              outMessage = `⚠️ Não encontrei trabalho para o cliente "${args.cliente}".`;
+              stepMsg = `⚠️ Não encontrei trabalho para o cliente "${args.cliente}".`;
             } else {
               if (!Array.isArray(trab.pagamentos)) trab.pagamentos = [];
               const now = new Date();
@@ -969,7 +986,7 @@ try {
               const summary = await fetchRealSummary.call(this, profileId);
               const falta = Math.max(0, trab.valor - totalPago);
 
-              outMessage = `💰 *Pagamento Registrado com Sucesso — Agente King*\n\n` +
+              stepMsg = `💰 *Pagamento Registrado com Sucesso — Agente King*\n\n` +
                 `👤 *Cliente:* ${trab.cliente}\n` +
                 `💵 *Valor Recebido Agora:* ${fmt(valorPago)}\n` +
                 `📈 *Total Pago Até Agora:* ${fmt(totalPago)} de ${fmt(trab.valor)}\n` +
@@ -1001,7 +1018,7 @@ try {
 
           session.lastCreatedTransactions = [];
           const summary = await fetchRealSummary.call(this, profileId);
-          outMessage = `🧹 *Gestão Financeira Zerada com Sucesso! — Agente King*\n\n` +
+          stepMsg = `🧹 *Gestão Financeira Zerada com Sucesso! — Agente King*\n\n` +
             `👑 *Adriano, executei a limpeza completa da sua gestão financeira:*\n` +
             `• ✅ *Fluxo de Caixa:* Todos os lançamentos foram apagados\n` +
             `• ✅ *Trabalhos:* Lista de trabalhos zerada\n` +
@@ -1011,30 +1028,62 @@ try {
             buildSummaryMessage(summary, fmt);
 
         // ── CREATE FLUXO (Receitas/Despesas Avulsas) ─────────────────
-        } else if (args.action === 'create' && Array.isArray(args.transactions) && args.transactions.length > 0) {
-          const createdItems = [];
-          for (const item of args.transactions) {
+        } else if (args.action === 'create') {
+          const txsToCreate = [];
+          if (Array.isArray(args.transactions) && args.transactions.length > 0) {
+            txsToCreate.push(...args.transactions);
+          }
+          const directAmount = Number(args.amount || args.valor || args.valor_total || 0);
+          if (directAmount > 0 && txsToCreate.length === 0) {
+            const directDesc = String(args.description || args.servico || 'Lançamento via bot').trim();
+            let directType = args.type ? String(args.type).toUpperCase() : null;
+            if (!directType) {
+              const lower = directDesc.toLowerCase();
+              if (lower.includes('dízimo') || lower.includes('dizimo') || lower.includes('saída') || lower.includes('saida') || lower.includes('despesa') || lower.includes('gasto') || lower.includes('pagamento')) {
+                directType = 'EXPENSE';
+              } else {
+                directType = 'INCOME';
+              }
+            }
+            txsToCreate.push({
+              type: directType,
+              amount: directAmount,
+              status: args.status || 'PAID',
+              description: directDesc
+            });
+          }
+
+          for (const item of txsToCreate) {
             if (!item.amount || item.amount <= 0) continue;
-            const payload = { profile_id: profileId, type: item.type || 'INCOME', amount: Number(item.amount), status: item.status || 'PAID', description: item.description || 'Lançamento via bot', transaction_date: today };
+            let itType = item.type ? String(item.type).toUpperCase() : null;
+            const itDesc = String(item.description || 'Lançamento via bot').trim();
+            if (!itType) {
+              const lower = itDesc.toLowerCase();
+              if (lower.includes('dízimo') || lower.includes('dizimo') || lower.includes('saída') || lower.includes('saida') || lower.includes('despesa') || lower.includes('gasto') || lower.includes('pagamento')) {
+                itType = 'EXPENSE';
+              } else {
+                itType = 'INCOME';
+              }
+            }
+            const payload = {
+              profile_id: profileId,
+              type: itType,
+              amount: Number(item.amount),
+              status: item.status || 'PAID',
+              description: itDesc,
+              transaction_date: today
+            };
             const cr = await ck.call(this, 'POST', '/api/finance/transactions', payload);
             if (cr.statusCode >= 200 && cr.statusCode < 300) {
               const data = (cr.body && cr.body.data) || {};
-              createdItems.push({ id: data.id, type: payload.type, amount: payload.amount, status: payload.status, description: payload.description });
+              allCreatedTransactions.push({
+                id: data.id,
+                type: payload.type,
+                amount: payload.amount,
+                status: payload.status,
+                description: payload.description
+              });
             }
-          }
-          if (createdItems.length > 0) {
-            session.lastCreatedTransactions = createdItems;
-            const summary = await fetchRealSummary.call(this, profileId);
-            const lines = ['👑 *Lançamento Financeiro Concluído!*\n'];
-            for (const it of createdItems) {
-              const icon = it.type === 'INCOME' ? '💵' : '💸';
-              const lbl = it.status === 'PAID' ? (it.type === 'INCOME' ? 'Recebido em caixa' : 'Pago') : 'Pendente (A receber)';
-              lines.push(`${icon} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${lbl})\n   📝 _${it.description}_`);
-            }
-            lines.push('\n' + buildSummaryMessage(summary, fmt));
-            outMessage = lines.join('\n');
-          } else {
-            outMessage = '⚠️ Não consegui registrar os valores. Tente novamente.';
           }
 
         // ── CANCEL LAST ─────────────────────────────────────────────
@@ -1045,12 +1094,12 @@ try {
             if (recent.length > 0) targetIds = [recent[0].id];
           }
           if (targetIds.length === 0) {
-            outMessage = '⚠️ Não encontrei transação recente para cancelar. Me fala o valor ou descrição do que quer tirar.';
+            stepMsg = '⚠️ Não encontrei transação recente para cancelar. Me fala o valor ou descrição do que quer tirar.';
           } else {
             for (const id of targetIds) await ck.call(this, 'DELETE', `/api/finance/transactions/${id}`);
             session.lastCreatedTransactions = [];
             const summary = await fetchRealSummary.call(this, profileId);
-            outMessage = `🗑️ *Lançamento Cancelado!*\nRemovi o lançamento anterior com sucesso.\n\n` + buildSummaryMessage(summary, fmt);
+            stepMsg = `🗑️ *Lançamento Cancelado!*\nRemovi o lançamento anterior com sucesso.\n\n` + buildSummaryMessage(summary, fmt);
           }
 
         // ── DELETE BY CRITERIA (valor ou descrição) ──────────────────
@@ -1067,7 +1116,7 @@ try {
           });
           if (targets.length === 0) {
             const listLines = recent.slice(0, 8).map((t, i) => `${i + 1}. ${t.type === 'INCOME' ? '💵' : '💸'} ${fmt(t.amount)} — _${t.description}_ (${t.status}) [ID: ${t.id}]`);
-            outMessage = '⚠️ Não encontrei transação com esse critério. Seus últimos lançamentos:\n\n' + listLines.join('\n') + '\n\nMe fala qual quer tirar.';
+            stepMsg = '⚠️ Não encontrei transação com esse critério. Seus últimos lançamentos:\n\n' + listLines.join('\n') + '\n\nMe fala qual quer tirar.';
           } else {
             const deleted = [];
             for (const t of targets.slice(0, 3)) {
@@ -1077,14 +1126,14 @@ try {
             session.lastCreatedTransactions = [];
             const summary = await fetchRealSummary.call(this, profileId);
             const lines = deleted.map(t => `• ${fmt(t.amount)} — ${t.description}`);
-            outMessage = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}\n\n` + buildSummaryMessage(summary, fmt);
+            stepMsg = `🗑️ *Lançamento(s) Removido(s):*\n${lines.join('\n')}\n\n` + buildSummaryMessage(summary, fmt);
           }
 
         // ── LIST RECENT ──────────────────────────────────────────────
         } else if (args.action === 'list_recent') {
           const recent = await fetchRecentTransactions.call(this, 10);
           if (recent.length === 0) {
-            outMessage = '📋 Nenhum lançamento encontrado ainda.';
+            stepMsg = '📋 Nenhum lançamento encontrado ainda.';
           } else {
             const lines = recent.map((t, i) => {
               const icon = t.type === 'INCOME' ? '💵' : '💸';
@@ -1092,7 +1141,7 @@ try {
               const lbl = t.status === 'PAID' ? 'Pago/Recebido' : 'Pendente';
               return `${i + 1}. ${icon} ${val} — _${t.description}_ (${lbl})`;
             });
-            outMessage = `📋 *Últimos Lançamentos:*\n\n${lines.join('\n')}\n\n_Me diz qual quer alterar ou remover._`;
+            stepMsg = `📋 *Últimos Lançamentos:*\n\n${lines.join('\n')}\n\n_Me diz qual quer alterar ou remover._`;
           }
 
         // ── ADJUST CASH ──────────────────────────────────────────────
@@ -1102,7 +1151,7 @@ try {
           const currentCash = Number(dash.body?.data?.saldoDisponivel ?? 0);
           const diff = targetCash - currentCash;
           if (Math.abs(diff) < 0.01) {
-            outMessage = `✅ Saldo em caixa já está em ${fmt(targetCash)}. Nenhum ajuste necessário.`;
+            stepMsg = `✅ Saldo em caixa já está em ${fmt(targetCash)}. Nenhum ajuste necessário.`;
           } else {
             const adjType = diff > 0 ? 'INCOME' : 'EXPENSE';
             const adjDesc = 'Ajuste de saldo (correção)';
@@ -1110,13 +1159,13 @@ try {
             const row = (cr.body && cr.body.data) || {};
             if (row.id) session.lastCreatedTransactions = [{ id: row.id, type: adjType, amount: Math.abs(diff), status: 'PAID', description: adjDesc }];
             const summary = await fetchRealSummary.call(this, profileId);
-            outMessage = `🔄 *Saldo Ajustado com Sucesso!*\n\nAntes: ${fmt(currentCash)}\nAgora: ${fmt(summary.saldoDisponivel)}\n\n📝 _Ajuste de ${diff > 0 ? '+' : ''}${fmt(diff)} aplicado._\n\n` + buildSummaryMessage(summary, fmt);
+            stepMsg = `🔄 *Saldo Ajustado com Sucesso!*\n\nAntes: ${fmt(currentCash)}\nAgora: ${fmt(summary.saldoDisponivel)}\n\n📝 _Ajuste de ${diff > 0 ? '+' : ''}${fmt(diff)} aplicado._\n\n` + buildSummaryMessage(summary, fmt);
           }
 
         // ── SUMMARY ──────────────────────────────────────────────────
         } else if (args.action === 'summary') {
           const summary = await fetchRealSummary.call(this, profileId);
-          outMessage = buildSummaryMessage(summary, fmt);
+          stepMsg = buildSummaryMessage(summary, fmt);
 
         // ── ADVICE (Consultoria de Faturamento) ──────────────────────
         } else if (args.action === 'advice') {
@@ -1138,7 +1187,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
             messages: [{ role: 'system', content: 'Você é um CFO de elite e consultor de faturamento para empreendedores criativos e CEOs de pequenas empresas de alto impacto. Seja direto, analítico e dê conselhos reais.' }, { role: 'user', content: finCtx }]
           });
           const advice = String(advRes.body?.choices?.[0]?.message?.content || '').trim();
-          outMessage = `👑 *Consultoria de Faturamento — King Assistente*\n\n${advice}`;
+          stepMsg = `👑 *Consultoria de Faturamento — King Assistente*\n\n${advice}`;
         }
 
       // ── DIAGNÓSTICO DO SISTEMA ────────────────────────────────────────────
@@ -1166,7 +1215,7 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
         } catch (_) {
           errorsMsg = '\n\n_Diagnóstico de páginas indisponível._';
         }
-        outMessage = `🟢 *Diagnóstico do Sistema Conecta King:*\n\n` +
+        stepMsg = `🟢 *Diagnóstico do Sistema Conecta King:*\n\n` +
           `• *Status Geral:* ${ok ? '100% Operacional ✅' : 'Atenção ⚠️'}\n` +
           `• *Servidor / HTTP:* ${h.statusCode}\n` +
           `• *Backend Laravel:* ${ok ? 'Ativo' : 'Com problemas'}\n` +
@@ -1179,16 +1228,40 @@ Dê um conselho CFO de elite, tático e prático. Seja direto. Inclua: o que est
         const r = await ck.call(this, 'POST', '/api/admin/codes/generate-manual', { customCode: code, expiresAt: null });
         if (r.statusCode >= 200 && r.statusCode < 300) {
           session.lastGeneratedCode = code;
-          outMessage = `🎟️ *Código de Registro Gerado!*\n\n*Código:* \`${code}\`\n\n_Código memorizado! Se você me passar o e-mail e senha agora, vou cadastrar o cliente diretamente neste código._`;
+          stepMsg = `🎟️ *Código de Registro Gerado!*\n\n*Código:* \`${code}\`\n\n_Código memorizado! Se você me passar o e-mail e senha agora, vou cadastrar o cliente diretamente neste código._`;
         } else {
-          outMessage = `⚠️ Falha ao criar código: ${JSON.stringify(r.body).slice(0, 200)}`;
+          stepMsg = `⚠️ Falha ao criar código: ${JSON.stringify(r.body).slice(0, 200)}`;
         }
       }
+      if (stepMsg) {
+        toolResponses.push(stepMsg);
+      }
+    } // fim do loop tool_calls
 
-    } else {
-      outMessage = choice?.content || 'Olá King! Como posso ajudar na gestão da Conecta King hoje?';
+    if (allCreatedTransactions.length > 0) {
+      session.lastCreatedTransactions = allCreatedTransactions;
+      const summary = await fetchRealSummary.call(this, profileId);
+      const lines = ['👑 *Lançamento Financeiro Concluído!*\n'];
+      for (const it of allCreatedTransactions) {
+        const icon = it.type === 'INCOME' ? '💵' : '💸';
+        const lbl = it.status === 'PAID' ? (it.type === 'INCOME' ? 'Recebido em caixa' : 'Saída / Pago') : 'Pendente (A receber)';
+        lines.push(`${icon} *${it.type === 'INCOME' ? 'Receita' : 'Despesa'}:* ${fmt(it.amount)} (${lbl})\n   📝 _${it.description}_`);
+      }
+      lines.push('\n' + buildSummaryMessage(summary, fmt));
+      toolResponses.push(lines.join('\n'));
     }
 
+    outMessage = toolResponses.filter(Boolean).join('\n\n').trim();
+    if (!outMessage) {
+      outMessage = choice?.content?.trim() || '👑 Adriano, comando recebido e processado com sucesso!';
+    }
+  } else {
+    outMessage = choice?.content || 'Olá King! Como posso ajudar na gestão da Conecta King hoje?';
+  }
+
+  if (!outMessage || !outMessage.trim()) {
+    outMessage = choice?.content?.trim() || '👑 Adriano, comando recebido e processado com sucesso!';
+  }
     session.history.push({ role: 'user', content: inputForAi });
     session.history.push({ role: 'assistant', content: outMessage });
     if (session.history.length > 24) session.history.splice(0, 2);
