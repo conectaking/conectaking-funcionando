@@ -312,10 +312,11 @@ class ModulesService
     {
         try {
             $users = DB::select(
-                'SELECT u.id, u.email, COALESCE(p.display_name, u.email) as name, u.account_type, u.created_at, u.subscription_expires_at, u.is_active
+                "SELECT u.id, u.email, COALESCE(p.display_name, u.name, u.email) as name, u.account_type, u.created_at, u.subscription_expires_at,
+                 (CASE WHEN u.subscription_status IN ('cancelled', 'canceled', 'expired', 'inactive') THEN false ELSE true END) as is_active
                  FROM users u
                  LEFT JOIN user_profiles p ON u.id = p.user_id
-                 ORDER BY u.email ASC'
+                 ORDER BY u.email ASC"
             );
 
             return ['status' => 200, 'body' => [
