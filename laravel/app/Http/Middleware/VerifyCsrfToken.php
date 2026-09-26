@@ -12,6 +12,45 @@ use Illuminate\Http\Request;
  */
 class VerifyCsrfToken extends Middleware
 {
+    /**
+     * The URIs that should be excluded from CSRF verification.
+     *
+     * @var array<int, string>
+     */
+    protected $except = [
+        'log/*',
+        '*/form/*/submit',
+        'api/bible/prosperidade/mark-read',
+        'api/bible/devotional/mark-read',
+        'api/bible/mark-read',
+        'api/bible/reset-progress',
+        'api/guest-lists/public/register/*',
+        'api/guest-lists/public/confirm/*',
+        'portaria/*/checkin/*',
+        'guest-list/view-full/*/checkin/*',
+        'guest-list/confirm/qr/*',
+        'guest-list/confirm/cpf',
+        'api/king-selection/client/login',
+        'api/king-selection/client/login-by-details',
+        'api/king-selection/client/register',
+        'api/king-selection/client/public-enter',
+        'api/king-selection/client/signup-enter',
+        'api/king-selection/client/clear-session-cookie',
+        'api/king-selection/client/redeem-access',
+        'api/king-selection/public/enroll-face-anonymous',
+        'api/auth/login',
+        'api/auth/refresh',
+        'api/auth/logout',
+        'api/auth/register',
+        'api/auth/sync-session-cookie',
+        'api/password/forgot',
+        'api/password/reset',
+        'api/inquiry/submit',
+        'api/admin/*',
+        'api/finance/*',
+        'api/subscription/*',
+    ];
+
     protected function tokensMatch($request): bool
     {
         if (parent::tokensMatch($request)) {

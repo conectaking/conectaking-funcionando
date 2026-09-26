@@ -230,8 +230,15 @@ function renderEditor(profileData) {
             const bibleSizeSetting = document.getElementById('bible-verse-size-setting');
             if (bibleSetting) {
                 bibleSetting.style.display = 'flex';
-                if (biblePosSetting) biblePosSetting.style.display = 'flex';
-                if (bibleSizeSetting) bibleSizeSetting.style.display = 'flex';
+                bibleSetting.classList.remove('ck-hidden');
+                if (biblePosSetting) {
+                    biblePosSetting.style.display = 'flex';
+                    biblePosSetting.classList.remove('ck-hidden');
+                }
+                if (bibleSizeSetting) {
+                    bibleSizeSetting.style.display = 'flex';
+                    bibleSizeSetting.classList.remove('ck-hidden');
+                }
 
                 if (bibleItem && bibleItem.bible_data) {
                     const bibleVisible = bibleItem.bible_data.is_visible !== false;

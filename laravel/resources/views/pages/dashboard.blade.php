@@ -343,10 +343,10 @@
                             </div>
                         </div>
 
-                        <div class="setting-item ck-hidden" id="bible-visibility-setting">
+                        <div class="setting-item" id="bible-visibility-setting">
                             <div class="setting-label">
                                 <i class="fas fa-quote-left"></i>
-                                <span>Versículo do Dia</span>
+                                <span>Palavra do Dia</span>
                             </div>
                             <div class="setting-control">
                                 <div class="segmented-control">
@@ -357,7 +357,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="setting-item ck-hidden" id="bible-verse-position-setting">
+                        <div class="setting-item" id="bible-verse-position-setting">
                             <div class="setting-label">
                                 <i class="fas fa-arrows-alt-v"></i>
                                 <span>Palavra do Dia — posição</span>
@@ -371,7 +371,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="setting-item ck-hidden" id="bible-verse-size-setting">
+                        <div class="setting-item" id="bible-verse-size-setting">
                             <div class="setting-label">
                                 <i class="fas fa-text-height"></i>
                                 <span>Palavra do Dia — tamanho</span>
