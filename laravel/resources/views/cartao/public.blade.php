@@ -62,7 +62,38 @@
             --logo-max: {{ max(24, min($logoSize, 90)) }}px;
         }
         html.ck-page-bg { background-color: var(--page-bg); }
-        .background-image-overlay-img { opacity: var(--bg-overlay-opacity); }
+        .background-image-overlay-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            z-index: -9999;
+            pointer-events: none;
+        }
+        .background-image-blur-backdrop {
+            display: none !important;
+        }
+        .background-image-overlay-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            object-fit: cover;
+            object-position: center center;
+            opacity: var(--bg-overlay-opacity);
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
         .wifi-ssid-value { display: block; }
         .profile-link-logo--sized { object-fit: contain; }
         .profile-link-logo--rounded { object-fit: contain; border-radius: 8px; }

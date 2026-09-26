@@ -992,22 +992,13 @@ body.light-theme .branding-logo span {
     bottom: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     overflow: hidden;
     z-index: -9999;
 }
 
 .background-image-blur-backdrop {
-    display: none;
-    position: absolute;
-    inset: -20px;
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    filter: blur(35px) brightness(0.35);
-    -webkit-filter: blur(35px) brightness(0.35);
-    opacity: 0.85;
+    display: none !important;
 }
 
 .background-image-overlay-img {
@@ -1018,11 +1009,12 @@ body.light-theme .branding-logo span {
     bottom: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     object-fit: cover;
     object-position: center center;
 }
 
-/* Modo Mobile: ajuste perfeito do fundo sem cortar a logomarca/arte e com scroll 100% livre */
+/* Modo Mobile: preenchimento completo contínuo de cima a baixo conforme gabarito 16:9 */
 @media (max-width: 768px) {
     .background-image-overlay-wrapper {
         position: fixed !important;
@@ -1032,12 +1024,13 @@ body.light-theme .branding-logo span {
         bottom: 0 !important;
         width: 100% !important;
         height: 100% !important;
+        height: 100dvh !important;
         overflow: hidden !important;
         z-index: -9999 !important;
     }
 
     .background-image-blur-backdrop {
-        display: block !important;
+        display: none !important;
     }
 
     .background-image-overlay-wrapper .background-image-overlay-img,
@@ -1045,15 +1038,18 @@ body.light-theme .branding-logo span {
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
         width: 100% !important;
-        max-width: 100% !important;
-        height: auto !important;
-        max-height: 52vh !important;
-        aspect-ratio: 16 / 9;
-        object-fit: contain !important;
-        object-position: center top !important;
-        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, rgba(0, 0, 0, 0.5) 85%, transparent 100%) !important;
-        mask-image: linear-gradient(to bottom, #000 0%, #000 65%, rgba(0, 0, 0, 0.5) 85%, transparent 100%) !important;
+        max-width: none !important;
+        height: 100% !important;
+        height: 100dvh !important;
+        max-height: none !important;
+        aspect-ratio: auto !important;
+        object-fit: cover !important;
+        object-position: center center !important;
+        -webkit-mask-image: none !important;
+        mask-image: none !important;
     }
 }
 
