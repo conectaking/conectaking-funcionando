@@ -71,6 +71,26 @@ class BibleConfigService
         return $this->getConfig($profileItemId, $userId);
     }
 
+    public function saveUserConfig(string $userId, array $data): array
+    {
+        $item = DB::selectOne(
+            "SELECT id FROM profile_items WHERE user_id = ? AND item_type = 'bible' ORDER BY id ASC LIMIT 1",
+            [$userId]
+        );
+        if (!$item) {
+            $inserted = DB::selectOne(
+                "INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
+                 VALUES (?, 'bible', 'Bíblia', false, 99) RETURNING id",
+                [$userId]
+            );
+            $profileItemId = (int) $inserted->id;
+        } else {
+            $profileItemId = (int) $item->id;
+        }
+
+        return $this->saveConfig($profileItemId, $userId, $data);
+    }
+
     private function ownsItem(int $profileItemId, string $userId): bool
     {
         $row = DB::selectOne(

@@ -229,24 +229,21 @@ function renderEditor(profileData) {
             const biblePosSetting = document.getElementById('bible-verse-position-setting');
             const bibleSizeSetting = document.getElementById('bible-verse-size-setting');
             if (bibleSetting) {
-                if (bibleItem) {
-                    bibleSetting.style.display = 'flex';
-                    if (biblePosSetting) biblePosSetting.style.display = 'flex';
-                    if (bibleSizeSetting) bibleSizeSetting.style.display = 'flex';
-                    const bibleVisible = bibleItem.bible_data && bibleItem.bible_data.is_visible !== false;
+                bibleSetting.style.display = 'flex';
+                if (biblePosSetting) biblePosSetting.style.display = 'flex';
+                if (bibleSizeSetting) bibleSizeSetting.style.display = 'flex';
+
+                if (bibleItem && bibleItem.bible_data) {
+                    const bibleVisible = bibleItem.bible_data.is_visible !== false;
                     const bibleToggle = document.querySelector(`input[name="bible-toggle"][value="${bibleVisible ? 'true' : 'false'}"]`);
                     if (bibleToggle) bibleToggle.checked = true;
-                    const versePos = (bibleItem.bible_data && bibleItem.bible_data.verse_position === 'bottom') ? 'bottom' : 'top';
+                    const versePos = bibleItem.bible_data.verse_position === 'bottom' ? 'bottom' : 'top';
                     const versePosRadio = document.querySelector(`input[name="bible-verse-position"][value="${versePos}"]`);
                     if (versePosRadio) versePosRadio.checked = true;
-                    const rawSize = (bibleItem.bible_data && bibleItem.bible_data.verse_size) || 'normal';
+                    const rawSize = bibleItem.bible_data.verse_size || 'normal';
                     const verseSize = ['small', 'xsmall'].includes(rawSize) ? rawSize : 'normal';
                     const verseSizeRadio = document.querySelector(`input[name="bible-verse-size"][value="${verseSize}"]`);
                     if (verseSizeRadio) verseSizeRadio.checked = true;
-                } else {
-                    bibleSetting.style.display = 'none';
-                    if (biblePosSetting) biblePosSetting.style.display = 'none';
-                    if (bibleSizeSetting) bibleSizeSetting.style.display = 'none';
                 }
             }
         }

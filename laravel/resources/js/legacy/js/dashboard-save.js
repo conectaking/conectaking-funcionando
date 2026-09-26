@@ -1153,11 +1153,10 @@ async function saveAllChanges(event) {
             }
         } catch (ePrev) { /* preview opcional */ }
 
-        // Salvar toggle Bíblia (visível/oculto) + posição/tamanho da Palavra do Dia
-        // IMPORTANTE: Sempre salvar quando bibleItem existe - não depender de display (usuário pode estar em outra aba)
+        // Salvar toggle Versículo do Dia (visível/oculto) + posição/tamanho da Palavra do Dia
         const bibleItem = (window.currentProfileData?.items || saveData.items || []).find(function (it) { return it.item_type === 'bible'; });
         const bibleSetting = document.getElementById('bible-visibility-setting');
-        if (bibleItem && bibleSetting) {
+        if (bibleSetting) {
             const bibleToggleChecked = document.querySelector('input[name="bible-toggle"]:checked');
             const isVisible = bibleToggleChecked ? bibleToggleChecked.value === 'true' : true;
             const posChecked = document.querySelector('input[name="bible-verse-position"]:checked');
@@ -1166,7 +1165,8 @@ async function saveAllChanges(event) {
             const sizeVal = sizeChecked ? sizeChecked.value : 'normal';
             const verse_size = ['small', 'xsmall'].includes(sizeVal) ? sizeVal : 'normal';
             try {
-                const bibleRes = await fetch(`${env.API_URL}/api/bible/config/${bibleItem.id}`, {
+                const bibleUrl = bibleItem ? `${env.API_URL}/api/bible/config/${bibleItem.id}` : `${env.API_URL}/api/bible/config`;
+                const bibleRes = await fetch(bibleUrl, {
                     method: 'PUT',
                     headers: env.HEADERS,
                     body: JSON.stringify({ is_visible: isVisible, verse_position, verse_size })
@@ -1181,10 +1181,10 @@ async function saveAllChanges(event) {
                             bi.bible_data.verse_size = verse_size;
                         }
                     }
-                    __ckDashLog('Config Bíblia salva:', { isVisible, verse_position, verse_size });
+                    __ckDashLog('Config Versículo do Dia salva:', { isVisible, verse_position, verse_size });
                 }
             } catch (bibleErr) {
-                console.warn('Erro ao salvar config Bíblia:', bibleErr);
+                console.warn('Erro ao salvar config Versículo do Dia:', bibleErr);
             }
         }
 

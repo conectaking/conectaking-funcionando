@@ -54,4 +54,26 @@ class BibleConfigController extends Controller
             'error' => null,
         ])->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function updateCurrent(Request $request)
+    {
+        $userId = (string) $request->attributes->get('auth_user_id');
+        try {
+            $data = $this->config->saveUserConfig($userId, $request->all());
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => $e->getMessage(),
+                'error' => ['code' => 'ERROR', 'message' => $e->getMessage()],
+            ], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+            'message' => 'Configuração salva.',
+            'error' => null,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
 }

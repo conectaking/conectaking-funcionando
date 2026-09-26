@@ -115,6 +115,8 @@ Route::post('/api/bible/mark-read', [BibleProgressController::class, 'markRead']
 Route::post('/api/bible/reset-progress', [BibleProgressController::class, 'reset'])->middleware('jwt');
 Route::get('/api/bible/config/{itemId}', [BibleConfigController::class, 'show'])
     ->middleware('jwt')->where('itemId', '[0-9]+');
+Route::put('/api/bible/config', [BibleConfigController::class, 'updateCurrent'])
+    ->middleware('jwt');
 Route::put('/api/bible/config/{itemId}', [BibleConfigController::class, 'update'])
     ->middleware('jwt')->where('itemId', '[0-9]+');
 Route::get('/guest-list/register/{token}', [GuestListPublicController::class, 'registerPage'])->where('token', $cardSlug);
