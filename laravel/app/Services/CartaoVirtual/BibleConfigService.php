@@ -65,6 +65,7 @@ class BibleConfigService
                 'UPDATE bible_items SET '.implode(', ', $sets).', updated_at = NOW() WHERE profile_item_id = ?',
                 $values
             );
+            CartaoPublicService::forgetCardCache($userId);
         }
 
         return $this->getConfig($profileItemId, $userId);
