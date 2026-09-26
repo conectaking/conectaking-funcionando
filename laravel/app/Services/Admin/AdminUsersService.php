@@ -694,8 +694,26 @@ class AdminUsersService
             $newExpiresAt = $base->addDays($days)->format('Y-m-d H:i:s');
             $appliedChanges[] = "Validade estendida por {$days} dia(s) (até " . \Illuminate\Support\Carbon::parse($newExpiresAt)->format('d/m/Y') . ")";
         } elseif (isset($data['expiresAt']) && ! empty($data['expiresAt'])) {
-            $newExpiresAt = date('Y-m-d H:i:s', strtotime((string) $data['expiresAt']));
-            $appliedChanges[] = "Validade definida até " . \Illuminate\Support\Carbon::parse($newExpiresAt)->format('d/m/Y');
+            $rawExp = trim((string) $data['expiresAt']);
+            $parsedDate = null;
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/', $rawExp, $m)) {
+                $day = str_pad($m[1], 2, '0', STR_PAD_LEFT);
+                $month = str_pad($m[2], 2, '0', STR_PAD_LEFT);
+                $year = $m[3];
+                $hour = isset($m[4]) ? str_pad($m[4], 2, '0', STR_PAD_LEFT) : '23';
+                $min = $m[5] ?? '59';
+                $sec = $m[6] ?? '59';
+                $parsedDate = "{$year}-{$month}-{$day} {$hour}:{$min}:{$sec}";
+            } else {
+                $ts = strtotime($rawExp);
+                if ($ts !== false && $ts > 0) {
+                    $parsedDate = date('Y-m-d H:i:s', $ts);
+                }
+            }
+            if ($parsedDate) {
+                $newExpiresAt = $parsedDate;
+                $appliedChanges[] = "Validade definida até " . \Illuminate\Support\Carbon::parse($newExpiresAt)->format('d/m/Y');
+            }
         }
 
         if ($newExpiresAt !== null) {

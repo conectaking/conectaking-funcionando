@@ -157,6 +157,32 @@ async function fetchRecentTransactions(limitN) {
 
 const fmt = v => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
 
+function parseDateInput(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+  const brMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (brMatch) {
+    const d = brMatch[1].padStart(2, '0');
+    const m = brMatch[2].padStart(2, '0');
+    const y = brMatch[3];
+    const h = brMatch[4] ? brMatch[4].padStart(2, '0') : '23';
+    const min = brMatch[5] || '59';
+    const sec = brMatch[6] || '59';
+    return `${y}-${m}-${d} ${h}:${min}:${sec}`;
+  }
+  const isoMatch = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (isoMatch) {
+    const y = isoMatch[1];
+    const m = isoMatch[2].padStart(2, '0');
+    const d = isoMatch[3].padStart(2, '0');
+    const h = isoMatch[4] ? isoMatch[4].padStart(2, '0') : '23';
+    const min = isoMatch[5] || '59';
+    const sec = isoMatch[6] || '59';
+    return `${y}-${m}-${d} ${h}:${min}:${sec}`;
+  }
+  return s;
+}
+
 async function fetchRealSummary(profileId) {
   const pid = profileId || 1;
   const [dashR, kingR] = await Promise.all([
@@ -251,8 +277,28 @@ ${KB}
 Você tem AUTORIZAÇÃO TOTAL, EXPRESSA e IRRESTRITA do Adriano King para realizar QUALQUER ação no Conecta King.
 NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quantos usuários existem, mudar e-mails, cadastrar clientes ou manipular senhas. Você é o braço direito do Adriano!
 
-═══ REGRAS CRÍTICAS DE CONTEXTO E MEMÓRIA ═══
-1. RESPOSTAS DE CONFIRMAÇÃO DO KING (ex: "Sim", "Pode excluir", "Confirmo", "Pode", "Manda"):
+═══ REGRAS CRÍTICAS DE CONTEXTO E MEMÓRIA MULTI-TURNO ═══
+1. COMPLEMENTO DE AÇÃO ANTERIOR (O REI RESPONDEU AO QUE VOCÊ PERGUNTOU):
+   - Se na mensagem anterior você perguntou algo ao Adriano, como:
+     * "Para qual cliente você deseja mudar a validade para [DATA]?" ou "Qual o cliente?"
+     * "Qual a nova senha?" ou "Para qual e-mail deseja alterar?"
+     * "Por quanto tempo deseja renovar a tag do cliente [X]?"
+     * "Deseja realmente excluir o cliente [X]?"
+   - E agora o Adriano respondeu com o cliente (ex: "Esse cliente KING-IEVN", "KING-IEVN", "o fulano@email.com", "desse cliente"), com a data, com a senha ou com confirmação ("Sim", "Pode", "Manda"):
+     -> VOCÊ DEVE OBRIGATORIAMENTE JUNTAR O COMANDO ANTERIOR COM A RESPOSTA ATUAL E EXECUTAR A FERRAMENTA IMEDIATAMENTE!
+     -> Exemplo Real:
+        Mensagem 1 (Adriano): "Mude a validade para 26/10/2027"
+        Mensagem 2 (Você): "Com certeza, King! Para qual cliente você deseja mudar a validade para 26/10/2027?"
+        Mensagem 3 (Adriano): "Esse cliente KING-IEVN"
+        -> AÇÃO OBRIGATÓRIA: Chame IMEDIATAMENTE 'manage_client' com:
+           { identifier: 'KING-IEVN', action: 'renew_tag', expires_at: '2027-10-26' }
+        -> NUNCA, JAMAIS chame 'get_info' nessa situação! Chamar 'get_info' quando o Adriano pediu para MUDAR A VALIDADE é um erro grave!
+     -> Exemplo 2: Se você perguntou a nova senha e ele mandou "123456" -> Chame 'manage_client' com action: 'change_password' e new_password: '123456'!
+     -> Exemplo 3: Se ele confirmou exclusão ("Sim", "Pode excluir") -> Chame 'manage_client' com action: 'delete'!
+     -> Exemplo 4: Se o Adriano acabou de cadastrar ou consultar um cliente na mensagem imediatamente anterior e diz "mude a validade para DATA" ou "altera o vencimento para DATA":
+        Ele está se referindo a esse mesmo cliente recém-cadastrado/mencionado! Execute imediatamente!
+
+1.1 RESPOSTAS DE CONFIRMAÇÃO DO KING (ex: "Sim", "Pode excluir", "Confirmo", "Pode", "Manda"):
    - Se o Adriano responder confirmando uma ação anterior, olhe IMEDIATAMENTE as mensagens anteriores no histórico para identificar a ação e o cliente em pauta.
    - EXECUTE A FERRAMENTA NA HORA! Por exemplo, se você perguntou "Deseja realmente excluir o cliente prjesimilson@hotmail.com?" e ele disse "Sim" ou "Pode excluir", chame IMEDIATAMENTE 'manage_client' com action: 'delete' e identifier: 'prjesimilson@hotmail.com'!
    - NUNCA responda "Como posso ajudá-lo hoje, King?" ou fique perdido!
@@ -291,9 +337,11 @@ NUNCA diga que não pode gerenciar dados sensíveis, excluir clientes, ver quant
        -> Chame IMEDIATAMENTE 'manage_client' com action: "set_admin", identifier e is_admin: true!
      * Se disser "tira o fulano do adm", "remove o admin do cliente X":
        -> Chame IMEDIATAMENTE 'manage_client' com action: "remove_admin", identifier e is_admin: false!
-   - RENOVAÇÃO DE TAG / ASSINATURA:
-     * Se o Adriano disser "renova o cliente X por 1 mês", "renova a tag do cliente tal até 31/12", "adiciona 30 dias na tag do fulano":
-       -> Use 'manage_client' com action: "renew_tag" e os meses/dias/data.
+   - RENOVAÇÃO DE TAG / ASSINATURA & MUDANÇA DE VALIDADE (PODER SUPREMO):
+     * Se o Adriano disser "mude a validade para DATA", "mudar validade do cliente X para DATA", "alterar vencimento para DATA", "renova o cliente X por 1 mês", "renova a tag do cliente tal até 31/12", "adiciona 30 dias na tag do fulano", "estender validade":
+       -> Use SEMPRE 'manage_client' com action: "renew_tag"!
+       -> Passe a nova data em 'expires_at' (ex: '2027-10-26' ou '26/10/2027') ou a quantidade em 'renew_months'/'renew_days'.
+       -> Se o cliente não foi dito na frase mas foi cadastrado ou consultado na mensagem imediatamente anterior, USE O IDENTIFICADOR DELE IMEDIATAMENTE!
      * Se o Adriano disser apenas "quero renovar o cliente X" sem falar o prazo:
        -> Responda de forma proativa e direta: "Com certeza, King! Por quanto tempo deseja renovar? Posso renovar por 1 mês, 1 ano ou você prefere definir uma data de vencimento específica?"
    - MUDAR PLANO DO CLIENTE:
@@ -411,7 +459,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         identifier: { type: 'string', description: 'E-mail, código da tag (ex: KING-XXXX), slug ou ID do cliente.' },
-        action: { type: 'string', enum: ['delete', 'change_email', 'change_password', 'set_admin', 'remove_admin', 'renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar: delete (excluir cliente permanentemente), change_email (alterar e-mail), change_password (alterar senha), set_admin (dar cargo de admin/colocar no adm), remove_admin (remover do adm), renew_tag (renovar tag/validade), change_plan (mudar plano), update_tag_code (mudar código tag), get_info (consultar dados).' },
+        action: { type: 'string', enum: ['delete', 'change_email', 'change_password', 'set_admin', 'remove_admin', 'renew_tag', 'change_plan', 'update_tag_code', 'get_info'], description: 'Ação a realizar: delete (excluir cliente permanentemente), change_email (alterar e-mail), change_password (alterar senha), set_admin (dar cargo de admin/colocar no adm), remove_admin (remover do adm), renew_tag (MUDAR VALIDADE, DEFINIR NOVA DATA DE VENCIMENTO OU RENOVAR TAG/ASSINATURA), change_plan (mudar plano), update_tag_code (mudar código tag), get_info (apenas consultar dados sem alterar nada).' },
         new_email: { type: 'string', description: 'Novo e-mail do cliente (para change_email).' },
         new_password: { type: 'string', description: 'Nova senha do cliente (para change_password).' },
         is_admin: { type: 'boolean', description: 'True para colocar no adm, false para remover do adm.' },
@@ -680,6 +728,7 @@ try {
       // ── GERENCIAR CLIENTE (EXCLUIR / MUDAR EMAIL / SENHA / ADM / RENOVAR / PLANO) ─
       } else if (fnName === 'manage_client') {
         const targetId = args.identifier || session.lastTargetClient;
+        const normalizedExpiresAt = parseDateInput(args.expires_at);
         const payload = {
           identifier: targetId,
           action: args.action,
@@ -689,7 +738,7 @@ try {
           newPlan: args.new_plan || null,
           renewMonths: args.renew_months || null,
           renewDays: args.renew_days || null,
-          expiresAt: args.expires_at || null,
+          expiresAt: normalizedExpiresAt || null,
           newTagCode: args.new_tag_code || null
         };
         const r = await ck.call(this, 'POST', '/api/admin/users/quick-manage', payload);
@@ -722,6 +771,18 @@ try {
               `⚡ *Status Admin:* ${isAdm ? 'SIM (Administrador Ativo 👑)' : 'NÃO (Usuário Padrão)'}\n` +
               `💎 *Tipo de Conta:* *${u.plan_name || u.account_type}*\n\n` +
               `_${isAdm ? 'O usuário agora tem acesso com privilégios ao painel /admin!' : 'Os privilégios de administração foram revogados.'}_`;
+          } else if (args.action === 'renew_tag' || args.expires_at || args.renew_months || args.renew_days) {
+            session.lastTargetClient = u.email;
+            const changes = r.body.data?.changes || [];
+            const changesText = changes.length > 0 ? changes.map(c => `✅ ${c}`).join('\n') : `✅ Validade atualizada para ${u.formatted_expires_at}`;
+            stepMsg = `📅 *Validade da Tag / Assinatura Atualizada com Sucesso! — Agente King*\n\n` +
+              `👤 *Cliente:* ${u.display_name} (\`${u.email}\`)\n` +
+              `🏷️ *Tag / Código:* \`${u.tag_code || u.profile_slug}\`\n` +
+              `💎 *Plano:* *${u.plan_name || u.account_type}*\n` +
+              `🗓️ *Novo Vencimento:* *${u.formatted_expires_at}* 🟢\n` +
+              `⚡ *Status:* ${u.subscription_status === 'active' ? 'Ativo 🟢' : u.subscription_status}\n\n` +
+              `*Ações Realizadas:*\n${changesText}\n\n` +
+              `_A nova data de validade já está ativa na plataforma Conecta King!_`;
           } else {
             session.lastTargetClient = u.email;
             const changes = r.body.data?.changes || [];
