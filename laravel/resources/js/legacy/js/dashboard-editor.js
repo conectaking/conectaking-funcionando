@@ -302,13 +302,12 @@ function renderEditor(profileData) {
         const preservedStates = env.preserveLocalItemStates();
 
         // Verificar duplicações antes de renderizar
-        // King Selection e Bíblia não aparecem como módulos (só no menu lateral); não listar na aba Módulos
+        // King Selection não aparece como módulo (só no menu lateral); não listar na aba Módulos
         const seenIds = new Set();
         const uniqueItems = (items || []).map(function (item) {
             return env.normalizeProfileItemType(Object.assign({}, item));
         }).filter(item => {
             if (item.item_type === 'king_selection') return false;
-            if (item.item_type === 'bible') return false;
             if (seenIds.has(item.id)) {
                 console.warn(`Item duplicado detectado e removido: ID ${item.id}, Tipo: ${item.item_type}`);
                 return false;
@@ -1137,14 +1136,17 @@ function renderEditor(profileData) {
                 case 'bible':
                     itemEl.classList.add('link-item');
                     iconOrThumbHTML = `<i class="${safeIconClass(item.icon_class, 'fas fa-bible')} item-icon-picker" title="Bíblia"></i>`;
-                    displayHTML = `<div class="item-display-title">${item.title || 'Bíblia'}</div><div class="item-display-dest">Versículo do dia</div>`;
+                    displayHTML = `<div class="item-display-title">${item.title || 'Bíblia'}</div><div class="item-display-dest">Módulo da Bíblia</div>`;
                     editHTML = `
-        <div style="padding: 1rem; text-align: center; color: var(--text, #ECECEC);">
-            <i class="fas fa-bible" style="font-size: 3rem; color: var(--dourado-principal, #FFC700); margin-bottom: 1rem;"></i>
-            <p>Clique em "Salvar" e depois em "Editar" para configurar tradução e preferências.</p>
-            <a href="/bibliaking" target="_blank" rel="noopener" onclick="try { sessionStorage.setItem('bible_item_id', '${item.id}'); sessionStorage.setItem('bible_panel_item_id', '${item.id}'); } catch(e) {}" style="display:inline-block;margin-top:0.75rem;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir configurações da Bíblia</a>
+        <label>Título do Botão</label>
+        <input type="text" class="item-title-input" value="${item.title || 'Bíblia'}" placeholder="Bíblia">
+        <label style="margin-top: 15px;">Ícone</label>
+        <div class="item-icon-picker" style="font-size: 2rem; cursor: pointer; color: var(--dourado-principal, #FFC700); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border-color, #2C2C2F); border-radius: 8px; margin: 10px 0;" title="Clique para alterar ícone">
+            <i class="${safeIconClass(item.icon_class, 'fas fa-bible')}"></i>
         </div>
-        <input type="hidden" class="item-title-input" value="${item.title || 'Bíblia'}">
+        <div style="margin-top: 1rem; text-align: center;">
+            <a href="/bibliaking" target="_blank" rel="noopener" onclick="try { sessionStorage.setItem('bible_item_id', '${item.id}'); sessionStorage.setItem('bible_panel_item_id', '${item.id}'); } catch(e) {}" style="display:inline-block;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir Painel da Bíblia</a>
+        </div>
     `;
                     break;
                 case 'location':

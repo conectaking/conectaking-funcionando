@@ -776,23 +776,24 @@ function updateLivePreviewFromForm() {
     const itemsContainer = SELECTORS.previewItemsContainer;
     SELECTORS.previewItemsContainer.innerHTML = '';
 
-    // Bíblia: não está no items-container (é especial), adicionar ao preview sempre (ativo ou desativado)
-    const bibleItem = (window.currentProfileData?.items || []).find(function (it) { return it.item_type === 'bible'; });
-    if (bibleItem) {
-        const bibleToggleChecked = document.querySelector('input[name="bible-toggle"]:checked');
-        const showBible = bibleToggleChecked ? bibleToggleChecked.value === 'true' : true;
-        const bibleDisabled = !showBible;
-        const bibleEl = document.createElement(bibleDisabled ? 'div' : 'a');
-        bibleEl.className = 'preview-link-button' + (bibleDisabled ? ' preview-link-disabled' : '');
-        if (!bibleDisabled) bibleEl.href = '#';
-        bibleEl.innerHTML = `<i class="fas fa-bible"></i> <span>Bíblia${bibleDisabled ? ' (Desativado)' : ''}</span>`;
-        bibleEl.style.backgroundColor = hexToRgba(SELECTORS.buttonColorPicker.value, bibleDisabled ? Math.max(0.3, buttonOpacity * 0.5) : buttonOpacity);
-        bibleEl.style.color = SELECTORS.buttonTextColorPicker.value;
-        bibleEl.style.borderRadius = borderRadius;
-        bibleEl.style.justifyContent = buttonJustifyContent;
-        bibleEl.style.fontSize = fontSize;
-        if (bibleDisabled) { bibleEl.style.opacity = '0.65'; bibleEl.style.cursor = 'default'; bibleEl.style.pointerEvents = 'none'; }
-        itemsContainer.appendChild(bibleEl);
+    // Pré-visualização do Versículo do Dia (Palavra do Dia)
+    const bibleToggleChecked = document.querySelector('input[name="bible-toggle"]:checked');
+    const showVerse = bibleToggleChecked ? bibleToggleChecked.value === 'true' : true;
+    const versePosChecked = document.querySelector('input[name="bible-verse-position"]:checked');
+    const versePos = versePosChecked ? versePosChecked.value : 'top';
+    const verseSizeChecked = document.querySelector('input[name="bible-verse-size"]:checked');
+    const verseSize = verseSizeChecked ? verseSizeChecked.value : 'normal';
+
+    const verseBoxTop = document.getElementById('preview-verse-box-top');
+    const verseBoxBottom = document.getElementById('preview-verse-box-bottom');
+
+    if (verseBoxTop) {
+        verseBoxTop.style.display = (showVerse && versePos === 'top') ? 'block' : 'none';
+        verseBoxTop.className = `verse-of-day-box preview-verse-of-day verse-size-${verseSize}`;
+    }
+    if (verseBoxBottom) {
+        verseBoxBottom.style.display = (showVerse && versePos === 'bottom') ? 'block' : 'none';
+        verseBoxBottom.className = `verse-of-day-box verse-of-day-box--bottom preview-verse-of-day verse-size-${verseSize}`;
     }
 
     // IMPORTANTE: Forçar leitura dos elementos atualizados do DOM
@@ -813,14 +814,7 @@ function updateLivePreviewFromForm() {
             isActive = itemEl.dataset.isActive !== 'false';
         }
 
-        // Bíblia: verificar se está visível (Oculto = desativado, mas ainda mostramos o botão)
-        let isBibleVisible = true;
-        if (itemType === 'bible') {
-            const bibleToggleChecked = document.querySelector('input[name="bible-toggle"]:checked');
-            isBibleVisible = bibleToggleChecked ? bibleToggleChecked.value === 'true' : true;
-        }
-
-        const isDisabled = !isActive || (itemType === 'bible' && !isBibleVisible);
+        const isDisabled = !isActive;
 
         // Para módulos, pegar o título do .module-name, senão pegar do input
         const title = itemEl.querySelector('.module-name')?.textContent?.trim() || itemEl.querySelector('.item-title-input')?.value || '';

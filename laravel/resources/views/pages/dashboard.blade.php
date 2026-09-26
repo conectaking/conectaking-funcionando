@@ -345,8 +345,8 @@
 
                         <div class="setting-item ck-hidden" id="bible-visibility-setting">
                             <div class="setting-label">
-                                <i class="fas fa-bible"></i>
-                                <span>Bíblia</span>
+                                <i class="fas fa-quote-left"></i>
+                                <span>Versículo do Dia</span>
                             </div>
                             <div class="setting-control">
                                 <div class="segmented-control">
@@ -1093,7 +1093,17 @@
                     <h3 id="preview-name">Seu Nome</h3>
                     <p id="preview-bio">Sua biografia aparecerá aqui.</p>
                 </div>
+                <div class="verse-of-day-box preview-verse-of-day" id="preview-verse-box-top" style="display: none; margin: 12px 0;">
+                    <div class="verse-of-day-ref" id="preview-verse-ref-top">Versículo do Dia</div>
+                    <div class="verse-of-day-text" id="preview-verse-text-top">"Porque Deus tanto amou o mundo que deu o seu Filho Unigênito..."</div>
+                    <div class="ck-cp-114bb6" style="font-size:0.75rem; color:var(--dourado-principal,#FFC700); margin-top:4px;">Abrir Bíblia →</div>
+                </div>
                 <div class="preview-items" id="preview-items-container"></div>
+                <div class="verse-of-day-box verse-of-day-box--bottom preview-verse-of-day" id="preview-verse-box-bottom" style="display: none; margin: 12px 0;">
+                    <div class="verse-of-day-ref" id="preview-verse-ref-bottom">Versículo do Dia</div>
+                    <div class="verse-of-day-text" id="preview-verse-text-bottom">"Porque Deus tanto amou o mundo que deu o seu Filho Unigênito..."</div>
+                    <div class="ck-cp-114bb6" style="font-size:0.75rem; color:var(--dourado-principal,#FFC700); margin-top:4px;">Abrir Bíblia →</div>
+                </div>
                 <div class="preview-footer-icons">
                     <i class="fas fa-share-alt"></i>
                     <i class="fas fa-user"></i>

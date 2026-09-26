@@ -251,7 +251,7 @@
             </a>
         @endif
 
-        @if($showVcard || $mapUrl !== '' || $hasVerse)
+        @if($showVcard || $mapUrl !== '')
             <div class="profile-actions">
                 @if($showVcard)
                     <a href="/vcard/{{ $profile_slug }}" class="profile-link" id="save-contact-btn">
@@ -263,12 +263,6 @@
                     <a href="{{ $mapUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer">
                         <i class="fas fa-map-marker-alt"></i>
                         <span>Ver no Mapa</span>
-                    </a>
-                @endif
-                @if($hasVerse)
-                    <a href="/{{ $profile_slug }}/biblia" class="profile-link">
-                        <i class="fas fa-book-bible"></i>
-                        <span>Bíblia</span>
                     </a>
                 @endif
             </div>
@@ -284,7 +278,13 @@
                     $img = trim((string)($item['image_url'] ?? ''));
                 @endphp
 
-                @if($type === 'king_selection')
+                @if($type === 'bible')
+                    <a href="/{{ $profile_slug }}/biblia" class="profile-link" data-item-id="{{ $item['id'] ?? '' }}">
+                        <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-bible') }}"></i>
+                        <span>{{ $title !== '' ? $title : 'Bíblia' }}</span>
+                    </a>
+
+                @elseif($type === 'king_selection')
                     <a href="@safeUrl($item['ks_public_url'] ?? '#')" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
                         <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-images') }}"></i>
                         <span>{{ $title !== '' ? $title : 'King Selection' }}</span>

@@ -74,9 +74,27 @@ class CartaoPublicService
             $verseDisplay = ['position' => 'top', 'size' => 'normal'];
             $bibleMeta = null;
             foreach ($items as $it) {
-                if (($it['item_type'] ?? '') === 'bible') {
-                    $bibleMeta = $it['bible_data'] ?? null;
+                if (($it['item_type'] ?? '') === 'bible' && !empty($it['bible_data'])) {
+                    $bibleMeta = $it['bible_data'];
                     break;
+                }
+            }
+            if ($bibleMeta === null) {
+                try {
+                    $bRow = DB::selectOne(
+                        'SELECT bi.* FROM bible_items bi
+                         JOIN profile_items pi ON bi.profile_item_id = pi.id
+                         WHERE pi.user_id = ? LIMIT 1',
+                        [$userId]
+                    );
+                    if ($bRow) {
+                        $bibleMeta = (array) $bRow;
+                        if (array_key_exists('is_visible', $bibleMeta)) {
+                            $bibleMeta['is_visible'] = filter_var($bibleMeta['is_visible'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // table may be missing
                 }
             }
             if (is_array($bibleMeta) && ($bibleMeta['is_visible'] ?? true) !== false) {
@@ -130,10 +148,7 @@ class CartaoPublicService
             }
         }
 
-        $itemsForLinks = array_values(array_filter(
-            $items,
-            static fn ($it) => ($it['item_type'] ?? '') !== 'bible'
-        ));
+        $itemsForLinks = $items;
 
         if (empty($details['company_logo_url']) || trim((string) $details['company_logo_url']) === '') {
             $details = array_merge($details, $this->defaultBranding());
