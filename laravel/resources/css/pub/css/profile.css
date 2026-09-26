@@ -977,15 +977,16 @@ body.light-theme .branding-logo span {
     bottom: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     min-height: 100%;
     overflow: hidden;
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
     z-index: -1;
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-    will-change: transform;
+    transform: none !important;
+    -webkit-transform: none !important;
+    will-change: auto !important;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
 }
@@ -1008,9 +1009,9 @@ body.light-theme .branding-logo span {
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-    will-change: transform;
+    transform: none !important;
+    -webkit-transform: none !important;
+    will-change: auto !important;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
 }
@@ -1020,7 +1021,7 @@ body.light-theme .branding-logo span {
     z-index: 1;
 }
 
-/* Modo Mobile: ajuste do fundo para não cortar a logomarca e evitar o tremor/salto ao rolar */
+/* Modo Mobile: ajuste perfeito do fundo sem cortar a logomarca/arte e sem tremor/salto ao rolar */
 @media (max-width: 768px) {
     .background-image-overlay-wrapper {
         position: fixed;
@@ -1030,36 +1031,44 @@ body.light-theme .branding-logo span {
         bottom: 0;
         width: 100%;
         height: 100%;
+        height: 100dvh;
         min-height: 100%;
         max-height: 100%;
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
+        transform: none !important;
+        -webkit-transform: none !important;
+        will-change: auto !important;
     }
 
-    /* Preenchimento atmosférico desfocado suave para preencher toda a altura do celular */
+    /* Preenchimento atmosférico escuro e suave para preencher a altura do celular */
     .background-image-blur-backdrop {
         display: block;
         position: absolute;
-        top: -15%;
-        left: -15%;
-        width: 130%;
-        height: 130%;
+        inset: -10%;
+        width: 120%;
+        height: 120%;
         background-size: cover;
         background-position: center center;
         background-repeat: no-repeat;
-        filter: blur(28px) brightness(0.65);
-        -webkit-filter: blur(28px) brightness(0.65);
-        opacity: 0.9;
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
+        filter: blur(40px) brightness(0.35);
+        -webkit-filter: blur(40px) brightness(0.35);
+        opacity: 0.85;
+        transform: none !important;
+        -webkit-transform: none !important;
     }
 
-    /* Imagem principal visível e nítida sem cortar as laterais da logomarca/arte */
+    /* Imagem principal nítida, centralizada e 100% visível na largura sem cortar laterais */
+    .background-image-overlay-wrapper .background-image-overlay-img,
     .background-image-overlay-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
-        object-position: center 68%;
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
+        object-position: center center;
+        transform: none !important;
+        -webkit-transform: none !important;
+        will-change: auto !important;
     }
 }
 
