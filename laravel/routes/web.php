@@ -395,7 +395,6 @@ Route::middleware('jwt')->group(function () {
         Route::get('/api/link-limits/stats', [\App\Http\Controllers\Account\LinkLimitsController::class, 'stats']);
         Route::get('/api/modules/available', [\App\Http\Controllers\Account\ModulesController::class, 'available']);
         Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
-        Route::put('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'updatePlanAvailability']);
         Route::get('/api/modules/individual-plans', [\App\Http\Controllers\Account\ModulesController::class, 'individualPlans']);
         Route::get('/api/modules/users-list', [\App\Http\Controllers\Account\ModulesController::class, 'usersList']);
         Route::get('/api/modules/individual-plans/{userId}', [\App\Http\Controllers\Account\ModulesController::class, 'getIndividualPlan']);
