@@ -1527,6 +1527,24 @@
     #ks-sales-confirm-bar.ks-hidden { display: none !important; }
     #ks-sales-confirm-count { font-size: 14px; font-weight: 800; color: #fef3c7; }
     #ks-refresh-downloads { margin-top: 8px; width: 100%; justify-content: center; }
+    #ks-sales-confirm-subtotal {
+      font-size: 14px;
+      font-weight: 900;
+      color: #fde047;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(250, 204, 21, 0.3);
+      display: inline-flex;
+      align-items: center;
+    }
+    #ks-sales-confirm-subtotal.ks-hidden { display: none !important; }
+    #ks-locked-pix-qr-container, #ks-dl-pix-qr-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 12px auto;
+    }
 
 /* auto-extracted from resources/views/pages/kingSelectionCliente.blade.php */
 

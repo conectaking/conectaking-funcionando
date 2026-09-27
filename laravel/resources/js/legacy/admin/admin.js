@@ -125,6 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             pane.classList.toggle('active', pane.id === targetId);
         });
         if (targetId === 'branding-pane') loadDefaultBranding();
+        if (targetId === 'r2-pane') loadR2InventoryAdmin();
         try { window.scrollTo(0, 0); } catch (_) {}
         return true;
     }
@@ -284,6 +285,160 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    // --- Cloudflare R2 (ADM) ---
+    let r2AdminLoaded = false;
+    let r2AdminLoading = false;
+
+    function fmtR2Bytes(n) {
+        const b = Number(n) || 0;
+        if (b < 1024) return `${b} B`;
+        if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+        if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+        return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    }
+
+    function renderR2AdminInventory(data) {
+        const s = data?.summary || {};
+        const set = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+        set('ks-r2-stat-total', String(s.r2TotalFiles ?? '—'));
+        set('ks-r2-stat-size', fmtR2Bytes(s.r2TotalBytes));
+        set('ks-r2-stat-ref', String(s.referencedInDb ?? '—'));
+        set('ks-r2-stat-orphans', `${s.orphanFiles ?? 0} (${fmtR2Bytes(s.orphanBytes)})`);
+        set('ks-r2-stat-projects', `${s.userProjectsWithR2 ?? 0} / ${s.userProjects ?? 0}`);
+        set('ks-r2-stat-deleted', String(s.orphanProjectFolders ?? 0));
+        const genEl = document.getElementById('ks-r2-generated');
+        if (genEl && data?.generatedAt) {
+            genEl.textContent = `Inventário gerado em ${new Date(data.generatedAt).toLocaleString('pt-BR')}. Pastas no formato galleries/ID/subpasta/arquivo.`;
+        }
+
+        const projBody = document.getElementById('ks-r2-projects-tbody');
+        if (projBody) {
+            const rows = Array.isArray(data?.projects) ? data.projects : [];
+            if (!rows.length) {
+                projBody.innerHTML = '<tr><td colspan="9" class="table-empty-state" style="padding:20px;text-align:center">Nenhum projeto encontrado no King Selection.</td></tr>';
+            } else {
+                projBody.innerHTML = rows.map((p) => `
+                    <tr>
+                        <td><b>${p.nome || ''}</b><div style="font-size:11px;color:#94a3b8">${p.slug || ''}</div></td>
+                        <td>${p.galleryId}</td>
+                        <td>${p.dbPhotos ?? 0}</td>
+                        <td>${p.r2Files ?? 0}</td>
+                        <td>${p.orphanFiles > 0 ? '<span style="color:#d97706;font-weight:bold">' + p.orphanFiles + '</span>' : '0'}</td>
+                        <td>${fmtR2Bytes(p.r2Bytes)}</td>
+                        <td>${p.lastUploaded ? new Date(p.lastUploaded).toLocaleDateString('pt-BR') : '—'}</td>
+                        <td style="font-size:12px">${Array.isArray(p.subfolders) ? p.subfolders.map(s => `${s.name} (${s.files})`).join(', ') || '—' : '—'}</td>
+                        <td><span class="badge ${p.status === 'ok' ? 'badge-success' : 'badge-warning'}">${p.status || '—'}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        const orphanFoldBody = document.getElementById('ks-r2-orphan-folders-tbody');
+        if (orphanFoldBody) {
+            const folders = Array.isArray(data?.orphanFolders) ? data.orphanFolders : [];
+            if (!folders.length) {
+                orphanFoldBody.innerHTML = '<tr><td colspan="5" class="table-empty-state" style="padding:20px;text-align:center">Nenhuma pasta de projeto excluído encontrada no R2.</td></tr>';
+            } else {
+                orphanFoldBody.innerHTML = folders.map((f) => `
+                    <tr>
+                        <td><code>galleries/${f.galleryId}/</code></td>
+                        <td>${f.r2Files ?? 0}</td>
+                        <td>${fmtR2Bytes(f.r2Bytes)}</td>
+                        <td>${f.lastUploaded ? new Date(f.lastUploaded).toLocaleDateString('pt-BR') : '—'}</td>
+                        <td style="font-size:12px">${Array.isArray(f.subfolders) ? f.subfolders.map(s => `${s.name} (${s.files})`).join(', ') : '—'}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        const orphanFilesBody = document.getElementById('ks-r2-orphan-files-tbody');
+        if (orphanFilesBody) {
+            const files = Array.isArray(data?.orphanSamples) ? data.orphanSamples : [];
+            if (!files.length) {
+                orphanFilesBody.innerHTML = '<tr><td colspan="5" class="table-empty-state" style="padding:20px;text-align:center">Nenhum arquivo órfão na amostra.</td></tr>';
+            } else {
+                const more = data.orphanSamplesTruncated ? '<tr><td colspan="5" style="padding:8px;text-align:center;font-size:12px;color:#94a3b8">— e mais arquivos órfãos (use Limpar R2 para todos).</td></tr>' : '';
+                orphanFilesBody.innerHTML = files.map((f) => `
+                    <tr>
+                        <td style="font-size:11px;word-break:break-all">${f.fileName || f.key || ''}</td>
+                        <td><code>galleries/${f.galleryId}/</code></td>
+                        <td>${f.subfolder || '—'}</td>
+                        <td>${fmtR2Bytes(f.size)}</td>
+                        <td>${f.uploaded ? new Date(f.uploaded).toLocaleDateString('pt-BR') : '—'}</td>
+                    </tr>
+                `).join('') + more;
+            }
+        }
+    }
+
+    async function loadR2InventoryAdmin(force) {
+        if (r2AdminLoading) return;
+        if (r2AdminLoaded && !force) return;
+        r2AdminLoading = true;
+        const loadingEl = document.getElementById('ks-r2-loading');
+        const btnRefresh = document.getElementById('ks-r2-refresh');
+        const btnDry = document.getElementById('btn-cleanup-r2-dry');
+        const btnClean = document.getElementById('btn-cleanup-r2');
+        if (loadingEl) loadingEl.classList.remove('ck-hidden');
+        if (btnRefresh) btnRefresh.disabled = true;
+        if (btnDry) btnDry.disabled = true;
+        if (btnClean) btnClean.disabled = true;
+        try {
+            const res = await fetch(`${API_BASE}/api/king-selection/r2-inventory`, { headers: { Authorization: HEADERS.Authorization } });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || 'Erro ao carregar inventário R2');
+            renderR2AdminInventory(data);
+            r2AdminLoaded = true;
+        } catch (e) {
+            alert('Inventário R2: ' + (e?.message || 'Erro ao carregar'));
+        } finally {
+            r2AdminLoading = false;
+            if (loadingEl) loadingEl.classList.add('ck-hidden');
+            if (btnRefresh) btnRefresh.disabled = false;
+            if (btnDry) btnDry.disabled = false;
+            if (btnClean) btnClean.disabled = false;
+        }
+    }
+
+    async function doCleanupR2Admin(dryRun) {
+        const btnDry = document.getElementById('btn-cleanup-r2-dry');
+        const btnClean = document.getElementById('btn-cleanup-r2');
+        if (!dryRun) {
+            if (!confirm('Tem certeza de que deseja apagar do Cloudflare R2 TODOS os arquivos e pastas órfãos identificados? Esta ação é irreversível.')) {
+                return;
+            }
+        }
+        try {
+            if (btnDry) btnDry.disabled = true;
+            if (btnClean) btnClean.disabled = true;
+            const res = await fetch(`${API_BASE}/api/king-selection/cleanup-r2`, {
+                method: 'POST',
+                headers: { Authorization: HEADERS.Authorization, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dryRun, confirm: dryRun ? '' : 'SIM' })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || 'Erro');
+            if (dryRun) {
+                alert(`Verificação R2:\n\nÓrfãos no R2: ${data.orphans || 0} de ${data.total || 0} arquivo(s) (referenciados: ${data.referenced || 0}).\nUse «Limpar R2» para apagar só os órfãos.`);
+            } else {
+                alert(`Limpeza concluída:\n\n${data.deleted || 0} arquivo(s) órfão(s) removido(s) do Cloudflare R2 com sucesso.`);
+                await loadR2InventoryAdmin(true);
+            }
+        } catch (e) {
+            alert('Limpeza R2: ' + (e?.message || 'Erro ao executar'));
+        } finally {
+            if (btnDry) btnDry.disabled = false;
+            if (btnClean) btnClean.disabled = false;
+        }
+    }
+
+    document.getElementById('ks-r2-refresh')?.addEventListener('click', () => loadR2InventoryAdmin(true));
+    document.getElementById('btn-cleanup-r2-dry')?.addEventListener('click', () => doCleanupR2Admin(true));
+    document.getElementById('btn-cleanup-r2')?.addEventListener('click', () => doCleanupR2Admin(false));
 
     // Arrastar para rolar a tabela horizontalmente (sem depender só da barra)
     function setupDragToScroll(container) {

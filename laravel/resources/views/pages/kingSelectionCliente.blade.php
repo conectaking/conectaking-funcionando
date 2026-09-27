@@ -215,6 +215,9 @@
           </div>
           <div class="ks-top-row-actions">
             <div class="ks-toolbar">
+              <button type="button" class="ks-btn ks-btn-outline" id="ks-filter-selected-only" title="Mostrar apenas as fotos que você selecionou">
+                <i class="fas fa-filter"></i> <span id="ks-filter-selected-text">Ver selecionadas</span>
+              </button>
               <button type="button" class="ks-btn ks-btn-outline" id="ks-compare" title="Comparar duas fotos lado a lado">
                 <i class="fas fa-columns"></i> Comparar e ajustar
               </button>
@@ -281,7 +284,11 @@
               <div style="font-size:12px;margin-bottom:4px"><b>Favorecido:</b> <span id="ks-dl-pix-holder">-</span></div>
               <div style="font-size:12px;margin-bottom:4px"><b>Chave PIX</b></div>
               <div id="ks-dl-pix-key" style="font-family:ui-monospace,monospace;font-size:13px;word-break:break-all;padding:8px;background:rgba(0,0,0,.4);border-radius:8px;margin-bottom:8px;border:1px solid rgba(255,255,255,.08)">-</div>
+              <div id="ks-dl-pix-qr-container" style="text-align:center;margin:12px auto;display:none">
+                <canvas id="ks-dl-pix-qrcode" style="border-radius:10px;background:#fff;padding:8px;box-shadow:0 4px 14px rgba(0,0,0,.5);max-width:160px;height:auto;margin:0 auto;display:block"></canvas>
+              </div>
               <button type="button" class="ks-btn ks-btn-yellow" id="ks-dl-pix-copy" style="width:100%;justify-content:center"><i class="fas fa-copy"></i> Copiar chave PIX</button>
+              <button type="button" class="ks-btn ks-hidden" id="ks-dl-pix-copy-emv" style="width:100%;justify-content:center;margin-top:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(250,204,21,0.5);color:#fef08a"><i class="fas fa-barcode"></i> Copiar Código PIX Copia e Cola</button>
             </div>
             <div style="font-weight:800;font-size:12px;margin-top:14px;margin-bottom:6px;color:#e5e7eb">Enviar comprovante (imagem)</div>
             <input type="file" id="ks-dl-proof-file" accept="image/*" class="ks-input" style="margin-bottom:8px;width:100%;box-sizing:border-box" />
@@ -495,8 +502,14 @@
         <div class="ks-locked-pix-line"><b>Favorecido:</b> <span id="ks-locked-pix-holder">-</span></div>
         <div class="ks-locked-pix-line"><b>Chave PIX:</b></div>
         <div id="ks-locked-pix-key" class="ks-locked-pix-key">-</div>
+        <div id="ks-locked-pix-qr-container" style="text-align:center;margin:12px auto;display:none">
+          <canvas id="ks-locked-pix-qrcode" style="border-radius:10px;background:#fff;padding:8px;box-shadow:0 4px 14px rgba(0,0,0,.5);max-width:180px;height:auto;margin:0 auto;display:block"></canvas>
+        </div>
         <button type="button" class="ks-btn ks-btn-yellow" id="ks-locked-pix-copy" style="width:100%;justify-content:center">
           <i class="fas fa-copy"></i> Clique aqui para copiar o PIX
+        </button>
+        <button type="button" class="ks-btn ks-hidden" id="ks-locked-pix-copy-emv" style="width:100%;justify-content:center;margin-top:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(250,204,21,0.5);color:#fef08a">
+          <i class="fas fa-barcode"></i> Copiar Código PIX Copia e Cola
         </button>
         <button type="button" class="ks-btn ks-locked-wa-paid" id="ks-locked-pix-whats" style="width:100%;justify-content:center;margin-top:8px">
           <i class="fab fa-whatsapp"></i> Avisar no WhatsApp
@@ -596,9 +609,12 @@
   </button>
 
   <div id="ks-sales-confirm-bar" class="ks-hidden" aria-live="polite">
-    <span id="ks-sales-confirm-count">0 foto(s) selecionada(s)</span>
-    <button type="button" class="ks-btn ks-btn-yellow" id="ks-sales-confirm-go">
-      <i class="fas fa-paper-plane"></i> Confirmar seleção
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span id="ks-sales-confirm-count">0 foto(s) selecionada(s)</span>
+      <span id="ks-sales-confirm-subtotal" class="ks-hidden" style="font-size:14px;font-weight:900;color:#fde047;background:rgba(0,0,0,0.35);padding:3px 10px;border-radius:999px;border:1px solid rgba(250,204,21,0.3)"></span>
+    </div>
+    <button type="button" class="ks-btn ks-btn-yellow" id="ks-sales-confirm-go" style="box-shadow:0 4px 14px rgba(234,179,8,0.4)">
+      <i class="fas fa-paper-plane"></i> Finalizar seleção
     </button>
   </div>
 </body>

@@ -102,7 +102,6 @@
       <div class="ks-card ks-card--side-nav p-3 lg:col-span-3">
         <div class="ks-side flex flex-col gap-1 max-h-none overflow-y-visible overflow-x-auto overscroll-x-contain pr-1 md:overflow-x-visible md:pr-0">
           <a href="#" data-tab="activity" class="active"><i class="fas fa-wave-square"></i> Atividades do cliente</a>
-          <a href="#" data-tab="r2"><i class="fas fa-cloud"></i> Cloudflare R2</a>
           <a href="#" data-tab="photos"><i class="fas fa-images"></i> Fotos</a>
           <a href="#" data-tab="facial"><i class="fas fa-face-smile"></i> Reconhecimento Facial</a>
           <a href="#" data-tab="details"><i class="fas fa-pen"></i> Dados da galeria de fotos</a>
@@ -111,10 +110,8 @@
           <a href="#" data-tab="sales"><i class="fas fa-receipt"></i> Fotos vendidas</a>
           <a href="#" data-tab="promo"><i class="fas fa-ticket"></i> Cupom e redes</a>
           <a href="#" data-tab="links"><i class="fas fa-link"></i> Link e compartilhamento</a>
-          <a href="#" data-tab="link-cover"><i class="fas fa-image"></i> Capa do link</a>
           <a href="#" data-tab="support"><i class="fab fa-whatsapp"></i> Suporte WhatsApp</a>
           <a href="#" data-tab="download"><i class="fas fa-download"></i> Download</a>
-          <a href="#" data-tab="image-quality"><i class="fas fa-expand"></i> Resolução da foto</a>
           <a href="#" data-tab="watermark"><i class="fas fa-droplet"></i> Marca d'água</a>
         </div>
       </div>
@@ -184,6 +181,12 @@
                       <button type="button" class="ks-btn ks-btn-sm" id="ks-activity-open-whatsapp" style="margin-left:8px;padding:4px 9px">
                         <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
                       </button>
+                      <button type="button" class="ks-btn ks-btn-sm hidden" id="ks-activity-whatsapp-pix" style="margin-left:6px;padding:4px 9px;background:#059669;color:#fff;border-color:#047857" title="Enviar resumo de cobrança e chave PIX para o cliente no WhatsApp">
+                        <i class="fab fa-whatsapp"></i> Lembrar PIX
+                      </button>
+                      <button type="button" class="ks-btn ks-btn-sm hidden" id="ks-activity-whatsapp-download" style="margin-left:6px;padding:4px 9px;background:#2563eb;color:#fff;border-color:#1d4ed8" title="Avisar no WhatsApp que as fotos foram aprovadas e estão prontas para download">
+                        <i class="fab fa-whatsapp"></i> Avisar Download Liberado
+                      </button>
                     </div>
                     <div class="ks-abo-client-sub mt-2 flex flex-wrap items-center gap-2 ck-hidden" id="ks-activity-pass-row">
                       <span class="text-xs text-slate-500">Senha de acesso (login do cliente):</span>
@@ -211,32 +214,17 @@
                         title="Com o cliente em revisão: abre nova seleção para ele escolher mais fotos sem perder as já enviadas.">
                         <i class="fas fa-layer-group"></i> Nova seleção
                       </button>
-                      <button type="button" class="ks-btn" id="ks-act-clear-review" data-ks-clear-review
-                        title="Apaga as fotos em revisão do cliente selecionado (não apaga o projeto).">
-                        <i class="fas fa-trash"></i> Excluir revisão
-                      </button>
-                      <button type="button" class="ks-btn" id="ks-act-delete-current-round"
-                        title="Apaga apenas a rodada atual (mantém o cadastro do cliente).">
-                        <i class="fas fa-layer-group"></i> Excluir só rodada
-                      </button>
-                      <button type="button" class="ks-btn" id="ks-act-delete-round-client"
-                        title="Apaga a rodada atual e exclui o cadastro do cliente nesta galeria.">
-                        <i class="fas fa-user-slash"></i> Excluir rodada + cadastro
-                      </button>
-                      <div class="text-xs ks-muted" style="line-height:1.4;margin-top:6px">
-                        <b>Excluir só rodada:</b> remove apenas a seleção atual. &nbsp;|&nbsp;
-                        <b>Excluir rodada + cadastro:</b> remove seleção e cadastro do cliente.
-                      </div>
                       <button class="ks-btn" id="ks-open-export"><i class="fas fa-file-export"></i> Exportar</button>
                       <div class="ks-menu ks-act-menu" id="ks-act-menu">
                         <button type="button" id="ks-act-open-round-dd" data-ks-open-round><i class="fas fa-layer-group"></i> Nova seleção</button>
-                        <button type="button" id="ks-act-clear-review-dd" data-ks-clear-review><i class="fas fa-trash"></i> Excluir revisão</button>
-                        <button id="ks-act-finalize"><i class="fas fa-flag-checkered"></i> Finalizar</button>
-                        <button id="ks-act-reactivate"><i class="fas fa-rotate-left"></i> Reativar</button>
-                        <button id="ks-act-share"><i class="fas fa-share"></i> Compartilhar</button>
-                        <button type="button" id="ks-act-delete-client" class="danger" title="Exclui o cadastro do cliente nesta galeria (remove seleções/liberações vinculadas).">
-                          <i class="fas fa-user-slash"></i> Excluir cliente
-                        </button>
+                        <button id="ks-act-finalize"><i class="fas fa-flag-checkered"></i> Finalizar galeria</button>
+                        <button id="ks-act-reactivate"><i class="fas fa-rotate-left"></i> Reativar seleção</button>
+                        <button id="ks-act-share"><i class="fas fa-share"></i> Compartilhar link</button>
+                        <div class="border-t border-slate-200/20 my-1"></div>
+                        <button type="button" id="ks-act-clear-review-dd" data-ks-clear-review class="text-amber-500" title="Apaga as fotos em revisão do cliente selecionado"><i class="fas fa-eraser"></i> Excluir revisão</button>
+                        <button type="button" id="ks-act-delete-current-round" class="text-amber-500" title="Apaga apenas a rodada atual"><i class="fas fa-layer-group"></i> Excluir só rodada atual</button>
+                        <button type="button" id="ks-act-delete-round-client" class="danger" title="Apaga a rodada atual e exclui o cadastro do cliente"><i class="fas fa-user-times"></i> Excluir rodada + cadastro</button>
+                        <button type="button" id="ks-act-delete-client" class="danger" title="Exclui o cadastro do cliente nesta galeria"><i class="fas fa-user-slash"></i> Excluir cliente inteiro</button>
                       </div>
                     </div>
                   </div>
@@ -302,100 +290,6 @@
             </div>
           </div>
 
-        </div>
-
-        <!-- Cloudflare R2 (inventário e limpeza) -->
-        <div class="ks-card p-5 hidden" data-pane="r2">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div class="font-extrabold text-slate-900 text-lg"><i class="fas fa-cloud"></i> Cloudflare R2</div>
-              <p class="text-sm ks-muted mt-1 max-w-2xl">Compare seus projetos no King Selection com as pastas e arquivos no armazenamento. Identifique projetos excluídos ou fotos órfãs antes de limpar.</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" class="ks-btn" id="ks-r2-refresh"><i class="fas fa-rotate"></i> Atualizar inventário</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2-dry"><i class="fas fa-search"></i> Verificar órfãos</button>
-              <button type="button" class="ks-btn" id="btn-cleanup-r2" style="color:#b45309;border-color:rgba(180,83,9,.45)"><i class="fas fa-broom"></i> Limpar R2 (só órfãos)</button>
-            </div>
-          </div>
-
-          <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="ks-r2-summary">
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Arquivos no R2</div><div class="font-extrabold text-lg" id="ks-r2-stat-total">—</div></div>
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Tamanho total</div><div class="font-extrabold text-lg" id="ks-r2-stat-size">—</div></div>
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Referenciados no BD</div><div class="font-extrabold text-lg" id="ks-r2-stat-ref">—</div></div>
-            <div class="ks-card p-3 border border-amber-300/70 bg-amber-50/90"><div class="text-xs text-amber-900/80">Órfãos no R2</div><div class="font-extrabold text-lg text-amber-900" id="ks-r2-stat-orphans">—</div></div>
-            <div class="ks-card p-3 border border-slate-200/80"><div class="text-xs ks-muted">Seus projetos</div><div class="font-extrabold text-lg" id="ks-r2-stat-projects">—</div></div>
-            <div class="ks-card p-3 border border-red-200/80 bg-red-50/80"><div class="text-xs text-red-800/80">Pastas de projetos excluídos</div><div class="font-extrabold text-lg text-red-800" id="ks-r2-stat-deleted">—</div></div>
-          </div>
-
-          <p class="text-xs ks-muted mt-3" id="ks-r2-generated">Clique em «Atualizar inventário» para carregar pastas, datas e comparação com o banco.</p>
-          <div class="hidden mt-2 text-sm text-amber-800" id="ks-r2-loading"><i class="fas fa-spinner fa-spin"></i> Lendo arquivos no Cloudflare R2… pode levar alguns minutos em galerias grandes.</div>
-
-          <div class="mt-6">
-            <div class="font-extrabold text-slate-900">Seus projetos (King Selection × R2)</div>
-            <p class="text-xs ks-muted mt-1">Cada linha é um projeto ativo no banco. Pastas internas mostram subpastas dentro de <code class="text-xs">galleries/ID/</code>.</p>
-            <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80">
-              <table class="ks-r2-table w-full text-sm">
-                <thead>
-                  <tr>
-                    <th>Projeto</th>
-                    <th>ID</th>
-                    <th>Fotos no BD</th>
-                    <th>Arquivos R2</th>
-                    <th>Órfãos</th>
-                    <th>Tamanho R2</th>
-                    <th>Último upload</th>
-                    <th>Pastas</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="ks-r2-projects-tbody">
-                  <tr><td colspan="9" class="ks-muted p-4 text-center">Nenhum dado carregado.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="mt-8">
-            <div class="font-extrabold text-slate-900">Pastas órfãs (projeto já excluído no King Selection)</div>
-            <p class="text-xs ks-muted mt-1">Estas pastas ainda existem no R2, mas o projeto não está mais no banco — candidatas à limpeza.</p>
-            <div class="mt-3 overflow-x-auto rounded-xl border border-red-200/60">
-              <table class="ks-r2-table w-full text-sm">
-                <thead>
-                  <tr>
-                    <th>Pasta R2</th>
-                    <th>Arquivos</th>
-                    <th>Tamanho</th>
-                    <th>Último upload</th>
-                    <th>Subpastas</th>
-                  </tr>
-                </thead>
-                <tbody id="ks-r2-orphan-folders-tbody">
-                  <tr><td colspan="5" class="ks-muted p-4 text-center">—</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="mt-8">
-            <div class="font-extrabold text-slate-900">Arquivos órfãos (amostra)</div>
-            <p class="text-xs ks-muted mt-1">Arquivos no R2 sem referência no banco (até 250 na lista). Use «Limpar R2» para remover todos os órfãos de uma vez.</p>
-            <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80 max-h-96 overflow-y-auto">
-              <table class="ks-r2-table w-full text-sm">
-                <thead>
-                  <tr>
-                    <th>Arquivo</th>
-                    <th>Pasta / projeto</th>
-                    <th>Subpasta</th>
-                    <th>Tamanho</th>
-                    <th>Data no R2</th>
-                  </tr>
-                </thead>
-                <tbody id="ks-r2-orphan-files-tbody">
-                  <tr><td colspan="5" class="ks-muted p-4 text-center">—</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
         <!-- Details -->

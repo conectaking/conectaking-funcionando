@@ -303,6 +303,8 @@
     faceRecognitionUsable: false,
     /** Subconjunto de IDs após filtro por rosto; null = sem filtro. */
     faceFilterIds: null,
+    /** Filtro rápido para ver apenas fotos selecionadas pelo cliente */
+    filterSelectedOnly: false,
     /** Painel: permitir download com marca d\'água (API gallery.allow_download). */
     allowDownload: false,
     /** Fotógrafos: download ativado nas definições (antes do filtro público/anónimo). */
@@ -419,6 +421,53 @@
     const last = sorted[sorted.length - 1];
     const lastPer = last.price / last.qty;
     return Math.round(last.price + (qty - last.qty) * lastPer);
+  }
+
+  function buildPixPayload(key, name, city, value) {
+    function genEMV(id, p) { return id + String(p.length).padStart(2, '0') + p; }
+    function crc16(s) {
+      let c = 0xFFFF;
+      for (let i = 0; i < s.length; i++) {
+        c ^= s.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1);
+      }
+      return (c & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    }
+    const cleanKey = String(key || '').trim();
+    if (!cleanKey) return '';
+    const cleanName = (name || 'CONECTAKING')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z0-9 ]/g, '')
+      .trim().substring(0, 25).toUpperCase() || 'RECEBEDOR';
+    const cleanCity = (city || 'BRASIL')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z0-9 ]/g, '')
+      .trim().substring(0, 15).toUpperCase() || 'BRASIL';
+    const keyBlock = genEMV('00', 'BR.GOV.BCB.PIX') + genEMV('01', cleanKey);
+    const parts = [genEMV('00', '01'), genEMV('26', keyBlock), genEMV('52', '0000'), genEMV('53', '986')];
+    if (value && value > 0) parts.push(genEMV('54', Number(value).toFixed(2)));
+    parts.push(genEMV('58', 'BR'), genEMV('59', cleanName), genEMV('60', cleanCity), genEMV('62', genEMV('05', 'KS' + Date.now().toString(36).slice(-6))), '6304');
+    return parts.join('') + crc16(parts.join(''));
+  }
+
+  function renderPixQrOnCanvas(canvasId, containerId, payload) {
+    const canvas = document.getElementById(canvasId);
+    const container = document.getElementById(containerId);
+    if (!canvas || !payload) {
+      if (container) container.style.display = 'none';
+      return;
+    }
+    try {
+      if (typeof window.QRCode !== 'undefined' && typeof window.QRCode.toCanvas === 'function') {
+        window.QRCode.toCanvas(canvas, payload, { width: 170, margin: 1 }, (err) => {
+          if (!err && container) container.style.display = 'block';
+        });
+      } else if (container) {
+        container.style.display = 'none';
+      }
+    } catch (e) {
+      if (container) container.style.display = 'none';
+    }
   }
 
   function normalizeWhatsDigits(v) {
@@ -1305,6 +1354,32 @@
     if (holder) holder.textContent = pixHolder || '—';
     if (keyEl) keyEl.textContent = pixKey || '—';
     if (copyBtn) copyBtn.setAttribute('data-pix-key', pixKey || '');
+
+    const copyEmvBtn = $('ks-dl-pix-copy-emv');
+    if (pixKey) {
+      const ps = state.paymentState;
+      const balCents = ps?.balance_due_cents != null && ps.balance_due_cents > 0 ? ps.balance_due_cents : 0;
+      let valReais = balCents > 0 ? (balCents / 100) : 0;
+      if (valReais <= 0) {
+        const packs = Array.isArray(state.salesPackages) ? state.salesPackages : [];
+        const mode = String(state.salesConfig?.sales_price_mode || 'best_price_auto').toLowerCase();
+        const unit = normalizeLegacyMoneyCents(state.salesConfig?.sales_unit_price_cents || 0);
+        const billable = billablePhotoCountForSalesEstimate(state.selected?.size || 0);
+        const estCents = estimateClientTotalByPackages(billable, packs, mode, unit);
+        if (estCents > 0) valReais = estCents / 100;
+      }
+      const emv = buildPixPayload(pixKey, pixHolder, 'BRASIL', valReais);
+      if (copyEmvBtn && emv) {
+        copyEmvBtn.setAttribute('data-pix-emv', emv);
+        copyEmvBtn.classList.remove('ks-hidden');
+      } else if (copyEmvBtn) {
+        copyEmvBtn.classList.add('ks-hidden');
+      }
+      renderPixQrOnCanvas('ks-dl-pix-qrcode', 'ks-dl-pix-qr-container', emv);
+    } else {
+      if (copyEmvBtn) copyEmvBtn.classList.add('ks-hidden');
+      renderPixQrOnCanvas('ks-dl-pix-qrcode', 'ks-dl-pix-qr-container', '');
+    }
   }
 
   function authHeaders(json) {
@@ -1432,6 +1507,24 @@
     bar.classList.toggle('ks-hidden', !show);
     const cnt = $('ks-sales-confirm-count');
     if (cnt) cnt.textContent = `${n} foto(s) selecionada(s)`;
+    const subtotalEl = $('ks-sales-confirm-subtotal');
+    if (subtotalEl) {
+      if (state.salesModeActive && n > 0) {
+        const packs = Array.isArray(state.salesPackages) ? state.salesPackages : [];
+        const mode = String(state.salesConfig?.sales_price_mode || 'best_price_auto').toLowerCase();
+        const unit = normalizeLegacyMoneyCents(state.salesConfig?.sales_unit_price_cents || 0);
+        const billable = billablePhotoCountForSalesEstimate(n);
+        const totalCents = estimateClientTotalByPackages(billable, packs, mode, unit);
+        if (totalCents > 0) {
+          subtotalEl.textContent = `Total: ${formatCentsBr(totalCents)}`;
+          subtotalEl.classList.remove('ks-hidden');
+        } else {
+          subtotalEl.classList.add('ks-hidden');
+        }
+      } else {
+        subtotalEl.classList.add('ks-hidden');
+      }
+    }
   }
 
   const KS_DL_ZIP_AUTO_BYTES = 500 * 1024 * 1024;
@@ -2210,12 +2303,13 @@
       : sel
         ? `<button type="button" class="ks-ph-act ks-ph-act--remove" data-strip="${p.id}"><i class="fas fa-times"></i> ${publicFree ? 'Desmarcar' : 'Remover'}</button>`
         : `<button type="button" class="ks-ph-act ks-ph-act--add" data-strip="${p.id}"><i class="fas fa-check"></i> ${publicFree ? 'Marcar' : 'Selecionar'}</button>`;
+    const isApproved = Array.isArray(state.approvedPhotoIds) && state.approvedPhotoIds.includes(parseInt(p.id, 10));
     const dl =
-      state.photographerAllowsDownload && jwt
-        ? state.allowDownload
-          ? `<a class="ks-ph-dl r" href="${previewDownloadUrl(p.id)}" download target="_blank" rel="noopener" title="Descarregar" aria-label="Descarregar"><i class="fas fa-download"></i></a>`
-          : `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar — cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
-        : '';
+      ((state.photographerAllowsDownload && jwt && state.allowDownload) || isApproved)
+        ? `<a class="ks-ph-dl r" href="${previewDownloadUrl(p.id)}" download target="_blank" rel="noopener" title="Baixar foto liberada" aria-label="Baixar foto liberada"><i class="fas fa-download"></i></a>`
+        : (state.photographerAllowsDownload && jwt && !state.allowDownload)
+          ? `<button type="button" class="ks-ph-dl r" data-pub-dl="${p.id}" title="Descarregar — cadastro ao baixar" aria-label="Descarregar"><i class="fas fa-download"></i></button>`
+          : '';
     return `
         <div class="ks-ph ${sel ? 'selected' : ''} ${fr ? 'frozen' : ''}" data-pid="${p.id}">
           <button type="button" class="${bubbleClass.join(' ')}" data-check="${p.id}" aria-label="${bubbleLabel}" title="${bubbleLabel}" ${fr ? 'disabled' : ''}>
@@ -3044,6 +3138,29 @@
     if (holder) holder.textContent = pixHolder || 'Não informado';
     if (keyEl) keyEl.textContent = pixKey || '—';
     if (copyBtn) copyBtn.setAttribute('data-pix-key', pixKey || '');
+
+    const copyEmvBtn = $('ks-locked-pix-copy-emv');
+    if (pixKey) {
+      let valReais = 0;
+      const packs = Array.isArray(state.salesPackages) ? state.salesPackages : [];
+      const mode = String(state.salesConfig?.sales_price_mode || 'best_price_auto').toLowerCase();
+      const unit = normalizeLegacyMoneyCents(state.salesConfig?.sales_unit_price_cents || 0);
+      const billable = billablePhotoCountForSalesEstimate(state.selected?.size || 0);
+      const estCents = estimateClientTotalByPackages(billable, packs, mode, unit);
+      if (estCents > 0) valReais = estCents / 100;
+      const emv = buildPixPayload(pixKey, pixHolder, 'BRASIL', valReais);
+      if (copyEmvBtn && emv) {
+        copyEmvBtn.setAttribute('data-pix-emv', emv);
+        copyEmvBtn.classList.remove('ks-hidden');
+      } else if (copyEmvBtn) {
+        copyEmvBtn.classList.add('ks-hidden');
+      }
+      renderPixQrOnCanvas('ks-locked-pix-qrcode', 'ks-locked-pix-qr-container', emv);
+    } else {
+      if (copyEmvBtn) copyEmvBtn.classList.add('ks-hidden');
+      renderPixQrOnCanvas('ks-locked-pix-qrcode', 'ks-locked-pix-qr-container', '');
+    }
+
     if (waPendingBtn) waPendingBtn.classList.add('ks-hidden');
 
     const isPaid = state.lastPaidChoice === 'yes' || state.lastProofUploaded;
@@ -3709,6 +3826,9 @@
     if (state.faceFilterIds && state.faceFilterIds.size) {
       filtered = filtered.filter((p) => state.faceFilterIds.has(parseInt(p.id, 10)));
     }
+    if (state.filterSelectedOnly) {
+      filtered = filtered.filter((p) => state.selected.has(parseInt(p.id, 10)));
+    }
     return sortPhotos(filtered, state.sortMode);
   }
 
@@ -3913,10 +4033,10 @@
     if (!list.length) {
       disconnectGridPreviewIo();
       grid.innerHTML = '';
-      empty.textContent = state.activeFolderId
-        ? 'Esta pasta ainda não tem fotos.'
-        : 'Nenhuma foto corresponde à busca.';
-      empty.classList.toggle('ks-hidden', !(tokens.length || faceOn || state.activeFolderId));
+      empty.textContent = state.filterSelectedOnly
+        ? 'Nenhuma foto selecionada ainda. Clique no círculo em cima das fotos para selecionar.'
+        : (state.activeFolderId ? 'Esta pasta ainda não tem fotos.' : 'Nenhuma foto corresponde à busca.');
+      empty.classList.toggle('ks-hidden', !(tokens.length || faceOn || state.activeFolderId || state.filterSelectedOnly));
       syncFolderSelectAllToolbar();
       syncEditRequestToolbar();
       refreshFacePanelVisibility();
@@ -4774,7 +4894,8 @@
       a.removeAttribute('data-pub-dl');
       return;
     }
-    if (state.allowDownload) {
+    const isApproved = Array.isArray(state.approvedPhotoIds) && state.approvedPhotoIds.includes(parseInt(viewerOpenPhotoId, 10));
+    if (state.allowDownload || isApproved) {
       a.href = previewDownloadUrl(viewerOpenPhotoId);
       a.removeAttribute('data-pub-dl');
       a.classList.remove('ks-hidden');
@@ -4862,7 +4983,8 @@
         el.removeAttribute('data-pub-dl');
         return;
       }
-      if (state.allowDownload) {
+      const isApproved = Array.isArray(state.approvedPhotoIds) && state.approvedPhotoIds.includes(parseInt(photoId, 10));
+      if (state.allowDownload || isApproved) {
         el.href = previewDownloadUrl(photoId);
         el.removeAttribute('data-pub-dl');
         el.classList.remove('ks-hidden');
@@ -5310,6 +5432,58 @@
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
+  });
+
+  $('ks-locked-pix-copy-emv')?.addEventListener('click', async () => {
+    const emv = String($('ks-locked-pix-copy-emv')?.getAttribute('data-pix-emv') || '').trim();
+    if (!emv) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(emv);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = emv;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      toast('Código PIX Copia e Cola copiado com sucesso!', 'ok');
+    } catch (_) {
+      toast('Não foi possível copiar o código PIX automaticamente.', 'err');
+    }
+  });
+  $('ks-dl-pix-copy-emv')?.addEventListener('click', async () => {
+    const emv = String($('ks-dl-pix-copy-emv')?.getAttribute('data-pix-emv') || '').trim();
+    if (!emv) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(emv);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = emv;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      toast('Código PIX Copia e Cola copiado com sucesso!', 'ok');
+    } catch (_) {
+      toast('Não foi possível copiar o código PIX automaticamente.', 'err');
+    }
+  });
+  $('ks-filter-selected-only')?.addEventListener('click', () => {
+    state.filterSelectedOnly = !state.filterSelectedOnly;
+    const btn = $('ks-filter-selected-only');
+    const txt = $('ks-filter-selected-text');
+    if (btn) {
+      btn.classList.toggle('ks-btn-yellow', state.filterSelectedOnly);
+      btn.classList.toggle('ks-btn-outline', !state.filterSelectedOnly);
+    }
+    if (txt) {
+      txt.textContent = state.filterSelectedOnly ? 'Ver todas' : 'Ver selecionadas';
+    }
+    renderGrid();
   });
 
   $('ks-dl-pix-copy')?.addEventListener('click', async () => {

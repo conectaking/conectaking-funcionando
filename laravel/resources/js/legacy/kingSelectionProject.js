@@ -372,6 +372,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const actEmail = document.getElementById('ks-activity-email');
   const actPhone = document.getElementById('ks-activity-phone');
   const actOpenWhatsappBtn = document.getElementById('ks-activity-open-whatsapp');
+  const actWhatsappPixBtn = document.getElementById('ks-activity-whatsapp-pix');
+  const actWhatsappDownloadBtn = document.getElementById('ks-activity-whatsapp-download');
   const actContactLine = document.getElementById('ks-activity-contact-line');
   const actBadge = document.getElementById('ks-activity-badge');
   const actSalesMini = document.getElementById('ks-activity-sales-mini');
@@ -982,21 +984,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function computeSalesMiniStatsForClient(clientId) {
     const cid = parseInt(clientId, 10) || 0;
-    if (!cid) return { pendingProof: 0, pendingBalanceRounds: 0, approvedPhotos: 0 };
+    if (!cid) return { pendingProof: 0, pendingBalanceRounds: 0, approvedPhotos: 0, totalBalanceCents: 0 };
     const cli = salesClientsCache.find((c) => (parseInt(c.id, 10) || 0) === cid);
     const rounds = Array.isArray(cli?.rounds) ? cli.rounds : [];
     let pendingProof = 0;
     let pendingBalanceRounds = 0;
     let approvedPhotos = 0;
+    let totalBalanceCents = 0;
     for (const r of rounds) {
       const st = String(r?.payment_status || 'pending').toLowerCase();
       const approvedCount = Math.max(0, parseInt(r?.approved_count, 10) || 0);
       const bal = parseInt(r?.balance_due_cents, 10) || 0;
       if (st === 'pending') pendingProof += 1;
       if (bal > 0 || st === 'partial') pendingBalanceRounds += 1;
+      if (bal > 0) totalBalanceCents += bal;
       approvedPhotos += approvedCount;
     }
-    return { pendingProof, pendingBalanceRounds, approvedPhotos };
+    return { pendingProof, pendingBalanceRounds, approvedPhotos, totalBalanceCents };
   }
   /** Preferência do filtro "Ver seleção" por galeria (`all` ou número da rodada) */
   const activityBatchPrefByGallery = {};
@@ -4198,6 +4202,52 @@ document.addEventListener('DOMContentLoaded', async () => {
           actOpenWhatsappBtn.disabled = true;
           actOpenWhatsappBtn.removeAttribute('data-whats-link');
           actOpenWhatsappBtn.title = 'Cliente sem WhatsApp válido (com DDD)';
+        }
+
+        // WhatsApp Lembrar PIX & Avisar Download inteligente
+        if (canOpen && cidWa) {
+          const isSales = isSalesModeEnabled();
+          const stats = isSales ? computeSalesMiniStatsForClient(cidWa) : { pendingProof: 0, pendingBalanceRounds: 0, approvedPhotos: 0, totalBalanceCents: 0 };
+
+          if (actWhatsappPixBtn) {
+            const hasPendingPayment = isSales && (stats.pendingProof > 0 || stats.pendingBalanceRounds > 0);
+            if (hasPendingPayment) {
+              const balTxt = stats.totalBalanceCents > 0 ? ` no valor de R$ ${(stats.totalBalanceCents / 100).toFixed(2).replace('.', ',')}` : '';
+              const pixKeyTxt = salesConfigCache?.pix_key ? `\nChave PIX: ${salesConfigCache.pix_key}${salesConfigCache?.pix_holder_name ? ` (${salesConfigCache.pix_holder_name})` : ''}` : '';
+              const pixMsg = `Olá, ${clientLabel}! Aqui é o fotógrafo da galeria "${gallery?.nome_projeto || ''}".\n\nLembramos que o pagamento da sua seleção de fotos${balTxt} ainda está pendente.${pixKeyTxt}\n\nVocê pode conferir o resumo e enviar o comprovante diretamente pelo seu link:\n${linkWa}`;
+              actWhatsappPixBtn.classList.remove('hidden');
+              actWhatsappPixBtn.style.display = 'inline-flex';
+              actWhatsappPixBtn.setAttribute('data-whats-link', `https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(pixMsg)}`);
+            } else {
+              actWhatsappPixBtn.classList.add('hidden');
+              actWhatsappPixBtn.style.display = 'none';
+              actWhatsappPixBtn.removeAttribute('data-whats-link');
+            }
+          }
+
+          if (actWhatsappDownloadBtn) {
+            if (stats.approvedPhotos > 0) {
+              const dlMsg = `Olá, ${clientLabel}! 🎉 Suas fotos da galeria "${gallery?.nome_projeto || ''}" foram aprovadas e estão liberadas para download em alta resolução sem marca d'água!\n\nAcesse seu link direto para baixar agora:\n${linkWa}`;
+              actWhatsappDownloadBtn.classList.remove('hidden');
+              actWhatsappDownloadBtn.style.display = 'inline-flex';
+              actWhatsappDownloadBtn.setAttribute('data-whats-link', `https://wa.me/${encodeURIComponent(wd)}?text=${encodeURIComponent(dlMsg)}`);
+            } else {
+              actWhatsappDownloadBtn.classList.add('hidden');
+              actWhatsappDownloadBtn.style.display = 'none';
+              actWhatsappDownloadBtn.removeAttribute('data-whats-link');
+            }
+          }
+        } else {
+          if (actWhatsappPixBtn) {
+            actWhatsappPixBtn.classList.add('hidden');
+            actWhatsappPixBtn.style.display = 'none';
+            actWhatsappPixBtn.removeAttribute('data-whats-link');
+          }
+          if (actWhatsappDownloadBtn) {
+            actWhatsappDownloadBtn.classList.add('hidden');
+            actWhatsappDownloadBtn.style.display = 'none';
+            actWhatsappDownloadBtn.removeAttribute('data-whats-link');
+          }
         }
       };
       if (cidWa) {
@@ -7543,6 +7593,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const url = String(actOpenWhatsappBtn.getAttribute('data-whats-link') || '').trim();
     if (!url) {
       toast('Este cliente não tem WhatsApp válido cadastrado.', { kind: 'warn', title: 'WhatsApp cliente' });
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  });
+  actWhatsappPixBtn?.addEventListener('click', () => {
+    const url = String(actWhatsappPixBtn.getAttribute('data-whats-link') || '').trim();
+    if (!url) {
+      toast('Este cliente não tem WhatsApp válido para lembrete de PIX.', { kind: 'warn', title: 'Lembrar PIX' });
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  });
+  actWhatsappDownloadBtn?.addEventListener('click', () => {
+    const url = String(actWhatsappDownloadBtn.getAttribute('data-whats-link') || '').trim();
+    if (!url) {
+      toast('Este cliente não tem WhatsApp válido para aviso de download.', { kind: 'warn', title: 'Avisar Download' });
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');

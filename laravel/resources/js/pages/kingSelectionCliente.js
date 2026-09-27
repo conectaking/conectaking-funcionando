@@ -1,4 +1,5 @@
 /** King Selection — Vite entry */
+import '../vendor-globals.js';
 import '@mod/js/ck-csrf.js';
 import '@css/pages/kingSelectionCliente.css';
 import '@mod/kingSelectionCliente.js';

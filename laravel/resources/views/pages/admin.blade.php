@@ -24,6 +24,7 @@
                 <a href="#" class="nav-link" data-target="users-pane"><i class="fas fa-users"></i> <span>Gerenciar Usuários</span></a>
                 <a href="#" class="nav-link" data-target="codes-pane"><i class="fas fa-key"></i> <span>Gerenciar Códigos</span></a>
                 <a href="#" class="nav-link" data-target="branding-pane"><i class="fas fa-image"></i> <span>Logomarca padrão</span></a>
+                <a href="#" class="nav-link" data-target="r2-pane"><i class="fas fa-cloud"></i> <span>Armazenamento R2</span></a>
                 <a href="/admin-devocionais-365" class="nav-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
                 <a href="/admin-devocionais-365#prosperidade" class="nav-link"><i class="fas fa-moon"></i> <span>Prosperidade antes de dormir</span></a>
             </nav>
@@ -473,6 +474,128 @@
                     <i class="fas fa-save"></i> Salvar logomarca padrão
                 </button>
                 <span class="ck-ad-347424" id="default-branding-message"></span>
+            </div>
+        </section>
+
+        <section id="r2-pane" class="content-pane">
+            <div class="overview-header-flex">
+                <div>
+                    <h2><i class="fas fa-cloud"></i> Armazenamento Cloudflare R2</h2>
+                    <p class="ck-text-dark-09" style="margin-top:6px;max-width:720px">
+                        Painel exclusivo de administração. Compare todos os projetos do King Selection com os arquivos no bucket do Cloudflare R2, identifique projetos excluídos e remova fotos órfãs para liberar espaço.
+                    </p>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" class="btn btn-secondary ck-btn-md" id="ks-r2-refresh">
+                        <i class="fas fa-sync-alt"></i> Atualizar inventário
+                    </button>
+                    <button type="button" class="btn btn-secondary ck-btn-md" id="btn-cleanup-r2-dry">
+                        <i class="fas fa-search"></i> Verificar órfãos
+                    </button>
+                    <button type="button" class="btn btn-danger ck-btn-md" id="btn-cleanup-r2">
+                        <i class="fas fa-broom"></i> Limpar R2 (só órfãos)
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-top:18px" id="ks-r2-summary">
+                <div class="stat-card">
+                    <span class="stat-label">Arquivos no R2</span>
+                    <span class="stat-value" id="ks-r2-stat-total">—</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Tamanho total</span>
+                    <span class="stat-value" id="ks-r2-stat-size">—</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Referenciados no BD</span>
+                    <span class="stat-value" id="ks-r2-stat-ref">—</span>
+                </div>
+                <div class="stat-card" style="border-left:4px solid #f59e0b">
+                    <span class="stat-label">Órfãos no R2</span>
+                    <span class="stat-value" id="ks-r2-stat-orphans" style="color:#f59e0b">—</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Projetos com fotos</span>
+                    <span class="stat-value" id="ks-r2-stat-projects">—</span>
+                </div>
+                <div class="stat-card" style="border-left:4px solid #ef4444">
+                    <span class="stat-label">Pastas de excluídos</span>
+                    <span class="stat-value" id="ks-r2-stat-deleted" style="color:#ef4444">—</span>
+                </div>
+            </div>
+
+            <p class="ck-hint" id="ks-r2-generated" style="margin-top:12px">
+                Clique em «Atualizar inventário» para carregar pastas, datas e comparação com o banco de dados.
+            </p>
+            <div class="ck-hidden" id="ks-r2-loading" style="margin-top:10px;color:#f59e0b;font-weight:600">
+                <i class="fas fa-spinner fa-spin"></i> Lendo arquivos no Cloudflare R2… pode levar alguns instantes.
+            </div>
+
+            <div style="margin-top:28px">
+                <h3 style="font-weight:800;margin-bottom:6px">Projetos Ativos (King Selection × R2)</h3>
+                <div class="table-container">
+                    <table class="table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Projeto</th>
+                                <th>ID</th>
+                                <th>Fotos no BD</th>
+                                <th>Arquivos R2</th>
+                                <th>Órfãos</th>
+                                <th>Tamanho R2</th>
+                                <th>Último upload</th>
+                                <th>Pastas</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ks-r2-projects-tbody">
+                            <tr><td colspan="9" class="table-empty-state" style="padding:24px;text-align:center">Nenhum dado carregado. Clique em «Atualizar inventário».</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="margin-top:32px">
+                <h3 style="font-weight:800;margin-bottom:6px;color:#ef4444">Pastas órfãs (Projetos já excluídos no King Selection)</h3>
+                <p class="ck-hint" style="margin-bottom:8px">Pastas que ainda ocupam espaço no R2 mas cujo projeto já foi apagado do banco.</p>
+                <div class="table-container">
+                    <table class="table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Pasta R2</th>
+                                <th>Arquivos</th>
+                                <th>Tamanho</th>
+                                <th>Último upload</th>
+                                <th>Subpastas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ks-r2-orphan-folders-tbody">
+                            <tr><td colspan="5" class="table-empty-state" style="padding:20px;text-align:center">—</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="margin-top:32px">
+                <h3 style="font-weight:800;margin-bottom:6px">Amostra de Arquivos Órfãos</h3>
+                <p class="ck-hint" style="margin-bottom:8px">Use «Limpar R2» para apagar todos os arquivos órfãos com segurança.</p>
+                <div class="table-container" style="max-height:360px;overflow-y:auto">
+                    <table class="table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Arquivo</th>
+                                <th>Pasta / projeto</th>
+                                <th>Subpasta</th>
+                                <th>Tamanho</th>
+                                <th>Data no R2</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ks-r2-orphan-files-tbody">
+                            <tr><td colspan="5" class="table-empty-state" style="padding:20px;text-align:center">—</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
