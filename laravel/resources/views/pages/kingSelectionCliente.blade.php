@@ -499,12 +499,17 @@
           <i class="fas fa-copy"></i> Clique aqui para copiar o PIX
         </button>
         <button type="button" class="ks-btn ks-locked-wa-paid" id="ks-locked-pix-whats" style="width:100%;justify-content:center;margin-top:8px">
-          <i class="fab fa-whatsapp"></i> J paguei . avisar no WhatsApp
+          <i class="fab fa-whatsapp"></i> Avisar no WhatsApp
         </button>
-        <button type="button" class="ks-btn ks-locked-wa-pending" id="ks-locked-pix-whats-pending" style="width:100%;justify-content:center;margin-top:8px">
-          <i class="fab fa-whatsapp"></i> Ainda vou pagar . avisar no WhatsApp
+        <button type="button" class="ks-btn ks-locked-wa-pending ks-hidden" id="ks-locked-pix-whats-pending" style="width:100%;justify-content:center;margin-top:8px">
+          <i class="fab fa-whatsapp"></i> Ainda vou pagar · avisar no WhatsApp
         </button>
-        <div class="ks-locked-pix-note">Faz o pagamento das suas fotos para desbloquear e avise o fotógrafo.</div>
+        <div id="ks-locked-pix-switch-wrap" class="ks-hidden" style="text-align:center;margin-top:6px">
+          <button type="button" id="ks-locked-pix-switch-btn" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;text-decoration:underline">
+            Mudar mensagem no WhatsApp
+          </button>
+        </div>
+        <div class="ks-locked-pix-note">Faça o pagamento das suas fotos para desbloquear e avise o fotógrafo.</div>
       </div>
       <hr />
       <div class="ks-tagline">Com carinho,</div>

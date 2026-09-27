@@ -95,6 +95,9 @@ class KingSelectionNotificationService
         $secret = trim((string) env('CK_SENTRY_WEBHOOK_SECRET', ''));
         $payload = json_encode(array_merge([
             'type'        => 'king_selection_finalized',
+            'event'       => 'king_selection_finalized',
+            'level'       => 'INFO',
+            'title'       => '📸 Seleção Concluída no King Selection!',
             'message'     => $message,
             'owner_phone' => $ownerPhone,
             'owner_slug'  => $ownerSlug,

@@ -137,6 +137,18 @@ if (secret && got !== secret && !looksSentry) {
   throw new Error('secret inválido');
 }
 
+// Notificação de negócio (seleção concluída, lead, etc.): não marcar como ERROR nem anexar Sentry
+const isAppNotification = body.type === 'king_selection_finalized' || body.type === 'king_forms_new_lead' || body.event === 'king_selection_finalized' || String(body.level || '').toUpperCase() === 'INFO';
+if (isAppNotification && body.message) {
+  return [{ json: {
+    outMessage: String(body.message),
+    chatId: String($env.ADMIN_TELEGRAM_ID || '78792434'),
+    level: 'INFO',
+    project: body.project || 'conectaking',
+    msg: String(body.message).slice(0, 200),
+  }}];
+}
+
 // Sentry Issue Alert webhook OR OpsAlert custom payload
 let title = body.action || body.title || 'alerta';
 let issue = body.data?.issue || body.issue || body;

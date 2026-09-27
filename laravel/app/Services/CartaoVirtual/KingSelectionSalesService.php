@@ -58,6 +58,15 @@ class KingSelectionSalesService
             $sets[] = "{$col} = ?";
             $params[] = $cast($body[$col]);
         }
+        if (! empty($body['activate_sales_mode']) || ! empty($body['set_access_mode_paid'])) {
+            if (SchemaMeta::hasColumn('king_galleries', 'access_mode')) {
+                $sets[] = "access_mode = 'paid_event_photos'";
+            }
+            if (SchemaMeta::hasColumn('king_galleries', 'allow_self_signup')) {
+                $sets[] = "allow_self_signup = true";
+            }
+        }
+
         if ($sets !== []) {
             $params[] = $galleryId;
             DB::update('UPDATE king_galleries SET '.implode(', ', $sets).', updated_at = NOW() WHERE id = ?', $params);
@@ -67,10 +76,17 @@ class KingSelectionSalesService
             $this->syncPackages($galleryId, $body['packages']);
         }
 
+        $galleryRow = DB::selectOne(
+            'SELECT access_mode, allow_self_signup FROM king_galleries WHERE id = ?',
+            [$galleryId]
+        );
+
         return ['status' => 200, 'body' => [
             'success' => true,
             'salesConfig' => $this->loadSalesConfig($galleryId),
             'packages' => $this->listPackages($galleryId),
+            'access_mode' => $galleryRow->access_mode ?? 'paid_event_photos',
+            'allow_self_signup' => (bool) ($galleryRow->allow_self_signup ?? true),
         ]];
     }
 

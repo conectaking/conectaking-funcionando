@@ -766,6 +766,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const salesEditedFileInput = document.getElementById('ks-sales-edited-file');
   const salesApprovalsWrap = document.getElementById('ks-sales-approvals');
   const salesSaveBtn = document.getElementById('ks-sales-save');
+  const salesActivateBtn = document.getElementById('ks-sales-activate-btn');
   const salesDashReceived = document.getElementById('ks-sales-dash-received');
   const salesDashMissing = document.getElementById('ks-sales-dash-missing');
   const salesDashCourtesy = document.getElementById('ks-sales-dash-courtesy');
@@ -4661,9 +4662,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function normalizeLegacyMoneyCents(v) {
-    const n = Math.max(0, parseInt(v, 10) || 0);
-    if (n > 0 && n < 1000) return n * 100;
-    return n;
+    return Math.max(0, parseInt(v, 10) || 0);
   }
 
   /**
@@ -5147,7 +5146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         q: Math.max(1, parseInt(p.photo_qty, 10) || 1),
         v: normalizeLegacyMoneyCents(p.price_cents || 0)
       }))
-      .filter((p) => p.v > 0);
+      .filter((p) => p.v >= 0);
     if (!packs.length) return mode === 'packages_only' ? 0 : (qty * unit);
     packs.sort((a, b) => a.q - b.q);
     const exact = packs.find((p) => p.q === qty);
@@ -5580,7 +5579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         sort_order: idx + 1,
         active: true
       };
-    }).filter((x) => x.photo_qty > 0 && x.price_cents > 0);
+    }).filter((x) => x.photo_qty > 0 && x.price_cents >= 0);
   }
 
   async function loadSalesConfig() {
@@ -7900,13 +7899,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadSalesDetail().catch((e) => showError(e?.message || 'Erro ao carregar detalhe de vendas'));
   });
 
+  salesActivateBtn?.addEventListener('click', async () => {
+    try {
+      salesActivateBtn.disabled = true;
+      const res = await fetch(`${API_URL}/api/king-selection/galleries/${galleryId}/sales-config`, {
+        method: 'PUT',
+        headers: HEADERS,
+        body: JSON.stringify({ activate_sales_mode: true })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Erro ao ativar');
+      if (data.access_mode) gallery.access_mode = data.access_mode;
+      else gallery.access_mode = 'paid_event_photos';
+      if (data.allow_self_signup != null) gallery.allow_self_signup = data.allow_self_signup;
+      else gallery.allow_self_signup = true;
+      const r = document.querySelector('input[name="access_mode"][value="paid_event_photos"]');
+      if (r) r.checked = true;
+      await refreshSalesUi();
+      toast('Modo Fotos Vendidas ativado com sucesso!', { kind: 'ok', title: 'Vendas' });
+    } catch (e) {
+      showError(e?.message || 'Erro ao ativar modo Fotos Vendidas');
+    } finally {
+      if (salesActivateBtn) salesActivateBtn.disabled = false;
+    }
+  });
+
   salesSaveBtn?.addEventListener('click', async () => {
     try {
-      if (!isSalesModeEnabled()) {
-        throw new Error('Ative o modo "Fotos vendidas por evento" em Acesso e privacidade antes de salvar.');
-      }
       salesSaveBtn.disabled = true;
+      const needActivate = !isSalesModeEnabled();
       const payload = {
+        activate_sales_mode: needActivate,
         pix_enabled: !!salesPixEnabled?.checked,
         pix_key: String(salesPixKey?.value || '').trim() || null,
         pix_holder_name: String(salesPixHolder?.value || '').trim() || null,
@@ -7923,8 +7946,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Erro ao salvar configuração comercial');
+      if (data.access_mode) gallery.access_mode = data.access_mode;
+      else if (needActivate) gallery.access_mode = 'paid_event_photos';
+      if (data.allow_self_signup != null) gallery.allow_self_signup = data.allow_self_signup;
+      else if (needActivate) gallery.allow_self_signup = true;
+      if (needActivate) {
+        const r = document.querySelector('input[name="access_mode"][value="paid_event_photos"]');
+        if (r) r.checked = true;
+      }
       await refreshSalesUi();
-      toast('Configuração comercial salva.', { kind: 'ok', title: 'Vendas' });
+      toast(needActivate ? 'Modo Fotos Vendidas ativado e configuração comercial salva!' : 'Configuração comercial salva.', { kind: 'ok', title: 'Vendas' });
     } catch (e) {
       showError(e?.message || 'Erro ao salvar configuração comercial');
     } finally {

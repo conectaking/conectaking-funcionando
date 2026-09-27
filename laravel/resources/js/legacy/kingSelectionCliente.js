@@ -377,9 +377,7 @@
   }
 
   function normalizeLegacyMoneyCents(v) {
-    const n = Math.max(0, parseInt(v, 10) || 0);
-    if (n > 0 && n < 1000) return n * 100;
-    return n;
+    return Math.max(0, parseInt(v, 10) || 0);
   }
 
   /** Alinha com ksBillablePhotoCountAfterPromo no servidor (cupom validado + janela ok). */
@@ -401,7 +399,7 @@
         price: normalizeLegacyMoneyCents(p?.price_cents || 0),
         name: String(p?.name || '')
       }))
-      .filter((p) => p.price > 0)
+      .filter((p) => p.price >= 0)
       .sort((a, b) => a.qty - b.qty);
     if (!sorted.length) return Math.max(0, parseInt(unitCents, 10) || 0) * qty;
     const exact = sorted.find((p) => p.qty === qty);
@@ -3036,6 +3034,8 @@
     const copyBtn = $('ks-locked-pix-copy');
     const waBtn = $('ks-locked-pix-whats');
     const waPendingBtn = $('ks-locked-pix-whats-pending');
+    const switchWrap = $('ks-locked-pix-switch-wrap');
+    const switchBtn = $('ks-locked-pix-switch-btn');
     const openGalleryBtn = $('ks-locked-open-gallery');
     const pixKey = String(paymentPix?.pix_key || '').trim();
     const pixHolder = String(paymentPix?.pix_holder_name || '').trim();
@@ -3044,17 +3044,42 @@
     if (holder) holder.textContent = pixHolder || 'Não informado';
     if (keyEl) keyEl.textContent = pixKey || '—';
     if (copyBtn) copyBtn.setAttribute('data-pix-key', pixKey || '');
-    if (waBtn) {
-      const waPaidMsg = `Olá! Acabei de enviar minha seleção na galeria "${state.gallery?.nome_projeto || ''}" e já fiz o pagamento via PIX. Pode confirmar, por favor?`;
-      const waLink = buildSupportWhatsLink(waPaidMsg);
-      waBtn.classList.toggle('ks-hidden', !waLink);
-      waBtn.setAttribute('data-whats-link', waLink || '');
+    if (waPendingBtn) waPendingBtn.classList.add('ks-hidden');
+
+    const isPaid = state.lastPaidChoice === 'yes' || state.lastProofUploaded;
+    let currentWaModeIsPaid = isPaid;
+
+    function applyWaButtonMode(paid) {
+      currentWaModeIsPaid = paid;
+      if (waBtn) {
+        const projName = state.gallery?.nome_projeto || '';
+        const msgText = paid
+          ? `Olá! Acabei de enviar minha seleção na galeria "${projName}" e já fiz o pagamento via PIX. Segue comprovante!`
+          : `Olá! Acabei de enviar minha seleção na galeria "${projName}" e vou realizar o pagamento via PIX em breve.`;
+        const link = buildSupportWhatsLink(msgText);
+        waBtn.classList.toggle('ks-hidden', !link);
+        waBtn.setAttribute('data-whats-link', link || '');
+        waBtn.innerHTML = paid
+          ? '<i class="fab fa-whatsapp"></i> Já fiz o PIX · Enviar comprovante'
+          : '<i class="fab fa-whatsapp"></i> Falar com fotógrafo no WhatsApp';
+        waBtn.className = paid
+          ? 'ks-btn ks-locked-wa-paid'
+          : 'ks-btn ks-locked-wa-pending';
+      }
+      if (switchWrap && switchBtn) {
+        switchWrap.classList.remove('ks-hidden');
+        switchBtn.textContent = paid
+          ? 'Mudar para: "Ainda vou pagar"'
+          : 'Mudar para: "Já fiz o PIX (enviar comprovante)"';
+      }
     }
-    if (waPendingBtn) {
-      const waPendingMsg = `Olá! Acabei de enviar minha seleção na galeria "${state.gallery?.nome_projeto || ''}" e vou realizar o pagamento via PIX em breve.`;
-      const waPendingLink = buildSupportWhatsLink(waPendingMsg);
-      waPendingBtn.classList.toggle('ks-hidden', !waPendingLink);
-      waPendingBtn.setAttribute('data-whats-link', waPendingLink || '');
+
+    applyWaButtonMode(isPaid);
+    if (switchBtn) {
+      switchBtn.onclick = (e) => {
+        e.preventDefault();
+        applyWaButtonMode(!currentWaModeIsPaid);
+      };
     }
     if (openGalleryBtn) {
       openGalleryBtn.classList.toggle('ks-hidden', !state.salesModeActive);
@@ -4531,6 +4556,8 @@
     const fb = (fbEl && fbEl.value) ? String(fbEl.value).trim() : '';
     const paidChoice = String($('ks-confirm-paid')?.value || 'no').toLowerCase();
     const proofFile = $('ks-confirm-proof-file')?.files?.[0] || null;
+    state.lastPaidChoice = paidChoice;
+    state.lastProofUploaded = !!proofFile;
     const payload = { slug, feedback: fb || undefined };
     if (confirmStepNeedsContactFields()) {
       const nome = ($('ks-confirm-nome')?.value || '').trim();

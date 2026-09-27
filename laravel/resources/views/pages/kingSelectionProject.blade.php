@@ -524,8 +524,11 @@
           </div>
 
           <div id="ks-sales-disabled-note" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 hidden">
-            Este painel está oculto porque a galeria não está no modo <b>Fotos vendidas</b>.
-            Vá em <b>Acesso e privacidade</b>, marque essa modalidade e clique em <b>Salvar</b>.
+            <div class="font-bold flex items-center gap-2"><i class="fas fa-info-circle text-amber-600"></i> Modo Fotos Vendidas não está ativo</div>
+            <div class="text-xs text-amber-800 mt-1">Para configurar pacotes e PIX para seus clientes, ative o modo <b>Fotos vendidas por evento</b>.</div>
+            <button type="button" class="ks-btn ks-btn-primary mt-3" id="ks-sales-activate-btn">
+              <i class="fas fa-bolt"></i> Ativar modo Fotos Vendidas agora
+            </button>
           </div>
 
           <div id="ks-sales-wrap" class="mt-4 space-y-4">
