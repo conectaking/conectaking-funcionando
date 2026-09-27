@@ -90,6 +90,30 @@ class KingSelectionZipService
                 }
                 $items[] = ['photo_id' => $id, 'approx_bytes' => $this->approxBytes()];
             }
+        } elseif ($accessMode === 'private') {
+            $allowDl = ! empty($g->allow_download);
+            $approvedBuilt = $this->resolvePaidZipRows($payload, $wantedIds, $galleryId);
+            $hasApprovals = ($approvedBuilt['status'] ?? 500) === 200 && ! empty($approvedBuilt['byPhoto']);
+
+            if (! $allowDl && ! $hasApprovals) {
+                return ['status' => 403, 'body' => ['message' => 'O download não está liberado nesta galeria.']];
+            }
+
+            $rows = $this->photosByIds($galleryId, $wantedIds);
+            $byId = [];
+            foreach ($rows as $r) {
+                $byId[(int) $r->id] = $r;
+            }
+            foreach ($wantedIds as $id) {
+                $r = $byId[$id] ?? null;
+                if (! $r || trim((string) ($r->file_path ?? '')) === '') {
+                    continue;
+                }
+                if (! $allowDl && ! isset($approvedBuilt['byPhoto'][$id])) {
+                    continue;
+                }
+                $items[] = ['photo_id' => $id, 'approx_bytes' => $this->approxBytes()];
+            }
         } else {
             return ['status' => 403, 'body' => ['message' => 'Plano de ZIP não disponível neste modo de galeria.']];
         }
@@ -119,6 +143,9 @@ class KingSelectionZipService
      */
     public function downloadZip(array $payload, array $body, ?string $ip, ?string $userAgent): array
     {
+        @set_time_limit(300);
+        @ini_set('memory_limit', '1024M');
+
         $slug = trim((string) ($body['slug'] ?? ''));
         if ($slug !== '' && $slug !== (string) ($payload['slug'] ?? '')) {
             return ['status' => 403, 'body' => ['message' => 'Sem permissão para esta galeria.']];
@@ -236,6 +263,77 @@ class KingSelectionZipService
                 'status' => 200,
                 'zip_path' => $builtZip['path'],
                 'filename' => $zipNameBase.'_galeria'.$partLabel.'.zip',
+                'entries' => $builtZip['entries'],
+            ];
+        }
+
+        if ($accessMode === 'private') {
+            $cid = (int) ($payload['clientId'] ?? 0);
+            if ($cid < 1) {
+                $ctx = KsAccess::parseClientContext($payload);
+                $cid = (int) ($ctx['cid'] ?? 0);
+            }
+            $allowDl = ! empty($g->allow_download);
+            $approvedBuilt = $this->resolvePaidZipRows($payload, $wantedIds, $galleryId);
+            $hasApprovals = ($approvedBuilt['status'] ?? 500) === 200 && ! empty($approvedBuilt['byPhoto']);
+
+            if (! $allowDl && ! $hasApprovals) {
+                return ['status' => 403, 'body' => ['message' => 'O download não está liberado nesta galeria.']];
+            }
+
+            if (! $this->enforceDownloadRateLimit($galleryId, $cid > 0 ? $cid : 1, $ip)) {
+                return ['status' => 429, 'body' => ['message' => 'Muitas tentativas de download. Tente novamente em instantes.']];
+            }
+
+            $rows = $this->photosByIds($galleryId, $wantedIds);
+            if ($rows === []) {
+                return ['status' => 404, 'body' => ['message' => 'Nenhuma foto encontrada para o ZIP.']];
+            }
+
+            $appendable = [];
+            foreach ($rows as $photo) {
+                $pid = (int) $photo->id;
+                $appr = $approvedBuilt['byPhoto'][$pid] ?? null;
+                $sourcePath = '';
+                if ($appr) {
+                    $mode = $this->sales->normalizeDeliveryMode($appr->delivery_mode ?? null);
+                    if ($mode === 'edited' && trim((string) ($appr->edited_file_path ?? '')) !== '') {
+                        $sourcePath = trim((string) $appr->edited_file_path);
+                    }
+                }
+                if ($sourcePath === '') {
+                    if (! $allowDl && ! $appr) {
+                        continue;
+                    }
+                    $sourcePath = trim((string) ($photo->file_path ?? ''));
+                }
+                if ($sourcePath === '') {
+                    continue;
+                }
+                $appendable[] = [
+                    'photo_id' => $pid,
+                    'selection_batch' => $appr ? (int) ($appr->selection_batch ?? 0) : null,
+                    'original_name' => (string) ($photo->original_name ?? ''),
+                    'source_path' => $sourcePath,
+                ];
+            }
+
+            if ($appendable === []) {
+                return ['status' => 404, 'body' => ['message' => 'Nenhuma foto com arquivo disponível para o ZIP.']];
+            }
+
+            $builtZip = $this->buildZipFile($appendable);
+            if ($builtZip['entries'] < 1 || ($builtZip['path'] ?? '') === '') {
+                return ['status' => 404, 'body' => ['message' => 'Nenhuma foto com arquivo disponível para o ZIP.']];
+            }
+            if ($cid > 0) {
+                $this->auditZipDownloads($galleryId, $cid, $appendable, $ip, $userAgent);
+            }
+
+            return [
+                'status' => 200,
+                'zip_path' => $builtZip['path'],
+                'filename' => $zipNameBase.($hasApprovals ? '_aprovadas' : '_fotos').$partLabel.'.zip',
                 'entries' => $builtZip['entries'],
             ];
         }
@@ -402,7 +500,7 @@ class KingSelectionZipService
                     $allowed[$id] = true;
                 }
             }
-        } elseif ($cidJwt > 0) {
+        } elseif ($cidJwt > 0 || $promoResolveCid > 0 || $publicDlGate) {
             foreach (DB::select(
                 'SELECT id FROM king_photos WHERE gallery_id = ? ORDER BY "order" ASC NULLS LAST, id ASC',
                 [$galleryId]
@@ -426,6 +524,9 @@ class KingSelectionZipService
      */
     private function buildZipFile(array $appendable): array
     {
+        @set_time_limit(300);
+        @ini_set('memory_limit', '1024M');
+
         $tmp = tempnam(sys_get_temp_dir(), 'kszip');
         if ($tmp === false) {
             return ['path' => '', 'entries' => 0];
@@ -438,17 +539,29 @@ class KingSelectionZipService
         }
         $used = [];
         $entries = 0;
+        $tempFiles = [];
         foreach ($appendable as $item) {
             $buf = $this->media->readFileBuffer($item['source_path']);
             if ($buf === null || $buf === '') {
                 continue;
             }
             $fname = $this->uniqueZipName($item['original_name'], $item['photo_id'], $used);
-            $zip->addFromString($fname, $buf);
-            unset($buf);
+            $itemTmp = tempnam(sys_get_temp_dir(), 'ks_item_');
+            if ($itemTmp !== false) {
+                file_put_contents($itemTmp, $buf);
+                unset($buf);
+                $zip->addFile($itemTmp, $fname);
+                $tempFiles[] = $itemTmp;
+            } else {
+                $zip->addFromString($fname, $buf);
+                unset($buf);
+            }
             $entries++;
         }
         $zip->close();
+        foreach ($tempFiles as $tf) {
+            @unlink($tf);
+        }
         if ($entries < 1 || ! is_file($zipPath)) {
             @unlink($zipPath);
 

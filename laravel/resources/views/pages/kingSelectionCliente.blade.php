@@ -322,11 +322,15 @@
                 <span id="ks-downloads-counter-text">0 selecionadas de 0 liberadas</span>
               </span>
               <button type="button" class="ks-btn" id="ks-downloads-select-none"><i class="fas fa-ban"></i> Limpar seleção</button>
-              <button type="button" class="ks-btn ks-dl-btn-selected" id="ks-downloads-download-selected" title="2 ou mais fotos: baixa em ZIP (um clique Salvar). Uma foto: download direto.">
-                <i class="fas fa-download"></i> Baixar selecionadas (ZIP)
+              <button type="button" class="ks-btn ks-dl-btn-selected" id="ks-downloads-download-selected" title="Baixar fotos selecionadas">
+                <i class="fas fa-download"></i> Baixar selecionadas
               </button>
-              <button type="button" class="ks-btn ks-dl-btn-all" id="ks-downloads-download-all"><i class="fas fa-download"></i> Baixar todas</button>
-              <button type="button" class="ks-btn ks-dl-btn-zip" id="ks-downloads-download-zip"><i class="fas fa-file-archive"></i> Baixar todas em ZIP</button>
+              <button type="button" class="ks-btn ks-dl-btn-all" id="ks-downloads-download-all" title="Baixar todas as fotos liberadas uma por uma">
+                <i class="fas fa-images"></i> Baixar todas (uma a uma)
+              </button>
+              <button type="button" class="ks-btn ks-dl-btn-zip" id="ks-downloads-download-zip" title="Baixar todas as fotos liberadas em arquivo ZIP">
+                <i class="fas fa-file-archive"></i> Baixar todas em ZIP
+              </button>
             </div>
           </div>
           <div id="ks-downloads-grid" class="ks-grid ck-mt-10"></div>

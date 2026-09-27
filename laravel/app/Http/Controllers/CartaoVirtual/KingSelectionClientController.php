@@ -212,9 +212,14 @@ class KingSelectionClientController extends Controller
                 return response($r['message'] ?? 'erro', $r['status'])->header('X-Conecta-Engine', 'laravel');
             }
 
+            $fname = preg_replace('/[\/\\\\:*?"<>|]+/', '-', trim((string) ($r['original_name'] ?? ''))) ?: ('foto-'.$photoId.'.jpg');
+            if (! preg_match('/\.[a-z0-9]{2,5}$/i', $fname)) {
+                $fname .= '.jpg';
+            }
+
             return response($r['binary'], 200)
                 ->header('Content-Type', $r['contentType'] ?? 'image/jpeg')
-                ->header('Content-Disposition', 'attachment; filename="foto-'.$photoId.'.jpg"')
+                ->header('Content-Disposition', 'attachment; filename="'.$fname.'"')
                 ->header('Cross-Origin-Resource-Policy', 'cross-origin')
                 ->header('X-Conecta-Engine', 'laravel');
         }

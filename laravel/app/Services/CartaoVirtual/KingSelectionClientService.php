@@ -609,23 +609,29 @@ class KingSelectionClientService
 
         // Reusa fetch via MediaService: path interno; se galeria não for public, bufferFromPath ainda funciona
         $path = null;
+        $origName = null;
         try {
             $row = DB::selectOne(
-                'SELECT file_path, edited_file_path FROM king_photos WHERE id = ? AND gallery_id = ? LIMIT 1',
+                'SELECT file_path, edited_file_path, original_name FROM king_photos WHERE id = ? AND gallery_id = ? LIMIT 1',
                 [$photoId, $galleryId]
             );
             $edited = trim((string) ($row->edited_file_path ?? ''));
             $fp = trim((string) ($row->file_path ?? ''));
+            $origName = trim((string) ($row->original_name ?? ''));
             $path = $edited !== '' ? $edited : ($fp !== '' ? $fp : null);
         } catch (\Throwable) {
-            $row = DB::selectOne('SELECT file_path FROM king_photos WHERE id = ? AND gallery_id = ? LIMIT 1', [$photoId, $galleryId]);
+            $row = DB::selectOne('SELECT file_path, original_name FROM king_photos WHERE id = ? AND gallery_id = ? LIMIT 1', [$photoId, $galleryId]);
             $path = trim((string) ($row->file_path ?? '')) ?: null;
+            $origName = trim((string) ($row->original_name ?? ''));
         }
         if (!$path) {
             return ['status' => 404, 'message' => 'Não encontrado'];
         }
 
-        return $this->media->previewFromStoragePath($path, $thumbOrMax, $this->watermarkOpts($payload, $galleryId));
+        $res = $this->media->previewFromStoragePath($path, $thumbOrMax, $this->watermarkOpts($payload, $galleryId));
+        $res['original_name'] = $origName ?: ('foto-'.$photoId.'.jpg');
+
+        return $res;
     }
 
     /**

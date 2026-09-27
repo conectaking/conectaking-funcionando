@@ -1662,15 +1662,29 @@
         }
       }
 
-      await downloadApprovedZipParts(normalized, ids, {
-        dirHandle: zipDir,
-        onProgress: (n, total) => {
-          setDownloadsProgress(n, total, true, 'zip');
-          ui?.onProgress?.(n, total, 'zip');
-        }
-      });
-      ui?.onDone?.(partCount, ids.length, 'zip');
-      return { mode: 'zip', parts: partCount };
+      try {
+        await downloadApprovedZipParts(normalized, ids, {
+          dirHandle: zipDir,
+          onProgress: (n, total) => {
+            setDownloadsProgress(n, total, true, 'zip');
+            ui?.onProgress?.(n, total, 'zip');
+          }
+        });
+        ui?.onDone?.(partCount, ids.length, 'zip');
+        return { mode: 'zip', parts: partCount };
+      } catch (zipErr) {
+        console.warn('Erro ao gerar ZIP, iniciando fallback sequencial:', zipErr);
+        toast('Não foi possível gerar o ZIP completo. Baixando fotos individualmente...', 'warn');
+        await downloadPhotosSequentially(ids, {
+          forceSequential: true,
+          onProgress: (n, total) => {
+            setDownloadsProgress(n, total, true, 'all');
+            ui?.onProgress?.(n, total, 'all');
+          }
+        });
+        ui?.onDone?.(1, ids.length, 'all');
+        return { mode: 'sequential', count: ids.length };
+      }
     } finally {
       _zipDownloadBusy = false;
     }
@@ -1704,6 +1718,7 @@
     const res = await fetch(`${API}/api/king-selection/client/download-zip-plan`, {
       method: 'POST',
       headers: authHeaders(true),
+      credentials: 'include',
       body: JSON.stringify({ slug, photo_ids: ids })
     });
     let data = {};
@@ -1722,6 +1737,7 @@
       const res = await fetch(`${API}/api/king-selection/client/download-zip`, {
         method: 'POST',
         headers: authHeaders(true),
+        credentials: 'include',
         body: JSON.stringify({
           slug,
           photo_ids: photoIds,
@@ -1832,7 +1848,7 @@
 
   async function downloadPhotosSequentially(photoIds, opts) {
     const ids = Array.isArray(photoIds) ? photoIds.map((x) => parseInt(x, 10)).filter(Boolean) : [];
-    if (shouldPreferZipDownload(ids.length)) {
+    if (!opts?.forceSequential && shouldPreferZipDownload(ids.length)) {
       return downloadAllPhotosSmart(ids, opts);
     }
     if (publicMustRegisterToDownload()) {
@@ -1849,33 +1865,45 @@
     for (let i = 0; i < ids.length; i += 1) {
       const pid = ids[i];
       if (onProgress) onProgress(i + 1, ids.length);
-      const res = await fetch(previewDownloadUrl(pid), {
-        method: 'GET',
-        headers: authHeaders(false)
-      });
-      let dataErr = {};
-      if (!res.ok) {
-        dataErr = await res.json().catch(() => ({}));
-      }
-      if (handleClientUnauthorized(res, dataErr)) return;
-      if (!res.ok) {
-        throw new Error(dataErr?.message || `Falha ao baixar foto #${pid}.`);
-      }
-      const blob = await res.blob();
-      const fromHeader = parseFilenameFromContentDisposition(res.headers.get('content-disposition'));
       const fallback = String(approvedMap.get(pid) || `foto-${pid}.jpg`).trim() || `foto-${pid}.jpg`;
-      const filename = fromHeader || fallback;
-      const objUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = objUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(objUrl), 5000);
-      // Pequeno intervalo para o navegador processar os downloads.
+      try {
+        const res = await fetch(previewDownloadUrl(pid), {
+          method: 'GET',
+          headers: authHeaders(false),
+          credentials: 'include'
+        });
+        let dataErr = {};
+        if (!res.ok) {
+          dataErr = await res.json().catch(() => ({}));
+        }
+        if (handleClientUnauthorized(res, dataErr)) return;
+        if (!res.ok) {
+          throw new Error(dataErr?.message || `Falha ao baixar foto #${pid}.`);
+        }
+        const blob = await res.blob();
+        const fromHeader = parseFilenameFromContentDisposition(res.headers.get('content-disposition'));
+        const filename = fromHeader || fallback;
+        const objUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(objUrl), 10000);
+      } catch (errDirect) {
+        console.warn(`Tentando download direto via link para foto #${pid}:`, errDirect);
+        const aFallback = document.createElement('a');
+        aFallback.href = previewDownloadUrl(pid);
+        aFallback.target = '_blank';
+        aFallback.download = fallback;
+        document.body.appendChild(aFallback);
+        aFallback.click();
+        aFallback.remove();
+      }
+      // Intervalo de 650ms para evitar bloqueios de múltiplos downloads pelo navegador
       // eslint-disable-next-line no-await-in-loop
-      await new Promise((r) => setTimeout(r, 260));
+      await new Promise((r) => setTimeout(r, 650));
     }
   }
 
@@ -6244,34 +6272,28 @@
       const msgEl = $('ks-downloads-msg');
       const prevMsg = msgEl ? String(msgEl.textContent || '') : '';
       setDownloadsProgress(0, all.length, true, 'all');
-      if (msgEl) msgEl.textContent = `Baixando 0/${all.length}...`;
-      const out = await downloadAllPhotosSmart(all, {
-        onProgress: (n, total, mode) => {
-          setDownloadsProgress(n, total, true, mode === 'folder' ? 'all' : 'all');
+      if (msgEl) msgEl.textContent = `Iniciando download de 0/${all.length} foto(s)...`;
+      await downloadPhotosSequentially(all, {
+        forceSequential: true,
+        onProgress: (n, total) => {
+          setDownloadsProgress(n, total, true, 'all');
           if (msgEl) {
-            msgEl.textContent = mode === 'folder'
-              ? `Salvando ${n}/${total} na pasta...`
-              : `Baixando ${n}/${total}...`;
+            msgEl.textContent = `Baixando foto ${n}/${total}...`;
           }
         }
       });
-      if (out?.mode === 'zip') {
-        if (msgEl) msgEl.textContent = `ZIP em ${out.parts} parte(s) — ${all.length} foto(s).`;
-        toast(`Download em ${out.parts} ZIP(s) (${all.length} foto(s)).`, 'ok');
-      } else {
-        setDownloadsProgress(all.length, all.length, true, 'all');
-        if (msgEl) {
-          msgEl.textContent = `Concluído: ${all.length}/${all.length} download(s) iniciados.`;
-          setTimeout(() => {
-            if (msgEl) msgEl.textContent = prevMsg || msgEl.textContent;
-            setDownloadsProgress(0, 1, false);
-          }, 2200);
-        }
-        toast(`Download de todas iniciado (${all.length} foto(s)).`, 'ok');
+      setDownloadsProgress(all.length, all.length, true, 'all');
+      if (msgEl) {
+        msgEl.textContent = `Concluído: ${all.length}/${all.length} fotos baixadas individualmente.`;
+        setTimeout(() => {
+          if (msgEl) msgEl.textContent = prevMsg || msgEl.textContent;
+          setDownloadsProgress(0, 1, false);
+        }, 3200);
       }
+      toast(`Download concluído (${all.length} foto(s)).`, 'ok');
     } catch (e) {
       setDownloadsProgress(0, 1, false);
-      toast(e?.message || 'Erro ao baixar todas', 'err');
+      toast(e?.message || 'Erro ao baixar fotos', 'err');
     }
   });
   $('ks-downloads-download-zip')?.addEventListener('click', async () => {
