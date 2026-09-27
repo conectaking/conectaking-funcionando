@@ -1,0 +1,315 @@
+{
+  "id": "ckAgentTelegramIABiblia",
+  "name": "CK Agent Telegram IA biblia",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "tgTriggerBiblia",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1100,
+        400
+      ],
+      "webhookId": "ck-agent-telegram-biblia",
+      "credentials": {
+        "telegramApi": {
+          "id": "bibliaTelegramAccount",
+          "name": "Telegram Agente Bíblia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst msg = raw.message || {};\nconst adminId = String($env.ADMIN_TELEGRAM_ID || '0');\nconst senderId = String(msg.from?.id || '');\nconst chatId = String(msg.chat?.id || '');\nconst firstName = msg.from?.first_name || 'Irmão(ã)';\nconst text = String(msg.text || msg.caption || '').trim();\nconst fileId = msg.voice?.file_id || msg.audio?.file_id || msg.video_note?.file_id || null;\nconst hadVoice = !text && !!fileId;\nreturn [{ json: {\n  adminId, senderId, chatId, firstName,\n  text: text || (hadVoice ? '' : '[mensagem sem texto]'),\n  hadVoice, fileId: fileId || '',\n  voiceError: ''\n} }];"
+      },
+      "id": "prepBiblia01",
+      "name": "Preparar (texto/voz)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "voz1",
+              "leftValue": "={{ $json.hadVoice }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ifVozBiblia01",
+      "name": "É Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -620,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo/getFile?file_id={{ $json.fileId }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "tgGetFileBiblia01",
+      "name": "TG getFile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -380,
+        220
+      ],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/file/bot8669321947:AAEm1Ek1gI_wTUDYHNsyyuqbRkPFqLE-NSo/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 25000
+        }
+      },
+      "id": "tgDlAudioBiblia01",
+      "name": "Baixar áudio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        220
+      ],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "language",
+              "value": "pt"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "whisperBiblia01",
+      "name": "Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        220
+      ],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prep = $('Preparar (texto/voz)').first().json;\nconst j = $input.first().json || {};\nlet text = String(j.text || '').trim();\nlet voiceError = '';\nif (!text) {\n  voiceError = String(j.error?.message || j.message || 'whisper vazio').slice(0, 180);\n  text = '[áudio recebido, mas não consegui transcrever]';\n}\nreturn [{ json: { ...prep, text, hadVoice: true, voiceError } }];"
+      },
+      "id": "unirVozBiblia01",
+      "name": "Unir voz",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst base = String($env.CK_BASE_URL || 'https://www.conectaking.com.br').replace(/\\/$/, '');\nconst token = String($env.CK_AGENT_JWT || '').trim();\nconst openaiKey = String($env.OPENAI_API_KEY || '').trim();\nconst model = String($env.OPENAI_MODEL || 'gpt-4o-mini').trim();\nconst text = String(prev.text || '').trim();\nconst chatId = String(prev.chatId || '');\nconst hadVoice = !!prev.hadVoice;\nconst firstName = String(prev.firstName || 'Irmão(ã)');\n\n// HTTP helper para Conecta King API\nasync function ck(method, path, body) {\n  const opts = {\n    method,\n    url: base + path,\n    headers: {\n      'Accept': 'application/json',\n      'Content-Type': 'application/json',\n      ...(token ? { 'Authorization': 'Bearer ' + token } : {})\n    },\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  };\n  if (body !== undefined) opts.body = body;\n  return this.helpers.httpRequest.call(this, opts);\n}\n\n// HTTP helper para OpenAI API\nasync function openaiCall(payload) {\n  return this.helpers.httpRequest.call(this, {\n    method: 'POST',\n    url: 'https://api.openai.com/v1/chat/completions',\n    headers: {\n      'Authorization': 'Bearer ' + openaiKey,\n      'Accept': 'application/json',\n      'Content-Type': 'application/json'\n    },\n    body: payload,\n    json: true,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n}\n\n// Armazenamento de memória no staticData global\nconst store = $getWorkflowStaticData('global');\nif (!store.chats) store.chats = {};\nif (!store.chats[chatId]) {\n  store.chats[chatId] = { history: [] };\n}\nconst session = store.chats[chatId];\nif (!session.history) session.history = [];\n\nconst SYSTEM_PROMPT = `Você é o Agente Bíblia da Conecta King no Telegram (@AgenteBiblia_Bot).\nVocê é um conselheiro bíblico, teológico e espiritual de excelência, dedicado EXCLUSIVAMENTE às Sagradas Escrituras, fé, devocionais, sabedoria cristã e princípios de Deus.\n\nTOM DE VOZ:\n- Acolhedor, reverente, inspirador, sábio e profundamente fundamentado na Bíblia.\n- Linguagem clara, elegante em Português do Brasil, sem jargões frios de robô.\n- Use emojis com bom gosto (📖, 🕊️, ✨, 🙏, 👑, 🌿, 💡).\n- Quando citar a Bíblia, mencione o Livro, Capítulo e Versículo com precisão.\n\nSEUS PRINCIPAIS RECURSOS & FERRAMENTAS:\n1. 'get_verse_of_day': Obter o versículo oficial do dia da Conecta King com reflexão.\n2. 'get_devocional_do_dia': Obter o devocional diário com meditação prática.\n3. 'get_salmo_do_dia': Obter a leitura e consolo do Salmo do dia.\n4. 'get_prosperidade_hoje': Obter o princípio diário das 365 ativações de Prosperidade Bíblica da plataforma.\n5. 'get_bible_text': Consultar capítulos ou passagens bíblicas.\n6. 'generate_sermon_outline': Criar esboços completos de sermões/pregações com introdução, tópicos e aplicação prática.\n7. 'pastoral_prayer_counsel': Conduzir orações pastorais e aconselhamento bíblico para ansiedade, decisões, família, gratidão ou trabalho.\n\nIMPORTANTE:\n- Responda apenas sobre a Bíblia, fé cristã, edificação espiritual e as ferramentas bíblicas.\n- Se o usuário pedir serviços de fotografia, finanças ou assuntos administrativos do King, oriente com carinho que para esses temas ele deve usar o @AgenteKingBot no canal principal.`;\n\nconst TOOLS = [\n  {\n    type: 'function',\n    function: {\n      name: 'get_verse_of_day',\n      description: 'Retorna o Versículo do Dia cadastrado na Conecta King com texto sagrado e reflexão.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_devocional_do_dia',\n      description: 'Retorna o Devocional do Dia da plataforma Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          date: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_salmo_do_dia',\n      description: 'Retorna o Salmo do Dia com oração e meditação de louvor/conforto.',\n      parameters: {\n        type: 'object',\n        properties: {}\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_prosperidade_hoje',\n      description: 'Retorna a ativação do dia do projeto 365 Ativações de Prosperidade Bíblica Conecta King.',\n      parameters: {\n        type: 'object',\n        properties: {\n          day: { type: 'number', description: 'Número do dia opcional (1 a 365)' }\n        }\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'get_bible_text',\n      description: 'Busca o texto bíblico de um livro e capítulo específico (ex: Genesis 1, Salmos 23, Joao 3).',\n      parameters: {\n        type: 'object',\n        properties: {\n          book_id: { type: 'string', description: 'Identificador do livro (ex: genesis, exodo, salmos, proverbios, mateus, joao, romanos)' },\n          chapter: { type: 'number', description: 'Número do capítulo' }\n        },\n        required: ['book_id', 'chapter']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'generate_sermon_outline',\n      description: 'Gera um esboço expositivo de sermão ou pregação para ministrar.',\n      parameters: {\n        type: 'object',\n        properties: {\n          theme: { type: 'string', description: 'Tema ou título da mensagem' },\n          passage: { type: 'string', description: 'Passagem ou texto bíblico base' },\n          audience: { type: 'string', description: 'Público-alvo (jovens, igreja, liderança, família)' }\n        },\n        required: ['theme']\n      }\n    }\n  },\n  {\n    type: 'function',\n    function: {\n      name: 'pastoral_prayer_counsel',\n      description: 'Gera uma oração pastoral e conselho bíblico personalizado para o momento da pessoa.',\n      parameters: {\n        type: 'object',\n        properties: {\n          need: { type: 'string', description: 'Motivo da oração (saúde, paz, família, direção, gratidão, finanças, ansiedade)' },\n          name: { type: 'string', description: 'Nome da pessoa para incluir na oração' }\n        },\n        required: ['need']\n      }\n    }\n  }\n];\n\nlet outMessage = '';\n\ntry {\n  if (!openaiKey) {\n    // Fallback gracioso se a OpenAI Key não estiver setada\n    const r = await ck.call(this, 'GET', '/api/bible/verse-of-day');\n    const v = (r.body && r.body.data) || {};\n    outMessage = `🕊️ *A paz do Senhor, ${firstName}!*\\n\\n📖 *Versículo do Dia:*\\n_\"${v.texto || 'O Senhor é o meu pastor; de nada terei falta.'}\"_\\n— *${v.ref || 'Salmos 23:1'}*\\n\\n✨ _${v.reflexao || 'Confie no cuidado e na provisão divina para o seu dia.'}_\\n\\nComo posso orar ou estudar a Palavra com você hoje?`;\n  } else {\n    const inputForAi = (hadVoice ? '[áudio transcrito] ' : '') + (text || 'A paz do Senhor!');\n    const messages = [\n      { role: 'system', content: SYSTEM_PROMPT },\n      ...session.history.slice(-6),\n      { role: 'user', content: inputForAi }\n    ];\n\n    const completionRes = await openaiCall.call(this, {\n      model,\n      temperature: 0.3,\n      messages,\n      tools: TOOLS,\n      tool_choice: 'auto'\n    });\n\n    const choice = completionRes.body?.choices?.[0]?.message;\n\n    if (choice?.tool_calls && choice.tool_calls.length > 0) {\n      const toolCall = choice.tool_calls[0];\n      const fnName = toolCall.function.name;\n      let args = {};\n      try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch (_) {}\n\n      if (fnName === 'get_verse_of_day') {\n        const query = args.date ? '?date=' + encodeURIComponent(args.date) : '';\n        const r = await ck.call(this, 'GET', '/api/bible/verse-of-day' + query);\n        const data = (r.body && r.body.data) || {};\n        const ref = data.ref || 'Palavra do Dia';\n        const versiculo = data.texto || 'Lâmpada para os meus pés é tua palavra e luz, para o meu caminho. (Salmos 119:105)';\n        const reflexao = data.reflexao || 'Guarde esta promessa em seu coração e permita que ela guie suas decisões hoje.';\n\n        outMessage = `📖 *Versículo do Dia | Conecta King*\\n\\n\"*${versiculo}*\"\\n\\n📍 *${ref}*\\n\\n🕊️ *Reflexão:*\\n${reflexao}\\n\\nQue esta Palavra alimente o seu espírito hoje! 🙏`;\n      } else if (fnName === 'get_devocional_do_dia') {\n        const r = await ck.call(this, 'GET', '/api/bible/devocional-do-dia');\n        const d = (r.body && r.body.data) || {};\n        const titulo = d.titulo || d.title || 'Devocional Diário';\n        const passagem = d.passagem || d.reference || d.ref || 'Escrituras Sagradas';\n        const texto = d.texto || d.content || d.meditacao || '';\n        const oracao = d.oracao || d.prayer || '';\n\n        outMessage = `✨ *Devocional do Dia:* ${titulo}\\n\\n📖 *Texto Base:* ${passagem}\\n\\n${texto}\\n\\n${oracao ? '🙏 *Oração:*\\n_' + oracao + '_\\n\\n' : ''}Amém! Que Deus abençoe sua jornada.`;\n      } else if (fnName === 'get_salmo_do_dia') {\n        const r = await ck.call(this, 'GET', '/api/bible/salmo-do-dia');\n        const s = (r.body && r.body.data) || {};\n        const ref = s.ref || 'Salmos';\n        const texto = s.texto || '';\n        const reflexao = s.reflexao || '';\n\n        outMessage = `🛡️ *Salmo do Dia:* ${ref}\\n\\n\"${texto}\"\\n\\n${reflexao ? '🕊️ *Meditação:*\\n' + reflexao + '\\n\\n' : ''}Que o Senhor seja o seu refúgio e fortaleza hoje! 🙌`;\n      } else if (fnName === 'get_prosperidade_hoje') {\n        const path = args.day ? '/api/bible/prosperidade/ativacao/' + args.day : '/api/bible/prosperidade/hoje';\n        const r = await ck.call(this, 'GET', path);\n        const p = (r.body && r.body.data) || {};\n        const num = p.numero || p.day || p.dia || '365';\n        const titulo = p.titulo || p.title || 'Ativação Bíblica de Prosperidade';\n        const versiculo = p.versiculo || p.verse || '';\n        const declaracao = p.declaracao || p.affirmation || '';\n        const chave = p.chave || p.chave_prosperidade || p.principio || '';\n        const acao = p.acao_pratica || p.action || '';\n\n        outMessage = `👑 *Ativação de Prosperidade Bíblica #${num}*\\n\\n💎 *${titulo}*\\n\\n📖 *Princípio Bíblico:*\\n\"${versiculo}\"\\n\\n${chave ? '🔑 *Chave de Sabedoria:* ' + chave + '\\n\\n' : ''}${declaracao ? '🗣️ *Declaração de Fé:*\\n_\"' + declaracao + '\"_\\n\\n' : ''}${acao ? '🎯 *Passo Prático de Hoje:* ' + acao + '\\n\\n' : ''}Deus tem prazer na prosperidade integral da sua vida!`;\n      } else if (fnName === 'get_bible_text') {\n        const bookId = String(args.book_id || 'salmos').toLowerCase();\n        const cap = Number(args.chapter || 1);\n        const r = await ck.call(this, 'GET', `/api/bible/book/${bookId}/${cap}`);\n        const data = (r.body && r.body.data) || {};\n        const bookName = data.book?.name || bookId.toUpperCase();\n        const verses = data.verses || data.versiculos || [];\n\n        if (Array.isArray(verses) && verses.length > 0) {\n          const sample = verses.slice(0, 10).map(v => `*${v.number || v.verse}* ${v.text}`).join('\\n\\n');\n          outMessage = `📖 *${bookName} ${cap}*\\n\\n${sample}${verses.length > 10 ? '\\n\\n_(Exibindo os primeiros 10 versículos de ' + verses.length + ')_' : ''}`;\n        } else {\n          outMessage = `📖 *Leitura de ${bookName} ${cap}* consultada na plataforma. Deseja uma reflexão teológica ou estudo guiado sobre este capítulo?`;\n        }\n      } else if (fnName === 'generate_sermon_outline') {\n        const theme = args.theme;\n        const pass = args.passage || 'Escrituras';\n        const aud = args.audience ? ` (Público: ${args.audience})` : '';\n\n        // Segunda chamada para gerar o esboço com profundidade\n        const sermonRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pregador e mestre bíblico expositivo. Crie um esboço claro de sermão contendo: 1. Título impactante; 2. Texto Base com contexto; 3. Introdução que prenda a atenção; 4. Três pontos principais expositivos bem alicerçados nas escrituras; 5. Aplicação prática para o cotidiano; 6. Conclusão e apelo/oração.' },\n            { role: 'user', content: `Elabore um esboço de pregação sobre o tema: \"${theme}\", baseado em \"${pass}\"${aud}.` }\n          ]\n        });\n        outMessage = sermonRes.body?.choices?.[0]?.message?.content || `📋 *Esboço de Pregação: ${theme}*\\n\\n📖 Base: ${pass}\\n\\nDeus ministre através de você!`;\n      } else if (fnName === 'pastoral_prayer_counsel') {\n        const prayerRes = await openaiCall.call(this, {\n          model,\n          temperature: 0.4,\n          messages: [\n            { role: 'system', content: 'Você é um pastor acolhedor e cheio de fé. Escreva uma oração pastoral profunda, sincera e bíblica, trazendo consolo, esperança e paz ao coração da pessoa, finalizando com uma bênção sacerdotal.' },\n            { role: 'user', content: `Faça uma oração pastoral para ${args.name || firstName}, que necessita de intercessão e direção sobre: ${args.need}.` }\n          ]\n        });\n        outMessage = prayerRes.body?.choices?.[0]?.message?.content || `🙏 Que a paz que excede todo entendimento guarde o seu coração em Cristo Jesus.`;\n      }\n    } else {\n      outMessage = choice?.content || `A paz do Senhor, ${firstName}! Estou aqui para estudarmos as Escrituras, orarmos e compartilharmos a sabedoria da Palavra de Deus.`;\n    }\n\n    session.history.push({ role: 'user', content: inputForAi });\n    session.history.push({ role: 'assistant', content: outMessage });\n    if (session.history.length > 12) session.history.splice(0, 2);\n  }\n} catch (e) {\n  outMessage = '🕊️ Graça e Paz! Ocorreu uma oscilação momentânea: ' + String(e.message || e).slice(0, 200) + '\\n\\nComo posso abençoar seus estudos na Palavra hoje?';\n}\n\nreturn [{ json: { ...prev, outMessage } }];"
+      },
+      "id": "executarBibliaIA",
+      "name": "Executar Bíblia IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Preparar (texto/voz)').first().json.chatId }}",
+        "text": "={{ $json.outMessage || $json.output || 'A paz do Senhor! Como posso abençoar seus estudos e sua fé hoje?' }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "enviarTelegramBiblia",
+      "name": "Enviar Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        540,
+        400
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "bibliaTelegramAccount",
+          "name": "Telegram Agente Bíblia"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar (texto/voz)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar (texto/voz)": {
+      "main": [
+        [
+          {
+            "node": "É Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Voz?": {
+      "main": [
+        [
+          {
+            "node": "TG getFile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executar Bíblia IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG getFile": {
+      "main": [
+        [
+          {
+            "node": "Baixar áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar áudio": {
+      "main": [
+        [
+          {
+            "node": "Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper": {
+      "main": [
+        [
+          {
+            "node": "Unir voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unir voz": {
+      "main": [
+        [
+          {
+            "node": "Executar Bíblia IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executar Bíblia IA": {
+      "main": [
+        [
+          {
+            "node": "Enviar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
