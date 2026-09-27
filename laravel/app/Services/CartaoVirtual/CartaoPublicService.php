@@ -349,7 +349,7 @@ class CartaoPublicService
             }
 
             if ($type === 'agenda' || $type === 'booking') {
-                $item['url'] = '/' . ($profile->profile_slug ?? '') . '/agendar';
+                $item['url'] = '/' . ($profileSlug ?? '') . '/agendar';
                 if (empty($item['title'])) {
                     $item['title'] = '📅 Agendar Horário';
                 }

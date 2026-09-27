@@ -43,6 +43,7 @@
 
         /** IDs estveis do dashboard - evita fallback por texto quando o HTML ainda não tem data-module. */
         var explicitSidebarIds = {
+            cartao_virtual: ['#cartao-virtual-sidebar-link', '#btn-ver-monocard', '#compartilhar-sidebar-link', '#personalizar-link-link', 'a[data-target="editar-pane"]', 'a[data-target="compartilhar-pane"]', 'a[data-target="personalizar-link-pane"]'],
             finance: ['#finance-link'],
             branding: ['#branding-link'],
             king_selection: ['#king-selection-sidebar-link'],
@@ -52,6 +53,7 @@
         };
 
         var map = [
+            { key: 'hasCartaoVirtual', module: 'cartao_virtual' },
             { key: 'hasFinance', module: 'finance' },
             { key: 'hasModoEmpresa', module: 'modo_empresa' },
             { key: 'hasBranding', module: 'branding' },
@@ -75,6 +77,7 @@
             /* Contas novas: API por vezes omite chaves - não assumir "sem módulo" (ocultaria atalhos). */
             if (raw === undefined) {
                 if (
+                    item.key === 'hasCartaoVirtual' ||
                     item.key === 'hasDigitalForm' ||
                     item.key === 'hasKingDocs' ||
                     item.key === 'hasKingSelection'
@@ -119,19 +122,43 @@
             });
         });
 
-        ensureCoreSidebarNavVisible();
+        ensureCoreSidebarNavVisible(user);
+
+        // Se o Cartão Virtual estiver desativado no plano do cliente:
+        var cartaoAtivo = user.hasCartaoVirtual === true || user.hasCartaoVirtual === 1 || user.hasCartaoVirtual === 'true' || user.hasCartaoVirtual === undefined;
+        if (!cartaoAtivo) {
+            var btnMono = document.getElementById('btn-ver-monocard');
+            if (btnMono) {
+                btnMono.style.display = 'none';
+                btnMono.setAttribute('hidden', 'hidden');
+            }
+            var livePreview = document.querySelector('.live-preview');
+            if (livePreview) {
+                livePreview.style.display = 'none';
+            }
+            var editarPane = document.getElementById('editar-pane');
+            if (editarPane && editarPane.classList.contains('active')) {
+                var candidateLink = document.querySelector('.sidebar-nav a.nav-link[data-target]:not([data-target="editar-pane"]):not([data-target="compartilhar-pane"]):not([style*="display: none"]):not(.ck-hidden)');
+                if (candidateLink) {
+                    candidateLink.click();
+                }
+            }
+        }
     }
 
     /**
      * Itens que não são "módulos por plano" - nunca devem ficar escondidos por engano de CSS/JS antigo.
      */
-    function ensureCoreSidebarNavVisible() {
+    function ensureCoreSidebarNavVisible(user) {
+        var cartaoAtivo = !user || user.hasCartaoVirtual === true || user.hasCartaoVirtual === 1 || user.hasCartaoVirtual === 'true' || user.hasCartaoVirtual === undefined;
         var sel = [
-            '.sidebar-nav a[data-target="editar-pane"]',
-            '.sidebar-nav a[data-target="compartilhar-pane"]',
             '.sidebar-nav a[data-target="relatorios-pane"]',
             '#bible-sidebar-link'
         ];
+        if (cartaoAtivo) {
+            sel.push('.sidebar-nav a[data-target="editar-pane"]');
+            sel.push('.sidebar-nav a[data-target="compartilhar-pane"]');
+        }
         try {
             var nav = document.querySelector('#sidebar .sidebar-nav, aside .sidebar-nav, nav.sidebar-nav');
             if (nav) {

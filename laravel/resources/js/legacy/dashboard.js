@@ -4622,17 +4622,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         applySidebarModulesVisibility();
     }
 
-    // Mostrar/ocultar links do sidebar por plano (Recibos e Orçamentos, Contratos, Agenda, etc.)
+    // Mostrar/ocultar links do sidebar por plano (Recibos e Orçamentos, Contratos, Agenda, Cartão Virtual, etc.)
     function applySidebarModulesVisibility() {
-        document.querySelectorAll('.sidebar .nav-link-by-plan').forEach(function (link) {
+        document.querySelectorAll('.sidebar .nav-link-by-plan, .nav-link-by-plan').forEach(function (link) {
             const moduleType = link.getAttribute('data-module');
             if (!moduleType) return;
             if (userAvailableModules === null) {
                 link.style.display = 'none';
                 return;
             }
-            link.style.display = userAvailableModules.has(moduleType) ? 'flex' : 'none';
+            link.style.display = userAvailableModules.has(moduleType) ? '' : 'none';
         });
+
+        // Se o plano não incluir cartao_virtual:
+        if (userAvailableModules && !userAvailableModules.has('cartao_virtual')) {
+            var btnMonocard = document.getElementById('btn-ver-monocard');
+            if (btnMonocard) {
+                btnMonocard.style.display = 'none';
+                btnMonocard.setAttribute('hidden', 'hidden');
+            }
+            var livePreview = document.querySelector('.live-preview');
+            if (livePreview) {
+                livePreview.style.display = 'none';
+            }
+
+            var editarPane = document.getElementById('editar-pane');
+            if (editarPane && editarPane.classList.contains('active')) {
+                var candidate = document.querySelector('.sidebar-nav a.nav-link[data-target]:not([data-target="editar-pane"]):not([data-target="compartilhar-pane"]):not([style*="display: none"]):not(.ck-hidden)');
+                if (candidate) {
+                    candidate.click();
+                } else {
+                    editarPane.innerHTML = `
+                        <div style="padding: 40px; text-align: center; color: var(--text-secondary, #a0a0a0); max-width: 600px; margin: 60px auto;">
+                            <div style="font-size: 54px; margin-bottom: 20px; color: #ffbb00;"><i class="fas fa-id-card"></i></div>
+                            <h2 style="color: #fff; margin-bottom: 12px; font-size: 22px;">Cartão Virtual não incluso neste plano</h2>
+                            <p style="font-size: 15px; line-height: 1.6; margin-bottom: 24px;">O recurso de Cartão Virtual está desativado para o seu pacote atual. Utilize os módulos disponíveis no menu lateral.</p>
+                        </div>
+                    `;
+                }
+            }
+        }
     }
 
     /** Garante cartão Wi-Fi no modal (deploy antigo do dashboard.html sem o bloco no HTML). */

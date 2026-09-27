@@ -347,22 +347,29 @@ class ProfileSaveService
             ? null
             : SafeIconClass::sanitize((string) $rawIcon);
 
+        $hasDestKey = array_key_exists('destination_url', $item);
+        $hasImgKey = array_key_exists('image_url', $item);
+
         $sets = [
             'title = ?',
-            'destination_url = COALESCE(?, destination_url)',
-            'image_url = COALESCE(?, image_url)',
+            $hasDestKey ? 'destination_url = ?' : 'destination_url = destination_url',
+            $hasImgKey ? 'image_url = ?' : 'image_url = image_url',
             'icon_class = ?',
             'display_order = ?',
             'is_active = ?',
         ];
         $vals = [
             $item['title'] ?? null,
-            $dest,
-            array_key_exists('image_url', $item) ? ($item['image_url'] ?: null) : null,
-            $iconClass,
-            $item['display_order'] ?? 0,
-            array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true,
         ];
+        if ($hasDestKey) {
+            $vals[] = $dest;
+        }
+        if ($hasImgKey) {
+            $vals[] = $item['image_url'] ?: null;
+        }
+        $vals[] = $iconClass;
+        $vals[] = $item['display_order'] ?? 0;
+        $vals[] = array_key_exists('is_active', $item) ? (bool) $item['is_active'] : true;
 
         foreach (['pix_key', 'recipient_name', 'pix_description', 'pdf_url', 'whatsapp_message', 'aspect_ratio'] as $opt) {
             if (in_array($opt, $cols, true)) {
