@@ -70,10 +70,14 @@
             bottom: 0;
             width: 100%;
             height: 100%;
-            height: 100dvh;
             overflow: hidden;
             z-index: -9999;
             pointer-events: none;
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            will-change: transform;
         }
         .background-image-blur-backdrop {
             display: none !important;
@@ -86,13 +90,16 @@
             bottom: 0;
             width: 100%;
             height: 100%;
-            height: 100dvh;
             object-fit: cover;
             object-position: center center;
             opacity: var(--bg-overlay-opacity);
             pointer-events: none;
             user-select: none;
             -webkit-user-drag: none;
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
         }
         .wifi-ssid-value { display: block; }
         .profile-link-logo--sized { object-fit: contain; }
