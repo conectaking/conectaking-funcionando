@@ -143,7 +143,7 @@ class KingSelectionClientController extends Controller
             $request->all()
         );
 
-        return response()->json($r['body'], $r['status'])->header('X-Conecta-Engine', 'laravel');
+        return $this->jsonWithKsCookie($request, $r);
     }
 
     public function export(Request $request)

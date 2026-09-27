@@ -4471,7 +4471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try { renderClients(); } catch (_) { }
 
     // Download + organização do cliente (abas Download e Fotos)
-    dAllow.checked = !!gallery?.allow_download;
+    if (dAllow) dAllow.checked = !!gallery?.allow_download;
     {
       const lay = String(gallery?.client_folder_layout || '').toLowerCase().trim() === 'flat' ? 'flat' : 'folders';
       document.querySelectorAll('input[name="ks_client_folder_layout"]').forEach((r) => {
@@ -9258,7 +9258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const layPick = document.querySelector('input[name="ks_client_folder_layout"]:checked');
       const lay = layPick && String(layPick.value || '').toLowerCase() === 'flat' ? 'flat' : 'folders';
       await savePatch({
-        allow_download: !!dAllow.checked,
+        allow_download: !!(dAllow && dAllow.checked),
         client_folder_layout: lay,
         client_entry_splash_enabled: !!(clientEntrySplash && clientEntrySplash.checked)
       });

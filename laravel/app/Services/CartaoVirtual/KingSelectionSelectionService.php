@@ -579,7 +579,7 @@ class KingSelectionSelectionService
         try {
             $newClientId = DB::transaction(function () use (
                 $galleryId, $sk, $nome, $emailNorm, $telefone, $senhaHash, $hasEnc, $pass,
-                $feedback, $hasClientStatus
+                $feedback, $hasClientStatus, $accessMode
             ) {
                 $existing = DB::selectOne(
                     'SELECT id, nome, telefone, status, enabled FROM king_gallery_clients WHERE gallery_id = ? AND lower(email) = lower(?) LIMIT 1',
