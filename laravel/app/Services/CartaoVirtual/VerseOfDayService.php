@@ -22,6 +22,20 @@ class VerseOfDayService
             ? $dateStr
             : now('America/Sao_Paulo')->toDateString();
         $trans = strtolower($translation ?: 'nvi');
+
+        $overrides = $this->loadOverrides();
+        if (isset($overrides[$date])) {
+            $ov = $overrides[$date];
+            return [
+                'ref' => (string) ($ov['ref'] ?? 'Versículo do Dia'),
+                'texto' => (string) ($ov['texto'] ?? ''),
+                'reflexao' => $ov['reflexao'] ?? null,
+                'date' => $date,
+                'translation' => $trans,
+                'is_custom' => true,
+            ];
+        }
+
         $key = "bible:vod:{$date}:{$trans}";
 
         return Cache::remember($key, 3600, function () use ($dateStr, $trans, $date) {
@@ -40,6 +54,54 @@ class VerseOfDayService
                 'translation' => $trans,
             ]);
         });
+    }
+
+    public function setOverride(string $date, array $data): bool
+    {
+        $overrides = $this->loadOverrides();
+        $overrides[$date] = [
+            'ref' => (string) ($data['ref'] ?? 'Palavra do Dia'),
+            'texto' => (string) ($data['texto'] ?? ''),
+            'reflexao' => $data['reflexao'] ?? null,
+            'updated_at' => now('America/Sao_Paulo')->toIso8601String(),
+        ];
+        $path = storage_path('app/bible/verse_overrides.json');
+        File::ensureDirectoryExists(dirname($path));
+        File::put($path, json_encode($overrides, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        Cache::forget("bible:vod:{$date}:nvi");
+        Cache::forget("bible:vod:{$date}:acf");
+        Cache::forget("bible:vod:{$date}:aa");
+        return true;
+    }
+
+    public function removeOverride(string $date): bool
+    {
+        $overrides = $this->loadOverrides();
+        if (isset($overrides[$date])) {
+            unset($overrides[$date]);
+            $path = storage_path('app/bible/verse_overrides.json');
+            File::ensureDirectoryExists(dirname($path));
+            File::put($path, json_encode($overrides, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            Cache::forget("bible:vod:{$date}:nvi");
+            Cache::forget("bible:vod:{$date}:acf");
+            Cache::forget("bible:vod:{$date}:aa");
+            return true;
+        }
+        return false;
+    }
+
+    public function loadOverrides(): array
+    {
+        $path = storage_path('app/bible/verse_overrides.json');
+        if (!File::exists($path)) {
+            return [];
+        }
+        try {
+            $decoded = json_decode(File::get($path), true);
+            return is_array($decoded) ? $decoded : [];
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /** Índice 0-based do dia no ano (igual Node getVerseOfDayIndex) para rotação de listas. */

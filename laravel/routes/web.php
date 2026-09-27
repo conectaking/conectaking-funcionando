@@ -3,6 +3,7 @@
 use App\Http\Controllers\CartaoVirtual\AnalyticsLogController;
 use App\Http\Controllers\CartaoVirtual\BibleAdminBookStudyController;
 use App\Http\Controllers\CartaoVirtual\BibleAdminDev365Controller;
+use App\Http\Controllers\CartaoVirtual\BibleAdminVerseController;
 use App\Http\Controllers\CartaoVirtual\BibleConfigController;
 use App\Http\Controllers\CartaoVirtual\BibleProsperidadeAdminController;
 use App\Http\Controllers\CartaoVirtual\BibleProgressController;
@@ -225,7 +226,12 @@ Route::middleware(['admin', 'audit'])->group(function () {
     Route::get('/api/admin/bible/study/generation-job/{jobId}', [BibleAdminBookStudyController::class, 'generationJob']);
     Route::post('/api/admin/bible/study/generation-job/{jobId}/cancel', [BibleAdminBookStudyController::class, 'cancelGenerationJob']);
 
-                                                                                                                                            });
+    Route::get('/api/admin/bible/verse-of-day', [BibleAdminVerseController::class, 'showVerse']);
+    Route::put('/api/admin/bible/verse-of-day', [BibleAdminVerseController::class, 'saveVerse']);
+    Route::delete('/api/admin/bible/verse-of-day', [BibleAdminVerseController::class, 'deleteVerse']);
+    Route::get('/api/admin/bible/salmo-do-dia', [BibleAdminVerseController::class, 'showSalmo']);
+    Route::put('/api/admin/bible/salmo-do-dia', [BibleAdminVerseController::class, 'saveSalmo']);
+});
 
 Route::middleware('jwt')->group(function () {
     Route::get('/api/guest-lists', [GuestListAdminController::class, 'index']);
