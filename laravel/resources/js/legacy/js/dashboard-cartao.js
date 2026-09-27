@@ -129,6 +129,9 @@ const SOCIAL_USERNAME_DOMAINS = {
 };
 
 const ITEM_TYPE_LABELS_FOR_VCARD = {
+    cartao_virtual: 'Cartão Virtual',
+    king_selection: 'King Selection',
+    king_docs: 'King Docs',
     link: 'Link Personalizado',
     whatsapp: 'WhatsApp',
     telegram: 'Telegram',

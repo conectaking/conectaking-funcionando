@@ -58,12 +58,12 @@
         </div>
     </div>
     
-    <button class="btn-ver-monocard" id="btn-ver-monocard">
+    <button class="btn-ver-monocard nav-link-by-plan" data-module="cartao_virtual" id="btn-ver-monocard">
         <i class="fas fa-eye"></i> Ver Cartão
     </button>
     
     <nav class="sidebar-nav">
-        <a href="#" class="nav-link active" data-target="editar-pane" title="Editar Conecta King"><i class="fas fa-pencil-alt"></i> <span>Editar Conecta King</span></a>
+        <a href="#" class="nav-link nav-link-by-plan active" data-module="cartao_virtual" data-target="editar-pane" id="cartao-virtual-sidebar-link" title="Editar Conecta King"><i class="fas fa-pencil-alt"></i> <span>Editar Conecta King</span></a>
         <a href="#" class="nav-link ck-hidden" data-target="separacao-pacotes-pane" id="separacao-pacotes-link" title="Separação de Pacotes"><i class="fas fa-layer-group"></i> <span>Separação de Pacotes</span></a>
         <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
         <a href="/kingForms" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
@@ -72,7 +72,7 @@
         <a href="/kingDocs" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
         <a href="/recibos-orcamentos" class="nav-link nav-link-by-plan ck-hidden" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
         <a href="#" class="nav-link" data-target="relatorios-pane" title="Relatórios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
-        <a href="#" class="nav-link" data-target="compartilhar-pane" title="Compartilhar"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></a>
+        <a href="#" class="nav-link nav-link-by-plan" data-module="cartao_virtual" data-target="compartilhar-pane" id="compartilhar-sidebar-link" title="Compartilhar"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></a>
         <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="branding" data-target="branding-pane" id="branding-link" title="Personalização da Marca"><i class="fas fa-palette"></i> <span>Personalização da Marca</span></a>
     </nav>
     
@@ -90,7 +90,7 @@
             </label>
         </div>
         <a href="/admin-devocionais-365" class="nav-link ck-hidden" id="dev365-admin-link"><i class="fas fa-book-open"></i> <span>Bíblia &amp; Devocionais</span></a>
-        <a href="#" class="nav-link ck-hidden" data-target="personalizar-link-pane" id="personalizar-link-link" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
+        <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="cartao_virtual" data-target="personalizar-link-pane" id="personalizar-link-link" title="Personalizar Link do Site"><i class="fas fa-link"></i> <span>Personalizar Link</span></a>
         <a href="#" class="nav-link" data-target="assinatura-pane" id="assinatura-link"><i class="fas fa-crown"></i> <span>Assinatura</span></a>
         <a href="/business?only=logo" class="nav-link ck-hidden" id="personalizacao-logo-link" title="Personalizar Logo"><i class="fas fa-palette"></i> <span>Personalizar Logo</span></a>
         <a href="#" id="logout-btn" class="nav-link" title="Sair"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a>

@@ -63,6 +63,12 @@ class ModulesService
                     [$planCode]
                 )
             );
+            if (! in_array('cartao_virtual', $available, true)) {
+                $hasCartaoRows = DB::selectOne("SELECT 1 FROM module_plan_availability WHERE module_type = 'cartao_virtual' LIMIT 1");
+                if (! $hasCartaoRows) {
+                    $available[] = 'cartao_virtual';
+                }
+            }
         } catch (\Throwable) {
             $available = [];
         }
@@ -115,6 +121,8 @@ class ModulesService
             $plans = [];
         }
 
+        $this->ensureCartaoVirtualProvisioned($plans);
+
         $modulesMap = [];
         try {
             $rows = DB::select(
@@ -141,6 +149,41 @@ class ModulesService
     }
 
     /**
+     * Auto-provisiona o módulo 'cartao_virtual' na tabela module_plan_availability
+     * caso ainda não exista nenhum registro dele.
+     */
+    private function ensureCartaoVirtualProvisioned(array $plans): void
+    {
+        try {
+            if (! Schema::hasTable('module_plan_availability')) {
+                return;
+            }
+            $exists = DB::selectOne(
+                "SELECT 1 FROM module_plan_availability WHERE module_type = 'cartao_virtual' LIMIT 1"
+            );
+            if (! $exists) {
+                $codes = [];
+                foreach ($plans as $p) {
+                    if (! empty($p->plan_code)) {
+                        $codes[] = (string) $p->plan_code;
+                    }
+                }
+                if ($codes === []) {
+                    $codes = ['free', 'basic', 'individual', 'individual_com_logo', 'premium', 'enterprise', 'adm_principal'];
+                }
+                foreach ($codes as $c) {
+                    DB::insert(
+                        'INSERT INTO module_plan_availability (module_type, plan_code, is_available) VALUES (?, ?, ?)',
+                        ['cartao_virtual', $c, true]
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('modules.provisionCartaoVirtual', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Público (landing): subset de módulos para o planRenderer da index.
      *
      * @return array{status:int, body:array<string,mixed>}
@@ -148,6 +191,8 @@ class ModulesService
     public function planAvailabilityPublic(): array
     {
         $types = [
+            'cartao_virtual',
+            'king_selection',
             'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
             'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
             'spotify', 'linkedin', 'pinterest',

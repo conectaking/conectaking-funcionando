@@ -120,6 +120,7 @@ class AccountStatusService
             'hasDigitalForm' => $has('digital_form'),
             'hasKingDocs' => $has('king_docs'),
             'hasKingBolao' => false,
+            'hasCartaoVirtual' => isset($baseSet['cartao_virtual']) ? $has('cartao_virtual') : (! ($exSet['cartao_virtual'] ?? false)),
             'plan_code' => $planCode,
             'linkLimits' => $linkLimits === [] ? new \stdClass : $linkLimits,
         ];

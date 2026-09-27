@@ -125,7 +125,7 @@ function renderModuleAvailability() {
     const REMOVED_SEP_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1 };
     const modulesToShow = (filterValue
         ? moduleAvailabilityData.filter(m => {
-            const label = (ITEM_TYPE_LABELS_FOR_VCARD[m.module_type] || m.module_type || '').toLowerCase();
+            const label = ((typeof ITEM_TYPE_LABELS_FOR_VCARD !== 'undefined' && ITEM_TYPE_LABELS_FOR_VCARD[m.module_type]) || (m.module_type === 'cartao_virtual' ? 'Cartão Virtual' : (m.module_type === 'king_selection' ? 'King Selection' : m.module_type)) || '').toLowerCase();
             const code = (m.module_type || '').toLowerCase();
             return label.indexOf(filterValue) !== -1 || code.indexOf(filterValue) !== -1;
         })
@@ -148,7 +148,7 @@ function renderModuleAvailability() {
     const planOrder = activePlans.map(p => p.plan_code);
 
     container.innerHTML = modulesToShow.map(module => {
-        const moduleName = ITEM_TYPE_LABELS_FOR_VCARD[module.module_type] || module.module_type;
+        const moduleName = (typeof ITEM_TYPE_LABELS_FOR_VCARD !== 'undefined' && ITEM_TYPE_LABELS_FOR_VCARD[module.module_type]) || (module.module_type === 'cartao_virtual' ? 'Cartão Virtual' : (module.module_type === 'king_selection' ? 'King Selection' : module.module_type));
         const plans = module.plans || {}; // Garantir que plans exista (ex: photographer_site)
 
         const planCheckboxes = planOrder.map(planCode => {
@@ -641,7 +641,7 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
             
             <div id="user-modules-list" style="margin-bottom: 24px;">
                 ${modules.map(module => {
-        const moduleName = ITEM_TYPE_LABELS_FOR_VCARD[module.module_type] || module.module_type;
+        const moduleName = (typeof ITEM_TYPE_LABELS_FOR_VCARD !== 'undefined' && ITEM_TYPE_LABELS_FOR_VCARD[module.module_type]) || (module.module_type === 'cartao_virtual' ? 'Cartão Virtual' : (module.module_type === 'king_selection' ? 'King Selection' : module.module_type));
         const isInBasePlan = module.in_base_plan;
         const isActive = module.is_active; // Usar is_active ao invés de is_individual
         const isFinance = module.module_type === 'finance';

@@ -593,6 +593,7 @@ async function renderPlansEditForm(plans) {
 
     // Módulos ativos na Separação de Pacotes (Agenda/Contratos/Bolão/Briefing removidos; Recibos fica)
     const moduleLabels = {
+        'cartao_virtual': 'Cartão Virtual',
         'carousel': 'Carrossel',
         'sales_page': 'Loja Virtual',
         'digital_form': 'King Forms',
@@ -779,6 +780,7 @@ window.savePlan = async function (planId) {
 
         // Mapear nomes de módulos para códigos
         const moduleNameToCode = {
+            'Cartão Virtual': 'cartao_virtual',
             'Carrossel': 'carousel',
             'Loja Virtual': 'sales_page',
             'King Forms': 'digital_form',
