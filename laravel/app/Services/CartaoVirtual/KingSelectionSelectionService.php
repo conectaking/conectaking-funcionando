@@ -598,7 +598,7 @@ class KingSelectionSelectionService
                             $mergePhone = mb_substr($telefone, 0, 120);
                         }
                     } else {
-                        if (KsAccess::normStatus($existing->status ?? '') === 'finalizado') {
+                        if (KsAccess::normStatus($existing->status ?? '') === 'finalizado' && $accessMode !== 'paid_event_photos' && $accessMode !== 'public') {
                             throw new FinalizeHttpException(409, 'Esta seleção já foi finalizada. Fale com o fotógrafo.');
                         }
                         if (KsAccess::normClientNameMatch($existing->nome) !== KsAccess::normClientNameMatch($nome)) {

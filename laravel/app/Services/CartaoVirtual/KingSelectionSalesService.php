@@ -1269,7 +1269,7 @@ class KingSelectionSalesService
                 }
             }
 
-            return 0;
+            return $this->estimatePriceByPackageInterpolationCents($n, $packs);
         }
         if ($mode === 'packages_plus_unit') {
             if ($unit === 0) {
@@ -1328,7 +1328,7 @@ class KingSelectionSalesService
         if ($qty <= 0) {
             return 0;
         }
-        $sorted = array_values(array_filter($packs, static fn ($p) => $p['price'] > 0));
+        $sorted = array_values(array_filter($packs, static fn ($p) => ($p['price'] ?? 0) >= 0 && ($p['qty'] ?? 0) > 0));
         usort($sorted, static fn ($a, $b) => $a['qty'] <=> $b['qty']);
         if ($sorted === []) {
             return 0;

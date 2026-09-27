@@ -218,7 +218,7 @@ class KingSelectionClientService
         }
 
         $st = KsAccess::normStatus($c->status ?? '');
-        if ($st === 'finalizado' && $am !== 'public') {
+        if ($st === 'finalizado' && $am !== 'public' && $am !== 'paid_event_photos') {
             return ['status' => 403, 'body' => ['message' => 'Esta seleção já foi finalizada. Fale com o fotógrafo.']];
         }
 
@@ -567,19 +567,15 @@ class KingSelectionClientService
     /**
      * @return list<int>
      */
-    private function approvedPhotoIdsForClient(int $galleryId, int $clientId, int $selectionBatch): array
+    private function approvedPhotoIdsForClient(int $galleryId, int $clientId, ?int $selectionBatch = null): array
     {
         if ($galleryId < 1 || $clientId < 1 || ! SchemaMeta::hasTable('king_selection_photo_approvals')) {
             return [];
         }
-        $hasBatch = SchemaMeta::hasColumn('king_selection_photo_approvals', 'selection_batch');
-        $sql = 'SELECT photo_id FROM king_selection_photo_approvals
-                WHERE gallery_id = ? AND client_id = ? AND lower(status) = \'approved\''
-            .($hasBatch ? ' AND selection_batch = ?' : '')
-            .' ORDER BY photo_id ASC';
-        $params = $hasBatch
-            ? [$galleryId, $clientId, max(1, $selectionBatch)]
-            : [$galleryId, $clientId];
+        $sql = 'SELECT DISTINCT photo_id FROM king_selection_photo_approvals
+                WHERE gallery_id = ? AND client_id = ? AND lower(status) = \'approved\'
+                ORDER BY photo_id ASC';
+        $params = [$galleryId, $clientId];
         $out = [];
         foreach (DB::select($sql, $params) as $r) {
             $id = (int) ($r->photo_id ?? 0);
