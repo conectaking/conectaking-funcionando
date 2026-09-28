@@ -43,9 +43,14 @@
     {{-- CSS da landing carregado via Vite (evita FOUC) --}}
     @vite(['resources/css/fontawesome.css', 'resources/css/pub/pages/index-extra.css', 'resources/js/pages/index.js'])
 
+    @php
+        $hasTokenCookie = !empty(request()->cookie('token')) || !empty(request()->cookie('refresh_token'));
+    @endphp
+
     {{-- CSS crítico inline: evita flash de fundo branco antes do Vite carregar --}}
     <style>
         html, body { background: #0B0B0B; color: #F5F5F5; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        .ck-hidden { display: none !important; }
     </style>
 </head>
     <body>
@@ -63,14 +68,14 @@
                 <a href="#faq" class="nav-link">FAQ</a>
             </nav>
                     <div class="nav-buttons">
-                        <a href="#" class="btn btn-secondary ck-ix-9656c9" id="landing-sair-btn" title="Encerrar sessão e entrar com outra conta">
+                        <a href="#" class="btn btn-secondary {{ $hasTokenCookie ? '' : 'ck-hidden' }}" id="landing-sair-btn" title="Encerrar sessão e entrar com outra conta">
                             <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Sair</span>
                         </a>
-                        <a href="/login" class="btn btn-secondary" id="login-btn">Login</a>
-                        <a href="/dashboard" class="btn btn-primary ck-hidden" id="access-panel-btn">
+                        <a href="/login" class="btn btn-secondary {{ $hasTokenCookie ? 'ck-hidden' : '' }}" id="login-btn">Login</a>
+                        <a href="/dashboard" class="btn btn-primary {{ $hasTokenCookie ? '' : 'ck-hidden' }}" id="access-panel-btn">
                             <i class="fas fa-tachometer-alt"></i> <span class="btn-text">Acessar Painel</span>
                         </a>
-                <a href="/registro" class="btn btn-primary" id="create-account-btn"><span class="btn-text">Criar Acesso</span></a>
+                        <a href="/registro" class="btn btn-primary {{ $hasTokenCookie ? 'ck-hidden' : '' }}" id="create-account-btn"><span class="btn-text">Criar Acesso</span></a>
                     </div>
         </div>
     </header>
@@ -428,9 +433,9 @@
                 <div>
                     <h3 class="ck-heading-gold">Suporte</h3>
                     <ul class="ck-list-none">
-                        <li class="ck-mb-12" id="footer-login-item"><a class="ck-link-muted" href="/login" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
-                        <li class="ck-ix-62d461" id="footer-access-panel-item"><a class="ck-link-muted" href="/dashboard" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
-                        <li class="ck-mb-12"><a class="ck-link-muted" href="/registro" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
+                        <li class="ck-mb-12 {{ $hasTokenCookie ? 'ck-hidden' : '' }}" id="footer-login-item"><a class="ck-link-muted" href="/login" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Login</a></li>
+                        <li class="ck-ix-62d461 {{ $hasTokenCookie ? '' : 'ck-hidden' }}" id="footer-access-panel-item"><a class="ck-link-muted" href="/dashboard" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Acessar Painel</a></li>
+                        <li class="ck-mb-12 {{ $hasTokenCookie ? 'ck-hidden' : '' }}" id="footer-register-item"><a class="ck-link-muted" href="/registro" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Criar Acesso</a></li>
                         <li class="ck-mb-12"><a class="ck-link-muted" href="#planos" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Falar com Vendedor</a></li>
                         <li class="ck-mb-12"><a class="ck-link-muted" href="https://www.instagram.com/conectaking" target="_blank" onmouseover="this.style.color='var(--yellow-primary)';" onmouseout="this.style.color='rgba(245, 245, 245, 0.7)';">Instagram</a></li>
                     </ul>

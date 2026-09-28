@@ -24,6 +24,13 @@ class LegacyPageController extends Controller
         if ($name === 'admin-prosperidade-31') {
             return redirect('/admin-devocionais-365#prosperidade', 301);
         }
+        if ($name === 'login') {
+            $hasTokenCookie = !empty($request->cookie('token')) || !empty($request->cookie('refresh_token'));
+            $isExplicitLogout = $request->query('logout') === '1' || $request->query('session_expired') === '1';
+            if ($hasTokenCookie && !$isExplicitLogout) {
+                return redirect('/dashboard');
+            }
+        }
 
         if ($name !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $name) === 1) {
             $view = 'pages.'.$name;

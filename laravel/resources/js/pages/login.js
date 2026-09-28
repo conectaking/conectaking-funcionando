@@ -36,6 +36,31 @@ import '@css/pages/login-inline.css';
           : '<strong>Localhost:</strong> Sessão inválida ou expirada. Faça login. Se o problema repetir, reinicie o backend e entre de novo.';
     }
 
+    // Se já estiver logado, redireciona diretamente para o dashboard
+    let currentUser = null;
+    try {
+      const rawUser = localStorage.getItem('conectaKingUser');
+      if (rawUser && rawUser !== 'null' && rawUser !== 'undefined') {
+        currentUser = JSON.parse(rawUser);
+      }
+    } catch (_) {}
+    const sessionMarker = localStorage.getItem('conectaKingSession');
+    const urlParams = new URLSearchParams(window.location.search);
+    const isExplicitLogout = urlParams.get('logout') === '1' || urlParams.get('session_expired') === '1' || reason === 'logout' || reason === 'session_expired';
+
+    if (!isExplicitLogout && currentUser && (sessionMarker === '1' || currentUser.id || currentUser.email)) {
+      const baseApi = String(window.API_URL || window.API_BASE || window.location.origin).replace(/\/$/, '');
+      fetch(baseApi + '/api/account/status', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { Accept: 'application/json' }
+      }).then(function(res) {
+        if (res.ok) {
+          window.location.replace('/dashboard');
+        }
+      }).catch(function() {});
+    }
+
     const loginForm = document.getElementById('login-form');
     if (!loginForm) {
       console.error('Formulário de login não encontrado!');

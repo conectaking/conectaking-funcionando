@@ -480,24 +480,87 @@ import '@mod/js/planRenderer.js';
 
 // Verificar se usuário está logado e ajustar botões do header e footer
         (function() {
-            const user = JSON.parse(localStorage.getItem('conectaKingUser') || 'null');
-            const token = localStorage.getItem('conectaKingToken');
             const loginBtn = document.getElementById('login-btn');
             const accessPanelBtn = document.getElementById('access-panel-btn');
             const sairBtn = document.getElementById('landing-sair-btn');
+            const createAccountBtn = document.getElementById('create-account-btn');
             const footerLoginItem = document.getElementById('footer-login-item');
             const footerAccessPanelItem = document.getElementById('footer-access-panel-item');
-            
-            // Verificar se user é válido (não null, não string 'null')
-            const isLoggedIn = user && user !== 'null' && user !== null && typeof user === 'object' && token && token !== 'null' && token !== '';
-            
+
+            let user = null;
+            try {
+                const raw = localStorage.getItem('conectaKingUser');
+                if (raw && raw !== 'null' && raw !== 'undefined') {
+                    user = JSON.parse(raw);
+                }
+            } catch (e) {}
+
+            const sessionMarker = localStorage.getItem('conectaKingSession');
+            const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token');
+            const hasUser = !!(user && typeof user === 'object' && (user.id || user.email));
+            const hasInitialSession = hasUser && (sessionMarker === '1' || !!token || !!user.account_type || !!user.accountType);
+
             function clearAuthStorage() {
-                ['conectaKingToken', 'conectaKingUser', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(function (k) {
+                ['conectaKingToken', 'conectaKingUser', 'token', 'refreshToken', 'user', 'dashboard_last_pane', 'conectaKingSession'].forEach(function (k) {
                     try { localStorage.removeItem(k); } catch (e) {}
                     try { sessionStorage.removeItem(k); } catch (e2) {}
                 });
             }
-            
+
+            function applyAuthState(isLoggedIn) {
+                if (isLoggedIn) {
+                    // Usuário está logado - mostrar "Acessar Painel" e "Sair", ocultar "Login" e "Criar Acesso"
+                    if (loginBtn) {
+                        loginBtn.style.display = 'none';
+                        loginBtn.style.setProperty('display', 'none', 'important');
+                    }
+                    if (createAccountBtn) {
+                        createAccountBtn.style.display = 'none';
+                        createAccountBtn.style.setProperty('display', 'none', 'important');
+                    }
+                    if (sairBtn) {
+                        sairBtn.classList.remove('ck-ix-9656c9');
+                        sairBtn.style.display = 'inline-flex';
+                        sairBtn.style.setProperty('display', 'inline-flex', 'important');
+                    }
+                    if (accessPanelBtn) {
+                        accessPanelBtn.classList.remove('ck-hidden');
+                        accessPanelBtn.style.display = 'inline-flex';
+                        accessPanelBtn.style.setProperty('display', 'inline-flex', 'important');
+                    }
+                    if (footerLoginItem) {
+                        footerLoginItem.style.display = 'none';
+                    }
+                    if (footerAccessPanelItem) {
+                        footerAccessPanelItem.style.display = 'block';
+                    }
+                } else {
+                    // Usuário não está logado - mostrar "Login" e "Criar Acesso", ocultar "Acessar Painel" e "Sair"
+                    if (loginBtn) {
+                        loginBtn.style.display = 'inline-flex';
+                        loginBtn.style.setProperty('display', 'inline-flex', 'important');
+                    }
+                    if (createAccountBtn) {
+                        createAccountBtn.style.display = 'inline-flex';
+                        createAccountBtn.style.setProperty('display', 'inline-flex', 'important');
+                    }
+                    if (sairBtn) {
+                        sairBtn.style.display = 'none';
+                        sairBtn.style.setProperty('display', 'none', 'important');
+                    }
+                    if (accessPanelBtn) {
+                        accessPanelBtn.style.display = 'none';
+                        accessPanelBtn.style.setProperty('display', 'none', 'important');
+                    }
+                    if (footerLoginItem) {
+                        footerLoginItem.style.display = 'block';
+                    }
+                    if (footerAccessPanelItem) {
+                        footerAccessPanelItem.style.display = 'none';
+                    }
+                }
+            }
+
             function doLogout() {
                 if (!window.confirm('Sair desta conta? Pode entrar com outro utilizador em seguida.')) return;
                 var rt = null;
@@ -525,60 +588,42 @@ import '@mod/js/planRenderer.js';
                     }).catch(function () {}).finally(done);
                 }
             }
-            
+
             if (sairBtn) {
                 sairBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     doLogout();
                 });
             }
-            
-            if (isLoggedIn) {
-                // Usuário está logado - mostrar "Acessar Painel", "Sair" e esconder "Login"
-                if (loginBtn) {
-                    loginBtn.style.display = 'none';
-                    loginBtn.style.setProperty('display', 'none', 'important');
+
+            // Aplicar de imediato para evitar flicker se há sessão local
+            applyAuthState(hasInitialSession);
+
+            // Validar com o backend (cookie HttpOnly de sessão)
+            var base = String(window.API_URL || window.API_BASE || window.location.origin).replace(/\/$/, '');
+            fetch(base + '/api/account/status', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { Accept: 'application/json' }
+            }).then(function (res) {
+                if (res.ok) {
+                    return res.json();
                 }
-                if (sairBtn) {
-                    sairBtn.style.display = 'inline-flex';
-                    sairBtn.style.setProperty('display', 'inline-flex', 'important');
+                throw new Error('Unauthenticated');
+            }).then(function (data) {
+                if (data && (data.user || data.id || data.email)) {
+                    var u = data.user || data;
+                    try {
+                        localStorage.setItem('conectaKingUser', JSON.stringify(u));
+                        localStorage.setItem('conectaKingSession', '1');
+                    } catch (e) {}
+                    applyAuthState(true);
+                } else {
+                    applyAuthState(false);
                 }
-                if (accessPanelBtn) {
-                    accessPanelBtn.style.display = 'inline-flex';
-                    accessPanelBtn.style.setProperty('display', 'inline-flex', 'important');
+            }).catch(function () {
+                if (!hasInitialSession) {
+                    applyAuthState(false);
                 }
-                if (footerLoginItem) {
-                    footerLoginItem.style.display = 'none';
-                }
-                if (footerAccessPanelItem) {
-                    footerAccessPanelItem.style.display = 'block';
-                }
-            } else {
-                // Usuário não está logado - mostrar "Login" e esconder "Acessar Painel" e "Sair"
-                if (loginBtn) {
-                    loginBtn.style.display = 'inline-flex';
-                    loginBtn.style.setProperty('display', 'inline-flex', 'important');
-                }
-                if (sairBtn) {
-                    sairBtn.style.display = 'none';
-                    sairBtn.style.setProperty('display', 'none', 'important');
-                }
-                if (accessPanelBtn) {
-                    accessPanelBtn.style.display = 'none';
-                    accessPanelBtn.style.setProperty('display', 'none', 'important');
-                }
-                if (footerLoginItem) {
-                    footerLoginItem.style.display = 'block';
-                }
-                if (footerAccessPanelItem) {
-                    footerAccessPanelItem.style.display = 'none';
-                }
-            }
-            
-            // Garantir que "Criar Acesso" sempre esteja visível
-            const createAccountBtn = document.getElementById('create-account-btn');
-            if (createAccountBtn) {
-                createAccountBtn.style.display = 'inline-flex';
-                createAccountBtn.style.setProperty('display', 'inline-flex', 'important');
-            }
+            });
         })();
