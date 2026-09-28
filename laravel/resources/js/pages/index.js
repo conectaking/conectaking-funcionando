@@ -511,52 +511,55 @@ import '@mod/js/planRenderer.js';
                 if (isLoggedIn) {
                     // Usuário está logado - mostrar "Acessar Painel" e "Sair", ocultar "Login" e "Criar Acesso"
                     if (loginBtn) {
-                        loginBtn.style.display = 'none';
+                        loginBtn.classList.add('ck-hidden');
                         loginBtn.style.setProperty('display', 'none', 'important');
                     }
                     if (createAccountBtn) {
-                        createAccountBtn.style.display = 'none';
+                        createAccountBtn.classList.add('ck-hidden');
                         createAccountBtn.style.setProperty('display', 'none', 'important');
                     }
                     if (sairBtn) {
+                        sairBtn.classList.remove('ck-hidden');
                         sairBtn.classList.remove('ck-ix-9656c9');
-                        sairBtn.style.display = 'inline-flex';
                         sairBtn.style.setProperty('display', 'inline-flex', 'important');
                     }
                     if (accessPanelBtn) {
                         accessPanelBtn.classList.remove('ck-hidden');
-                        accessPanelBtn.style.display = 'inline-flex';
                         accessPanelBtn.style.setProperty('display', 'inline-flex', 'important');
                     }
                     if (footerLoginItem) {
-                        footerLoginItem.style.display = 'none';
+                        footerLoginItem.classList.add('ck-hidden');
+                        footerLoginItem.style.setProperty('display', 'none', 'important');
                     }
                     if (footerAccessPanelItem) {
-                        footerAccessPanelItem.style.display = 'block';
+                        footerAccessPanelItem.classList.remove('ck-hidden');
+                        footerAccessPanelItem.style.setProperty('display', 'block', 'important');
                     }
                 } else {
                     // Usuário não está logado - mostrar "Login" e "Criar Acesso", ocultar "Acessar Painel" e "Sair"
                     if (loginBtn) {
-                        loginBtn.style.display = 'inline-flex';
+                        loginBtn.classList.remove('ck-hidden');
                         loginBtn.style.setProperty('display', 'inline-flex', 'important');
                     }
                     if (createAccountBtn) {
-                        createAccountBtn.style.display = 'inline-flex';
+                        createAccountBtn.classList.remove('ck-hidden');
                         createAccountBtn.style.setProperty('display', 'inline-flex', 'important');
                     }
                     if (sairBtn) {
-                        sairBtn.style.display = 'none';
+                        sairBtn.classList.add('ck-hidden');
                         sairBtn.style.setProperty('display', 'none', 'important');
                     }
                     if (accessPanelBtn) {
-                        accessPanelBtn.style.display = 'none';
+                        accessPanelBtn.classList.add('ck-hidden');
                         accessPanelBtn.style.setProperty('display', 'none', 'important');
                     }
                     if (footerLoginItem) {
-                        footerLoginItem.style.display = 'block';
+                        footerLoginItem.classList.remove('ck-hidden');
+                        footerLoginItem.style.setProperty('display', 'block', 'important');
                     }
                     if (footerAccessPanelItem) {
-                        footerAccessPanelItem.style.display = 'none';
+                        footerAccessPanelItem.classList.add('ck-hidden');
+                        footerAccessPanelItem.style.setProperty('display', 'none', 'important');
                     }
                 }
             }
