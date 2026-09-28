@@ -251,6 +251,10 @@ class BibleAdminDev365Service
                 'day_of_year' => $day,
                 'titulo' => $full['titulo'] ?? '',
                 'versiculo_ref' => $full['versiculo_ref'] ?? '',
+                'versiculo_texto' => $full['versiculo_texto'] ?? '',
+                'reflexao' => $full['reflexao'] ?? '',
+                'aplicacao' => $full['aplicacao'] ?? '',
+                'oracao' => $full['oracao'] ?? '',
             ],
         ];
     }

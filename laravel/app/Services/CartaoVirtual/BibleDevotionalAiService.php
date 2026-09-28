@@ -70,7 +70,7 @@ Título de apoio (pode inspirar o tom): {$titulo}
 TEMA DO MÊS (contexto na UI): {$temaMes}
 ".($temaMesCal !== '' ? "TEMA DO MÊS CALENDÁRIO (integrar na reflexão): {$temaMesCal}\n" : '')."TEMA DO ANO (contexto): {$temaAno}
 
-INSTRUÇÃO DE TEMA (obedeça à risca na estrutura da reflexão - NUNCA FUJA DO TEMA DO MÊS):
+INSTRUÇÃO DE TEMA (obedeça com máxima prioridade na estrutura da reflexão):
 ".($instr !== '' ? $instr : 'Ligue a reflexão à passagem e aos temas acima.')."
 
 Texto-base do catálogo (use só como ideia geral; NÃO copie frases literais — parafraseie e personalize para o dia {$dayOfYear}):
@@ -79,9 +79,9 @@ Texto-base do catálogo (use só como ideia geral; NÃO copie frases literais �
 {$estiloCunha}
 
 Responda APENAS com um JSON válido neste formato exato (sem markdown):
-{\"reflexao\":\"Devocional GRANDE, PROFUNDO e COMPLETO de 7 a 10 parágrafos ricos em português do Brasil: 1) Revelação e Exegese Teológica Contextualizada da passagem e alinhamento inegociável com o Tema do Mês; 2) A perspectiva da Neurociência (como a neuroplasticidade, a regulação neuroquímica de cortisol, dopamina, serotonina e GABA, e a desativação da amígdala pelo amor divino validam esta verdade bíblica); 3) Princípio de PNL e Reprogramação Mental (ressignificação do padrão mental limitante para a Mente de Cristo, renovação da mente em Romanos 12:2); 4) Psicologia Clínica e Psiquiatria Integrativa (saúde emocional, alívio de angústias, equilíbrio mente-corpo e regulação das emoções à luz da fé); 5) Desbloqueio Mental e Emocional (rompimento de travas de escassez, medo, culpa, rejeição ou paralisia através da verdade bíblica); 6) Ancoragem e Sugestão Profunda de Paz (exercício de foco interior, respiração e ancoragem da Paz de Deus de Filipenses 4:7 com técnicas de hipnose clínica e metáforas transformadoras).\",\"aplicacao\":\"2 parágrafos com passos práticos e objetivos de reprogramação mental e neuro-ação concreta para o dia a dia.\",\"oracao\":\"1 oração pastoral profunda e inspiradora, selando o desbloqueio mental, a cura da alma e a fé inabalável.\"}
+{\"reflexao\":\"Devocional ESPECIALISTA, GRANDE, PROFUNDO e COMPLETO de 7 a 10 parágrafos ricos em português do Brasil: 1) Revelação e Exegese Teológica Contextualizada da passagem e alinhamento inegociável com a instrução do tema; 2) A perspectiva da Neurociência (como a neuroplasticidade, a regulação neuroquímica de cortisol, dopamina, serotonina e GABA, e a desativação da amígdala pelo amor divino validam esta verdade bíblica); 3) Princípio de PNL e Reprogramação Mental (ressignificação do padrão mental limitante para a Mente de Cristo, renovação da mente em Romanos 12:2); 4) Psicologia Clínica e Psiquiatria Integrativa (saúde emocional, alívio de angústias, equilíbrio mente-corpo e regulação das emoções à luz da fé); 5) Desbloqueio Mental e Emocional (rompimento de travas de escassez, medo, culpa, rejeição ou paralisia através da verdade bíblica); 6) Ancoragem e Sugestão Profunda de Paz (exercício de foco interior, respiração e ancoragem da Paz de Deus de Filipenses 4:7 com técnicas de hipnose clínica e metáforas transformadoras).\",\"aplicacao\":\"2 parágrafos com passos práticos e objetivos de reprogramação mental e neuro-ação concreta para o dia a dia.\",\"oracao\":\"1 oração pastoral profunda e inspiradora, selando o desbloqueio mental, a cura da alma e a fé inabalável.\"}
 
-Regras: A reflexão DEVE ser grande e detalhada, integrando com maestria a teologia bíblica às lentes de neurociência, PNL, psicologia, psiquiatria integrativa, hipnose clínica e desbloqueio mental. Mantenha fidelidade inegociável às Sagradas Escrituras e ao Tema do Mês. Seja profundo, maduro e transformador.";
+Regras: A reflexão DEVE ser grande e detalhada, integrando com maestria a teologia bíblica às lentes de neurociência, PNL, psicologia, psiquiatria integrativa, hipnose clínica e desbloqueio mental. Mantenha fidelidade inegociável às Sagradas Escrituras e à instrução do tema. Seja profundo, maduro e transformador.";
 
         $system = 'Você é um Doutor em Teologia Bíblica, Neurocientista, especialista em PNL, Reprogramação Mental, Psicologia Clínica, Psiquiatria Integrativa, Hipnose Clínica e Desbloqueio Mental e Emocional. Você une a autoridade inerrante da Bíblia à ciência da mente humana para transformar vidas através de devocionais profundos, ricos e completos. Responda somente JSON válido, sem blocos de código.';
 
@@ -179,7 +179,7 @@ Regras: A reflexão DEVE ser grande e detalhada, integrando com maestria a teolo
         $cacheKey = 'dev365-full:'.$year.':'.$dayOfYear.':'.$model.':'.$estilo.':'
             .$this->fnv1aShort($instr).':'.$this->fnv1aShort($avoidBlock).':'.$this->fnv1aShort($retryExtra);
         $hit = Cache::get($cacheKey);
-        if (is_array($hit) && !empty($hit['reflexao']) && !empty($hit['versiculo_ref'])) {
+        if (is_array($hit) && !empty($hit['reflexao']) && mb_strlen((string) $hit['reflexao']) > 350 && !empty($hit['versiculo_ref'])) {
             return $hit;
         }
 
@@ -193,7 +193,7 @@ MODO: GERAÇÃO COMPLETA — você escolhe UM título NOVO, UMA passagem bíblic
 TEMA DO MÊS (painel): {$temaMes}
 ".($temaMesCal !== '' ? "TEMA DO MÊS CALENDÁRIO: {$temaMesCal}\n" : '')."TEMA DO ANO: {$temaAno}
 
-INSTRUÇÃO DE TEMA (obedeça; estruture título + reflexão + aplicação em função disto):
+INSTRUÇÃO DE TEMA (obedeça com máxima prioridade; estruture título + reflexão + aplicação em função disto):
 ".($instr !== '' ? $instr : 'Ligue o devocional ao tema do mês e ao contexto do dia.')."
 
 ".($avoidBlock !== '' ? "PASSAGENS E TÍTULOS JÁ USADOS (NÃO REPITA — escolha OUTRO livro da Bíblia ou OUTRO capítulo/versículo; há 66 livros, explore variedade):\n{$avoidBlock}\n" : '')."
@@ -201,22 +201,21 @@ INSTRUÇÃO DE TEMA (obedeça; estruture título + reflexão + aplicação em fu
 {$estiloCunha}
 
 REGRAS CRÍTICAS DE CONTEÚDO E ESTRUTURA:
-- Este é o dia {$dayOfYear} — título e "versiculo_ref" devem ser OBRIGATORIAMENTE distintos de qualquer linha da lista acima.
-- "versiculo_ref" deve ser UMA referência válida em português NVI (ex.: João 14:6, Romanos 12:2, Filipenses 4:6-8).
-- A reflexão deve ser um DEVOCIONAL GRANDE, COMPLETO E PROFUNDO (7 a 10 parágrafos ricos em português do Brasil), NUNCA superficial:
-  1. Base Bíblica & Exegese Teológica Contextualizada: Sentido original, contexto histórico e ligação inegociável ao Tema do Mês (nunca fuja do tema do mês).
-  2. Neurociência Aplicada: Como o cérebro (neuroplasticidade, regulação neuroquímica de cortisol, dopamina, serotonina e GABA, silenciamento da amígdala e ativação do córtex pré-frontal) valida a verdade do texto sagrado.
-  3. PNL & Reprogramação Mental: Reenquadre cognitivo, destruição de pensamentos disfuncionais e instalação da Mente de Cristo (Romanos 12:2).
-  4. Psicologia Clínica & Psiquiatria Integrativa: Saúde emocional, alívio de angústias e equilíbrio mente-corpo à luz da paz de Deus.
-  5. Desbloqueio Mental & Emocional: Como destravar paralisias emocionais, travas de escassez, medo, culpa, rejeição ou procrastinação com base na tese bíblica.
-  6. Ancoragem & Hipnose Ericksoniana: Padrão de foco interior profundo, respiração consciente e ancoragem da Paz de Deus de Filipenses 4:7.
-- A "aplicacao" deve ter 2 parágrafos com ações práticas de neuro-reprogramação mental e neuro-ação para o dia.
-- A "oracao" deve ser uma oração pastoral profunda, inspiradora e profética.
+- Este é o dia {$dayOfYear} — título e \"versiculo_ref\" devem ser OBRIGATORIAMENTE distintos de qualquer linha da lista acima.
+- \"versiculo_ref\" deve ser UMA referência válida em português NVI (ex.: João 14:6, Romanos 12:2, Filipenses 4:6-8).
+- \"versiculo_texto\" deve ser o texto bíblico sagrado COMPLETO do versículo na tradução NVI ou Almeida Revista e Atualizada. NUNCA DEIXE VAZIO.
+- A reflexão deve ser um DEVOCIONAL DE MESTRE, ESPECIALISTA, COMPLETO E PROFUNDO (7 a 10 parágrafos ricos em português do Brasil), NUNCA superficial ou raso:
+  1. Base Bíblica & Exegese Teológica Contextualizada: Sentido original das palavras no hebraico/grego, contexto histórico e conexão direta com a instrução do tema.
+  2. Neurociência Aplicada Real: Como o cérebro opera (neuroplasticidade dirigida, regulação neuroquímica de cortisol, dopamina, ocitocina, serotonina e GABA, desativação da amígdala pelo amor divino e ativação do córtex pré-frontal) para validar e vivenciar a promessa bíblica.
+  3. PNL & Reprogramação Mental: Reenquadramento cognitivo, desativação de âncoras negativas, destruição de crenças limitantes e alinhamento à Mente de Cristo (Romanos 12:2, 1 Coríntios 2:16).
+  4. Psicologia Clínica & Psiquiatria Integrativa: Cura de feridas emocionais, alívio de angústias, ansiedade e depressão, equilíbrio mente-corpo-espírito.
+  5. Desbloqueio Mental & Emocional (Escassez para Abundância): Rompimento definitivo de travas de escassez, medo da perda, síndrome do impostor, complexo de inferioridade, culpa e paralisia, destravando a visão de abundância do Reino.
+  6. Ancoragem & Sugestão Profunda de Paz (Hipnose Clínica Ericksoniana): Exercício imersivo de foco interior, respiração consciente e ancoragem sensorial profunda da Paz de Deus que excede todo o entendimento (Filipenses 4:7).
+- A \"aplicacao\" deve conter 2 parágrafos com ações práticas, claras e imediatas de neuro-ação e reprogramação mental diária.
+- A \"oracao\" deve ser uma oração pastoral profunda, poderosa e profética de autoridade e cura interior.
 
-Responda APENAS com JSON válido (sem markdown):
-{\"titulo\":\"string impactante até 120 caracteres\",\"versiculo_ref\":\"ex.: João 14:6\",\"versiculo_texto\":\"\",\"reflexao\":\"texto longo e estruturado com teologia, neurociência, PNL, psicologia, psiquiatria, hipnose e desbloqueio mental\",\"aplicacao\":\"dois parágrafos práticos de neuro-ação\",\"oracao\":\"oração pastoral profunda\"}
-
-Use versiculo_texto vazio.";
+Responda APENAS com JSON válido neste formato exato (sem blocos de código ```json):
+{\"titulo\":\"Título impactante e profético de alta relevância\",\"versiculo_ref\":\"ex.: Romanos 12:2\",\"versiculo_texto\":\"Texto bíblico sagrado completo do versículo na íntegra\",\"reflexao\":\"Texto longo, rico e profundo de 7 a 10 parágrafos integrando teologia, neurociência, PNL, psicologia e desbloqueio\",\"aplicacao\":\"Dois parágrafos de ações práticas de neuro-reprogramação mental\",\"oracao\":\"Oração pastoral profunda, ungida e transformadora\"}";
 
         try {
             $temp = min(0.92, ($estilo === 'cunha' ? 0.82 : 0.78) + (($dayOfYear % 11) * 0.008));

@@ -90,17 +90,21 @@ class BibleDevotionalService
     public function getForDate(?string $dateStr = null): ?array
     {
         $day = $this->dayOfYear($dateStr);
-        $shaped = $this->getByDay($day);
-        if (!$shaped) {
-            return null;
-        }
         $date = $dateStr && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)
             ? $dateStr
             : now('America/Sao_Paulo')->toDateString();
 
+        $shaped = $this->get365($day) ?? $this->getByDay($day);
+        if (!$shaped) {
+            return null;
+        }
+
         return array_merge($shaped, [
-            'versiculo' => $shaped['versiculo_ref'],
-            'texto' => $shaped['reflexao'],
+            'passagem' => $shaped['versiculo_ref'] ?? '',
+            'ref' => $shaped['versiculo_ref'] ?? '',
+            'versiculo' => $shaped['versiculo_ref'] ?? '',
+            'texto' => $shaped['reflexao'] ?? '',
+            'content' => $shaped['reflexao'] ?? '',
             'date' => $date,
         ]);
     }
@@ -248,19 +252,19 @@ class BibleDevotionalService
         $custom = mb_substr(trim((string) ($options['temaPersonalizado'] ?? '')), 0, 500);
         $uniq = $this->uniquenessInstruction($dayOfYear, $year);
 
-        if (($modo === 'personalizado' || $modo === 'custom') && $custom !== '') {
+        if ($custom !== '' || in_array($modo, ['personalizado', 'custom', 'manual', 'customizado', 'user'], true)) {
             $md = $this->dayOfYearToMonthDay($dayOfYear, $year);
             $temaMesCal = self::TEMAS_MES[$md['month'] - 1] ?? self::TEMAS_MES[0];
+            $targetTheme = $custom !== '' ? $custom : ($base['tema_mes'] ?? 'Renovação da Mente e Prosperidade');
 
             return array_merge($base, [
-                'tema_mes' => $custom,
+                'tema_mes' => $targetTheme,
                 'tema_mes_calendario' => $temaMesCal,
                 'tema_modo_aplicado' => 'personalizado',
                 'tema_ia_instrucao' =>
-                    'O devocional deve girar em torno deste tema escolhido pelo usuário: "'.$custom.'". '.
-                    'Inclua também uma ligação clara ao TEMA DO MÊS CALENDÁRIO ('.$md['month'].'/'.$year.'): '.$temaMesCal.
-                    ' — pelo menos uma frase no corpo da reflexão. '.
-                    'A abertura e o fecho devem deixar o tema personalizado explícito.'.$uniq,
+                    'O devocional DEVE OBRIGATORIAMENTE girar em torno deste FOCO/TEMA SOLICITADO: "'.$targetTheme.'". '.
+                    'Explore este tema com profundidade através de Teologia Exegética, Neurociência Aplicada (neuroplasticidade, regulação neuroquímica e circuitos neurais), PNL e Reprogramação Mental (ressignificação e Mente de Cristo), Psicologia Clínica e Desbloqueio Emocional/Escassez. '.
+                    'O Tema do Mês calendário ('.$md['month'].'/'.$year.': '.$temaMesCal.') pode ser conectado harmoniosamente no contexto, mas o foco central inegociável é: "'.$targetTheme.'".'.$uniq,
             ]);
         }
         if ($modo === 'ano_auto' || $modo === 'ano') {
