@@ -438,8 +438,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     throw err;
                 }
-                const err = new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+                let errMsg = `HTTP ${response.status}: ${response.statusText || ''}`.trim();
+                try {
+                    const cloned = response.clone();
+                    const errData = await cloned.json();
+                    if (errData && errData.message) {
+                        errMsg = errData.message;
+                    }
+                } catch (_) {}
+
+                const err = new Error(errMsg);
                 err.status = response.status;
+                err.response = response;
                 throw err;
             }
 

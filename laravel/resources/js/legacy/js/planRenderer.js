@@ -6,19 +6,21 @@
 
 // Nomes para exibição dos módulos (igual à Separação de Pacotes)
 const MODULE_LABELS = {
-    agenda: 'Agenda Inteligente',
+    cartao_virtual: 'Cartão Virtual',
     banner: 'Banner',
     carousel: 'Carrossel',
-    contract: 'Contratos',
     digital_form: 'King Forms',
     finance: 'Gestão Financeira',
     portfolio: 'Portfólio',
-    sales_page: 'Loja Virtual',
+    sales_page: 'Página de Vendas',
     link: 'Link personalizado',
     instagram_embed: 'Instagram incorporado',
     youtube_embed: 'YouTube incorporado',
     modo_empresa: 'Modo Empresa',
-    photographer_site: 'Meu site'
+    branding: 'Personalização da Marca',
+    bible: 'Bíblia',
+    location: 'Localização',
+    recibos_orcamentos: 'Recibos e Orçamentos'
 };
 
 function getModuleLabel(moduleType) {

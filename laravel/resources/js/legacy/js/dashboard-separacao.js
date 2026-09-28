@@ -33,9 +33,69 @@
 var moduleAvailabilityData = null;
 var moduleAvailabilityChanges = {};
 
+var DISCONTINUED_MODULES = new Set([
+    'agenda',
+    'contract',
+    'photographer_site',
+    'kingbrief',
+    'king_bolao'
+]);
 
-// Event listener para upload de foto de perfil já foi configurado anteriormente
-// Não duplicar aqui para evitar conflitos
+var MODULE_DISPLAY_NAMES = {
+    cartao_virtual: 'Cartão Virtual',
+    link: 'Link Personalizado',
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    email: 'Email',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+    pinterest: 'Pinterest',
+    reddit: 'Reddit',
+    tiktok: 'TikTok',
+    twitch: 'Twitch',
+    twitter: 'X (Twitter)',
+    youtube: 'YouTube',
+    linkedin: 'LinkedIn',
+    portfolio: 'Portfólio',
+    spotify: 'Spotify',
+    instagram_embed: 'Instagram',
+    youtube_embed: 'YouTube',
+    tiktok_embed: 'TikTok',
+    spotify_embed: 'Spotify',
+    linkedin_embed: 'LinkedIn',
+    pinterest_embed: 'Pinterest',
+    banner: 'Banner',
+    texto_com_botao: 'Texto com Botão',
+    carousel: 'Carrossel',
+    pdf: 'PDF',
+    pdf_embed: 'PDF',
+    finance: 'Gestão Financeira',
+    guest_list: 'Lista de Convidados',
+    pix: 'PIX',
+    pix_qrcode: 'PIX QR Code',
+    wifi: 'Wi-Fi',
+    sales_page: 'Página de Vendas',
+    product_catalog: 'Catálogo de Produtos',
+    banner_carousel: 'Carrossel de Banners',
+    digital_form: 'King Forms',
+    modo_empresa: 'Modo Empresa',
+    branding: 'Personalização da Marca',
+    convite: 'Convite Digital',
+    bible: 'Bíblia',
+    location: 'Localização',
+    recibos_orcamentos: 'Recibos e Orçamentos',
+    king_selection: 'King Selection',
+    king_docs: 'King Docs'
+};
+
+function getModuleName(type) {
+    if (!type) return '';
+    if (MODULE_DISPLAY_NAMES[type]) return MODULE_DISPLAY_NAMES[type];
+    if (typeof ITEM_TYPE_LABELS_FOR_VCARD !== 'undefined' && ITEM_TYPE_LABELS_FOR_VCARD[type]) {
+        return ITEM_TYPE_LABELS_FOR_VCARD[type];
+    }
+    return String(type);
+}
 
 // ============================================
 // SEPARAÇÃO DE PACOTES (ADM)
@@ -122,15 +182,14 @@ function renderModuleAvailability() {
 
     // Filtrar módulos removidos do produto + texto de busca
     // Recibos e Orçamentos permanece no produto — não filtrar aqui
-    const REMOVED_SEP_MODULES = { agenda: 1, contract: 1, photographer_site: 1, kingbrief: 1, king_bolao: 1 };
     const modulesToShow = (filterValue
         ? moduleAvailabilityData.filter(m => {
-            const label = ((typeof ITEM_TYPE_LABELS_FOR_VCARD !== 'undefined' && ITEM_TYPE_LABELS_FOR_VCARD[m.module_type]) || (m.module_type === 'cartao_virtual' ? 'Cartão Virtual' : (m.module_type === 'king_selection' ? 'King Selection' : m.module_type)) || '').toLowerCase();
+            const label = (getModuleName(m.module_type) || '').toLowerCase();
             const code = (m.module_type || '').toLowerCase();
             return label.indexOf(filterValue) !== -1 || code.indexOf(filterValue) !== -1;
         })
         : moduleAvailabilityData
-    ).filter(m => !REMOVED_SEP_MODULES[m.module_type]);
+    ).filter(m => !DISCONTINUED_MODULES.has(m.module_type));
 
     if (modulesToShow.length === 0) {
         container.innerHTML = '<p style="color: var(--text-secondary, #888888);">Nenhum módulo encontrado para &quot;' + (filterInput ? filterInput.value.trim() : '') + '&quot;.</p>';
@@ -148,7 +207,7 @@ function renderModuleAvailability() {
     const planOrder = activePlans.map(p => p.plan_code);
 
     container.innerHTML = modulesToShow.map(module => {
-        const moduleName = (typeof ITEM_TYPE_LABELS_FOR_VCARD !== 'undefined' && ITEM_TYPE_LABELS_FOR_VCARD[module.module_type]) || (module.module_type === 'cartao_virtual' ? 'Cartão Virtual' : (module.module_type === 'king_selection' ? 'King Selection' : module.module_type));
+        const moduleName = getModuleName(module.module_type);
         const plans = module.plans || {}; // Garantir que plans exista (ex: photographer_site)
 
         const planCheckboxes = planOrder.map(planCode => {
@@ -393,9 +452,10 @@ async function loadIndividualPlans() {
 function renderIndividualPlans(plans) {
     const container = document.getElementById('individual-plans-list');
 
-    // Agrupar por usuário
+    // Agrupar por usuário (filtrando módulos descontinuados)
     const plansByUser = {};
     plans.forEach(plan => {
+        if (DISCONTINUED_MODULES.has(plan.module_type)) return;
         if (!plansByUser[plan.user_id]) {
             plansByUser[plan.user_id] = {
                 user_id: plan.user_id,
@@ -419,7 +479,7 @@ function renderIndividualPlans(plans) {
                     <h3 style="color: var(--text-primary, #F5F5F5); margin-bottom: 4px;">${userPlan.user_name}</h3>
                     <p style="color: var(--text-secondary, #888888); font-size: 0.875rem;">${userPlan.user_email}</p>
                     <p style="color: var(--text-secondary, #888888); font-size: 0.875rem; margin-top: 8px;">
-                        Módulos extras: ${userPlan.modules.map(m => ITEM_TYPE_LABELS_FOR_VCARD[m.module_type] || m.module_type).join(', ') || 'Nenhum'}
+                        Módulos extras: ${userPlan.modules.map(m => getModuleName(m.module_type)).join(', ') || 'Nenhum'}
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px;">
@@ -640,8 +700,8 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
             </p>
             
             <div id="user-modules-list" style="margin-bottom: 24px;">
-                ${modules.map(module => {
-        const moduleName = (typeof ITEM_TYPE_LABELS_FOR_VCARD !== 'undefined' && ITEM_TYPE_LABELS_FOR_VCARD[module.module_type]) || (module.module_type === 'cartao_virtual' ? 'Cartão Virtual' : (module.module_type === 'king_selection' ? 'King Selection' : module.module_type));
+                ${(modules || []).filter(m => !DISCONTINUED_MODULES.has(m.module_type)).map(module => {
+        const moduleName = getModuleName(module.module_type);
         const isInBasePlan = module.in_base_plan;
         const isActive = module.is_active; // Usar is_active ao invés de is_individual
         const isFinance = module.module_type === 'finance';
@@ -653,7 +713,7 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
                                 <div>
                                     <h3 style="color: var(--text-primary, #F5F5F5); font-size: 1rem; font-weight: 600; margin-bottom: 4px;">${moduleName}</h3>
                                     <span class="module-type-badge" style="background: rgba(255,215,0,0.2); color: var(--dourado-principal, #FFD700); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">${module.module_type}</span>
-                                    ${isInBasePlan ? '<p style="color: #4ade80; font-size: 0.75rem; margin-top: 8px;">o" Já no plano (pode desmarcar para tirar)</p>' : '<p style="color: #60a5fa; font-size: 0.75rem; margin-top: 8px;">+ Adicionar</p>'}
+                                    ${isInBasePlan ? '<p style="color: #4ade80; font-size: 0.75rem; margin-top: 8px;"><i class="fas fa-check-circle"></i> Já no plano (pode desmarcar para tirar)</p>' : '<p style="color: #60a5fa; font-size: 0.75rem; margin-top: 8px;"><i class="fas fa-plus-circle"></i> Adicionar ao usuário</p>'}
                                     ${isFinance ? `
                                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
                                         <label style="color: var(--text-secondary, #888888); font-size: 0.8rem;">Quantidade de perfis:</label>
@@ -725,8 +785,8 @@ window.saveUserIndividualModules = async function (userId) {
         const checkboxes = document.querySelectorAll('#user-modules-modal .user-module-checkbox');
         const selectedModules = Array.from(checkboxes)
             .filter(cb => cb.checked)
-            .map(cb => cb.dataset.module);
-
+            .map(cb => cb.dataset.module)
+            .filter(m => !DISCONTINUED_MODULES.has(m));
 
         let maxFinanceProfiles = 1;
         const financeProfilesEl = document.getElementById('user-modules-finance-profiles');
@@ -747,21 +807,25 @@ window.saveUserIndividualModules = async function (userId) {
             })
         });
 
+        let result = {};
+        try {
+            result = await response.json();
+        } catch (_) {}
+
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Erro ao salvar módulos' }));
-            throw new Error(errorData.message || 'Erro ao salvar módulos');
+            throw new Error(result.message || `Erro ${response.status}: Falha ao salvar módulos`);
         }
 
-        const result = await response.json();
         alert(result.message || 'Módulos atualizados com sucesso! Alterações em "Já no plano", "Adicionar" e quantidade de perfis de Gestão Financeira foram salvas.');
 
         // Fechar modal e recarregar lista
-        document.getElementById('user-modules-modal').remove();
+        const modalEl = document.getElementById('user-modules-modal');
+        if (modalEl) modalEl.remove();
         await loadIndividualPlans();
 
     } catch (error) {
         console.error('Erro ao salvar módulos:', error);
-        alert('Erro ao salvar módulos: ' + error.message);
+        alert('Erro ao salvar módulos: ' + (error.message || 'Erro desconhecido'));
     }
 };
 

@@ -10,6 +10,53 @@ use Illuminate\Support\Facades\Schema;
 class ModulesService
 {
     /**
+     * Módulos descontinuados/removidos do sistema que não devem mais ser listados nem atribuídos.
+     *
+     * @var list<string>
+     */
+    public const DISCONTINUED_MODULES = [
+        'agenda',
+        'contract',
+        'photographer_site',
+        'kingbrief',
+        'king_bolao',
+    ];
+
+    /**
+     * Garante que as tabelas de planos individuais existam no banco com a estrutura correta.
+     */
+    private function ensureIndividualTablesExist(): void
+    {
+        try {
+            DB::statement('CREATE TABLE IF NOT EXISTS individual_user_plans (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(255) NOT NULL,
+                module_type VARCHAR(50) NOT NULL,
+                plan_code VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, module_type)
+            )');
+
+            DB::statement('CREATE TABLE IF NOT EXISTS individual_user_plan_exclusions (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(255) NOT NULL,
+                module_type VARCHAR(50) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, module_type)
+            )');
+
+            DB::statement('CREATE TABLE IF NOT EXISTS individual_user_finance_profiles (
+                user_id VARCHAR(255) NOT NULL PRIMARY KEY,
+                max_finance_profiles INTEGER NOT NULL DEFAULT 1 CHECK (max_finance_profiles >= 1 AND max_finance_profiles <= 20),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )');
+        } catch (\Throwable $e) {
+            Log::warning('modules.ensureIndividualTablesExist', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * @return array{status:int, body:array<string,mixed>}
      */
     public function available(string $userId, ?string $planCodeQuery): array
@@ -92,7 +139,10 @@ class ModulesService
             }
             $exSet = array_fill_keys($exclusions, true);
             $merged = array_unique(array_merge($available, $adds));
-            $available = array_values(array_filter($merged, static fn ($m) => ! ($exSet[$m] ?? false)));
+            $available = array_values(array_filter(
+                $merged,
+                static fn ($m) => ! ($exSet[$m] ?? false) && ! in_array($m, self::DISCONTINUED_MODULES, true)
+            ));
             sort($available);
             if (! ($exSet['wifi'] ?? false) && ! in_array('wifi', $available, true)) {
                 $available[] = 'wifi';
@@ -130,6 +180,9 @@ class ModulesService
             );
             foreach ($rows as $r) {
                 $type = (string) $r->module_type;
+                if (in_array($type, self::DISCONTINUED_MODULES, true)) {
+                    continue;
+                }
                 if (! isset($modulesMap[$type])) {
                     $modulesMap[$type] = ['module_type' => $type, 'plans' => []];
                 }
@@ -274,6 +327,9 @@ class ModulesService
                     if (strlen($moduleType) > 64 || strlen($planCode) > 64) {
                         continue;
                     }
+                    if (in_array($moduleType, self::DISCONTINUED_MODULES, true)) {
+                        continue;
+                    }
                     $raw = $row['is_available'] ?? false;
                     $isAvailable = $raw === true || $raw === 1 || $raw === '1' || $raw === 'true';
 
@@ -327,12 +383,17 @@ class ModulesService
     public function individualPlans(): array
     {
         try {
+            $this->ensureIndividualTablesExist();
+
+            $placeholders = implode(',', array_fill(0, count(self::DISCONTINUED_MODULES), '?'));
             $plans = DB::select(
-                'SELECT i.user_id, i.module_type, u.email as user_email, COALESCE(p.display_name, u.email) as user_name
+                "SELECT i.user_id, i.module_type, u.email as user_email, COALESCE(p.display_name, u.email) as user_name
                  FROM individual_user_plans i
                  JOIN users u ON i.user_id = u.id
                  LEFT JOIN user_profiles p ON u.id = p.user_id
-                 ORDER BY u.email ASC, i.module_type ASC'
+                 WHERE i.module_type NOT IN ($placeholders)
+                 ORDER BY u.email ASC, i.module_type ASC",
+                self::DISCONTINUED_MODULES
             );
 
             return ['status' => 200, 'body' => [
@@ -385,6 +446,8 @@ class ModulesService
     public function getIndividualPlan(string $userId): array
     {
         try {
+            $this->ensureIndividualTablesExist();
+
             $user = DB::selectOne(
                 'SELECT u.id, u.email, COALESCE(p.display_name, u.email) as name, u.account_type
                  FROM users u
@@ -405,26 +468,34 @@ class ModulesService
                     [$planCode]
                 )
             );
+            $baseModules = array_diff($baseModules, self::DISCONTINUED_MODULES);
             $baseSet = array_fill_keys($baseModules, true);
 
             $exclusions = array_map(
                 static fn ($r) => (string) $r->module_type,
                 DB::select('SELECT module_type FROM individual_user_plan_exclusions WHERE user_id = ?', [$userId])
             );
+            $exclusions = array_diff($exclusions, self::DISCONTINUED_MODULES);
             $exSet = array_fill_keys($exclusions, true);
 
             $adds = array_map(
                 static fn ($r) => (string) $r->module_type,
                 DB::select('SELECT module_type FROM individual_user_plans WHERE user_id = ?', [$userId])
             );
+            $adds = array_diff($adds, self::DISCONTINUED_MODULES);
             $addSet = array_fill_keys($adds, true);
 
+            $placeholders = implode(',', array_fill(0, count(self::DISCONTINUED_MODULES), '?'));
             $allTypes = array_map(
                 static fn ($r) => (string) $r->module_type,
-                DB::select('SELECT DISTINCT module_type FROM module_plan_availability ORDER BY module_type ASC')
+                DB::select(
+                    "SELECT DISTINCT module_type FROM module_plan_availability WHERE module_type NOT IN ($placeholders) ORDER BY module_type ASC",
+                    self::DISCONTINUED_MODULES
+                )
             );
             if (empty($allTypes)) {
                 $allTypes = [
+                    'cartao_virtual',
                     'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode', 'wifi',
                     'facebook', 'instagram', 'tiktok', 'twitter', 'youtube',
                     'spotify', 'linkedin', 'pinterest',
@@ -434,9 +505,13 @@ class ModulesService
                     'recibos_orcamentos',
                 ];
             }
+            $allTypes = array_values(array_diff($allTypes, self::DISCONTINUED_MODULES));
 
             $modulesList = [];
             foreach ($allTypes as $type) {
+                if (in_array($type, self::DISCONTINUED_MODULES, true)) {
+                    continue;
+                }
                 $inBase = isset($baseSet[$type]);
                 $isActive = $inBase ? ! isset($exSet[$type]) : isset($addSet[$type]);
                 $modulesList[] = [
@@ -474,7 +549,7 @@ class ModulesService
 
             return ['status' => 500, 'body' => [
                 'success' => false,
-                'message' => 'Erro ao carregar plano individual do usuário.',
+                'message' => 'Erro ao carregar plano individual do usuário: ' . $e->getMessage(),
             ]];
         }
     }
@@ -486,6 +561,8 @@ class ModulesService
     public function updateIndividualPlan(string $userId, array $data): array
     {
         try {
+            $this->ensureIndividualTablesExist();
+
             $user = DB::selectOne('SELECT id, account_type FROM users WHERE id = ? LIMIT 1', [$userId]);
             if (! $user) {
                 return ['status' => 404, 'body' => ['success' => false, 'message' => 'Usuário não encontrado.']];
@@ -496,9 +573,17 @@ class ModulesService
                 $selectedModules = [];
             }
             $selectedModules = array_map('strval', $selectedModules);
+            // Filtrar módulos descontinuados
+            $selectedModules = array_values(array_filter(
+                $selectedModules,
+                static fn ($m) => ! in_array($m, self::DISCONTINUED_MODULES, true)
+            ));
             $selectedSet = array_fill_keys($selectedModules, true);
 
             $planCode = PlanCodeResolver::fromAccountType((string) ($user->account_type ?? ''));
+            if (! $planCode) {
+                $planCode = 'individual';
+            }
 
             $baseModules = array_map(
                 static fn ($r) => (string) $r->module_type,
@@ -507,21 +592,30 @@ class ModulesService
                     [$planCode]
                 )
             );
+            $baseModules = array_diff($baseModules, self::DISCONTINUED_MODULES);
             $baseSet = array_fill_keys($baseModules, true);
 
+            $placeholders = implode(',', array_fill(0, count(self::DISCONTINUED_MODULES), '?'));
             $allModules = array_map(
                 static fn ($r) => (string) $r->module_type,
-                DB::select('SELECT DISTINCT module_type FROM module_plan_availability')
+                DB::select(
+                    "SELECT DISTINCT module_type FROM module_plan_availability WHERE module_type NOT IN ($placeholders)",
+                    self::DISCONTINUED_MODULES
+                )
             );
             if (empty($allModules)) {
                 $allModules = array_keys(array_merge($baseSet, $selectedSet));
             }
+            $allModules = array_values(array_diff($allModules, self::DISCONTINUED_MODULES));
 
             DB::transaction(function () use ($userId, $planCode, $selectedSet, $baseSet, $allModules, $data): void {
                 DB::delete('DELETE FROM individual_user_plans WHERE user_id = ?', [$userId]);
                 DB::delete('DELETE FROM individual_user_plan_exclusions WHERE user_id = ?', [$userId]);
 
                 foreach ($allModules as $mod) {
+                    if (in_array($mod, self::DISCONTINUED_MODULES, true)) {
+                        continue;
+                    }
                     $inBase = isset($baseSet[$mod]);
                     $selected = isset($selectedSet[$mod]);
 
@@ -540,20 +634,33 @@ class ModulesService
 
                 if (isset($data['max_finance_profiles'])) {
                     $maxP = max(1, min(20, (int) $data['max_finance_profiles']));
-                    $hasFp = DB::selectOne(
-                        'SELECT 1 FROM individual_user_finance_profiles WHERE user_id = ? LIMIT 1',
-                        [$userId]
-                    );
-                    if ($hasFp) {
-                        DB::update(
-                            'UPDATE individual_user_finance_profiles SET max_finance_profiles = ?, updated_at = NOW() WHERE user_id = ?',
-                            [$maxP, $userId]
-                        );
-                    } else {
-                        DB::insert(
-                            'INSERT INTO individual_user_finance_profiles (user_id, max_finance_profiles, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
+                    try {
+                        DB::statement(
+                            'INSERT INTO individual_user_finance_profiles (user_id, max_finance_profiles, updated_at)
+                             VALUES (?, ?, NOW())
+                             ON CONFLICT (user_id) DO UPDATE SET max_finance_profiles = EXCLUDED.max_finance_profiles, updated_at = NOW()',
                             [$userId, $maxP]
                         );
+                    } catch (\Throwable $efp) {
+                        try {
+                            $hasFp = DB::selectOne(
+                                'SELECT 1 FROM individual_user_finance_profiles WHERE user_id = ? LIMIT 1',
+                                [$userId]
+                            );
+                            if ($hasFp) {
+                                DB::update(
+                                    'UPDATE individual_user_finance_profiles SET max_finance_profiles = ?, updated_at = NOW() WHERE user_id = ?',
+                                    [$maxP, $userId]
+                                );
+                            } else {
+                                DB::insert(
+                                    'INSERT INTO individual_user_finance_profiles (user_id, max_finance_profiles, updated_at) VALUES (?, ?, NOW())',
+                                    [$userId, $maxP]
+                                );
+                            }
+                        } catch (\Throwable $efp2) {
+                            Log::warning('modules.updateIndividualPlan.financeProfiles', ['error' => $efp2->getMessage()]);
+                        }
                     }
                 }
             });
@@ -578,10 +685,15 @@ class ModulesService
     public function deleteIndividualPlan(string $userId): array
     {
         try {
+            $this->ensureIndividualTablesExist();
+
             DB::transaction(function () use ($userId): void {
                 DB::delete('DELETE FROM individual_user_plans WHERE user_id = ?', [$userId]);
                 DB::delete('DELETE FROM individual_user_plan_exclusions WHERE user_id = ?', [$userId]);
-                DB::delete('DELETE FROM individual_user_finance_profiles WHERE user_id = ?', [$userId]);
+                try {
+                    DB::delete('DELETE FROM individual_user_finance_profiles WHERE user_id = ?', [$userId]);
+                } catch (\Throwable) {
+                }
             });
 
             return ['status' => 200, 'body' => [
@@ -598,3 +710,4 @@ class ModulesService
         }
     }
 }
+
