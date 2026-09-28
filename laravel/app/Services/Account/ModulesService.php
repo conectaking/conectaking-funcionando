@@ -596,17 +596,17 @@ class ModulesService
             $baseSet = array_fill_keys($baseModules, true);
 
             $placeholders = implode(',', array_fill(0, count(self::DISCONTINUED_MODULES), '?'));
-            $allModules = array_map(
+            $availModules = array_map(
                 static fn ($r) => (string) $r->module_type,
                 DB::select(
                     "SELECT DISTINCT module_type FROM module_plan_availability WHERE module_type NOT IN ($placeholders)",
                     self::DISCONTINUED_MODULES
                 )
             );
-            if (empty($allModules)) {
-                $allModules = array_keys(array_merge($baseSet, $selectedSet));
-            }
-            $allModules = array_values(array_diff($allModules, self::DISCONTINUED_MODULES));
+            $allModules = array_values(array_unique(array_filter(
+                array_merge($availModules, array_keys($baseSet), array_keys($selectedSet)),
+                static fn ($m) => ! in_array($m, self::DISCONTINUED_MODULES, true) && trim((string) $m) !== ''
+            )));
 
             DB::transaction(function () use ($userId, $planCode, $selectedSet, $baseSet, $allModules, $data): void {
                 DB::delete('DELETE FROM individual_user_plans WHERE user_id = ?', [$userId]);
@@ -620,13 +620,17 @@ class ModulesService
                     $selected = isset($selectedSet[$mod]);
 
                     if ($inBase && ! $selected) {
-                        DB::insert(
-                            'INSERT INTO individual_user_plan_exclusions (user_id, module_type) VALUES (?, ?)',
+                        DB::statement(
+                            'INSERT INTO individual_user_plan_exclusions (user_id, module_type)
+                             VALUES (?, ?)
+                             ON CONFLICT (user_id, module_type) DO NOTHING',
                             [$userId, $mod]
                         );
                     } elseif (! $inBase && $selected) {
-                        DB::insert(
-                            'INSERT INTO individual_user_plans (user_id, module_type, plan_code) VALUES (?, ?, ?)',
+                        DB::statement(
+                            'INSERT INTO individual_user_plans (user_id, module_type, plan_code)
+                             VALUES (?, ?, ?)
+                             ON CONFLICT (user_id, module_type) DO UPDATE SET plan_code = EXCLUDED.plan_code',
                             [$userId, $mod, $planCode]
                         );
                     }

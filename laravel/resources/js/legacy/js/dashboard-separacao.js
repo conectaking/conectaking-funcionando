@@ -767,11 +767,11 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
             </div>
             
             <div style="display: flex; gap: 12px; margin-top: 32px;">
-                <button type="button" id="cancel-user-modules-btn" onclick="document.getElementById('user-modules-modal').remove()" 
+                <button type="button" id="cancel-user-modules-btn" 
                         style="flex: 1; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color, #333); background: transparent; color: var(--text-secondary, #888888); cursor: pointer; font-weight: 600;">
                     Cancelar
                 </button>
-                <button type="button" id="save-user-modules-btn" onclick="saveUserIndividualModules('${user.id}')" 
+                <button type="button" id="save-user-modules-btn" 
                         style="flex: 2; padding: 14px; border-radius: 8px; border: none; background: var(--dourado-principal, #FFD700); color: #000; cursor: pointer; font-weight: 700;">
                     <i class="fas fa-save"></i> Salvar Módulos
                 </button>
@@ -785,6 +785,7 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
     if (saveBtn) {
         saveBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             window.saveUserIndividualModules(user.id);
         });
     }
@@ -792,6 +793,7 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
     if (cancelBtn) {
         cancelBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             modal.remove();
         });
     }
@@ -806,6 +808,16 @@ function showUserModulesModal(user, modules, maxFinanceProfiles) {
 
 // Salvar módulos individuais do usuário
 window.saveUserIndividualModules = async function (userId) {
+    const saveBtn = document.getElementById('save-user-modules-btn');
+    const cancelBtn = document.getElementById('cancel-user-modules-btn');
+    if (saveBtn) {
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = '0.7';
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+    }
+    if (cancelBtn) cancelBtn.disabled = true;
+
     try {
         // Buscar TODOS os checkboxes (incluindo os que estão no plano base)
         const checkboxes = document.querySelectorAll('#user-modules-modal .user-module-checkbox');
@@ -852,6 +864,12 @@ window.saveUserIndividualModules = async function (userId) {
     } catch (error) {
         console.error('Erro ao salvar módulos:', error);
         alert('Erro ao salvar módulos: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Módulos';
+        }
     }
 };
 
