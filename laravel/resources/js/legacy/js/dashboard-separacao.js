@@ -509,10 +509,10 @@ function renderIndividualPlans(plans) {
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn-edit-indiv" data-user-id="${userPlan.user_id}" onclick="editIndividualPlan('${userPlan.user_id}')" style="padding: 6px 12px; background: var(--dourado-principal, #FFD700); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                    <button class="btn-edit-indiv" data-user-id="${userPlan.user_id}" style="padding: 6px 12px; background: var(--dourado-principal, #FFD700); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
                         <i class="fas fa-edit"></i> Editar
                     </button>
-                    <button class="btn-delete-indiv" data-user-id="${userPlan.user_id}" onclick="deleteAllIndividualPlans('${userPlan.user_id}')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                    <button class="btn-delete-indiv" data-user-id="${userPlan.user_id}" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
                         <i class="fas fa-trash"></i> Remover
                     </button>
                 </div>
