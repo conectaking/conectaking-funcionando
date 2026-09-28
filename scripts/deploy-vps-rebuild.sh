@@ -1,7 +1,7 @@
 #!/bin/bash
 # Rebuild limpo Laravel na VPS — sem docker cp pontual.
 # Esperado: /tmp/ck-rebuild.tgz com laravel/, public/, docker-compose.prod.yml
-set -euo pipefail
+set -eu
 BASE=/opt/conectaking
 TGZ=/tmp/ck-rebuild.tgz
 
