@@ -60,8 +60,24 @@
             --btn-align: {{ $alignValue ?? 'center' }};
             --btn-text-align: {{ ($alignValue ?? 'center') === 'flex-end' ? 'right' : (($alignValue ?? 'center') === 'center' ? 'center' : 'left') }};
             --logo-max: {{ max(24, min($logoSize, 90)) }}px;
-        }
         html.ck-page-bg { background-color: var(--page-bg); }
+        html {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            min-height: 100% !important;
+            height: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        body {
+            overflow: visible !important;
+            overflow-x: visible !important;
+            overflow-y: visible !important;
+            min-height: 100% !important;
+            height: auto !important;
+        }
+        .profile-page-wrapper {
+            overflow: visible !important;
+        }
         .background-image-overlay-wrapper {
             position: fixed;
             top: 0;
