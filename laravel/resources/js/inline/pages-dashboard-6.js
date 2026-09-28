@@ -11,6 +11,32 @@
             var editorTab = null;
             if (map[tid]) tid = map[tid];
             else if (tid === 'modelos-editor' || tid === 'info-editor' || tid === 'items-editor' || tid === 'personalizar-editor') { editorTab = tid; tid = 'editar-pane'; }
+
+            var isAdmin = false;
+            try {
+                var u = JSON.parse(localStorage.getItem('conectaKingUser') || localStorage.getItem('user') || '{}');
+                isAdmin = (u.isAdmin === true || u.is_admin === true || u.accountType === 'admin');
+            } catch(e){}
+            if (!isAdmin) {
+                var sepPane = document.getElementById('separacao-pacotes-pane');
+                if (sepPane) {
+                    sepPane.classList.remove('active');
+                    sepPane.classList.add('ck-hidden');
+                    sepPane.style.display = 'none';
+                }
+                var sepLink = document.getElementById('separacao-pacotes-link');
+                if (sepLink) {
+                    sepLink.classList.add('ck-hidden');
+                    sepLink.style.display = 'none';
+                }
+                if (tid === 'separacao-pacotes-pane' || tid === 'separacao-pacotes' || tid === 'personalizar-link-pane') {
+                    tid = 'editar-pane';
+                    try { localStorage.removeItem('dashboard_last_pane'); } catch(e){}
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar');
+                    }
+                }
+            }
             var target = document.getElementById(tid);
             var panes = document.querySelectorAll('.main-content');
             if (panes.length && target) {

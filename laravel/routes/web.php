@@ -388,24 +388,10 @@ Route::middleware('jwt')->group(function () {
         ->where('email', '[^/]+');
         Route::get('/api/subscription/info', [\App\Http\Controllers\Account\SubscriptionController::class, 'info']);
         Route::get('/api/subscription/plans', [\App\Http\Controllers\Account\SubscriptionController::class, 'plans']);
-        Route::put('/api/subscription/plans/{id}', [\App\Http\Controllers\Account\SubscriptionController::class, 'updatePlan'])
-        ->where('id', '[0-9]+');
         Route::get('/api/link-limits/user', [\App\Http\Controllers\Account\LinkLimitsController::class, 'user']);
         Route::get('/api/link-limits/check/{moduleType}', [\App\Http\Controllers\Account\LinkLimitsController::class, 'check'])
         ->where('moduleType', '[A-Za-z0-9_]+');
-        Route::get('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'index']);
-        Route::put('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'upsert']);
-        Route::post('/api/link-limits/bulk-update', [\App\Http\Controllers\Account\LinkLimitsController::class, 'bulkUpdate']);
-        Route::post('/api/link-limits/reset-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'resetPlan']);
-        Route::post('/api/link-limits/copy-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'copyPlan']);
-        Route::get('/api/link-limits/stats', [\App\Http\Controllers\Account\LinkLimitsController::class, 'stats']);
         Route::get('/api/modules/available', [\App\Http\Controllers\Account\ModulesController::class, 'available']);
-        Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
-        Route::get('/api/modules/individual-plans', [\App\Http\Controllers\Account\ModulesController::class, 'individualPlans']);
-        Route::get('/api/modules/users-list', [\App\Http\Controllers\Account\ModulesController::class, 'usersList']);
-        Route::get('/api/modules/individual-plans/{userId}', [\App\Http\Controllers\Account\ModulesController::class, 'getIndividualPlan']);
-        Route::put('/api/modules/individual-plans/{userId}', [\App\Http\Controllers\Account\ModulesController::class, 'updateIndividualPlan']);
-        Route::delete('/api/modules/individual-plans/{userId}', [\App\Http\Controllers\Account\ModulesController::class, 'deleteIndividualPlan']);
         Route::get('/api/analytics/kpis', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'kpis']);
         Route::get('/api/analytics/performance', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'performance']);
         Route::get('/api/analytics/top-items', [\App\Http\Controllers\Analytics\AnalyticsController::class, 'topItems']);
@@ -751,8 +737,22 @@ Route::middleware(['jwt', 'module:king_docs'])->group(function () use ($kd) {
 
 Route::get('/api/modules/plan-availability-public', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailabilityPublic']);
 Route::middleware(['admin', 'audit'])->group(function () {
+    Route::put('/api/subscription/plans/{id}', [\App\Http\Controllers\Account\SubscriptionController::class, 'updatePlan'])
+        ->where('id', '[0-9]+');
+    Route::get('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'index']);
+    Route::put('/api/link-limits', [\App\Http\Controllers\Account\LinkLimitsController::class, 'upsert']);
+    Route::post('/api/link-limits/bulk-update', [\App\Http\Controllers\Account\LinkLimitsController::class, 'bulkUpdate']);
+    Route::post('/api/link-limits/reset-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'resetPlan']);
+    Route::post('/api/link-limits/copy-plan', [\App\Http\Controllers\Account\LinkLimitsController::class, 'copyPlan']);
+    Route::get('/api/link-limits/stats', [\App\Http\Controllers\Account\LinkLimitsController::class, 'stats']);
+    Route::get('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'planAvailability']);
     Route::put('/api/modules/plan-availability', [\App\Http\Controllers\Account\ModulesController::class, 'updatePlanAvailability'])
         ->middleware('throttle:60,1');
+    Route::get('/api/modules/individual-plans', [\App\Http\Controllers\Account\ModulesController::class, 'individualPlans']);
+    Route::get('/api/modules/users-list', [\App\Http\Controllers\Account\ModulesController::class, 'usersList']);
+    Route::get('/api/modules/individual-plans/{userId}', [\App\Http\Controllers\Account\ModulesController::class, 'getIndividualPlan']);
+    Route::put('/api/modules/individual-plans/{userId}', [\App\Http\Controllers\Account\ModulesController::class, 'updateIndividualPlan']);
+    Route::delete('/api/modules/individual-plans/{userId}', [\App\Http\Controllers\Account\ModulesController::class, 'deleteIndividualPlan']);
         $linkPreview = \App\Http\Controllers\Admin\PersonalizarLinkController::class;
     Route::get('/api/admin/link-preview-config', [$linkPreview, 'getConfig']);
         Route::post('/api/admin/link-preview-config', [$linkPreview, 'saveConfig']);

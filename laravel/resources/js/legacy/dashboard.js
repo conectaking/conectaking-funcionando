@@ -4296,6 +4296,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (isAdmin) separacaoLink.classList.remove('ck-hidden');
                 else separacaoLink.classList.add('ck-hidden');
             }
+
+            if (!isAdmin) {
+                const separacaoPane = document.getElementById('separacao-pacotes-pane');
+                if (separacaoPane) {
+                    separacaoPane.classList.remove('active');
+                    separacaoPane.classList.add('ck-hidden');
+                    separacaoPane.style.display = 'none';
+                }
+                const curHash = (window.location.hash || '').replace(/^#/, '').trim();
+                if (curHash === 'separacao-pacotes' || curHash === 'separacao-pacotes-pane' || curHash === 'personalizar-link' || curHash === 'personalizar-link-pane') {
+                    try { localStorage.removeItem('dashboard_last_pane'); } catch (e) {}
+                    try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar'); } catch (e) {}
+                    const editarLink = document.querySelector('.sidebar .nav-link[data-target="editar-pane"]');
+                    if (editarLink) editarLink.click();
+                }
+            }
         }
 
         // Aplicar IMEDIATAMENTE com localStorage (antes de qualquer await) para evitar aba aparecer e sumir

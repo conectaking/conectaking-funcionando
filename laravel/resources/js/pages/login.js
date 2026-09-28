@@ -210,6 +210,7 @@ import '@css/pages/login-inline.css';
             try { localStorage.removeItem('token'); } catch (_) {}
           }
           // refresh_token HttpOnly via Set-Cookie — não gravar no localStorage.
+          try { localStorage.removeItem('dashboard_last_pane'); } catch (_) {}
           if (data.user) {
             localStorage.setItem('conectaKingUser', JSON.stringify(data.user));
           }

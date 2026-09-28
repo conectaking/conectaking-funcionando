@@ -8,8 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
     const handleLogout = () => {
-        localStorage.removeItem('conectaKingToken');
-        localStorage.removeItem('conectaKingUser');
+        ['conectaKingToken', 'conectaKingUser', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(k => {
+            try { localStorage.removeItem(k); } catch (e) {}
+            try { sessionStorage.removeItem(k); } catch (e) {}
+        });
         window.location.href = '/';
     };
 

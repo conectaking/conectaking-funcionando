@@ -110,10 +110,29 @@ async function checkAdminAndShowLink() {
 
         if (response.ok) {
             const data = await response.json();
+            const separacaoLink = document.getElementById('separacao-pacotes-link');
+            const separacaoPane = document.getElementById('separacao-pacotes-pane');
             if (data.isAdmin) {
-                const separacaoLink = document.getElementById('separacao-pacotes-link');
                 if (separacaoLink) {
                     separacaoLink.style.display = 'block';
+                    separacaoLink.classList.remove('ck-hidden');
+                }
+            } else {
+                if (separacaoLink) {
+                    separacaoLink.style.display = 'none';
+                    separacaoLink.classList.add('ck-hidden');
+                }
+                if (separacaoPane) {
+                    separacaoPane.classList.remove('active');
+                    separacaoPane.classList.add('ck-hidden');
+                    separacaoPane.style.display = 'none';
+                }
+                const curHash = (window.location.hash || '').replace(/^#/, '').trim();
+                if (curHash === 'separacao-pacotes' || curHash === 'separacao-pacotes-pane') {
+                    try { localStorage.removeItem('dashboard_last_pane'); } catch (e) {}
+                    try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar'); } catch (e) {}
+                    const editarLink = document.querySelector('.sidebar .nav-link[data-target="editar-pane"]');
+                    if (editarLink) editarLink.click();
                 }
             }
         }
@@ -132,9 +151,16 @@ async function loadModuleAvailability() {
 
         if (!response.ok) {
             if (response.status === 403) {
-                document.getElementById('module-availability-list').innerHTML = `
-                    <p style="color: #ff4444;">Acesso negado. Apenas administradores podem acessar esta página.</p>
-                `;
+                const separacaoPane = document.getElementById('separacao-pacotes-pane');
+                if (separacaoPane) {
+                    separacaoPane.classList.remove('active');
+                    separacaoPane.classList.add('ck-hidden');
+                    separacaoPane.style.display = 'none';
+                }
+                try { localStorage.removeItem('dashboard_last_pane'); } catch (e) {}
+                try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar'); } catch (e) {}
+                const editarLink = document.querySelector('.sidebar .nav-link[data-target="editar-pane"]');
+                if (editarLink) editarLink.click();
                 return;
             }
             throw new Error('Erro ao carregar disponibilidade de módulos');

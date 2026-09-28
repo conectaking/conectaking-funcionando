@@ -1022,7 +1022,22 @@ function _setupEventListenersBody() {
         if (!hasPaneTarget && hrefAttr && hrefAttr !== '#' && hrefAttr.charAt(0) !== '#') {
             return;
         }
-        if (link.id !== 'logout-btn' && link.id !== 'adm-link' && link.id !== 'personalizacao-logo-link' && !link.href.includes('conta.html') && !link.href.includes('admin') && !link.href.includes('business')) {
+        if (link.id === 'logout-btn') {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                ['conectaKingToken', 'conectaKingUser', 'token', 'refreshToken', 'user', 'dashboard_last_pane'].forEach(k => {
+                    try { localStorage.removeItem(k); } catch (err) {}
+                    try { sessionStorage.removeItem(k); } catch (err) {}
+                });
+                if (typeof window.ckExitToLogin === 'function') {
+                    window.ckExitToLogin();
+                } else {
+                    window.location.href = '/';
+                }
+            });
+            return;
+        }
+        if (link.id !== 'adm-link' && link.id !== 'personalizacao-logo-link' && !link.href.includes('conta.html') && !link.href.includes('admin') && !link.href.includes('business')) {
             if (link.id === 'king-forms-sidebar-link') {
                 return;
             }
@@ -1104,6 +1119,14 @@ function _setupEventListenersBody() {
                 SELECTORS.sidebarNavLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
                 const targetId = link.dataset.target;
+                let isAdmin = false;
+                try {
+                    const u = JSON.parse(localStorage.getItem('conectaKingUser') || localStorage.getItem('user') || '{}');
+                    isAdmin = (u.isAdmin === true || u.is_admin === true || u.accountType === 'admin');
+                } catch(e){}
+                if (!isAdmin && (targetId === 'separacao-pacotes-pane' || targetId === 'personalizar-link-pane')) {
+                    return;
+                }
 
                 if (targetId) {
                     // Esconder todos os painéis
@@ -2578,8 +2601,32 @@ function _setupEventListenersBody() {
         if (!targetId) return;
         const fullHash = targetId; // guardar para finance-pane-tab-X
         // finance-pane-tab-cartoes -> finance-pane (preservar hash para initFinancePane ler a aba)
-        if (targetId.startsWith('finance-pane-tab-')) targetId = 'finance-pane';
         if (hashToPaneId[targetId]) targetId = hashToPaneId[targetId];
+
+        let isAdmin = false;
+        try {
+            const u = JSON.parse(localStorage.getItem('conectaKingUser') || localStorage.getItem('user') || '{}');
+            isAdmin = (u.isAdmin === true || u.is_admin === true || u.accountType === 'admin');
+        } catch (e) {}
+
+        if (!isAdmin) {
+            const sepPane = document.getElementById('separacao-pacotes-pane');
+            if (sepPane) {
+                sepPane.classList.remove('active');
+                sepPane.classList.add('ck-hidden');
+                sepPane.style.display = 'none';
+            }
+            const sepLink = document.getElementById('separacao-pacotes-link');
+            if (sepLink) {
+                sepLink.classList.add('ck-hidden');
+                sepLink.style.display = 'none';
+            }
+            if (targetId === 'separacao-pacotes-pane' || targetId === 'separacao-pacotes' || targetId === 'personalizar-link-pane') {
+                targetId = 'editar-pane';
+                try { localStorage.removeItem('dashboard_last_pane'); } catch (e) {}
+                try { window.history.replaceState(null, '', (window.location.pathname || '/dashboard') + '#editar'); } catch (e) {}
+            }
+        }
 
         // 1) Hash é um painel principal (ex: finance-pane, relatorios-pane, editar-pane)?
         const mainNavLink = document.querySelector(`.sidebar .nav-link[data-target="${targetId}"]`);
