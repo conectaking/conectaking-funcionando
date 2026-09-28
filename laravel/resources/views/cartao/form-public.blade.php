@@ -5,13 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $form['form_title'] ?? 'Formulário' }}</title>
     @php
+        $rawTheme = strtolower(trim((string) ($form['theme'] ?? 'light')));
+        $isDark = ($rawTheme === 'dark');
         $primary = $form['primary_color'] ?? '#4A90E2';
         $secondary = $form['secondary_color'] ?? $primary;
-        $bg = $form['background_color'] ?? '#F5F7FA';
-        $text = $form['text_color'] ?? '#202124';
-        $card = $form['card_color'] ?? '#FFFFFF';
+        $defaultBg = $isDark ? '#0D0D0F' : '#F5F7FA';
+        $defaultCard = $isDark ? '#18181B' : '#FFFFFF';
+        $defaultText = $isDark ? '#ECECEC' : '#202124';
+        $bg = $form['background_color'] ?? $defaultBg;
+        $text = $form['text_color'] ?? $defaultText;
+        $card = $form['card_color'] ?? $defaultCard;
+        if ($isDark && (strtoupper((string) $card) === '#FFFFFF' || strtoupper((string) $card) === '#FFF')) {
+            $card = '#18181B';
+        }
+        if ($isDark && (strtoupper((string) $bg) === '#F5F7FA' || strtoupper((string) $bg) === '#FFFFFF')) {
+            $bg = '#0D0D0F';
+        }
         $bar = $form['decorative_bar_color'] ?? $primary;
-        $sep = $form['separator_line_color'] ?? 'rgba(0,0,0,.08)';
+        $sep = $form['separator_line_color'] ?? ($isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,.08)');
+        $inputBg = $isDark ? '#27272A' : '#FFFFFF';
+        $inputBorder = $isDark ? 'rgba(255,255,255,0.16)' : '#DADCE0';
+        $inputText = $isDark ? '#FFFFFF' : $text;
         $bgImg = $form['background_image_url'] ?? null;
         $bgOp = isset($form['background_image_opacity']) ? (float) $form['background_image_opacity'] : 0.35;
         $headerImg = $form['header_image_url'] ?? null;
@@ -25,6 +39,9 @@
             --card: {{ $card }};
             --bar: {{ $bar }};
             --sep: {{ $sep }};
+            --input-bg: {{ $inputBg }};
+            --input-border: {{ $inputBorder }};
+            --input-text: {{ $inputText }};
         }
 
 @if($bgImg)

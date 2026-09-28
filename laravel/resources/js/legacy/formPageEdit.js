@@ -9678,7 +9678,12 @@
             icon: 'fas fa-crown',
             theme: 'dark',
             primary_color: '#FFC700',
+            secondary_color: '#FFA500',
             text_color: '#FFFFFF',
+            card_color: '#1C1C21',
+            background_color: '#0D0D0F',
+            decorative_bar_color: '#FFC700',
+            bar_color: '#FFC700',
             description: 'Elegância dourada sobre fundo escuro - Luxo absoluto'
         },
         'black_red_luxury': {
@@ -9686,7 +9691,12 @@
             icon: 'fas fa-fire',
             theme: 'dark',
             primary_color: '#DC2626',
+            secondary_color: '#991B1B',
             text_color: '#FFFFFF',
+            card_color: '#1C1C21',
+            background_color: '#0D0D0F',
+            decorative_bar_color: '#DC2626',
+            bar_color: '#DC2626',
             description: 'Preto e vermelho intenso - Poder e elegância'
         },
         'golden_luxury': {
@@ -9694,7 +9704,12 @@
             icon: 'fas fa-coins',
             theme: 'light',
             primary_color: '#D4AF37',
-            text_color: '#1a1a1a',
+            secondary_color: '#F59E0B',
+            text_color: '#1A1A1A',
+            card_color: '#FFFFFF',
+            background_color: '#FFFDF5',
+            decorative_bar_color: '#D4AF37',
+            bar_color: '#D4AF37',
             description: 'Elegância dourada premium e sofisticada'
         },
         'midnight_gold': {
@@ -9702,7 +9717,12 @@
             icon: 'fas fa-moon',
             theme: 'dark',
             primary_color: '#FFD700',
+            secondary_color: '#FFA500',
             text_color: '#FFFFFF',
+            card_color: '#141418',
+            background_color: '#070709',
+            decorative_bar_color: '#FFD700',
+            bar_color: '#FFD700',
             description: 'Dourado intenso em fundo preto profundo'
         },
         'royal_purple_luxury': {
@@ -9710,7 +9730,12 @@
             icon: 'fas fa-gem',
             theme: 'dark',
             primary_color: '#9D4EDD',
+            secondary_color: '#7B2CBF',
             text_color: '#FFFFFF',
+            card_color: '#181424',
+            background_color: '#0E0A17',
+            decorative_bar_color: '#9D4EDD',
+            bar_color: '#9D4EDD',
             description: 'Roxo majestoso com toque de elegância'
         },
         'emerald_jewel': {
@@ -9718,7 +9743,12 @@
             icon: 'fas fa-dragon',
             theme: 'dark',
             primary_color: '#00FF88',
+            secondary_color: '#00CC6A',
             text_color: '#FFFFFF',
+            card_color: '#121F18',
+            background_color: '#08120D',
+            decorative_bar_color: '#00FF88',
+            bar_color: '#00FF88',
             description: 'Verde esmeralda brilhante e premium'
         },
         'crimson_rose': {
@@ -9726,7 +9756,12 @@
             icon: 'fas fa-heart',
             theme: 'dark',
             primary_color: '#FF1744',
+            secondary_color: '#C51162',
             text_color: '#FFFFFF',
+            card_color: '#1F1215',
+            background_color: '#0F080A',
+            decorative_bar_color: '#FF1744',
+            bar_color: '#FF1744',
             description: 'Rosa intenso e apaixonante'
         },
         'sunset_premium': {
@@ -9734,7 +9769,12 @@
             icon: 'fas fa-sun',
             theme: 'light',
             primary_color: '#FF6B35',
-            text_color: '#1a1a1a',
+            secondary_color: '#F97316',
+            text_color: '#1A1A1A',
+            card_color: '#FFFFFF',
+            background_color: '#FFF8F5',
+            decorative_bar_color: '#FF6B35',
+            bar_color: '#FF6B35',
             description: 'Gradiente de pôr do sol vibrante'
         },
         'ocean_deep': {
@@ -9742,15 +9782,25 @@
             icon: 'fas fa-water',
             theme: 'dark',
             primary_color: '#00D4FF',
+            secondary_color: '#0284C7',
             text_color: '#FFFFFF',
+            card_color: '#101B2B',
+            background_color: '#080E18',
+            decorative_bar_color: '#00D4FF',
+            bar_color: '#00D4FF',
             description: 'Azul oceânico vibrante com profundidade'
         },
         'ice_blue': {
             name: 'Azul Gelo',
             icon: 'fas fa-snowflake',
             theme: 'light',
-            primary_color: '#00E5FF',
-            text_color: '#1a1a1a',
+            primary_color: '#00B4D8',
+            secondary_color: '#0077B6',
+            text_color: '#1A1A1A',
+            card_color: '#FFFFFF',
+            background_color: '#F0F9FF',
+            decorative_bar_color: '#00B4D8',
+            bar_color: '#00B4D8',
             description: 'Azul gelo refrescante e moderno'
         },
         'lavender_dream': {
@@ -9758,7 +9808,12 @@
             icon: 'fas fa-star',
             theme: 'dark',
             primary_color: '#B794F6',
+            secondary_color: '#805AD5',
             text_color: '#FFFFFF',
+            card_color: '#1A1628',
+            background_color: '#0D0A17',
+            decorative_bar_color: '#B794F6',
+            bar_color: '#B794F6',
             description: 'Lavanda suave e relaxante'
         },
         'forest_dark': {
@@ -9766,7 +9821,12 @@
             icon: 'fas fa-tree',
             theme: 'dark',
             primary_color: '#22C55E',
+            secondary_color: '#15803D',
             text_color: '#FFFFFF',
+            card_color: '#121F16',
+            background_color: '#08120B',
+            decorative_bar_color: '#22C55E',
+            bar_color: '#22C55E',
             description: 'Verde floresta natural e orgânico'
         },
         'coral_vibrant': {
@@ -9774,7 +9834,12 @@
             icon: 'fas fa-palette',
             theme: 'dark',
             primary_color: '#FF6B9D',
+            secondary_color: '#DB2777',
             text_color: '#FFFFFF',
+            card_color: '#20131B',
+            background_color: '#0F080D',
+            decorative_bar_color: '#FF6B9D',
+            bar_color: '#FF6B9D',
             description: 'Coral energético e chamativo'
         },
         'steel_blue': {
@@ -9782,23 +9847,38 @@
             icon: 'fas fa-shield-alt',
             theme: 'light',
             primary_color: '#3B82F6',
-            text_color: '#1a1a1a',
+            secondary_color: '#1D4ED8',
+            text_color: '#1A1A1A',
+            card_color: '#FFFFFF',
+            background_color: '#F8FAFC',
+            decorative_bar_color: '#3B82F6',
+            bar_color: '#3B82F6',
             description: 'Azul aço profissional e confiável'
         },
         'amber_fire': {
-            name: ',mbar Flamejante',
+            name: 'Âmbar Flamejante',
             icon: 'fas fa-fire-alt',
             theme: 'dark',
             primary_color: '#F59E0B',
+            secondary_color: '#D97706',
             text_color: '#FFFFFF',
-            description: ',mbar quente e acolhedor'
+            card_color: '#20180F',
+            background_color: '#0F0B06',
+            decorative_bar_color: '#F59E0B',
+            bar_color: '#F59E0B',
+            description: 'Âmbar quente e acolhedor'
         },
         'mint_fresh': {
             name: 'Menta Fresca',
             icon: 'fas fa-leaf',
             theme: 'light',
             primary_color: '#10B981',
-            text_color: '#1a1a1a',
+            secondary_color: '#059669',
+            text_color: '#1A1A1A',
+            card_color: '#FFFFFF',
+            background_color: '#F0FDF4',
+            decorative_bar_color: '#10B981',
+            bar_color: '#10B981',
             description: 'Verde menta refrescante e moderno'
         },
         'violet_storm': {
@@ -9806,7 +9886,12 @@
             icon: 'fas fa-bolt',
             theme: 'dark',
             primary_color: '#8B5CF6',
+            secondary_color: '#6D28D9',
             text_color: '#FFFFFF',
+            card_color: '#181426',
+            background_color: '#0C0A16',
+            decorative_bar_color: '#8B5CF6',
+            bar_color: '#8B5CF6',
             description: 'Violeta intenso e misterioso'
         },
         'copper_warm': {
@@ -9814,7 +9899,12 @@
             icon: 'fas fa-coins',
             theme: 'light',
             primary_color: '#E67E22',
-            text_color: '#1a1a1a',
+            secondary_color: '#D35400',
+            text_color: '#1A1A1A',
+            card_color: '#FFFFFF',
+            background_color: '#FEF9F5',
+            decorative_bar_color: '#E67E22',
+            bar_color: '#E67E22',
             description: 'Cobre quente e aconchegante'
         },
         'cyan_electric': {
@@ -9822,7 +9912,12 @@
             icon: 'fas fa-bolt',
             theme: 'dark',
             primary_color: '#06B6D4',
+            secondary_color: '#0891B2',
             text_color: '#FFFFFF',
+            card_color: '#101F24',
+            background_color: '#081014',
+            decorative_bar_color: '#06B6D4',
+            bar_color: '#06B6D4',
             description: 'Ciano elétrico e futurista'
         },
         'pink_blush': {
@@ -9830,15 +9925,25 @@
             icon: 'fas fa-heart',
             theme: 'light',
             primary_color: '#EC4899',
-            text_color: '#1a1a1a',
+            secondary_color: '#DB2777',
+            text_color: '#1A1A1A',
+            card_color: '#FFFFFF',
+            background_color: '#FDF2F8',
+            decorative_bar_color: '#EC4899',
+            bar_color: '#EC4899',
             description: 'Rosa blush delicado e feminino'
         },
         'indigo_night': {
             name: 'Noite Índigo',
-            icon: 'fas fa-moon-stars',
+            icon: 'fas fa-moon',
             theme: 'dark',
             primary_color: '#6366F1',
+            secondary_color: '#4338CA',
             text_color: '#FFFFFF',
+            card_color: '#14142B',
+            background_color: '#0A0A18',
+            decorative_bar_color: '#6366F1',
+            bar_color: '#6366F1',
             description: 'Índigo noturno profundo e elegante'
         },
         'sapphire_blue': {
@@ -9846,7 +9951,12 @@
             icon: 'fas fa-gem',
             theme: 'light',
             primary_color: '#2563EB',
+            secondary_color: '#1D4ED8',
             text_color: '#1E3A8A',
+            card_color: '#FFFFFF',
+            background_color: '#EFF6FF',
+            decorative_bar_color: '#2563EB',
+            bar_color: '#2563EB',
             description: 'Azul safira profundo e premium'
         },
         'ruby_red': {
@@ -9854,7 +9964,12 @@
             icon: 'fas fa-fire',
             theme: 'light',
             primary_color: '#DC2626',
+            secondary_color: '#B91C1C',
             text_color: '#7F1D1D',
+            card_color: '#FFFFFF',
+            background_color: '#FEF2F2',
+            decorative_bar_color: '#DC2626',
+            bar_color: '#DC2626',
             description: 'Vermelho rubi intenso e impactante'
         },
         'platinum_modern': {
@@ -9862,7 +9977,12 @@
             icon: 'fas fa-shield-alt',
             theme: 'light',
             primary_color: '#64748B',
+            secondary_color: '#475569',
             text_color: '#1E293B',
+            card_color: '#FFFFFF',
+            background_color: '#F8FAFC',
+            decorative_bar_color: '#64748B',
+            bar_color: '#64748B',
             description: 'Platina moderna e minimalista'
         },
         'neon_modern': {
@@ -9870,7 +9990,12 @@
             icon: 'fas fa-lightbulb',
             theme: 'dark',
             primary_color: '#00F5FF',
+            secondary_color: '#00B4D8',
             text_color: '#FFFFFF',
+            card_color: '#111827',
+            background_color: '#0B0F19',
+            decorative_bar_color: '#00F5FF',
+            bar_color: '#00F5FF',
             description: 'Neon moderno com efeitos futuristas'
         },
         'vintage_gold': {
@@ -9878,7 +10003,12 @@
             icon: 'fas fa-clock',
             theme: 'light',
             primary_color: '#B8860B',
+            secondary_color: '#926C08',
             text_color: '#1C1917',
+            card_color: '#FFFFFF',
+            background_color: '#FCFBF7',
+            decorative_bar_color: '#B8860B',
+            bar_color: '#B8860B',
             description: 'Dourado vintage elegante e clássico'
         },
         'emerald_light': {
@@ -9886,7 +10016,12 @@
             icon: 'fas fa-leaf',
             theme: 'light',
             primary_color: '#10B981',
+            secondary_color: '#059669',
             text_color: '#064E3B',
+            card_color: '#FFFFFF',
+            background_color: '#F0FDF4',
+            decorative_bar_color: '#10B981',
+            bar_color: '#10B981',
             description: 'Verde esmeralda claro e natural'
         },
         'royal_blue': {
@@ -9894,7 +10029,12 @@
             icon: 'fas fa-gem',
             theme: 'light',
             primary_color: '#1E40AF',
+            secondary_color: '#1E3A8A',
             text_color: '#1E3A8A',
+            card_color: '#FFFFFF',
+            background_color: '#EFF6FF',
+            decorative_bar_color: '#1E40AF',
+            bar_color: '#1E40AF',
             description: 'Azul real profundo e majestoso'
         },
         'silver_modern': {
@@ -9902,7 +10042,12 @@
             icon: 'fas fa-star',
             theme: 'light',
             primary_color: '#94A3B8',
+            secondary_color: '#64748B',
             text_color: '#1E293B',
+            card_color: '#FFFFFF',
+            background_color: '#F8FAFC',
+            decorative_bar_color: '#94A3B8',
+            bar_color: '#94A3B8',
             description: 'Prata moderna e elegante'
         },
         'custom': {
@@ -9910,7 +10055,12 @@
             icon: 'fas fa-sliders-h',
             theme: 'light',
             primary_color: '#4A90E2',
+            secondary_color: '#3B82F6',
             text_color: '#333333',
+            card_color: '#FFFFFF',
+            background_color: '#FFFFFF',
+            decorative_bar_color: '#4A90E2',
+            bar_color: '#4A90E2',
             description: 'Configure suas próprias cores'
         }
     };
@@ -10710,32 +10860,28 @@
         input.click();
     }
     
-    // Abrir personalizador de cores com temas premium (VERSfO COMPLETA)
+    // Abrir personalizador de cores com temas premium e cores sugeridas
     function openColorCustomizer() {
         const backgroundImageUrlEl = document.getElementById('background-image-url');
         const backgroundOpacityEl = document.getElementById('background-opacity');
-        const backgroundColorEl = document.getElementById('background-color-url'); // Campo hidden para cor de fundo
+        const backgroundColorEl = document.getElementById('background-color-url') || document.getElementById('background-color');
         const themeEl = document.getElementById('form-theme');
         const primaryColorEl = document.getElementById('primary-color');
         const textColorEl = document.getElementById('text-color');
-        
-        // Detectar tema atual
+        const cardColorEl = document.getElementById('card-color');
+        const secondaryColorEl = document.getElementById('secondary-color');
+        let decorativeBarColorEl = document.getElementById('decorative-bar-color');
+        let barColorEl = document.getElementById('bar-color');
+
+        // Detectar valores atuais com fallbacks seguros (sem ReferenceError de formData)
         const currentTheme = themeEl?.value || 'light';
         const currentPrimary = primaryColorEl?.value || '#4A90E2';
-        const currentText = textColorEl?.value || '#333333';
-        const currentBackgroundColor = backgroundColorEl?.value || '#FFFFFF';
-        const cardColorEl = document.getElementById('card-color');
-        const currentCardColor = cardColorEl?.value || formData.card_color || '#FFFFFF';
-        const secondaryColorEl = document.getElementById('secondary-color');
-        const currentSecondary = secondaryColorEl?.value || formData.secondary_color || '#6BA3F0';
-        
-        // Obter cor atual das barrinhas decorativas
-        let decorativeBarColorEl = document.getElementById('decorative-bar-color');
-        const currentDecorativeBarColor = decorativeBarColorEl?.value || formData.decorative_bar_color || currentPrimary;
-        
-        // Obter cor atual da barra principal
-        let barColorEl = document.getElementById('bar-color');
-        const currentBarColor = barColorEl?.value || formData.separator_line_color || currentPrimary;
+        const currentText = textColorEl?.value || (currentTheme === 'dark' ? '#FFFFFF' : '#333333');
+        const currentBackgroundColor = backgroundColorEl?.value || (currentTheme === 'dark' ? '#0D0D0F' : '#FFFFFF');
+        const currentCardColor = cardColorEl?.value || (currentTheme === 'dark' ? '#1C1C21' : '#FFFFFF');
+        const currentSecondary = secondaryColorEl?.value || currentPrimary;
+        const currentDecorativeBarColor = decorativeBarColorEl?.value || currentPrimary;
+        const currentBarColor = barColorEl?.value || currentPrimary;
         
         // Identificar tema atual baseado nas cores
         let selectedThemeKey = 'custom';
@@ -10747,121 +10893,172 @@
                 break;
             }
         }
-        
+        let currentSelectedThemeKey = selectedThemeKey;
+
+        // Paletas Rápidas & Cores Sugeridas Populares
+        const suggestedPalettes = [
+            { name: 'Dourado King', primary: '#FFC700', secondary: '#FFA500', text: '#FFFFFF', card: '#1C1C21', bg: '#0D0D0F', theme: 'dark' },
+            { name: 'Azul Real', primary: '#2563EB', secondary: '#60A5FA', text: '#FFFFFF', card: '#1E293B', bg: '#0F172A', theme: 'dark' },
+            { name: 'Esmeralda Vip', primary: '#10B981', secondary: '#34D399', text: '#FFFFFF', card: '#064E3B', bg: '#022C22', theme: 'dark' },
+            { name: 'Vermelho Nobre', primary: '#DC2626', secondary: '#EF4444', text: '#FFFFFF', card: '#1C1C21', bg: '#0D0D0F', theme: 'dark' },
+            { name: 'Roxo Imperial', primary: '#8B5CF6', secondary: '#A78BFA', text: '#FFFFFF', card: '#1E1B4B', bg: '#0F0E2A', theme: 'dark' },
+            { name: 'Sunset Laranja', primary: '#F97316', secondary: '#FB923C', text: '#FFFFFF', card: '#1C1C21', bg: '#0D0D0F', theme: 'dark' },
+            { name: 'Ciano Cyber', primary: '#06B6D4', secondary: '#22D3EE', text: '#FFFFFF', card: '#083344', bg: '#041A24', theme: 'dark' },
+            { name: 'Corporativo Clean', primary: '#1E40AF', secondary: '#3B82F6', text: '#1E293B', card: '#FFFFFF', bg: '#F8FAFC', theme: 'light' },
+            { name: 'Dourado Clean', primary: '#D4AF37', secondary: '#F59E0B', text: '#1A1A1A', card: '#FFFFFF', bg: '#FFFDF5', theme: 'light' },
+            { name: 'Rosa Chic', primary: '#EC4899', secondary: '#F472B6', text: '#FFFFFF', card: '#2A081A', bg: '#18040F', theme: 'dark' },
+            { name: 'Preto & Grafite', primary: '#F3F4F6', secondary: '#D1D5DB', text: '#F9FAFB', card: '#18181B', bg: '#09090B', theme: 'dark' }
+        ];
+
         const modal = document.createElement('div');
         modal.className = 'color-customizer-modal';
         modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;';
         modal.innerHTML = `
-            <div style="background: linear-gradient(135deg, #1C1C21 0%, #0D0D0F 100%); padding: 0; border-radius: 24px; max-width: 1200px; width: 100%; max-height: 95vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
+            <div style="background: linear-gradient(135deg, #1C1C21 0%, #0D0D0F 100%); padding: 0; border-radius: 24px; max-width: 1240px; width: 100%; max-height: 95vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
                 <style>
                     @keyframes slideDown {
                         from { transform: translateY(-30px); opacity: 0; }
                         to { transform: translateY(0); opacity: 1; }
                     }
+                    .suggested-chip-btn {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px 14px;
+                        background: rgba(255,255,255,0.05);
+                        border: 1px solid rgba(255,255,255,0.12);
+                        border-radius: 12px;
+                        color: #ECECEC;
+                        font-size: 13px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+                    .suggested-chip-btn:hover {
+                        border-color: #FFC700;
+                        background: rgba(255,199,0,0.15);
+                        transform: translateY(-2px);
+                    }
                 </style>
-                <div style="background: linear-gradient(135deg, #FFC70015 0%, transparent 100%); padding: 32px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px);">
+                <div style="background: linear-gradient(135deg, #FFC70015 0%, transparent 100%); padding: 28px 36px; border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h3 style="margin: 0 0 8px 0; color: #ECECEC; font-size: 28px; font-weight: 800; display: flex; align-items: center; gap: 12px;">
+                            <h3 style="margin: 0 0 6px 0; color: #ECECEC; font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 12px;">
                                 <i class="fas fa-palette" style="color: #FFC700;"></i>
-                                Temas Premium - King Forms
+                                Temas & Cores Sugeridas - King Forms
                             </h3>
-                            <p style="margin: 0; color: #A1A1A1; font-size: 15px;">Escolha um tema ou personalize suas cores</p>
+                            <p style="margin: 0; color: #A1A1A1; font-size: 14px;">Paletas sugeridas de alto impacto, extração automática por imagem ou temas completos</p>
                         </div>
-                        <button class="close-modal-btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #A1A1A1; font-size: 20px; cursor: pointer; padding: 12px 16px; border-radius: 12px; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.borderColor='#FFC700'; this.style.color='#FFC700';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#A1A1A1';">
+                        <button class="close-modal-btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #A1A1A1; font-size: 20px; cursor: pointer; padding: 10px 14px; border-radius: 12px; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.borderColor='#FFC700'; this.style.color='#FFC700';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#A1A1A1';">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                 </div>
                 
-                <div style="padding: 40px; display: grid; grid-template-columns: 1fr 400px; gap: 32px;">
-                    <!-- Coluna Esquerda: Seleção de Temas -->
+                <div style="padding: 32px; display: grid; grid-template-columns: 1fr 380px; gap: 28px;">
+                    <!-- Coluna Esquerda: Sugestões, Temas e Personalização -->
                     <div>
+                        <!-- Bloco: Cores Sugeridas & Paletas Rápidas -->
+                        <div style="margin-bottom: 24px; padding: 20px; background: linear-gradient(135deg, rgba(255,199,0,0.08) 0%, rgba(255,255,255,0.02) 100%); border: 1px solid rgba(255,199,0,0.25); border-radius: 18px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                                <label style="margin: 0; color: #ECECEC; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-wand-magic-sparkles" style="color: #FFC700;"></i>
+                                    Cores Sugeridas & Paletas Rápidas
+                                </label>
+                                <button type="button" id="btn-extract-colors-img" style="background: rgba(255,199,0,0.15); border: 1px solid rgba(255,199,0,0.4); color: #FFC700; padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='#FFC700'; this.style.color='#000';" onmouseout="this.style.background='rgba(255,199,0,0.15)'; this.style.color='#FFC700';">
+                                    <i class="fas fa-eye-dropper"></i> Extrair do Cabeçalho / Logo
+                                </button>
+                            </div>
+                            <p style="margin: 0 0 14px 0; color: #A1A1A1; font-size: 13px;">Selecione uma paleta sugerida de alta conversão para harmonizar contraste, cards e botões:</p>
+                            
+                            <div id="suggested-chips-container" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                ${suggestedPalettes.map(p => `
+                                    <button type="button" class="suggested-chip-btn" data-primary="${p.primary}" data-secondary="${p.secondary}" data-text="${p.text}" data-card="${p.card}" data-bg="${p.bg}" data-theme="${p.theme}">
+                                        <span style="width: 14px; height: 14px; border-radius: 50%; background: ${p.primary}; border: 1.5px solid rgba(255,255,255,0.4); display: inline-block;"></span>
+                                        ${p.name}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <div id="extract-status-msg" style="display: none; margin-top: 10px; font-size: 12px; padding: 8px 12px; border-radius: 8px; background: rgba(255,199,0,0.12); border: 1px solid rgba(255,199,0,0.25); color: #FFC700;"></div>
+                        </div>
+
+                        <!-- Temas Prontos -->
                         <div style="margin-bottom: 24px;">
                             <label style="display: block; margin-bottom: 16px; color: #ECECEC; font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px;">
                                 <i class="fas fa-paint-brush" style="color: #FFC700;"></i>
                                 Temas Premium
                             </label>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px;">
                                 ${Object.entries(premiumThemes).map(([key, theme]) => `
-                                    <div class="theme-card" data-theme-key="${key}" style="padding: 20px; background: ${selectedThemeKey === key ? 'linear-gradient(135deg, rgba(255,199,0,0.2), rgba(255,199,0,0.1))' : 'linear-gradient(135deg, #2C2C2F 0%, #1C1C21 100%)'}; border: 2px solid ${selectedThemeKey === key ? '#FFC700' : 'rgba(255,255,255,0.1)'}; border-radius: 16px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, ${theme.primary_color}, ${theme.primary_color}80);"></div>
-                                        <div style="font-size: 2.5rem; margin-bottom: 12px; color: ${theme.primary_color}; text-align: center;">
+                                    <div class="theme-card" data-theme-key="${key}" style="padding: 16px; background: ${currentSelectedThemeKey === key ? 'linear-gradient(135deg, rgba(255,199,0,0.2), rgba(255,199,0,0.1))' : 'linear-gradient(135deg, #2C2C2F 0%, #1C1C21 100%)'}; border: 2px solid ${currentSelectedThemeKey === key ? '#FFC700' : 'rgba(255,255,255,0.1)'}; border-radius: 16px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, ${theme.primary_color}, ${theme.secondary_color || theme.primary_color});"></div>
+                                        <div style="font-size: 2.2rem; margin-bottom: 10px; color: ${theme.primary_color}; text-align: center;">
                                             <i class="${theme.icon}"></i>
                                         </div>
-                                        <div style="font-weight: 700; font-size: 14px; color: #ECECEC; margin-bottom: 6px; text-align: center;">${theme.name}</div>
-                                        <div style="font-size: 11px; color: #A1A1A1; text-align: center; line-height: 1.4;">${theme.description}</div>
-                                        ${selectedThemeKey === key ? '<div class="check-icon" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: #FFC700; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 12px;"><i class="fas fa-check"></i></div>' : ''}
+                                        <div style="font-weight: 700; font-size: 13px; color: #ECECEC; margin-bottom: 4px; text-align: center;">${theme.name}</div>
+                                        <div style="font-size: 11px; color: #A1A1A1; text-align: center; line-height: 1.3;">${theme.description}</div>
+                                        ${currentSelectedThemeKey === key ? '<div class="check-icon" style="position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; background: #FFC700; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 11px;"><i class="fas fa-check"></i></div>' : ''}
                                     </div>
                                 `).join('')}
                             </div>
                         </div>
                         
                         <!-- Personalização Avançada -->
-                        <div style="margin-top: 32px; padding: 24px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="margin-top: 24px; padding: 24px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
                             <label style="display: block; margin-bottom: 16px; color: #ECECEC; font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px;">
                                 <i class="fas fa-sliders-h" style="color: #FFC700;"></i>
-                                Personalização Avançada
+                                Personalização Avançada de Cores
                             </label>
                             
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Cor Primária</label>
-                                <input type="color" id="customizer-primary-color" value="${currentPrimary}" style="width: 100%; height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div style="margin-bottom: 16px;">
+                                    <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Cor Primária</label>
+                                    <input type="color" id="customizer-primary-color" value="${currentPrimary}" style="width: 100%; height: 46px; border-radius: 10px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); background: #2C2C2F;">
+                                </div>
+                                
+                                <div style="margin-bottom: 16px;" id="customizer-secondary-color-container">
+                                    <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Cor Secundária</label>
+                                    <input type="color" id="customizer-secondary-color" value="${currentSecondary}" style="width: 100%; height: 46px; border-radius: 10px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); background: #2C2C2F;">
+                                </div>
                             </div>
-                            
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Cor Secundária</label>
-                                <input type="color" id="customizer-secondary-color" value="${currentSecondary}" style="width: 100%; height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);">
-                                <div style="margin-top: 8px; font-size: 12px; color: #A1A1A1;">
-                                    <i class="fas fa-info-circle"></i> Use quando a cor primária for muito escura (ex: preto)
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div style="margin-bottom: 16px;">
+                                    <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Cor do Texto</label>
+                                    <input type="color" id="customizer-text-color" value="${currentText}" style="width: 100%; height: 46px; border-radius: 10px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); background: #2C2C2F;">
+                                </div>
+                                
+                                <div style="margin-bottom: 16px;">
+                                    <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Cor do Card/Container</label>
+                                    <input type="color" id="customizer-card-color" value="${currentCardColor || '#FFFFFF'}" style="width: 100%; height: 46px; border-radius: 10px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); background: #2C2C2F;">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div style="margin-bottom: 16px;">
+                                    <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Cor de Fundo da Página</label>
+                                    <input type="color" id="customizer-background-color" value="${currentBackgroundColor || '#FFFFFF'}" style="width: 100%; height: 46px; border-radius: 10px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); background: #2C2C2F;">
+                                </div>
+
+                                <div style="margin-bottom: 16px;">
+                                    <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Cor das Barras Decorativas</label>
+                                    <input type="color" id="customizer-decorative-bar-color" value="${currentDecorativeBarColor}" style="width: 100%; height: 46px; border-radius: 10px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); background: #2C2C2F;">
                                 </div>
                             </div>
                             
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Cor do Texto</label>
-                                <input type="color" id="customizer-text-color" value="${currentText}" style="width: 100%; height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);">
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Cor da Barra do Título</label>
+                                <input type="color" id="customizer-bar-color" value="${currentBarColor || currentPrimary}" style="width: 100%; height: 46px; border-radius: 10px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); background: #2C2C2F;">
                             </div>
                             
                             <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Cor de Fundo</label>
-                                <input type="color" id="customizer-background-color" value="${currentBackgroundColor || '#FFFFFF'}" style="width: 100%; height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);">
-                                <div style="margin-top: 8px; font-size: 12px; color: #A1A1A1;">
-                                    <i class="fas fa-info-circle"></i> A cor de fundo será aplicada quando não houver imagem de fundo
-                                </div>
-                            </div>
-                            
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Cor do Card/Container</label>
-                                <input type="color" id="customizer-card-color" value="${currentCardColor || '#FFFFFF'}" style="width: 100%; height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);">
-                                <div style="margin-top: 8px; font-size: 12px; color: #A1A1A1;">
-                                    <i class="fas fa-info-circle"></i> Cor do fundo dos cards brancos do formulário (container principal)
-                                </div>
-                            </div>
-                            
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Cor das Barras Decorativas</label>
-                                <input type="color" id="customizer-decorative-bar-color" value="${currentDecorativeBarColor}" style="width: 100%; height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);">
-                                <div style="margin-top: 8px; font-size: 12px; color: #A1A1A1;">
-                                    <i class="fas fa-info-circle"></i> Cor das barrinhas decorativas ao lado dos labels dos campos (padrão: cor primária)
-                                </div>
-                            </div>
-                            
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Cor da Barra</label>
-                                <input type="color" id="customizer-bar-color" value="${currentBarColor || currentPrimary}" style="width: 100%; height: 50px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);">
-                                <div style="margin-top: 8px; font-size: 12px; color: #A1A1A1;">
-                                    <i class="fas fa-info-circle"></i> Cor da barra vertical ao lado do título "Preencha os dados" (padrão: cor primária)
-                                </div>
-                            </div>
-                            
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Imagem de Fundo (opcional)</label>
+                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Imagem de Fundo (opcional)</label>
                                 <input type="file" id="customizer-background-image" accept="image/*" style="display: none;">
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                                    <button type="button" id="customizer-upload-background" style="padding: 14px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; color: #ECECEC; cursor: pointer; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.borderColor='#FFC700';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)';">
+                                    <button type="button" id="customizer-upload-background" style="padding: 12px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; color: #ECECEC; cursor: pointer; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.borderColor='#FFC700';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)';">
                                         <i class="fas fa-upload"></i> Upload
                                     </button>
-                                    <button type="button" id="customizer-search-background" style="padding: 14px; background: linear-gradient(135deg, rgba(255,199,0,0.2), rgba(255,199,0,0.1)); border: 2px solid rgba(255,199,0,0.3); border-radius: 12px; color: #FFC700; cursor: pointer; font-weight: 700; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,199,0,0.3)'; this.style.borderColor='#FFC700';" onmouseout="this.style.background='linear-gradient(135deg, rgba(255,199,0,0.2), rgba(255,199,0,0.1))'; this.style.borderColor='rgba(255,199,0,0.3)';">
+                                    <button type="button" id="customizer-search-background" style="padding: 12px; background: linear-gradient(135deg, rgba(255,199,0,0.2), rgba(255,199,0,0.1)); border: 2px solid rgba(255,199,0,0.3); border-radius: 12px; color: #FFC700; cursor: pointer; font-weight: 700; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,199,0,0.3)'; this.style.borderColor='#FFC700';" onmouseout="this.style.background='linear-gradient(135deg, rgba(255,199,0,0.2), rgba(255,199,0,0.1))'; this.style.borderColor='rgba(255,199,0,0.3)';">
                                         <i class="fas fa-search"></i> Buscar Online
                                     </button>
                                 </div>
@@ -10873,10 +11070,10 @@
                                 </div>
                             </div>
                             
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600;">Opacidade do Fundo</label>
-                                <input type="range" id="customizer-background-opacity" min="0" max="1" step="0.1" value="${backgroundOpacityEl?.value || 1}" style="width: 100%;">
-                                <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #ECECEC; font-weight: 600; font-size: 13px;">Opacidade do Fundo</label>
+                                <input type="range" id="customizer-background-opacity" min="0" max="1" step="0.05" value="${backgroundOpacityEl?.value || 1}" style="width: 100%;">
+                                <div style="display: flex; justify-content: space-between; margin-top: 6px;">
                                     <span style="font-size: 0.85rem; color: #A1A1A1;">0%</span>
                                     <span id="customizer-opacity-value" style="font-size: 0.85rem; color: #ECECEC; font-weight: 600;">${Math.round((backgroundOpacityEl?.value || 1) * 100)}%</span>
                                     <span style="font-size: 0.85rem; color: #A1A1A1;">100%</span>
@@ -10892,120 +11089,258 @@
                                 <i class="fas fa-eye" style="color: #FFC700;"></i>
                                 Pré-visualização
                             </label>
-                            <div id="theme-preview-container" style="background: ${currentCardColor || (currentTheme === 'dark' ? '#1C1C21' : 'white')}; border-radius: 20px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: none; min-height: 400px; position: relative; overflow: hidden;">
-                                <div id="preview-top-bar" style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, ${currentPrimary}, ${currentPrimary}80);"></div>
-                                <h4 style="margin: 0 0 16px 0; color: ${currentText}; font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 12px;">
-                                    <div id="preview-main-bar" style="width: 6px; height: 32px; background: ${currentBarColor || currentPrimary}; border-radius: 3px;"></div>
+                            <div id="theme-preview-container" style="background: ${currentCardColor || (currentTheme === 'dark' ? '#1C1C21' : 'white')}; border-radius: 20px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); min-height: 400px; position: relative; overflow: hidden;">
+                                <div id="preview-top-bar" style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, ${currentPrimary}, ${currentSecondary || currentPrimary});"></div>
+                                <h4 style="margin: 0 0 14px 0; color: ${currentText}; font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 12px;">
+                                    <div id="preview-main-bar" style="width: 6px; height: 30px; background: ${currentBarColor || currentPrimary}; border-radius: 3px;"></div>
                                     King Forms
                                 </h4>
-                                <p style="margin: 0 0 24px 0; color: ${currentText === '#ECECEC' || currentText === '#FFFFFF' ? '#A1A1A1' : '#5f6368'}; font-size: 14px; line-height: 1.6;">Este é um exemplo de como seu formulário ficará com o tema selecionado.</p>
-                                <div style="margin-bottom: 20px;">
-                                    <label class="preview-label" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; color: ${currentText}; font-weight: 600; font-size: 14px;">
-                                        <span style="width: 3px; height: 18px; background: ${currentDecorativeBarColor}; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
+                                <p style="margin: 0 0 20px 0; color: ${currentTheme === 'dark' ? '#A1A1A1' : '#5f6368'}; font-size: 13px; line-height: 1.5;">Este é um exemplo de como seu formulário ficará com as cores e temas selecionados.</p>
+                                <div style="margin-bottom: 16px;">
+                                    <label class="preview-label" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; color: ${currentText}; font-weight: 600; font-size: 13px;">
+                                        <span class="preview-decor-bar" style="width: 3px; height: 18px; background: ${currentDecorativeBarColor}; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
                                         <span style="flex: 1;">Nome completo *</span>
                                     </label>
-                                    <input type="text" placeholder="Digite seu nome" class="preview-input" style="width: 100%; padding: 12px 16px; border: 2px solid ${currentTheme === 'dark' ? 'rgba(255,255,255,0.1)' : '#e8eaed'}; border-radius: 12px; font-size: 14px; background: ${currentTheme === 'dark' ? '#2C2C2F' : '#f8f9fa'}; color: ${currentText};" readonly>
+                                    <input type="text" placeholder="Digite seu nome" class="preview-input" style="width: 100%; padding: 12px 14px; border: 2px solid ${currentTheme === 'dark' ? 'rgba(255,255,255,0.1)' : '#e8eaed'}; border-radius: 10px; font-size: 13px; background: ${currentTheme === 'dark' ? '#27272A' : '#f8f9fa'}; color: ${currentText};" readonly>
                                 </div>
                                 <div style="margin-bottom: 20px;">
-                                    <label class="preview-label" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; color: ${currentText}; font-weight: 600; font-size: 14px;">
-                                        <span style="width: 3px; height: 18px; background: ${currentDecorativeBarColor}; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
+                                    <label class="preview-label" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; color: ${currentText}; font-weight: 600; font-size: 13px;">
+                                        <span class="preview-decor-bar" style="width: 3px; height: 18px; background: ${currentDecorativeBarColor}; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
                                         <span style="flex: 1;">Email *</span>
                                     </label>
-                                    <input type="email" placeholder="seu@email.com" class="preview-input" style="width: 100%; padding: 12px 16px; border: 2px solid ${currentTheme === 'dark' ? 'rgba(255,255,255,0.1)' : '#e8eaed'}; border-radius: 12px; font-size: 14px; background: ${currentTheme === 'dark' ? '#2C2C2F' : '#f8f9fa'}; color: ${currentText};" readonly>
+                                    <input type="email" placeholder="seu@email.com" class="preview-input" style="width: 100%; padding: 12px 14px; border: 2px solid ${currentTheme === 'dark' ? 'rgba(255,255,255,0.1)' : '#e8eaed'}; border-radius: 10px; font-size: 13px; background: ${currentTheme === 'dark' ? '#27272A' : '#f8f9fa'}; color: ${currentText};" readonly>
                                 </div>
-                                <button style="width: 100%; padding: 14px; background: linear-gradient(135deg, #25D366, #20BA5A); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: default; margin-top: 8px;">
-                                    <i class="fab fa-whatsapp"></i> Enviar via WhatsApp
+                                <button class="preview-submit-btn-modal" style="width: 100%; padding: 13px; background: linear-gradient(135deg, ${currentPrimary}, ${currentSecondary || currentPrimary}); color: ${isDarkColor(currentPrimary) ? '#FFFFFF' : '#000000'}; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: default; margin-top: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                                    <i class="fab fa-whatsapp"></i> Enviar Formulário
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div style="padding: 32px 40px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); display: flex; gap: 12px; justify-content: flex-end;">
-                    <button class="cancel-btn" style="padding: 14px 28px; background: transparent; border: 2px solid rgba(255,255,255,0.1); color: #ECECEC; border-radius: 12px; cursor: pointer; font-weight: 700; transition: all 0.3s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.3)'; this.style.background='rgba(255,255,255,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='transparent';">
+                <div style="padding: 24px 36px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="cancel-btn" style="padding: 12px 26px; background: transparent; border: 2px solid rgba(255,255,255,0.1); color: #ECECEC; border-radius: 12px; cursor: pointer; font-weight: 700; transition: all 0.3s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.3)'; this.style.background='rgba(255,255,255,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='transparent';">
                         Cancelar
                     </button>
-                    <button class="save-colors-btn" style="padding: 14px 28px; background: linear-gradient(135deg, #FFC700, #FFA500); border: none; color: #000; border-radius: 12px; cursor: pointer; font-weight: 700; box-shadow: 0 4px 12px rgba(255,199,0,0.3); transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(255,199,0,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255,199,0,0.3)';">
-                        <i class="fas fa-check"></i> Aplicar Tema
+                    <button class="save-colors-btn" style="padding: 12px 28px; background: linear-gradient(135deg, #FFC700, #FFA500); border: none; color: #000; border-radius: 12px; cursor: pointer; font-weight: 700; box-shadow: 0 4px 12px rgba(255,199,0,0.3); transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(255,199,0,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255,199,0,0.3)';">
+                        <i class="fas fa-check"></i> Aplicar Tema & Salvar
                     </button>
                 </div>
             </div>
         `;
         
         document.body.appendChild(modal);
+
+        // Helper para extrair cores de imagens (cabeçalho ou logo)
+        const extractColorsFromImage = (imgElement, maxColors = 6) => {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const w = (canvas.width = Math.min(imgElement.naturalWidth || imgElement.width || 100, 100));
+                const h = (canvas.height = Math.min(imgElement.naturalHeight || imgElement.height || 100, 100));
+                ctx.drawImage(imgElement, 0, 0, w, h);
+                const imgData = ctx.getImageData(0, 0, w, h).data;
+                const counts = {};
+                for (let i = 0; i < imgData.length; i += 16) {
+                    const r = imgData[i], g = imgData[i + 1], b = imgData[i + 2], a = imgData[i + 3];
+                    if (a < 140) continue;
+                    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                    if (brightness > 240 || brightness < 25) continue;
+                    const qr = Math.round(r / 30) * 30;
+                    const qg = Math.round(g / 30) * 30;
+                    const qb = Math.round(b / 30) * 30;
+                    const hex = '#' + ((1 << 24) + (qr << 16) + (qg << 8) + qb).toString(16).slice(1).toUpperCase();
+                    counts[hex] = (counts[hex] || 0) + 1;
+                }
+                return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, maxColors).map(([c]) => c);
+            } catch (err) {
+                console.warn('CORS ou restrição ao extrair cores:', err);
+                return [];
+            }
+        };
+
+        // Evento: Extrair cores da imagem de cabeçalho ou logo
+        const extractBtn = modal.querySelector('#btn-extract-colors-img');
+        const extractStatus = modal.querySelector('#extract-status-msg');
+        if (extractBtn) {
+            extractBtn.addEventListener('click', () => {
+                // Procurar elementos de imagem
+                const headerImg = document.querySelector('#preview-header-image, .preview-header-img, .header-image-container img, #preview-header img')
+                    || modal.querySelector('#customizer-background-preview-img');
+                const logoImg = document.querySelector('#preview-logo, .preview-logo-img, #logo-preview img');
+                const targetImg = headerImg || logoImg;
+
+                if (!targetImg || !targetImg.src || targetImg.naturalWidth === 0) {
+                    extractStatus.style.display = 'block';
+                    extractStatus.style.color = '#FFA500';
+                    extractStatus.innerHTML = '<i class="fas fa-info-circle"></i> Nenhuma imagem de cabeçalho ou logo detectada ainda. Faça upload de uma imagem acima ou no menu lateral para extrair as cores da sua marca.';
+                    setTimeout(() => { extractStatus.style.display = 'none'; }, 6000);
+                    return;
+                }
+
+                const extracted = extractColorsFromImage(targetImg, 6);
+                if (extracted.length === 0) {
+                    extractStatus.style.display = 'block';
+                    extractStatus.style.color = '#FFA500';
+                    extractStatus.innerHTML = '<i class="fas fa-info-circle"></i> A imagem possui proteção ou é muito clara/escura. Escolha uma das paletas sugeridas abaixo.';
+                    setTimeout(() => { extractStatus.style.display = 'none'; }, 5000);
+                    return;
+                }
+
+                // Renderizar botões com as cores extraídas
+                const chipsContainer = modal.querySelector('#suggested-chips-container');
+                const extractedHtml = extracted.map((hex, i) => `
+                    <button type="button" class="suggested-chip-btn extracted-chip" data-primary="${hex}" data-secondary="${hex}" data-text="#FFFFFF" data-card="#1C1C21" data-bg="#0D0D0F" data-theme="dark" style="border-color: #FFC700; background: rgba(255,199,0,0.18);">
+                        <span style="width: 14px; height: 14px; border-radius: 50%; background: ${hex}; border: 1.5px solid #FFFFFF; display: inline-block;"></span>
+                        Marca #${i + 1} (${hex})
+                    </button>
+                `).join('');
+
+                chipsContainer.insertAdjacentHTML('afterbegin', extractedHtml);
+                extractStatus.style.display = 'block';
+                extractStatus.style.color = '#00FF88';
+                extractStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${extracted.length} cores extraídas com sucesso do seu banner! Clique em qualquer uma para testar.`;
+
+                // Re-atribuir listeners aos novos chips
+                attachSuggestedChipListeners();
+            });
+        }
+
+        // Listener para chips de cores sugeridas
+        const attachSuggestedChipListeners = () => {
+            modal.querySelectorAll('.suggested-chip-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const primary = btn.dataset.primary;
+                    const secondary = btn.dataset.secondary || primary;
+                    const text = btn.dataset.text || '#FFFFFF';
+                    const card = btn.dataset.card || '#1C1C21';
+                    const bg = btn.dataset.bg || '#0D0D0F';
+                    const themeMode = btn.dataset.theme || 'dark';
+
+                    // Atualizar inputs
+                    const primaryInput = modal.querySelector('#customizer-primary-color');
+                    const secondaryInput = modal.querySelector('#customizer-secondary-color');
+                    const textInput = modal.querySelector('#customizer-text-color');
+                    const cardInput = modal.querySelector('#customizer-card-color');
+                    const bgInput = modal.querySelector('#customizer-background-color');
+                    const decorBarInput = modal.querySelector('#customizer-decorative-bar-color');
+                    const barInput = modal.querySelector('#customizer-bar-color');
+
+                    if (primaryInput) primaryInput.value = primary;
+                    if (secondaryInput) secondaryInput.value = secondary;
+                    if (textInput) textInput.value = text;
+                    if (cardInput) cardInput.value = card;
+                    if (bgInput) bgInput.value = bg;
+                    if (decorBarInput) decorBarInput.value = primary;
+                    if (barInput) barInput.value = primary;
+
+                    currentSelectedThemeKey = 'custom';
+
+                    // Atualizar preview
+                    const previewContainer = modal.querySelector('#theme-preview-container');
+                    if (previewContainer) {
+                        previewContainer.style.background = card;
+                        const topBar = previewContainer.querySelector('#preview-top-bar');
+                        if (topBar) topBar.style.background = `linear-gradient(90deg, ${primary}, ${secondary})`;
+                        const mainBar = previewContainer.querySelector('#preview-main-bar');
+                        if (mainBar) mainBar.style.background = primary;
+                        const h4 = previewContainer.querySelector('h4');
+                        if (h4) h4.style.color = text;
+                        previewContainer.querySelectorAll('.preview-label, label').forEach(l => l.style.color = text);
+                        previewContainer.querySelectorAll('.preview-decor-bar, span[style*="width: 3px"]').forEach(b => b.style.background = primary);
+                        previewContainer.querySelectorAll('.preview-input, input').forEach(inp => {
+                            inp.style.background = themeMode === 'dark' ? '#27272A' : '#f8f9fa';
+                            inp.style.color = text;
+                            inp.style.borderColor = themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : '#e8eaed';
+                        });
+                        const submitBtn = previewContainer.querySelector('.preview-submit-btn-modal');
+                        if (submitBtn) {
+                            submitBtn.style.background = `linear-gradient(135deg, ${primary}, ${secondary})`;
+                            submitBtn.style.color = isDarkColor(primary) ? '#FFFFFF' : '#000000';
+                        }
+                    }
+
+                    // Tirar destaque de outros temas
+                    modal.querySelectorAll('.theme-card').forEach(c => {
+                        c.style.background = 'linear-gradient(135deg, #2C2C2F 0%, #1C1C21 100%)';
+                        c.style.borderColor = 'rgba(255,255,255,0.1)';
+                        const chk = c.querySelector('.check-icon');
+                        if (chk) chk.remove();
+                    });
+                };
+            });
+        };
+        attachSuggestedChipListeners();
         
-        // Função para atualizar preview
+        // Função para atualizar preview a partir de um tema
         const updatePreview = (themeKey) => {
             const theme = premiumThemes[themeKey] || premiumThemes.custom;
+            currentSelectedThemeKey = themeKey;
+
             const previewContainer = modal.querySelector('#theme-preview-container');
             const primaryColorInput = modal.querySelector('#customizer-primary-color');
-            const textColorInput = modal.querySelector('#customizer-text-color');
             const secondaryColorInput = modal.querySelector('#customizer-secondary-color');
+            const textColorInput = modal.querySelector('#customizer-text-color');
             const backgroundColorInput = modal.querySelector('#customizer-background-color');
             const cardColorInput = modal.querySelector('#customizer-card-color');
+            const decorativeBarColorInput = modal.querySelector('#customizer-decorative-bar-color');
+            const barColorInput = modal.querySelector('#customizer-bar-color');
             
             if (primaryColorInput) primaryColorInput.value = theme.primary_color;
-            if (textColorInput) textColorInput.value = theme.text_color;
             if (secondaryColorInput) secondaryColorInput.value = theme.secondary_color || theme.primary_color;
+            if (textColorInput) textColorInput.value = theme.text_color;
+            if (backgroundColorInput) backgroundColorInput.value = theme.background_color || (theme.theme === 'dark' ? '#0D0D0F' : '#FFFFFF');
+            if (cardColorInput) cardColorInput.value = theme.card_color || (theme.theme === 'dark' ? '#1C1C21' : '#FFFFFF');
+            if (decorativeBarColorInput) decorativeBarColorInput.value = theme.decorative_bar_color || theme.primary_color;
+            if (barColorInput) barColorInput.value = theme.bar_color || theme.primary_color;
             
             if (previewContainer) {
-                // Atualizar background do container baseado no tema
-                const bgColor = theme.theme === 'dark' ? '#1C1C21' : '#FFFFFF';
-                previewContainer.style.background = bgColor;
+                const cardBg = theme.card_color || (theme.theme === 'dark' ? '#1C1C21' : '#FFFFFF');
+                previewContainer.style.background = cardBg;
                 
-                // Atualizar linha do topo (traço) com a cor primária
                 const topBar = previewContainer.querySelector('#preview-top-bar');
                 if (topBar) {
-                    topBar.style.background = `linear-gradient(90deg, ${theme.primary_color}, ${theme.primary_color}80)`;
+                    topBar.style.background = `linear-gradient(90deg, ${theme.primary_color}, ${theme.secondary_color || theme.primary_color})`;
                 }
                 
-                // Atualizar título
                 const h4 = previewContainer.querySelector('h4');
                 if (h4) h4.style.color = theme.text_color;
                 
-                // Atualizar parágrafo
                 const p = previewContainer.querySelector('p');
                 if (p) {
-                    p.style.color = (theme.text_color === '#ECECEC' || theme.text_color === '#FFFFFF') ? '#A1A1A1' : '#5f6368';
+                    p.style.color = (theme.theme === 'dark') ? '#A1A1A1' : '#5f6368';
                 }
                 
-                // Atualizar labels
                 previewContainer.querySelectorAll('.preview-label, label').forEach(l => {
                     l.style.color = theme.text_color;
                 });
                 
-                // Atualizar barra principal (6px) ao lado do título
-                const barColorInput = modal.querySelector('#customizer-bar-color');
-                const barColor = barColorInput ? barColorInput.value : theme.primary_color;
                 const mainBar = previewContainer.querySelector('#preview-main-bar');
                 if (mainBar) {
-                    mainBar.style.background = barColor;
+                    mainBar.style.background = theme.bar_color || theme.primary_color;
                 }
                 
-                // Atualizar barras decorativas (apenas as de 3px ao lado dos labels)
-                // Marcar que estamos atualizando estilos para evitar loops no MutationObserver
-                isUpdatingStyles = true;
-                const decorativeBarColorInput = modal.querySelector('#customizer-decorative-bar-color');
-                const decorativeBarColor = decorativeBarColorInput ? decorativeBarColorInput.value : theme.primary_color;
-                previewContainer.querySelectorAll('span[style*="width: 3px"][style*="height: 18px"]').forEach(bar => {
-                    const currentStyle = bar.getAttribute('style') || '';
-                    const cleanedStyle = currentStyle.replace(/background:[^;]+;?/gi, '').trim();
-                    const newStyle = (cleanedStyle ? cleanedStyle + '; ' : '') + `background: ${decorativeBarColor} !important;`;
-                    bar.setAttribute('style', newStyle);
+                const decorColor = theme.decorative_bar_color || theme.primary_color;
+                previewContainer.querySelectorAll('.preview-decor-bar, span[style*="width: 3px"]').forEach(bar => {
+                    bar.style.background = decorColor;
                 });
-                setTimeout(() => { isUpdatingStyles = false; }, 100);
                 
-                // Atualizar inputs
                 previewContainer.querySelectorAll('.preview-input, input').forEach(i => {
                     if (i.type === 'text' || i.type === 'email') {
-                    i.style.background = theme.theme === 'dark' ? '#2C2C2F' : '#f8f9fa';
-                    i.style.color = theme.text_color;
+                        i.style.background = theme.theme === 'dark' ? '#27272A' : '#f8f9fa';
+                        i.style.color = theme.text_color;
                         i.style.borderColor = theme.theme === 'dark' ? 'rgba(255,255,255,0.1)' : '#e8eaed';
                     }
                 });
+
+                const submitBtn = previewContainer.querySelector('.preview-submit-btn-modal');
+                if (submitBtn) {
+                    submitBtn.style.background = `linear-gradient(135deg, ${theme.primary_color}, ${theme.secondary_color || theme.primary_color})`;
+                    submitBtn.style.color = isDarkColor(theme.primary_color) ? '#FFFFFF' : '#000000';
+                }
             }
             
-            // Atualizar seleção visual
+            // Atualizar seleção visual dos cards de tema
             modal.querySelectorAll('.theme-card').forEach(card => {
                 const key = card.dataset.themeKey;
                 if (key === themeKey) {
@@ -11014,7 +11349,7 @@
                     if (!card.querySelector('.check-icon')) {
                         const check = document.createElement('div');
                         check.className = 'check-icon';
-                        check.style.cssText = 'position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: #FFC700; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 12px;';
+                        check.style.cssText = 'position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; background: #FFC700; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 11px;';
                         check.innerHTML = '<i class="fas fa-check"></i>';
                         card.appendChild(check);
                     }
@@ -11644,32 +11979,38 @@
         });
         
         modal.querySelector('.save-colors-btn').addEventListener('click', () => {
-            const selectedThemeKey = Array.from(modal.querySelectorAll('.theme-card')).find(card => card.style.borderColor === 'rgb(255, 199, 0)')?.dataset.themeKey || 'custom';
+            const selectedThemeKey = currentSelectedThemeKey || 'custom';
             const theme = premiumThemes[selectedThemeKey] || premiumThemes.custom;
             
-            // Obter tema do tema selecionado (sem opção claro/escuro - removido)
-            const selectedTheme = theme.theme || 'light';
-            
-            // Obter cor primária e secundária
+            // Obter cores configuradas
             const primaryColor = modal.querySelector('#customizer-primary-color').value;
             const secondaryColorInput = modal.querySelector('#customizer-secondary-color');
-            // Cor secundária agora sempre é salva (não depende mais de ser cor escura)
-            const secondaryColor = secondaryColorInput ? secondaryColorInput.value : null;
+            const secondaryColor = secondaryColorInput ? secondaryColorInput.value : primaryColor;
+            const textColor = modal.querySelector('#customizer-text-color').value;
+            const bgColor = modal.querySelector('#customizer-background-color').value || (theme.theme === 'dark' ? '#0D0D0F' : '#FFFFFF');
+            const cardColor = modal.querySelector('#customizer-card-color').value || (theme.theme === 'dark' ? '#1C1C21' : '#FFFFFF');
+            const decorativeBarColor = modal.querySelector('#customizer-decorative-bar-color')?.value || primaryColor;
+            const barColor = modal.querySelector('#customizer-bar-color')?.value || primaryColor;
+            const bgOpacity = parseFloat(modal.querySelector('#customizer-background-opacity')?.value || '1');
             
-            // Obter cor das barrinhas decorativas
-            const decorativeBarColorInput = modal.querySelector('#customizer-decorative-bar-color');
-            const decorativeBarColor = decorativeBarColorInput ? decorativeBarColorInput.value : primaryColor;
+            // Detectar modo dark/light
+            const isDark = (theme.theme === 'dark') || isDarkColor(cardColor) || isDarkColor(bgColor);
+            const selectedTheme = isDark ? 'dark' : 'light';
             
             if (themeEl) themeEl.value = selectedTheme;
             if (primaryColorEl) primaryColorEl.value = primaryColor;
-            if (textColorEl) textColorEl.value = modal.querySelector('#customizer-text-color').value;
-            if (backgroundOpacityEl) backgroundOpacityEl.value = modal.querySelector('#customizer-background-opacity').value;
+            if (textColorEl) textColorEl.value = textColor;
+            if (backgroundOpacityEl) backgroundOpacityEl.value = bgOpacity;
             
-            // Salvar cor secundária sempre (agora tem campo hidden)
-            const secondaryColorEl = document.getElementById('secondary-color');
-            if (secondaryColorEl && secondaryColor) {
-                secondaryColorEl.value = secondaryColor;
+            // Salvar cor secundária
+            let secondaryColorEl = document.getElementById('secondary-color');
+            if (!secondaryColorEl) {
+                secondaryColorEl = document.createElement('input');
+                secondaryColorEl.type = 'hidden';
+                secondaryColorEl.id = 'secondary-color';
+                document.body.appendChild(secondaryColorEl);
             }
+            secondaryColorEl.value = secondaryColor;
             
             // Salvar cor das barrinhas decorativas
             let decorativeBarColorEl = document.getElementById('decorative-bar-color');
@@ -11679,54 +12020,26 @@
                 decorativeBarColorEl.id = 'decorative-bar-color';
                 document.body.appendChild(decorativeBarColorEl);
             }
-            // IMPORTANTE: Usar o valor do input do modal (já obtido acima na linha 10539)
-            // Verificar novamente o valor do input antes de salvar (pode ter mudado)
-            const currentDecorativeBarColorInput = modal.querySelector('#customizer-decorative-bar-color');
-            const finalDecorativeBarColor = currentDecorativeBarColorInput ? currentDecorativeBarColorInput.value.trim() : (decorativeBarColorInput ? decorativeBarColorInput.value.trim() : decorativeBarColor);
-            decorativeBarColorEl.value = finalDecorativeBarColor || primaryColor;
-            
-            // IMPORTANTE: Garantir que a cor seja aplicada imediatamente no preview
-            // Marcar que estamos atualizando estilos para evitar loops no MutationObserver
-            isUpdatingStyles = true;
-            const mainPreviewContainer = document.querySelector('.form-preview-container');
-            if (mainPreviewContainer) {
-                const allMainBars = mainPreviewContainer.querySelectorAll('.preview-decorative-bar, span[style*="width: 3px"][style*="height: 18px"]');
-                allMainBars.forEach(bar => {
-                    const currentStyle = bar.getAttribute('style') || '';
-                    const newStyle = currentStyle.replace(/background:[^;]+;?/gi, '').trim() + ` background: linear-gradient(180deg, ${finalDecorativeBarColor}, ${secondaryColor || finalDecorativeBarColor}80);`;
-                    bar.setAttribute('style', newStyle);
-                });
-                
-                // Atualizar variável CSS
-                mainPreviewContainer.style.setProperty('--preview-decorative-bar-color', finalDecorativeBarColor);
-                document.documentElement.style.setProperty('--preview-decorative-bar-color', finalDecorativeBarColor);
-                // Removido console.log excessivo
-            }
-            setTimeout(() => { isUpdatingStyles = false; }, 100);
-            
-            const bgImageUrl = modal.querySelector('#customizer-background-preview')?.dataset.imageUrl || '';
-            // Se não houver imagem no preview mas houver no campo hidden, manter o campo hidden
-            // Se não houver imagem no preview E não houver no campo hidden, limpar
-            if (backgroundImageUrlEl) {
-                if (bgImageUrl) {
-                    backgroundImageUrlEl.value = bgImageUrl;
-                } else {
-                    // Se o preview foi removido, limpar também o campo hidden
-                    backgroundImageUrlEl.value = '';
-                }
-            }
+            decorativeBarColorEl.value = decorativeBarColor;
             
             // Salvar cor de fundo
-            const bgColor = modal.querySelector('#customizer-background-color').value;
+            let backgroundColorEl = document.getElementById('background-color-url');
+            if (!backgroundColorEl) {
+                backgroundColorEl = document.getElementById('background-color');
+            }
             if (backgroundColorEl) {
                 backgroundColorEl.value = bgColor;
             }
             
             // Salvar cor do card
-            const cardColor = modal.querySelector('#customizer-card-color').value || '#FFFFFF';
-            if (cardColorEl) {
-                cardColorEl.value = cardColor;
+            let cardColorEl = document.getElementById('card-color');
+            if (!cardColorEl) {
+                cardColorEl = document.createElement('input');
+                cardColorEl.type = 'hidden';
+                cardColorEl.id = 'card-color';
+                document.body.appendChild(cardColorEl);
             }
+            cardColorEl.value = cardColor;
             
             // Salvar cor da barra principal
             let barColorEl = document.getElementById('bar-color');
@@ -11736,26 +12049,41 @@
                 barColorEl.id = 'bar-color';
                 document.body.appendChild(barColorEl);
             }
-            const barColorInput = modal.querySelector('#customizer-bar-color');
-            const barColor = barColorInput ? barColorInput.value.trim() : primaryColor;
             barColorEl.value = barColor;
             
-            // Obter cor das barrinhas decorativas antes de aplicar (já foi salva acima - usar finalDecorativeBarColor da linha 10563)
+            // Background image
+            const bgImageUrl = modal.querySelector('#customizer-background-preview')?.dataset.imageUrl || '';
+            if (backgroundImageUrlEl) {
+                backgroundImageUrlEl.value = bgImageUrl || '';
+            }
             
-            
+            // Aplicar cores personalizadas ao preview
             applyCustomColors({
                 theme: selectedTheme,
                 primary_color: primaryColor,
                 secondary_color: secondaryColor,
-                text_color: modal.querySelector('#customizer-text-color').value,
+                text_color: textColor,
                 background_image_url: bgImageUrl || (backgroundImageUrlEl?.value || ''),
                 background_color: bgColor,
-                background_opacity: parseFloat(modal.querySelector('#customizer-background-opacity').value),
+                background_opacity: bgOpacity,
                 card_color: cardColor,
-                decorative_bar_color: finalDecorativeBarColor
+                decorative_bar_color: decorativeBarColor,
+                separator_line_color: barColor
             });
             
             modal.remove();
+
+            // Salvar automaticamente no backend para persistência garantida
+            setTimeout(() => {
+                const saveBtn = document.getElementById('save-form-btn');
+                if (saveBtn) {
+                    saveBtn.click();
+                }
+            }, 350);
+
+            if (typeof showSuccessMessage === 'function') {
+                showSuccessMessage('Cores e tema aplicados e salvos com sucesso!');
+            }
         });
     }
     
@@ -13723,16 +14051,50 @@ async function applyTemplate(template) {
 
 // Aplicar tema
 function applyTheme(theme) {
+    const isDark = true;
     const primaryColorEl = document.getElementById('primary-color');
     const secondaryColorEl = document.getElementById('secondary-color');
+    const textColorEl = document.getElementById('text-color');
+    const themeEl = document.getElementById('form-theme');
+    const cardColorEl = document.getElementById('card-color');
+    const backgroundColorEl = document.getElementById('background-color-url') || document.getElementById('background-color');
+    const decorativeBarColorEl = document.getElementById('decorative-bar-color');
+    const barColorEl = document.getElementById('bar-color');
     
     if (primaryColorEl) primaryColorEl.value = theme.primary;
     if (secondaryColorEl) secondaryColorEl.value = theme.secondary;
+    if (textColorEl) textColorEl.value = '#FFFFFF';
+    if (themeEl) themeEl.value = 'dark';
+    if (cardColorEl) cardColorEl.value = '#1C1C21';
+    if (backgroundColorEl) backgroundColorEl.value = '#0D0D0F';
+    if (decorativeBarColorEl) decorativeBarColorEl.value = theme.primary;
+    if (barColorEl) barColorEl.value = theme.primary;
+    
+    if (typeof applyCustomColors === 'function') {
+        applyCustomColors({
+            theme: 'dark',
+            primary_color: theme.primary,
+            secondary_color: theme.secondary,
+            text_color: '#FFFFFF',
+            card_color: '#1C1C21',
+            background_color: '#0D0D0F',
+            decorative_bar_color: theme.primary,
+            separator_line_color: theme.primary
+        });
+    }
     
     syncPreviewStyles();
     
+    // Auto-salvar no backend
+    setTimeout(() => {
+        const saveBtn = document.getElementById('save-form-btn');
+        if (saveBtn) {
+            saveBtn.click();
+        }
+    }, 400);
+    
     // Notificação
-    showSuccessMessage(`Tema "${theme.name}" aplicado com sucesso!`);
+    showSuccessMessage(`Tema "${theme.name}" aplicado e salvo com sucesso!`);
 }
 
 // Função auxiliar para mostrar mensagens (se não existir)

@@ -220,11 +220,12 @@ textarea,
 select {
   width: 100%;
   padding: 13px 14px;
-  border: 2px solid #dadce0;
+  border: 2px solid var(--input-border, #dadce0);
   border-radius: 12px;
   font: inherit;
-  background: #fff;
-  color: var(--text);
+  background: var(--input-bg, #fff);
+  color: var(--input-text, var(--text));
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus,
@@ -232,6 +233,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 textarea {
@@ -252,14 +254,17 @@ textarea {
   gap: 10px;
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--sep, #e0e0e0);
   border-radius: 10px;
   cursor: pointer;
+  background: var(--input-bg, #fff);
+  color: var(--input-text, var(--text));
+  transition: border-color 0.2s, background 0.2s;
 }
 
 .opt:has(input:checked) {
   border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 8%, white);
+  background: color-mix(in srgb, var(--primary) 14%, var(--input-bg, white));
 }
 
 .opt input {
@@ -279,9 +284,12 @@ textarea {
   min-width: 40px;
   text-align: center;
   padding: 10px 8px;
-  border: 1px solid #dadce0;
+  border: 1px solid var(--input-border, #dadce0);
   border-radius: 10px;
   cursor: pointer;
+  background: var(--input-bg, #fff);
+  color: var(--input-text, var(--text));
+  transition: all 0.2s;
 }
 
 .scale input,
@@ -311,12 +319,23 @@ button[type='submit'] {
   padding: 15px;
   border: 0;
   border-radius: 12px;
-  background: var(--primary);
+  background: linear-gradient(115deg, var(--primary) 0%, var(--secondary) 100%);
   color: #fff;
   font-weight: 800;
   font-size: 1rem;
   cursor: pointer;
   letter-spacing: 0.01em;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 30%, transparent);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+button[type='submit']:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+button[type='submit']:active {
+  transform: translateY(0);
 }
 
 button[type='submit']:disabled {
