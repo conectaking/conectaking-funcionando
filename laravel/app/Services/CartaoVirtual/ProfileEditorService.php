@@ -106,6 +106,22 @@ class ProfileEditorService
         $placeholders = implode(',', array_fill(0, count($profileItemIds), '?'));
 
         try {
+            $countsMap = [];
+            try {
+                $respCounts = DB::select(
+                    "SELECT profile_item_id, COUNT(*)::int AS total
+                     FROM digital_form_responses
+                     WHERE profile_item_id IN ({$placeholders})
+                     GROUP BY profile_item_id",
+                    $profileItemIds
+                );
+                foreach ($respCounts as $rc) {
+                    $countsMap[(string) $rc->profile_item_id] = (int) $rc->total;
+                }
+            } catch (\Throwable $e) {
+                $countsMap = [];
+            }
+
             $digitalForms = DB::select(
                 "SELECT DISTINCT ON (profile_item_id) *
                  FROM digital_form_items
@@ -121,6 +137,7 @@ class ProfileEditorService
                 if ($key === '') {
                     continue;
                 }
+                $data['responses_count'] = $countsMap[$key] ?? 0;
                 $fieldsRaw = $data['form_fields'] ?? null;
                 $parsedFields = [];
                 if (is_string($fieldsRaw)) {
