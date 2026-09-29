@@ -70,70 +70,163 @@ class LocationController extends Controller
         'TO' => 'Tocantins',
     ];
 
+    public function cep(Request $request, string $cep)
+    {
+        $cleanCep = preg_replace('/\D/', '', $cep);
+        if (strlen($cleanCep) !== 8) {
+            return response()->json(['erro' => 'CEP inválido'], 400)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        $cacheKey = 'viacep_' . $cleanCep;
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 604800, function () use ($cleanCep) {
+            try {
+                $resp = \Illuminate\Support\Facades\Http::timeout(5)
+                    ->withHeaders(['User-Agent' => 'ConectaKing/1.0'])
+                    ->get("https://viacep.com.br/ws/{$cleanCep}/json/");
+
+                if ($resp->successful()) {
+                    $json = $resp->json();
+                    if (!isset($json['erro'])) {
+                        return $json;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('ViaCEP failed: ' . $e->getMessage());
+            }
+
+            // Fallback BrasilAPI
+            try {
+                $resp = \Illuminate\Support\Facades\Http::timeout(5)
+                    ->withHeaders(['User-Agent' => 'ConectaKing/1.0'])
+                    ->get("https://brasilapi.com.br/api/cep/v1/{$cleanCep}");
+
+                if ($resp->successful()) {
+                    $bJson = $resp->json();
+                    return [
+                        'cep' => $cleanCep,
+                        'logradouro' => $bJson['street'] ?? '',
+                        'bairro' => $bJson['neighborhood'] ?? '',
+                        'localidade' => $bJson['city'] ?? '',
+                        'uf' => $bJson['state'] ?? '',
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('BrasilAPI CEP fallback failed: ' . $e->getMessage());
+            }
+
+            return ['erro' => true];
+        });
+
+        return response()->json($data, 200)->header('X-Conecta-Engine', 'laravel');
+    }
+
     public function geocode(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
-        $uf = strtoupper(trim((string) ($request->query('uf') ?? $request->query('state') ?? '')));
+        $number = trim((string) $request->query('number', ''));
+        $bairro = trim((string) $request->query('bairro', ''));
         $city = trim((string) $request->query('city', ''));
-        $limit = min(15, max(1, (int) $request->query('limit', 10)));
+        $uf = strtoupper(trim((string) ($request->query('uf') ?? $request->query('state') ?? '')));
+        $cep = preg_replace('/\D/', '', (string) $request->query('cep', ''));
+        $limit = min(20, max(1, (int) $request->query('limit', 12)));
 
-        if ($q === '' && $city === '' && $uf === '') {
+        if ($q === '' && $city === '' && $uf === '' && $cep === '') {
             return response()->json([], 200)->header('X-Conecta-Engine', 'laravel');
+        }
+
+        // Se número não foi passado explicitamente, extrai número de $q se existir
+        $cleanStreet = $q;
+        if ($number === '' && preg_match('/\b(?:n[ºo°]?\s*)?(\d{1,5})\b/i', $q, $m)) {
+            $number = $m[1];
+            $cleanStreet = trim(preg_replace('/\b(?:n[ºo°]?\s*)?' . preg_quote($number, '/') . '\b/i', '', $q));
+            $cleanStreet = trim($cleanStreet, " ,\t\n\r\0\x0B");
+        }
+
+        // Se CEP de 8 dígitos foi enviado, resolve dados via ViaCEP se rua/cidade estiverem vazias
+        if (strlen($cep) === 8 && ($cleanStreet === '' || $city === '')) {
+            try {
+                $viaData = \Illuminate\Support\Facades\Cache::remember('viacep_' . $cep, 604800, function () use ($cep) {
+                    $r = \Illuminate\Support\Facades\Http::timeout(3)->get("https://viacep.com.br/ws/{$cep}/json/");
+                    return $r->successful() ? $r->json() : null;
+                });
+                if ($viaData && !isset($viaData['erro'])) {
+                    if ($cleanStreet === '' && !empty($viaData['logradouro'])) {
+                        $cleanStreet = $viaData['logradouro'];
+                    }
+                    if ($bairro === '' && !empty($viaData['bairro'])) {
+                        $bairro = $viaData['bairro'];
+                    }
+                    if ($city === '' && !empty($viaData['localidade'])) {
+                        $city = $viaData['localidade'];
+                    }
+                    if ($uf === '' && !empty($viaData['uf'])) {
+                        $uf = strtoupper($viaData['uf']);
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
         $stateName = self::UF_MAP[$uf] ?? ($uf !== '' ? $uf : null);
 
-        // Build composed query
-        $composedQuery = $q;
-        if ($city !== '' && stripos($composedQuery, $city) === false) {
-            $composedQuery .= ($composedQuery !== '' ? ', ' : '') . $city;
-        }
-        if ($stateName && stripos($composedQuery, $stateName) === false && stripos($composedQuery, $uf) === false) {
-            $composedQuery .= ($composedQuery !== '' ? ', ' : '') . $stateName;
-        }
-        $composedQuery = trim($composedQuery, ', ');
-
-        $cacheKey = 'geocode_search_v3_'.md5(mb_strtolower("{$composedQuery}_{$uf}_{$city}_{$limit}"));
-        $results = \Illuminate\Support\Facades\Cache::remember($cacheKey, 86400, function () use ($composedQuery, $q, $stateName, $uf, $city, $limit) {
+        $cacheKey = 'geocode_search_v4_' . md5(mb_strtolower("{$cleanStreet}_{$number}_{$bairro}_{$city}_{$uf}_{$limit}"));
+        $results = \Illuminate\Support\Facades\Cache::remember($cacheKey, 86400, function () use ($cleanStreet, $number, $bairro, $city, $uf, $stateName, $limit) {
             $parsedResults = [];
 
-            // 1. Try Nominatim with composedQuery (and countrycodes=br)
-            try {
-                $params = [
-                    'q' => $composedQuery,
-                    'format' => 'json',
-                    'limit' => $limit,
-                    'addressdetails' => 1,
-                    'countrycodes' => 'br',
-                ];
+            // 1. Prioridade: Busca estruturada no Nominatim se rua e cidade/estado estiverem presentes
+            if ($cleanStreet !== '' && ($city !== '' || $stateName !== null)) {
+                try {
+                    $structuredParams = [
+                        'street' => $cleanStreet,
+                        'format' => 'json',
+                        'limit' => $limit,
+                        'addressdetails' => 1,
+                        'countrycodes' => 'br',
+                    ];
+                    if ($city !== '') $structuredParams['city'] = $city;
+                    if ($stateName !== null) $structuredParams['state'] = $stateName;
+                    $structuredParams['country'] = 'Brasil';
 
-                $resp = \Illuminate\Support\Facades\Http::timeout(6)
-                    ->withHeaders([
-                        'User-Agent' => 'ConectaKing/1.0 (https://conectaking.com.br; contato@conectaking.com.br)',
-                        'Accept' => 'application/json',
-                    ])
-                    ->get('https://nominatim.openstreetmap.org/search', $params);
+                    $resp = \Illuminate\Support\Facades\Http::timeout(6)
+                        ->withHeaders([
+                            'User-Agent' => 'ConectaKing/1.0 (https://conectaking.com.br; contato@conectaking.com.br)',
+                            'Accept' => 'application/json',
+                        ])
+                        ->get('https://nominatim.openstreetmap.org/search', $structuredParams);
 
-                if ($resp->successful()) {
-                    $data = $resp->json();
-                    if (is_array($data) && count($data) > 0) {
-                        $parsedResults = $this->formatNominatimResults($data, $uf, $stateName);
+                    if ($resp->successful()) {
+                        $data = $resp->json();
+                        if (is_array($data) && count($data) > 0) {
+                            $parsedResults = $this->formatNominatimResults($data, $uf, $stateName, $number, $city);
+                        }
                     }
+                } catch (\Throwable $e) {
+                    Log::warning('Geocode nominatim structured failed: ' . $e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::warning('Geocode nominatim primary failed: '.$e->getMessage());
             }
 
-            // 2. If nothing found and city/state was appended, try free-form with stateName fallback
-            if (empty($parsedResults) && ($composedQuery !== $q && $q !== '')) {
+            // 2. Se a busca estruturada não retornou nada, tenta busca composta
+            if (empty($parsedResults)) {
+                $composedQuery = $cleanStreet !== '' ? $cleanStreet : '';
+                if ($bairro !== '' && stripos($composedQuery, $bairro) === false) {
+                    $composedQuery .= ($composedQuery !== '' ? ', ' : '') . $bairro;
+                }
+                if ($city !== '' && stripos($composedQuery, $city) === false) {
+                    $composedQuery .= ($composedQuery !== '' ? ', ' : '') . $city;
+                }
+                if ($stateName && stripos($composedQuery, $stateName) === false && stripos($composedQuery, $uf) === false) {
+                    $composedQuery .= ($composedQuery !== '' ? ', ' : '') . $stateName;
+                }
+                $composedQuery .= ', Brasil';
+                $composedQuery = trim($composedQuery, ', ');
+
                 try {
-                    $resp = \Illuminate\Support\Facades\Http::timeout(5)
+                    $resp = \Illuminate\Support\Facades\Http::timeout(6)
                         ->withHeaders([
                             'User-Agent' => 'ConectaKing/1.0 (https://conectaking.com.br; contato@conectaking.com.br)',
                             'Accept' => 'application/json',
                         ])
                         ->get('https://nominatim.openstreetmap.org/search', [
-                            'q' => $q . ($stateName ? ", {$stateName}" : ''),
+                            'q' => $composedQuery,
                             'format' => 'json',
                             'limit' => $limit,
                             'addressdetails' => 1,
@@ -143,18 +236,18 @@ class LocationController extends Controller
                     if ($resp->successful()) {
                         $data = $resp->json();
                         if (is_array($data) && count($data) > 0) {
-                            $parsedResults = $this->formatNominatimResults($data, $uf, $stateName);
+                            $parsedResults = $this->formatNominatimResults($data, $uf, $stateName, $number, $city);
                         }
                     }
                 } catch (\Throwable $e) {
-                    Log::warning('Geocode nominatim secondary failed: '.$e->getMessage());
+                    Log::warning('Geocode nominatim composed failed: ' . $e->getMessage());
                 }
             }
 
             // 3. Fallback: Photon API
             if (empty($parsedResults)) {
                 try {
-                    $photonQ = ($composedQuery !== '' ? $composedQuery : $q) . ', Brasil';
+                    $photonQ = trim(($cleanStreet ?: '') . ($city ? ", {$city}" : '') . ($stateName ? ", {$stateName}" : '') . ', Brasil', ', ');
                     $resp = \Illuminate\Support\Facades\Http::timeout(5)
                         ->withHeaders([
                             'User-Agent' => 'ConectaKing/1.0',
@@ -171,35 +264,38 @@ class LocationController extends Controller
                         foreach ($features as $f) {
                             $coords = $f['geometry']['coordinates'] ?? [0, 0];
                             $props = $f['properties'] ?? [];
-                            $nameParts = array_filter([
-                                $props['name'] ?? null,
-                                $props['street'] ?? null,
-                                $props['housenumber'] ?? null,
-                                $props['district'] ?? null,
-                                $props['city'] ?? $props['town'] ?? $props['village'] ?? null,
-                                $props['state'] ?? null,
-                                $props['country'] ?? null,
-                            ]);
+                            $cStreet = (string) ($props['street'] ?? $props['name'] ?? '');
                             $cCity = (string) ($props['city'] ?? $props['town'] ?? $props['village'] ?? '');
                             $cState = (string) ($props['state'] ?? '');
-                            $badge = trim(($cCity !== '' ? $cCity : '') . ($cState !== '' ? ' - ' . $cState : ''), ' - ');
+                            $cSuburb = (string) ($props['district'] ?? '');
+                            $cPostcode = (string) ($props['postcode'] ?? '');
+
+                            $stWithNum = $cStreet;
+                            if ($number !== '' && !preg_match('/\b' . preg_quote($number, '/') . '\b/', $stWithNum)) {
+                                $stWithNum .= ', ' . $number;
+                            }
+
+                            $fullParts = array_filter([$stWithNum, $cSuburb, $cCity, $cState, $cPostcode, 'Brasil']);
+                            $displayName = implode(', ', $fullParts);
+                            $badge = trim(($cSuburb !== '' ? $cSuburb . ', ' : '') . ($cCity !== '' ? $cCity : '') . ($cState !== '' ? ' - ' . $cState : ''), ' - ,');
+
                             $parsedResults[] = [
                                 'lat' => (string) ($coords[1] ?? 0),
                                 'lon' => (string) ($coords[0] ?? 0),
-                                'display_name' => implode(', ', $nameParts),
-                                'street' => (string) ($props['street'] ?? $props['name'] ?? ''),
-                                'house_number' => (string) ($props['housenumber'] ?? ''),
-                                'suburb' => (string) ($props['district'] ?? ''),
+                                'display_name' => $displayName,
+                                'street' => $stWithNum,
+                                'house_number' => $number ?: (string) ($props['housenumber'] ?? ''),
+                                'suburb' => $cSuburb,
                                 'city' => $cCity,
                                 'state' => $cState,
                                 'uf' => '',
-                                'postcode' => (string) ($props['postcode'] ?? ''),
+                                'postcode' => $cPostcode,
                                 'badge' => $badge,
                             ];
                         }
                     }
                 } catch (\Throwable $e) {
-                    Log::warning('Geocode photon fallback failed: '.$e->getMessage());
+                    Log::warning('Geocode photon fallback failed: ' . $e->getMessage());
                 }
             }
 
@@ -209,7 +305,7 @@ class LocationController extends Controller
         return response()->json($results, 200)->header('X-Conecta-Engine', 'laravel');
     }
 
-    private function formatNominatimResults(array $items, string $filterUf = '', ?string $filterStateName = null): array
+    private function formatNominatimResults(array $items, string $filterUf = '', ?string $filterStateName = null, string $customNumber = '', string $filterCity = ''): array
     {
         $out = [];
         $ufMapFlipped = array_flip(self::UF_MAP);
@@ -221,7 +317,7 @@ class LocationController extends Controller
             $displayName = (string) ($item['display_name'] ?? '');
 
             $street = (string) ($addr['road'] ?? $addr['street'] ?? $addr['pedestrian'] ?? $item['name'] ?? '');
-            $houseNumber = (string) ($addr['house_number'] ?? '');
+            $houseNumber = $customNumber !== '' ? $customNumber : (string) ($addr['house_number'] ?? '');
             $suburb = (string) ($addr['suburb'] ?? $addr['neighbourhood'] ?? $addr['quarter'] ?? $addr['city_district'] ?? '');
             $city = (string) ($addr['city'] ?? $addr['town'] ?? $addr['village'] ?? $addr['municipality'] ?? '');
             $state = (string) ($addr['state'] ?? $addr['state_district'] ?? '');
@@ -232,14 +328,30 @@ class LocationController extends Controller
                 $ufCode = strtoupper($state);
             }
 
+            // Injetar número da casa se disponível
+            $streetWithNum = $street;
+            if ($houseNumber !== '' && $street !== '') {
+                if (!preg_match('/\b' . preg_quote($houseNumber, '/') . '\b/', $street)) {
+                    $streetWithNum = $street . ', ' . $houseNumber;
+                }
+            }
+
+            // Formatar display_name com número
+            if ($houseNumber !== '' && $street !== '') {
+                $parts = array_filter([$streetWithNum, $suburb, $city, $ufCode ?: $state, $postcode, 'Brasil']);
+                $formattedDisplayName = implode(', ', $parts);
+            } else {
+                $formattedDisplayName = $displayName;
+            }
+
             $badgeParts = array_filter([$suburb, $city, $ufCode ?: $state]);
             $badge = implode(', ', $badgeParts);
 
             $out[] = [
                 'lat' => $lat,
                 'lon' => $lon,
-                'display_name' => $displayName,
-                'street' => $street,
+                'display_name' => $formattedDisplayName,
+                'street' => $streetWithNum,
                 'house_number' => $houseNumber,
                 'suburb' => $suburb,
                 'city' => $city,
@@ -250,16 +362,24 @@ class LocationController extends Controller
             ];
         }
 
-        if ($filterUf !== '' || $filterStateName !== null) {
-            usort($out, function ($a, $b) use ($filterUf, $filterStateName) {
-                $aMatch = ($filterUf !== '' && strcasecmp($a['uf'] ?? '', $filterUf) === 0) ||
-                          ($filterStateName !== null && stripos($a['state'] ?? '', $filterStateName) !== false);
-                $bMatch = ($filterUf !== '' && strcasecmp($b['uf'] ?? '', $filterUf) === 0) ||
-                          ($filterStateName !== null && stripos($b['state'] ?? '', $filterStateName) !== false);
-                if ($aMatch === $bMatch) return 0;
-                return $aMatch ? -1 : 1;
-            });
-        }
+        // Ordenação inteligente: cidade solicitada primeiro, estado solicitado primeiro
+        usort($out, function ($a, $b) use ($filterCity, $filterUf, $filterStateName) {
+            $aCityMatch = ($filterCity !== '' && stripos($a['city'] ?? '', $filterCity) !== false);
+            $bCityMatch = ($filterCity !== '' && stripos($b['city'] ?? '', $filterCity) !== false);
+            if ($aCityMatch !== $bCityMatch) {
+                return $aCityMatch ? -1 : 1;
+            }
+
+            $aStateMatch = ($filterUf !== '' && strcasecmp($a['uf'] ?? '', $filterUf) === 0) ||
+                           ($filterStateName !== null && stripos($a['state'] ?? '', $filterStateName) !== false);
+            $bStateMatch = ($filterUf !== '' && strcasecmp($b['uf'] ?? '', $filterUf) === 0) ||
+                           ($filterStateName !== null && stripos($b['state'] ?? '', $filterStateName) !== false);
+            if ($aStateMatch !== $bStateMatch) {
+                return $aStateMatch ? -1 : 1;
+            }
+
+            return 0;
+        });
 
         return $out;
     }

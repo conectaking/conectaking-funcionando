@@ -526,7 +526,16 @@
                     @endif
 
                 @elseif($type === 'location')
-                    {{-- renderizado em profile-actions via map_url --}}
+                    @php
+                        $locMapUrl = !empty($item['map_url']) ? $item['map_url'] : $mapUrl;
+                        $locTitle = $title !== '' ? $title : 'Onde me encontrar';
+                    @endphp
+                    @if($locMapUrl !== '')
+                        <a href="{{ $locMapUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+                            <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-map-marker-alt') }}"></i>
+                            <span>{{ $locTitle }}</span>
+                        </a>
+                    @endif
 
                 @elseif($type === 'pix_qrcode')
                     <button type="button" class="profile-link profile-button-pix-qrcode" data-item-id="{{ $item['id'] ?? '' }}">

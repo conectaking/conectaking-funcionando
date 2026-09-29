@@ -830,21 +830,65 @@ async function openEditModal(itemEl) {
                 var locTitle = (currentTitle || 'Localização').replace(/"/g, '&quot;');
 
                 var ufList = [
-                    { uf: '', name: 'Todos os Estados' },
-                    { uf: 'AC', name: 'AC - Acre' }, { uf: 'AL', name: 'AL - Alagoas' }, { uf: 'AP', name: 'AP - Amapá' },
-                    { uf: 'AM', name: 'AM - Amazonas' }, { uf: 'BA', name: 'BA - Bahia' }, { uf: 'CE', name: 'CE - Ceará' },
-                    { uf: 'DF', name: 'DF - Distrito Federal' }, { uf: 'ES', name: 'ES - Espírito Santo' }, { uf: 'GO', name: 'GO - Goiás' },
-                    { uf: 'MA', name: 'MA - Maranhão' }, { uf: 'MT', name: 'MT - Mato Grosso' }, { uf: 'MS', name: 'MS - Mato Grosso do Sul' },
-                    { uf: 'MG', name: 'MG - Minas Gerais' }, { uf: 'PA', name: 'PA - Pará' }, { uf: 'PB', name: 'PB - Paraíba' },
-                    { uf: 'PR', name: 'PR - Paraná' }, { uf: 'PE', name: 'PE - Pernambuco' }, { uf: 'PI', name: 'PI - Piauí' },
-                    { uf: 'RJ', name: 'RJ - Rio de Janeiro' }, { uf: 'RN', name: 'RN - Rio Grande do Norte' }, { uf: 'RS', name: 'RS - Rio Grande do Sul' },
-                    { uf: 'RO', name: 'RO - Rondônia' }, { uf: 'RR', name: 'RR - Roraima' }, { uf: 'SC', name: 'SC - Santa Catarina' },
-                    { uf: 'SP', name: 'SP - São Paulo' }, { uf: 'SE', name: 'SE - Sergipe' }, { uf: 'TO', name: 'TO - Tocantins' }
+                    { uf: 'MA', name: 'MA - Maranhão' },
+                    { uf: 'SP', name: 'SP - São Paulo' },
+                    { uf: 'RJ', name: 'RJ - Rio de Janeiro' },
+                    { uf: 'MG', name: 'MG - Minas Gerais' },
+                    { uf: 'BA', name: 'BA - Bahia' },
+                    { uf: 'CE', name: 'CE - Ceará' },
+                    { uf: 'PE', name: 'PE - Pernambuco' },
+                    { uf: 'PA', name: 'PA - Pará' },
+                    { uf: 'PR', name: 'PR - Paraná' },
+                    { uf: 'RS', name: 'RS - Rio Grande do Sul' },
+                    { uf: 'SC', name: 'SC - Santa Catarina' },
+                    { uf: 'GO', name: 'GO - Goiás' },
+                    { uf: 'DF', name: 'DF - Distrito Federal' },
+                    { uf: 'ES', name: 'ES - Espírito Santo' },
+                    { uf: 'AM', name: 'AM - Amazonas' },
+                    { uf: 'PI', name: 'PI - Piauí' },
+                    { uf: 'RN', name: 'RN - Rio Grande do Norte' },
+                    { uf: 'PB', name: 'PB - Paraíba' },
+                    { uf: 'AL', name: 'AL - Alagoas' },
+                    { uf: 'SE', name: 'SE - Sergipe' },
+                    { uf: 'MT', name: 'MT - Mato Grosso' },
+                    { uf: 'MS', name: 'MS - Mato Grosso do Sul' },
+                    { uf: 'RO', name: 'RO - Rondônia' },
+                    { uf: 'TO', name: 'TO - Tocantins' },
+                    { uf: 'AC', name: 'AC - Acre' },
+                    { uf: 'AP', name: 'AP - Amapá' },
+                    { uf: 'RR', name: 'RR - Roraima' }
                 ];
 
                 var defaultUf = 'MA';
+                var defaultCity = 'São Luís';
+                var initialStreet = '';
+                var initialNumber = '';
+                var initialBairro = '';
+                var initialCep = '';
+
+                if (locData.street) initialStreet = locData.street;
+                if (locData.house_number) initialNumber = locData.house_number;
+                if (locData.bairro) initialBairro = locData.bairro;
+                if (locData.city) defaultCity = locData.city;
+                if (locData.uf) defaultUf = locData.uf;
+                if (locData.cep) initialCep = locData.cep;
+
+                // Extrair se não estiver estruturado
+                if (!initialNumber && locAddr) {
+                    var nMatch = locAddr.match(/\b(?:n[ºo°]?\s*)?(\d{1,5})\b/i);
+                    if (nMatch) initialNumber = nMatch[1];
+                }
+                if (!initialStreet && locAddr) {
+                    var parts = locAddr.split(',');
+                    initialStreet = (parts[0] || '').replace(/\s*,?\s*(?:n[ºo°]?\s*)?\d{1,5}\s*$/i, '').trim();
+                }
+                if (!initialCep && locAddr) {
+                    var cMatch = locAddr.match(/\b\d{5}-?\d{3}\b/);
+                    if (cMatch) initialCep = cMatch[0];
+                }
+
                 for (var u = 0; u < ufList.length; u++) {
-                    if (ufList[u].uf && (locAddr.indexOf(ufList[u].name) !== -1 || locAddr.indexOf(' ' + ufList[u].uf + ',') !== -1 || locAddr.indexOf(' ' + ufList[u].uf + ' ') !== -1)) {
+                    if (ufList[u].uf && (locAddr.indexOf(ufList[u].name) !== -1 || locAddr.indexOf(' ' + ufList[u].uf + ',') !== -1 || locAddr.indexOf(' ' + ufList[u].uf + ' ') !== -1 || locAddr.indexOf('- ' + ufList[u].uf) !== -1)) {
                         defaultUf = ufList[u].uf;
                         break;
                     }
@@ -857,69 +901,92 @@ async function openEditModal(itemEl) {
 
                 formHTML = `
             <div class="input-group location-edit-panel" data-item-id="${itemId}">
-                <label>Título do botão</label>
-                <input type="text" id="edit-title" class="location-title-input" value="${locTitle}" placeholder="Ex: Onde me encontrar">
+                <label style="font-weight:600;font-size:0.85rem;margin-bottom:6px;display:block;">Título do botão</label>
+                <input type="text" id="edit-title" class="location-title-input" value="${locTitle}" placeholder="Ex: Onde me encontrar" style="width:100%;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);font-size:0.9rem;">
             </div>
 
-            <!-- Filtros Regionais e GPS Local -->
-            <div class="location-filter-card" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-                    <span style="font-weight:600;font-size:0.82rem;color:var(--dourado-principal,#FFC700);display:flex;align-items:center;gap:6px;">
-                        <i class="fas fa-sliders-h"></i> Filtro por Região / Estado
+            <!-- Caixa de Localização Estruturada com Alta Precisão -->
+            <div class="location-structured-card" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,199,0,0.35);border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <span style="font-weight:700;font-size:0.85rem;color:var(--dourado-principal,#FFC700);display:flex;align-items:center;gap:6px;">
+                        <i class="fas fa-map-marker-alt"></i> Localização Precisa
                     </span>
-                    <button type="button" class="location-gps-btn" style="background:rgba(255,199,0,0.15);border:1px solid rgba(255,199,0,0.4);color:#FFC700;padding:5px 10px;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;" title="Detectar endereço do seu dispositivo">
-                        <i class="fas fa-crosshairs"></i> Usar Minha Localização
+                    <button type="button" class="location-gps-btn" style="background:rgba(255,199,0,0.15);border:1px solid rgba(255,199,0,0.5);color:#FFC700;padding:6px 12px;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;" title="Detectar endereço do seu dispositivo via GPS">
+                        <i class="fas fa-crosshairs"></i> Usar Meu GPS
                     </button>
                 </div>
-                <div style="display:grid;grid-template-columns:minmax(140px, 1.2fr) minmax(130px, 1.5fr);gap:8px;">
+
+                <!-- Linha 1: CEP (com auto-preenchimento) e Bairro -->
+                <div style="display:grid;grid-template-columns:135px 1fr;gap:8px;margin-bottom:10px;">
                     <div>
-                        <label style="display:block;font-size:0.75rem;opacity:0.8;margin-bottom:4px;">Estado (UF)</label>
-                        <select id="location-uf-select" class="location-uf-select" style="width:100%;padding:8px 10px;border-radius:6px;background:rgba(18,18,20,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;cursor:pointer;">
+                        <label style="display:block;font-size:0.75rem;opacity:0.85;margin-bottom:4px;font-weight:600;">CEP (opcional)</label>
+                        <div style="position:relative;">
+                            <input type="text" id="location-cep-input" class="location-cep-input" value="${initialCep}" placeholder="00000-000" maxlength="9" style="width:100%;padding:8px 10px;border-radius:6px;background:rgba(18,18,20,0.95);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;">
+                            <span class="location-cep-loading" style="display:none;position:absolute;right:8px;top:8px;color:#FFC700;font-size:0.8rem;"><i class="fas fa-spinner fa-spin"></i></span>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;opacity:0.85;margin-bottom:4px;font-weight:600;">Bairro</label>
+                        <input type="text" id="location-bairro-input" class="location-bairro-input" value="${initialBairro}" placeholder="Ex: Centro, Cohab, Calhau..." style="width:100%;padding:8px 10px;border-radius:6px;background:rgba(18,18,20,0.95);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;">
+                    </div>
+                </div>
+
+                <!-- Linha 2: Rua / Logradouro e Número em Destaque -->
+                <div style="display:grid;grid-template-columns:1fr 95px;gap:8px;margin-bottom:10px;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;opacity:0.85;margin-bottom:4px;font-weight:600;">Rua / Avenida / Ponto</label>
+                        <input type="text" id="location-address-input" class="location-address-input" value="${initialStreet || locAddr}" placeholder="Ex: Av. Tancredo Neves" style="width:100%;padding:9px 11px;border-radius:6px;background:rgba(18,18,20,0.95);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.88rem;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;opacity:0.85;margin-bottom:4px;font-weight:600;color:#FFC700;">Número</label>
+                        <input type="text" id="location-number-input" class="location-number-input" value="${initialNumber}" placeholder="Ex: 820" style="width:100%;padding:9px 10px;border-radius:6px;background:rgba(18,18,20,0.95);color:#FFC700;border:1px solid rgba(255,199,0,0.55);font-size:0.88rem;font-weight:700;text-align:center;">
+                    </div>
+                </div>
+
+                <!-- Linha 3: Cidade, Estado (UF) e Botão Localizar -->
+                <div style="display:grid;grid-template-columns:1fr 115px auto;gap:8px;align-items:end;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;opacity:0.85;margin-bottom:4px;font-weight:600;">Cidade</label>
+                        <input type="text" id="location-city-input" class="location-city-input" value="${defaultCity}" placeholder="Ex: São Luís" style="width:100%;padding:8px 10px;border-radius:6px;background:rgba(18,18,20,0.95);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;opacity:0.85;margin-bottom:4px;font-weight:600;">Estado (UF)</label>
+                        <select id="location-uf-select" class="location-uf-select" style="width:100%;padding:8px 8px;border-radius:6px;background:rgba(18,18,20,0.95);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;cursor:pointer;">
                             ${ufOptionsHtml}
                         </select>
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;opacity:0.8;margin-bottom:4px;">Cidade (Opcional)</label>
-                        <input type="text" id="location-city-input" class="location-city-input" placeholder="Ex: São Luís" style="width:100%;padding:8px 10px;border-radius:6px;background:rgba(18,18,20,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;">
+                        <button type="button" class="location-search-btn" style="padding:9px 14px;border-radius:6px;background:var(--dourado-principal,#FFC700);color:#000;border:none;font-weight:700;font-size:0.85rem;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;height:35px;">
+                            <i class="fas fa-search-location"></i> Localizar
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Busca de Endereço -->
-            <div class="input-group" style="position:relative;">
-                <label>Endereço ou Ponto de Referência</label>
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                    <input type="text" id="location-address-input" class="location-address-input" value="${locAddr}" placeholder="Ex: Avenida Tancredo Neves, 820..." style="flex:1;">
-                    <button type="button" class="location-search-btn" style="padding:10px 16px;border-radius:8px;background:var(--dourado-principal,#FFC700);color:#000;border:none;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
-                        <i class="fas fa-search"></i> Pesquisar
-                    </button>
+            <!-- Lista de Sugestões / Opções de Endereço Encontradas -->
+            <div id="location-results-container" class="location-results-container" style="display:none;margin-bottom:12px;background:#18181b;border:1px solid rgba(255,199,0,0.4);border-radius:10px;padding:10px;max-height:230px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:0.8rem;color:#FFC700;font-weight:600;">
+                    <span class="location-results-count"><i class="fas fa-map-marked-alt"></i> Opções encontradas:</span>
+                    <button type="button" class="location-results-close-btn" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:1.1rem;line-height:1;padding:0 6px;" title="Fechar opções">&times;</button>
                 </div>
-
-                <!-- Lista de Sugestões / Opções de Endereço Encontradas -->
-                <div id="location-results-container" class="location-results-container" style="display:none;margin-bottom:12px;background:#18181b;border:1px solid rgba(255,199,0,0.4);border-radius:10px;padding:10px;max-height:230px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.6);">
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:0.8rem;color:#FFC700;font-weight:600;">
-                        <span class="location-results-count"><i class="fas fa-map-marked-alt"></i> Opções encontradas:</span>
-                        <button type="button" class="location-results-close-btn" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:1.1rem;line-height:1;padding:0 6px;" title="Fechar opções">&times;</button>
-                    </div>
-                    <div class="location-results-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-                </div>
-
-                <!-- Card de Endereço Selecionado -->
-                <div class="location-selected-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
-                    <i class="fas fa-map-pin" style="color:var(--dourado-principal,#FFC700);margin-top:3px;font-size:1.1rem;flex-shrink:0;"></i>
-                    <div style="flex:1;min-width:0;">
-                        <span style="font-size:0.72rem;opacity:0.75;display:block;text-transform:uppercase;letter-spacing:0.5px;">Endereço Definido no Mapa</span>
-                        <p class="location-formatted-display" style="font-size:0.85rem;line-height:1.4;margin:2px 0 0 0;font-weight:500;word-break:break-word;">${locAddr || 'Nenhum endereço definido ainda. Pesquise ou use o GPS acima.'}</p>
-                    </div>
-                </div>
-
-                <input type="hidden" id="location-lat-input" class="location-lat-input" value="${locLat}">
-                <input type="hidden" id="location-lng-input" class="location-lng-input" value="${locLng}">
+                <div class="location-results-list" style="display:flex;flex-direction:column;gap:6px;"></div>
             </div>
+
+            <!-- Card de Endereço Selecionado -->
+            <div class="location-selected-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
+                <i class="fas fa-map-pin" style="color:var(--dourado-principal,#FFC700);margin-top:3px;font-size:1.1rem;flex-shrink:0;"></i>
+                <div style="flex:1;min-width:0;">
+                    <span style="font-size:0.72rem;opacity:0.75;display:block;text-transform:uppercase;letter-spacing:0.5px;">Endereço Definido no Mapa</span>
+                    <p class="location-formatted-display" style="font-size:0.85rem;line-height:1.4;margin:2px 0 0 0;font-weight:500;word-break:break-word;">${locAddr || 'Nenhum endereço definido ainda. Preencha acima e clique em Localizar.'}</p>
+                </div>
+            </div>
+
+            <input type="hidden" id="location-lat-input" class="location-lat-input" value="${locLat}">
+            <input type="hidden" id="location-lng-input" class="location-lng-input" value="${locLng}">
 
             <!-- Mapa Interativo Leaflet -->
             <div class="input-group">
-                <label>Ponto no Mapa</label>
+                <label style="font-weight:600;font-size:0.85rem;margin-bottom:6px;display:block;">Ponto no Mapa</label>
                 <div class="location-map-preview-edit" style="height:230px;border-radius:12px;overflow:hidden;background:rgba(0,0,0,0.3);position:relative;border:1px solid rgba(255,255,255,0.15);">
                     <div id="location-map-container-${itemId}" class="location-map-container" style="width:100%;height:100%;min-height:230px;"></div>
                 </div>
@@ -1420,9 +1487,13 @@ async function openEditModal(itemEl) {
             var container = SELECTORS.editModalBody.querySelector('#location-map-container-' + itemId);
             var searchBtn = SELECTORS.editModalBody.querySelector('.location-search-btn');
             var addrIn = SELECTORS.editModalBody.querySelector('#location-address-input');
-            var formattedP = SELECTORS.editModalBody.querySelector('.location-formatted-display');
-            var ufSelect = SELECTORS.editModalBody.querySelector('#location-uf-select');
+            var numIn = SELECTORS.editModalBody.querySelector('#location-number-input');
+            var bairroIn = SELECTORS.editModalBody.querySelector('#location-bairro-input');
             var cityIn = SELECTORS.editModalBody.querySelector('#location-city-input');
+            var ufSelect = SELECTORS.editModalBody.querySelector('#location-uf-select');
+            var cepIn = SELECTORS.editModalBody.querySelector('#location-cep-input');
+            var cepLoading = SELECTORS.editModalBody.querySelector('.location-cep-loading');
+            var formattedP = SELECTORS.editModalBody.querySelector('.location-formatted-display');
             var gpsBtn = SELECTORS.editModalBody.querySelector('.location-gps-btn');
             var resultsContainer = SELECTORS.editModalBody.querySelector('#location-results-container');
             var resultsList = SELECTORS.editModalBody.querySelector('.location-results-list');
@@ -1451,6 +1522,47 @@ async function openEditModal(itemEl) {
                 }
             }
 
+            // Auto-extrair número se o usuário digitou junto na rua (ex: "av tancredo neves 820")
+            function extractNumberFromStreet() {
+                if (!addrIn) return;
+                var val = addrIn.value || '';
+                var numVal = numIn ? numIn.value.trim() : '';
+                if (!numVal) {
+                    var match = val.match(/\s*,?\s*(?:n[ºo°]?\s*)?(\d{1,5})\s*$/i);
+                    if (match) {
+                        if (numIn) numIn.value = match[1];
+                        addrIn.value = val.substring(0, match.index).replace(/,\s*$/, '').trim();
+                    }
+                }
+            }
+
+            function syncDisplayAddress() {
+                if (!formattedP) return;
+                var parts = [];
+                var street = addrIn ? addrIn.value.trim() : '';
+                var num = numIn ? numIn.value.trim() : '';
+                var bairro = bairroIn ? bairroIn.value.trim() : '';
+                var city = cityIn ? cityIn.value.trim() : '';
+                var uf = ufSelect ? ufSelect.value.trim() : '';
+                var cep = cepIn ? cepIn.value.trim() : '';
+
+                if (street) {
+                    parts.push(street + (num ? ', ' + num : ''));
+                }
+                if (bairro) parts.push(bairro);
+                if (city) {
+                    parts.push(city + (uf ? ' - ' + uf : ''));
+                } else if (uf) {
+                    parts.push(uf);
+                }
+                if (cep) parts.push('CEP ' + cep);
+                parts.push('Brasil');
+
+                if (parts.length > 1) {
+                    formattedP.textContent = parts.join(', ');
+                }
+            }
+
             function updateInputsFromLatLng(lat, lng, skipReverseGeocode) {
                 if (latIn) latIn.value = lat;
                 if (lngIn) lngIn.value = lng;
@@ -1469,14 +1581,30 @@ async function openEditModal(itemEl) {
                     })
                     .then(function (data) {
                         var displayName = (data && data.display_name) ? data.display_name : '';
-                        if (addrIn) addrIn.value = displayName;
-                        if (formattedP) formattedP.textContent = displayName || 'Endereço selecionado no mapa.';
+                        var curNum = numIn ? numIn.value.trim() : '';
+                        if (data && data.street && addrIn && !addrIn.value) {
+                            addrIn.value = data.street;
+                        }
+                        if (data && data.house_number && numIn && !numIn.value) {
+                            numIn.value = data.house_number;
+                            curNum = data.house_number;
+                        }
                         if (data && data.uf && ufSelect) {
                             ufSelect.value = data.uf;
                         }
                         if (data && data.city && cityIn && !cityIn.value) {
                             cityIn.value = data.city;
                         }
+                        if (data && data.bairro && bairroIn && !bairroIn.value) {
+                            bairroIn.value = data.bairro;
+                        }
+                        if (curNum && displayName && displayName.indexOf(curNum) === -1) {
+                            var firstComma = displayName.indexOf(',');
+                            if (firstComma !== -1) {
+                                displayName = displayName.substring(0, firstComma) + ', ' + curNum + displayName.substring(firstComma);
+                            }
+                        }
+                        if (formattedP) formattedP.textContent = displayName || 'Endereço selecionado no mapa.';
                     })
                     .catch(function () {
                         if (formattedP) formattedP.textContent = 'Endereço não identificado para estas coordenadas (ponto marcado).';
@@ -1563,12 +1691,26 @@ async function openEditModal(itemEl) {
                 var lat = item.lat;
                 var lon = item.lon;
                 var displayName = item.display_name || '';
+                var curNum = numIn ? numIn.value.trim() : '';
+
                 if (latIn) latIn.value = lat;
                 if (lngIn) lngIn.value = lon;
-                if (addrIn) addrIn.value = displayName;
-                if (formattedP) formattedP.textContent = displayName;
+                if (item.street && addrIn) addrIn.value = item.street;
+                if (item.house_number && numIn) numIn.value = item.house_number;
+                if (item.bairro && bairroIn) bairroIn.value = item.bairro;
+                if (item.city && cityIn) cityIn.value = item.city;
                 if (item.uf && ufSelect) ufSelect.value = item.uf;
-                if (item.city && cityIn && !cityIn.value) cityIn.value = item.city;
+                if (item.cep && cepIn && !cepIn.value) cepIn.value = item.cep;
+
+                // Garantir número no endereço formatado final
+                if (curNum && displayName && displayName.indexOf(curNum) === -1) {
+                    var firstComma = displayName.indexOf(',');
+                    if (firstComma !== -1) {
+                        displayName = displayName.substring(0, firstComma) + ', ' + curNum + displayName.substring(firstComma);
+                    }
+                }
+
+                if (formattedP) formattedP.textContent = displayName;
                 updateMapFromCoords(lat, lon);
                 if (resultsContainer) resultsContainer.style.display = 'none';
             }
@@ -1579,7 +1721,7 @@ async function openEditModal(itemEl) {
                 if (!arr || !Array.isArray(arr) || arr.length === 0) {
                     resultsContainer.style.display = 'block';
                     if (resultsCount) resultsCount.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#f39c12;"></i> Nenhum resultado encontrado';
-                    resultsList.innerHTML = '<div style="padding:10px 8px;font-size:0.8rem;color:#bbb;text-align:center;">Não encontramos nenhum local para essa busca. Tente buscar pelo nome da rua, número ou trocar o Estado/Cidade no filtro acima.</div>';
+                    resultsList.innerHTML = '<div style="padding:10px 8px;font-size:0.8rem;color:#bbb;text-align:center;">Não encontramos nenhum local com esses dados. Tente informar o nome da rua, número e confirmar a Cidade/Estado.</div>';
                     return;
                 }
 
@@ -1591,9 +1733,17 @@ async function openEditModal(itemEl) {
                 // Pré-selecionar o 1º no mapa e formulário
                 var first = arr[0];
                 if (first) {
+                    var curNum = numIn ? numIn.value.trim() : '';
                     if (latIn) latIn.value = first.lat;
                     if (lngIn) lngIn.value = first.lon;
-                    if (formattedP) formattedP.textContent = first.display_name;
+                    var firstDisp = first.display_name || '';
+                    if (curNum && firstDisp && firstDisp.indexOf(curNum) === -1) {
+                        var cPos = firstDisp.indexOf(',');
+                        if (cPos !== -1) {
+                            firstDisp = firstDisp.substring(0, cPos) + ', ' + curNum + firstDisp.substring(cPos);
+                        }
+                    }
+                    if (formattedP) formattedP.textContent = firstDisp;
                     if (first.uf && ufSelect && !ufSelect.value) ufSelect.value = first.uf;
                     if (first.city && cityIn && !cityIn.value) cityIn.value = first.city;
                     updateMapFromCoords(first.lat, first.lon);
@@ -1604,7 +1754,9 @@ async function openEditModal(itemEl) {
                     optionEl.className = 'location-option-item';
                     optionEl.style.cssText = 'padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;transition:all 0.15s ease;';
 
-                    var mainTitle = item.street ? (item.street + (item.house_number ? ', ' + item.house_number : '')) : (item.display_name ? item.display_name.split(',')[0] : ('Opção ' + (idx + 1)));
+                    var curNum = numIn ? numIn.value.trim() : '';
+                    var itemNum = item.house_number || curNum;
+                    var mainTitle = item.street ? (item.street + (itemNum ? ', ' + itemNum : '')) : (item.display_name ? item.display_name.split(',')[0] : ('Opção ' + (idx + 1)));
                     var badge = item.badge || ((item.city || '') + (item.uf ? ' - ' + item.uf : (item.state ? ' - ' + item.state : ''))).trim();
                     badge = badge.replace(/^[\s,-]+/, '');
 
@@ -1647,24 +1799,31 @@ async function openEditModal(itemEl) {
             }
 
             function doSearch() {
-                var q = (addrIn && addrIn.value || '').trim();
+                extractNumberFromStreet();
+                var street = (addrIn && addrIn.value || '').trim();
+                var number = (numIn && numIn.value || '').trim();
+                var bairro = (bairroIn && bairroIn.value || '').trim();
                 var uf = (ufSelect && ufSelect.value || '').trim();
                 var city = (cityIn && cityIn.value || '').trim();
+                var cep = (cepIn && cepIn.value || '').trim();
 
-                if (!q && !city) {
-                    if (formattedP) formattedP.textContent = 'Digite o endereço ou nome da rua para pesquisar.';
+                if (!street && !city && !cep) {
+                    if (formattedP) formattedP.textContent = 'Digite o nome da rua ou CEP para pesquisar.';
                     return;
                 }
 
                 if (searchBtn) {
                     searchBtn.disabled = true;
-                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localizando...';
                 }
 
                 var params = new URLSearchParams();
-                if (q) params.set('q', q);
-                if (uf) params.set('uf', uf);
+                if (street) params.set('q', street);
+                if (number) params.set('number', number);
+                if (bairro) params.set('bairro', bairro);
                 if (city) params.set('city', city);
+                if (uf) params.set('uf', uf);
+                if (cep) params.set('cep', cep);
                 params.set('limit', '12');
 
                 var searchUrl = (env.API_URL || '') + '/api/location/geocode?' + params.toString();
@@ -1674,7 +1833,7 @@ async function openEditModal(itemEl) {
                         return r.json();
                     })
                     .catch(function () {
-                        var fallbackQuery = q + (city ? ', ' + city : '') + (uf ? ', ' + uf : '') + ', Brasil';
+                        var fallbackQuery = street + (number ? ', ' + number : '') + (bairro ? ', ' + bairro : '') + (city ? ', ' + city : '') + (uf ? ', ' + uf : '') + ', Brasil';
                         return __rawFetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(fallbackQuery) + '&format=json&limit=10&countrycodes=br&addressdetails=1', {
                             headers: { 'Accept': 'application/json' },
                             credentials: 'omit'
@@ -1688,11 +1847,11 @@ async function openEditModal(itemEl) {
                                         lon: it.lon,
                                         display_name: it.display_name,
                                         street: addr.road || addr.street || it.name,
-                                        house_number: addr.house_number || '',
-                                        city: addr.city || addr.town || addr.village || '',
+                                        house_number: addr.house_number || number || '',
+                                        city: addr.city || addr.town || addr.village || city || '',
                                         state: addr.state || '',
                                         uf: uf || '',
-                                        badge: (addr.city || addr.town || '') + (addr.state ? ' - ' + addr.state : '')
+                                        badge: (addr.city || addr.town || city || '') + (addr.state ? ' - ' + addr.state : (uf ? ' - ' + uf : ''))
                                     };
                                 });
                             });
@@ -1707,9 +1866,49 @@ async function openEditModal(itemEl) {
                     .finally(function () {
                         if (searchBtn) {
                             searchBtn.disabled = false;
-                            searchBtn.innerHTML = '<i class="fas fa-search"></i> Pesquisar';
+                            searchBtn.innerHTML = '<i class="fas fa-search-location"></i> Localizar';
                         }
                     });
+            }
+
+            // Auto-busca por CEP via API ViaCEP / BrasilAPI
+            function checkCepInput() {
+                if (!cepIn) return;
+                var raw = (cepIn.value || '').replace(/\D/g, '');
+                if (raw.length === 8) {
+                    cepIn.value = raw.substring(0, 5) + '-' + raw.substring(5);
+                    if (cepLoading) cepLoading.style.display = 'inline-block';
+                    var cepUrl = (env.API_URL || '') + '/api/location/cep/' + raw;
+                    __rawFetch(cepUrl, { headers: { 'Accept': 'application/json' }, credentials: 'omit' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (cepLoading) cepLoading.style.display = 'none';
+                            if (data && !data.error) {
+                                if (data.logradouro && addrIn) addrIn.value = data.logradouro;
+                                if (data.bairro && bairroIn) bairroIn.value = data.bairro;
+                                if (data.localidade && cityIn) cityIn.value = data.localidade;
+                                if (data.uf && ufSelect) ufSelect.value = data.uf;
+                                if (numIn) numIn.focus();
+                                doSearch();
+                            }
+                        })
+                        .catch(function () {
+                            if (cepLoading) cepLoading.style.display = 'none';
+                        });
+                }
+            }
+
+            if (cepIn) {
+                cepIn.addEventListener('input', function () {
+                    var v = cepIn.value.replace(/\D/g, '');
+                    if (v.length > 5) {
+                        cepIn.value = v.substring(0, 5) + '-' + v.substring(5, 8);
+                    }
+                    if (v.length === 8) {
+                        checkCepInput();
+                    }
+                });
+                cepIn.addEventListener('blur', checkCepInput);
             }
 
             if (searchBtn) {
@@ -1717,7 +1916,30 @@ async function openEditModal(itemEl) {
             }
 
             if (addrIn) {
+                addrIn.addEventListener('blur', function () {
+                    extractNumberFromStreet();
+                    syncDisplayAddress();
+                });
                 addrIn.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        doSearch();
+                    }
+                });
+            }
+
+            if (numIn) {
+                numIn.addEventListener('input', syncDisplayAddress);
+                numIn.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        doSearch();
+                    }
+                });
+            }
+
+            if (bairroIn) {
+                bairroIn.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         doSearch();
@@ -1731,6 +1953,12 @@ async function openEditModal(itemEl) {
                         e.preventDefault();
                         doSearch();
                     }
+                });
+            }
+
+            if (ufSelect) {
+                ufSelect.addEventListener('change', function () {
+                    syncDisplayAddress();
                 });
             }
 

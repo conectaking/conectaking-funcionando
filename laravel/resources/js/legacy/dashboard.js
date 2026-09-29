@@ -2321,7 +2321,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!modal) return;
             const locTitle = modal.querySelector('#edit-title')?.value?.trim() || 'Localização';
             const locAddr = modal.querySelector('#location-address-input')?.value?.trim() || '';
-            const locFormatted = modal.querySelector('.location-formatted-display')?.textContent?.trim() || locAddr;
+            const locNum = modal.querySelector('#location-number-input')?.value?.trim() || '';
+            const locBairro = modal.querySelector('#location-bairro-input')?.value?.trim() || '';
+            const locCity = modal.querySelector('#location-city-input')?.value?.trim() || '';
+            const locUf = modal.querySelector('#location-uf-select')?.value?.trim() || '';
+            const locCep = modal.querySelector('#location-cep-input')?.value?.trim() || '';
+            const locFormatted = modal.querySelector('.location-formatted-display')?.textContent?.trim() || (locAddr + (locNum ? ', ' + locNum : ''));
             const locLat = modal.querySelector('.location-lat-input')?.value?.trim() || '';
             const locLng = modal.querySelector('.location-lng-input')?.value?.trim() || '';
             const titleInput = itemEl.querySelector('.item-title-input');
@@ -2352,7 +2357,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 if (listPlaceholder) listPlaceholder.style.display = 'none';
             }
-            const payload = { address: locAddr, address_formatted: locFormatted, latitude: locLat ? parseFloat(locLat) : null, longitude: locLng ? parseFloat(locLng) : null, place_name: locTitle };
+            const payload = {
+                address: locAddr,
+                address_formatted: locFormatted,
+                latitude: locLat ? parseFloat(locLat) : null,
+                longitude: locLng ? parseFloat(locLng) : null,
+                place_name: locTitle,
+                street: locAddr,
+                house_number: locNum,
+                bairro: locBairro,
+                city: locCity,
+                uf: locUf,
+                cep: locCep
+            };
             fetch('/api/location/config/' + itemId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -2368,6 +2385,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         item.location_data.latitude = payload.latitude;
                         item.location_data.longitude = payload.longitude;
                         item.location_data.place_name = payload.place_name;
+                        item.location_data.street = payload.street;
+                        item.location_data.house_number = payload.house_number;
+                        item.location_data.bairro = payload.bairro;
+                        item.location_data.city = payload.city;
+                        item.location_data.uf = payload.uf;
+                        item.location_data.cep = payload.cep;
                     }
                 }
             }).catch(function (err) { console.warn('Erro ao salvar localização:', err); });
