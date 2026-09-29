@@ -68,7 +68,7 @@
         <a href="#" class="nav-link nav-link-by-plan ck-hidden" data-module="finance" data-target="finance-pane" id="finance-link" title="Gestão Financeira"><i class="fas fa-wallet"></i> <span>Gestão Financeira</span></a>
         <a href="/kingForms" class="nav-link nav-link-by-plan" data-module="digital_form" id="king-forms-sidebar-link" title="King Forms"><i class="fas fa-file-signature"></i> <span>King Forms</span></a>
         <a href="/kingSelection?v=2026-09-08-no-render" class="nav-link nav-link-by-plan ck-hidden" data-module="king_selection" id="king-selection-sidebar-link" title="King Selection"><i class="fas fa-check-double"></i> <span>King Selection</span></a>
-        <a href="/bibliaking" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
+        <a href="/biblia" class="nav-link" id="bible-sidebar-link" title="Bíblia"><i class="fas fa-bible"></i> <span>Bíblia</span></a>
         <a href="/kingDocs" class="nav-link nav-link-by-plan" data-module="king_docs" id="king-docs-sidebar-link" title="King Docs"><i class="fas fa-file-shield"></i> <span>King Docs</span></a>
         <a href="/recibos-orcamentos" class="nav-link nav-link-by-plan ck-hidden" data-module="recibos_orcamentos" id="recibos-orcamentos-sidebar-link" title="Recibos e Orçamentos"><i class="fas fa-file-invoice-dollar"></i> <span>Recibos e Orçamentos</span></a>
         <a href="#" class="nav-link" data-target="relatorios-pane" title="Relatórios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>

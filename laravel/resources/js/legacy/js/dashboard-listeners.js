@@ -1103,8 +1103,7 @@ function _setupEventListenersBody() {
                             sessionStorage.setItem('bible_item_id', String(itemId));
                             sessionStorage.setItem('bible_panel_item_id', String(itemId));
                         } catch (e) {}
-                        // Painel do dono (não o hub público do cartão — lá o "← Cartão" confunde)
-                        window.location.href = '/bibliaking?itemId=' + encodeURIComponent(String(itemId));
+                        window.location.href = '/biblia';
                     } catch (err) {
                         alert(err.message || 'Erro ao abrir Bíblia.');
                     }

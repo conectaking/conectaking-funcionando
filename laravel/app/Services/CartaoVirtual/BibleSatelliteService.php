@@ -376,23 +376,26 @@ class BibleSatelliteService
             [$slug]
         );
         if (!$user) {
-            return null;
+            $fallbackSlug = DB::table('users')->whereNotNull('profile_slug')->value('profile_slug') ?: 'king-andrelp';
+
+            return [
+                'slug' => (string) $fallbackSlug,
+                'translation' => 'nvi',
+            ];
         }
+
         $item = DB::selectOne(
             "SELECT pi.id, bi.translation_code
              FROM profile_items pi
              LEFT JOIN bible_items bi ON bi.profile_item_id = pi.id
-             WHERE pi.user_id = ? AND pi.item_type = 'bible' AND pi.is_active = true
+             WHERE pi.user_id = ? AND pi.item_type = 'bible'
              LIMIT 1",
             [$user->id]
         );
-        if (!$item) {
-            return null;
-        }
 
         return [
             'slug' => (string) $user->profile_slug,
-            'translation' => (string) ($item->translation_code ?: 'nvi'),
+            'translation' => (string) ($item?->translation_code ?: 'nvi'),
         ];
     }
 }

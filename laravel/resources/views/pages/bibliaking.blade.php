@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bíblia — painel</title>
     <script src="/config.js?v=2026-09-09-vite1"></script>
+    <script>window.location.replace('/biblia' + (window.location.search || ''));</script>
     @vite(['resources/css/fontawesome.css', 'resources/js/pages/bibliaking.js'])
 </head>
 <body>

@@ -203,7 +203,7 @@ async function openEditModal(itemEl) {
                 sessionStorage.setItem('bible_item_id', String(itemId));
                 sessionStorage.setItem('bible_panel_item_id', String(itemId));
             } catch (e) {}
-            window.location.href = '/bibliaking';
+            window.location.href = '/biblia';
         }
         return;
     }

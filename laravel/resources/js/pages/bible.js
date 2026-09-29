@@ -9,5 +9,5 @@ import '@css/pages/bible-inline.css';
       if (sid) search = (search ? search + '&' : '?') + 'itemId=' + encodeURIComponent(sid);
     }
   } catch (e) {}
-  window.location.replace('/bibliaking' + search);
+  window.location.replace('/biblia' + search);
 })();

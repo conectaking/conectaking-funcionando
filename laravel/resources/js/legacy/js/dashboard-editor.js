@@ -1149,7 +1149,7 @@ function renderEditor(profileData) {
             <i class="${safeIconClass(item.icon_class, 'fas fa-bible')}"></i>
         </div>
         <div style="margin-top: 1rem; text-align: center;">
-            <a href="/bibliaking" target="_blank" rel="noopener" onclick="try { sessionStorage.setItem('bible_item_id', '${item.id}'); sessionStorage.setItem('bible_panel_item_id', '${item.id}'); } catch(e) {}" style="display:inline-block;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir Painel da Bíblia</a>
+            <a href="/biblia" target="_blank" rel="noopener" style="display:inline-block;padding:10px 20px;background:var(--dourado-principal,#FFC700);color:#000;border-radius:8px;font-weight:600;text-decoration:none;">Abrir Bíblia</a>
         </div>
     `;
                     break;

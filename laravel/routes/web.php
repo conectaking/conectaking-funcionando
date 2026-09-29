@@ -301,6 +301,28 @@ Route::get('/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
 Route::get('/{slug}/biblia/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReader'])
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
+
+// Bíblia Pública Universal (acesso direto /biblia sem prefixo de slug)
+Route::get('/biblia', [SatellitePublicController::class, 'bibleHubDirect']);
+Route::get('/biblia/estudos-livro', [SatellitePublicController::class, 'bibleStudyRedirectDirect']);
+Route::get('/biblia/estudos-livro/{bookId}', [SatellitePublicController::class, 'bibleStudyDirect'])
+    ->where('bookId', '[A-Za-z0-9_-]+');
+Route::get('/biblia/devocional/{day?}', [SatellitePublicController::class, 'bibleDevotionalDirect'])
+    ->where('day', '[0-9]+');
+Route::get('/biblia/salmo', [SatellitePublicController::class, 'bibleSalmoDirect']);
+Route::get('/biblia/plano/{day?}', [SatellitePublicController::class, 'biblePlanDirect'])
+    ->where('day', '[0-9]+');
+Route::get('/biblia/biblia-inteira/{day?}', [SatellitePublicController::class, 'bibleWholeDirect'])
+    ->where('day', '[0-9]+');
+Route::get('/biblia/prosperidade/{n?}', [SatellitePublicController::class, 'bibleProsperidadeDirect'])
+    ->where('n', '[0-9]+');
+Route::get('/biblia/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReaderDirect'])
+    ->where(['bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
+
+// Redirecionamentos amigáveis /bible e /bibliaking para a Bíblia moderna
+Route::get('/bible', fn () => redirect('/biblia', 302));
+Route::get('/bibliaking', fn () => redirect('/biblia', 302));
+Route::get('/bibliaking.html', fn () => redirect('/biblia', 302));
 // King Selection (read-only público)
 Route::get('/kingSelection/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
 Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery'])
@@ -938,7 +960,7 @@ $bladePages = [
     'documentos-preview', 'documentos-ver', 'orcamentos', 'recibos-orcamentos',
     'dashboard-recibos-orcamentos', 'clientes-recibos-orcamentos', 'configuracoes-recibos-orcamentos',
     'dashboard-agenda',
-    'termos', 'privacidade', 'index', 'bible', 'bibliaking',
+    'termos', 'privacidade', 'index',
     'admin-devocionais-365',
     'responsesList', 'conviteEdit', 'arquetipo-resultados', 'business',
 ];

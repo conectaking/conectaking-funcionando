@@ -246,4 +246,61 @@ class SatellitePublicController extends Controller
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('X-Conecta-Engine', 'laravel');
     }
+
+    public function bibleHubDirect()
+    {
+        return $this->bibleHub($this->resolveEffectiveSlug());
+    }
+
+    public function bibleReaderDirect(Request $request, string $bookId, string $chapter)
+    {
+        return $this->bibleReader($request, $this->resolveEffectiveSlug(), $bookId, $chapter);
+    }
+
+    public function bibleStudyDirect(string $bookId)
+    {
+        return $this->bibleStudy($this->resolveEffectiveSlug(), $bookId);
+    }
+
+    public function bibleStudyRedirectDirect()
+    {
+        return redirect('/biblia', 302)->header('X-Conecta-Engine', 'laravel');
+    }
+
+    public function bibleDevotionalDirect(?string $day = null)
+    {
+        return $this->bibleDevotional($this->resolveEffectiveSlug(), $day);
+    }
+
+    public function bibleSalmoDirect()
+    {
+        return $this->bibleSalmo($this->resolveEffectiveSlug());
+    }
+
+    public function biblePlanDirect(?string $day = null)
+    {
+        return $this->biblePlan($this->resolveEffectiveSlug(), $day);
+    }
+
+    public function bibleWholeDirect(?string $day = null)
+    {
+        return $this->bibleWhole($this->resolveEffectiveSlug(), $day);
+    }
+
+    public function bibleProsperidadeDirect(?string $n = null)
+    {
+        return $this->bibleProsperidade($this->resolveEffectiveSlug(), $n);
+    }
+
+    private function resolveEffectiveSlug(): string
+    {
+        $user = auth()->user();
+        if ($user && !empty($user->profile_slug)) {
+            return (string) $user->profile_slug;
+        }
+
+        $slug = \Illuminate\Support\Facades\DB::table('users')->whereNotNull('profile_slug')->value('profile_slug');
+
+        return $slug ? (string) $slug : 'king-andrelp';
+    }
 }
