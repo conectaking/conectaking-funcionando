@@ -1616,20 +1616,6 @@
             console.warn('s️ Botão sidebar-add-header-image não encontrado');
         }
         
-        // Adicionar imagem
-        const sidebarAddImage = document.getElementById('sidebar-add-image');
-        if (sidebarAddImage) {
-            const newBtn = sidebarAddImage.cloneNode(true);
-            sidebarAddImage.parentNode.replaceChild(newBtn, sidebarAddImage);
-            newBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                addImage();
-            });
-        } else if (isFormEditPage) {
-            console.warn('s️ Botão sidebar-add-image não encontrado');
-        }
-        
         // Personalizar cores
         const sidebarCustomizeColors = document.getElementById('sidebar-customize-colors');
         if (sidebarCustomizeColors) {
@@ -13797,88 +13783,53 @@ const PREMIUM_TEMPLATES = [
     }
 ];
 
-// Função para abrir seletor de módulos/templates
+// Função para abrir seletor de modelos de formulário
 function openModuleSelector() {
     const modal = document.createElement('div');
     modal.className = 'module-selector-modal';
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;';
     
     modal.innerHTML = `
-        <div style="background: linear-gradient(135deg, #1C1C21 0%, #0D0D0F 100%); padding: 0; border-radius: 24px; max-width: 1200px; width: 100%; max-height: 90vh; overflow: hidden; color: #ECECEC; box-shadow: 0 30px 80px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">
-            <div style="background: linear-gradient(135deg, #FFC70015 0%, transparent 100%); padding: 32px 40px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <div style="background: linear-gradient(145deg, #1C1C21 0%, #111114 100%); padding: 0; border-radius: 24px; max-width: 1100px; width: 100%; max-height: 90vh; overflow: hidden; color: #ECECEC; box-shadow: 0 30px 80px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">
+            <div style="background: linear-gradient(135deg, rgba(255,199,0,0.12) 0%, transparent 100%); padding: 28px 36px; border-bottom: 1px solid rgba(255,255,255,0.08);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h3 style="margin: 0; font-size: 28px; font-weight: 800; color: #FFC700; display: flex; align-items: center; gap: 12px;">
-                            <i class="fas fa-layer-group"></i> Templates e Temas Premium
+                        <h3 style="margin: 0; font-size: 24px; font-weight: 800; color: #FFC700; display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-layer-group"></i> Modelos Prontos de Formulário
                         </h3>
-                        <p style="margin: 8px 0 0 0; color: #A1A1A1; font-size: 15px;">Escolha um template pronto ou personalize com temas premium</p>
+                        <p style="margin: 6px 0 0 0; color: #A1A1A1; font-size: 14px;">Selecione um modelo pronto estruturado para carregar no seu formulário com um clique</p>
                     </div>
-                    <button class="close-module-modal" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #A1A1A1; font-size: 24px; cursor: pointer; padding: 12px 16px; border-radius: 12px; transition: all 0.3s;">
+                    <button class="close-module-modal" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #A1A1A1; font-size: 20px; cursor: pointer; padding: 10px 14px; border-radius: 12px; transition: all 0.2s;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
             
-            <div style="padding: 32px 40px; overflow-y: auto; max-height: calc(90vh - 140px);">
-                <!-- Abas -->
-                <div style="display: flex; gap: 12px; margin-bottom: 32px; border-bottom: 2px solid rgba(255,255,255,0.1);">
-                    <button class="module-tab active" data-tab="templates" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid #FFC700; color: #FFC700; font-weight: 700; font-size: 16px; cursor: pointer;">
-                        <i class="fas fa-file-alt"></i> Templates
-                    </button>
-                    <button class="module-tab" data-tab="themes" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; color: #A1A1A1; font-weight: 600; font-size: 16px; cursor: pointer;">
-                        <i class="fas fa-palette"></i> Temas Premium
-                    </button>
-                </div>
-                
-                <!-- Conteúdo Templates -->
-                <div id="module-templates-content" class="module-tab-content" style="display: block;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
-                        ${PREMIUM_TEMPLATES.map(template => `
-                            <div class="template-card" data-template-id="${template.id}" style="background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;" 
-                                 onmouseover="this.style.borderColor='#FFC700'; this.style.background='rgba(255,199,0,0.1)'; this.style.transform='translateY(-4px)';" 
-                                 onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.03)'; this.style.transform='translateY(0)';">
-                                <div style="height: 120px; background: ${template.headerGradient || template.gradient || `linear-gradient(135deg, ${template.primary} 0%, ${template.secondary} 100%)`}; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #FFFFFF; text-shadow: 0 2px 10px rgba(0,0,0,0.4);">
+            <div style="padding: 28px 36px; overflow-y: auto; max-height: calc(90vh - 120px);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                    ${PREMIUM_TEMPLATES.map(template => `
+                        <div class="template-card" data-template-id="${template.id}" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 22px; cursor: pointer; transition: all 0.3s; position: relative; display: flex; flex-direction: column; justify-content: space-between;" 
+                             onmouseover="this.style.borderColor='#FFC700'; this.style.background='rgba(255,199,0,0.06)'; this.style.transform='translateY(-3px)';" 
+                             onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.03)'; this.style.transform='translateY(0)';">
+                            <div>
+                                <div style="height: 100px; background: ${template.headerGradient || template.gradient || `linear-gradient(135deg, ${template.primary} 0%, ${template.secondary} 100%)`}; border-radius: 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #FFFFFF; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
                                     ${template.name}
                                 </div>
-                                <h4 style="margin: 0 0 8px 0; color: #ECECEC; font-size: 18px; font-weight: 700;">${template.title}</h4>
-                                <p style="margin: 0 0 16px 0; color: #A1A1A1; font-size: 13px; line-height: 1.5;">${template.description}</p>
-                                <div style="display: flex; align-items: center; gap: 8px; color: #FFC700; font-size: 12px; font-weight: 600;">
-                                    <i class="fas fa-list"></i> ${template.fields.length} campos
+                                <h4 style="margin: 0 0 6px 0; color: #ECECEC; font-size: 17px; font-weight: 700;">${template.title}</h4>
+                                <p style="margin: 0 0 14px 0; color: #A1A1A1; font-size: 13px; line-height: 1.5;">${template.description}</p>
+                            </div>
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 8px; color: #FFC700; font-size: 12px; font-weight: 600; margin-bottom: 14px;">
+                                    <i class="fas fa-list-check"></i> ${template.fields.length} campos estruturados
                                 </div>
-                                <button class="apply-template-btn" data-template-id="${template.id}" style="margin-top: 16px; width: 100%; padding: 12px; background: linear-gradient(135deg, ${template.primary}, ${template.secondary}); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; transition: all 0.3s;" 
-                                        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.3)';" 
-                                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                                    <i class="fas fa-check"></i> Aplicar Template
+                                <button class="apply-template-btn" data-template-id="${template.id}" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #FFC700 0%, #FFA500 100%); border: none; border-radius: 12px; color: #000; font-weight: 800; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;" 
+                                        onmouseover="this.style.boxShadow='0 6px 20px rgba(255,199,0,0.4)';" 
+                                        onmouseout="this.style.boxShadow='none';">
+                                    <i class="fas fa-check"></i> Aplicar Modelo
                                 </button>
                             </div>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                <!-- Conteúdo Temas -->
-                <div id="module-themes-content" class="module-tab-content" style="display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px;">
-                        ${PREMIUM_THEMES.map(theme => `
-                            <div class="theme-card" data-theme-id="${theme.id}" style="background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%); border: 2px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 24px; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;" 
-                                 onmouseover="this.style.borderColor='#FFC700'; this.style.background='linear-gradient(135deg, rgba(255,199,0,0.15) 0%, rgba(255,199,0,0.05) 100%)'; this.style.transform='translateY(-6px) scale(1.02)'; this.style.boxShadow='0 12px 40px rgba(255,199,0,0.3)';" 
-                                 onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)'; this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='none';">
-                                <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: ${theme.gradient}; opacity: 0.8;"></div>
-                                <div style="height: 120px; background: ${theme.gradient}; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2); position: relative; overflow: hidden;">
-                                    <div style="position: absolute; bottom: 12px; left: 12px; right: 12px; display: flex; gap: 8px;">
-                                        <div style="width: 32px; height: 32px; background: ${theme.primary}; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.3);"></div>
-                                        <div style="width: 32px; height: 32px; background: ${theme.secondary}; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.3);"></div>
-                                    </div>
-                                </div>
-                                <h4 style="margin: 0 0 8px 0; color: #ECECEC; font-size: 18px; font-weight: 800; letter-spacing: -0.3px;">${theme.name}</h4>
-                                <p style="margin: 0 0 16px 0; color: #A1A1A1; font-size: 13px; line-height: 1.5; min-height: 38px;">${theme.description}</p>
-                                <button class="apply-theme-btn" data-theme-id="${theme.id}" style="width: 100%; padding: 12px; background: linear-gradient(135deg, rgba(255,199,0,0.25) 0%, rgba(255,199,0,0.15) 100%); border: 2px solid #FFC700; border-radius: 12px; color: #FFC700; font-weight: 700; cursor: pointer; font-size: 14px; transition: all 0.3s; position: relative; overflow: hidden;" 
-                                        onmouseover="this.style.background='linear-gradient(135deg, #FFC700 0%, #FFA500 100%)'; this.style.color='#000'; this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(255,199,0,0.5)';" 
-                                        onmouseout="this.style.background='linear-gradient(135deg, rgba(255,199,0,0.25) 0%, rgba(255,199,0,0.15) 100%)'; this.style.color='#FFC700'; this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                                    <i class="fas fa-paint-brush" style="margin-right: 6px;"></i> Aplicar Tema
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         </div>
@@ -13892,28 +13843,6 @@ function openModuleSelector() {
         if (e.target === modal) modal.remove();
     });
     
-    // Tabs
-    modal.querySelectorAll('.module-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabName = tab.dataset.tab;
-            modal.querySelectorAll('.module-tab').forEach(t => {
-                t.classList.remove('active');
-                t.style.borderBottomColor = 'transparent';
-                t.style.color = '#A1A1A1';
-                t.style.fontWeight = '600';
-            });
-            tab.classList.add('active');
-            tab.style.borderBottomColor = '#FFC700';
-            tab.style.color = '#FFC700';
-            tab.style.fontWeight = '700';
-            
-            modal.querySelectorAll('.module-tab-content').forEach(content => {
-                content.style.display = 'none';
-            });
-            document.getElementById(`module-${tabName}-content`).style.display = 'block';
-        });
-    });
-    
     // Aplicar template
     modal.querySelectorAll('.apply-template-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -13923,23 +13852,7 @@ function openModuleSelector() {
             
             if (!template) return;
             
-            // Aplicar template
             applyTemplate(template);
-            modal.remove();
-        });
-    });
-    
-    // Aplicar tema
-    modal.querySelectorAll('.apply-theme-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const themeId = btn.dataset.themeId;
-            const theme = PREMIUM_THEMES.find(t => t.id === themeId);
-            
-            if (!theme) return;
-            
-            // Aplicar tema
-            applyTheme(theme);
             modal.remove();
         });
     });

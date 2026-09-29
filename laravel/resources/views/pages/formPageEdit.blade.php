@@ -26,8 +26,11 @@
     <div class="form-edit-main">
         <!-- Sidebar -->
         <div class="form-edit-sidebar">
+            <!-- 1. Estrutura do Formulário -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Adicionar Elementos</div>
+                <div class="sidebar-section-title">
+                    <i class="fas fa-edit" style="color: #FFC700; margin-right: 6px;"></i> Estrutura
+                </div>
                 
                 <!-- Busca de Perguntas -->
                 <div class="ck-fpe-dc36b9">
@@ -45,28 +48,38 @@
                 </button>
                 <button class="sidebar-btn" id="sidebar-add-title">
                     <i class="fas fa-heading"></i>
-                    <span>Adicionar título e descrição</span>
+                    <span>Título e descrição</span>
                 </button>
                 <button class="sidebar-btn" id="sidebar-add-header-image">
                     <i class="fas fa-image"></i>
-                    <span>Adicionar imagem de cabeçalho</span>
+                    <span>Banner de cabeçalho</span>
                 </button>
-                <button class="sidebar-btn" id="sidebar-add-image">
-                    <i class="fas fa-image"></i>
-                    <span>Adicionar imagem</span>
-                </button>
+            </div>
+
+            <!-- 2. Design & Modelos -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="fas fa-paint-brush" style="color: #FFC700; margin-right: 6px;"></i> Design & Modelos
+                </div>
                 <button class="sidebar-btn" id="sidebar-customize-colors">
                     <i class="fas fa-palette"></i>
                     <span>Cores e Temas</span>
                 </button>
                 <button class="sidebar-btn" id="sidebar-load-module">
                     <i class="fas fa-layer-group"></i>
-                    <span>Módulos/Templates</span>
+                    <span>Modelos Prontos</span>
                 </button>
                 <button class="sidebar-btn" id="sidebar-settings">
                     <i class="fas fa-cog"></i>
                     <span>Configurações</span>
                 </button>
+            </div>
+
+            <!-- 3. Gestão & Clientes -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="fas fa-chart-line" style="color: #FFC700; margin-right: 6px;"></i> Gestão & Clientes
+                </div>
                 <button class="sidebar-btn" id="sidebar-responses">
                     <i class="fas fa-inbox"></i>
                     <span>Envios | Listas</span>
@@ -76,10 +89,14 @@
                     <span>Dashboard</span>
                 </button>
             </div>
+
+            <!-- 4. Compartilhar -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Compartilhar</div>
+                <div class="sidebar-section-title">
+                    <i class="fas fa-share-alt" style="color: #FFC700; margin-right: 6px;"></i> Compartilhar
+                </div>
                 <button class="sidebar-btn" id="sidebar-share-form-ready" title="Gera um código para outro usuário importar este formulário na conta dele">
-                    <i class="fas fa-share-alt"></i>
+                    <i class="fas fa-code"></i>
                     <span>Gerar código</span>
                 </button>
                 <button class="sidebar-btn" id="sidebar-import-form" title="Importar um formulário: digite o código que alguém te passou">

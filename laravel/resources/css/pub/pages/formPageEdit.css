@@ -610,6 +610,71 @@
             width: 100%;
         }
         
+        /* Modo Mobile (Simulador Smartphone Elegante no Desktop) */
+        .form-preview-container.preview-mobile {
+            max-width: 414px !important;
+            width: 100% !important;
+            margin: 20px auto !important;
+            border-radius: 38px !important;
+            border: 10px solid #202124 !important;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+            overflow: hidden !important;
+            position: relative !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            background: var(--preview-card-color, #ffffff) !important;
+        }
+
+        .form-preview-container.preview-mobile::after {
+            content: '';
+            position: absolute;
+            top: 7px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 56px;
+            height: 4px;
+            background: #3c3c40;
+            border-radius: 10px;
+            z-index: 99;
+        }
+
+        .form-preview-container.preview-mobile .preview-form-wrapper {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .form-preview-container.preview-mobile .digital-form {
+            padding: 16px 12px !important;
+        }
+
+        .form-preview-container.preview-mobile .form-preview-title {
+            font-size: 22px !important;
+            padding: 22px 16px 8px 16px !important;
+            line-height: 1.35 !important;
+        }
+
+        .form-preview-container.preview-mobile .form-preview-description {
+            font-size: 14px !important;
+            padding: 6px 16px 18px 16px !important;
+            line-height: 1.5 !important;
+        }
+
+        .form-preview-container.preview-mobile .form-question-item-preview {
+            margin: 10px 4px !important;
+            padding: 16px 14px 44px 14px !important;
+            border-radius: 14px !important;
+        }
+
+        .form-preview-container.preview-mobile .submit-btn {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 14px 20px !important;
+            font-size: 15px !important;
+            border-radius: 12px !important;
+            margin: 16px 0 8px 0 !important;
+        }
+        
         /* Modo Mobile - Ajustes para preview */
         @media (max-width: 1024px) {
             .preview-checkout-layout {
@@ -1382,508 +1447,119 @@
                 box-sizing: border-box !important;
             }
             
-            /* FOR?AR ajustes no modo mobile - especificidade máxima - ZERO CORTE */
-            .form-preview-container.preview-mobile,
-            body .form-preview-container.preview-mobile,
-            .form-edit-preview .form-preview-container.preview-mobile,
-            html body .form-preview-container.preview-mobile {
+            /* Ajustes fluidos do preview no mobile físico (mesma elegância e proporção do desktop) */
+            .form-preview-container,
+            #form-preview-container-main,
+            .form-preview-container.preview-mobile {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
                 padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                min-width: 0 !important;
-                box-sizing: border-box !important;
-                overflow-x: hidden !important;
-                overflow-y: auto !important;
-                border-radius: 0 !important;
+                border-radius: 16px !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+                overflow: hidden !important;
             }
-            
-            /* FOR?AR wrapper no modo mobile - SEM CORTE */
-            .form-preview-container.preview-mobile .preview-form-wrapper,
-            body .form-preview-container.preview-mobile .preview-form-wrapper,
-            html body .form-preview-container.preview-mobile .preview-form-wrapper {
-                max-width: 100% !important;
+
+            .preview-form-wrapper,
+            #preview-form-wrapper-main {
                 width: 100% !important;
+                max-width: 100% !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 box-sizing: border-box !important;
-                overflow-x: hidden !important;
             }
-            
-            /* FOR?AR digital-form no modo mobile - SEM CORTE */
-            .form-preview-container.preview-mobile .digital-form,
-            body .form-preview-container.preview-mobile .digital-form,
-            html body .form-preview-container.preview-mobile .digital-form {
-                max-width: 100% !important;
+
+            .digital-form {
+                padding: 16px 12px !important;
                 width: 100% !important;
-                padding: 10px 6px !important;
-                margin: 0 !important;
-                box-sizing: border-box !important;
-                overflow-x: hidden !important;
-            }
-            
-            /* FOR?AR todos os elementos dentro do preview mobile - SEM CORTE */
-            .form-preview-container.preview-mobile *,
-            body .form-preview-container.preview-mobile * {
-                max-width: 100% !important;
                 box-sizing: border-box !important;
             }
-            
-            /* FOR?AR campos no modo mobile - SEM CORTE */
-            .form-preview-container.preview-mobile .form-question-item-preview,
-            body .form-preview-container.preview-mobile .form-question-item-preview {
-                margin: 4px 0 !important;
-                padding: 8px 4px 35px 4px !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* FOR?AR botão no modo mobile - SEM CORTE */
-            .form-preview-container.preview-mobile .submit-btn,
-            body .form-preview-container.preview-mobile .submit-btn {
-                width: calc(100% - 8px) !important;
-                max-width: calc(100% - 8px) !important;
-                margin: 6px 4px !important;
-                padding: 12px 14px !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* FOR?AR header no modo mobile - SEM CORTE */
-            .form-preview-container.preview-mobile .form-header,
-            body .form-preview-container.preview-mobile .form-header {
-                width: 100% !important;
-                max-width: 100% !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                margin: 0 !important;
-                box-sizing: border-box !important;
-            }
-            
-            .form-preview-container.preview-mobile .form-header h1,
-            body .form-preview-container.preview-mobile .form-header h1 {
-                padding-left: 4px !important;
-                padding-right: 4px !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
+
+            .form-preview-title {
+                font-size: 22px !important;
+                font-weight: 700 !important;
+                padding: 20px 16px 8px 16px !important;
+                line-height: 1.35 !important;
                 word-wrap: break-word !important;
             }
-            
-            /* FOR?AR descrição no modo mobile - SEM CORTE */
-            .form-preview-container.preview-mobile .form-description,
-            body .form-preview-container.preview-mobile .form-description {
-                margin-left: 2px !important;
-                margin-right: 2px !important;
-                max-width: calc(100% - 4px) !important;
-                box-sizing: border-box !important;
-            }
-            
-            .form-preview-title {
-                font-size: 24px;
-                padding: 24px 16px 8px 16px;
-                text-align: left;
-            }
-            
+
             .form-preview-description {
-                padding: 8px 16px 20px 16px;
-                font-size: 13px;
-                text-align: left;
-            }
-            
-            .form-question-item-preview {
-                margin: 12px 16px;
-                padding: 20px 16px 60px 16px; /* Mais padding embaixo para os botões */
-                text-align: left;
-                position: relative;
-            }
-            
-            /* Ajustar botões de edição no mobile */
-            .question-edit-bar {
-                position: static !important; /* Mudar de absolute para static no mobile */
-                display: flex !important; /* Sempre visível no mobile */
-                margin-top: 12px;
-                margin-left: -6px; /* Compensar padding do container */
-                margin-right: -6px;
-                justify-content: flex-start;
-                gap: 8px;
-                padding: 8px;
-                border-radius: 8px;
-                background: rgba(255, 255, 255, 0.95);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            
-            .form-question-item-preview:hover .question-edit-bar {
-                display: flex !important; /* Forçar display no mobile */
-            }
-            
-            /* Ajustar título da pergunta no mobile para não sobrepor */
-            .form-question-item-preview .question-label,
-            .form-question-item-preview .question-title,
-            .form-question-item-preview label {
-                margin-bottom: 10px;
-                padding-right: 0 !important; /* Remover padding direito já que botões estão embaixo */
-                word-wrap: break-word;
-                overflow-wrap: break-word;
                 font-size: 14px !important;
-                line-height: 1.4;
+                padding: 6px 16px 18px 16px !important;
+                line-height: 1.5 !important;
+                word-wrap: break-word !important;
             }
-            
-            /* Melhorar campos de input no preview mobile */
+
+            .form-question-item-preview {
+                margin: 12px 0 !important;
+                padding: 18px 14px 44px 14px !important;
+                border-radius: 14px !important;
+                box-sizing: border-box !important;
+                width: 100% !important;
+            }
+
+            .form-question-item-preview label {
+                font-size: 15px !important;
+                font-weight: 600 !important;
+                margin-bottom: 8px !important;
+                display: block !important;
+            }
+
             .form-question-item-preview input,
             .form-question-item-preview textarea,
             .form-question-item-preview select {
+                font-size: 15px !important;
                 padding: 12px 14px !important;
-                font-size: 16px !important;
-                border-radius: 8px !important;
-                width: 100%;
-                box-sizing: border-box;
+                border-radius: 10px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
-            
-            /* Melhorar botões de opção no preview mobile */
+
             .form-question-item-preview .checkbox-group,
             .form-question-item-preview .radio-group {
-                gap: 8px;
+                gap: 8px !important;
+                display: flex !important;
+                flex-direction: column !important;
             }
-            
+
             .form-question-item-preview .checkbox-group label,
             .form-question-item-preview .radio-group label {
-                padding: 10px 12px !important;
+                padding: 10px 14px !important;
                 font-size: 14px !important;
-                border-radius: 8px !important;
+                border-radius: 10px !important;
             }
-            
-            /* Ajustar container de preview no mobile - SEM ESPA?OS BRANCOS */
-            .form-preview-container {
-                padding: 0 !important;
-                margin: 0 !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                border-radius: 0 !important;
-                box-shadow: none !important;
+
+            .question-edit-bar {
+                position: static !important;
+                display: flex !important;
+                margin-top: 14px !important;
+                justify-content: flex-start !important;
+                gap: 8px !important;
+                padding: 8px 12px !important;
+                border-radius: 10px !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
             }
-            
-            /* Garantir que o preview container ocupe toda largura no mobile */
-            .form-edit-preview {
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            
-            /* Ajustar preview wrapper no mobile - SEM ESPA?OS */
-            .preview-form-wrapper {
-                margin: 0 !important;
-                padding: 0 4px !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* FOR?AR estilos mobile quando estiver em modo mobile - SEM CORTE */
-            .form-edit-preview .form-preview-container.preview-mobile,
-            .preview-mobile .form-preview-container,
-            .form-preview-container.preview-mobile {
-                padding: 0 !important;
-                margin: 0 !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                min-width: 0 !important;
-                overflow-x: hidden !important;
-                overflow-y: auto !important;
-                box-sizing: border-box !important;
-                border-radius: 0 !important;
-            }
-            
-            /* Ajustar preview wrapper quando em modo mobile - SEM CORTE */
-            .preview-mobile .preview-form-wrapper,
-            .form-preview-container.preview-mobile .preview-form-wrapper {
-                max-width: 100% !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 1px !important;
-                box-sizing: border-box !important;
-                overflow-x: hidden !important;
-            }
-            
-            /* Garantir que o container principal não corte conteúdo */
-            .form-edit-preview {
-                overflow-x: hidden !important;
-                overflow-y: auto !important;
-                padding: 2px !important;
-            }
-            
-            /* Quando estiver em modo mobile, reduzir padding ao máximo */
-            .form-edit-preview:has(.preview-mobile),
-            .form-edit-preview:has(.form-preview-container.preview-mobile) {
-                padding: 0 !important;
-            }
-            
-            /* Ajustar header do preview no mobile */
-            .form-preview-title {
-                font-size: 16px !important;
-                padding: 10px 8px 4px 8px !important;
-                line-height: 1.3 !important;
-            }
-            
-            .preview-mobile .form-preview-title {
-                font-size: 14px !important;
-                padding: 8px 6px 4px 6px !important;
-            }
-            
-            .form-preview-description {
-                padding: 4px 8px 10px 8px !important;
-                font-size: 12px !important;
-                line-height: 1.4 !important;
-            }
-            
-            .preview-mobile .form-preview-description {
-                font-size: 11px !important;
-                padding: 4px 6px 8px 6px !important;
-            }
-            
-            /* Ajustar seção de informações no preview */
-            .form-description,
-            .form-preview-container .form-description {
-                padding: 10px 8px !important;
-                margin: 0 8px 10px 8px !important;
-                border-radius: 8px !important;
-                font-size: 12px !important;
-            }
-            
-            .preview-mobile .form-description {
-                padding: 8px 6px !important;
-                margin: 0 4px 8px 4px !important;
-                font-size: 11px !important;
-                max-width: calc(100% - 8px) !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* Garantir que header não corte no mobile */
-            .preview-mobile .form-header {
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                overflow-x: hidden !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-            }
-            
-            .preview-mobile .form-header h1 {
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                overflow-x: hidden !important;
-                text-overflow: ellipsis !important;
-                white-space: normal !important;
-                word-wrap: break-word !important;
-                padding-left: 4px !important;
-                padding-right: 4px !important;
-            }
-            
-            /* Header do formulário no preview mobile */
-            .form-preview-container .form-header,
-            .form-preview-container header.form-header {
-                padding: 12px 0 !important;
-                margin: 0 !important;
-            }
-            
-            .preview-mobile .form-header,
-            .preview-mobile header.form-header {
-                padding: 10px 0 !important;
-            }
-            
-            .form-preview-container .form-header h1,
-            .form-preview-container header.form-header h1 {
-                font-size: 16px !important;
-                padding: 0 8px !important;
-                line-height: 1.3 !important;
-            }
-            
-            .preview-mobile .form-header h1,
-            .preview-mobile header.form-header h1 {
-                font-size: 14px !important;
-                padding: 0 6px !important;
-            }
-            
-            /* Melhorar botão de envio no preview mobile */
+
             .submit-btn,
             .form-preview-container .submit-btn {
-                width: calc(100% - 16px) !important;
-                max-width: calc(100% - 16px) !important;
-                padding: 12px 18px !important;
-                font-size: 14px !important;
-                border-radius: 8px !important;
-                margin: 10px 8px !important;
-                box-sizing: border-box !important;
-            }
-            
-            .preview-mobile .submit-btn,
-            .form-preview-container.preview-mobile .submit-btn,
-            body .preview-mobile .submit-btn,
-            body .form-preview-container.preview-mobile .submit-btn {
-                width: calc(100% - 8px) !important;
-                max-width: calc(100% - 8px) !important;
-                padding: 12px 16px !important;
-                font-size: 13px !important;
-                margin: 8px 4px !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* Garantir que elementos não ultrapassem a largura */
-            .preview-mobile * {
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                word-wrap: break-word !important;
-                overflow-wrap: break-word !important;
-            }
-            
-            /* Evitar que imagens ou outros elementos quebrem o layout */
-            .preview-mobile img {
-                max-width: 100% !important;
-                height: auto !important;
-                display: block !important;
-            }
-            
-            /* Garantir que o container principal não tenha overflow horizontal */
-            .preview-mobile,
-            .preview-mobile .form-preview-container {
-                overflow-x: hidden !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                min-width: 0 !important;
+                padding: 15px 20px !important;
+                font-size: 15px !important;
+                font-weight: 700 !important;
+                border-radius: 12px !important;
+                margin: 18px 0 8px 0 !important;
                 box-sizing: border-box !important;
             }
-            
-            /* Garantir que o wrapper não ultrapasse e não corte - REMOVIDO max-width fixo */
-            .preview-mobile .preview-form-wrapper,
-            .form-preview-container.preview-mobile .preview-form-wrapper,
-            body .preview-mobile .preview-form-wrapper,
-            body .form-preview-container.preview-mobile .preview-form-wrapper {
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                overflow-x: hidden !important;
-            }
-            
-            /* Garantir que elementos dentro do wrapper não ultrapassem */
-            .preview-mobile .preview-form-wrapper > *,
-            .form-preview-container.preview-mobile .preview-form-wrapper > *,
-            body .preview-mobile .preview-form-wrapper > *,
-            body .form-preview-container.preview-mobile .preview-form-wrapper > * {
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                overflow-x: hidden !important;
-            }
-            
-            /* Ajustar digital-form dentro do preview mobile */
-            .preview-mobile .digital-form,
-            .form-preview-container.preview-mobile .digital-form,
-            body .preview-mobile .digital-form,
-            body .form-preview-container.preview-mobile .digital-form {
-                max-width: 100% !important;
-                width: 100% !important;
-                box-sizing: border-box !important;
-                padding: 10px 6px !important;
-                margin: 0 !important;
-            }
-            
-            /* FOR?AR que container e todos os filhos não tenham overflow horizontal */
-            .form-preview-container.preview-mobile,
-            .form-preview-container.preview-mobile *,
-            body .form-preview-container.preview-mobile,
-            body .form-preview-container.preview-mobile * {
-                overflow-x: hidden !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* Ajustar campos no preview quando em modo mobile */
-            .preview-mobile .form-question-item-preview {
-                margin: 6px 4px !important;
-                padding: 10px 6px 40px 6px !important;
-                width: calc(100% - 8px) !important;
-                max-width: calc(100% - 8px) !important;
-                box-sizing: border-box !important;
-            }
-            
-            .preview-mobile .form-question-item-preview input,
-            .preview-mobile .form-question-item-preview textarea,
-            .preview-mobile .form-question-item-preview select {
-                padding: 10px 12px !important;
-                font-size: 16px !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-            }
-            
-            /* Garantir que checkboxes e radios não ultrapassem */
-            .preview-mobile .checkbox-group,
-            .preview-mobile .radio-group {
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-            
-            .preview-mobile .checkbox-group label,
-            .preview-mobile .radio-group label {
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-            }
-            
-            .preview-mobile .checkbox-group label,
-            .preview-mobile .radio-group label {
-                padding: 8px 10px !important;
-                font-size: 12px !important;
-                margin-bottom: 6px !important;
-            }
-            
-            /* Ajustar labels no mobile */
-            .preview-mobile .form-question-item-preview label {
-                font-size: 12px !important;
-                margin-bottom: 6px !important;
-            }
-            
-            /* Ajustar espaçamento entre campos no mobile */
-            .preview-mobile .form-group {
-                margin-bottom: 14px !important;
-            }
-            
-            /* Ajustar preview das perguntas no mobile */
-            #preview-questions-container {
-                padding: 0 8px;
-            }
-            
-            /* Ajustar form-group no mobile */
-            .form-group.preview-form-group {
-                margin-bottom: 24px;
-                padding: 16px;
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            }
-            
-            /* Garantir que o label tenha espaço suficiente */
-            .form-group.preview-form-group label {
-                padding-right: 60px !important;
-                margin-bottom: 12px;
-            }
-            
-            /* Scrollbar personalizada para mobile */
+
             ::-webkit-scrollbar {
-                width: 8px;
-                height: 8px;
+                width: 6px;
+                height: 6px;
             }
-            
-            ::-webkit-scrollbar-track {
-                background: var(--background-color, #0D0D0F);
-            }
-            
             ::-webkit-scrollbar-thumb {
                 background: var(--border-color, #2C2C2F);
                 border-radius: 4px;
-            }
-            
-            ::-webkit-scrollbar-thumb:hover {
-                background: var(--dourado-principal, #FFC700);
             }
         }
 
