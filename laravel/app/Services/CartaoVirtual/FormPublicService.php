@@ -251,7 +251,7 @@ class FormPublicService
         }
         $id = (int) $itemId;
         $item = DB::selectOne(
-            "SELECT pi.id, u.profile_slug
+            "SELECT pi.id, pi.title, u.profile_slug, u.name AS user_name
              FROM profile_items pi
              JOIN users u ON u.id = pi.user_id
              WHERE pi.id = ? AND pi.item_type IN ('digital_form','guest_list') AND pi.is_active = true
@@ -264,8 +264,11 @@ class FormPublicService
         }
 
         $form = DB::selectOne(
-            'SELECT form_title, primary_color, secondary_color, background_color,
-                    enable_whatsapp, whatsapp_number, enable_guest_list_submit, send_mode
+            'SELECT form_title, form_description, welcome_text, form_logo_url, header_image_url,
+                    background_image_url, background_opacity, banner_image_url,
+                    primary_color, secondary_color, background_color, card_color, text_color,
+                    enable_whatsapp, whatsapp_number, enable_pastor_button, pastor_whatsapp_number,
+                    pastor_button_name, enable_guest_list_submit, send_mode
              FROM digital_form_items WHERE profile_item_id = ?
              ORDER BY COALESCE(updated_at, \'1970-01-01\'::timestamp) DESC, id DESC LIMIT 1',
             [$id]
@@ -274,19 +277,26 @@ class FormPublicService
         $qrToken = null;
         $guestId = null;
         $guestName = null;
+        $responderName = null;
+        $submittedAt = null;
+
         if ($responseId && ctype_digit($responseId)) {
             $resp = DB::selectOne(
-                'SELECT id, guest_id, responder_name FROM digital_form_responses
+                'SELECT id, guest_id, responder_name, submitted_at FROM digital_form_responses
                  WHERE id = ? AND profile_item_id = ? LIMIT 1',
                 [(int) $responseId, $id]
             );
-            if ($resp && !empty($resp->guest_id)) {
-                $guestId = (int) $resp->guest_id;
-                $guestName = $resp->responder_name ?? null;
-                $guest = DB::selectOne('SELECT qr_token, name FROM guests WHERE id = ? LIMIT 1', [$guestId]);
-                if ($guest) {
-                    $qrToken = $guest->qr_token ?? null;
-                    $guestName = $guest->name ?? $guestName;
+            if ($resp) {
+                $responderName = $resp->responder_name ?? null;
+                $submittedAt = $resp->submitted_at ?? null;
+                if (!empty($resp->guest_id)) {
+                    $guestId = (int) $resp->guest_id;
+                    $guestName = $responderName;
+                    $guest = DB::selectOne('SELECT qr_token, name FROM guests WHERE id = ? LIMIT 1', [$guestId]);
+                    if ($guest) {
+                        $qrToken = $guest->qr_token ?? null;
+                        $guestName = $guest->name ?? $guestName;
+                    }
                 }
             }
         }
@@ -301,23 +311,39 @@ class FormPublicService
             || $guestId
         );
 
+        $formTitle = (string) ($form->form_title ?? $item->title ?? 'Formulário');
+
         return [
             'status' => 200,
             'view' => 'cartao.form-success',
             'data' => [
-                'title' => 'Enviado!',
-                'message' => 'Resposta enviada com sucesso!',
-                'formTitle' => (string) ($form->form_title ?? 'Formulário'),
+                'title' => 'Enviado com Sucesso!',
+                'message' => 'Sua resposta foi registrada com sucesso.',
+                'formTitle' => $formTitle,
+                'formDescription' => (string) ($form->form_description ?? ''),
                 'backUrl' => "/{$slug}/form/{$id}",
+                'cardUrl' => "https://tag.conectaking.com.br/{$slug}",
                 'primaryColor' => (string) ($form->primary_color ?? '#FFC700'),
                 'secondaryColor' => (string) ($form->secondary_color ?? ($form->primary_color ?? '#FFB700')),
                 'backgroundColor' => (string) ($form->background_color ?? '#0D0D0F'),
+                'cardColor' => (string) ($form->card_color ?? '#18181B'),
+                'textColor' => (string) ($form->text_color ?? '#ECECEC'),
+                'headerImageUrl' => $form->header_image_url ?? $form->banner_image_url ?? null,
+                'formLogoUrl' => $form->form_logo_url ?? null,
                 'showQr' => $showQr,
                 'qrToken' => $qrToken,
                 'guestId' => $guestId,
                 'guestName' => $guestName,
+                'responderName' => $responderName,
+                'responseId' => $responseId,
+                'submittedAt' => $submittedAt,
                 'showWhatsapp' => ($form->enable_whatsapp ?? true) && !empty($form->whatsapp_number),
                 'whatsappNumber' => (string) ($form->whatsapp_number ?? ''),
+                'enablePastorButton' => !empty($form->enable_pastor_button) && !empty($form->pastor_whatsapp_number),
+                'pastorWhatsappNumber' => (string) ($form->pastor_whatsapp_number ?? ''),
+                'pastorButtonName' => (string) ($form->pastor_button_name ?? 'Falar com o Pastor'),
+                'profileSlug' => $slug,
+                'ownerName' => (string) ($item->user_name ?? ''),
             ],
         ];
     }
