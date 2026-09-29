@@ -251,9 +251,11 @@ class FormPublicService
         }
         $id = (int) $itemId;
         $item = DB::selectOne(
-            "SELECT pi.id, pi.title, u.profile_slug, u.name AS user_name
+            "SELECT pi.id, pi.title, u.id AS user_id, u.profile_slug, u.name AS user_name,
+                    p.display_name, p.profile_image_url
              FROM profile_items pi
              JOIN users u ON u.id = pi.user_id
+             LEFT JOIN user_profiles p ON p.user_id = u.id
              WHERE pi.id = ? AND pi.item_type IN ('digital_form','guest_list') AND pi.is_active = true
                AND (LOWER(u.profile_slug) = LOWER(?) OR u.id::text = ?)
              LIMIT 1",
@@ -267,6 +269,7 @@ class FormPublicService
             'SELECT form_title, form_description, welcome_text, form_logo_url, header_image_url,
                     background_image_url, background_opacity, banner_image_url,
                     primary_color, secondary_color, background_color, card_color, text_color,
+                    theme, decorative_bar_color, separator_line_color,
                     enable_whatsapp, whatsapp_number, enable_pastor_button, pastor_whatsapp_number,
                     pastor_button_name, enable_guest_list_submit, send_mode
              FROM digital_form_items WHERE profile_item_id = ?
@@ -312,6 +315,7 @@ class FormPublicService
         );
 
         $formTitle = (string) ($form->form_title ?? $item->title ?? 'Formulário');
+        $theme = strtolower((string) ($form->theme ?? 'light'));
 
         return [
             'status' => 200,
@@ -321,15 +325,18 @@ class FormPublicService
                 'message' => 'Sua resposta foi registrada com sucesso.',
                 'formTitle' => $formTitle,
                 'formDescription' => (string) ($form->form_description ?? ''),
+                'welcomeText' => (string) ($form->welcome_text ?? ''),
                 'backUrl' => "/{$slug}/form/{$id}",
                 'cardUrl' => "https://tag.conectaking.com.br/{$slug}",
-                'primaryColor' => (string) ($form->primary_color ?? '#FFC700'),
-                'secondaryColor' => (string) ($form->secondary_color ?? ($form->primary_color ?? '#FFB700')),
-                'backgroundColor' => (string) ($form->background_color ?? '#0D0D0F'),
-                'cardColor' => (string) ($form->card_color ?? '#18181B'),
-                'textColor' => (string) ($form->text_color ?? '#ECECEC'),
+                'primaryColor' => (string) ($form->primary_color ?? '#dc2626'),
+                'secondaryColor' => (string) ($form->secondary_color ?? '#000000'),
+                'backgroundColor' => (string) ($form->background_color ?? ($theme === 'light' ? '#fef2f2' : '#0D0D0F')),
+                'cardColor' => (string) ($form->card_color ?? ($theme === 'light' ? '#ffffff' : '#18181B')),
+                'textColor' => (string) ($form->text_color ?? ($theme === 'light' ? '#0F172A' : '#ECECEC')),
+                'theme' => $theme,
                 'headerImageUrl' => $form->header_image_url ?? $form->banner_image_url ?? null,
-                'formLogoUrl' => $form->form_logo_url ?? null,
+                'formLogoUrl' => $form->form_logo_url ?? $item->profile_image_url ?? null,
+                'brandName' => (string) ($item->display_name ?? $item->user_name ?? 'Conecta King'),
                 'showQr' => $showQr,
                 'qrToken' => $qrToken,
                 'guestId' => $guestId,
@@ -337,7 +344,7 @@ class FormPublicService
                 'responderName' => $responderName,
                 'responseId' => $responseId,
                 'submittedAt' => $submittedAt,
-                'showWhatsapp' => ($form->enable_whatsapp ?? true) && !empty($form->whatsapp_number),
+                'showWhatsapp' => ($form->enable_whatsapp ?? false) && !empty($form->whatsapp_number),
                 'whatsappNumber' => (string) ($form->whatsapp_number ?? ''),
                 'enablePastorButton' => !empty($form->enable_pastor_button) && !empty($form->pastor_whatsapp_number),
                 'pastorWhatsappNumber' => (string) ($form->pastor_whatsapp_number ?? ''),
