@@ -207,10 +207,23 @@ import '../vendor-globals.js';
     var btn = form.querySelector('button[type=submit]');
     if (btn) btn.disabled = true;
 
+    function getCkCsrf() {
+      try {
+        var match = document.cookie.match(/(?:^|;\s*)ck_csrf=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+      } catch (e) { return ''; }
+    }
+
     try {
+      var reqHeaders = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+      var csrfToken = getCkCsrf();
+      if (csrfToken) {
+        reqHeaders['X-CK-CSRF'] = csrfToken;
+      }
+
       var res = await fetch(submitUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: reqHeaders,
         body: JSON.stringify({
           response_data: data,
           responder_name: contact.name || null,

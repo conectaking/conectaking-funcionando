@@ -35,7 +35,7 @@ class KingFormsNotificationService
                     pi.title AS form_title,
                     u.id AS owner_id,
                     u.profile_slug,
-                    u.notification_phone,
+                    COALESCE(NULLIF(BTRIM(u.notification_phone), ''), NULLIF(BTRIM(dfi.whatsapp_number), '')) AS notification_phone,
                     u.notification_email,
                     COALESCE(dfi.form_title, pi.title) AS form_display_title
                  FROM profile_items pi
@@ -65,7 +65,13 @@ class KingFormsNotificationService
                 . $clientEmail
                 . "\n✅ Acesse o painel para ver todos os detalhes.";
 
-            $this->sendViaWebhook($message, $ownerPhone, $ownerSlug);
+            $this->sendViaWebhook($message, $ownerPhone, $ownerSlug, [
+                'item_id'       => $profileItemId,
+                'form_title'    => $formTitle,
+                'client_name'   => $responderName,
+                'client_phone'  => $responderPhone,
+                'client_email'  => $responderEmail,
+            ]);
         } catch (\Throwable $e) {
             // Notificação é "best-effort" — nunca deve quebrar o fluxo do formulário
             Log::warning('kingforms.notification.failed', [
@@ -77,9 +83,9 @@ class KingFormsNotificationService
 
     /**
      * Envia via webhook CK Agent (n8n) → Telegram.
-     * Mesmo padrão do OpsAlertService::toAgentWebhook.
+     * Mesmo padrão do OpsAlertService::toAgentWebhook e KingSelectionNotificationService.
      */
-    private function sendViaWebhook(string $message, string $ownerPhone, string $ownerSlug): void
+    private function sendViaWebhook(string $message, string $ownerPhone, string $ownerSlug, array $extra = []): void
     {
         $url = trim((string) env('CK_FORMS_NOTIFICATION_WEBHOOK', env('CK_AGENT_ALERT_WEBHOOK', '')));
         if ($url === '') {
@@ -87,13 +93,16 @@ class KingFormsNotificationService
         }
 
         $secret = trim((string) env('CK_SENTRY_WEBHOOK_SECRET', ''));
-        $payload = json_encode([
+        $payload = json_encode(array_merge([
             'type'        => 'king_forms_new_lead',
+            'event'       => 'king_forms_new_lead',
+            'level'       => 'INFO',
+            'title'       => '📋 Novo preenchimento no King Forms!',
             'message'     => $message,
             'owner_phone' => $ownerPhone,
             'owner_slug'  => $ownerSlug,
             'secret'      => $secret,
-        ], JSON_UNESCAPED_UNICODE);
+        ], $extra), JSON_UNESCAPED_UNICODE);
 
         $headers = "Content-Type: application/json\r\n";
         if ($secret !== '') {

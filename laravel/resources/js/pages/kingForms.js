@@ -1,6 +1,7 @@
 import '@css/style.css';
 import '@css/pages/kingForms.css';
 import '@mod/js/ck-auth-gate.js';
+import '@mod/js/ck-csrf.js';
 import QRCode from 'qrcode';
 
 (function () {

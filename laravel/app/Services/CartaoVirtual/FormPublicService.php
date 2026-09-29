@@ -86,7 +86,7 @@ class FormPublicService
             return ['status' => 400, 'message' => 'ID do formulário inválido.'];
         }
         $user = DB::selectOne(
-            'SELECT id, account_type, profile_slug FROM users WHERE profile_slug = ? OR id = ? LIMIT 1',
+            'SELECT id, account_type, profile_slug FROM users WHERE LOWER(profile_slug) = LOWER(?) OR id::text = ? LIMIT 1',
             [$slug, $slug]
         );
         if (!$user) {
@@ -124,7 +124,7 @@ class FormPublicService
              FROM profile_items pi
              JOIN users u ON u.id = pi.user_id
              WHERE pi.id = ? AND pi.item_type IN ('digital_form','guest_list') AND pi.is_active = true
-               AND (u.profile_slug = ? OR u.id = ?)
+               AND (LOWER(u.profile_slug) = LOWER(?) OR u.id::text = ?)
              LIMIT 1",
             [$id, $slug, $slug]
         );
@@ -255,7 +255,7 @@ class FormPublicService
              FROM profile_items pi
              JOIN users u ON u.id = pi.user_id
              WHERE pi.id = ? AND pi.item_type IN ('digital_form','guest_list') AND pi.is_active = true
-               AND (u.profile_slug = ? OR u.id = ?)
+               AND (LOWER(u.profile_slug) = LOWER(?) OR u.id::text = ?)
              LIMIT 1",
             [$id, $slug, $slug]
         );
