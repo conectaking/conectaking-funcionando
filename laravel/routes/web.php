@@ -818,6 +818,10 @@ $goneCheckout = fn () => response('Checkout/pagamento online não está disponí
 Route::post('/api/payment/create-preference', $goneCheckout);
 Route::post('/api/payment/webhook-notification', $goneCheckout);
 Route::any('/api/checkout/{any?}', $goneCheckout)->where('any', '.*');
+
+Route::get('/api/location/geocode', [\App\Http\Controllers\CartaoVirtual\LocationController::class, 'geocode'])->middleware('throttle:60,1');
+Route::get('/api/location/reverse-geocode', [\App\Http\Controllers\CartaoVirtual\LocationController::class, 'reverseGeocode'])->middleware('throttle:60,1');
+
 Route::middleware('jwt')->group(function () use ($push) {
     $location = \App\Http\Controllers\CartaoVirtual\LocationController::class;
     Route::get('/api/location/config/{itemId}', [$location, 'show'])->whereNumber('itemId');

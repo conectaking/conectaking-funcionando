@@ -6726,10 +6726,19 @@
             var q = (input.value || '').trim();
             if (q.length < 3) { list.style.display = 'none'; list.innerHTML = ''; return; }
             debounceTimer = setTimeout(function() {
-                var params = 'q=' + encodeURIComponent(q) + '&format=json&addressdetails=1&limit=10';
-                fetch('https://nominatim.openstreetmap.org/search?' + params, {
-                    headers: { 'Accept': 'application/json', 'User-Agent': 'ConectaKingFormEditor/1.0' }
-                }).then(function(r) { return r.json(); }).then(function(data) {
+                var searchProxy = (typeof API_URL !== 'undefined' ? API_URL : (window.API_URL || '')) + '/api/location/geocode?q=' + encodeURIComponent(q);
+                fetch(searchProxy, { headers: { 'Accept': 'application/json' }, credentials: 'omit' })
+                    .then(function(r) {
+                        if (!r.ok) throw new Error('Proxy error');
+                        return r.json();
+                    })
+                    .catch(function() {
+                        var params = 'q=' + encodeURIComponent(q) + '&format=json&addressdetails=1&limit=10';
+                        return fetch('https://nominatim.openstreetmap.org/search?' + params, {
+                            headers: { 'Accept': 'application/json' },
+                            credentials: 'omit'
+                        }).then(function(r) { return r.json(); });
+                    }).then(function(data) {
                     list.innerHTML = '';
                     if (!data || !data.length) {
                         list.innerHTML = '<div style="padding:12px;color:#A1A1A1;font-size:13px;">Nenhum endereço encontrado. Digite rua e número (ex.: Av. Nome 3800).</div>';

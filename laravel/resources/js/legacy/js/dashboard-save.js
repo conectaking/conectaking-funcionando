@@ -232,7 +232,13 @@ async function saveAllChanges(event) {
 
             // Verificar se é um item temporário (não salvo ainda)
             // IMPORTANTE: Mesmo itens 'sales_page' temporários precisam ser criados no servidor
-            if (itemIdRaw && (itemIdRaw.toString().startsWith('temp_') || itemEl.dataset.isUnsaved === 'true')) {
+            const isTempItem = !itemIdRaw ||
+                !/^\d+$/.test(String(itemIdRaw).trim()) ||
+                String(itemIdRaw).startsWith('temp_') ||
+                String(itemIdRaw).startsWith('te_') ||
+                itemEl.dataset.isUnsaved === 'true' ||
+                itemEl.dataset.isTemporary === 'true';
+            if (isTempItem) {
                 __ckDashLog(`Item temporário encontrado: ${itemIdRaw} (${itemType}) - será criado no servidor ao salvar`);
                 tempItems.push({ element: itemEl, index });
             } else {
@@ -1299,7 +1305,7 @@ async function saveAllChanges(event) {
         const allCurrentItemsBeforeProcessing = document.querySelectorAll('#items-container .item[data-id], #items-container .module-item[data-id]');
         allCurrentItemsBeforeProcessing.forEach((itemEl, visualIndex) => {
             const itemId = itemEl.dataset.id;
-            if (itemId && !itemId.toString().startsWith('temp_')) {
+            if (itemId && /^\d+$/.test(String(itemId).trim())) {
                 // Mapear ID do item para sua posição visual atual (1-indexed)
                 visualOrderMap.set(String(itemId), visualIndex + 1);
             }
@@ -1319,7 +1325,7 @@ async function saveAllChanges(event) {
             // Buscar dados atualizados de cada sales_page diretamente do servidor
             for (const itemEl of salesPageElements) {
                 const itemId = itemEl.dataset.id;
-                if (itemId && !itemId.toString().startsWith('temp_')) {
+                if (itemId && /^\d+$/.test(String(itemId).trim())) {
                     try {
                         __ckDashLog(`Buscando dados atualizados do sales_page ${itemId}...`);
                         const itemResponse = await fetch(`${env.API_URL}/api/profile/items/${itemId}`, {
@@ -1488,7 +1494,7 @@ async function saveAllChanges(event) {
             const allCurrentItems = document.querySelectorAll('#items-container .item[data-id], #items-container .module-item[data-id]');
             allCurrentItems.forEach((itemEl, visualIndex) => {
                 const itemId = itemEl.dataset.id;
-                if (itemId && !itemId.toString().startsWith('temp_')) {
+                if (itemId && /^\d+$/.test(String(itemId).trim())) {
                     // Mapear ID do item para sua posição visual atual (1-indexed)
                     visualOrderMap.set(String(itemId), visualIndex + 1);
                 }

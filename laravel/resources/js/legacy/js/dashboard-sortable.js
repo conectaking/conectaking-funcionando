@@ -103,14 +103,16 @@
 
 async function saveItemOrder(itemsOrder) {
     try {
-        // Atualizar a ordem de cada item no servidor
-        const updatePromises = itemsOrder.map(item => {
-            return fetch(`${env.API_URL}/api/profile/items/${item.id}`, {
-                method: 'PUT',
-                headers: env.HEADERS,
-                body: JSON.stringify({ display_order: item.display_order })
+        // Atualizar a ordem de cada item no servidor (somente itens com ID numérico já persistidos)
+        const updatePromises = itemsOrder
+            .filter(item => item.id && /^\d+$/.test(String(item.id).trim()))
+            .map(item => {
+                return fetch(`${env.API_URL}/api/profile/items/${item.id}`, {
+                    method: 'PUT',
+                    headers: env.HEADERS,
+                    body: JSON.stringify({ display_order: item.display_order })
+                });
             });
-        });
 
         await Promise.all(updatePromises);
     } catch (error) {

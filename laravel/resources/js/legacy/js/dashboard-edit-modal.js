@@ -134,10 +134,13 @@ async function openEditModal(itemEl) {
     // Redirecionar para página de edição dedicada (digital_form abre modal no dashboard)
     if (itemType === 'sales_page' || itemType === 'guest_list' || itemType === 'contract' || itemType === 'king_selection' || itemType === 'convite' || itemType === 'bible') {
         // IMPORTANTE: Verificar se o item é temporário (não salvo ainda)
-        // Verificar tanto pelo ID quanto pelo atributo data-is-temporary
-        const isTemporary = (itemId && itemId.toString().startsWith('temp_')) ||
+        const isTemporary = !itemId ||
+            !/^\d+$/.test(String(itemId).trim()) ||
+            String(itemId).startsWith('temp_') ||
+            String(itemId).startsWith('te_') ||
             itemEl.dataset.isTemporary === 'true' ||
-            itemEl.hasAttribute('data-is-temporary');
+            itemEl.hasAttribute('data-is-temporary') ||
+            itemEl.dataset.isUnsaved === 'true';
 
         __ckDashLog(`Verificando se sales_page é temporário:`, {
             itemId,
@@ -862,8 +865,8 @@ async function openEditModal(itemEl) {
                     formData = itemData.form_data;
                 }
             }
-            const needsFormHydrate = !Array.isArray(formData.form_fields) || formData.form_fields.length === 0;
-            if (needsFormHydrate && itemId && !String(itemId).startsWith('temp_')) {
+            const isTempId = !itemId || !/^\d+$/.test(String(itemId).trim()) || String(itemId).startsWith('temp_') || String(itemId).startsWith('te_');
+            if (needsFormHydrate && !isTempId) {
                 try {
                     if (typeof core().updateHeaders === 'function') core().updateHeaders();
                     const fullRes = await fetch(`${env.API_URL}/api/profile/items/${itemId}`, {
@@ -1354,8 +1357,18 @@ async function openEditModal(itemEl) {
                 if (latIn) latIn.value = lat;
                 if (lngIn) lngIn.value = lng;
                 if (skipReverseGeocode) return;
-                fetch('https://nominatim.openstreetmap.org/reverse?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) + '&format=json', { headers: { 'Accept': 'application/json' } })
-                    .then(function (r) { return r.json(); })
+                var revUrl = (env.API_URL || '') + '/api/location/reverse-geocode?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng);
+                __rawFetch(revUrl, { headers: { 'Accept': 'application/json' }, credentials: 'omit' })
+                    .then(function (r) {
+                        if (!r.ok) throw new Error('Proxy error');
+                        return r.json();
+                    })
+                    .catch(function () {
+                        return __rawFetch('https://nominatim.openstreetmap.org/reverse?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) + '&format=json', {
+                            headers: { 'Accept': 'application/json' },
+                            credentials: 'omit'
+                        }).then(function (r) { return r.json(); });
+                    })
                     .then(function (data) {
                         var displayName = (data && data.display_name) ? data.display_name : '';
                         if (addrIn) addrIn.value = displayName;
@@ -1392,11 +1405,9 @@ async function openEditModal(itemEl) {
                     var center = hasInitial ? [parseFloat(latIn.value), parseFloat(lngIn.value)] : defaultCenter;
                     var zoom = hasInitial ? 17 : 11;
                     leafletMap = window.L.map(container, { center: center, zoom: zoom });
-                    leafletMap.invalidateSize();
-                    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                        subdomains: 'abcd',
-                        maxZoom: 20
+                    window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                        maxZoom: 19
                     }).addTo(leafletMap);
 
                     if (hasInitial) {
@@ -1441,8 +1452,18 @@ async function openEditModal(itemEl) {
                     if (!q) return;
                     searchBtn.disabled = true;
                     searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pesquisando...';
-                    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', { headers: { 'Accept': 'application/json' } })
-                        .then(function (r) { return r.json(); })
+                    var searchUrl = (env.API_URL || '') + '/api/location/geocode?q=' + encodeURIComponent(q);
+                    __rawFetch(searchUrl, { headers: { 'Accept': 'application/json' }, credentials: 'omit' })
+                        .then(function (r) {
+                            if (!r.ok) throw new Error('Proxy error ' + r.status);
+                            return r.json();
+                        })
+                        .catch(function () {
+                            return __rawFetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', {
+                                headers: { 'Accept': 'application/json' },
+                                credentials: 'omit'
+                            }).then(function (r) { return r.json(); });
+                        })
                         .then(function (arr) {
                             if (arr && arr[0]) {
                                 var lat = arr[0].lat;
