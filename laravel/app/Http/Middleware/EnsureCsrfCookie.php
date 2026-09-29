@@ -7,7 +7,10 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Garante cookie ck_csrf em respostas autenticadas por cookie (sessões antigas / login).
+ * Garante que o cookie ck_csrf esteja presente em todas as respostas.
+ * O RequireCookieCsrf só exige a validação quando há cookie de auth,
+ * mas emitir o cookie para todos garante que o JS sempre tenha o token
+ * disponível (inclui visitantes anônimos em formulários públicos).
  */
 class EnsureCsrfCookie
 {
@@ -16,15 +19,14 @@ class EnsureCsrfCookie
         /** @var Response $response */
         $response = $next($request);
 
-        $hasAuthCookie = (is_string($request->cookie('token')) && $request->cookie('token') !== '')
-            || (is_string($request->cookie('ks_client_token')) && $request->cookie('ks_client_token') !== '');
         $hasCsrf = is_string($request->cookie(RequireCookieCsrf::COOKIE))
             && $request->cookie(RequireCookieCsrf::COOKIE) !== '';
 
-        if ($hasAuthCookie && ! $hasCsrf && method_exists($response, 'headers')) {
+        if (! $hasCsrf && method_exists($response, 'headers')) {
             $response->headers->setCookie(RequireCookieCsrf::makeCookie($request));
         }
 
         return $response;
     }
 }
+

@@ -40,10 +40,19 @@ import QRCode from 'qrcode';
         }
     }
 
+    function getCkCsrf() {
+        try {
+            const match = document.cookie.match(/(?:^|;\s*)ck_csrf=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        } catch (e) { return ''; }
+    }
+
     function getHeaders() {
         const t = getToken();
         const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
         if (t) h['Authorization'] = 'Bearer ' + t;
+        const csrf = getCkCsrf();
+        if (csrf) h['X-CK-CSRF'] = csrf;
         return h;
     }
 

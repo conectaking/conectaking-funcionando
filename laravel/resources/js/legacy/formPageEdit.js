@@ -264,17 +264,29 @@
         localStorage.setItem('lastEditedFormItemId', currentItemId);
     }
     
+    // Lê o cookie ck_csrf para o double-submit CSRF (legível pelo JS — httpOnly=false)
+    function getCkCsrf() {
+        try {
+            const match = document.cookie.match(/(?:^|;\s*)ck_csrf=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        } catch (e) { return ''; }
+    }
     // Função para obter headers (cookie-first: sem Bearer null)
     function getHeaders() {
         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
         const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
         if (token) h.Authorization = 'Bearer ' + token;
+        const csrf = getCkCsrf();
+        if (csrf) h['X-CK-CSRF'] = csrf;
         return h;
     }
     // Apenas Authorization (para upload com FormData - não definir Content-Type)
     function getAuthHeadersOnly() {
         const token = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
-        return token ? { 'Authorization': 'Bearer ' + token } : {};
+        const h = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const csrf = getCkCsrf();
+        if (csrf) h['X-CK-CSRF'] = csrf;
+        return h;
     }
     function escapeHtml(str) {
         return String(str == null ? '' : str)
