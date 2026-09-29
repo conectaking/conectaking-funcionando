@@ -144,11 +144,19 @@ class RequireCookieCsrf
             'portaria/',
             'guest-list/view-full/',
             'guest-list/confirm/qr/',
+            // Formulários públicos via token de acesso direto
+            'form/',
         ];
         foreach ($prefixes as $prefix) {
             if (str_starts_with($path, $prefix)) {
                 return true;
             }
+        }
+
+        // Formulário público: /{slug}/form/{itemId}/submit
+        // Visitante pode ter cookie de auth do painel no mesmo dispositivo.
+        if (preg_match('#^[^/]+/form/\d+/submit$#', $path) === 1) {
+            return true;
         }
 
         return false;
