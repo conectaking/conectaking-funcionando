@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\Schema;
  */
 class LocationService
 {
-    private const FIELDS = ['address', 'address_formatted', 'latitude', 'longitude', 'place_name'];
+    private const FIELDS = [
+        'address', 'address_formatted', 'latitude', 'longitude', 'place_name',
+        'street', 'house_number', 'complement', 'bairro', 'city', 'uf', 'cep',
+    ];
 
     /**
      * @return array{status:int, body:array<string,mixed>}
