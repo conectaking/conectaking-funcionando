@@ -853,6 +853,16 @@
             if (previewTitle) {
                 previewTitle.textContent = formData.form_title || 'Formulário sem título';
             }
+            const editorHeaderTitle = document.getElementById('editor-header-title');
+            if (editorHeaderTitle && formData.form_title) {
+                editorHeaderTitle.textContent = formData.form_title;
+            }
+            const openPublicBtn = document.getElementById('btn-open-public');
+            const userSlug = data.slug || data.profile_slug || (data.user && data.user.slug) || (item && item.profile_slug) || '';
+            if (openPublicBtn && userSlug && currentItemId) {
+                openPublicBtn.href = `/${userSlug}/form/${currentItemId}`;
+                openPublicBtn.style.display = 'inline-flex';
+            }
             if (previewDescription && previewDescriptionContainer) {
                 const descText = formData.form_description || '';
                 if (descText) {
@@ -1934,7 +1944,24 @@
                 };
             });
         }
-        
+
+        // Alternar menu/sidebar no mobile
+        const toggleSidebarBtn = document.getElementById('btn-toggle-sidebar');
+        const sidebarEl = document.getElementById('form-edit-sidebar');
+        if (toggleSidebarBtn && sidebarEl) {
+            toggleSidebarBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                sidebarEl.classList.toggle('sidebar-open');
+            });
+            sidebarEl.querySelectorAll('.sidebar-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (window.innerWidth <= 992) {
+                        sidebarEl.classList.remove('sidebar-open');
+                    }
+                });
+            });
+        }
     }
     
     // Função para abrir modal de gerenciamento de lista de convidados (quando está em modo lista)
