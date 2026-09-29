@@ -298,6 +298,8 @@ Route::get('/{slug}/bible/estudo-livro/{bookId}', [SatellitePublicController::cl
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+']);
 Route::get('/{slug}/bible/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReader'])
     ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
+Route::get('/{slug}/biblia/{bookId}/{chapter}', [SatellitePublicController::class, 'bibleReader'])
+    ->where(['slug' => $cardSlug, 'bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
 // King Selection (read-only público)
 Route::get('/kingSelection/{slug}', [KingSelectionPublicController::class, 'show'])->where('slug', $cardSlug);
 Route::get('/api/king-selection/public/gallery', [KingSelectionPublicController::class, 'gallery'])

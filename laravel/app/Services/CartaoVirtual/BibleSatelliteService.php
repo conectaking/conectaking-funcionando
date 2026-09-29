@@ -128,7 +128,7 @@ class BibleSatelliteService
         $chapterStudy = $this->studies->getChapterStudy($bookId, $ch);
         $chapterStudyHtml = '';
         if ($chapterStudy && !empty($chapterStudy['content'])) {
-            $returnTo = '/'.$ctx['slug'].'/bible/'.$bookId.'/'.$ch.$tParam;
+            $returnTo = '/'.$ctx['slug'].'/biblia/'.$bookId.'/'.$ch.$tParam;
             $chapterStudyHtml = $this->studies->prepareStudyContentHtml($chapterStudy['content'], $ctx['slug'], $returnTo);
         }
 
@@ -145,8 +145,8 @@ class BibleSatelliteService
                 'hubUrl' => '/'.$ctx['slug'].'/biblia',
                 'profileUrl' => '/'.$ctx['slug'],
                 'studyUrl' => $hasStudy ? '/'.$ctx['slug'].'/biblia/estudos-livro/'.$bookId : null,
-                'prevUrl' => $prev ? '/'.$ctx['slug'].'/bible/'.$bookId.'/'.$prev.$tParam : null,
-                'nextUrl' => $next ? '/'.$ctx['slug'].'/bible/'.$bookId.'/'.$next.$tParam : null,
+                'prevUrl' => $prev ? '/'.$ctx['slug'].'/biblia/'.$bookId.'/'.$prev.$tParam : null,
+                'nextUrl' => $next ? '/'.$ctx['slug'].'/biblia/'.$bookId.'/'.$next.$tParam : null,
                 'tParam' => $tParam,
                 'markReadApi' => '/api/bible/mark-read',
             ],
@@ -301,7 +301,7 @@ class BibleSatelliteService
         }
         $prev = $day > 1 ? $day - 1 : null;
         $next = $day + 1;
-        $readUrl = '/'.$ctx['slug'].'/bible/'.$item['bookId'].'/'.$item['chapter'];
+        $readUrl = '/'.$ctx['slug'].'/biblia/'.$item['bookId'].'/'.$item['chapter'];
 
         return [
             'status' => 200,
