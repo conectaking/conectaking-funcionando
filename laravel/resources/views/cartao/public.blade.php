@@ -527,11 +527,140 @@
 
                 @elseif($type === 'location')
                     @php
-                        $locMapUrl = !empty($item['map_url']) ? $item['map_url'] : $mapUrl;
-                        $locTitle = $title !== '' ? $title : 'Onde me encontrar';
+                        $locData     = $item['location_data'] ?? [];
+                        $locMapUrl   = !empty($item['map_url']) ? $item['map_url'] : ($mapUrl ?? '');
+                        $locTitle    = $title !== '' ? $title : 'Onde me encontrar';
+                        $locFmt      = $locData['display_format'] ?? 'mapa';
+                        $locLat      = !empty($locData['latitude'])  ? (float)$locData['latitude']  : null;
+                        $locLng      = !empty($locData['longitude']) ? (float)$locData['longitude'] : null;
+                        $locAddr     = $locData['address_formatted'] ?? ($locData['address'] ?? '');
+                        $locStreet   = $locData['street']       ?? '';
+                        $locNumber   = $locData['house_number'] ?? '';
+                        $locComplement = $locData['complement'] ?? '';
+                        $locBairro   = $locData['bairro']       ?? '';
+                        $locCity     = $locData['city']         ?? '';
+                        $locUf       = $locData['uf']           ?? '';
+                        $locCep      = $locData['cep']          ?? '';
+                        $locBannerUrl = $locData['banner_url']  ?? '';
+                        $locPlaceName = $locData['place_name']  ?? '';
+
+                        // Monta endereço de exibição amigável
+                        $addrLine1Parts = [];
+                        if ($locStreet !== '') {
+                            $addrLine1Parts[] = $locStreet . ($locNumber !== '' ? ', ' . $locNumber : '');
+                        }
+                        if ($locComplement !== '') $addrLine1Parts[] = $locComplement;
+                        $addrLine1 = implode(' – ', $addrLine1Parts);
+
+                        $addrLine2Parts = [];
+                        if ($locBairro !== '') $addrLine2Parts[] = $locBairro;
+                        if ($locCity !== '')   $addrLine2Parts[] = $locCity . ($locUf !== '' ? ' - ' . $locUf : '');
+                        if ($locCep !== '')    $addrLine2Parts[] = 'CEP ' . $locCep;
+                        $addrLine2 = implode(', ', $addrLine2Parts);
+
+                        if ($addrLine1 === '' && $addrLine2 === '' && $locAddr !== '') {
+                            $addrParts = explode(',', $locAddr, 3);
+                            $addrLine1 = trim($addrParts[0] ?? '');
+                            $addrLine2 = trim(implode(',', array_slice($addrParts, 1)));
+                        }
+
+                        // URLs de navegação
+                        $gmapsUrl = '';
+                        $wazeUrl  = '';
+                        if ($locLat !== null && $locLng !== null) {
+                            $gmapsUrl = "https://www.google.com/maps/dir/?api=1&destination={$locLat},{$locLng}";
+                            $wazeUrl  = "https://waze.com/ul?ll={$locLat},{$locLng}&navigate=yes";
+                        } elseif ($locMapUrl !== '') {
+                            $gmapsUrl = $locMapUrl;
+                        }
+
+                        // Tile do OSM para thumbnail (zoom 16)
+                        $mapThumbUrl = '';
+                        if ($locLat !== null && $locLng !== null) {
+                            $zoom  = 16;
+                            $tileX = (int)floor(($locLng + 180) / 360 * pow(2, $zoom));
+                            $tileY = (int)floor((1 - log(tan(deg2rad($locLat)) + 1 / cos(deg2rad($locLat))) / pi()) / 2 * pow(2, $zoom));
+                            $mapThumbUrl = "https://tile.openstreetmap.org/{$zoom}/{$tileX}/{$tileY}.png";
+                        }
                     @endphp
-                    @if($locMapUrl !== '')
-                        <a href="{{ $locMapUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
+
+                    @if($locFmt === 'mapa' && ($locLat !== null || $locAddr !== ''))
+                        {{-- ── FORMATO CARTÃO MAPA ── --}}
+                        <div class="location-map-card" data-item-id="{{ $item['id'] ?? '' }}" style="width:100%;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#1a1a1d,#111113);border:1px solid rgba(255,199,0,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.5);margin-bottom:0;">
+
+                            {{-- Thumbnail do mapa --}}
+                            <div style="position:relative;height:140px;overflow:hidden;background:#1e2028;">
+                                @if($mapThumbUrl !== '')
+                                    <img src="{{ $mapThumbUrl }}" alt="Mapa" loading="lazy"
+                                         style="width:100%;height:160px;object-fit:cover;object-position:center;filter:brightness(0.7) saturate(0.9);margin-top:-10px;">
+                                @else
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a2035,#0f1520);">
+                                        <i class="fas fa-map" style="font-size:3rem;color:rgba(255,199,0,0.3);"></i>
+                                    </div>
+                                @endif
+                                {{-- Overlay escuro + pin central --}}
+                                <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,0.85));"></div>
+                                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);">
+                                    <div style="width:36px;height:36px;background:var(--dourado-principal,#FFC700);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.5);"></div>
+                                </div>
+                                {{-- Título sobreposto --}}
+                                <div style="position:absolute;bottom:10px;left:14px;right:14px;">
+                                    <span style="font-weight:700;font-size:0.95rem;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8);">
+                                        <i class="fas fa-map-marker-alt" style="color:var(--dourado-principal,#FFC700);margin-right:5px;"></i>
+                                        {{ $locTitle }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Corpo com endereço --}}
+                            <div style="padding:12px 14px 14px;">
+                                @if($addrLine1 !== '')
+                                    <p style="margin:0 0 2px;font-weight:600;font-size:0.88rem;color:#f0f0f0;line-height:1.3;">{{ $addrLine1 }}</p>
+                                @endif
+                                @if($addrLine2 !== '')
+                                    <p style="margin:0 0 12px;font-size:0.78rem;color:rgba(255,255,255,0.6);line-height:1.3;">{{ $addrLine2 }}</p>
+                                @elseif($addrLine1 === '')
+                                    <p style="margin:0 0 12px;font-size:0.82rem;color:rgba(255,255,255,0.5);">Localização definida no mapa</p>
+                                @else
+                                    <div style="margin-bottom:12px;"></div>
+                                @endif
+
+                                {{-- Botões de navegação --}}
+                                <div style="display:grid;grid-template-columns:1fr{{ $wazeUrl !== '' ? ' 1fr' : '' }};gap:8px;">
+                                    @if($gmapsUrl !== '')
+                                        <a href="{{ $gmapsUrl }}" target="_blank" rel="noopener noreferrer"
+                                           style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:10px;background:linear-gradient(135deg,#4285F4,#1a73e8);color:#fff;font-weight:700;font-size:0.8rem;text-decoration:none;border:none;transition:all 0.2s;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                            Google Maps
+                                        </a>
+                                    @endif
+                                    @if($wazeUrl !== '')
+                                        <a href="{{ $wazeUrl }}" target="_blank" rel="noopener noreferrer"
+                                           style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:10px;background:linear-gradient(135deg,#05c8f0,#00b4cf);color:#fff;font-weight:700;font-size:0.8rem;text-decoration:none;border:none;transition:all 0.2s;">
+                                            <svg width="15" height="15" viewBox="0 0 50 50" fill="currentColor"><path d="M25 2C12.3 2 2 12.3 2 25c0 4.8 1.4 9.2 3.9 12.9L2 48l10.4-3.8C15.8 46.6 20.3 48 25 48c12.7 0 23-10.3 23-23S37.7 2 25 2z"/></svg>
+                                            Waze
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                    @elseif($locFmt === 'banner' && $locBannerUrl !== '')
+                        {{-- ── FORMATO BANNER ── --}}
+                        <div class="location-banner-card" data-item-id="{{ $item['id'] ?? '' }}" style="position:relative;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.5);">
+                            <img src="{{ $locBannerUrl }}" alt="{{ $locTitle }}" style="width:100%;display:block;border-radius:14px;">
+                            @if($gmapsUrl !== '')
+                                <a href="{{ $gmapsUrl }}" target="_blank" rel="noopener noreferrer"
+                                   style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:50px;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);color:#fff;font-weight:700;font-size:0.85rem;text-decoration:none;border:1px solid rgba(255,199,0,0.5);white-space:nowrap;">
+                                    <i class="fas fa-map-marker-alt" style="color:var(--dourado-principal,#FFC700);"></i>
+                                    {{ $locTitle }}
+                                </a>
+                            @endif
+                        </div>
+
+                    @elseif($locMapUrl !== '' || $gmapsUrl !== '')
+                        {{-- ── FORMATO BOTÃO (padrão) ── --}}
+                        <a href="{{ $gmapsUrl ?: $locMapUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
                             <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-map-marker-alt') }}"></i>
                             <span>{{ $locTitle }}</span>
                         </a>

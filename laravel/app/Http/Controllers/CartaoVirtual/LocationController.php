@@ -136,11 +136,15 @@ class LocationController extends Controller
 
         // Se número não foi passado explicitamente, extrai número de $q se existir
         $cleanStreet = $q;
-        if ($number === '' && preg_match('/\b(?:n[ºo°]?\s*)?(\d{1,5})\b/i', $q, $m)) {
+        if ($number === '' && preg_match('/\b(?:n[ºo°]?\s*)?(\d{1,5}[A-Za-z]?)\b/i', $q, $m)) {
             $number = $m[1];
             $cleanStreet = trim(preg_replace('/\b(?:n[ºo°]?\s*)?' . preg_quote($number, '/') . '\b/i', '', $q));
             $cleanStreet = trim($cleanStreet, " ,\t\n\r\0\x0B");
         }
+        // Monta rua com número no formato aceito pelo Nominatim ("Número, Rua")
+        $streetWithNumber = $number !== '' && $cleanStreet !== ''
+            ? $number . ' ' . $cleanStreet
+            : $cleanStreet;
 
         // Se CEP de 8 dígitos foi enviado, resolve dados via ViaCEP se rua/cidade estiverem vazias
         if (strlen($cep) === 8 && ($cleanStreet === '' || $city === '')) {
@@ -168,15 +172,16 @@ class LocationController extends Controller
 
         $stateName = self::UF_MAP[$uf] ?? ($uf !== '' ? $uf : null);
 
-        $cacheKey = 'geocode_search_v4_' . md5(mb_strtolower("{$cleanStreet}_{$number}_{$bairro}_{$city}_{$uf}_{$limit}"));
-        $results = \Illuminate\Support\Facades\Cache::remember($cacheKey, 86400, function () use ($cleanStreet, $number, $bairro, $city, $uf, $stateName, $limit) {
+        $cacheKey = 'geocode_search_v5_' . md5(mb_strtolower("{$cleanStreet}_{$number}_{$bairro}_{$city}_{$uf}_{$limit}"));
+        $fetchFn = function () use ($cleanStreet, $streetWithNumber, $number, $bairro, $city, $uf, $stateName, $limit) {
             $parsedResults = [];
 
-            // 1. Prioridade: Busca estruturada no Nominatim se rua e cidade/estado estiverem presentes
+            // 1. Prioridade: Busca estruturada no Nominatim — passa número dentro do campo street
             if ($cleanStreet !== '' && ($city !== '' || $stateName !== null)) {
                 try {
+                    // Nominatim aceita "número logradouro" no campo street
                     $structuredParams = [
-                        'street' => $cleanStreet,
+                        'street' => $streetWithNumber,
                         'format' => 'json',
                         'limit' => $limit,
                         'addressdetails' => 1,
@@ -204,9 +209,10 @@ class LocationController extends Controller
                 }
             }
 
-            // 2. Se a busca estruturada não retornou nada, tenta busca composta
+            // 2. Se a busca estruturada não retornou nada, tenta busca composta COM número
             if (empty($parsedResults)) {
-                $composedQuery = $cleanStreet !== '' ? $cleanStreet : '';
+                // Inclui número no início da query composta para melhor precisão
+                $composedQuery = $streetWithNumber !== '' ? $streetWithNumber : '';
                 if ($bairro !== '' && stripos($composedQuery, $bairro) === false) {
                     $composedQuery .= ($composedQuery !== '' ? ', ' : '') . $bairro;
                 }
@@ -300,7 +306,18 @@ class LocationController extends Controller
             }
 
             return $parsedResults;
-        });
+        };
+
+        // Só cacheia se houver resultados válidos (evita cachear falhas de rede)
+        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if ($cached !== null) {
+            $results = $cached;
+        } else {
+            $results = $fetchFn();
+            if (!empty($results)) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $results, 86400);
+            }
+        }
 
         return response()->json($results, 200)->header('X-Conecta-Engine', 'laravel');
     }
