@@ -544,6 +544,8 @@ class GuestListAdminService
 
                     return ($n >= 20 && $n <= 300) ? $n : 40;
                 },
+                'button_logo_shape' => fn ($v) => in_array(strtolower(trim((string) $v)), ['square', 'rounded', 'circle'], true) ? strtolower(trim((string) $v)) : 'rounded',
+                'button_logo_remove_bg' => fn ($v) => $this->boolish($v),
                 'show_logo_corner' => fn ($v) => $this->boolish($v),
                 'enable_whatsapp' => fn ($v) => $this->boolish($v),
                 'enable_guest_list_submit' => fn ($v) => $this->boolish($v),
@@ -1036,6 +1038,8 @@ class GuestListAdminService
             || array_key_exists('form_logo_url', $body)
             || array_key_exists('button_logo_url', $body)
             || array_key_exists('button_logo_size', $body)
+            || array_key_exists('button_logo_shape', $body)
+            || array_key_exists('button_logo_remove_bg', $body)
             || array_key_exists('show_logo_corner', $body)
             || array_key_exists('event_title', $body)
             || array_key_exists('event_date', $body)
@@ -1054,6 +1058,8 @@ class GuestListAdminService
 
                 return ($n >= 20 && $n <= 300) ? $n : 40;
             },
+            'button_logo_shape' => fn ($v) => in_array(strtolower(trim((string) $v)), ['square', 'rounded', 'circle'], true) ? strtolower(trim((string) $v)) : 'rounded',
+            'button_logo_remove_bg' => fn ($v) => $this->boolish($v),
             'show_logo_corner' => fn ($v) => $this->boolish($v),
             'form_title' => null,
             'event_date' => null,
@@ -1062,7 +1068,7 @@ class GuestListAdminService
         ];
         $sets = [];
         $params = [];
-        foreach (['enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner'] as $col) {
+        foreach (['enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'button_logo_shape', 'button_logo_remove_bg', 'show_logo_corner'] as $col) {
             if (! array_key_exists($col, $body) || ! SchemaMeta::hasColumn('digital_form_items', $col)) {
                 continue;
             }

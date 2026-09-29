@@ -119,7 +119,8 @@
         }
         .wifi-ssid-value { display: block; }
         .profile-link-logo--sized { object-fit: contain; }
-        .profile-link-logo--rounded { object-fit: contain; border-radius: 8px; }
+        .profile-link-logo--rounded, .profile-link-logo--circle { object-fit: contain; border-radius: 50%; }
+        .profile-link-logo--square { object-fit: contain; border-radius: 6px; }
         .carousel-wrapper-public { display: flex; width: calc(var(--ck-carousel-n, 1) * 100%); }
         .carousel-slide-public { width: calc(100% / var(--ck-carousel-n, 1)); flex-shrink: 0; }
         .profile-link, .profile-button-pix, .profile-button-pix-qrcode {
@@ -434,6 +435,8 @@
                         $btnLogo = trim((string)($fd['button_logo_url'] ?? $fd['form_logo_url'] ?? $img));
                         $btnLogoSize = (int)($fd['button_logo_size'] ?? 40);
                         if ($btnLogoSize < 20 || $btnLogoSize > 300) $btnLogoSize = 40;
+                        $btnLogoShape = strtolower(trim((string)($fd['button_logo_shape'] ?? 'rounded')));
+                        $logoShapeClass = ($btnLogoShape === 'square') ? 'profile-link-logo--square' : 'profile-link-logo--rounded';
                         $hasBtnLogo = $btnLogo !== '' && !str_contains($btnLogo, 'placeholder');
                     @endphp
                     @if($formUrl !== '')
@@ -450,7 +453,7 @@
                         @else
                             <a href="{{ $formUrl }}" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="{{ $item['id'] ?? '' }}">
                                 @if($hasBtnLogo)
-                                    <img src="{{ $btnLogo }}" alt="" class="profile-link-logo profile-link-logo--rounded" width="{{ $btnLogoSize }}" height="{{ $btnLogoSize }}">
+                                    <img src="{{ $btnLogo }}" alt="" class="profile-link-logo {{ $logoShapeClass }}" width="{{ $btnLogoSize }}" height="{{ $btnLogoSize }}">
                                 @else
                                     <i class="{{ \App\Support\SafeIconClass::sanitize($item['icon_class'] ?? null, 'fas fa-wpforms') }}"></i>
                                 @endif

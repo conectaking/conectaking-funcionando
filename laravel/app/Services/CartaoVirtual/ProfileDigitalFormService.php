@@ -185,6 +185,15 @@ class ProfileDigitalFormService
             $sets[] = 'button_logo_size = ?';
             $vals[] = ($n >= 20 && $n <= 300) ? $n : 40;
         }
+        if (array_key_exists('button_logo_shape', $body) && in_array('button_logo_shape', $dfCols, true)) {
+            $shape = strtolower(trim((string) $body['button_logo_shape']));
+            $sets[] = 'button_logo_shape = ?';
+            $vals[] = in_array($shape, ['square', 'rounded', 'circle'], true) ? $shape : 'rounded';
+        }
+        if (array_key_exists('button_logo_remove_bg', $body) && in_array('button_logo_remove_bg', $dfCols, true)) {
+            $sets[] = 'button_logo_remove_bg = ?';
+            $vals[] = $this->toBool($body['button_logo_remove_bg'] ?? false);
+        }
         foreach (['event_address_lat', 'event_address_lon'] as $coord) {
             if (!array_key_exists($coord, $body) || !in_array($coord, $dfCols, true)) {
                 continue;
@@ -328,6 +337,8 @@ class ProfileDigitalFormService
             'background_color' => $body['background_color'] ?? '#FFFFFF',
             'button_logo_url' => $body['button_logo_url'] ?? null,
             'button_logo_size' => isset($body['button_logo_size']) ? (int) $body['button_logo_size'] : null,
+            'button_logo_shape' => $body['button_logo_shape'] ?? 'rounded',
+            'button_logo_remove_bg' => array_key_exists('button_logo_remove_bg', $body) ? $this->toBool($body['button_logo_remove_bg']) : false,
             'enable_pastor_button' => $body['enable_pastor_button'] ?? false,
             'pastor_whatsapp_number' => $body['pastor_whatsapp_number'] ?? null,
             'pastor_button_name' => $body['pastor_button_name'] ?? null,

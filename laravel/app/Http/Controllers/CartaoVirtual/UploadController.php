@@ -233,12 +233,29 @@ class UploadController extends Controller
             return response()->json(['success' => false, 'message' => 'Falha ao recortar.'], 500)
                 ->header('X-Conecta-Engine', 'laravel');
         }
+
+        $isPng = ($check['mime'] === 'image/png')
+            || str_ends_with(strtolower((string) $file->getClientOriginalName()), '.png')
+            || $request->input('format') === 'png'
+            || $request->boolean('preserveAlpha');
+
         ob_start();
-        imagejpeg($cropped, null, 90);
+        if ($isPng && function_exists('imagepng')) {
+            imagealphablending($cropped, false);
+            imagesavealpha($cropped, true);
+            imagepng($cropped, null, 8);
+            $outMime = 'image/png';
+            $ext = '.png';
+        } else {
+            imagejpeg($cropped, null, 90);
+            $outMime = 'image/jpeg';
+            $ext = '.jpg';
+        }
         $out = ob_get_clean() ?: '';
         imagedestroy($cropped);
-        $name = preg_replace('/\.[^.]+$/i', '.jpg', $file->getClientOriginalName() ?: 'image.jpg') ?: 'image.jpg';
-        $url = $this->r2->uploadImage($out, 'image/jpeg', $name);
+
+        $name = preg_replace('/\.[^.]+$/i', $ext, $file->getClientOriginalName() ?: ('image'.$ext)) ?: ('image'.$ext);
+        $url = $this->r2->uploadImage($out, $outMime, $name);
         if (!$url) {
             return response()->json(['success' => false, 'message' => 'Upload temporariamente indisponível.'], 503)
                 ->header('X-Conecta-Engine', 'laravel');

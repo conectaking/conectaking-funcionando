@@ -1806,3 +1806,22 @@
 .ck-fpe2-79c1e2 { width: 40px; height: 40px; background: linear-gradient(135deg, var(--preview-primary-color, #4A90E2), rgba(74, 144, 226, 0.7)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
 .ck-fpe2-e2792a { margin: 0; font-size: 24px; font-weight: 800; color: var(--preview-text-color, #202124); letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
 .ck-fpe2-0f1883 { width: 100%; padding: 16px 24px; background: linear-gradient(135deg, #25D366, #20BA5A); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: default; margin-top: 32px; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3); }
+
+/* King Forms - Button Logo Enhancement Styles */
+.image-crop-checkered {
+    background-image: linear-gradient(45deg, #1c1c20 25%, transparent 25%),
+                      linear-gradient(-45deg, #1c1c20 25%, transparent 25%),
+                      linear-gradient(45deg, transparent 75%, #1c1c20 75%),
+                      linear-gradient(-45deg, transparent 75%, #1c1c20 75%) !important;
+    background-size: 16px 16px !important;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px !important;
+    background-color: #111114 !important;
+}
+
+#modal-shape-rounded-card:hover,
+#modal-shape-square-card:hover,
+#modal-bg-transparent-card:hover,
+#modal-bg-original-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}

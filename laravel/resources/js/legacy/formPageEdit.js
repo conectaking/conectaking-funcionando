@@ -534,6 +534,8 @@
                                 form_logo_url: guestListData.form_logo_url || null,
                                 button_logo_url: guestListData.button_logo_url || null,
                                 button_logo_size: guestListData.button_logo_size !== undefined ? guestListData.button_logo_size : 40,
+                                button_logo_shape: guestListData.button_logo_shape || 'rounded',
+                                button_logo_remove_bg: guestListData.button_logo_remove_bg !== undefined ? guestListData.button_logo_remove_bg : false,
                                 show_logo_corner: guestListData.show_logo_corner !== undefined ? guestListData.show_logo_corner : false,
                                 // Incluir opções de envio
                                 enable_whatsapp: guestListData.enable_whatsapp !== undefined ? guestListData.enable_whatsapp : true,
@@ -627,6 +629,8 @@
                                 form_logo_url: digitalFormColors.form_logo_url !== undefined && digitalFormColors.form_logo_url !== null ? digitalFormColors.form_logo_url : (guestListData.form_logo_url || null),
                                 button_logo_url: digitalFormColors.button_logo_url !== undefined && digitalFormColors.button_logo_url !== null ? digitalFormColors.button_logo_url : (guestListData.button_logo_url || null),
                                 button_logo_size: digitalFormColors.button_logo_size !== undefined ? digitalFormColors.button_logo_size : (guestListData.button_logo_size !== undefined ? guestListData.button_logo_size : 40),
+                                button_logo_shape: digitalFormColors.button_logo_shape || guestListData.button_logo_shape || 'rounded',
+                                button_logo_remove_bg: digitalFormColors.button_logo_remove_bg !== undefined ? digitalFormColors.button_logo_remove_bg : (guestListData.button_logo_remove_bg || false),
                                 show_logo_corner: digitalFormColors.show_logo_corner !== undefined ? digitalFormColors.show_logo_corner : (guestListData.show_logo_corner !== undefined ? guestListData.show_logo_corner : false),
                                 enable_whatsapp: preferWa,
                                 enable_guest_list_submit: preferGl,
@@ -780,6 +784,23 @@
                 const size = formData.button_logo_size || 40;
                 buttonLogoSizeEl.value = parseInt(size, 10) || 40;
             }
+            let buttonLogoShapeEl = document.getElementById('button-logo-shape');
+            if (!buttonLogoShapeEl) {
+                buttonLogoShapeEl = document.createElement('input');
+                buttonLogoShapeEl.type = 'hidden';
+                buttonLogoShapeEl.id = 'button-logo-shape';
+                document.body.appendChild(buttonLogoShapeEl);
+            }
+            buttonLogoShapeEl.value = formData.button_logo_shape || 'rounded';
+
+            let buttonLogoRemoveBgEl = document.getElementById('button-logo-remove-bg');
+            if (!buttonLogoRemoveBgEl) {
+                buttonLogoRemoveBgEl = document.createElement('input');
+                buttonLogoRemoveBgEl.type = 'hidden';
+                buttonLogoRemoveBgEl.id = 'button-logo-remove-bg';
+                document.body.appendChild(buttonLogoRemoveBgEl);
+            }
+            buttonLogoRemoveBgEl.value = (formData.button_logo_remove_bg || false) ? '1' : '0';
             if (bannerEl) bannerEl.value = formData.banner_image_url || '';
             if (headerEl) headerEl.value = formData.header_image_url || '';
             const backgroundColorEl = document.getElementById('background-color-url');
@@ -6839,22 +6860,82 @@
                         <div style="font-size: 12px; color: var(--text-dark, #A1A1A1); margin-bottom: 12px;">
                             Logo que aparecerá no botão do formulário no seu cartão público quando o modo for "Botão"
                         </div>
-                        <div class="image-upload-area" id="modal-button-logo-upload-area" style="border: 2px dashed var(--border-color, #2C2C2F); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; background: var(--background-color, #0D0D0F);">
+                        <div class="image-upload-area image-crop-checkered" id="modal-button-logo-upload-area" style="border: 2px dashed var(--border-color, #2C2C2F); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; background: var(--background-color, #0D0D0F); transition: all 0.2s;">
                             <input type="file" id="modal-button-logo-file-input" accept="image/png,image/jpeg,image/jpg" style="display: none;">
-                            <img id="modal-button-logo-preview" style="max-width: 150px; max-height: 150px; display: none; border-radius: 8px; margin: 0 auto 15px;">
+                            <img id="modal-button-logo-preview" style="max-width: 140px; max-height: 140px; display: none; margin: 0 auto 12px; object-fit: contain; box-shadow: 0 4px 14px rgba(0,0,0,0.35);">
                             <div id="modal-button-logo-upload-text">
                                 <i class="fas fa-image" style="font-size: 2.5rem; color: var(--dourado-principal, #FFC700); margin-bottom: 15px;"></i>
-                                <p style="margin: 5px 0; color: var(--text, #ECECEC);">Clique para fazer upload do Logo</p>
+                                <p style="margin: 5px 0; color: var(--text, #ECECEC); font-weight: 600;">Clique para fazer upload do Logo</p>
                                 <span style="font-size: 0.85rem; color: var(--text-dark, #A1A1A1);">PNG ou JPG (máx. 5MB)</span>
                             </div>
-                            <button type="button" id="modal-remove-button-logo-btn" style="display: none; margin-top: 15px; padding: 8px 20px; background: #ff4444; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                                <i class="fas fa-trash"></i> Remover Logo
-                            </button>
+                            <div id="modal-button-logo-actions" style="display: none; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+                                <button type="button" id="modal-btn-remove-bg-action" style="padding: 6px 14px; background: rgba(255, 199, 0, 0.15); color: #FFC700; border: 1px solid rgba(255, 199, 0, 0.4); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-magic"></i> <span id="modal-btn-remove-bg-text">Remover Fundo (Sem Fundo)</span>
+                                </button>
+                                <button type="button" id="modal-btn-restore-bg-action" style="display: none; padding: 6px 14px; background: rgba(255, 255, 255, 0.08); color: #ECECEC; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; align-items: center; gap: 6px;">
+                                    <i class="fas fa-undo"></i> <span>Restaurar Fundo</span>
+                                </button>
+                                <button type="button" id="modal-remove-button-logo-btn" style="padding: 6px 14px; background: rgba(255, 68, 68, 0.15); color: #ff6b6b; border: 1px solid rgba(255, 68, 68, 0.35); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-trash"></i> <span>Remover</span>
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- Opções de Formato da Logo: Arredondada vs Quadradinho -->
                         <div style="margin-top: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text, #ECECEC); font-weight: 600; font-size: 14px;">Tamanho da Logo</label>
+                            <label style="display: block; margin-bottom: 8px; color: var(--text, #ECECEC); font-weight: 600; font-size: 13px;">Formato da Logo no Botão</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <label id="modal-shape-rounded-card" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid #FFC700; background: rgba(255, 199, 0, 0.08); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                                    <input type="radio" name="modal_button_logo_shape" value="rounded" id="modal-shape-rounded-radio" checked style="accent-color: #FFC700; width: 16px; height: 16px; cursor: pointer;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 13px; color: #ECECEC; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-circle" style="color: #FFC700; font-size: 0.95rem;"></i> Arredondada
+                                        </div>
+                                        <div style="font-size: 11px; color: #A1A1A1; margin-top: 2px;">Círculo (100% arredondado)</div>
+                                    </div>
+                                </label>
+                                <label id="modal-shape-square-card" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid var(--border-color, #2C2C2F); background: var(--background-color, #0D0D0F); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                                    <input type="radio" name="modal_button_logo_shape" value="square" id="modal-shape-square-radio" style="accent-color: #FFC700; width: 16px; height: 16px; cursor: pointer;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 13px; color: #ECECEC; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-square" style="color: #FFC700; font-size: 0.95rem;"></i> Quadradinho
+                                        </div>
+                                        <div style="font-size: 11px; color: #A1A1A1; margin-top: 2px;">Quadrado com cantos suaves</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Opções de Fundo da Logo: Sem Fundo vs Com Fundo -->
+                        <div style="margin-top: 14px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--text, #ECECEC); font-weight: 600; font-size: 13px;">Fundo da Logo</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <label id="modal-bg-transparent-card" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid #FFC700; background: rgba(255, 199, 0, 0.08); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                                    <input type="radio" name="modal_button_logo_bg" value="transparent" id="modal-bg-transparent-radio" checked style="accent-color: #FFC700; width: 16px; height: 16px; cursor: pointer;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 13px; color: #ECECEC; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-magic" style="color: #FFC700; font-size: 0.95rem;"></i> Sem Fundo
+                                        </div>
+                                        <div style="font-size: 11px; color: #A1A1A1; margin-top: 2px;">Transparente / Recortado</div>
+                                    </div>
+                                </label>
+                                <label id="modal-bg-original-card" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid var(--border-color, #2C2C2F); background: var(--background-color, #0D0D0F); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                                    <input type="radio" name="modal_button_logo_bg" value="original" id="modal-bg-original-radio" style="accent-color: #FFC700; width: 16px; height: 16px; cursor: pointer;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 13px; color: #ECECEC; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-image" style="color: #FFC700; font-size: 0.95rem;"></i> Com Fundo
+                                        </div>
+                                        <div style="font-size: 11px; color: #A1A1A1; margin-top: 2px;">Fundo original da foto</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Controle de Tamanho da Logo -->
+                        <div style="margin-top: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--text, #ECECEC); font-weight: 600; font-size: 13px;">Tamanho da Logo</label>
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <input type="range" id="modal-button-logo-size" min="20" max="300" value="40" step="2" style="flex: 1; height: 6px; border-radius: 3px; background: var(--border-color, #2C2C2F); outline: none; cursor: pointer;">
+                                <input type="range" id="modal-button-logo-size" min="20" max="300" value="40" step="2" style="flex: 1; height: 6px; border-radius: 3px; background: var(--border-color, #2C2C2F); outline: none; cursor: pointer; accent-color: #FFC700;">
                                 <input type="number" id="modal-button-logo-size-input" min="20" max="300" value="40" step="2" style="width: 70px; padding: 8px; border-radius: 8px; background: var(--background-color, #0D0D0F); border: 1px solid var(--border-color, #2C2C2F); color: var(--text, #ECECEC); text-align: center; font-weight: 600;">
                                 <span style="color: var(--text-dark, #A1A1A1); font-size: 14px; min-width: 30px;">px</span>
                             </div>
@@ -7201,59 +7282,206 @@
             if (logoUploadText) logoUploadText.style.display = 'block';
             if (removeLogoBtn) removeLogoBtn.style.display = 'none';
         }
+        const buttonLogoPreview = modal.querySelector('#modal-button-logo-preview');
+        const buttonLogoUploadText = modal.querySelector('#modal-button-logo-upload-text');
+        const buttonLogoActions = modal.querySelector('#modal-button-logo-actions');
+        const removeButtonLogoBtn = modal.querySelector('#modal-remove-button-logo-btn');
+        const btnRemoveBgAction = modal.querySelector('#modal-btn-remove-bg-action');
+        const btnRestoreBgAction = modal.querySelector('#modal-btn-restore-bg-action');
+        const btnRemoveBgText = modal.querySelector('#modal-btn-remove-bg-text');
+
+        // Formato da logo: Arredondada vs Quadradinho
+        let buttonLogoShapeEl = document.getElementById('button-logo-shape');
+        const shapeRoundedRadio = modal.querySelector('#modal-shape-rounded-radio');
+        const shapeSquareRadio = modal.querySelector('#modal-shape-square-radio');
+        const shapeRoundedCard = modal.querySelector('#modal-shape-rounded-card');
+        const shapeSquareCard = modal.querySelector('#modal-shape-square-card');
+
+        let currentButtonLogoShape = (buttonLogoShapeEl && buttonLogoShapeEl.value)
+            || currentFormData?.button_logo_shape
+            || 'rounded';
+
+        const updateShapeUI = (shape) => {
+            currentButtonLogoShape = (shape === 'square') ? 'square' : 'rounded';
+            if (shapeRoundedRadio) shapeRoundedRadio.checked = (currentButtonLogoShape === 'rounded');
+            if (shapeSquareRadio) shapeSquareRadio.checked = (currentButtonLogoShape === 'square');
+            if (shapeRoundedCard) {
+                shapeRoundedCard.style.borderColor = currentButtonLogoShape === 'rounded' ? '#FFC700' : 'var(--border-color, #2C2C2F)';
+                shapeRoundedCard.style.background = currentButtonLogoShape === 'rounded' ? 'rgba(255, 199, 0, 0.08)' : 'var(--background-color, #0D0D0F)';
+            }
+            if (shapeSquareCard) {
+                shapeSquareCard.style.borderColor = currentButtonLogoShape === 'square' ? '#FFC700' : 'var(--border-color, #2C2C2F)';
+                shapeSquareCard.style.background = currentButtonLogoShape === 'square' ? 'rgba(255, 199, 0, 0.08)' : 'var(--background-color, #0D0D0F)';
+            }
+            if (buttonLogoPreview) {
+                buttonLogoPreview.style.borderRadius = currentButtonLogoShape === 'square' ? '6px' : '50%';
+            }
+            if (!buttonLogoShapeEl) {
+                buttonLogoShapeEl = document.createElement('input');
+                buttonLogoShapeEl.type = 'hidden';
+                buttonLogoShapeEl.id = 'button-logo-shape';
+                document.body.appendChild(buttonLogoShapeEl);
+            }
+            buttonLogoShapeEl.value = currentButtonLogoShape;
+        };
+
+        if (shapeRoundedRadio) shapeRoundedRadio.addEventListener('change', () => updateShapeUI('rounded'));
+        if (shapeSquareRadio) shapeSquareRadio.addEventListener('change', () => updateShapeUI('square'));
+        if (shapeRoundedCard) shapeRoundedCard.addEventListener('click', () => updateShapeUI('rounded'));
+        if (shapeSquareCard) shapeSquareCard.addEventListener('click', () => updateShapeUI('square'));
+        updateShapeUI(currentButtonLogoShape);
+
+        // Fundo da logo: Sem Fundo (Transparente) vs Com Fundo
+        let buttonLogoRemoveBgEl = document.getElementById('button-logo-remove-bg');
+        const bgTransparentRadio = modal.querySelector('#modal-bg-transparent-radio');
+        const bgOriginalRadio = modal.querySelector('#modal-bg-original-radio');
+        const bgTransparentCard = modal.querySelector('#modal-bg-transparent-card');
+        const bgOriginalCard = modal.querySelector('#modal-bg-original-card');
+
+        let currentRemoveBg = (buttonLogoRemoveBgEl && buttonLogoRemoveBgEl.value === '1')
+            || (currentFormData?.button_logo_remove_bg === true || currentFormData?.button_logo_remove_bg === 'true')
+            || false;
+
+        const updateBgUI = (removeBg) => {
+            currentRemoveBg = !!removeBg;
+            if (bgTransparentRadio) bgTransparentRadio.checked = currentRemoveBg;
+            if (bgOriginalRadio) bgOriginalRadio.checked = !currentRemoveBg;
+            if (bgTransparentCard) {
+                bgTransparentCard.style.borderColor = currentRemoveBg ? '#FFC700' : 'var(--border-color, #2C2C2F)';
+                bgTransparentCard.style.background = currentRemoveBg ? 'rgba(255, 199, 0, 0.08)' : 'var(--background-color, #0D0D0F)';
+            }
+            if (bgOriginalCard) {
+                bgOriginalCard.style.borderColor = !currentRemoveBg ? '#FFC700' : 'var(--border-color, #2C2C2F)';
+                bgOriginalCard.style.background = !currentRemoveBg ? 'rgba(255, 199, 0, 0.08)' : 'var(--background-color, #0D0D0F)';
+            }
+            if (!buttonLogoRemoveBgEl) {
+                buttonLogoRemoveBgEl = document.createElement('input');
+                buttonLogoRemoveBgEl.type = 'hidden';
+                buttonLogoRemoveBgEl.id = 'button-logo-remove-bg';
+                document.body.appendChild(buttonLogoRemoveBgEl);
+            }
+            buttonLogoRemoveBgEl.value = currentRemoveBg ? '1' : '0';
+        };
+
         if (buttonLogoEl && buttonLogoEl.value) {
-            const buttonLogoPreview = modal.querySelector('#modal-button-logo-preview');
-            const buttonLogoUploadText = modal.querySelector('#modal-button-logo-upload-text');
-            const removeButtonLogoBtn = modal.querySelector('#modal-remove-button-logo-btn');
             buttonLogoPreview.src = buttonLogoEl.value;
+            buttonLogoPreview.dataset.originalSrc = buttonLogoEl.value;
             buttonLogoPreview.style.display = 'block';
-            buttonLogoUploadText.style.display = 'none';
-            removeButtonLogoBtn.style.display = 'block';
+            buttonLogoPreview.style.borderRadius = currentButtonLogoShape === 'square' ? '6px' : '50%';
+            if (buttonLogoUploadText) buttonLogoUploadText.style.display = 'none';
+            if (buttonLogoActions) buttonLogoActions.style.display = 'flex';
+            if (removeButtonLogoBtn) removeButtonLogoBtn.style.display = 'inline-flex';
         }
-        
+
+        // Ação de remover fundo da logo existente via canvas inteligente
+        const performBackgroundRemoval = async () => {
+            if (!buttonLogoPreview || !buttonLogoPreview.src) return;
+            const remover = (typeof window !== 'undefined' && window.AutoBackgroundRemover)
+                ? window.AutoBackgroundRemover
+                : (typeof ImageCropModal !== 'undefined' && ImageCropModal.AutoBackgroundRemover) ? ImageCropModal.AutoBackgroundRemover : null;
+
+            if (!remover) {
+                alert('Módulo de remoção de fundo carregando, tente novamente em instantes.');
+                return;
+            }
+
+            if (btnRemoveBgText) btnRemoveBgText.textContent = 'Recortando...';
+            if (btnRemoveBgAction) btnRemoveBgAction.disabled = true;
+
+            try {
+                if (!buttonLogoPreview.dataset.originalSrc) {
+                    buttonLogoPreview.dataset.originalSrc = buttonLogoPreview.src;
+                }
+                const res = await remover.removeBackground(buttonLogoPreview.src);
+                buttonLogoPreview.src = res.dataUrl;
+                updateBgUI(true);
+                if (btnRestoreBgAction) btnRestoreBgAction.style.display = 'inline-flex';
+
+                // Enviar PNG transparente para o servidor
+                const fd = new FormData();
+                fd.append('file', res.blob, 'logo-sem-fundo.png');
+                fd.append('image', res.blob, 'logo-sem-fundo.png');
+                const t = getToken();
+                const headers = {};
+                if (t) headers['Authorization'] = 'Bearer ' + t;
+                const uploadRes = await fetch(`${API_URL}/api/upload/image`, {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'include',
+                    headers: headers
+                });
+                const uploadData = await uploadRes.json();
+                if (uploadData && uploadData.success && (uploadData.url || uploadData.imageUrl)) {
+                    const finalUrl = uploadData.url || uploadData.imageUrl;
+                    if (buttonLogoEl) buttonLogoEl.value = finalUrl;
+                }
+            } catch (err) {
+                console.error('Erro ao remover fundo:', err);
+                alert('Não foi possível remover o fundo automaticamente desta imagem.');
+            } finally {
+                if (btnRemoveBgText) btnRemoveBgText.textContent = 'Remover Fundo (Sem Fundo)';
+                if (btnRemoveBgAction) btnRemoveBgAction.disabled = false;
+            }
+        };
+
+        const restoreOriginalBackground = () => {
+            if (buttonLogoPreview && buttonLogoPreview.dataset.originalSrc) {
+                buttonLogoPreview.src = buttonLogoPreview.dataset.originalSrc;
+                if (buttonLogoEl) buttonLogoEl.value = buttonLogoPreview.dataset.originalSrc;
+                updateBgUI(false);
+                if (btnRestoreBgAction) btnRestoreBgAction.style.display = 'none';
+            }
+        };
+
+        if (btnRemoveBgAction) btnRemoveBgAction.addEventListener('click', performBackgroundRemoval);
+        if (btnRestoreBgAction) btnRestoreBgAction.addEventListener('click', restoreOriginalBackground);
+        if (bgTransparentRadio) bgTransparentRadio.addEventListener('change', () => {
+            updateBgUI(true);
+            performBackgroundRemoval();
+        });
+        if (bgOriginalRadio) bgOriginalRadio.addEventListener('change', () => {
+            updateBgUI(false);
+            restoreOriginalBackground();
+        });
+        if (bgTransparentCard) bgTransparentCard.addEventListener('click', () => {
+            updateBgUI(true);
+            performBackgroundRemoval();
+        });
+        if (bgOriginalCard) bgOriginalCard.addEventListener('click', () => {
+            updateBgUI(false);
+            restoreOriginalBackground();
+        });
+        updateBgUI(currentRemoveBg);
+
         // IMPORTANTE: Carregar e configurar controles de tamanho da logo do botão
         let buttonLogoSizeEl = document.getElementById('button-logo-size');
         const modalButtonLogoSize = modal.querySelector('#modal-button-logo-size');
         const modalButtonLogoSizeInput = modal.querySelector('#modal-button-logo-size-input');
-        const buttonLogoPreview = modal.querySelector('#modal-button-logo-preview');
-        
-        // Carregar valor atual do tamanho da logo
-        let currentButtonLogoSize = 40; // Valor padrão
+
+        let currentButtonLogoSize = 40;
         if (buttonLogoSizeEl && buttonLogoSizeEl.value) {
             currentButtonLogoSize = parseInt(buttonLogoSizeEl.value, 10) || 40;
         } else if (currentFormData?.button_logo_size !== undefined) {
             currentButtonLogoSize = parseInt(currentFormData.button_logo_size, 10) || 40;
         }
-        
-        // Garantir que o valor está dentro dos limites (20 a 300)
         currentButtonLogoSize = Math.max(20, Math.min(300, currentButtonLogoSize));
-        
-        // Configurar valores iniciais dos controles
-        if (modalButtonLogoSize) {
-            modalButtonLogoSize.value = currentButtonLogoSize;
-        }
-        if (modalButtonLogoSizeInput) {
-            modalButtonLogoSizeInput.value = currentButtonLogoSize;
-        }
-        
-        // Função para atualizar o preview da logo com o novo tamanho
+
+        if (modalButtonLogoSize) modalButtonLogoSize.value = currentButtonLogoSize;
+        if (modalButtonLogoSizeInput) modalButtonLogoSizeInput.value = currentButtonLogoSize;
+
         const updateButtonLogoPreviewSize = (size) => {
             if (buttonLogoPreview && buttonLogoPreview.src) {
-                const previewSize = Math.min(size * 1.5, 450); // Preview até 450px para logo até 300px
+                const previewSize = Math.min(size * 1.5, 450);
                 buttonLogoPreview.style.maxWidth = `${previewSize}px`;
                 buttonLogoPreview.style.maxHeight = `${previewSize}px`;
             }
         };
-        
-        // Sincronizar slider com input numérico e atualizar preview em tempo real
+
         if (modalButtonLogoSize && modalButtonLogoSizeInput) {
-            // Quando o slider muda, atualizar input numérico e preview
             modalButtonLogoSize.addEventListener('input', (e) => {
                 const newSize = parseInt(e.target.value, 10);
                 modalButtonLogoSizeInput.value = newSize;
                 updateButtonLogoPreviewSize(newSize);
-                
-                // Atualizar o input hidden
                 if (!buttonLogoSizeEl) {
                     buttonLogoSizeEl = document.createElement('input');
                     buttonLogoSizeEl.type = 'hidden';
@@ -7262,19 +7490,14 @@
                 }
                 buttonLogoSizeEl.value = newSize;
             });
-            
-            // Quando o input numérico muda, atualizar slider e preview
+
             modalButtonLogoSizeInput.addEventListener('input', (e) => {
                 let newSize = parseInt(e.target.value, 10);
-                // Garantir que está dentro dos limites
                 if (isNaN(newSize)) newSize = 40;
                 newSize = Math.max(20, Math.min(300, newSize));
-                
                 modalButtonLogoSize.value = newSize;
-                modalButtonLogoSizeInput.value = newSize; // Corrigir valor se estava fora dos limites
+                modalButtonLogoSizeInput.value = newSize;
                 updateButtonLogoPreviewSize(newSize);
-                
-                // Atualizar o input hidden
                 if (!buttonLogoSizeEl) {
                     buttonLogoSizeEl = document.createElement('input');
                     buttonLogoSizeEl.type = 'hidden';
@@ -7283,8 +7506,7 @@
                 }
                 buttonLogoSizeEl.value = newSize;
             });
-            
-            // Atualizar preview inicialmente
+
             updateButtonLogoPreviewSize(currentButtonLogoSize);
         }
         if (bannerEl && bannerEl.value) {
@@ -7638,6 +7860,31 @@
             if (modalButtonLogoSizeInput && buttonLogoSizeEl) {
                 buttonLogoSizeEl.value = modalButtonLogoSizeInput.value || modalButtonLogoSize?.value || '40';
             }
+
+            // Copiar formato e fundo da logo do botão
+            const modalShapeRadio = modal.querySelector('input[name="modal_button_logo_shape"]:checked');
+            let buttonLogoShapeEl = document.getElementById('button-logo-shape');
+            if (!buttonLogoShapeEl) {
+                buttonLogoShapeEl = document.createElement('input');
+                buttonLogoShapeEl.type = 'hidden';
+                buttonLogoShapeEl.id = 'button-logo-shape';
+                document.body.appendChild(buttonLogoShapeEl);
+            }
+            if (modalShapeRadio && buttonLogoShapeEl) {
+                buttonLogoShapeEl.value = modalShapeRadio.value || 'rounded';
+            }
+
+            const modalBgRadio = modal.querySelector('input[name="modal_button_logo_bg"]:checked');
+            let buttonLogoRemoveBgEl = document.getElementById('button-logo-remove-bg');
+            if (!buttonLogoRemoveBgEl) {
+                buttonLogoRemoveBgEl = document.createElement('input');
+                buttonLogoRemoveBgEl.type = 'hidden';
+                buttonLogoRemoveBgEl.id = 'button-logo-remove-bg';
+                document.body.appendChild(buttonLogoRemoveBgEl);
+            }
+            if (modalBgRadio && buttonLogoRemoveBgEl) {
+                buttonLogoRemoveBgEl.value = modalBgRadio.value === 'transparent' ? '1' : '0';
+            }
             
             // Salvar configurações do botão do pastor e logo corner
             const enablePastorBtnEl = document.getElementById('enable-pastor-button');
@@ -7748,6 +7995,8 @@
                     header_image_url: (document.getElementById('header-image-url')?.value || '').trim() || null,
                     button_logo_url: (btnLogoVal && btnLogoVal !== 'null' && btnLogoVal !== 'undefined') ? btnLogoVal : null,
                     button_logo_size: (!isNaN(btnSizeVal) && btnSizeVal >= 20 && btnSizeVal <= 300) ? btnSizeVal : 40,
+                    button_logo_shape: modal.querySelector('input[name="modal_button_logo_shape"]:checked')?.value || document.getElementById('button-logo-shape')?.value || 'rounded',
+                    button_logo_remove_bg: (modal.querySelector('input[name="modal_button_logo_bg"]:checked')?.value === 'transparent') || (document.getElementById('button-logo-remove-bg')?.value === '1'),
                     show_logo_corner: showCorner,
                     enable_whatsapp: enableWa,
                     enable_guest_list_submit: enableGL,
@@ -8219,14 +8468,25 @@
                         }
                         const buttonLogoPreview = modal.querySelector('#modal-button-logo-preview');
                         const buttonLogoUploadText = modal.querySelector('#modal-button-logo-upload-text');
+                        const buttonLogoActions = modal.querySelector('#modal-button-logo-actions');
                         const removeButtonLogoBtn = modal.querySelector('#modal-remove-button-logo-btn');
-                        if (buttonLogoPreview) { buttonLogoPreview.src = imageUrl; buttonLogoPreview.style.display = 'block'; }
+                        const shapeRadioVal = modal.querySelector('input[name="modal_button_logo_shape"]:checked')?.value || 'rounded';
+
+                        if (buttonLogoPreview) {
+                            buttonLogoPreview.src = imageUrl;
+                            buttonLogoPreview.dataset.originalSrc = imageUrl;
+                            buttonLogoPreview.style.display = 'block';
+                            buttonLogoPreview.style.borderRadius = (shapeRadioVal === 'square') ? '6px' : '50%';
+                        }
                         if (buttonLogoUploadText) buttonLogoUploadText.style.display = 'none';
-                        if (removeButtonLogoBtn) removeButtonLogoBtn.style.display = 'block';
+                        if (buttonLogoActions) buttonLogoActions.style.display = 'flex';
+                        if (removeButtonLogoBtn) removeButtonLogoBtn.style.display = 'inline-flex';
                         e.target.value = '';
                     }
+
+                    const wantsRemoveBg = modal.querySelector('#modal-bg-transparent-radio')?.checked ?? true;
                     if (typeof ImageCropModal !== 'undefined' && ImageCropModal.open) {
-                        ImageCropModal.open(file, { aspectRatio: 1, apiBase: API_URL }, (url, errMsg) => {
+                        ImageCropModal.open(file, { aspectRatio: 1, apiBase: API_URL, isButtonLogo: true, removeBg: wantsRemoveBg }, (url, errMsg) => {
                             if (url) applyButtonLogoUrl(url);
                             else alert(errMsg || 'Erro ao fazer upload da logo do botão.');
                         });
@@ -8246,8 +8506,14 @@
                 if (buttonLogoEl) buttonLogoEl.value = '';
                 const buttonLogoPreview = modal.querySelector('#modal-button-logo-preview');
                 const buttonLogoUploadText = modal.querySelector('#modal-button-logo-upload-text');
-                if (buttonLogoPreview) buttonLogoPreview.style.display = 'none';
+                const buttonLogoActions = modal.querySelector('#modal-button-logo-actions');
+                if (buttonLogoPreview) {
+                    buttonLogoPreview.src = '';
+                    buttonLogoPreview.style.display = 'none';
+                    buttonLogoPreview.removeAttribute('data-original-src');
+                }
                 if (buttonLogoUploadText) buttonLogoUploadText.style.display = 'block';
+                if (buttonLogoActions) buttonLogoActions.style.display = 'none';
                 removeButtonLogoBtn.style.display = 'none';
             });
         }
@@ -10319,6 +10585,14 @@
                     }
                     return 40;
                 })(),
+                button_logo_shape: (() => {
+                    const shapeEl = document.getElementById('button-logo-shape');
+                    return (shapeEl && shapeEl.value) ? shapeEl.value : 'rounded';
+                })(),
+                button_logo_remove_bg: (() => {
+                    const removeBgEl = document.getElementById('button-logo-remove-bg');
+                    return (removeBgEl && removeBgEl.value === '1');
+                })(),
                 show_logo_corner: showLogoCorner,
                 is_listed: isListed,
                 form_description: formDescEl?.value.trim() || (previewDescEl?.textContent.trim()) || null,
@@ -10616,6 +10890,8 @@
                     form_logo_url: updateData.form_logo_url || null,
                     button_logo_url: updateData.button_logo_url || null,
                     button_logo_size: updateData.button_logo_size || 40,
+                    button_logo_shape: updateData.button_logo_shape || 'rounded',
+                    button_logo_remove_bg: updateData.button_logo_remove_bg || false,
                     show_logo_corner: updateData.show_logo_corner || false
                     // decorative_bar_color, card_color, separator_line_color REMOVIDOS
                     // Cada sistema (King Forms/digital_form_items e Portaria/guest_list_items) mantém suas próprias cores
