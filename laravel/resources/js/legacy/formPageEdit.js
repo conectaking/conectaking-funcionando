@@ -8467,7 +8467,7 @@
             buttonLogoFileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    function applyButtonLogoUrl(imageUrl) {
+                    function applyButtonLogoUrl(imageUrl, meta) {
                         if (!imageUrl) return;
                         if (buttonLogoEl) {
                             buttonLogoEl.value = imageUrl;
@@ -8493,13 +8493,16 @@
                         if (buttonLogoUploadText) buttonLogoUploadText.style.display = 'none';
                         if (buttonLogoActions) buttonLogoActions.style.display = 'flex';
                         if (removeButtonLogoBtn) removeButtonLogoBtn.style.display = 'inline-flex';
+                        if (meta && typeof meta.removeBg === 'boolean' && typeof updateBgUI === 'function') {
+                            updateBgUI(meta.removeBg);
+                        }
                         e.target.value = '';
                     }
 
-                    const wantsRemoveBg = modal.querySelector('#modal-bg-transparent-radio')?.checked ?? true;
+                    const wantsRemoveBg = modal.querySelector('#modal-bg-transparent-radio')?.checked ?? false;
                     if (typeof ImageCropModal !== 'undefined' && ImageCropModal.open) {
-                        ImageCropModal.open(file, { aspectRatio: 1, apiBase: API_URL, isButtonLogo: true, removeBg: wantsRemoveBg }, (url, errMsg) => {
-                            if (url) applyButtonLogoUrl(url);
+                        ImageCropModal.open(file, { aspectRatio: 1, apiBase: API_URL, isButtonLogo: true, removeBg: wantsRemoveBg }, (url, errMsg, meta) => {
+                            if (url) applyButtonLogoUrl(url, meta);
                             else alert(errMsg || 'Erro ao fazer upload da logo do botão.');
                         });
                     } else {

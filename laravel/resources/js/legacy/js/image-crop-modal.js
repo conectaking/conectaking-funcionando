@@ -271,14 +271,23 @@
         return 'A imagem final corresponde ao recorte em <strong>pixels</strong> indicado acima. Em ecrãs estreitos, imagens largas mostram sobretudo o centro.';
     }
 
+    function apiBaseForUpload() {
+        try {
+            if (currentOptions && currentOptions.apiBase) return String(currentOptions.apiBase).replace(/\/$/, '');
+            if (global.API_BASE) return String(global.API_BASE).replace(/\/$/, '');
+            if (global.API_URL) return String(global.API_URL).replace(/\/$/, '');
+        } catch (e) {}
+        return (global.location && global.location.origin) ? global.location.origin.replace(/\/$/, '') : '';
+    }
+
     function getModal() {
         if (modalEl && modalEl.parentNode) return modalEl;
         injectStyles();
         var wrap = document.createElement('div');
         wrap.id = 'image-crop-modal-wrap';
         wrap.innerHTML =
-            '<div id="image-crop-modal" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">' +
-            '  <div style="background:#1C1C21; border-radius:16px; padding:20px; max-width:95vw; max-height:95vh; box-shadow:0 20px 60px rgba(0,0,0,0.5); overflow-y:auto;">' +
+            '<div id="image-crop-modal" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">' +
+            '  <div style="background:#1C1C21; border-radius:16px; padding:20px; max-width:95vw; max-height:95vh; box-shadow:0 20px 60px rgba(0,0,0,0.5); overflow-y:auto; z-index:1000000; position:relative;">' +
             '    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">' +
             '      <h3 style="color:#FFC700; margin:0; font-size:1.25rem;">Ajuste sua Imagem</h3>' +
             '      <button type="button" id="image-crop-modal-close" style="background:transparent; border:none; color:#888; font-size:1.5rem; cursor:pointer; padding:0 8px;">&times;</button>' +
@@ -301,7 +310,7 @@
             '    </div>' +
             '  </div>' +
             '</div>';
-        wrap.style.cssText = 'position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;';
+        wrap.style.cssText = 'position:fixed; inset:0; z-index:999999 !important; display:flex; align-items:center; justify-content:center;';
         document.body.appendChild(wrap);
         modalEl = document.getElementById('image-crop-modal');
         var closeBtn = document.getElementById('image-crop-modal-close');
@@ -334,20 +343,15 @@
         currentOptions = {};
         var m = document.getElementById('image-crop-modal');
         if (m) m.style.display = 'none';
+        var wrap = document.getElementById('image-crop-modal-wrap');
+        if (wrap) wrap.style.display = 'none';
         var img = document.getElementById('image-crop-source');
         if (img) { img.src = ''; img.removeAttribute('src'); }
     }
 
-    function apiBaseForUpload() {
-        try {
-            if (global.API_BASE) return String(global.API_BASE).replace(/\/$/, '');
-            if (global.API_URL) return String(global.API_URL).replace(/\/$/, '');
-        } catch (e) {}
-        return (global.location && global.location.origin) ? global.location.origin.replace(/\/$/, '') : '';
-    }
-
     function applyCrop() {
         if (!cropperInstance || !currentFile || !currentCallback) { close(); return; }
+        var cb = currentCallback; // Preserva o callback antes de fechar e limpar o estado
         var applyBtn = document.getElementById('image-crop-apply');
         if (applyBtn) { applyBtn.disabled = true; applyBtn.textContent = 'Enviando...'; }
 
@@ -359,7 +363,7 @@
         if (token) headers['Authorization'] = 'Bearer ' + token;
 
         var removeBgToggle = document.getElementById('image-crop-remove-bg-toggle');
-        var shouldRemoveBg = (removeBgToggle && removeBgToggle.checked) || currentOptions.removeBg === true;
+        var shouldRemoveBg = removeBgToggle ? removeBgToggle.checked : (currentOptions.removeBg === true);
 
         if (shouldRemoveBg) {
             // Recorte direto no canvas e remoção de fundo transparente
@@ -386,15 +390,15 @@
                         close();
                         if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Cortar e Enviar'; }
                         if (data && data.success && (data.url || data.imageUrl)) {
-                            currentCallback(data.url || data.imageUrl);
+                            if (typeof cb === 'function') cb(data.url || data.imageUrl, null, { removeBg: true });
                         } else {
-                            currentCallback(null, data && data.message ? data.message : 'Falha no upload.');
+                            if (typeof cb === 'function') cb(null, data && data.message ? data.message : 'Falha no upload.');
                         }
                     })
                     .catch(function (err) {
                         close();
                         if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Cortar e Enviar'; }
-                        currentCallback(null, err && err.message ? err.message : 'Erro ao processar remoção de fundo.');
+                        if (typeof cb === 'function') cb(null, err && err.message ? err.message : 'Erro ao processar remoção de fundo.');
                     });
                 return;
             } catch (cropErr) {
@@ -422,13 +426,16 @@
             .then(function (data) {
                 close();
                 if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Cortar e Enviar'; }
-                if (data && data.success && data.url) currentCallback(data.url);
-                else currentCallback(null, data && data.message ? data.message : 'Falha no upload.');
+                if (data && data.success && (data.url || data.imageUrl)) {
+                    if (typeof cb === 'function') cb(data.url || data.imageUrl, null, { removeBg: false });
+                } else {
+                    if (typeof cb === 'function') cb(null, data && data.message ? data.message : 'Falha no upload.');
+                }
             })
             .catch(function (err) {
                 close();
                 if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Cortar e Enviar'; }
-                currentCallback(null, err && err.message ? err.message : 'Erro de conexão.');
+                if (typeof cb === 'function') cb(null, err && err.message ? err.message : 'Erro de conexão.');
             });
     }
 
@@ -483,6 +490,18 @@
         currentCallback = typeof callback === 'function' ? callback : function () {};
         currentOptions = options || {};
         var modal = getModal();
+        var wrap = modal ? modal.parentNode : document.getElementById('image-crop-modal-wrap');
+        if (wrap) {
+            wrap.style.cssText = 'position:fixed; inset:0; z-index:999999 !important; display:flex; align-items:center; justify-content:center;';
+            if (wrap.parentNode === document.body) {
+                document.body.appendChild(wrap);
+            }
+            wrap.style.display = 'flex';
+        }
+        if (modal) {
+            modal.style.zIndex = '999999';
+        }
+
         var tipEl = document.getElementById('image-crop-tip');
         if (tipEl) tipEl.innerHTML = tipHtml(currentOptions);
 
@@ -493,7 +512,7 @@
             var showBgOption = currentOptions.isButtonLogo || currentOptions.showRemoveBg;
             removeBgLabel.style.display = showBgOption ? 'inline-flex' : 'none';
             if (showBgOption) {
-                removeBgToggle.checked = currentOptions.removeBg !== false;
+                removeBgToggle.checked = currentOptions.removeBg === true;
             }
         }
 
