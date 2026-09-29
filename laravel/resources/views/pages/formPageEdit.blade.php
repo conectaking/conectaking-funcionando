@@ -11,126 +11,136 @@
     @vite(['resources/css/fontawesome.css', 'resources/js/pages/formPageEdit.js'])
 </head>
 <body class="form-edit-page form-edit-page-body">
-    <div class="form-edit-header">
-        <div class="ck-fpe2-c9a733">
+    <!-- Header do Editor Ultra Moderno -->
+    <header class="form-edit-header">
+        <div class="header-left">
             <a href="/kingForms" target="_top" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Voltar
+                <i class="fas fa-arrow-left"></i>
+                <span>Voltar ao King Forms</span>
             </a>
-            <h1>Editar King Forms</h1>
+            <div class="header-divider"></div>
+            <div class="header-title-box">
+                <span class="header-badge-studio"><i class="fas fa-crown"></i> Studio</span>
+                <h1 id="editor-header-title">Editar King Forms</h1>
+            </div>
         </div>
-        <button class="btn-save-form" id="save-form-btn">
-            <i class="fas fa-save"></i> Salvar
-        </button>
-    </div>
+        <div class="header-actions">
+            <a id="btn-open-public" href="#" target="_blank" rel="noopener" class="btn-view-live" style="display: none;" title="Abrir página pública">
+                <i class="fas fa-external-link-alt"></i>
+                <span>Ver Público</span>
+            </a>
+            <button type="button" class="btn-toggle-sidebar-mobile" id="btn-toggle-sidebar" title="Ferramentas do Editor">
+                <i class="fas fa-sliders-h"></i>
+                <span>Ferramentas</span>
+            </button>
+            <button type="button" class="btn-save-form" id="save-form-btn">
+                <i class="fas fa-save"></i>
+                <span>Salvar</span>
+            </button>
+        </div>
+    </header>
     
     <div class="form-edit-main">
-        <!-- Sidebar -->
-        <div class="form-edit-sidebar">
+        <!-- Sidebar Unificada e Moderna -->
+        <aside class="form-edit-sidebar" id="form-edit-sidebar">
             <!-- 1. Estrutura do Formulário -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">
-                    <i class="fas fa-edit" style="color: #FFC700; margin-right: 6px;"></i> Estrutura
+                    <i class="fas fa-layer-group"></i> Estrutura & Perguntas
                 </div>
                 
                 <!-- Busca de Perguntas -->
-                <div class="ck-fpe-dc36b9">
-                    <div class="ck-fpe-50666a">
-                        <input class="ck-fpe-892057" type="text" id="search-questions-input" placeholder="Buscar perguntas..." onfocus="this.style.borderColor='#FFC700'; this.style.background='rgba(255,199,0,0.1)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';">
-                        <button class="ck-fpe2-70e5b5" id="clear-search-btn" title="Limpar busca">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
+                <div class="sidebar-search-box">
+                    <i class="fas fa-search sidebar-search-icon"></i>
+                    <input type="text" id="search-questions-input" placeholder="Buscar perguntas..." autocomplete="off">
+                    <button type="button" id="clear-search-btn" class="sidebar-search-clear" title="Limpar busca">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
                 
-                <button class="sidebar-btn" id="sidebar-add-question">
+                <button type="button" class="sidebar-btn sidebar-btn-primary" id="sidebar-add-question">
                     <i class="fas fa-plus-circle"></i>
-                    <span>Adicionar pergunta</span>
+                    <span>Adicionar Pergunta</span>
                 </button>
-                <button class="sidebar-btn" id="sidebar-add-title">
+                <button type="button" class="sidebar-btn" id="sidebar-add-title">
                     <i class="fas fa-heading"></i>
-                    <span>Título e descrição</span>
+                    <span>Título e Descrição</span>
                 </button>
-                <button class="sidebar-btn" id="sidebar-add-header-image">
+                <button type="button" class="sidebar-btn" id="sidebar-add-header-image">
                     <i class="fas fa-image"></i>
-                    <span>Banner de cabeçalho</span>
+                    <span>Banner & Logotipo</span>
                 </button>
             </div>
 
-            <!-- 2. Design & Modelos -->
+            <!-- 2. Design & Temas -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">
-                    <i class="fas fa-paint-brush" style="color: #FFC700; margin-right: 6px;"></i> Design & Modelos
+                    <i class="fas fa-palette"></i> Design & Aparência
                 </div>
-                <button class="sidebar-btn" id="sidebar-customize-colors">
-                    <i class="fas fa-palette"></i>
+                <button type="button" class="sidebar-btn" id="sidebar-customize-colors">
+                    <i class="fas fa-swatchbook"></i>
                     <span>Cores e Temas</span>
                 </button>
-                <button class="sidebar-btn" id="sidebar-load-module">
-                    <i class="fas fa-layer-group"></i>
+                <button type="button" class="sidebar-btn" id="sidebar-load-module">
+                    <i class="fas fa-magic"></i>
                     <span>Modelos Prontos</span>
                 </button>
-                <button class="sidebar-btn" id="sidebar-settings">
+                <button type="button" class="sidebar-btn" id="sidebar-settings">
                     <i class="fas fa-cog"></i>
                     <span>Configurações</span>
                 </button>
             </div>
 
-            <!-- 3. Gestão & Clientes -->
+            <!-- 3. Respostas & Compartilhar -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">
-                    <i class="fas fa-chart-line" style="color: #FFC700; margin-right: 6px;"></i> Gestão & Clientes
+                    <i class="fas fa-share-alt"></i> Respostas & Envio
                 </div>
-                <button class="sidebar-btn" id="sidebar-responses">
+                <button type="button" class="sidebar-btn" id="sidebar-responses">
                     <i class="fas fa-inbox"></i>
-                    <span>Envios | Listas</span>
+                    <span>Ver Respostas & Leads</span>
                 </button>
-                <button class="sidebar-btn" id="sidebar-dashboard">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Dashboard</span>
+                <button type="button" class="sidebar-btn" id="sidebar-share-form-ready" title="Gera um código para outro usuário importar este formulário na conta dele">
+                    <i class="fas fa-qrcode"></i>
+                    <span>Compartilhar & Link</span>
+                </button>
+                <button type="button" class="sidebar-btn" id="sidebar-import-form" title="Importar um formulário">
+                    <i class="fas fa-file-import"></i>
+                    <span>Importar Modelo</span>
                 </button>
             </div>
 
-            <!-- 4. Compartilhar -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-share-alt" style="color: #FFC700; margin-right: 6px;"></i> Compartilhar
-                </div>
-                <button class="sidebar-btn" id="sidebar-share-form-ready" title="Gera um código para outro usuário importar este formulário na conta dele">
-                    <i class="fas fa-code"></i>
-                    <span>Gerar código</span>
-                </button>
-                <button class="sidebar-btn" id="sidebar-import-form" title="Importar um formulário: digite o código que alguém te passou">
-                    <i class="fas fa-file-import"></i>
-                    <span>Importar formulário</span>
-                </button>
+            <!-- Botões legados mantidos para compatibilidade -->
+            <div class="ck-sr-only">
+                <button type="button" id="sidebar-dashboard"></button>
             </div>
-            
-        </div>
+        </aside>
         
         <!-- Preview Area -->
-        <div class="form-edit-preview ck-fpe2-0dd877">
+        <div class="form-edit-preview">
             <!-- Barra de Controles da Pré-visualização -->
-            <div class="preview-controls-bar ck-fpe2-7613ab">
-                <div class="ck-fpe2-c9a733">
-                    <h3 class="ck-fpe2-0c9f24">
-                        <i class="fas fa-eye ck-fpe-13e70b"></i>
-                        Pré-visualização
+            <div class="preview-controls-bar">
+                <div class="preview-controls-left">
+                    <h3 class="preview-controls-heading">
+                        <span class="preview-pulse-dot"></span>
+                        <i class="fas fa-eye"></i>
+                        <span>Pré-visualização</span>
                     </h3>
-                    <div class="preview-separator ck-fpe-6c9375"></div>
-                    <div class="preview-mode-buttons ck-fpe2-693434">
-                        <button id="preview-mode-desktop" class="preview-mode-btn active ck-fpe2-cd479f" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
+                    <div class="preview-separator"></div>
+                    <div class="preview-mode-buttons">
+                        <button type="button" id="preview-mode-desktop" class="preview-mode-btn active" title="Modo Desktop">
                             <i class="fas fa-desktop"></i>
-                            Desktop
+                            <span>Desktop</span>
                         </button>
-                        <button id="preview-mode-mobile" class="preview-mode-btn ck-fpe2-b015db" onmouseover="this.style.borderColor='rgba(255,199,0,0.3)'; this.style.color='#FFC700';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#A1A1A1';">
+                        <button type="button" id="preview-mode-mobile" class="preview-mode-btn" title="Modo Celular">
                             <i class="fas fa-mobile-alt"></i>
-                            Celular
+                            <span>Celular</span>
                         </button>
                     </div>
                 </div>
-                <div class="ck-fpe-67e95f">
+                <div class="preview-tip-text">
                     <i class="fas fa-info-circle"></i>
-                    Visualização idêntica ao formulário público
+                    <span>Visualização idêntica ao formulário público</span>
                 </div>
             </div>
             <div class="form-preview-container ck-fpe2-95a3e6">
