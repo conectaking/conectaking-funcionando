@@ -828,28 +828,106 @@ async function openEditModal(itemEl) {
                 var locLat = locData.latitude != null ? String(locData.latitude) : '';
                 var locLng = locData.longitude != null ? String(locData.longitude) : '';
                 var locTitle = (currentTitle || 'Localização').replace(/"/g, '&quot;');
+
+                var ufList = [
+                    { uf: '', name: 'Todos os Estados' },
+                    { uf: 'AC', name: 'AC - Acre' }, { uf: 'AL', name: 'AL - Alagoas' }, { uf: 'AP', name: 'AP - Amapá' },
+                    { uf: 'AM', name: 'AM - Amazonas' }, { uf: 'BA', name: 'BA - Bahia' }, { uf: 'CE', name: 'CE - Ceará' },
+                    { uf: 'DF', name: 'DF - Distrito Federal' }, { uf: 'ES', name: 'ES - Espírito Santo' }, { uf: 'GO', name: 'GO - Goiás' },
+                    { uf: 'MA', name: 'MA - Maranhão' }, { uf: 'MT', name: 'MT - Mato Grosso' }, { uf: 'MS', name: 'MS - Mato Grosso do Sul' },
+                    { uf: 'MG', name: 'MG - Minas Gerais' }, { uf: 'PA', name: 'PA - Pará' }, { uf: 'PB', name: 'PB - Paraíba' },
+                    { uf: 'PR', name: 'PR - Paraná' }, { uf: 'PE', name: 'PE - Pernambuco' }, { uf: 'PI', name: 'PI - Piauí' },
+                    { uf: 'RJ', name: 'RJ - Rio de Janeiro' }, { uf: 'RN', name: 'RN - Rio Grande do Norte' }, { uf: 'RS', name: 'RS - Rio Grande do Sul' },
+                    { uf: 'RO', name: 'RO - Rondônia' }, { uf: 'RR', name: 'RR - Roraima' }, { uf: 'SC', name: 'SC - Santa Catarina' },
+                    { uf: 'SP', name: 'SP - São Paulo' }, { uf: 'SE', name: 'SE - Sergipe' }, { uf: 'TO', name: 'TO - Tocantins' }
+                ];
+
+                var defaultUf = 'MA';
+                for (var u = 0; u < ufList.length; u++) {
+                    if (ufList[u].uf && (locAddr.indexOf(ufList[u].name) !== -1 || locAddr.indexOf(' ' + ufList[u].uf + ',') !== -1 || locAddr.indexOf(' ' + ufList[u].uf + ' ') !== -1)) {
+                        defaultUf = ufList[u].uf;
+                        break;
+                    }
+                }
+
+                var ufOptionsHtml = ufList.map(function (item) {
+                    var isSel = (item.uf === defaultUf) ? 'selected' : '';
+                    return `<option value="${item.uf}" ${isSel}>${item.name}</option>`;
+                }).join('');
+
                 formHTML = `
             <div class="input-group location-edit-panel" data-item-id="${itemId}">
                 <label>Título do botão</label>
                 <input type="text" id="edit-title" class="location-title-input" value="${locTitle}" placeholder="Ex: Onde me encontrar">
             </div>
-            <div class="input-group">
-                <label>Endereço</label>
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                    <input type="text" id="location-address-input" class="location-address-input" value="${locAddr}" placeholder="Digite o endereço ou pesquise..." style="flex:1;">
-                    <button type="button" class="location-search-btn" style="padding:10px 16px;border-radius:8px;background:var(--dourado-principal,#FFC700);color:#000;border:none;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="fas fa-search"></i> Pesquisar</button>
+
+            <!-- Filtros Regionais e GPS Local -->
+            <div class="location-filter-card" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                    <span style="font-weight:600;font-size:0.82rem;color:var(--dourado-principal,#FFC700);display:flex;align-items:center;gap:6px;">
+                        <i class="fas fa-sliders-h"></i> Filtro por Região / Estado
+                    </span>
+                    <button type="button" class="location-gps-btn" style="background:rgba(255,199,0,0.15);border:1px solid rgba(255,199,0,0.4);color:#FFC700;padding:5px 10px;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;" title="Detectar endereço do seu dispositivo">
+                        <i class="fas fa-crosshairs"></i> Usar Minha Localização
+                    </button>
                 </div>
-                <p class="location-formatted-display" style="font-size:0.9em;opacity:0.9;margin:0 0 8px 0;min-height:1.4em;"></p>
+                <div style="display:grid;grid-template-columns:minmax(140px, 1.2fr) minmax(130px, 1.5fr);gap:8px;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;opacity:0.8;margin-bottom:4px;">Estado (UF)</label>
+                        <select id="location-uf-select" class="location-uf-select" style="width:100%;padding:8px 10px;border-radius:6px;background:rgba(18,18,20,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;cursor:pointer;">
+                            ${ufOptionsHtml}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;opacity:0.8;margin-bottom:4px;">Cidade (Opcional)</label>
+                        <input type="text" id="location-city-input" class="location-city-input" placeholder="Ex: São Luís" style="width:100%;padding:8px 10px;border-radius:6px;background:rgba(18,18,20,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Busca de Endereço -->
+            <div class="input-group" style="position:relative;">
+                <label>Endereço ou Ponto de Referência</label>
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input type="text" id="location-address-input" class="location-address-input" value="${locAddr}" placeholder="Ex: Avenida Tancredo Neves, 820..." style="flex:1;">
+                    <button type="button" class="location-search-btn" style="padding:10px 16px;border-radius:8px;background:var(--dourado-principal,#FFC700);color:#000;border:none;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
+                        <i class="fas fa-search"></i> Pesquisar
+                    </button>
+                </div>
+
+                <!-- Lista de Sugestões / Opções de Endereço Encontradas -->
+                <div id="location-results-container" class="location-results-container" style="display:none;margin-bottom:12px;background:#18181b;border:1px solid rgba(255,199,0,0.4);border-radius:10px;padding:10px;max-height:230px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:0.8rem;color:#FFC700;font-weight:600;">
+                        <span class="location-results-count"><i class="fas fa-map-marked-alt"></i> Opções encontradas:</span>
+                        <button type="button" class="location-results-close-btn" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:1.1rem;line-height:1;padding:0 6px;" title="Fechar opções">&times;</button>
+                    </div>
+                    <div class="location-results-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+                </div>
+
+                <!-- Card de Endereço Selecionado -->
+                <div class="location-selected-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
+                    <i class="fas fa-map-pin" style="color:var(--dourado-principal,#FFC700);margin-top:3px;font-size:1.1rem;flex-shrink:0;"></i>
+                    <div style="flex:1;min-width:0;">
+                        <span style="font-size:0.72rem;opacity:0.75;display:block;text-transform:uppercase;letter-spacing:0.5px;">Endereço Definido no Mapa</span>
+                        <p class="location-formatted-display" style="font-size:0.85rem;line-height:1.4;margin:2px 0 0 0;font-weight:500;word-break:break-word;">${locAddr || 'Nenhum endereço definido ainda. Pesquise ou use o GPS acima.'}</p>
+                    </div>
+                </div>
+
                 <input type="hidden" id="location-lat-input" class="location-lat-input" value="${locLat}">
                 <input type="hidden" id="location-lng-input" class="location-lng-input" value="${locLng}">
             </div>
+
+            <!-- Mapa Interativo Leaflet -->
             <div class="input-group">
-                <label>Mapa</label>
-                <div class="location-map-preview-edit" style="height:220px;border-radius:12px;overflow:hidden;background:rgba(0,0,0,0.3);position:relative;">
-                    <div id="location-map-container-${itemId}" class="location-map-container" style="width:100%;height:100%;min-height:220px;"></div>
+                <label>Ponto no Mapa</label>
+                <div class="location-map-preview-edit" style="height:230px;border-radius:12px;overflow:hidden;background:rgba(0,0,0,0.3);position:relative;border:1px solid rgba(255,255,255,0.15);">
+                    <div id="location-map-container-${itemId}" class="location-map-container" style="width:100%;height:100%;min-height:230px;"></div>
                 </div>
-                <p class="location-map-hint" style="font-size:0.75rem;opacity:0.85;margin-top:6px;"><i class="fas fa-hand-paper"></i> Arraste o marcador ou clique no mapa para ajustar o ponto exato.</p>
-                <p style="font-size:0.75rem;opacity:0.7;margin-top:4px;">No cartão, o visitante poderá abrir no Google Maps ou no Waze.</p>
+                <p class="location-map-hint" style="font-size:0.75rem;opacity:0.85;margin-top:6px;display:flex;align-items:center;gap:6px;">
+                    <i class="fas fa-hand-paper" style="color:var(--dourado-principal,#FFC700);"></i>
+                    <span>Arraste o marcador ou clique diretamente no mapa para ajustar o ponto exato.</span>
+                </p>
+                <p style="font-size:0.75rem;opacity:0.7;margin-top:2px;">No cartão público, o visitante poderá traçar rota no Google Maps ou no Waze.</p>
             </div>
         `;
             })();
@@ -1343,6 +1421,13 @@ async function openEditModal(itemEl) {
             var searchBtn = SELECTORS.editModalBody.querySelector('.location-search-btn');
             var addrIn = SELECTORS.editModalBody.querySelector('#location-address-input');
             var formattedP = SELECTORS.editModalBody.querySelector('.location-formatted-display');
+            var ufSelect = SELECTORS.editModalBody.querySelector('#location-uf-select');
+            var cityIn = SELECTORS.editModalBody.querySelector('#location-city-input');
+            var gpsBtn = SELECTORS.editModalBody.querySelector('.location-gps-btn');
+            var resultsContainer = SELECTORS.editModalBody.querySelector('#location-results-container');
+            var resultsList = SELECTORS.editModalBody.querySelector('.location-results-list');
+            var resultsCloseBtn = SELECTORS.editModalBody.querySelector('.location-results-close-btn');
+            var resultsCount = SELECTORS.editModalBody.querySelector('.location-results-count');
 
             if (formattedP && locData && locData.address_formatted) {
                 formattedP.textContent = locData.address_formatted;
@@ -1350,8 +1435,21 @@ async function openEditModal(itemEl) {
 
             var leafletMap = null;
             var marker = null;
-            var defaultCenter = [-23.5505, -46.6333];
+            var defaultCenter = [-2.5387, -44.2825]; // São Luís / MA por padrão se vazio
             var defaultZoom = 13;
+
+            function configureLeafletIcons() {
+                if (window.L && window.L.Icon && window.L.Icon.Default) {
+                    try {
+                        delete window.L.Icon.Default.prototype._getIconUrl;
+                        window.L.Icon.Default.mergeOptions({
+                            iconRetinaUrl: '/images/leaflet/marker-icon-2x.png',
+                            iconUrl: '/images/leaflet/marker-icon.png',
+                            shadowUrl: '/images/leaflet/marker-shadow.png',
+                        });
+                    } catch (e) {}
+                }
+            }
 
             function updateInputsFromLatLng(lat, lng, skipReverseGeocode) {
                 if (latIn) latIn.value = lat;
@@ -1364,7 +1462,7 @@ async function openEditModal(itemEl) {
                         return r.json();
                     })
                     .catch(function () {
-                        return __rawFetch('https://nominatim.openstreetmap.org/reverse?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) + '&format=json', {
+                        return __rawFetch('https://nominatim.openstreetmap.org/reverse?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) + '&format=json&addressdetails=1', {
                             headers: { 'Accept': 'application/json' },
                             credentials: 'omit'
                         }).then(function (r) { return r.json(); });
@@ -1372,14 +1470,23 @@ async function openEditModal(itemEl) {
                     .then(function (data) {
                         var displayName = (data && data.display_name) ? data.display_name : '';
                         if (addrIn) addrIn.value = displayName;
-                        if (formattedP) formattedP.textContent = displayName;
+                        if (formattedP) formattedP.textContent = displayName || 'Endereço selecionado no mapa.';
+                        if (data && data.uf && ufSelect) {
+                            ufSelect.value = data.uf;
+                        }
+                        if (data && data.city && cityIn && !cityIn.value) {
+                            cityIn.value = data.city;
+                        }
                     })
-                    .catch(function () { if (formattedP) formattedP.textContent = 'Endereço não encontrado para este ponto.'; });
+                    .catch(function () {
+                        if (formattedP) formattedP.textContent = 'Endereço não identificado para estas coordenadas (ponto marcado).';
+                    });
             }
 
             function setMarkerPosition(latLng) {
                 var lat = typeof latLng.lat === 'function' ? latLng.lat() : latLng.lat;
                 var lng = typeof latLng.lng === 'function' ? latLng.lng() : latLng.lng;
+                configureLeafletIcons();
                 if (marker) {
                     marker.setLatLng(latLng);
                 } else if (window.L && leafletMap) {
@@ -1391,48 +1498,7 @@ async function openEditModal(itemEl) {
                 }
                 if (latIn) latIn.value = lat;
                 if (lngIn) lngIn.value = lng;
-                if (leafletMap) leafletMap.setView([lat, lng], leafletMap.getZoom() < 16 ? 17 : leafletMap.getZoom());
-            }
-
-            var bootLeafletMap = function () {
-            if (window.L && container) {
-                if (window._lastLocationLeafletMap) {
-                    try { window._lastLocationLeafletMap.remove(); } catch (e) {}
-                    window._lastLocationLeafletMap = null;
-                }
-                setTimeout(function () {
-                    var hasInitial = latIn && lngIn && latIn.value && lngIn.value;
-                    var center = hasInitial ? [parseFloat(latIn.value), parseFloat(lngIn.value)] : defaultCenter;
-                    var zoom = hasInitial ? 17 : 11;
-                    leafletMap = window.L.map(container, { center: center, zoom: zoom });
-                    window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        maxZoom: 19
-                    }).addTo(leafletMap);
-
-                    if (hasInitial) {
-                        var initialLatLng = window.L.latLng(parseFloat(latIn.value), parseFloat(lngIn.value));
-                        marker = window.L.marker(initialLatLng, { draggable: true }).addTo(leafletMap);
-                        marker.on('dragend', function () {
-                            var pos = marker.getLatLng();
-                            updateInputsFromLatLng(pos.lat, pos.lng, false);
-                        });
-                    }
-
-                    leafletMap.on('click', function (e) {
-                        setMarkerPosition(e.latlng);
-                        updateInputsFromLatLng(e.latlng.lat, e.latlng.lng, false);
-                    });
-
-                    container._leafletMap = leafletMap;
-                    window._lastLocationLeafletMap = leafletMap;
-                }, 200);
-            }
-            };
-            if (typeof window.ckEnsureLeaflet === 'function') {
-                window.ckEnsureLeaflet().then(bootLeafletMap).catch(function () {});
-            } else {
-                bootLeafletMap();
+                if (leafletMap) leafletMap.setView([lat, lng], leafletMap.getZoom() < 16 ? 16 : leafletMap.getZoom());
             }
 
             function updateMapFromCoords(lat, lng) {
@@ -1441,50 +1507,268 @@ async function openEditModal(itemEl) {
                 if (isNaN(latNum) || isNaN(lngNum)) return;
                 if (leafletMap) {
                     var latLng = window.L && window.L.latLng(latNum, lngNum);
-                    leafletMap.setView(latLng, 17);
+                    leafletMap.setView(latLng, 16);
                     setMarkerPosition(latLng);
                 }
             }
 
-            if (searchBtn && addrIn) {
-                searchBtn.addEventListener('click', function () {
-                    var q = (addrIn.value || '').trim();
-                    if (!q) return;
+            var bootLeafletMap = function () {
+                if (window.L && container) {
+                    configureLeafletIcons();
+                    if (window._lastLocationLeafletMap) {
+                        try { window._lastLocationLeafletMap.remove(); } catch (e) {}
+                        window._lastLocationLeafletMap = null;
+                    }
+                    setTimeout(function () {
+                        var hasInitial = latIn && lngIn && latIn.value && lngIn.value && !isNaN(parseFloat(latIn.value));
+                        var center = hasInitial ? [parseFloat(latIn.value), parseFloat(lngIn.value)] : defaultCenter;
+                        var zoom = hasInitial ? 16 : 12;
+                        leafletMap = window.L.map(container, { center: center, zoom: zoom });
+                        window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            maxZoom: 19
+                        }).addTo(leafletMap);
+
+                        if (hasInitial) {
+                            var initialLatLng = window.L.latLng(parseFloat(latIn.value), parseFloat(lngIn.value));
+                            marker = window.L.marker(initialLatLng, { draggable: true }).addTo(leafletMap);
+                            marker.on('dragend', function () {
+                                var pos = marker.getLatLng();
+                                updateInputsFromLatLng(pos.lat, pos.lng, false);
+                            });
+                        }
+
+                        leafletMap.on('click', function (e) {
+                            setMarkerPosition(e.latlng);
+                            updateInputsFromLatLng(e.latlng.lat, e.latlng.lng, false);
+                        });
+
+                        container._leafletMap = leafletMap;
+                        window._lastLocationLeafletMap = leafletMap;
+
+                        setTimeout(function () {
+                            if (leafletMap) leafletMap.invalidateSize();
+                        }, 300);
+                    }, 200);
+                }
+            };
+
+            if (typeof window.ckEnsureLeaflet === 'function') {
+                window.ckEnsureLeaflet().then(bootLeafletMap).catch(function () {});
+            } else {
+                bootLeafletMap();
+            }
+
+            function selectOption(item) {
+                var lat = item.lat;
+                var lon = item.lon;
+                var displayName = item.display_name || '';
+                if (latIn) latIn.value = lat;
+                if (lngIn) lngIn.value = lon;
+                if (addrIn) addrIn.value = displayName;
+                if (formattedP) formattedP.textContent = displayName;
+                if (item.uf && ufSelect) ufSelect.value = item.uf;
+                if (item.city && cityIn && !cityIn.value) cityIn.value = item.city;
+                updateMapFromCoords(lat, lon);
+                if (resultsContainer) resultsContainer.style.display = 'none';
+            }
+
+            function renderResultsList(arr) {
+                if (!resultsContainer || !resultsList) return;
+                resultsList.innerHTML = '';
+                if (!arr || !Array.isArray(arr) || arr.length === 0) {
+                    resultsContainer.style.display = 'block';
+                    if (resultsCount) resultsCount.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#f39c12;"></i> Nenhum resultado encontrado';
+                    resultsList.innerHTML = '<div style="padding:10px 8px;font-size:0.8rem;color:#bbb;text-align:center;">Não encontramos nenhum local para essa busca. Tente buscar pelo nome da rua, número ou trocar o Estado/Cidade no filtro acima.</div>';
+                    return;
+                }
+
+                resultsContainer.style.display = 'block';
+                if (resultsCount) {
+                    resultsCount.innerHTML = '<i class="fas fa-list-ul"></i> ' + arr.length + ' opções encontradas (clique na sua):';
+                }
+
+                // Pré-selecionar o 1º no mapa e formulário
+                var first = arr[0];
+                if (first) {
+                    if (latIn) latIn.value = first.lat;
+                    if (lngIn) lngIn.value = first.lon;
+                    if (formattedP) formattedP.textContent = first.display_name;
+                    if (first.uf && ufSelect && !ufSelect.value) ufSelect.value = first.uf;
+                    if (first.city && cityIn && !cityIn.value) cityIn.value = first.city;
+                    updateMapFromCoords(first.lat, first.lon);
+                }
+
+                arr.forEach(function (item, idx) {
+                    var optionEl = document.createElement('div');
+                    optionEl.className = 'location-option-item';
+                    optionEl.style.cssText = 'padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;transition:all 0.15s ease;';
+
+                    var mainTitle = item.street ? (item.street + (item.house_number ? ', ' + item.house_number : '')) : (item.display_name ? item.display_name.split(',')[0] : ('Opção ' + (idx + 1)));
+                    var badge = item.badge || ((item.city || '') + (item.uf ? ' - ' + item.uf : (item.state ? ' - ' + item.state : ''))).trim();
+                    badge = badge.replace(/^[\s,-]+/, '');
+
+                    var isFirst = idx === 0;
+                    if (isFirst) {
+                        optionEl.style.border = '1px solid rgba(255,199,0,0.45)';
+                        optionEl.style.background = 'rgba(255,199,0,0.08)';
+                    }
+
+                    optionEl.innerHTML = `
+                        <i class="fas fa-map-pin" style="color:var(--dourado-principal,#FFC700);margin-top:2px;font-size:1rem;flex-shrink:0;"></i>
+                        <div style="flex:1;min-width:0;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;">
+                                <strong style="font-size:0.88rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${mainTitle}</strong>
+                                ${badge ? `<span style="font-size:0.72rem;background:rgba(255,199,0,0.2);color:#FFC700;border:1px solid rgba(255,199,0,0.4);border-radius:4px;padding:2px 6px;white-space:nowrap;font-weight:600;">${badge}</span>` : ''}
+                            </div>
+                            <p style="font-size:0.78rem;opacity:0.8;margin:0;line-height:1.3;word-break:break-word;">${item.display_name || ''}</p>
+                        </div>
+                    `;
+
+                    optionEl.addEventListener('mouseenter', function () {
+                        optionEl.style.background = 'rgba(255,199,0,0.18)';
+                        optionEl.style.borderColor = 'rgba(255,199,0,0.6)';
+                    });
+                    optionEl.addEventListener('mouseleave', function () {
+                        if (isFirst) {
+                            optionEl.style.background = 'rgba(255,199,0,0.08)';
+                            optionEl.style.borderColor = 'rgba(255,199,0,0.45)';
+                        } else {
+                            optionEl.style.background = 'rgba(255,255,255,0.05)';
+                            optionEl.style.borderColor = 'rgba(255,255,255,0.1)';
+                        }
+                    });
+                    optionEl.addEventListener('click', function () {
+                        selectOption(item);
+                    });
+
+                    resultsList.appendChild(optionEl);
+                });
+            }
+
+            function doSearch() {
+                var q = (addrIn && addrIn.value || '').trim();
+                var uf = (ufSelect && ufSelect.value || '').trim();
+                var city = (cityIn && cityIn.value || '').trim();
+
+                if (!q && !city) {
+                    if (formattedP) formattedP.textContent = 'Digite o endereço ou nome da rua para pesquisar.';
+                    return;
+                }
+
+                if (searchBtn) {
                     searchBtn.disabled = true;
-                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pesquisando...';
-                    var searchUrl = (env.API_URL || '') + '/api/location/geocode?q=' + encodeURIComponent(q);
-                    __rawFetch(searchUrl, { headers: { 'Accept': 'application/json' }, credentials: 'omit' })
-                        .then(function (r) {
-                            if (!r.ok) throw new Error('Proxy error ' + r.status);
-                            return r.json();
-                        })
-                        .catch(function () {
-                            return __rawFetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', {
-                                headers: { 'Accept': 'application/json' },
-                                credentials: 'omit'
-                            }).then(function (r) { return r.json(); });
-                        })
-                        .then(function (arr) {
-                            if (arr && arr[0]) {
-                                var lat = arr[0].lat;
-                                var lon = arr[0].lon;
-                                var displayName = arr[0].display_name || '';
-                                if (latIn) latIn.value = lat;
-                                if (lngIn) lngIn.value = lon;
-                                if (addrIn) addrIn.value = displayName;
-                                if (formattedP) formattedP.textContent = displayName;
-                                updateMapFromCoords(lat, lon);
-                            } else {
-                                if (formattedP) formattedP.textContent = 'Endereço não encontrado. Tente outro termo.';
-                            }
-                        })
-                        .catch(function () {
-                            if (formattedP) formattedP.textContent = 'Erro ao pesquisar. Tente novamente.';
-                        })
-                        .finally(function () {
+                    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+                }
+
+                var params = new URLSearchParams();
+                if (q) params.set('q', q);
+                if (uf) params.set('uf', uf);
+                if (city) params.set('city', city);
+                params.set('limit', '12');
+
+                var searchUrl = (env.API_URL || '') + '/api/location/geocode?' + params.toString();
+                __rawFetch(searchUrl, { headers: { 'Accept': 'application/json' }, credentials: 'omit' })
+                    .then(function (r) {
+                        if (!r.ok) throw new Error('Proxy error ' + r.status);
+                        return r.json();
+                    })
+                    .catch(function () {
+                        var fallbackQuery = q + (city ? ', ' + city : '') + (uf ? ', ' + uf : '') + ', Brasil';
+                        return __rawFetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(fallbackQuery) + '&format=json&limit=10&countrycodes=br&addressdetails=1', {
+                            headers: { 'Accept': 'application/json' },
+                            credentials: 'omit'
+                        }).then(function (r) {
+                            return r.json().then(function (rawArr) {
+                                if (!Array.isArray(rawArr)) return [];
+                                return rawArr.map(function (it) {
+                                    var addr = it.address || {};
+                                    return {
+                                        lat: it.lat,
+                                        lon: it.lon,
+                                        display_name: it.display_name,
+                                        street: addr.road || addr.street || it.name,
+                                        house_number: addr.house_number || '',
+                                        city: addr.city || addr.town || addr.village || '',
+                                        state: addr.state || '',
+                                        uf: uf || '',
+                                        badge: (addr.city || addr.town || '') + (addr.state ? ' - ' + addr.state : '')
+                                    };
+                                });
+                            });
+                        });
+                    })
+                    .then(function (arr) {
+                        renderResultsList(arr);
+                    })
+                    .catch(function () {
+                        if (formattedP) formattedP.textContent = 'Erro ao pesquisar. Tente novamente.';
+                    })
+                    .finally(function () {
+                        if (searchBtn) {
                             searchBtn.disabled = false;
                             searchBtn.innerHTML = '<i class="fas fa-search"></i> Pesquisar';
-                        });
+                        }
+                    });
+            }
+
+            if (searchBtn) {
+                searchBtn.addEventListener('click', doSearch);
+            }
+
+            if (addrIn) {
+                addrIn.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        doSearch();
+                    }
+                });
+            }
+
+            if (cityIn) {
+                cityIn.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        doSearch();
+                    }
+                });
+            }
+
+            if (resultsCloseBtn && resultsContainer) {
+                resultsCloseBtn.addEventListener('click', function () {
+                    resultsContainer.style.display = 'none';
+                });
+            }
+
+            if (gpsBtn) {
+                gpsBtn.addEventListener('click', function () {
+                    if (!navigator.geolocation) {
+                        alert('Geolocalização não é suportada pelo seu navegador.');
+                        return;
+                    }
+                    var oldHtml = gpsBtn.innerHTML;
+                    gpsBtn.disabled = true;
+                    gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localizando...';
+                    navigator.geolocation.getCurrentPosition(
+                        function (pos) {
+                            var lat = pos.coords.latitude;
+                            var lng = pos.coords.longitude;
+                            updateMapFromCoords(lat, lng);
+                            updateInputsFromLatLng(lat, lng, false);
+                            gpsBtn.disabled = false;
+                            gpsBtn.innerHTML = '<i class="fas fa-check"></i> Localizado!';
+                            setTimeout(function () {
+                                gpsBtn.innerHTML = oldHtml;
+                            }, 2500);
+                        },
+                        function (err) {
+                            console.warn('Erro GPS:', err);
+                            gpsBtn.disabled = false;
+                            gpsBtn.innerHTML = oldHtml;
+                            alert('Não foi possível obter a localização do dispositivo. Verifique se o GPS e as permissões de localização estão ativados no navegador.');
+                        },
+                        { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+                    );
                 });
             }
         })();
