@@ -155,7 +155,7 @@ class RequireCookieCsrf
 
         // Formulário público: /{slug}/form/{itemId}/submit
         // Visitante pode ter cookie de auth do painel no mesmo dispositivo.
-        if (preg_match('#^[^/]+/form/\d+/submit$#', $path) === 1) {
+        if (preg_match('#(^|/)form/\d+/submit/?$#i', $path) === 1 || (str_contains($path, '/form/') && str_ends_with($path, '/submit'))) {
             return true;
         }
 
