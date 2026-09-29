@@ -53,12 +53,17 @@
             return; // Nada mudou
         }
         
+        const fieldsRaw = JSON.parse(document.getElementById('form-fields-json')?.value || '[]');
+        if (!Array.isArray(fieldsRaw) || fieldsRaw.length === 0) {
+            return; // Nunca sobrescrever rascunho com formulário vazio
+        }
+
         // Salvar em localStorage como rascunho
         const draft = {
             itemId: currentItemId,
             timestamp: new Date().toISOString(),
             data: {
-                form_fields: JSON.parse(document.getElementById('form-fields-json')?.value || '[]'),
+                form_fields: fieldsRaw,
                 form_title: document.getElementById('preview-title')?.textContent || '',
                 form_description: document.getElementById('preview-description')?.textContent || ''
             }
@@ -151,6 +156,10 @@
                 const hoursOld = draftAge / (1000 * 60 * 60);
                 
                 if (hoursOld < 24) { // Rascunho válido por 24h
+                    if (!draft.data || !Array.isArray(draft.data.form_fields) || draft.data.form_fields.length === 0) {
+                        localStorage.removeItem(draftKey);
+                        return;
+                    }
                     if (confirm(`Encontramos um rascunho salvo ${hoursOld < 1 ? 'há alguns minutos' : `há ${Math.floor(hoursOld)} horas`}.\n\nDeseja restaurar?`)) {
                         // Restaurar dados
                         if (draft.data.form_fields) {
@@ -495,6 +504,13 @@
                         // NÃO usar cores de guest_list_items para o editor do King Forms
                         // Apenas sincronizar dados funcionais (form_fields, form_title, logos, enable_whatsapp, enable_guest_list_submit)
                         const digitalFormColors = item.digital_form_data || {};
+                        let glFields = guestListData.custom_form_fields;
+                        if (typeof glFields === 'string') { try { glFields = JSON.parse(glFields); } catch (e) { glFields = []; } }
+                        if (!Array.isArray(glFields)) glFields = [];
+                        const resolvedGlFields = (Array.isArray(glFields) && glFields.length > 0)
+                            ? glFields
+                            : (Array.isArray(digitalFormColors.form_fields) && digitalFormColors.form_fields.length > 0 ? digitalFormColors.form_fields : []);
+
                         currentItemData = {
                             ...item,
                             item_type: 'digital_form', // Manter compatibilidade
@@ -505,7 +521,7 @@
                                 // Apenas sobrescrever campos funcionais de guest_list_items (não cores)
                                 form_title: guestListData.event_title || guestListData.title || digitalFormColors.form_title,
                                 form_description: guestListData.event_description || digitalFormColors.form_description || '',
-                                form_fields: guestListData.custom_form_fields || digitalFormColors.form_fields || [],
+                                form_fields: resolvedGlFields,
                                 // CORES: Usar APENAS de digital_form_items (já estão em digitalFormColors), NÃO de guest_list_items
                                 // primary_color, secondary_color, text_color, background_color, card_color, decorative_bar_color, separator_line_color
                                 // vêm de digitalFormColors, não de guestListData
@@ -572,11 +588,26 @@
                         // NÃO usar cores de guest_list_items para o editor do King Forms
                         // Apenas sincronizar dados funcionais (form_fields, form_title, logos, enable_whatsapp, enable_guest_list_submit)
                         {
-                            // IMPORTANTE: Preservar cores de digital_form_items (item.digital_form_data), NÃO usar cores de guest_list_items
+                            // IMPORTANTE: Preservar dados de digital_form_items (item.digital_form_data)
                             const digitalFormColors = item.digital_form_data || currentItemData.digital_form_data || {};
-                            let cfFields = guestListData.custom_form_fields != null ? guestListData.custom_form_fields : (digitalFormColors.form_fields || []);
+                            let cfFields = guestListData.custom_form_fields;
                             if (typeof cfFields === 'string') { try { cfFields = JSON.parse(cfFields); } catch (e) { cfFields = []; } }
                             if (!Array.isArray(cfFields)) cfFields = [];
+
+                            // Para digital_form: SEMPRE priorizar campos e título de digital_form_items!
+                            // Só usar dados de guest_list como fallback se digital_form_items estiver vazio
+                            const resolvedFields = (Array.isArray(digitalFormColors.form_fields) && digitalFormColors.form_fields.length > 0)
+                                ? digitalFormColors.form_fields
+                                : (cfFields.length > 0 ? cfFields : (digitalFormColors.form_fields || []));
+
+                            const resolvedTitle = (digitalFormColors.form_title && digitalFormColors.form_title.trim() && digitalFormColors.form_title !== 'Formulário King')
+                                ? digitalFormColors.form_title
+                                : (guestListData.event_title || guestListData.title || digitalFormColors.form_title || 'Formulário King');
+
+                            const resolvedDescription = (digitalFormColors.form_description && digitalFormColors.form_description.trim())
+                                ? digitalFormColors.form_description
+                                : (guestListData.event_description || '');
+
                             // Preferir flags de digital_form_items (fonte da verdade do Tipo Captação/Check-in)
                             const preferGl = digitalFormColors.enable_guest_list_submit !== undefined && digitalFormColors.enable_guest_list_submit !== null
                                 ? digitalFormColors.enable_guest_list_submit
@@ -586,24 +617,17 @@
                                 : (guestListData.enable_whatsapp !== undefined ? guestListData.enable_whatsapp : true);
                             currentItemData.digital_form_data = {
                                 ...digitalFormColors, // Preservar TODOS os dados de digital_form_items primeiro (incluindo cores)
-                                // Apenas sobrescrever campos funcionais de guest_list_items (não cores)
-                                form_title: guestListData.event_title || guestListData.title || digitalFormColors.form_title,
-                                form_description: guestListData.event_description || digitalFormColors.form_description || '',
-                                form_fields: cfFields,
-                                // CORES: Usar APENAS de digital_form_items (já estão em digitalFormColors), NÃO de guest_list_items
-                                // primary_color, secondary_color, text_color, background_color, card_color, decorative_bar_color, separator_line_color
-                                // vêm de digitalFormColors, não de guestListData
-                                header_image_url: guestListData.header_image_url || digitalFormColors.header_image_url || '',
-                                background_image_url: guestListData.background_image_url || digitalFormColors.background_image_url || '',
-                                // background_opacity e theme podem vir de guest_list se necessário, mas preferir digital_form
+                                form_title: resolvedTitle,
+                                form_description: resolvedDescription,
+                                form_fields: resolvedFields,
+                                header_image_url: digitalFormColors.header_image_url || guestListData.header_image_url || '',
+                                background_image_url: digitalFormColors.background_image_url || guestListData.background_image_url || '',
                                 background_opacity: digitalFormColors.background_opacity !== undefined ? digitalFormColors.background_opacity : (guestListData.background_opacity !== undefined ? guestListData.background_opacity : 1.0),
                                 theme: digitalFormColors.theme || guestListData.theme || 'light',
-                                // IMPORTANTE: Incluir campos de logo do guest_list_data
-                                form_logo_url: guestListData.form_logo_url !== undefined ? guestListData.form_logo_url : (currentItemData.digital_form_data?.form_logo_url || null),
-                                button_logo_url: guestListData.button_logo_url !== undefined ? guestListData.button_logo_url : (currentItemData.digital_form_data?.button_logo_url || null),
-                                button_logo_size: guestListData.button_logo_size !== undefined ? guestListData.button_logo_size : (currentItemData.digital_form_data?.button_logo_size || 40),
-                                show_logo_corner: guestListData.show_logo_corner !== undefined ? guestListData.show_logo_corner : (currentItemData.digital_form_data?.show_logo_corner || false),
-                                // Incluir opções de envio
+                                form_logo_url: digitalFormColors.form_logo_url !== undefined && digitalFormColors.form_logo_url !== null ? digitalFormColors.form_logo_url : (guestListData.form_logo_url || null),
+                                button_logo_url: digitalFormColors.button_logo_url !== undefined && digitalFormColors.button_logo_url !== null ? digitalFormColors.button_logo_url : (guestListData.button_logo_url || null),
+                                button_logo_size: digitalFormColors.button_logo_size !== undefined ? digitalFormColors.button_logo_size : (guestListData.button_logo_size !== undefined ? guestListData.button_logo_size : 40),
+                                show_logo_corner: digitalFormColors.show_logo_corner !== undefined ? digitalFormColors.show_logo_corner : (guestListData.show_logo_corner !== undefined ? guestListData.show_logo_corner : false),
                                 enable_whatsapp: preferWa,
                                 enable_guest_list_submit: preferGl,
                                 send_mode: digitalFormColors.send_mode || guestListData.send_mode || undefined
