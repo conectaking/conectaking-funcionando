@@ -89,6 +89,7 @@ Route::post('/api/booking/public/{slug}/book', [\App\Http\Controllers\Booking\Bo
 Route::get('/api/pix/qrcode/{itemId}', [PixQrCodeController::class, 'show'])->where('itemId', '[0-9]+');
 Route::get('/api/bible/verse-of-day', [BiblePublicController::class, 'verseOfDay']);
 Route::get('/api/bible/books', [BiblePublicController::class, 'books']);
+Route::get('/api/bible/search', [BiblePublicController::class, 'search'])->middleware('throttle:60,1');
 Route::get('/api/bible/book/{bookId}/{chapter}', [BiblePublicController::class, 'bookChapter'])
     ->where(['bookId' => '[A-Za-z0-9_-]+', 'chapter' => '[0-9]+']);
 Route::get('/api/bible/study/books', [BiblePublicController::class, 'studyBooks']);

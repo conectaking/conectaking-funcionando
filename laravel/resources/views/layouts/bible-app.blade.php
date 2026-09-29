@@ -35,7 +35,16 @@
             </div>
         </div>
 
-        <div class="bible-top-bar-right">
+            {{-- Busca Bíblica Global --}}
+            <button type="button" class="bible-icon-btn" id="btn-open-search" title="Buscar versículos" aria-label="Buscar versículos">
+                <i class="fas fa-search"></i>
+            </button>
+
+            {{-- Pergunte à Bíblia --}}
+            <button type="button" class="bible-icon-btn" id="btn-open-ask-ai" title="Pergunte à Bíblia" aria-label="Pergunte à Bíblia">
+                <i class="fas fa-sparkles"></i>
+            </button>
+
             {{-- Botão de Ouvir Narração --}}
             <button type="button" class="bible-icon-btn btn-audio" id="btn-top-narrate"
                     data-speak-target="@yield('speak_target', '.hero-verse-quote, .reader-verses-flow, .devotional-body')"
@@ -152,6 +161,95 @@
                     <button type="button" class="btn-pref-option" id="btn-font-dec" style="flex:1;"><i class="fas fa-minus"></i> A−</button>
                     <button type="button" class="btn-pref-option" id="btn-font-inc" style="flex:1;"><i class="fas fa-plus"></i> A+</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Floating Verse Action Bar (Marca-texto, Favoritos, WhatsApp, Copiar, Story) --}}
+    <div class="verse-action-bar" id="verse-action-bar">
+        <button type="button" class="color-picker-dot dot-gold" data-color="gold" title="Marcar Dourado"></button>
+        <button type="button" class="color-picker-dot dot-green" data-color="green" title="Marcar Verde"></button>
+        <button type="button" class="color-picker-dot dot-blue" data-color="blue" title="Marcar Azul"></button>
+        <button type="button" class="color-picker-dot dot-pink" data-color="pink" title="Marcar Rosa"></button>
+        <button type="button" class="color-picker-dot dot-clear" data-color="clear" title="Remover marcação">✕</button>
+        <div style="width:1px;height:18px;background:var(--border-subtle);margin:0 2px;"></div>
+        <button type="button" class="verse-act-btn btn-wpp" id="btn-verse-wpp" title="Compartilhar no WhatsApp">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+        </button>
+        <button type="button" class="verse-act-btn" id="btn-verse-copy" title="Copiar versículo">
+            <i class="fas fa-copy"></i> Copiar
+        </button>
+        <button type="button" class="verse-act-btn" id="btn-verse-story" title="Criar Story Instagram">
+            <i class="fab fa-instagram"></i> Story
+        </button>
+        <button type="button" class="verse-act-btn" id="btn-verse-speak" title="Ouvir versículo">
+            <i class="fas fa-volume-up"></i>
+        </button>
+    </div>
+
+    {{-- Modal de Busca Bíblica Global --}}
+    <div class="bible-modal-backdrop" id="bible-search-modal" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
+        <div class="bible-modal-dialog" style="max-width:580px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="search-modal-title">
+                    <i class="fas fa-search" style="color:var(--gold-primary);margin-right:8px;"></i> Busca Bíblica Global
+                </h3>
+                <button type="button" class="modal-close-btn" id="btn-close-search" aria-label="Fechar">✕</button>
+            </div>
+            <div class="search-modal-body">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="bible-global-search-input" placeholder="Digite uma palavra ou tema (ex: amor, fé, cura, paz)..." autocomplete="off">
+                </div>
+                <div class="search-tags-row">
+                    <span style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;margin-right:4px;">Temas:</span>
+                    <button type="button" class="search-tag" data-tag="amor">Amor</button>
+                    <button type="button" class="search-tag" data-tag="fé">Fé</button>
+                    <button type="button" class="search-tag" data-tag="paz">Paz</button>
+                    <button type="button" class="search-tag" data-tag="esperança">Esperança</button>
+                    <button type="button" class="search-tag" data-tag="prosperidade">Prosperidade</button>
+                    <button type="button" class="search-tag" data-tag="cura">Cura</button>
+                    <button type="button" class="search-tag" data-tag="sabedoria">Sabedoria</button>
+                    <button type="button" class="search-tag" data-tag="ansiedade">Ansiedade</button>
+                    <button type="button" class="search-tag" data-tag="perdão">Perdão</button>
+                </div>
+                <div id="search-status-msg" style="font-size:0.85rem;color:var(--text-muted);text-align:center;margin:12px 0;display:none;"></div>
+                <div class="search-results-list" id="search-results-container"></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Pergunte à Bíblia (Conselheiro Espiritual) --}}
+    <div class="bible-modal-backdrop" id="bible-ask-modal" role="dialog" aria-modal="true" aria-labelledby="ask-modal-title">
+        <div class="bible-modal-dialog" style="max-width:580px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="ask-modal-title">
+                    <i class="fas fa-sparkles" style="color:var(--gold-primary);margin-right:8px;"></i> Pergunte à Bíblia
+                </h3>
+                <button type="button" class="modal-close-btn" id="btn-close-ask" aria-label="Fechar">✕</button>
+            </div>
+            <div class="search-modal-body">
+                <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">
+                    Escolha o que você está sentindo no seu coração para receber direção e versículos de fortalecimento:
+                </p>
+                <div class="ask-topics-grid">
+                    <button type="button" class="ask-topic-chip" data-topic="ansiedade">🌿 Ansiedade & Medo</button>
+                    <button type="button" class="ask-topic-chip" data-topic="financas">💰 Finanças & Trabalho</button>
+                    <button type="button" class="ask-topic-chip" data-topic="perdao">🕊️ Cura & Perdão</button>
+                    <button type="button" class="ask-topic-chip" data-topic="familia">💍 Família & Casamento</button>
+                    <button type="button" class="ask-topic-chip" data-topic="forca">🔥 Força na Dificuldade</button>
+                    <button type="button" class="ask-topic-chip" data-topic="gratidao">☀️ Gratidão & Bênçãos</button>
+                </div>
+                <div class="search-input-wrapper">
+                    <i class="fas fa-comment-dots"></i>
+                    <input type="text" id="bible-ask-input" placeholder="Ou digite sua oração ou pergunta bíblica..." autocomplete="off">
+                </div>
+                <div style="text-align:right;">
+                    <button type="button" class="verse-act-btn" id="btn-submit-ask" style="background:var(--gold-primary);color:#111;padding:8px 16px;">
+                        <i class="fas fa-paper-plane"></i> Buscar Orientação
+                    </button>
+                </div>
+                <div class="ask-answer-box" id="ask-answer-container" style="display:none;"></div>
             </div>
         </div>
     </div>

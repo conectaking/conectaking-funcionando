@@ -1047,3 +1047,268 @@ a {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
+
+/* --- Highlights para Versículos --- */
+.verse-item.highlight-gold {
+    background: rgba(255, 199, 0, 0.18) !important;
+    border-left: 3px solid #FFC700 !important;
+    padding-left: 10px;
+    border-radius: 4px;
+}
+.verse-item.highlight-green {
+    background: rgba(34, 197, 94, 0.18) !important;
+    border-left: 3px solid #22C55E !important;
+    padding-left: 10px;
+    border-radius: 4px;
+}
+.verse-item.highlight-blue {
+    background: rgba(59, 130, 246, 0.18) !important;
+    border-left: 3px solid #3B82F6 !important;
+    padding-left: 10px;
+    border-radius: 4px;
+}
+.verse-item.highlight-pink {
+    background: rgba(236, 72, 153, 0.18) !important;
+    border-left: 3px solid #EC4899 !important;
+    padding-left: 10px;
+    border-radius: 4px;
+}
+
+/* --- Floating Verse Action Bar --- */
+.verse-action-bar {
+    position: fixed;
+    bottom: calc(75px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(120%);
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius-full);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), var(--gold-glow);
+    z-index: 990;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+    max-width: 95vw;
+}
+.verse-action-bar.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.color-picker-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    padding: 0;
+}
+.color-picker-dot:hover {
+    transform: scale(1.25);
+}
+.color-picker-dot.dot-gold { background: #FFC700; }
+.color-picker-dot.dot-green { background: #22C55E; }
+.color-picker-dot.dot-blue { background: #3B82F6; }
+.color-picker-dot.dot-pink { background: #EC4899; }
+.color-picker-dot.dot-clear { 
+    background: transparent; 
+    border: 1px dashed var(--text-muted); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 11px; 
+    color: var(--text-muted); 
+}
+.verse-act-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    border-radius: var(--radius-full);
+    padding: 6px 11px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+.verse-act-btn:hover {
+    background: var(--gold-primary);
+    color: #111;
+    border-color: var(--gold-primary);
+}
+.verse-act-btn.btn-wpp {
+    background: #25D366;
+    color: #FFFFFF;
+    border-color: #25D366;
+}
+.verse-act-btn.btn-wpp:hover {
+    background: #1EBE5D;
+}
+
+/* --- Modal de Busca Global --- */
+.search-modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-top: 4px;
+}
+.search-input-wrapper {
+    position: relative;
+    margin-bottom: 14px;
+}
+.search-input-wrapper i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold-primary);
+}
+.search-input-wrapper input {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+}
+.search-input-wrapper input:focus {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 12px rgba(255, 199, 0, 0.25);
+}
+.search-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+.search-tag {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.search-tag:hover {
+    background: rgba(255, 199, 0, 0.15);
+    color: var(--gold-primary);
+    border-color: var(--border-gold);
+}
+.search-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.search-result-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    display: block;
+}
+.search-result-item:hover {
+    background: rgba(255, 199, 0, 0.08);
+    border-color: var(--border-gold);
+    transform: translateY(-1px);
+}
+.search-result-ref {
+    font-family: var(--font-heading);
+    color: var(--gold-primary);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+.search-result-text {
+    font-family: var(--bible-font-family);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+}
+.search-result-text mark {
+    background: rgba(255, 199, 0, 0.35);
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 700;
+}
+
+/* --- Modal Pergunte à Bíblia --- */
+.ask-topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.ask-topic-chip {
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+.ask-topic-chip:hover {
+    background: rgba(255, 199, 0, 0.12);
+    border-color: var(--border-gold);
+    color: var(--gold-primary);
+}
+.ask-answer-box {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255, 199, 0, 0.06);
+    border: 1px solid var(--border-gold);
+    line-height: 1.7;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+/* --- Continue Reading & Streak --- */
+.continue-reading-card {
+    background: linear-gradient(135deg, rgba(255, 199, 0, 0.12) 0%, rgba(22, 22, 29, 0.85) 100%);
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+}
+.continue-reading-card:hover {
+    border-color: var(--gold-primary);
+    box-shadow: 0 4px 20px rgba(255, 199, 0, 0.2);
+    transform: translateY(-2px);
+}
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(255, 199, 0, 0.15);
+    border: 1px solid var(--border-gold);
+    border-radius: 999px;
+    color: var(--gold-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+}

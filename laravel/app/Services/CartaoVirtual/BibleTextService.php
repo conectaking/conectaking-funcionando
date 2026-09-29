@@ -2,6 +2,7 @@
 
 namespace App\Services\CartaoVirtual;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -352,5 +353,89 @@ class BibleTextService
         self::$bookCache[$key] = is_array($data) ? $data : null;
 
         return self::$bookCache[$key];
+    }
+
+    /**
+     * Busca global por palavra ou frase em toda a Bíblia.
+     *
+     * @return list<array{bookId:string,bookName:string,chapter:int,verse:int,text:string,reference:string}>
+     */
+    public function search(string $query, string $translation = 'nvi', int $limit = 35): array
+    {
+        $query = trim($query);
+        if (mb_strlen($query) < 2) {
+            return [];
+        }
+
+        $trans = strtolower($translation ?: 'nvi');
+        $qNormalized = mb_strtolower($this->removeAccents($query));
+        $cacheKey = 'bible_search:'.md5($trans.':'.$qNormalized.':'.$limit);
+
+        return Cache::remember($cacheKey, 86400, function () use ($qNormalized, $trans, $limit) {
+            $manifest = $this->manifest();
+            $allBooks = array_merge($manifest['at'] ?? [], $manifest['nt'] ?? []);
+            $results = [];
+
+            foreach ($allBooks as $bookMeta) {
+                $bookId = (string) ($bookMeta['id'] ?? '');
+                if ($bookId === '') {
+                    continue;
+                }
+                $book = $this->loadBook($trans, $bookId);
+                if (!$book || empty($book['chapters'])) {
+                    continue;
+                }
+
+                $bookName = (string) ($book['name'] ?? $bookMeta['name'] ?? $bookId);
+                $chapters = is_array($book['chapters']) ? $book['chapters'] : [];
+
+                foreach ($chapters as $chIndex => $verses) {
+                    $chapterNum = $chIndex + 1;
+                    if (!is_array($verses)) {
+                        continue;
+                    }
+
+                    foreach ($verses as $vIndex => $verseText) {
+                        $verseNum = $vIndex + 1;
+                        $textStr = (string) $verseText;
+                        $normalizedText = mb_strtolower($this->removeAccents($textStr));
+
+                        if (str_contains($normalizedText, $qNormalized)) {
+                            $results[] = [
+                                'bookId' => $bookId,
+                                'bookName' => $bookName,
+                                'chapter' => $chapterNum,
+                                'verse' => $verseNum,
+                                'text' => $textStr,
+                                'reference' => "{$bookName} {$chapterNum}:{$verseNum}",
+                            ];
+
+                            if (count($results) >= $limit) {
+                                return $results;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return $results;
+        });
+    }
+
+    /**
+     * Remove acentos e caracteres especiais para busca insensível a acentuação.
+     */
+    private function removeAccents(string $string): string
+    {
+        $trans = [
+            'á'=>'a','à'=>'a','ã'=>'a','â'=>'a','ä'=>'a','é'=>'e','è'=>'e','ê'=>'e','ë'=>'e',
+            'í'=>'i','ì'=>'i','î'=>'i','ï'=>'i','ó'=>'o','ò'=>'o','õ'=>'o','ô'=>'o','ö'=>'o',
+            'ú'=>'u','ù'=>'u','û'=>'u','ü'=>'u','ç'=>'c','ñ'=>'n',
+            'Á'=>'a','À'=>'a','Ã'=>'a','Â'=>'a','Ä'=>'a','É'=>'e','È'=>'e','Ê'=>'e','Ë'=>'e',
+            'Í'=>'i','Ì'=>'i','Î'=>'i','Ï'=>'i','Ó'=>'o','Ò'=>'o','Õ'=>'o','Ô'=>'o','Ö'=>'o',
+            'Ú'=>'u','Ù'=>'u','Û'=>'u','Ü'=>'u','Ç'=>'c','Ñ'=>'n',
+        ];
+
+        return strtr($string, $trans);
     }
 }

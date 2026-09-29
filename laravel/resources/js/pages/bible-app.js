@@ -384,6 +384,20 @@ import '@css/pages/bible-app.css';
             });
         });
 
+        // Controle de Velocidade do Áudio
+        const btnSpeed = document.getElementById('btn-audio-speed');
+        if (btnSpeed) {
+            const SPEEDS = [1.0, 1.25, 1.5, 2.0, 0.8];
+            btnSpeed.addEventListener('click', () => {
+                let currentIdx = SPEEDS.indexOf(AudioEngine.speed);
+                if (currentIdx === -1) currentIdx = 0;
+                let nextIdx = (currentIdx + 1) % SPEEDS.length;
+                let newSpeed = SPEEDS[nextIdx];
+                AudioEngine.setSpeed(newSpeed);
+                btnSpeed.textContent = newSpeed + 'x';
+            });
+        }
+
         // Modal de Preferências
         const prefModal = document.getElementById('bible-pref-modal');
         const openPrefBtn = document.getElementById('btn-open-prefs');
@@ -402,6 +416,426 @@ import '@css/pages/bible-app.css';
         if (prefModal) {
             prefModal.addEventListener('click', (e) => {
                 if (e.target === prefModal) prefModal.classList.remove('open');
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Modal de Busca Bíblica Global
+        // ---------------------------------------------------------
+        const searchModal = document.getElementById('bible-search-modal');
+        const openSearchBtn = document.getElementById('btn-open-search');
+        const closeSearchBtn = document.getElementById('btn-close-search');
+        const searchInput = document.getElementById('bible-global-search-input');
+        const searchResultsCont = document.getElementById('search-results-container');
+        const searchStatusMsg = document.getElementById('search-status-msg');
+
+        if (openSearchBtn && searchModal) {
+            openSearchBtn.addEventListener('click', () => {
+                searchModal.classList.add('open');
+                setTimeout(() => searchInput?.focus(), 150);
+            });
+        }
+        if (closeSearchBtn && searchModal) {
+            closeSearchBtn.addEventListener('click', () => {
+                searchModal.classList.remove('open');
+            });
+        }
+        if (searchModal) {
+            searchModal.addEventListener('click', (e) => {
+                if (e.target === searchModal) searchModal.classList.remove('open');
+            });
+        }
+
+        let searchDebounceTimer = null;
+        function performSearch(term) {
+            const q = (term || '').trim();
+            if (q.length < 2) {
+                if (searchResultsCont) searchResultsCont.innerHTML = '';
+                if (searchStatusMsg) searchStatusMsg.style.display = 'none';
+                return;
+            }
+
+            if (searchStatusMsg) {
+                searchStatusMsg.style.display = 'block';
+                searchStatusMsg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando nas Escrituras...';
+            }
+
+            fetch(`/api/bible/search?q=${encodeURIComponent(q)}&limit=30`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!searchResultsCont) return;
+                    searchResultsCont.innerHTML = '';
+
+                    const results = data.data || [];
+                    if (searchStatusMsg) {
+                        if (results.length === 0) {
+                            searchStatusMsg.innerHTML = `Nenhum versículo encontrado para "<strong>${q}</strong>".`;
+                        } else {
+                            searchStatusMsg.innerHTML = `Encontrado(s) <strong>${results.length}</strong> versículo(s) para "<strong>${q}</strong>":`;
+                        }
+                    }
+
+                    const pathParts = window.location.pathname.split('/').filter(Boolean);
+                    const slug = pathParts[0] || '';
+
+                    results.forEach(item => {
+                        const regex = new RegExp(`(${q.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+                        const highlighted = item.text.replace(regex, '<mark>$1</mark>');
+                        const linkUrl = `/${slug}/biblia/${item.bookId}/${item.chapter}#v${item.verse}`;
+
+                        const a = document.createElement('a');
+                        a.href = linkUrl;
+                        a.className = 'search-result-item';
+                        a.innerHTML = `
+                            <div class="search-result-ref"><i class="fas fa-book-open"></i> ${item.reference}</div>
+                            <div class="search-result-text">"${highlighted}"</div>
+                        `;
+                        searchResultsCont.appendChild(a);
+                    });
+                })
+                .catch(() => {
+                    if (searchStatusMsg) searchStatusMsg.innerHTML = 'Erro ao realizar busca. Tente novamente.';
+                });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(() => performSearch(this.value), 320);
+            });
+        }
+
+        document.querySelectorAll('.search-tag').forEach(tag => {
+            tag.addEventListener('click', function () {
+                const term = this.dataset.tag || this.innerText;
+                if (searchInput) {
+                    searchInput.value = term;
+                    performSearch(term);
+                }
+            });
+        });
+
+        // ---------------------------------------------------------
+        // Modal Pergunte à Bíblia (Conselheiro Espiritual)
+        // ---------------------------------------------------------
+        const askModal = document.getElementById('bible-ask-modal');
+        const openAskBtn = document.getElementById('btn-open-ask-ai');
+        const closeAskBtn = document.getElementById('btn-close-ask');
+        const askInput = document.getElementById('bible-ask-input');
+        const btnSubmitAsk = document.getElementById('btn-submit-ask');
+        const askAnswerCont = document.getElementById('ask-answer-container');
+
+        if (openAskBtn && askModal) {
+            openAskBtn.addEventListener('click', () => {
+                askModal.classList.add('open');
+                setTimeout(() => askInput?.focus(), 150);
+            });
+        }
+        if (closeAskBtn && askModal) {
+            closeAskBtn.addEventListener('click', () => {
+                askModal.classList.remove('open');
+            });
+        }
+        if (askModal) {
+            askModal.addEventListener('click', (e) => {
+                if (e.target === askModal) askModal.classList.remove('open');
+            });
+        }
+
+        const BIBLE_COUNSEL_TOPICS = {
+            ansiedade: {
+                title: "Vencendo a Ansiedade e o Medo",
+                verse: "Não andeis ansiosos de coisa alguma; em tudo, porém, sejam conhecidas diante de Deus as vossas petições, pela oração e pela súplica, com ações de graças. E a paz de Deus, que excede todo o entendimento, guardará os vossos corações e os vossos sentimentos em Cristo Jesus.",
+                ref: "Filipenses 4:6-7",
+                counsel: "Deus sabe exatamente as batalhas que você está enfrentando. Ele não quer que você carregue o fardo do amanhã sozinho. Entregue cada preocupação nas mãos do Pai agora mesmo e descanse na certeza de que Ele cuida de você.",
+                prayer: "Senhor, coloco diante de Ti toda a ansiedade e incerteza. Enche meu coração com a Tua paz que excede todo entendimento. Amém!"
+            },
+            financas: {
+                title: "Sabedoria Financeira e Provisão",
+                verse: "O meu Deus suprirá todas as necessidades de vocês, de acordo com as suas gloriosas riquezas em Cristo Jesus.",
+                ref: "Filipenses 4:19",
+                counsel: "A verdadeira prosperidade começa com a fidelidade nos princípios e a sabedoria no trabalho diário (Provérbios 3:9-10). Deus é o provedor soberano que abre portas onde não há caminhos.",
+                prayer: "Pai celestial, concede-me sabedoria para gerir tudo o que colocas em minhas mãos. Abre portas de oportunidade e abençoa o trabalho das minhas mãos. Amém!"
+            },
+            perdao: {
+                title: "Cura do Coração e Perdão",
+                verse: "Sejam bondosos e compassivos uns para com os outros, perdoando-se mutuamente, assim como Deus os perdoou em Cristo.",
+                ref: "Efésios 4:32",
+                counsel: "O perdão não é um sentimento, é uma decisão de libertar a sua própria alma da prisão do ressentimento. Ao perdoar, você abre espaço para a cura completa de Deus fluir em sua vida.",
+                prayer: "Senhor Jesus, ajuda-me a liberar perdão assim como fui perdoado por Ti. Sara as feridas do meu coração e renova minhas forças. Amém!"
+            },
+            familia: {
+                title: "Proteção e Amor no Lar",
+                verse: "Eu e a minha família serviremos ao Senhor.",
+                ref: "Josué 24:15",
+                counsel: "A família é o projeto mais precioso de Deus na terra. Cubra seu lar com amor paciente, oração diária e palavras de bênção. O amor de Cristo sustenta o casamento e os filhos.",
+                prayer: "Deus de amor, abençoa e protege minha família. Que haja unidade, respeito e a Tua presença diária em nosso lar. Amém!"
+            },
+            forca: {
+                title: "Força nas Dificuldades",
+                verse: "Tudo posso naquele que me fortalece.",
+                ref: "Filipenses 4:13",
+                counsel: "Nos momentos em que suas forças humanas se esgotam, o poder de Deus se aperfeiçoa em sua fraqueza (2 Coríntios 12:9). Você não está sozinho nesta travessia; a vitória já está decretada.",
+                prayer: "Senhor Deus, renova minhas energias como a águia. Dá-me forças para continuar e fé inabalável para vencer as tempestades. Amém!"
+            },
+            gratidao: {
+                title: "Gratidão e Louvor",
+                verse: "Deem graças em todas as circunstâncias, pois esta é a vontade de Deus para vocês em Cristo Jesus.",
+                ref: "1 Tessalonicenses 5:18",
+                counsel: "A gratidão transforma o que temos em suficiência e abre as janelas do céu para novas bênçãos. Agradeça pelas vitórias e até pelos aprendizados da jornada.",
+                prayer: "Pai bondoso, obrigado pela vida, pela Tua graça infalível e por cada livramento visível e invisível. Meu coração Te louva! Amém!"
+            }
+        };
+
+        function showCounsel(topicKey, customQuery = '') {
+            if (!askAnswerCont) return;
+            const data = BIBLE_COUNSEL_TOPICS[topicKey] || {
+                title: customQuery ? `Orientação para: "${customQuery}"` : "Palavra de Orientação",
+                verse: "Lâmpada para os meus pés é tua palavra e luz, para o meu caminho.",
+                ref: "Salmos 119:105",
+                counsel: "A Bíblia Sagrada é o mapa vivo de Deus para cada passo seu. Busque primeiro o Reino de Deus e a Sua justiça, e todas as coisas lhe serão acrescentadas (Mateus 6:33).",
+                prayer: "Senhor, guia meus passos conforme a Tua Palavra. Que a Tua verdade ilumine minhas escolhas diárias. Amém!"
+            };
+
+            askAnswerCont.style.display = 'block';
+            askAnswerCont.innerHTML = `
+                <div style="font-weight:700;font-size:1.05rem;color:var(--gold-primary);margin-bottom:8px;">
+                    <i class="fas fa-feather-alt"></i> ${data.title}
+                </div>
+                <blockquote style="font-family:var(--bible-font-family);font-style:italic;color:var(--text-primary);margin:10px 0;padding-left:10px;border-left:3px solid var(--gold-primary);">
+                    "${data.verse}"
+                    <div style="font-weight:700;color:var(--gold-primary);font-size:0.85rem;margin-top:4px;font-style:normal;">— ${data.ref}</div>
+                </blockquote>
+                <p style="margin:10px 0;color:var(--text-secondary);">${data.counsel}</p>
+                <div style="margin-top:12px;padding:10px;background:rgba(255,199,0,0.08);border-radius:8px;">
+                    <strong style="color:var(--gold-primary);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.04em;">Oração Guiada:</strong>
+                    <div style="font-style:italic;margin-top:4px;color:var(--text-primary);">${data.prayer}</div>
+                </div>
+            `;
+        }
+
+        document.querySelectorAll('.ask-topic-chip').forEach(chip => {
+            chip.addEventListener('click', function () {
+                const topic = this.dataset.topic;
+                showCounsel(topic);
+            });
+        });
+
+        if (btnSubmitAsk) {
+            btnSubmitAsk.addEventListener('click', () => {
+                const q = (askInput?.value || '').trim();
+                if (!q) {
+                    showToast('Digite uma pergunta ou momento de oração.', 'fas fa-info-circle');
+                    return;
+                }
+                const lower = q.toLowerCase();
+                let matchedTopic = null;
+                if (lower.includes('ansie') || lower.includes('medo') || lower.includes('paz') || lower.includes('dormir')) matchedTopic = 'ansiedade';
+                else if (lower.includes('dinheiro') || lower.includes('finan') || lower.includes('trabalho') || lower.includes('divida')) matchedTopic = 'financas';
+                else if (lower.includes('perdo') || lower.includes('magoa') || lower.includes('raiva') || lower.includes('cura')) matchedTopic = 'perdao';
+                else if (lower.includes('casam') || lower.includes('filho') || lower.includes('famili') || lower.includes('espos')) matchedTopic = 'familia';
+                else if (lower.includes('luta') || lower.includes('forca') || lower.includes('triste') || lower.includes('fraqu')) matchedTopic = 'forca';
+                else if (lower.includes('grato') || lower.includes('obrigad') || lower.includes('louvor') || lower.includes('benc')) matchedTopic = 'gratidao';
+
+                showCounsel(matchedTopic, q);
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Continuar Leitura & Streak Espiritual
+        // ---------------------------------------------------------
+        const chapterContainer = document.getElementById('chapter-verses-container');
+        if (chapterContainer) {
+            const bId = chapterContainer.dataset.bookId;
+            const bName = chapterContainer.dataset.bookName;
+            const chNum = chapterContainer.dataset.chapter;
+            const trans = chapterContainer.dataset.translation || 'nvi';
+
+            if (bId && chNum) {
+                const readRecord = {
+                    bookId: bId,
+                    bookName: bName || bId,
+                    chapter: chNum,
+                    translation: trans,
+                    url: window.location.pathname,
+                    date: new Date().toISOString()
+                };
+                try {
+                    localStorage.setItem('ck_bible_last_read', JSON.stringify(readRecord));
+                } catch (e) {}
+
+                // Atualizar Streak diário
+                try {
+                    const todayStr = new Date().toISOString().slice(0, 10);
+                    const lastStreakDate = localStorage.getItem('ck_bible_streak_date');
+                    let count = parseInt(localStorage.getItem('ck_bible_streak_count') || '1', 10);
+
+                    if (lastStreakDate !== todayStr) {
+                        if (lastStreakDate) {
+                            const diffDays = Math.round((new Date(todayStr) - new Date(lastStreakDate)) / (1000 * 60 * 60 * 24));
+                            if (diffDays === 1) count += 1;
+                            else if (diffDays > 1) count = 1;
+                        }
+                        localStorage.setItem('ck_bible_streak_date', todayStr);
+                        localStorage.setItem('ck_bible_streak_count', String(count));
+                    }
+                } catch (e) {}
+            }
+        }
+
+        // Carregar Continuar Leitura e Streak no Hub
+        const continueCard = document.getElementById('hub-continue-card');
+        const continueTitle = document.getElementById('hub-continue-title');
+        const streakCountElem = document.getElementById('hub-streak-count');
+
+        try {
+            const streakVal = localStorage.getItem('ck_bible_streak_count') || '1';
+            if (streakCountElem) streakCountElem.textContent = streakVal;
+
+            const savedLastRead = localStorage.getItem('ck_bible_last_read');
+            if (savedLastRead && continueCard && continueTitle) {
+                const item = JSON.parse(savedLastRead);
+                if (item && item.url && item.bookName && item.chapter) {
+                    continueTitle.textContent = `${item.bookName} · Capítulo ${item.chapter}`;
+                    continueCard.href = item.url;
+                    continueCard.style.display = 'flex';
+                }
+            }
+        } catch (e) {}
+
+        // ---------------------------------------------------------
+        // Marca-Texto Colorido, Favoritos & Verse Action Bar
+        // ---------------------------------------------------------
+        const verseActionBar = document.getElementById('verse-action-bar');
+        const LS_HIGHLIGHTS = 'ck_bible_highlights';
+        let highlights = {};
+        try {
+            highlights = JSON.parse(localStorage.getItem(LS_HIGHLIGHTS) || '{}');
+        } catch (e) {
+            highlights = {};
+        }
+
+        // Aplicar marcações salvas nos versículos
+        if (chapterContainer) {
+            const bId = chapterContainer.dataset.bookId || '';
+            const chNum = chapterContainer.dataset.chapter || '';
+
+            document.querySelectorAll('.verse-item').forEach(vEl => {
+                const vNum = vEl.dataset.verseNum || '';
+                const key = `${bId}-${chNum}-${vNum}`;
+                if (highlights[key]) {
+                    vEl.classList.add('highlight-' + highlights[key]);
+                }
+            });
+        }
+
+        let activeVerseData = null;
+
+        document.querySelectorAll('.verse-item').forEach(vEl => {
+            vEl.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const wasSelected = this.classList.contains('selected');
+                document.querySelectorAll('.verse-item').forEach(v => v.classList.remove('selected'));
+
+                if (!wasSelected) {
+                    this.classList.add('selected');
+                    const text = this.querySelector('.verse-text')?.innerText || this.innerText;
+                    const num = this.dataset.verseNum || '';
+                    const bId = chapterContainer?.dataset.bookId || '';
+                    const bName = chapterContainer?.dataset.bookName || '';
+                    const chNum = chapterContainer?.dataset.chapter || '';
+                    const ref = `${bName} ${chNum}:${num}`;
+
+                    activeVerseData = {
+                        key: `${bId}-${chNum}-${num}`,
+                        element: this,
+                        text: text.trim(),
+                        ref: ref,
+                    };
+
+                    if (verseActionBar) verseActionBar.classList.add('visible');
+                } else {
+                    activeVerseData = null;
+                    if (verseActionBar) verseActionBar.classList.remove('visible');
+                }
+            });
+        });
+
+        // Fechar barra ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (verseActionBar && !verseActionBar.contains(e.target) && !e.target.closest('.verse-item')) {
+                verseActionBar.classList.remove('visible');
+                document.querySelectorAll('.verse-item').forEach(v => v.classList.remove('selected'));
+                activeVerseData = null;
+            }
+        });
+
+        // Botões de Cores do Marca-Texto
+        document.querySelectorAll('.color-picker-dot').forEach(dot => {
+            dot.addEventListener('click', function () {
+                if (!activeVerseData) return;
+                const color = this.dataset.color;
+                const el = activeVerseData.element;
+                const key = activeVerseData.key;
+
+                ['gold', 'green', 'blue', 'pink'].forEach(c => el.classList.remove('highlight-' + c));
+
+                if (color === 'clear') {
+                    delete highlights[key];
+                    showToast('Marcação removida', 'fas fa-eraser');
+                } else {
+                    el.classList.add('highlight-' + color);
+                    highlights[key] = color;
+                    showToast(`Versículo marcado em ${color.toUpperCase()}`, 'fas fa-highlighter');
+                }
+
+                try {
+                    localStorage.setItem(LS_HIGHLIGHTS, JSON.stringify(highlights));
+                } catch (e) {}
+            });
+        });
+
+        // Ações da Barra: WhatsApp
+        const btnVerseWpp = document.getElementById('btn-verse-wpp');
+        if (btnVerseWpp) {
+            btnVerseWpp.addEventListener('click', () => {
+                if (!activeVerseData) return;
+                const msg = `"${activeVerseData.text}"\n— ${activeVerseData.ref}\n\n📖 Bíblia King · ${window.location.href}`;
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+            });
+        }
+
+        // Ações da Barra: Copiar
+        const btnVerseCopy = document.getElementById('btn-verse-copy');
+        if (btnVerseCopy) {
+            btnVerseCopy.addEventListener('click', () => {
+                if (!activeVerseData) return;
+                const msg = `"${activeVerseData.text}" — ${activeVerseData.ref}`;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(msg).then(() => {
+                        showToast('Versículo copiado para a área de transferência!', 'fas fa-check');
+                    });
+                } else {
+                    showToast('Copiado!', 'fas fa-check');
+                }
+            });
+        }
+
+        // Ações da Barra: Story
+        const btnVerseStory = document.getElementById('btn-verse-story');
+        if (btnVerseStory) {
+            btnVerseStory.addEventListener('click', () => {
+                if (!activeVerseData) return;
+                generateStoriesCard(activeVerseData.text, activeVerseData.ref, 'Bíblia King');
+            });
+        }
+
+        // Ações da Barra: Ouvir
+        const btnVerseSpeak = document.getElementById('btn-verse-speak');
+        if (btnVerseSpeak) {
+            btnVerseSpeak.addEventListener('click', () => {
+                if (!activeVerseData) return;
+                AudioEngine.speak(activeVerseData.text, activeVerseData.ref);
             });
         }
 
@@ -454,20 +888,6 @@ import '@css/pages/bible-app.css';
                         card.style.display = card.dataset.testament === filter ? '' : 'none';
                     }
                 });
-            });
-        });
-
-        // Seleção e clique em versículos no Leitor
-        document.querySelectorAll('.verse-item').forEach(vEl => {
-            vEl.addEventListener('click', function () {
-                const wasSelected = this.classList.contains('selected');
-                document.querySelectorAll('.verse-item').forEach(v => v.classList.remove('selected'));
-                if (!wasSelected) {
-                    this.classList.add('selected');
-                    const text = this.querySelector('.verse-text')?.innerText || this.innerText;
-                    const num = this.querySelector('.verse-num')?.innerText || '';
-                    showToast(`Versículo ${num} selecionado. Toque no topo para ouvir ou copiar.`, 'fas fa-bookmark');
-                }
             });
         });
     });

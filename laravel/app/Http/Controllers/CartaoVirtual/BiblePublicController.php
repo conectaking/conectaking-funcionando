@@ -61,6 +61,22 @@ class BiblePublicController extends Controller
         ])->header('X-Conecta-Engine', 'laravel');
     }
 
+    public function search(Request $request)
+    {
+        $q = trim((string) ($request->query('q') ?? ''));
+        $translation = (string) ($request->query('translation') ?: 'nvi');
+        $limit = min(50, max(5, (int) ($request->query('limit') ?: 35)));
+
+        $results = $this->text->search($q, $translation, $limit);
+
+        return response()->json([
+            'success' => true,
+            'query' => $q,
+            'count' => count($results),
+            'data' => $results,
+        ])->header('X-Conecta-Engine', 'laravel');
+    }
+
     public function bookChapter(Request $request, string $bookId, string $chapter)
     {
         $translation = (string) ($request->query('translation') ?: 'nvi');

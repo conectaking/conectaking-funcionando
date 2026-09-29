@@ -17,7 +17,12 @@
 <div class="hero-verse-card">
     <div class="hero-verse-header">
         <span class="hero-badge-tag"><i class="fas fa-sun"></i> Versículo do Dia</span>
-        <span class="hero-verse-date">{{ now()->translatedFormat('d \d\e F') }}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span class="streak-badge" id="hub-streak-badge" title="Dias seguidos lendo a Palavra">
+                <i class="fas fa-fire"></i> <span id="hub-streak-count">1</span> dias
+            </span>
+            <span class="hero-verse-date">{{ now()->translatedFormat('d \d\e F') }}</span>
+        </div>
     </div>
 
     <blockquote class="hero-verse-quote" id="hub-verse-text">
@@ -55,6 +60,22 @@
     </div>
 </div>
 @endif
+
+{{-- Card: Continuar de Onde Parei (Carregado dinamicamente via JS) --}}
+<a href="#" class="continue-reading-card" id="hub-continue-card" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,199,0,0.15);display:flex;align-items:center;justify-content:center;color:var(--gold-primary);font-size:1.1rem;">
+            <i class="fas fa-bookmark"></i>
+        </div>
+        <div>
+            <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold-primary);font-weight:700;">Continuar Leitura</div>
+            <div style="font-weight:700;font-size:1.02rem;color:var(--text-primary);" id="hub-continue-title">Gênesis Capítulo 1</div>
+        </div>
+    </div>
+    <div style="color:var(--gold-primary);font-size:0.9rem;display:flex;align-items:center;gap:4px;font-weight:600;">
+        <span>Continuar</span> <i class="fas fa-chevron-right"></i>
+    </div>
+</a>
 
 {{-- 2. Pilares da Bíblia (Grade de Destaques) --}}
 <div class="section-header">

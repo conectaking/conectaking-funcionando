@@ -50,7 +50,7 @@
         $headingCount = count($headings);
     @endphp
 
-    <div class="reader-verses-flow" id="chapter-verses-container">
+    <div class="reader-verses-flow" id="chapter-verses-container" data-book-id="{{ $bookId }}" data-book-name="{{ $chapterData['bookName'] ?? $bookId }}" data-chapter="{{ $chapter }}" data-translation="{{ $translation }}">
         @foreach($chapterData['verses'] as $v)
             @while($headingIdx < $headingCount && ($headings[$headingIdx]['beforeVerse'] ?? 0) <= ($v['verse'] ?? 0))
                 <div class="reader-section-divider">{{ $headings[$headingIdx]['text'] }}</div>
