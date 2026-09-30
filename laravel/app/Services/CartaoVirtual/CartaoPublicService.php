@@ -140,14 +140,6 @@ class CartaoPublicService
             $details['profile_slug'] = $slugKey;
         }
 
-        // Mapa a partir do item location (como no cartão Node)
-        foreach ($items as $it) {
-            if (($it['item_type'] ?? '') === 'location' && !empty($it['map_url'])) {
-                $details['map_url'] = $it['map_url'];
-                break;
-            }
-        }
-
         $itemsForLinks = $items;
 
         if (empty($details['company_logo_url']) || trim((string) $details['company_logo_url']) === '') {
